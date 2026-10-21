@@ -21,3 +21,5 @@ SELECT IdGrupo FROM tar.GrupoIsencao;
 SELECT IdGrupo FROM tar.GrupoIsencao WHERE NomeGrupo LIKE '%abc';
 -- ok: sentinel-sql-like-curinga-inicial-arquivo
 SELECT IdGrupo FROM tar.GrupoIsencao WHERE NomeGrupo LIKE 'abc%';
+-- ok: sentinel-sql-select-estrela-arquivo
+INSERT INTO vets (nome) SELECT 'A' WHERE NOT EXISTS (SELECT * FROM vets WHERE id=1);

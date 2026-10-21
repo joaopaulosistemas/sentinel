@@ -47,6 +47,7 @@ rules:
     paths:
       include: ["*Dockerfile*", "*.dockerfile"]
     metadata:
+      cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
       category: security
 
   - id: sentinel-docker-apt-sem-no-recommends

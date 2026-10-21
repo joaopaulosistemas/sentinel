@@ -1,0 +1,11 @@
+# Modelo: copie para .pre-commit-config.yaml do projeto. Roda só as regras de segredo e segurança do Sentinel
+# sobre os arquivos do commit (rápido, offline). Requer: pip install pre-commit semgrep.
+repos:
+  - repo: local
+    hooks:
+      - id: sentinel-semgrep
+        name: Sentinel (segurança)
+        language: system
+        entry: semgrep --error --metrics=off --disable-version-check --config audit-rules/packs/core-security/rules
+        types_or: [java, javascript, ts, tsx, jsx, yaml]
+        pass_filenames: true

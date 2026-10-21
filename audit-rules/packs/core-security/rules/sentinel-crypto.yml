@@ -52,10 +52,7 @@ rules:
   - id: sentinel-desserializacao-insegura
     pattern-either:
       - pattern: new ObjectInputStream(...).readObject()
-      - pattern: $O.readObject()
-    pattern-inside: |
-      ObjectInputStream $O = new ObjectInputStream(...);
-      ...
+      - pattern: (ObjectInputStream $O).readObject()
     message: >
       Desserialização nativa do Java (ObjectInputStream.readObject): permite execução de código se a entrada não for confiável.
       Use JSON/Protobuf ou configure um filtro (ObjectInputFilter) com lista de classes permitidas.

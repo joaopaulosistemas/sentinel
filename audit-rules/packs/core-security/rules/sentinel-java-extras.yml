@@ -188,6 +188,7 @@ rules:
     paths:
       exclude: ["**/test/**", "**/*Main*.java", "**/*Application*.java", "**/cli/**"]
     metadata:
+      cwe: "CWE-382: J2EE Bad Practices: Use of System.exit()"
       category: quality
 
   - id: sentinel-cookie-sem-secure

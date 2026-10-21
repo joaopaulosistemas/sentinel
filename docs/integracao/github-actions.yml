@@ -1,0 +1,45 @@
+# Modelo: auditoria do Sentinel em pull request (copie para .github/workflows/sentinel.yml do projeto auditado).
+# Requer os segredos SENTINEL_API_URL e SENTINEL_API_KEY e o sistema já cadastrado no Sentinel (SENTINEL_SYSTEM_ID).
+name: Sentinel
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  auditoria:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Baixar o CLI
+        run: curl -fsSL -o sentinel-cli.jar "${{ secrets.SENTINEL_API_URL }}/cli/sentinel-audit-cli.jar" || { echo "Publique o jar do CLI no seu repositório de artefatos e ajuste esta linha"; exit 1; }
+      - name: Auditar (falha se piorar o código novo)
+        run: |
+          java -jar sentinel-cli.jar \
+            --api-url "${{ secrets.SENTINEL_API_URL }}" \
+            --api-key "${{ secrets.SENTINEL_API_KEY }}" \
+            --system-id "${{ vars.SENTINEL_SYSTEM_ID }}" \
+            --branch "${{ github.head_ref }}" \
+            --base-ref "origin/${{ github.base_ref }}" \
+            --fail-on-new HIGH \
+            --sarif sentinel.sarif --junit sentinel.xml --pr-comment sentinel-comentario.md
+      - name: Publicar no Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: sentinel.sarif
+      - name: Comentar no PR
+        if: always() && hashFiles('sentinel-comentario.md') != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: sentinel-comentario.md

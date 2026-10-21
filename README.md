@@ -800,3 +800,11 @@ Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dad
 - **Angular (2):** `detectChanges()` manual e componente sem `OnPush`.
 - **Spectral** (`market-tools`): guia REST (recurso kebab-case minúsculo, plural, atributos sem abreviação, erro `problem+json`, coleção paginada, gateway Swagger 2).
 - O pacote vem desligado por padrão. O perfil `corporativo-java-ee-angular` o liga e deixa a nomenclatura de SQL, `OnPush` e EJB sem interface em modo sombra (aparecem, mas não reprovam).
+
+## Novidades da v12
+
+- **CI do projeto** (`.github/workflows/ci.yml`): API/CLI, testes Semgrep dos pacotes e dashboard. Modelos para o projeto auditado em `docs/integracao/` (GitHub Actions com gate de código novo e SARIF, pre-commit).
+- **Calibração em repositórios públicos** (`docs/evolucao/calibracao.md`): corrigidos 2 falsos positivos (`SELECT *` em `EXISTS`, `<html>` sem `lang` em fragmentos Thymeleaf), 1 falha de detecção (desserialização) e nova regra `sentinel-command-injection-shell`. O Semgrep passou a ignorar bibliotecas de terceiros embutidas (`libs`, `vendor`, `*.min.js`).
+- **Dashboard**: 14 testes (vitest + Testing Library) e versão no cabeçalho.
+- **Verificador de regras SQL/XML** (`audit-rules/scripts/testar-regex-sql.py`), porque o `semgrep --test` não avalia essas regras.
+- Placar e histórico em `docs/evolucao/LOG.md`.

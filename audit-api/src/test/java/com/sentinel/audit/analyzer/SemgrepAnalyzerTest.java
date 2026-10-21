@@ -84,4 +84,10 @@ class SemgrepAnalyzerTest {
         assertEquals(Category.QUALITY, f.get(2).getCategory());
         assertEquals(Severity.LOW, f.get(0).getSeverity());     // INFO do Semgrep = LOW
     }
+
+    @Test
+    void ignoraBibliotecasDeTerceirosEArquivosGerados() {
+        assertTrue(SemgrepAnalyzer.VENDORED_EXCLUDES.containsAll(
+                List.of("node_modules", "vendor", "libs", "*.min.js")));
+    }
 }

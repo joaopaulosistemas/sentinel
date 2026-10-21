@@ -74,6 +74,27 @@ rules:
       cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
       owasp: A03:2021 - Injection
 
+  - id: sentinel-command-injection-shell
+    patterns:
+      - pattern-either:
+          - pattern: new ProcessBuilder($SH, $FLAG, $CMD)
+          - pattern: Runtime.getRuntime().exec(new String[]{$SH, $FLAG, $CMD})
+      - metavariable-regex:
+          metavariable: $FLAG
+          regex: ^"(-c|/c)"$
+      - pattern-not: new ProcessBuilder($SH, $FLAG, "...")
+      - pattern-not: Runtime.getRuntime().exec(new String[]{$SH, $FLAG, "..."})
+    message: >
+      Comando montado para um interpretador de shell (sh -c / cmd /c): '$CMD' é interpretado pelo shell, então
+      qualquer valor do usuário vira injeção de comando (OWASP A03). Evite shell: passe cada argumento separado
+      ao ProcessBuilder e valide o valor contra uma lista de permitidos.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      owasp: A03:2021 - Injection
+
   - id: sentinel-ldap-injection
     mode: taint
     pattern-sources:

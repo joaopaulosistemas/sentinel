@@ -36,6 +36,17 @@ class InjectionCases {
         Runtime.getRuntime().exec(new String[]{"ls", "-l"});
     }
 
+    void comandoViaShell(String cmd) throws Exception {
+        // ruleid: sentinel-command-injection-shell
+        new ProcessBuilder("sh", "-c", cmd);
+        // ruleid: sentinel-command-injection-shell
+        Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", cmd});
+        // ok: sentinel-command-injection-shell
+        new ProcessBuilder("sh", "-c", "ls -l");
+        // ok: sentinel-command-injection-shell
+        new ProcessBuilder("git", "log", "--oneline");
+    }
+
     void ldap(javax.naming.directory.DirContext ctx, String user) throws Exception {
         // ruleid: sentinel-ldap-injection
         ctx.search("dc=empresa", "(uid=" + user + ")", null);

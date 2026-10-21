@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: API, CLI e pacotes de regras
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Compilar e testar
+        run: mvn -B -ntp verify
+
+  regras:
+    name: Testes Semgrep dos pacotes
+    runs-on: ubuntu-latest
+    env:
+      SEMGREP_SEND_METRICS: "off"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install semgrep
+      - name: Rodar os testes de cada pacote
+        run: |
+          set -e
+          for p in audit-rules/packs/*/; do
+            [ -d "$p/tests" ] && [ -d "$p/rules" ] || continue
+            echo "== $p"
+            # regras de SQL/XML (arquivos *-sql.yml) não são avaliadas pelo `semgrep --test`: têm verificador próprio
+            tmp=$(mktemp -d)
+            for f in "$p"rules/*.yml; do
+              if [[ "$f" == *-sql.yml ]]; then
+                # regras de SQL/XML não são avaliadas pelo `semgrep --test`: têm verificador próprio
+                python3 audit-rules/scripts/testar-regex-sql.py "$f" "$p/tests"
+              else
+                cp "$f" "$tmp"/
+              fi
+            done
+            semgrep --test --metrics=off --disable-version-check --config "$tmp" "$p/tests"
+            rm -rf "$tmp"
+          done
+            semgrep --test --metrics=off --disable-version-check "${cfg[@]}" "$p/tests"
+          done
+
+  dashboard:
+    name: Dashboard
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: audit-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: audit-dashboard/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test --if-present
+      - run: npm run build

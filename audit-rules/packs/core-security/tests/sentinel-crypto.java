@@ -57,4 +57,16 @@ class CryptoCases {
         // ok: sentinel-desserializacao-insegura
         return m.readValue(json, Object.class);
     }
+
+    Object lerComRecurso(byte[] bytes) throws Exception {
+        try (ObjectInputStream ois = new ObjectInputStream(new java.io.ByteArrayInputStream(bytes))) {
+            // ruleid: sentinel-desserializacao-insegura
+            return ois.readObject();
+        }
+    }
+
+    Object lerDeParametro(ObjectInputStream entrada) throws Exception {
+        // ruleid: sentinel-desserializacao-insegura
+        return entrada.readObject();
+    }
 }

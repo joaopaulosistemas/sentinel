@@ -40,14 +40,14 @@ rules:
       category: security
 
   - id: sentinel-fe-html-sem-lang
-    pattern-regex: '(?s)<html\b(?![^>]*\blang\s*=)[^>]*>'
+    pattern-regex: '(?s)<html\b(?![^>]*\blang\s*=)(?![^>]*\bth:(?:replace|insert|include)\b)[^>]*>'
     message: >
       <html> sem atributo 'lang'. Leitores de tela não sabem a pronúncia correta e tradutores erram o idioma.
     severity: INFO
     languages: [regex]
     paths:
       include: ["*.html"]
-      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "**/fragments/**"]
     metadata:
       category: quality
 

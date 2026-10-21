@@ -33,9 +33,9 @@ rules:
     metadata:
       category: quality
   - id: sentinel-sql-select-estrela-arquivo
-    pattern-regex: '(?i)\bselect\s+\*\s+from\b'
+    pattern-regex: '(?i)(?<!exists\()(?<!exists \()\bselect\s+\*\s+from\b'
     message: >
-      SELECT * em script ou arquivo de comandos: traz colunas que ninguém usa e quebra quando a tabela muda.
+      SELECT * em script ou arquivo de comandos (fora de EXISTS, onde é idiomático): traz colunas que ninguém usa e quebra quando a tabela muda.
       Liste as colunas necessárias.
     severity: INFO
     languages: [regex]

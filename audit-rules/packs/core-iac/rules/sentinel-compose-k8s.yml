@@ -40,6 +40,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**"]
     metadata:
+      cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
       category: security
 
   - id: sentinel-compose-segredo-em-env

@@ -123,6 +123,14 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
     }
 
     /**
+     * Bibliotecas de terceiros e arquivos gerados: não são código do projeto e inflam o relatório
+     * (na calibração, um único projeto trouxe milhares de achados só de jQuery e Ace embutidos).
+     */
+    static final List<String> VENDORED_EXCLUDES = List.of(
+            "node_modules", "vendor", "vendors", "third_party", "thirdparty", "bower_components", "libs",
+            "*.min.js", "*.min.css", "*.bundle.js", "*.pack.js");
+
+    /**
      * Executa o Semgrep e devolve o JSON de saída, ou {@code null} se a execução falhou.
      */
     private String runSemgrep(Path projectPath, List<String> configs) throws IOException, InterruptedException {
@@ -131,6 +139,10 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         for (String config : configs) {
             command.add("--config");
             command.add(config);
+        }
+        for (String pattern : VENDORED_EXCLUDES) {
+            command.add("--exclude");
+            command.add(pattern);
         }
         command.add("--json");
         command.add("--quiet");
