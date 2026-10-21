@@ -1,0 +1,30 @@
+# Padrões Angular dos guias internos. Casos de teste: tests/sentinel-padroes-angular.ts
+rules:
+  - id: sentinel-ng-detectchanges-manual
+    pattern: $CDR.detectChanges()
+    message: >
+      detectChanges() manual costuma esconder estado mutado fora do fluxo do Angular. Com OnPush, use um Observable +
+      async pipe, signal ou markForCheck() em último caso.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      exclude: ["**/*.spec.ts", "**/node_modules/**"]
+    metadata:
+      category: quality
+  - id: sentinel-ng-componente-sem-onpush
+    patterns:
+      - pattern: |
+          @Component({...})
+          class $C {...}
+      - pattern-not: |
+          @Component({..., changeDetection: ChangeDetectionStrategy.OnPush, ...})
+          class $C {...}
+    message: >
+      Componente sem ChangeDetectionStrategy.OnPush: o Angular reavalia o template a cada evento da aplicação.
+      O padrão do projeto é OnPush em todo componente.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      exclude: ["**/*.spec.ts", "**/node_modules/**"]
+    metadata:
+      category: performance

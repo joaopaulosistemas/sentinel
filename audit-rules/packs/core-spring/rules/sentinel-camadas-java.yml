@@ -1,0 +1,44 @@
+# Camadas (Controller -> Service -> Repository). Casos de teste: tests/sentinel-camadas-java.java
+rules:
+  - id: sentinel-camadas-controller-usa-repository
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @RestController
+              class $C { ... $R $F; ... }
+          - pattern: |
+              @Controller
+              class $C { ... $R $F; ... }
+      - metavariable-regex:
+          metavariable: $R
+          regex: '^\w*(Repository|Repositorio|Dao|DAO)$'
+    message: >
+      Controller usando Repository diretamente: regra de negócio e transação ficam sem dono. Injete um Service e deixe
+      o Controller só traduzir HTTP.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: architecture
+  - id: sentinel-camadas-controller-expoe-entidade
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @RestController
+              class $C { ... public $T $M(...) {...} ... }
+          - pattern: |
+              @Controller
+              class $C { ... public $T $M(...) {...} ... }
+      - metavariable-regex:
+          metavariable: $T
+          regex: '^(ResponseEntity<)?(List<|Optional<|Set<)?\w*Entity>*$'
+    message: >
+      Controller devolvendo uma entidade JPA: expõe o modelo do banco, causa LazyInitializationException e vaza campos.
+      Devolva um DTO (record) montado no Service.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: architecture

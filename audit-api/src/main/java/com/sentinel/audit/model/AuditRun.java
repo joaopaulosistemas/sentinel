@@ -39,6 +39,10 @@ public class AuditRun {
     @Embedded
     private RiskScore riskScore;
 
+    /** Linhas de código-fonte analisadas (sem testes nem gerados); base do score por densidade. Nulo em auditorias antigas. */
+    @Column(name = "lines_of_code")
+    private Long linesOfCode;
+
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 
@@ -121,6 +125,14 @@ public class AuditRun {
 
     public void setStatus(AuditStatus status) {
         this.status = status;
+    }
+
+    public Long getLinesOfCode() {
+        return linesOfCode;
+    }
+
+    public void setLinesOfCode(Long linesOfCode) {
+        this.linesOfCode = linesOfCode;
     }
 
     public RiskScore getRiskScore() {

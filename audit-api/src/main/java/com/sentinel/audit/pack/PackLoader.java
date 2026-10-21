@@ -206,7 +206,7 @@ public final class PackLoader {
         try {
             return Category.valueOf(v.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            errors.add(where + "." + key + ": categoria inválida '" + v + "' (use SECURITY, QUALITY, ARCHITECTURE, DEPENDENCY ou OBSERVABILITY)");
+            errors.add(where + "." + key + ": categoria inválida '" + v + "' (use SECURITY, QUALITY, ARCHITECTURE, DEPENDENCY, OBSERVABILITY ou PERFORMANCE)");
             return fallback;
         }
     }

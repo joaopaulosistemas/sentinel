@@ -1,0 +1,9 @@
+# Contrato de API (OpenAPI/Swagger): guia de design REST (nomes, erros, paginação). Precisa de /opt/extras (Spectral).
+# Para usar só as regras do guia, defina SPECTRAL_RULESET; o padrão é o ruleset corporativo da imagem.
+- id: spectral
+  name: "Spectral (guia de API REST)"
+  category: quality
+  applies-to: ["**/openapi*.yaml", "**/openapi*.yml", "**/openapi*.json", "**/swagger*.yaml", "**/swagger*.yml", "**/swagger*.json"]
+  command: [/opt/extras/node_modules/.bin/spectral, lint, --ruleset, /opt/extras/spectral-corporativo.yaml, -f, sarif, -o, "{output}", "{files}"]
+  severity-map: {error: medium, warning: low, note: info}
+  timeout-seconds: 300

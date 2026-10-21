@@ -34,7 +34,7 @@ public final class InsightsBuilder {
         COVERAGE.put(AuditArea.ARCHITECTURE, Set.of("Architecture", "Arquitetura (pacotes)"));
         COVERAGE.put(AuditArea.CODE_QUALITY, Set.of("CleanCode", "Semgrep", "PMD", "ESLint"));
         COVERAGE.put(AuditArea.TESTING, Set.of("Higiene do projeto"));
-        COVERAGE.put(AuditArea.PERFORMANCE, Set.of("Semgrep"));
+        COVERAGE.put(AuditArea.PERFORMANCE, Set.of("Semgrep", "Evidências"));
         COVERAGE.put(AuditArea.FRONTEND, Set.of("Semgrep"));
         COVERAGE.put(AuditArea.DEVOPS, Set.of("Semgrep", "Higiene do projeto"));
         COVERAGE.put(AuditArea.DOCUMENTATION, Set.of("Higiene do projeto"));

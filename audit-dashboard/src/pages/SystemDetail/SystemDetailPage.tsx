@@ -42,6 +42,7 @@ const dimensionLabels: Array<{ key: keyof NonNullable<AuditRunResponse['riskScor
   { key: 'architecture', label: 'Arquitetura' },
   { key: 'dependencies', label: 'Dependências' },
   { key: 'observability', label: 'Observabilidade' },
+  { key: 'performance', label: 'Desempenho' },
 ];
 
 const severityOrder: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
@@ -117,7 +118,7 @@ export function SystemDetailPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
+            gridTemplateColumns: 'repeat(6, 1fr)',
             gap: '0.75rem',
           }}
         >

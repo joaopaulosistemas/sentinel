@@ -64,6 +64,8 @@ class AuditOrchestrationServiceTest {
 
         service = new AuditOrchestrationService();
         service.scoringService = new ScoringService();
+        service.evidenceStager = new EvidenceStager();
+        service.evidenceAnalyzer = new com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer();
         service.packRegistry = com.sentinel.audit.pack.TestPacks.registry();
 
         service.auditRunRepository = new AuditRunRepository() {

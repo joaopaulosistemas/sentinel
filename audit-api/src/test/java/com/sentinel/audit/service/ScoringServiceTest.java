@@ -33,6 +33,7 @@ class ScoringServiceTest {
         assertEquals(100.0, score.getArchitecture());
         assertEquals(100.0, score.getDependencies());
         assertEquals(100.0, score.getObservability());
+        assertEquals(100.0, score.getPerformance());
     }
 
     @Test
@@ -50,13 +51,13 @@ class ScoringServiceTest {
 
     @Test
     void scoreGeralDeveRespeiteOsPesosDosDimensoes() {
-        // SECURITY tem peso 0.35, CRITICAL penaliza -20 => security = 80
-        // geral = 80 * 0.35 + 100 * 0.65 = 28 + 65 = 93
+        // SECURITY tem peso 0.30, CRITICAL penaliza -20 => security = 80
+        // geral = 80 * 0.30 + 100 * 0.70 = 24 + 70 = 94
         Finding finding = buildFinding(Category.SECURITY, Severity.CRITICAL);
 
         RiskScore score = scoringService.calculate(List.of(finding));
 
-        double expectedOverall = (80 * 0.35) + (100 * 0.25) + (100 * 0.20) + (100 * 0.10) + (100 * 0.10);
+        double expectedOverall = (80 * 0.30) + (100 * 0.20) + (100 * 0.20) + (100 * 0.10) + (100 * 0.10) + (100 * 0.10);
         assertEquals(Math.round(expectedOverall * 100.0) / 100.0, score.getOverall());
     }
 
@@ -123,6 +124,53 @@ class ScoringServiceTest {
             segredos.add(f);
         }
         assertEquals(0.0, scoringService.calculateDimensionScore(segredos, Category.SECURITY));
+    }
+
+    @Test
+    void desempenhoEUmaDimensaoPropria() {
+        Finding f = buildFinding(Category.PERFORMANCE, Severity.HIGH);
+
+        RiskScore score = scoringService.calculate(List.of(f));
+
+        assertEquals(90.0, score.getPerformance());
+        assertEquals(100.0, score.getQuality());
+    }
+
+    @Test
+    void projetoGrandeToleraProporcionalmenteMaisAchados() {
+        List<Finding> achados = List.of(
+                buildFinding(Category.QUALITY, Severity.HIGH),
+                buildFinding(Category.QUALITY, Severity.HIGH));
+
+        double semTamanho = scoringService.calculate(achados).getQuality();
+        double pequeno = scoringService.calculate(achados, 5_000L).getQuality();
+        double grande = scoringService.calculate(achados, 80_000L).getQuality();
+
+        assertEquals(80.0, semTamanho);
+        assertEquals(80.0, pequeno, "abaixo da referência não muda nada");
+        // 80 mil linhas: fator = raiz(20 mil / 80 mil) = 0,5 => penalidade 20 * 0,5 = 10
+        assertEquals(90.0, grande);
+    }
+
+    @Test
+    void criticalNuncaEDiluidoPeloTamanho() {
+        List<Finding> achados = List.of(buildFinding(Category.SECURITY, Severity.CRITICAL));
+
+        assertEquals(80.0, scoringService.calculate(achados, 1_000_000L).getSecurity());
+    }
+
+    @Test
+    void fatorTemPisoParaSistemasEnormes() {
+        assertEquals(0.2, scoringService.sizeFactor(100_000_000L));
+        assertEquals(1.0, scoringService.sizeFactor(null));
+    }
+
+    @Test
+    void densidadePodeSerDesligada() {
+        scoringService.densityEnabled = false;
+        List<Finding> achados = List.of(buildFinding(Category.QUALITY, Severity.HIGH));
+
+        assertEquals(90.0, scoringService.calculate(achados, 1_000_000L).getQuality());
     }
 
     private Finding buildFinding(Category category, Severity severity) {

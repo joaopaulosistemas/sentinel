@@ -228,3 +228,17 @@
   after: "c.setSecure(true); c.setHttpOnly(true);"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-taint-sql-parametro-http"
+  summary: "Use parâmetros nomeados ou binding com '?'; nunca concatene entrada na consulta."
+  before: "jdbc.queryForObject(\"select * from c where nome = '\" + nome + \"'\", Object.class)"
+  after: "jdbc.queryForObject(\"select * from c where nome = ?\", Object.class, nome)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-taint-html-parametro-url"
+  summary: "Mostre o dado com interpolação do framework, que escapa o texto."
+  before: "el.innerHTML = location.search"
+  after: "el.textContent = location.search"
+  effort: S
+  regression-risk: LOW

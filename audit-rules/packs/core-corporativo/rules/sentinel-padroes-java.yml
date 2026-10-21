@@ -1,0 +1,103 @@
+# Padrões do guia de desenvolvimento Java. Casos de teste: tests/sentinel-padroes-java.java
+rules:
+  - id: sentinel-ee-catch-relanca-sem-causa
+    patterns:
+      - pattern: throw new $X($E.getMessage());
+      - pattern-inside: |
+          try { ... } catch ($T $E) { ... }
+    message: >
+      A exceção é relançada só com a mensagem: o stack trace original se perde e o erro fica impossível de rastrear.
+      Passe a causa: new MinhaException("mensagem de negócio", e).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-755: Improper Handling of Exceptional Conditions"
+  - id: sentinel-ee-lanca-excecao-generica
+    pattern-either:
+      - pattern: throw new Exception(...);
+      - pattern: throw new Throwable(...);
+    message: >
+      Lançar Exception genérica impede quem chama de tratar o erro por tipo. Crie ou use uma exceção de negócio
+      específica (ex.: SaldoInsuficienteException) derivada da raiz da aplicação.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: quality
+  - id: sentinel-ee-ejb-sem-interface
+    patterns:
+      - pattern: |
+          @Stateless
+          class $C {...}
+      - pattern-not: |
+          @Stateless
+          class $C implements $I {...}
+      - pattern-not: |
+          @Stateless
+          class $C extends $P implements $I {...}
+    message: >
+      Serviço EJB sem interface: o contrato de negócio fica preso à implementação e não dá para trocar, simular em teste
+      nem expor como @Local/@Remote. Defina uma interface de serviço e implemente-a.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: architecture
+  - id: sentinel-ee-initialcontext-direto
+    pattern: new InitialContext(...)
+    message: >
+      Lookup JNDI direto espalha o conhecimento de onde cada serviço mora. Centralize em um Service Locator ou use
+      injeção (@EJB / @Inject).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**", "**/*Locator*.java"]
+    metadata:
+      category: architecture
+  - id: sentinel-ee-dinheiro-ponto-flutuante
+    patterns:
+      - pattern-either:
+          - pattern: double $V
+          - pattern: float $V
+          - pattern: Double $V
+          - pattern: Float $V
+      - metavariable-regex:
+          metavariable: $V
+          regex: '(?i)^\w*(valor|preco|saldo|total|tarifa|montante|salario|desconto|imposto)\w*$'
+    message: >
+      Valor monetário em double/float acumula erro de arredondamento (0,1 + 0,2 != 0,3). Use BigDecimal (e escala
+      explícita) ou inteiro em centavos.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-681: Incorrect Conversion between Numeric Types"
+  - id: sentinel-ee-log-dado-pessoal
+    patterns:
+      - pattern: $LOG.$M(..., $ARG, ...)
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: '(?i)^(this\.)?\w*(log|logger)$'
+      - metavariable-regex:
+          metavariable: $M
+          regex: '^(trace|debug|info|warn|warning|error|fatal|severe)$'
+      - metavariable-regex:
+          metavariable: $ARG
+          regex: '(?i)^(this\.)?[\w.()]*(cpf|cnpj|senha|password|token|secret|cartao)\w*(\(\))?$'
+    message: >
+      Dado pessoal ou segredo indo para o log. A diretriz de logging exige mascarar ou omitir CPF/CNPJ, senha, token
+      e cartão. Registre um identificador interno (id) em vez do dado.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"

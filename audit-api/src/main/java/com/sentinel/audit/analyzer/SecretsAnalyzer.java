@@ -43,7 +43,7 @@ public class SecretsAnalyzer implements CodeAnalyzer {
     private static final int MAX_LINE_LENGTH = 2000; // ignora arquivos minificados
 
     private static final Set<String> IGNORED_DIRS = Set.of(
-            "node_modules", ".git", "target", "build", "dist", "vendor",
+            "node_modules", ".git", ".sentinel", "target", "build", "dist", "vendor",
             "test", "tests", "__tests__", ".mvn"
     );
 

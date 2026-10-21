@@ -1,0 +1,12 @@
+id: corporativo-java-ee-angular
+name: "Corporativo: Java EE (EJB/JPA) + Angular + SQL"
+description: "Pacotes padrão mais o core-corporativo (guias internos de Java, REST, logging e banco de dados). As regras de nomenclatura de banco entram em modo sombra: aparecem no relatório, mas só pesam no score depois de promovidas, já que o legado não segue a norma."
+packs: [core-security, core-iac, core-spring, core-persistencia, core-quality, core-architecture, core-frontend, core-corporativo, market-tools]
+rules:
+  "sentinel-sqlnorma-*": {shadow: true}
+  sentinel-ng-componente-sem-onpush: {shadow: true}
+  sentinel-ee-ejb-sem-interface: {shadow: true}
+thresholds:
+  max-function-lines: 60
+  max-complexity: 12
+  max-nesting: 4

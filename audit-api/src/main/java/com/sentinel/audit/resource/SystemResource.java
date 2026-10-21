@@ -259,7 +259,8 @@ public class SystemResource {
                     run.getRiskScore().getQuality(),
                     run.getRiskScore().getArchitecture(),
                     run.getRiskScore().getDependencies(),
-                    run.getRiskScore().getObservability()
+                    run.getRiskScore().getObservability(),
+                    run.getRiskScore().getPerformance()
             ));
         }
 

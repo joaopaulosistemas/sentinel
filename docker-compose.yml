@@ -58,6 +58,8 @@ services:
       OSV_URL: ${OSV_URL:-https://api.osv.dev}
       TRIVY_ENABLED: ${TRIVY_ENABLED:-true}
       TRIVY_SCANNERS: ${TRIVY_SCANNERS:-vuln,misconfig}
+      SENTINEL_EVIDENCE_DIR: /evidence
+      EVIDENCE_MIN_LINE_COVERAGE: ${EVIDENCE_MIN_LINE_COVERAGE:-60}
       GITLEAKS_ENABLED: ${GITLEAKS_ENABLED:-true}
       PMD_ENABLED: ${PMD_ENABLED:-true}
       ESLINT_ENABLED: ${ESLINT_ENABLED:-true}
@@ -92,6 +94,8 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - audit_clones:/tmp/sentinel-audit-clones
+      # Evidências offline: ./evidencias/<nome-do-sistema>/ (somente leitura). Veja docs/evidencias/README.md
+      - ${EVIDENCE_HOST_DIR:-./evidencias}:/evidence:ro
 
   audit-dashboard:
     build:
