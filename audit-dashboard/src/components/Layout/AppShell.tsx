@@ -26,6 +26,9 @@ export function AppShell({ children }: AppShellProps) {
         <HeaderName prefix="SENTINEL" onClick={() => navigate('/')}>
           Audit Tool
         </HeaderName>
+        <span style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
+          v{__APP_VERSION__}
+        </span>
       </Header>
 
       <SideNav
