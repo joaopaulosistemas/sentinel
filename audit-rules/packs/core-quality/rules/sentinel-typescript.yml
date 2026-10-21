@@ -56,7 +56,7 @@ rules:
       cwe: "CWE-390: Detection of Error Condition Without Action"
 
   - id: sentinel-ts-var
-    pattern-regex: '(?m)^[ \t]*(?:export[ \t]+)?var[ \t]+[\w$]+'
+    pattern-regex: '(?m)(?:^[ \t]*(?:export[ \t]+)?|\bfor[ \t]*\([ \t]*)var[ \t]+[\w$]+'
     message: >
       'var' tem escopo de função e sofre hoisting, fonte clássica de bugs. Use const (padrão) ou let.
     severity: INFO

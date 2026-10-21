@@ -97,3 +97,6 @@ export function armazenamento(t: string): void {
 
 // ruleid: sentinel-ts-var
 for (var i = 0; i < 3; i++) { run(); }
+
+// ok: sentinel-ts-var
+for (let j = 0; j < 3; j++) { run(); }

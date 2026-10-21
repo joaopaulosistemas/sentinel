@@ -66,3 +66,13 @@ Defeitos encontrados só por rodar de verdade, todos corrigidos:
 | 9 Qualidade interna | 2 | 2 | suíte Java passa no Maven real, não só no harness |
 
 Média do placar: 2,0 (meta 2,5). Faltam: revisão manual dos achados (credibilidade 3), subir o Quarkus de verdade com banco e rodar uma auditoria ponta a ponta no CI, teste do login OIDC, métricas da própria ferramenta e corrigir o N+1 do `RuleQualityService`/`AuditScheduler`.
+
+## Evolução automática — 2026-10-21 — `sentinel-ts-var` não pegava `var` em `for`
+
+- **Classe:** falso negativo.
+- **Causa:** a regex exigia `var` no início da linha (`^[ \t]*(export )?var`); `for (var i = 0; ...)` ficava de fora.
+- **Evidência:** CI do commit 4aa3b12, pacote `core-quality`: `✖ sentinel-ts-var` (caso `ruleid` em `tests/sentinel-typescript.ts`).
+- **O que mudou:** a regex aceita também `for (` antes do `var`; caso `ok` com `for (let ...)` adicionado.
+- **Verificado:** `semgrep --test` com a regra e o teste de `sentinel-typescript` (9/9 passaram).
+- **NÃO verificado:** CI completo; impacto na contagem de achados em repositórios reais; `var` em `for` com a `(` em outra linha. O `pack.yml` não teve a versão alterada.
+- **Sem causa conclusiva:** o aviso do setup-java v4 e o sumiço de 2 regras njsscan no WebGoat (−15 achados) não têm evidência de defeito da ferramenta e não foram alterados.
