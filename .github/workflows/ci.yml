@@ -16,6 +16,8 @@ jobs:
   backend:
     name: API, CLI e pacotes de regras
     runs-on: ubuntu-latest
+    env:
+      SEMGREP_SEND_METRICS: "off"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -23,6 +25,11 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # alguns testes (PackToolTest, RulePlaygroundServiceTest) executam o Semgrep de verdade
+      - run: pip install semgrep==1.172.0
       - name: Compilar e testar
         run: bash scripts/ci-anotar.sh "Maven" mvn -B -ntp verify
 
@@ -36,7 +43,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install semgrep
+      - run: pip install semgrep==1.172.0
       - name: Rodar os testes de cada pacote
         run: |
           set -e

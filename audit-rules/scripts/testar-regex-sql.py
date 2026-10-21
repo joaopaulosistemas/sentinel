@@ -20,6 +20,10 @@ def main():
         ["semgrep", "--json", "--metrics=off", "--disable-version-check", "--config", regras, pasta],
         capture_output=True, text=True, env=env)
     dados = json.loads(saida.stdout)
+    if dados.get("errors"):
+        for e in dados["errors"][:5]:
+            print("ERRO DO SEMGREP:", str(e.get("message", e))[:300])
+    print(f"semgrep {dados.get('version', '?')}: {len(dados['results'])} achado(s)")
     achados = {}
     for r in dados["results"]:
         regra = r["check_id"].split(".")[-1]
