@@ -1,6 +1,6 @@
 id: core-quality
 name: "Qualidade, padrões e integrações (núcleo)"
-version: 1.0.0
+version: 1.0.1
 description: "Clean code e boas práticas Java/TypeScript, resiliência de integrações (timeouts, TLS, pools) e arquitetura básica."
 author: Sentinel
 languages: [java, javascript, typescript]

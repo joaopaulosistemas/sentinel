@@ -66,3 +66,12 @@ Defeitos encontrados só por rodar de verdade, todos corrigidos:
 | 9 Qualidade interna | 2 | 2 | suíte Java passa no Maven real, não só no harness |
 
 Média do placar: 2,0 (meta 2,5). Faltam: revisão manual dos achados (credibilidade 3), subir o Quarkus de verdade com banco e rodar uma auditoria ponta a ponta no CI, teste do login OIDC, métricas da própria ferramenta e corrigir o N+1 do `RuleQualityService`/`AuditScheduler`.
+
+## Evolução — 2026-10-21 (`sentinel-ts-any-explicito`)
+
+- **Classe:** falso negativo (o CI do pacote `core-quality` falhou no teste do caso positivo).
+- **Causa:** a regex só cobria `: any`, `as any`, `<any>` e `any[]`; `any` como argumento genérico com outros parâmetros (`Record<string, any>`, `Map<any, string>`) não casava.
+- **Evidência:** entrada da execução 39651811612, `✖ sentinel-ts-any-explicito` em `audit-rules/packs/core-quality`; caso `Record<string, any>` em `tests/sentinel-typescript.ts`.
+- **O que mudou:** `<any>` virou `<(?:[^<>(){};=]*,\s*)?any\s*[,>]`; casos `ruleid` (`Map<any, string>`) e `ok` (`Record<string, unknown>`, `chamar(a, anyValue, b)`); `pack.yml` 1.0.0 → 1.0.1.
+- **Verificado:** a regex, em pasta temporária com Semgrep 1.172.0, casa `Record<string, any>`, `Map<any, string>`, `Array<any>` e `: any`, e não casa os casos `ok`.
+- **Não verificado:** `semgrep --test` do pacote inteiro (o ambiente não permitiu montar a pasta como o CI); impacto da regex em repositórios reais (calibração); o CI completo.

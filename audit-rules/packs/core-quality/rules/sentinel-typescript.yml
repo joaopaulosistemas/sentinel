@@ -2,7 +2,7 @@
 # Casos de teste: tests/sentinel-typescript.ts e sentinel-typescript-react.tsx
 rules:
   - id: sentinel-ts-any-explicito
-    pattern-regex: '(?m)(:\s*any\b(?!\w)|\bas\s+any\b|<any>|\bany\[\])'
+    pattern-regex: '(?m)(:\s*any\b(?!\w)|\bas\s+any\b|<(?:[^<>(){};=]*,\s*)?any\s*[,>]|\bany\[\])'
     message: >
       Uso explícito de 'any' desliga a checagem de tipos exatamente onde ela mais ajudaria. Use o tipo correto,
       um tipo genérico ou 'unknown' (que obriga a verificar antes de usar).
