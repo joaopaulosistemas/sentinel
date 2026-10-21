@@ -45,7 +45,7 @@ sid="$(printf '%s' "$sistema" | python3 -c 'import json,sys; print(json.load(sys
   || falhar "Cadastro do sistema falhou: ${sistema:0:300}"
 echo "sistema $sid"
 
-auditoria="$(curl -sS "${H[@]}" -X POST "$API/api/v1/audits" -d "{\"systemId\":$sid}")"
+auditoria="$(curl -sS "${H[@]}" -X POST "$API/api/v1/audits" -d "{\"systemId\":$sid,\"branch\":\"main\"}")"
 aid="$(printf '%s' "$auditoria" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' 2>/dev/null)" \
   || falhar "Pedido de auditoria falhou: ${auditoria:0:300}"
 echo "auditoria $aid"
@@ -70,6 +70,9 @@ for ep in report sbom insights findings; do
 done
 sem_chave="$(curl -sS -o /dev/null -w '%{http_code}' "$API/api/v1/systems")"
 [ "$sem_chave" = "401" ] || falhar "Sem chave de API o acesso deveria dar 401, deu $sem_chave"
+
+cors="$(curl -sS -i -X OPTIONS "$API/api/v1/systems" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: X-API-Key" | tr -d '\r' | grep -i '^access-control-allow-origin:')"
+[ -n "$cors" ] || falhar "CORS desligado: o preflight não devolveu Access-Control-Allow-Origin"
 
 echo "::notice title=Teste ponta a ponta::auditoria $aid concluída com $total achados e nota $score; relatório, SBOM, insights e findings responderam 200; sem chave devolve 401"
 docker rm -f sentinel-e2e-api sentinel-e2e-db >/dev/null 2>&1
