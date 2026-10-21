@@ -23,7 +23,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.ts", "*.tsx"]
-      exclude: ["*.d.ts", "**/node_modules/**"]
+      exclude: ["*.d.ts", "**/node_modules/**", "**/generated/**"]
     metadata:
       category: quality
 
