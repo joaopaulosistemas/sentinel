@@ -9,7 +9,9 @@ REPOS=("$@")
 [ -n "${GIT_TOKEN:-}" ] && [ -n "${GITHUB_REPOSITORY:-}" ] && REPOS+=("$GITHUB_REPOSITORY")
 KEY="cal-$(date +%s)"; NET="sentinel-cal"; API="http://127.0.0.1:18081"
 H=(-H "X-API-Key: $KEY" -H "Content-Type: application/json")
-SAIDA="calibracao-saida"; mkdir -p "$SAIDA"
+SAIDA="${SAIDA:-calibracao-saida}"; mkdir -p "$SAIDA"
+# GUARDAR_ACHADOS=1 grava também a lista completa de achados; TOLERAR=1 segue para o próximo repositório se um falhar
+GUARDAR_ACHADOS="${GUARDAR_ACHADOS:-0}"; TOLERAR="${TOLERAR:-0}"
 
 falhar() {
   local r="$1%0A$(docker logs sentinel-cal-api 2>&1 | grep -E 'ERROR|Exception' | tail -8)"
@@ -40,17 +42,24 @@ for repo in "${REPOS[@]}"; do
     sleep 5
   done
   fim=$(date +%s)
-  [ "$status" = "COMPLETED" ] || falhar "$repo terminou como '$status': ${resp:0:300}"
-  curl -sS "${H[@]}" "$API/api/v1/audits/$aid/findings" | REPO="$repo" SEG=$((fim-inicio)) RESP="$resp" python3 -c '
+  if [ "$status" != "COMPLETED" ]; then
+    [ "$TOLERAR" = 1 ] || falhar "$repo terminou como '$status': ${resp:0:300}"
+    echo "::warning title=Auditoria não concluída::$repo terminou como '$status'"
+    printf '{"repo":"%s","erro":"%s"}' "$repo" "$status" > "$SAIDA/${repo//\//__}.json"
+    continue
+  fi
+  curl -sS "${H[@]}" "$API/api/v1/audits/$aid/findings" > "$SAIDA/.achados.tmp"
+  [ "$GUARDAR_ACHADOS" = 1 ] && cp "$SAIDA/.achados.tmp" "$SAIDA/${repo//\//__}.achados.json"
+  REPO="$repo" SEG=$((fim-inicio)) RESP="$resp" SAIDA="$SAIDA" python3 -c '
 import json, os, sys, collections
-f = json.load(sys.stdin)
+f = json.load(open(os.environ["SAIDA"] + "/.achados.tmp"))
 resp = json.loads(os.environ["RESP"])
 por_regra = collections.Counter("%s/%s" % (x.get("toolSource"), x.get("ruleId")) for x in f)
 saida = {"repo": os.environ["REPO"], "total": len(f), "segundos": int(os.environ["SEG"]),
          "nota": (resp.get("riskScore") or {}).get("overall"), "porRegra": dict(por_regra)}
 nome = os.environ["REPO"].replace("/", "__")
-json.dump(saida, open("calibracao-saida/%s.json" % nome, "w"), ensure_ascii=False, indent=1)
+json.dump(saida, open("%s/%s.json" % (os.environ["SAIDA"], nome), "w"), ensure_ascii=False, indent=1)
 print("%s: %d achados, nota %s, %ds" % (os.environ["REPO"], saida["total"], saida["nota"], saida["segundos"]))
-'
+' < /dev/null
 done
 docker rm -f sentinel-cal-api sentinel-cal-db >/dev/null 2>&1
