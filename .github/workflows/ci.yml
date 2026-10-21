@@ -24,7 +24,7 @@ jobs:
           java-version: "21"
           cache: maven
       - name: Compilar e testar
-        run: mvn -B -ntp verify
+        run: bash scripts/ci-anotar.sh "Maven" mvn -B -ntp verify
 
   regras:
     name: Testes Semgrep dos pacotes
@@ -48,12 +48,12 @@ jobs:
             for f in "$p"rules/*.yml; do
               if [[ "$f" == *-sql.yml ]]; then
                 # regras de SQL/XML não são avaliadas pelo `semgrep --test`: têm verificador próprio
-                python3 audit-rules/scripts/testar-regex-sql.py "$f" "$p/tests"
+                bash scripts/ci-anotar.sh "SQL $f" python3 audit-rules/scripts/testar-regex-sql.py "$f" "$p/tests"
               else
                 cp "$f" "$tmp"/
               fi
             done
-            semgrep --test --metrics=off --disable-version-check --config "$tmp" "$p/tests"
+            bash scripts/ci-anotar.sh "Semgrep $p" semgrep --test --metrics=off --disable-version-check --config "$tmp" "$p/tests"
             rm -rf "$tmp"
           done
             semgrep --test --metrics=off --disable-version-check "${cfg[@]}" "$p/tests"
