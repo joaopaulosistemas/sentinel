@@ -2,10 +2,20 @@
 "use strict";
 const path = require("path");
 
+// CSS gerado: um .css cujo nome também existe como .scss/.sass/.less no projeto é saída de compilação
+// (milhares de achados que ninguém vai corrigir à mão). O erro está no .scss de origem.
+const FONTES = /\.(scss|sass|less)$/i;
+
 module.exports = function sarifFormatter(results) {
   const rules = new Map();
   const out = [];
+  const nomesDeFonte = new Set(
+    results.filter((r) => FONTES.test(r.source || "")).map((r) => path.basename(r.source).replace(FONTES, "").toLowerCase()),
+  );
   for (const file of results) {
+    if (/\.css$/i.test(file.source || "") && nomesDeFonte.has(path.basename(file.source).replace(/\.css$/i, "").toLowerCase())) {
+      continue;
+    }
     const uri = path.relative(process.cwd(), file.source || "").split(path.sep).join("/");
     for (const w of file.warnings || []) {
       const id = w.rule || "stylelint-erro";

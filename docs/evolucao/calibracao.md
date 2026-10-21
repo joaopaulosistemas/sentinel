@@ -40,3 +40,19 @@ Falsos positivos corrigidos:
 4. `sentinel-ts-catch-vazio` (37 no Frequency): `catch (_) {}` é a forma de ignorar de propósito e deixou de ser marcado.
 
 Limites que ficam: `sentinel-xss-inner-html` marca 68 atribuições a `innerHTML` no Frequency sem saber se o valor passou por `esc()` (vale revisão manual, não é falso positivo comprovado); `sentinel-owasp-a01-endpoint-sem-autorizacao` marca recursos do Sentinel protegidos por filtro global (`ApiKeyFilter`).
+
+## Terceira rodada: auditoria ponta a ponta no petclinic (CI real)
+
+Auditoria completa pela API (todas as ferramentas, não só o Semgrep) rodando num contêiner no GitHub Actions: **1.498 achados, nota 42,6** num projeto de exemplo limpo. Isso é ruído, e a distribuição mostrou de onde vinha:
+
+| Origem | Achados | Causa |
+|---|---|---|
+| Stylelint | 1.000 (limite da ferramenta; 4.049 reais) | `petclinic.css` é CSS compilado (a fonte é `petclinic.scss`) e a configuração `standard-scss` cobra formatação |
+| SQLFluff | 241 (419 reais) | regras de layout, maiúsculas e alias de coluna em scripts de dados |
+
+Correções:
+- O formatador do Stylelint ignora `.css` cujo nome existe como `.scss/.sass/.less` no projeto (saída de compilação).
+- A configuração do Stylelint desliga 44 regras de estilo (linhas em branco, notação de cores, padrões de nome, especificidade).
+- O SQLFluff exclui `layout`, `capitalisation` e `AL03`.
+
+Medido localmente com as mesmas ferramentas: Stylelint 4.049 → 26 achados (todos de regras de acessibilidade, `!important` e erros reais no SCSS); SQLFluff 419 → 133 (126 de AL03 antes da exclusão do AL03). A nota final da auditoria será conferida na próxima rodada do CI.
