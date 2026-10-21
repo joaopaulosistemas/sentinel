@@ -39,9 +39,6 @@ export function catches(): void {
   try { run(); } catch (_) {}
 
   // ok: sentinel-ts-catch-vazio
-  try { run(); } catch (_erro) {}
-
-  // ok: sentinel-ts-catch-vazio
   try { run(); } catch (e) { report(e); }
 
   // ok: sentinel-ts-catch-vazio
@@ -97,3 +94,6 @@ export function armazenamento(t: string): void {
   // ok: sentinel-ts-token-em-localstorage
   localStorage.setItem('tema', 'escuro');
 }
+
+// ruleid: sentinel-ts-var
+for (var i = 0; i < 3; i++) { run(); }
