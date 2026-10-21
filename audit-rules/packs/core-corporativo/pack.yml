@@ -1,0 +1,7 @@
+id: core-corporativo
+name: "Padrões corporativos Java EE / Angular / SQL"
+version: 1.0.0
+description: "Regras extraídas dos guias internos (desenvolvimento Java, REST, logging, banco de dados): tratamento de exceção, EJB com interface, lookup JNDI direto, dinheiro em double, dado pessoal em log, nomenclatura de constraint/índice/trigger e SELECT * em scripts e arquivos de comando XML. Detecção por sufixo e anotação, sem depender de nomes de classes internas."
+author: Sentinel
+languages: [java, typescript]
+enabled-by-default: false

@@ -1,0 +1,57 @@
+# Nomenclatura da norma de banco de dados e SQL em scripts/arquivos de comando. Casos de teste: tests/sentinel-padroes-sql.sql e .xml
+rules:
+  - id: sentinel-sqlnorma-constraint-fora-do-padrao
+    pattern-regex: '(?i)\bCONSTRAINT\s++(?!PK_|FK_|DF_|CK_|UQ_|AK_)\w+'
+    message: >
+      Nome de constraint fora da norma. Use PK_Tabela, FK_TabelaFilha_TabelaPai, DF_Tabela_Coluna, CK_Tabela_Coluna
+      (UQ_/AK_ para chave alternativa).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.sql"]
+    metadata:
+      category: quality
+  - id: sentinel-sqlnorma-indice-fora-do-padrao
+    pattern-regex: '(?i)\bCREATE\s+(?:UNIQUE\s+)?(?:(?:NON)?CLUSTERED\s+)?INDEX\s++(?!IDX_)\w+'
+    message: >
+      Nome de índice fora da norma. Use IDX_Tabela_Colunas (ex.: IDX_GrupoIsencao_IdInstituicao_CodSituacao).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.sql"]
+    metadata:
+      category: quality
+  - id: sentinel-sqlnorma-trigger-fora-do-padrao
+    pattern-regex: '(?i)\bCREATE\s+TRIGGER\s++(?:\[?\w+\]?\.)?\[?(?!TRG_)\w+'
+    message: >
+      Nome de trigger fora da norma. Use TRG_Tabela_{A|I}{I|U|D}, ou TRG_LOG_Tabela para trigger de log (sempre AFTER).
+      Triggers exigem análise do administrador de dados; prefira FK/constraint para integridade.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.sql"]
+    metadata:
+      category: quality
+  - id: sentinel-sql-select-estrela-arquivo
+    pattern-regex: '(?i)\bselect\s+\*\s+from\b'
+    message: >
+      SELECT * em script ou arquivo de comandos: traz colunas que ninguém usa e quebra quando a tabela muda.
+      Liste as colunas necessárias.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.sql", "*.queries.xml"]
+      exclude: ["**/diagnostico/**"]
+    metadata:
+      category: performance
+  - id: sentinel-sql-like-curinga-inicial-arquivo
+    pattern-regex: "(?i)\\blike\\s+'%[^']"
+    message: >
+      LIKE com curinga no início não usa índice e varre a tabela inteira. Use busca por prefixo (LIKE 'abc%') ou
+      índice de texto.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.sql", "*.queries.xml"]
+    metadata:
+      category: performance

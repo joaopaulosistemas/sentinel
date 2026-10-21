@@ -49,7 +49,7 @@ public class ArchitectureAnalyzer implements CodeAnalyzer {
     private static final long MAX_FILE_BYTES             = 2L * 1024 * 1024;
 
     private static final Set<String> IGNORED_DIRS = Set.of(
-            "target", "build", "dist", "node_modules", ".git", "test", "tests", "generated");
+            "target", "build", "dist", "node_modules", ".git", ".sentinel", "test", "tests", "generated");
 
     /** Códigos HTTP e valores comuns que não são "mágicos". */
     private static final Set<Integer> COMMON_NUMBERS = Set.of(

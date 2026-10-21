@@ -56,10 +56,11 @@ public class ReportService {
             var s = run.getRiskScore();
             h.append("<div class=\"score\">").append(s.getOverall()).append("</div>")
                     .append("<p>Score geral (0–100, maior = melhor)</p><table><tr>")
-                    .append("<th>Segurança</th><th>Qualidade</th><th>Arquitetura</th><th>Dependências</th><th>Observabilidade</th></tr><tr>")
+                    .append("<th>Segurança</th><th>Qualidade</th><th>Arquitetura</th><th>Dependências</th><th>Observabilidade</th><th>Desempenho</th></tr><tr>")
                     .append("<td>").append(s.getSecurity()).append("</td><td>").append(s.getQuality()).append("</td><td>")
                     .append(s.getArchitecture()).append("</td><td>").append(s.getDependencies()).append("</td><td>")
-                    .append(s.getObservability()).append("</td></tr></table>");
+                    .append(s.getObservability()).append("</td><td>").append(s.getPerformance() == null ? "—" : s.getPerformance())
+                    .append("</td></tr></table>");
         }
         Map<Severity, Long> bySeverity = active.stream()
                 .collect(Collectors.groupingBy(Finding::getSeverity, Collectors.counting()));

@@ -8,6 +8,7 @@ import com.sentinel.audit.analyzer.CodeAnalyzer;
 import com.sentinel.audit.analyzer.EslintAnalyzer;
 import com.sentinel.audit.analyzer.GitleaksAnalyzer;
 import com.sentinel.audit.analyzer.HygieneAnalyzer;
+import com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer;
 import com.sentinel.audit.insights.AnalyzerRunInfo;
 import com.sentinel.audit.insights.AuditContextData;
 import com.sentinel.audit.insights.ProjectMap;
@@ -127,6 +128,12 @@ public class AuditOrchestrationService {
     HygieneAnalyzer hygieneAnalyzer;
 
     @Inject
+    EvidenceAnalyzer evidenceAnalyzer;
+
+    @Inject
+    EvidenceStager evidenceStager;
+
+    @Inject
     SecretsAnalyzer secretsAnalyzer;
 
     @Inject
@@ -200,6 +207,7 @@ public class AuditOrchestrationService {
             AuditContext context = markRunning(auditRunId);
 
             clonedPath = ingestionService.cloneRepository(context.repoUrl(), context.branch(), null);
+            evidenceStager.stage(context.systemName(), context.repoUrl(), clonedPath);
 
             // Referência leve apenas para os analisadores vincularem os findings;
             // o vínculo definitivo com a entidade gerenciada é refeito ao persistir.
@@ -213,8 +221,9 @@ public class AuditOrchestrationService {
 
             // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
             FindingLifecycleService.apply(allFindings, loadBaselineSafely(auditRunId));
-            RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings));
-            persistResultsAndComplete(auditRunId, allFindings, riskScore);
+            long linesOfCode = SourceSizer.countLines(clonedPath);
+            RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
+            persistResultsAndComplete(auditRunId, allFindings, riskScore, linesOfCode);
             saveSbomSafely(auditRunId, context, clonedPath);
             saveContextSafely(auditRunId, clonedPath, analysis.runs());
 
@@ -241,7 +250,8 @@ public class AuditOrchestrationService {
         List<CodeAnalyzer> candidates = Stream.of(
                 semgrepAnalyzer, dependencyAnalyzer, architectureAnalyzer, secretsAnalyzer, historyAnalyzer,
                 trivyAnalyzer, gitleaksAnalyzer, cleanCodeAnalyzer,
-                pmdAnalyzer, eslintAnalyzer, sarifAnalyzer, architecturePolicyAnalyzer, hygieneAnalyzer)
+                pmdAnalyzer, eslintAnalyzer, sarifAnalyzer, architecturePolicyAnalyzer, hygieneAnalyzer,
+                evidenceAnalyzer)
                 .filter(Objects::nonNull).toList();
         List<CodeAnalyzer> analyzers = selectAnalyzers(candidates);
 
@@ -260,6 +270,11 @@ public class AuditOrchestrationService {
             if (stack != null && !analyzer.supports(stack)) {
                 LOG.infof("Analisador %s ignorado: não suporta a stack %s", analyzer.getName(), stack);
                 runs.add(new AnalyzerRunInfo(analyzer.getName(), "NAO_SUPORTADO", 0, 0, "não se aplica à stack " + stack));
+                continue;
+            }
+            if (analyzer instanceof EvidenceAnalyzer ev && !ev.hasEvidence(projectPath)) {
+                runs.add(new AnalyzerRunInfo(analyzer.getName(), "SEM_EVIDENCIA", 0, 0,
+                        "nenhum arquivo em " + EvidenceAnalyzer.DIR + " (dump do banco, estatísticas, cobertura ou histograma de memória)"));
                 continue;
             }
             started.add(analyzer);
@@ -440,7 +455,7 @@ public class AuditOrchestrationService {
     }
 
     @Transactional
-    void persistResultsAndComplete(Long auditRunId, List<Finding> findings, RiskScore riskScore) {
+    void persistResultsAndComplete(Long auditRunId, List<Finding> findings, RiskScore riskScore, long linesOfCode) {
         AuditRun run = auditRunRepository.findById(auditRunId);
         if (run == null) {
             throw new IllegalStateException("Auditoria " + auditRunId + " não encontrada ao persistir resultados");
@@ -453,6 +468,7 @@ public class AuditOrchestrationService {
         }
 
         run.setRiskScore(riskScore);
+        run.setLinesOfCode(linesOfCode);
         run.setStatus(AuditStatus.COMPLETED);
         run.setCompletedAt(LocalDateTime.now());
     }

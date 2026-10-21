@@ -27,11 +27,20 @@ public class RiskScore {
     /** Score da dimensão de observabilidade (0–100). */
     private Double observability;
 
+    /** Score da dimensão de desempenho: consultas, memória e uso de recursos (0–100). Nulo em auditorias antigas. */
+    private Double performance;
+
     public RiskScore() {
     }
 
     public RiskScore(Double overall, Double security, Double quality,
                      Double architecture, Double dependencies, Double observability) {
+        this(overall, security, quality, architecture, dependencies, observability, null);
+    }
+
+    public RiskScore(Double overall, Double security, Double quality,
+                     Double architecture, Double dependencies, Double observability, Double performance) {
+        this.performance = performance;
         this.overall = overall;
         this.security = security;
         this.quality = quality;
@@ -86,5 +95,13 @@ public class RiskScore {
 
     public void setObservability(Double observability) {
         this.observability = observability;
+    }
+
+    public Double getPerformance() {
+        return performance;
+    }
+
+    public void setPerformance(Double performance) {
+        this.performance = performance;
     }
 }

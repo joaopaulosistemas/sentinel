@@ -5,6 +5,7 @@ import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.RiskScore;
 import com.sentinel.audit.model.Severity;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.HashMap;
 import java.util.List;
@@ -33,31 +34,58 @@ public class ScoringService {
 
     /** Peso de cada dimensão no score geral (soma = 1.0). */
     private static final Map<Category, Double> DIMENSION_WEIGHT = Map.of(
-            Category.SECURITY,      0.35,
-            Category.QUALITY,       0.25,
+            Category.SECURITY,      0.30,
+            Category.QUALITY,       0.20,
             Category.ARCHITECTURE,  0.20,
             Category.DEPENDENCY,    0.10,
-            Category.OBSERVABILITY, 0.10
+            Category.OBSERVABILITY, 0.10,
+            Category.PERFORMANCE,   0.10
     );
+
+    /**
+     * Score por densidade: projetos maiores toleram proporcionalmente mais achados. Acima de
+     * {@code reference-lines} linhas de código, as penalidades (exceto CRITICAL) são multiplicadas por
+     * raiz(referência / linhas), com piso em {@link #MIN_SIZE_FACTOR}. A raiz quadrada evita dois extremos:
+     * penalizar sem critério um sistema grande e deixar o grande "de graça".
+     */
+    @ConfigProperty(name = "sentinel.audit.score.density.enabled", defaultValue = "true")
+    boolean densityEnabled = true;
+
+    @ConfigProperty(name = "sentinel.audit.score.density.reference-lines", defaultValue = "20000")
+    long referenceLines = 20_000;
+
+    /** Mesmo em um sistema enorme, achados HIGH/MEDIUM ainda pesam pelo menos este tanto. */
+    static final double MIN_SIZE_FACTOR = 0.2;
+
+    /**
+     * Calcula o {@link RiskScore} sem considerar o tamanho do projeto (tamanho desconhecido).
+     */
+    public RiskScore calculate(List<Finding> findings) {
+        return calculate(findings, null);
+    }
 
     /**
      * Calcula o {@link RiskScore} completo a partir da lista de findings.
      *
-     * @param findings lista de findings encontrados na auditoria
+     * @param findings    lista de findings encontrados na auditoria
+     * @param linesOfCode linhas de código analisadas; nulo = desconhecido (sem ajuste por tamanho)
      * @return objeto {@link RiskScore} com scores por dimensão e score geral
      */
-    public RiskScore calculate(List<Finding> findings) {
-        double security      = calculateDimensionScore(findings, Category.SECURITY);
-        double quality       = calculateDimensionScore(findings, Category.QUALITY);
-        double architecture  = calculateDimensionScore(findings, Category.ARCHITECTURE);
-        double dependencies  = calculateDimensionScore(findings, Category.DEPENDENCY);
-        double observability = calculateDimensionScore(findings, Category.OBSERVABILITY);
+    public RiskScore calculate(List<Finding> findings, Long linesOfCode) {
+        double factor = sizeFactor(linesOfCode);
+        double security      = calculateDimensionScore(findings, Category.SECURITY, factor);
+        double quality       = calculateDimensionScore(findings, Category.QUALITY, factor);
+        double architecture  = calculateDimensionScore(findings, Category.ARCHITECTURE, factor);
+        double dependencies  = calculateDimensionScore(findings, Category.DEPENDENCY, factor);
+        double observability = calculateDimensionScore(findings, Category.OBSERVABILITY, factor);
+        double performance   = calculateDimensionScore(findings, Category.PERFORMANCE, factor);
 
         double overall = (security      * DIMENSION_WEIGHT.get(Category.SECURITY))
                        + (quality       * DIMENSION_WEIGHT.get(Category.QUALITY))
                        + (architecture  * DIMENSION_WEIGHT.get(Category.ARCHITECTURE))
                        + (dependencies  * DIMENSION_WEIGHT.get(Category.DEPENDENCY))
-                       + (observability * DIMENSION_WEIGHT.get(Category.OBSERVABILITY));
+                       + (observability * DIMENSION_WEIGHT.get(Category.OBSERVABILITY))
+                       + (performance   * DIMENSION_WEIGHT.get(Category.PERFORMANCE));
 
         return new RiskScore(
                 round(overall),
@@ -65,20 +93,37 @@ public class ScoringService {
                 round(quality),
                 round(architecture),
                 round(dependencies),
-                round(observability)
+                round(observability),
+                round(performance)
         );
+    }
+
+    /** Fator (0,2 a 1,0) aplicado às penalidades que não são CRITICAL, conforme o tamanho do projeto. */
+    double sizeFactor(Long linesOfCode) {
+        if (!densityEnabled || linesOfCode == null || referenceLines <= 0 || linesOfCode <= referenceLines) {
+            return 1.0;
+        }
+        return Math.max(MIN_SIZE_FACTOR, Math.sqrt((double) referenceLines / linesOfCode));
+    }
+
+    /** Score de uma dimensão sem ajuste por tamanho. */
+    public double calculateDimensionScore(List<Finding> findings, Category category) {
+        return calculateDimensionScore(findings, category, 1.0);
     }
 
     /**
      * Calcula o score de uma dimensão específica subtraindo as penalidades dos findings
-     * dessa categoria do score base de 100. Findings CRITICAL/HIGH sempre penalizam por inteiro;
-     * os de severidade menor têm teto por regra (veja {@code MAX_LOW_SEVERITY_PENALTY_PER_RULE}).
+     * dessa categoria do score base de 100. Findings CRITICAL sempre penalizam por inteiro; os demais
+     * são multiplicados por {@code sizeFactor}. Os de severidade MEDIUM ou menor têm teto por regra (veja
+     * {@code MAX_LOW_SEVERITY_PENALTY_PER_RULE}).
      *
-     * @param findings lista completa de findings
-     * @param category categoria (dimensão) a calcular
+     * @param findings   lista completa de findings
+     * @param category   categoria (dimensão) a calcular
+     * @param sizeFactor fator por tamanho do projeto (1.0 = sem ajuste)
      * @return score entre 0 e 100
      */
-    public double calculateDimensionScore(List<Finding> findings, Category category) {
+    public double calculateDimensionScore(List<Finding> findings, Category category, double sizeFactor) {
+        double criticalPenalty = 0.0;
         double penalty = 0.0;
         Map<String, Double> lowSeverityByRule = new HashMap<>();
 
@@ -87,8 +132,9 @@ public class ScoringService {
                 continue;
             }
             double p = SEVERITY_PENALTY.getOrDefault(f.getSeverity(), 0.0);
-            boolean capped = f.getRuleId() != null && isLowSeverity(f.getSeverity());
-            if (capped) {
+            if (f.getSeverity() == Severity.CRITICAL) {
+                criticalPenalty += p;
+            } else if (f.getRuleId() != null && isLowSeverity(f.getSeverity())) {
                 // Muitas ocorrências de severidade baixa da mesma regra não devem zerar a dimensão.
                 lowSeverityByRule.merge(f.getRuleId() + "|" + f.getSeverity(), p, Double::sum);
             } else {
@@ -99,7 +145,7 @@ public class ScoringService {
             penalty += Math.min(rulePenalty, MAX_LOW_SEVERITY_PENALTY_PER_RULE);
         }
 
-        return Math.max(0.0, 100.0 - penalty);
+        return Math.max(0.0, 100.0 - criticalPenalty - penalty * sizeFactor);
     }
 
     private boolean isLowSeverity(Severity severity) {

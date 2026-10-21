@@ -1,0 +1,55 @@
+# Fluxo de dados (taint) dentro do mesmo arquivo. Casos de teste: tests/sentinel-taint.java e tests/sentinel-taint.ts
+rules:
+  - id: sentinel-taint-sql-parametro-http
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern: $P
+          - pattern-either:
+              - pattern-inside: |
+                  $RET $M(..., @RequestParam $T $P, ...) { ... }
+              - pattern-inside: |
+                  $RET $M(..., @RequestParam(...) $T $P, ...) { ... }
+    pattern-sanitizers:
+      - pattern: Integer.parseInt(...)
+      - pattern: Long.parseLong(...)
+    pattern-sinks:
+      - patterns:
+          - focus-metavariable: $Q
+          - pattern-either:
+              - pattern: $JDBC.query($Q, ...)
+              - pattern: $JDBC.queryForObject($Q, ...)
+              - pattern: $JDBC.execute($Q)
+              - pattern: $EM.createNativeQuery($Q, ...)
+              - pattern: $EM.createQuery($Q, ...)
+    message: >
+      Parâmetro da requisição chegando concatenado numa consulta SQL/JPQL (injeção de SQL). Use parâmetros nomeados
+      (:nome) ou "?" com binding; nunca monte a consulta com +.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-89: SQL Injection"
+  - id: sentinel-taint-html-parametro-url
+    mode: taint
+    pattern-sources:
+      - pattern: location.search
+      - pattern: location.hash
+      - pattern: $ROUTE.snapshot.queryParams
+      - pattern: $ROUTE.snapshot.paramMap.get(...)
+    pattern-sinks:
+      - pattern: $EL.innerHTML = $X
+      - pattern: document.write($X)
+      - pattern: $SAN.bypassSecurityTrustHtml($X)
+    message: >
+      Dado vindo da URL chegando em innerHTML/document.write/bypassSecurityTrustHtml (XSS). Use interpolação do
+      framework ({{ }} ou JSX) que escapa o texto.
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["**/node_modules/**", "**/*.spec.ts"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting"

@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS audit_run (
     architecture DOUBLE PRECISION,
     dependencies DOUBLE PRECISION,
     observability DOUBLE PRECISION,
+    performance  DOUBLE PRECISION,       -- consultas, memória e uso de recursos (nulo em auditorias antigas)
+    lines_of_code BIGINT,                -- base do score por densidade
     started_at   TIMESTAMP,
     completed_at TIMESTAMP,
 

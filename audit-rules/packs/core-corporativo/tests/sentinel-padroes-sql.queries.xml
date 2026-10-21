@@ -1,0 +1,6 @@
+<comandos>
+  <!-- ruleid: sentinel-sql-select-estrela-arquivo -->
+  <comando nome="a">SELECT * FROM tar.GrupoIsencao</comando>
+  <!-- ok: sentinel-sql-select-estrela-arquivo -->
+  <comando nome="b">SELECT IdGrupo FROM tar.GrupoIsencao</comando>
+</comandos>

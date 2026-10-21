@@ -38,7 +38,7 @@ public final class DependencyExtractor {
     private static final Logger LOG = Logger.getLogger(DependencyExtractor.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Set<String> IGNORED_DIRS =
-            Set.of("node_modules", ".git", "target", "build", "dist", ".gradle", "venv", ".venv", "__pycache__");
+            Set.of("node_modules", ".git", ".sentinel", "target", "build", "dist", ".gradle", "venv", ".venv", "__pycache__");
     private static final long MAX_FILE_BYTES = 10L * 1024 * 1024;
     private static final Pattern PROPERTY_REF = Pattern.compile("\\$\\{([^}]+)}");
     private static final Pattern GRADLE_COORD =

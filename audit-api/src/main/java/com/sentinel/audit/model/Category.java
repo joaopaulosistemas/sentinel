@@ -8,5 +8,7 @@ public enum Category {
     QUALITY,
     ARCHITECTURE,
     DEPENDENCY,
-    OBSERVABILITY
+    OBSERVABILITY,
+    /** Consultas lentas, memória, concorrência e uso de recursos. */
+    PERFORMANCE
 }

@@ -11,12 +11,19 @@ public class RiskScoreDto {
     private Double architecture;
     private Double dependencies;
     private Double observability;
+    private Double performance;
 
     public RiskScoreDto() {
     }
 
     public RiskScoreDto(Double overall, Double security, Double quality,
                         Double architecture, Double dependencies, Double observability) {
+        this(overall, security, quality, architecture, dependencies, observability, null);
+    }
+
+    public RiskScoreDto(Double overall, Double security, Double quality,
+                        Double architecture, Double dependencies, Double observability, Double performance) {
+        this.performance = performance;
         this.overall = overall;
         this.security = security;
         this.quality = quality;
@@ -63,6 +70,14 @@ public class RiskScoreDto {
 
     public void setDependencies(Double dependencies) {
         this.dependencies = dependencies;
+    }
+
+    public Double getPerformance() {
+        return performance;
+    }
+
+    public void setPerformance(Double performance) {
+        this.performance = performance;
     }
 
     public Double getObservability() {

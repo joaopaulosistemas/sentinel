@@ -1,0 +1,90 @@
+- key: "sentinel-ee-catch-relanca-sem-causa"
+  summary: "Passe a exceção original como causa ao relançar."
+  before: "catch (Exception e) { throw new NegocioException(e.getMessage()); }"
+  after: "catch (Exception e) { throw new NegocioException(\"Não foi possível obter o extrato.\", e); }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-ee-lanca-excecao-generica"
+  summary: "Crie uma exceção de negócio específica."
+  before: "throw new Exception(\"saldo insuficiente\");"
+  after: "throw new SaldoInsuficienteException(conta.getId());"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-ee-ejb-sem-interface"
+  summary: "Defina a interface do serviço e implemente-a no EJB."
+  before: "@Stateless public class ContaServicoEJB { ... }"
+  after: "@Stateless @Local(ContaServico.class) public class ContaServicoEJB implements ContaServico { ... }"
+  effort: M
+  regression-risk: LOW
+
+- key: "sentinel-ee-initialcontext-direto"
+  summary: "Centralize o lookup em um Service Locator ou injete com @EJB/@Inject."
+  before: "Object o = new InitialContext().lookup(\"java:comp/env/x\");"
+  after: "@EJB private ContaServico servico;"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-ee-dinheiro-ponto-flutuante"
+  summary: "Use BigDecimal para valores monetários."
+  before: "private double saldo;"
+  after: "private BigDecimal saldo;"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-ee-log-dado-pessoal"
+  summary: "Registre um identificador interno, não o dado pessoal."
+  before: "LOG.info(\"cliente {}\", cpf);"
+  after: "LOG.info(\"cliente {}\", idCliente);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-sqlnorma-constraint-fora-do-padrao"
+  summary: "Renomeie a constraint para o padrão PK_/FK_/DF_/CK_."
+  before: "CONSTRAINT grupo_pk PRIMARY KEY (IdGrupo)"
+  after: "CONSTRAINT PK_GrupoIsencao PRIMARY KEY (IdGrupo)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-sqlnorma-indice-fora-do-padrao"
+  summary: "Renomeie o índice para IDX_Tabela_Colunas."
+  before: "CREATE INDEX ix_grupo ON tar.GrupoIsencao (IdGrupo);"
+  after: "CREATE INDEX IDX_GrupoIsencao_IdGrupo ON tar.GrupoIsencao (IdGrupo);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-sqlnorma-trigger-fora-do-padrao"
+  summary: "Renomeie o trigger para TRG_Tabela_{A|I}{I|U|D} (TRG_LOG_Tabela para log)."
+  before: "CREATE TRIGGER tr_grupo ON ..."
+  after: "CREATE TRIGGER TRG_GrupoIsencao_AI ON ..."
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-sql-select-estrela-arquivo"
+  summary: "Liste as colunas necessárias."
+  before: "SELECT * FROM tar.GrupoIsencao"
+  after: "SELECT IdGrupo, NomeGrupo FROM tar.GrupoIsencao"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-sql-like-curinga-inicial-arquivo"
+  summary: "Use busca por prefixo ou índice de texto."
+  before: "WHERE NomeGrupo LIKE '%abc'"
+  after: "WHERE NomeGrupo LIKE 'abc%'"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-ng-detectchanges-manual"
+  summary: "Exponha o estado como Observable e use o async pipe."
+  before: "this.cdr.detectChanges();"
+  after: "readonly dados$ = this.service.dados$;   // <div *ngIf=\"dados$ | async as dados\">"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-ng-componente-sem-onpush"
+  summary: "Adicione ChangeDetectionStrategy.OnPush."
+  before: "@Component({ selector: 'a', template: '' })"
+  after: "@Component({ selector: 'a', template: '', changeDetection: ChangeDetectionStrategy.OnPush })"
+  effort: S
+  regression-risk: MEDIUM

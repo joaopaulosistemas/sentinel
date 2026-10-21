@@ -47,7 +47,7 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
     private static final long MAX_FILE_BYTES = 1024 * 1024;
 
     static final Set<String> IGNORED_DIRS = Set.of(
-            "target", "build", "dist", "out", "node_modules", ".git", ".idea", ".gradle", "vendor", "coverage",
+            "target", "build", "dist", "out", "node_modules", ".git", ".sentinel", ".idea", ".gradle", "vendor", "coverage",
             "test", "tests", "__tests__", "generated", "generated-sources", "e2e");
     private static final Set<String> JAVA_EXT = Set.of(".java");
     private static final Set<String> TS_EXT = Set.of(".ts", ".tsx", ".js", ".jsx", ".mjs");

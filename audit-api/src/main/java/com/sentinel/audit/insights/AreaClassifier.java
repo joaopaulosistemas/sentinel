@@ -37,6 +37,8 @@ public final class AreaClassifier {
         PREFIXES.put("sentinel-sql-update", AuditArea.MAINTAINABILITY);
         PREFIXES.put("sentinel-sql-", AuditArea.PERFORMANCE);
         PREFIXES.put("sentinel-mem-", AuditArea.PERFORMANCE);
+        PREFIXES.put("sentinel-camadas-", AuditArea.ARCHITECTURE);
+        PREFIXES.put("sentinel-taint-", AuditArea.SECURITY);
         PREFIXES.put("sentinel-spring-open-in-view", AuditArea.PERFORMANCE);
         PREFIXES.put("sentinel-ng-ngfor", AuditArea.PERFORMANCE);
         PREFIXES.put("sentinel-ng-chamada", AuditArea.PERFORMANCE);
@@ -112,6 +114,7 @@ public final class AreaClassifier {
             case ARCHITECTURE -> AuditArea.ARCHITECTURE;
             case DEPENDENCY -> AuditArea.DEPENDENCIES;
             case OBSERVABILITY -> AuditArea.OBSERVABILITY;
+            case PERFORMANCE -> AuditArea.PERFORMANCE;
         };
     }
 }

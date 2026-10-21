@@ -2,7 +2,7 @@
 # Squawk: risco de lock e downtime no Postgres (índice sem CONCURRENTLY, mudança de tipo, NOT NULL, int em vez de bigint...).
 - id: squawk
   name: "Squawk"
-  category: quality
+  category: performance
   applies-to: ["**/db/migration/**/*.sql", "**/db/migrations/**/*.sql", "**/migrations/**/*.sql", "**/db/changelog/**/*.sql", "**/liquibase/**/*.sql", "**/flyway/**/*.sql"]
   stdout: true
   command: [node, /opt/extras/sarif-extras.mjs, squawk, "{files}"]

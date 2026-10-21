@@ -211,3 +211,10 @@
   after: "useEffect(() => { const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-camadas-componente-injeta-httpclient"
+  summary: "Crie um service injetável que faz as chamadas HTTP; o componente só apresenta."
+  before: "constructor(private http: HttpClient) {}"
+  after: "constructor(private contas: ContaService) {}"
+  effort: M
+  regression-risk: LOW

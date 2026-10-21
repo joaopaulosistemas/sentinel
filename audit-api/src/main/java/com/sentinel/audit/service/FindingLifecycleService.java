@@ -195,7 +195,7 @@ public class FindingLifecycleService {
         if (run.getRiskScore() == null) {
             return;
         }
-        run.setRiskScore(scoringService.calculate(active(findingRepository.findByAuditRunId(run.getId()))));
+        run.setRiskScore(scoringService.calculate(active(findingRepository.findByAuditRunId(run.getId())), run.getLinesOfCode()));
     }
 
     // ------------------------------------------------------------------ comparação e tendência
@@ -248,7 +248,8 @@ public class FindingLifecycleService {
             points.add(new TrendPoint(r.getId(), r.getBranch(), r.getCompletedAt(),
                     r.getRiskScore().getOverall(), r.getRiskScore().getSecurity(), r.getRiskScore().getQuality(),
                     r.getRiskScore().getArchitecture(), r.getRiskScore().getDependencies(),
-                    r.getRiskScore().getObservability(), findingRepository.countBySeverityForRun(r.getId())));
+                    r.getRiskScore().getObservability(), r.getRiskScore().getPerformance(),
+                    findingRepository.countBySeverityForRun(r.getId())));
         }
         return points;
     }

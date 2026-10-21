@@ -300,6 +300,9 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         if ("observability".equalsIgnoreCase(metadataCategory)) {
             return Category.OBSERVABILITY;
         }
+        if ("performance".equalsIgnoreCase(metadataCategory)) {
+            return Category.PERFORMANCE;
+        }
         String lower = checkId.toLowerCase();
         if (lower.contains("security") || lower.contains("sql") || lower.contains("injection")
                 || lower.contains("xss") || lower.contains("csrf") || lower.contains("ssrf")

@@ -309,6 +309,9 @@ public class AuditCli {
             System.out.printf("  Arquitetura:    %.2f%n", riskScore.path("architecture").asDouble());
             System.out.printf("  Dependências:   %.2f%n", riskScore.path("dependencies").asDouble());
             System.out.printf("  Observabilidade:%.2f%n", riskScore.path("observability").asDouble());
+            if (riskScore.hasNonNull("performance")) {
+                System.out.printf("  Desempenho:     %.2f%n", riskScore.path("performance").asDouble());
+            }
         }
 
         JsonNode summary = result.path("findingsSummary");

@@ -12,6 +12,7 @@ export interface RiskScoreDto {
   architecture: number;
   dependencies: number;
   observability: number;
+  performance?: number | null;
 }
 
 export interface SystemSummaryResponse {
@@ -127,6 +128,7 @@ export interface TrendPoint {
   architecture: number;
   dependencies: number;
   observability: number;
+  performance?: number | null;
   findings: Record<Severity, number>;
 }
 

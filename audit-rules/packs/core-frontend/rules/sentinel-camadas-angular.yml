@@ -1,0 +1,16 @@
+# Camadas no Angular. Casos de teste: tests/sentinel-camadas-angular.ts
+rules:
+  - id: sentinel-camadas-componente-injeta-httpclient
+    patterns:
+      - pattern: |
+          @Component(...)
+          class $C { constructor(..., $P: HttpClient, ...) {...} }
+    message: >
+      Componente falando HTTP direto: a tela fica acoplada à API e difícil de testar. Crie um service injetável
+      (providedIn: 'root') que faz as chamadas e deixe o componente só apresentar.
+    severity: WARNING
+    languages: [typescript]
+    paths:
+      exclude: ["**/*.spec.ts", "**/node_modules/**"]
+    metadata:
+      category: architecture

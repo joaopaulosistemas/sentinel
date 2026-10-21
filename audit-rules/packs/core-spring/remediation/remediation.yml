@@ -88,3 +88,17 @@
   after: "log.error(\"falha ao processar\", e);"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-camadas-controller-usa-repository"
+  summary: "Injete um Service no Controller; o Service usa o Repository e define a transação."
+  before: "private final ContaRepository repo;"
+  after: "private final ContaService service;"
+  effort: M
+  regression-risk: LOW
+
+- key: "sentinel-camadas-controller-expoe-entidade"
+  summary: "Devolva um DTO (record) montado no Service, não a entidade JPA."
+  before: "public ContaEntity buscar(Long id)"
+  after: "public ContaDto buscar(Long id)"
+  effort: M
+  regression-risk: LOW

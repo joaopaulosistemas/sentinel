@@ -783,3 +783,20 @@ Documentação interativa (somente modo dev): **http://localhost:8080/swagger-ui
 
 **Desenvolvido com ❤️ usando IBM Bob**  
 **Bobathon de Modernização Java — Sicoob 2026**
+
+## Novidades da v10
+
+- **Evidências offline**: coloque dumps e exports em `evidencias/<nome-do-sistema>/` (veja `docs/evidencias/README.md`). O analisador "Evidências" lê `schema.sql`, estatísticas do `pg_stat_*`, planos `EXPLAIN` JSON, cobertura (JaCoCo/lcov) e histograma de heap. Nenhuma conexão com banco é aberta.
+- **Dimensão Performance** no score (seis dimensões) e **ajuste por tamanho** do código (`sentinel.audit.score.density.enabled`, `reference-lines`).
+- **Camadas**: Controller→Repository, entidade exposta em Controller, `HttpClient` em componente Angular.
+- **Taint (mesmo arquivo)**: parâmetro HTTP → SQL e URL → `innerHTML`. Não cobre fluxo entre arquivos (isso exigiria CodeQL).
+
+### Pacote `core-corporativo` e perfil `corporativo-java-ee-angular` (v10)
+
+Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dados internos):
+
+- **Java (6):** catch que relança sem causa, `throw` de exceção genérica, `@Stateless` sem interface, `InitialContext` fora de Locator, dinheiro em `double/float`, dado pessoal em log.
+- **SQL (5, regex em `*.sql` e `*.queries.xml`):** nomes de constraint (PK_/FK_/DF_/CK_), índice (IDX_) e trigger (TRG_) fora do padrão, `SELECT *` e `LIKE '%…'` em arquivo.
+- **Angular (2):** `detectChanges()` manual e componente sem `OnPush`.
+- **Spectral** (`market-tools`): guia REST (recurso kebab-case minúsculo, plural, atributos sem abreviação, erro `problem+json`, coleção paginada, gateway Swagger 2).
+- O pacote vem desligado por padrão. O perfil `corporativo-java-ee-angular` o liga e deixa a nomenclatura de SQL, `OnPush` e EJB sem interface em modo sombra (aparecem, mas não reprovam).
