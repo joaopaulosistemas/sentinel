@@ -25,7 +25,7 @@ rules:
       cwe: "CWE-401: Missing Release of Memory after Effective Lifetime"
 
   - id: sentinel-mem-colecao-estatica
-    pattern-regex: '\bstatic\s+(?!final\b)(?:(?:private|public|protected)\s+)?(?:Map|HashMap|ConcurrentHashMap|List|ArrayList|LinkedList|Set|HashSet|Queue|Deque)\s*<[^;=]*>\s+\w+\s*=\s*new\b'
+    pattern-regex: '\bstatic\s+(?!final\b)(?:(?:private|public|protected)\s+)?(?:Map|HashMap|ConcurrentHashMap|List|ArrayList|LinkedList|Set|HashSet|Queue|Deque)\s*<[^;=(){}]*>\s+\w+\s*=\s*new\b'
     message: >
       Coleção estática mutável: ela vive até o fim da aplicação e cresce sem limite se ninguém remover itens
       (vazamento de memória clássico, comum em caches caseiros). Use um cache com tamanho e expiração (Caffeine) ou

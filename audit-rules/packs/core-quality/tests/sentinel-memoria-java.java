@@ -26,6 +26,11 @@ class Estaticos {
     private static final Map<String, Object> CONSTANTE = Map.of();
     // ok: sentinel-mem-colecao-estatica
     private Map<String, Object> instancia = new HashMap<>();
+    // ok: sentinel-mem-colecao-estatica
+    private static List<String> listar(int n) {
+        List<String> saida = new ArrayList<>();
+        return saida;
+    }
 }
 
 class Caches {

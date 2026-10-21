@@ -42,10 +42,10 @@ rules:
       category: quality
 
   - id: sentinel-ts-catch-vazio
-    pattern-regex: 'catch\s*(?:\([^)]*\))?\s*\{\s*\}'
+    pattern-regex: 'catch\s*(?:\((?!\s*_)[^)]*\))?\s*\{\s*\}'
     message: >
       Bloco catch totalmente vazio engole a falha. Trate o erro, registre ou propague. Se ignorar for intencional,
-      diga o motivo em um comentário dentro do bloco.
+      diga o motivo em um comentário dentro do bloco ou nomeie o parâmetro com sublinhado (catch (_) {}).
     severity: WARNING
     languages: [regex]
     paths:

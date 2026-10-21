@@ -10,7 +10,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
@@ -24,7 +24,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
@@ -38,7 +38,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
       category: security
@@ -66,7 +66,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
@@ -80,7 +80,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
       cwe: "CWE-269: Improper Privilege Management"
@@ -94,7 +94,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
@@ -108,7 +108,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
       cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
@@ -122,7 +122,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
@@ -136,6 +136,6 @@ rules:
     languages: [regex]
     paths:
       include: ["*.yml", "*.yaml"]
-      exclude: ["**/node_modules/**", "**/.github/**"]
+      exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security

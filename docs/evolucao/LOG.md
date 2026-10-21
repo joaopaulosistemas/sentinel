@@ -32,5 +32,7 @@ Não verificado: os workflows do GitHub não rodaram num GitHub real; Maven, ima
 | 2 Precisão | 1 | 2 | falsos positivos medidos em 4 repositórios reais e corrigidos (ver `calibracao.md`); 134→80 e 5619→1609 achados |
 | 10 Credibilidade | 0 | 1 | calibração em 4 repositórios públicos; faltam projetos do João (precisa de 3 reais para chegar a 3) |
 
+Atualização na mesma volta: calibração nos repositórios do João (Frequency e Sentinel) corrigiu mais 4 regras (ver `calibracao.md`). Credibilidade passa a 2 (6 repositórios, 2 deles do João), sem chegar a 3 porque não houve revisão manual completa dos achados.
+
 Verificado: bateria Java 364 testes verdes; Semgrep dos 8 pacotes.
 Não verificado: calibração só das regras (não do pipeline completo); sem revisão manual de todos os achados.

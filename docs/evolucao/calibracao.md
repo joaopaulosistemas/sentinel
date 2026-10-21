@@ -23,3 +23,20 @@ Limite honesto: são repositórios **públicos** escolhidos por perfil, não pro
 - O comando via `sh -c` com o argumento de shell guardado em variável (caso do WebGoat `CommandExecutionService`) continua sem detecção.
 - Regras de estilo do pacote `ts-clean-code` (padrão TypeScript da empresa) geram muitos achados em projetos fora do padrão (51 em um só projeto Angular); o pacote vem desligado por padrão.
 - Sem contagem de falsos negativos além dos casos conhecidos do WebGoat; não houve revisão manual de todos os achados.
+
+## Segunda rodada: Frequency e Sentinel (repositórios do João)
+
+Regras `core-*` sobre `joaopaulosistemas/frequency` (PWA em JavaScript) e `joaopaulosistemas/sentinel` (Java/React). Só relato: o Frequency não foi alterado.
+
+| Repositório | Achados antes → depois |
+|---|---|
+| frequency | 125 → 88 |
+| sentinel | 83 → 40 |
+
+Falsos positivos corrigidos:
+1. `sentinel-mem-colecao-estatica` (35 no Sentinel): a expressão atravessava `(){}` e marcava métodos `static` que retornam `List`. Agora só campos.
+2. `sentinel-jpa-n-mais-um` (10 → 5): consulta no cabeçalho do `for`/`forEach`/`stream` não é N+1. Os 5 restantes são N+1 reais no código do Sentinel (`RuleQualityService`, `AuditScheduler`, etc.) e ficam como dívida a corrigir.
+3. `sentinel-compose-docker-sock` e regras de Compose/K8s (4): liam os arquivos de remediação do próprio Sentinel. Pasta `remediation` excluída.
+4. `sentinel-ts-catch-vazio` (37 no Frequency): `catch (_) {}` é a forma de ignorar de propósito e deixou de ser marcado.
+
+Limites que ficam: `sentinel-xss-inner-html` marca 68 atribuições a `innerHTML` no Frequency sem saber se o valor passou por `esc()` (vale revisão manual, não é falso positivo comprovado); `sentinel-owasp-a01-endpoint-sem-autorizacao` marca recursos do Sentinel protegidos por filtro global (`ApiKeyFilter`).

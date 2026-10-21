@@ -18,6 +18,14 @@ class Exemplos {
             repo.findByCpf("x" + id);
         });
         // ok: sentinel-jpa-n-mais-um
+        for (Object c : contaRepository.findByAtivoTrue()) {
+            System.out.println(c);
+        }
+        // ok: sentinel-jpa-n-mais-um
+        contaRepository.findAtivas().stream().map(c -> c.getId()).toList();
+        // ok: sentinel-jpa-n-mais-um
+        contaRepository.findAtivas().forEach(c -> System.out.println(c));
+        // ok: sentinel-jpa-n-mais-um
         contaRepository.findAllById(ids);
         // ok: sentinel-jpa-n-mais-um
         contaRepository.findById(1L);

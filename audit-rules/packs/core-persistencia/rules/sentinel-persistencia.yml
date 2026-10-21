@@ -18,6 +18,12 @@ rules:
               $COLL.forEach($X -> { ... });
           - pattern-inside: |
               $COLL.stream().$OP($X -> { ... });
+      - pattern-not-inside: |
+          for ($T $V : $REPO.$M(...)) { ... }
+      - pattern-not-inside: |
+          $REPO.$M(...).stream().$OP($X -> { ... });
+      - pattern-not-inside: |
+          $REPO.$M(...).forEach($X -> { ... });
     message: >
       Consulta ao banco dentro de um loop (problema N+1): uma consulta por item em vez de uma só. Busque tudo de uma
       vez (findAllById, consulta com IN, JOIN FETCH ou @EntityGraph) antes do loop e use um Map para consultar.
