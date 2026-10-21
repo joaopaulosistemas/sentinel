@@ -89,6 +89,7 @@ jobs:
           git config user.email "sentinel-evolution@users.noreply.github.com"
 
       - name: Agente
+        id: agente
         if: steps.chave.outputs.pular == 'false'
         uses: anthropics/claude-code-action@v1
         with:
@@ -101,3 +102,18 @@ jobs:
             --max-turns 60
             --disallowedTools "Bash(git push origin main:*),Bash(git push --force:*),Bash(git push -f:*)"
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh workflow run:*),Bash(semgrep:*),Bash(python3:*),Bash(mvn:*),Bash(mktemp:*),Bash(cp:*),Bash(ls:*),Bash(cat:*)"
+
+      - name: Resumo do agente (anotação)
+        if: always() && steps.chave.outputs.pular == 'false'
+        env:
+          ARQ: ${{ steps.agente.outputs.execution_file }}
+        run: |
+          [ -f "$ARQ" ] || { echo "::notice title=Agente::sem arquivo de execução"; exit 0; }
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open(os.environ["ARQ"]))
+          fim = [x for x in d if isinstance(x, dict) and x.get("type") == "result"]
+          r = fim[-1] if fim else {}
+          txt = (r.get("result") or "sem resultado").replace("\n", "%0A")
+          print("::notice title=Agente (%s turnos, %s)::%s" % (r.get("num_turns"), r.get("subtype"), txt[:3000]))
+          PY
