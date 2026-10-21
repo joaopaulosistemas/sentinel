@@ -1,0 +1,18 @@
+{
+  "_comentario": "Verdades conhecidas para a calibração automática. deve_achar: regra (sufixo do ruleId) que PRECISA aparecer. nao_deve_achar: falso positivo já corrigido, que não pode voltar. max_total: teto de achados (regressão de ruído).",
+  "repositorios": {
+    "spring-projects/spring-petclinic": {
+      "nao_deve_achar": ["sentinel-sql-select-estrela-arquivo", "sentinel-fe-html-sem-lang", "sentinel-mem-colecao-estatica"],
+      "max_total": 400
+    },
+    "WebGoat/WebGoat": {
+      "deve_achar": ["sentinel-sql-injection", "sentinel-desserializacao-insegura", "sentinel-senha-fixa-no-codigo"]
+    },
+    "gothinkster/angular-realworld-example-app": {
+      "max_total": 400
+    },
+    "gothinkster/react-redux-realworld-example-app": {
+      "max_total": 100
+    }
+  }
+}

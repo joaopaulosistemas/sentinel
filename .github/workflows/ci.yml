@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:   # o agente Sentinel Evolution dispara o CI na branch evolucao/* que abriu
 
 permissions:
   contents: read
@@ -123,4 +124,57 @@ jobs:
             r="$(tail -15 helm.log)"; r="${r//'%'/'%25'}"; r="${r//$'\n'/'%0A'}"
             echo "::error title=Helm falhou::${r:0:3500}"; exit 1
           fi
+
+  escopo-agente:
+    name: Escopo dos PRs do agente
+    runs-on: ubuntu-latest
+    # só vale para branches evolucao/*: o agente não pode mexer em CI, scripts de e2e nem em segredos
+    if: startsWith(github.head_ref || github.ref_name, 'evolucao/')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Conferir os arquivos alterados
+        run: |
+          base="origin/main"
+          proibidos="$(git diff --name-only "$base"...HEAD | grep -E '^(\.github/|scripts/(e2e|evolucao-entrada|ci-anotar)\.sh$|\.gitignore$|\.env)' || true)"
+          if [ -n "$proibidos" ]; then
+            r="${proibidos//$'\n'/%0A}"
+            echo "::error title=PR do agente mexeu em arquivo protegido::${r}"
+            exit 1
+          fi
+          echo "ok: nenhum arquivo protegido alterado"
+
+  calibracao:
+    name: Calibração em vários repositórios
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # pesado: roda na main, sob demanda e nos PRs do agente (que mexem em regras)
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'evolucao/')
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir a imagem da API
+        run: docker build -f audit-api/Dockerfile -t sentinel-audit-api:ci . > build-api.log 2>&1 || { tail -15 build-api.log; exit 1; }
+      - name: Auditar os repositórios de teste (e o próprio Sentinel)
+        env:
+          GIT_TOKEN: ${{ github.token }}
+        run: bash scripts/calibracao.sh
+      - name: Baixar o resultado da última execução verde da main
+        run: |
+          id="$(gh run list -R "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 1 --json databaseId -q '.[0].databaseId')"
+          mkdir -p anterior
+          if [ -n "$id" ]; then gh run download "$id" -R "$GITHUB_REPOSITORY" -n calibracao-historico -D anterior || echo "sem histórico anterior"; else echo "sem execução anterior"; fi
+      - name: Comparar e conferir as verdades conhecidas
+        run: python3 scripts/comparar-calibracao.py calibracao-saida anterior audit-rules/calibracao/esperado.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: calibracao-historico
+          path: calibracao-saida
+          retention-days: 90
 

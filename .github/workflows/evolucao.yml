@@ -1,0 +1,99 @@
+name: Sentinel Evolution
+
+# Fecha o laço: lê o resultado do CI, classifica os problemas e abre PRs em branches evolucao/*.
+# Pré-requisito: segredo ANTHROPIC_API_KEY no repositório (Settings > Secrets and variables > Actions).
+# Sem o segredo o workflow só registra o aviso e termina com sucesso.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "ID da execução do CI a analisar (vazio = a mais recente na main)"
+        required: false
+
+permissions:
+  contents: write        # criar a branch evolucao/*
+  pull-requests: write   # abrir o PR
+  actions: write         # disparar o CI na branch do PR (PRs abertos com GITHUB_TOKEN não disparam o CI sozinhos)
+  checks: read
+
+concurrency:
+  group: evolucao
+  cancel-in-progress: false
+
+jobs:
+  evoluir:
+    name: Ler o CI e propor melhorias
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # não reage a execuções de branches do próprio agente (evita laço) nem a commits do bot
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.actor.login != 'github-actions[bot]')
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Conferir o segredo
+        id: chave
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::warning title=Sentinel Evolution::Segredo ANTHROPIC_API_KEY ausente: o agente não rodou."
+            echo "pular=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pular=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.chave.outputs.pular == 'false'
+        with:
+          fetch-depth: 0
+
+      - name: Reunir a entrada
+        if: steps.chave.outputs.pular == 'false'
+        env:
+          RUN_ID: ${{ inputs.run_id || github.event.workflow_run.id }}
+        run: |
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID="$(gh run list --workflow CI --branch main --limit 1 --json databaseId -q '.[0].databaseId')"
+          fi
+          bash scripts/evolucao-entrada.sh "$RUN_ID" > evolucao-entrada.md
+          wc -c evolucao-entrada.md
+
+      - uses: actions/setup-java@v4
+        if: steps.chave.outputs.pular == 'false'
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-python@v5
+        if: steps.chave.outputs.pular == 'false'
+        with:
+          python-version: "3.12"
+      - name: Instalar o Semgrep (mesma versão do CI)
+        if: steps.chave.outputs.pular == 'false'
+        run: pip install semgrep==1.172.0
+
+      - name: Configurar o autor dos commits
+        if: steps.chave.outputs.pular == 'false'
+        run: |
+          git config user.name "sentinel-evolution[bot]"
+          git config user.email "sentinel-evolution@users.noreply.github.com"
+
+      - name: Agente
+        if: steps.chave.outputs.pular == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: |
+            Siga as instruções de .github/agente/sentinel-evolution.md. A entrada está em evolucao-entrada.md.
+          claude_args: >-
+            --max-turns 60
+            --disallowedTools "Bash(git push origin main:*),Bash(git push --force:*),Bash(git push -f:*)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh workflow run:*),Bash(semgrep:*),Bash(python3:*),Bash(mvn:*),Bash(mktemp:*),Bash(cp:*),Bash(ls:*),Bash(cat:*)"
