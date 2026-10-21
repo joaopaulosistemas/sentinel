@@ -96,13 +96,19 @@ export default tseslint.config(
     },
     languageOptions: jsxA11y.flatConfigs.recommended.languageOptions,
   },
-  // Angular: código (componentes, diretivas, serviços)
-  {
-    files: ["**/*.ts"],
-    ignores: ["**/*.spec.ts"],
-    extends: [...angular.configs.tsRecommended],
-    processor: angular.processInlineTemplates,
-  },
+  // Angular: código (componentes, diretivas, serviços). O EslintAnalyzer define SENTINEL_ESLINT_ANGULAR=0 quando o
+  // projeto não depende de @angular/*; sem isso, NestJS/Express receberiam regras como prefer-inject (injeção por
+  // construtor é o padrão do Nest) e a nota seria distorcida (calibração: 112 achados em 3 repositórios sem Angular).
+  ...(process.env.SENTINEL_ESLINT_ANGULAR === "0"
+    ? []
+    : [
+        {
+          files: ["**/*.ts"],
+          ignores: ["**/*.spec.ts"],
+          extends: [...angular.configs.tsRecommended],
+          processor: angular.processInlineTemplates,
+        },
+      ]),
   // HTML puro (páginas, index.html): acessibilidade e boas práticas. Templates Angular usam a regra acima.
   {
     files: ["**/*.html"],

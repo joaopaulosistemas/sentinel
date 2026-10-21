@@ -79,7 +79,8 @@ public class EslintAnalyzer implements CodeAnalyzer {
                 cmd.add("**/" + dir + "/**");
             }
             cmd.addAll(List.of("--ignore-pattern", "**/*.d.ts", "--ignore-pattern", "**/*.min.js", "."));
-            int code = ExternalTools.run(cmd, projectPath, Map.of(), timeoutSeconds);
+            Map<String, String> env = usaAngular(projectPath) ? Map.of() : Map.of("SENTINEL_ESLINT_ANGULAR", "0");
+            int code = ExternalTools.run(cmd, projectPath, env, timeoutSeconds);
             if (code == -1) {
                 LOG.warnf("ESLint excedeu o tempo limite de %ds e foi encerrado", timeoutSeconds);
             } else if (code > 1) {                       // 1 = há problemas (normal); 2 = erro de execução
@@ -102,6 +103,23 @@ public class EslintAnalyzer implements CodeAnalyzer {
             }
         }
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+    }
+
+    /** Algum package.json (fora de pastas ignoradas) menciona {@code @angular/}: só então valem as regras do Angular. */
+    static boolean usaAngular(Path projectPath) {
+        try (var paths = Files.walk(projectPath, 6)) {
+            return paths.filter(p -> p.getFileName() != null && p.getFileName().toString().equals("package.json"))
+                    .filter(p -> !ExternalTools.inIgnoredDir(ExternalTools.relativize(projectPath, p.toString())))
+                    .anyMatch(p -> {
+                        try {
+                            return Files.readString(p, StandardCharsets.UTF_8).contains("\"@angular/");
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    });
+        } catch (Exception e) {
+            return true;                                 // na dúvida, mantém o comportamento anterior
+        }
     }
 
     /** Regras de segurança: as do núcleo listadas e todas dos plugins security/ e no-unsanitized/. */

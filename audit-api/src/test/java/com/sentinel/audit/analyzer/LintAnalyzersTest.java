@@ -226,6 +226,23 @@ class LintAnalyzersTest {
     }
 
     @Test
+    void eslintSoUsaRegrasDoAngularQuandoOProjetoDependeDeAngular() throws Exception {
+        Path nest = Files.createTempDirectory("nest");
+        Files.writeString(nest.resolve("package.json"), "{\"dependencies\":{\"@nestjs/core\":\"^10.0.0\"}}");
+        assertFalse(EslintAnalyzer.usaAngular(nest));
+
+        Path ng = Files.createTempDirectory("ng");
+        Files.createDirectories(ng.resolve("web"));
+        Files.writeString(ng.resolve("web/package.json"), "{\"dependencies\":{\"@angular/core\":\"^19.0.0\"}}");
+        assertTrue(EslintAnalyzer.usaAngular(ng));
+
+        Path soDependencia = Files.createTempDirectory("dep");
+        Files.createDirectories(soDependencia.resolve("node_modules/x"));
+        Files.writeString(soDependencia.resolve("node_modules/x/package.json"), "{\"peerDependencies\":{\"@angular/core\":\"*\"}}");
+        assertFalse(EslintAnalyzer.usaAngular(soDependencia), "package.json de dependências não conta");
+    }
+
+    @Test
     void eslintExigeOArquivoDeConfiguracaoEIgnoraErroDeExecucao() throws Exception {
         Path bin = Files.createTempDirectory("fakebin");
         fakeBin(bin, "eslint", "exit 2");
