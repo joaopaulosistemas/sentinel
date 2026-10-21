@@ -138,6 +138,21 @@ export default tseslint.config(
       "@html-eslint/prefer-https": "warn",
     },
   },
+  // Templates de motor do servidor (Thymeleaf, Freemarker, JSP em pastas templates/fragments/views) são trechos
+  // de página, montados por um layout: não têm <html lang>, <title>, <meta> nem fecham todas as tags sozinhos.
+  // Calibração no spring-petclinic: 33 + 12 + 8 achados desse tipo.
+  {
+    files: ["**/templates/**/*.html", "**/fragments/**/*.html", "**/views/**/*.html"],
+    rules: {
+      "@html-eslint/require-lang": "off",
+      "@html-eslint/require-title": "off",
+      "@html-eslint/require-meta-viewport": "off",
+      "@html-eslint/require-meta-charset": "off",
+      "@html-eslint/require-closing-tags": "off",
+      "@html-eslint/no-multiple-h1": "off",
+      "@html-eslint/no-skip-heading-levels": "off",
+    },
+  },
   // Angular: templates, com acessibilidade
   {
     files: ["**/*.component.html"],

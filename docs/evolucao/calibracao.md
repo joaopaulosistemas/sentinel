@@ -56,3 +56,7 @@ Correções:
 - O SQLFluff exclui `layout`, `capitalisation` e `AL03`.
 
 Medido localmente com as mesmas ferramentas: Stylelint 4.049 → 26 achados (todos de regras de acessibilidade, `!important` e erros reais no SCSS); SQLFluff 419 → 133 (126 de AL03 antes da exclusão do AL03). A nota final da auditoria será conferida na próxima rodada do CI.
+
+Resultado da rodada seguinte do CI (petclinic completo): 1.498 → **290 achados**; a nota ficou em 42,6 porque o cálculo já limita a penalidade de severidade baixa por regra (20 pontos), então o ruído de estilo inflava a contagem, mas quase não a nota. O que sustenta a nota são poucos achados HIGH e a diversidade de regras.
+
+Mais um ajuste desta rodada: o ESLint deixa de cobrar `lang`, `title`, `meta`, fechamento de tags e níveis de título em templates de servidor (`templates/`, `fragments/`, `views/`), que são trechos de página. No petclinic, 53 achados nessa área caíram para 20, todos relevantes (rótulos de campo, estilos inline, imagens sem alt).

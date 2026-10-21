@@ -62,6 +62,7 @@ done
 total="$(printf '%s' "$resp" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(sum((d.get("findingsSummary") or {}).values()))')"
 score="$(printf '%s' "$resp" | python3 -c 'import json,sys; d=json.load(sys.stdin); print((d.get("riskScore") or {}).get("overall"))')"
 echo "findings=$total score=$score"
+echo "::notice title=Nota por dimensão::$(printf '%s' "$resp" | python3 -c 'import json,sys; print(json.dumps((json.load(sys.stdin).get("riskScore") or {})))')"
 [ "${total:-0}" -gt 0 ] || falhar "Auditoria concluída sem nenhum achado (esperava ao menos 1): ${resp:0:400}"
 
 # resumo dos achados por ferramenta/regra, publicado como aviso para calibração (não reprova o teste)
