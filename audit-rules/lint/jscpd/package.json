@@ -1,0 +1,8 @@
+{
+  "name": "sentinel-audit-jscpd",
+  "private": true,
+  "description": "jscpd (detecção de código duplicado) usado pelo pacote market-tools; instalado em /opt/jscpd na imagem",
+  "dependencies": {
+    "jscpd": "5.4.2"
+  }
+}

@@ -1,0 +1,10 @@
+# Esta regra só vale para arquivos docker-compose*.yml / compose*.yml, por isso o caso de teste tem este nome.
+services:
+  db:
+    environment:
+      # ruleid: sentinel-compose-segredo-em-env
+      POSTGRES_PASSWORD: admin123
+      # ok: sentinel-compose-segredo-em-env
+      POSTGRES_PASSWORD_FILE: ${PG_FILE}
+      # ok: sentinel-compose-segredo-em-env
+      OUTRA_SENHA: ${OUTRA}

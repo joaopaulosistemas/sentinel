@@ -1,0 +1,27 @@
+services:
+  app:
+    # ruleid: sentinel-compose-privileged
+    privileged: true
+    # ruleid: sentinel-compose-network-host
+    network_mode: host
+    volumes:
+      # ruleid: sentinel-compose-docker-sock
+      - /var/run/docker.sock:/var/run/docker.sock
+    securityContext:
+      # ruleid: sentinel-k8s-escalada-de-privilegio
+      allowPrivilegeEscalation: true
+      # ok: sentinel-k8s-escalada-de-privilegio
+      # allowPrivilegeEscalation: false
+      # ruleid: sentinel-k8s-roda-como-root
+      runAsNonRoot: false
+      # ruleid: sentinel-k8s-capacidade-perigosa
+      capabilities: {add: ["SYS_ADMIN"]}
+    # ruleid: sentinel-k8s-host-network
+    hostNetwork: true
+    # ruleid: sentinel-k8s-hostpath
+    hostPath:
+      path: /data
+    # ruleid: sentinel-k8s-imagem-latest
+    image: nginx:latest
+    # ok: sentinel-k8s-imagem-latest
+    image: nginx:1.27

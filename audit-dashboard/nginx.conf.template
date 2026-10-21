@@ -1,0 +1,32 @@
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # SPA fallback — todas as rotas vão para index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy para a API — evita CORS e injeta a API key no servidor (ela nunca vai para o navegador).
+    # API_UPSTREAM e API_KEY vêm do ambiente do container (envsubst do nginx).
+    location /api/ {
+        proxy_pass ${API_UPSTREAM}/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-API-Key "${API_KEY}";
+        proxy_read_timeout 120s;
+    }
+
+    # Cache de assets estáticos (arquivos com hash no nome)
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # index.html nunca em cache, para pegar novas versões
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+}

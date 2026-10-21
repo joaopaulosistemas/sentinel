@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels: { app: {{ .Release.Name }}-api }
+  template:
+    metadata:
+      labels: { app: {{ .Release.Name }}-api }
+    spec:
+      containers:
+        - name: api
+          image: {{ .Values.api.image | quote }}
+          ports:
+            - containerPort: 8080
+          env:
+            - { name: DB_URL, value: {{ include "sentinel.dbUrl" . | quote }} }
+            - { name: DB_USER, value: {{ .Values.database.user | quote }} }
+            - { name: DB_PASSWORD, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: DB_PASSWORD } } }
+            - { name: API_KEY, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: API_KEY, optional: true } } }
+            - { name: GIT_TOKEN, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: GIT_TOKEN, optional: true } } }
+            - { name: WEBHOOK_SECRET, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: WEBHOOK_SECRET, optional: true } } }
+            - { name: CLONE_DIR, value: /tmp/sentinel-audit-clones }
+            - { name: PACKS_GIT_URL, value: {{ .Values.packs.gitUrl | quote }} }
+            - { name: PACKS_GIT_REF, value: {{ .Values.packs.gitRef | quote }} }
+            - { name: PACKS_GIT_PATH, value: {{ .Values.packs.gitPath | quote }} }
+            - { name: PACKS_DIRS, value: {{ .Values.packs.dirs | quote }} }
+            - { name: PACKS_DISABLED, value: {{ .Values.packs.disabled | quote }} }
+            - { name: PACKS_ALLOW_TOOLS, value: {{ .Values.packs.allowTools | quote }} }
+            - { name: PACKS_TRUSTED_TOOL_PACKS, value: {{ .Values.packs.trustedToolPacks | quote }} }
+            - { name: PACKS_PUBLIC_KEY, value: {{ .Values.packs.publicKey | quote }} }
+            - { name: PACKS_REQUIRE_SIGNATURE, value: {{ .Values.packs.requireSignature | quote }} }
+            {{- range $k, $v := .Values.api.env }}
+            - { name: {{ $k }}, value: {{ $v | quote }} }
+            {{- end }}
+          readinessProbe:
+            httpGet: { path: /api/v1/health, port: 8080 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/v1/health, port: 8080 }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources: {{- toYaml .Values.api.resources | nindent 12 }}
+          volumeMounts:
+            - { name: clones, mountPath: /tmp/sentinel-audit-clones }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: clones
+          emptyDir: { sizeLimit: {{ .Values.api.cloneVolumeSize | quote }} }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+spec:
+  selector: { app: {{ .Release.Name }}-api }
+  ports:
+    - { port: 8080, targetPort: 8080 }

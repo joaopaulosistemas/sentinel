@@ -1,0 +1,230 @@
+- key: "sentinel-sql-injection"
+  summary: "Nunca concatene valores na consulta. Use PreparedStatement (?) ou parâmetros nomeados do JPA."
+  before: "stmt.executeQuery(\"SELECT * FROM conta WHERE id = \" + id);"
+  after: |-
+    var ps = conn.prepareStatement("SELECT * FROM conta WHERE id = ?");
+    ps.setLong(1, id);
+    ps.executeQuery();
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+
+- key: "command-injection"
+  summary: "Evite shell. Passe cada argumento separado ao ProcessBuilder e valide o valor contra uma lista de permissão."
+  before: "Runtime.getRuntime().exec(\"ping \" + host);"
+  after: |-
+    if (!host.matches("[A-Za-z0-9.-]{1,253}")) throw new IllegalArgumentException();
+    new ProcessBuilder("ping", "-c", "1", host).start();
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html"
+
+- key: "ldap-injection"
+  summary: "Escape os valores do filtro LDAP (ou use um construtor de consultas parametrizado)."
+  before: "ctx.search(base, \"(uid=\" + user + \")\", controls);"
+  after: "ctx.search(base, \"(uid={0})\", new Object[] { user }, controls);"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html"
+
+- key: "xpath-injection"
+  summary: "Use variáveis XPath (XPathVariableResolver) em vez de concatenar texto na expressão."
+  before: "xpath.evaluate(\"//user[name='\" + name + \"']\", doc);"
+  after: |-
+    xpath.setXPathVariableResolver(v -> name);
+    xpath.evaluate("//user[name=$name]", doc);
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
+
+- key: "xss"
+  summary: "Escape toda saída conforme o contexto (HTML, atributo, JS). No navegador, prefira textContent a innerHTML."
+  before: "el.innerHTML = userInput;"
+  after: "el.textContent = userInput;"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+
+- key: "secrets-history"
+  summary: "O segredo já vazou: REVOGUE/rotacione a credencial agora. Só depois limpe o histórico (git filter-repo) e avise quem clonou."
+  before: "// commit antigo: password = \"SuperSecreta123\""
+  after: |-
+    # 1) gere uma credencial nova e invalide a antiga
+    # 2) git filter-repo --replace-text expressoes.txt  (e force-push coordenado)
+  refs:
+    - "https://docs.github.com/pt/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository"
+
+- key: "secrets-"
+  summary: "Tire a credencial do código: leia de variável de ambiente ou cofre de segredos e rotacione a atual, que já está exposta."
+  before: "String password = \"SuperSecreta123\";"
+  after: "String password = System.getenv(\"DB_PASSWORD\");   // ou @ConfigProperty / Vault"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
+- key: "osv-"
+  summary: "Atualize a dependência para a versão corrigida indicada e gere o lockfile novamente; prefira o BOM do framework."
+  before: "<version>2.14.1</version>"
+  after: "<version>2.17.1</version>   <!-- ou: npm install pacote@versao-corrigida -->"
+  refs:
+    - "https://osv.dev"
+
+- key: "owasp-dependency"
+  summary: "Atualize a dependência para a versão corrigida indicada na descrição."
+  before: "<version>2.14.1</version>"
+  after: "<version>2.17.1</version>"
+  refs:
+    - "https://nvd.nist.gov"
+
+- key: "owasp-a01-endpoint"
+  summary: "Declare o controle de acesso do recurso (@RolesAllowed / @Authenticated) ou documente onde ele é aplicado."
+  before: "@Path(\"/contas\") class ContaResource {}"
+  after: "@Path(\"/contas\") @RolesAllowed(\"gerente\") class ContaResource {}"
+  refs:
+    - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+- key: "api-ssrf"
+  summary: "Valide a URL contra uma lista de hosts permitidos e bloqueie endereços internos antes de fazer a chamada."
+  before: "new URL(request.getParameter(\"u\")).openStream();"
+  after: |-
+    URI u = URI.create(param);
+    if (!PERMITIDOS.contains(u.getHost())) throw new BadRequestException();
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html"
+
+- key: "path-traversal"
+  summary: "Resolva o caminho dentro de um diretório base e confira que continua dentro dele."
+  before: "new File(\"/dados/\" + nome);"
+  after: |-
+    Path base = Path.of("/dados").toRealPath();
+    Path alvo = base.resolve(nome).normalize();
+    if (!alvo.startsWith(base)) throw new ForbiddenException();
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+
+- key: "cors-wildcard"
+  summary: "Liste as origens confiáveis em vez de '*'."
+  before: "response.header(\"Access-Control-Allow-Origin\", \"*\");"
+  after: "quarkus.http.cors.origins=https://portal.exemplo.com.br"
+  refs:
+    - "https://developer.mozilla.org/pt-BR/docs/Web/HTTP/CORS"
+
+- key: "csrf-disabled"
+  summary: "Mantenha o CSRF ativo quando houver sessão/cookies; desligue só em API stateless com token no header."
+  before: "http.csrf().disable();"
+  after: "http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html"
+
+- key: "tls-validation-disabled"
+  summary: "Remova o TrustManager/HostnameVerifier permissivo; instale a CA interna no truststore em vez de ignorar a validação."
+  before: "HttpsURLConnection.setDefaultHostnameVerifier((h, s) -> true);"
+  after: "// -Djavax.net.ssl.trustStore=/etc/ssl/truststore.jks  (com a CA da empresa)"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
+
+- key: "jwt-sem-verificacao"
+  summary: "Valide a assinatura, o emissor e a expiração do token antes de confiar nas claims."
+  before: "Jwts.parser().parse(token);"
+  after: "Jwts.parser().verifyWith(chave).build().parseSignedClaims(token);"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
+- key: "jwt-chave-fixa"
+  summary: "A chave de assinatura não pode estar no código: leia de cofre/variável e permita rotação."
+  before: "Algorithm.HMAC256(\"segredo\");"
+  after: "Algorithm.HMAC256(System.getenv(\"JWT_SECRET\"));"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
+- key: "crypto-hash-fraco"
+  summary: "Use SHA-256 ou superior; para senhas use bcrypt/scrypt/Argon2 (hash lento com salt)."
+  before: "MessageDigest.getInstance(\"MD5\");"
+  after: "MessageDigest.getInstance(\"SHA-256\");   // senhas: BCrypt.hashpw(senha, BCrypt.gensalt())"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
+- key: "crypto-cifra-fraca"
+  summary: "Use AES-GCM com IV aleatório e único por mensagem."
+  before: "Cipher.getInstance(\"AES/ECB/PKCS5Padding\");"
+  after: "Cipher.getInstance(\"AES/GCM/NoPadding\");   // IV de 12 bytes gerado com SecureRandom"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
+- key: "crypto-random-previsivel"
+  summary: "Para tokens, senhas e OTP use SecureRandom."
+  before: "new Random().nextInt();"
+  after: "new SecureRandom().nextInt();"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
+- key: "desserializacao-insegura"
+  summary: "Evite a desserialização nativa de dados não confiáveis; use JSON ou, se inevitável, um ObjectInputFilter restritivo."
+  before: "new ObjectInputStream(in).readObject();"
+  after: "ois.setObjectInputFilter(ObjectInputFilter.Config.createFilter(\"com.empresa.dto.*;!*\"));"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+
+- key: "sentinel-xxe-parser-xml"
+  summary: "Desligue DTD e entidades externas antes de usar o parser."
+  before: "DocumentBuilderFactory.newInstance()"
+  after: "f.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-spel-injection"
+  summary: "Use expressões fixas ou SimpleEvaluationContext; nunca monte a expressão com entrada do usuário."
+  before: "parser.parseExpression(entrada)"
+  after: "parser.parseExpression(\"nome\")  // fixa"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-open-redirect"
+  summary: "Valide o destino contra uma lista de caminhos internos permitidos."
+  before: "resp.sendRedirect(redirectUrl)"
+  after: "resp.sendRedirect(destinoPermitido(redirectUrl))"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-jackson-default-typing"
+  summary: "Use @JsonTypeInfo com um PolymorphicTypeValidator restrito."
+  before: "mapper.enableDefaultTyping()"
+  after: "mapper.activateDefaultTyping(validadorRestrito, ...)"
+  effort: M
+  regression-risk: HIGH
+
+- key: "sentinel-zip-slip"
+  summary: "Normalize o caminho e confira que continua dentro da pasta de destino."
+  before: "new File(destino, entry.getName())"
+  after: "Path alvo = destino.toPath().resolve(entry.getName()).normalize(); if (!alvo.startsWith(destino.toPath())) throw ..."
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-crossorigin-aberto"
+  summary: "Liste as origens permitidas."
+  before: "@CrossOrigin"
+  after: "@CrossOrigin(origins = \"https://app.exemplo.com\")"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-log-dado-sensivel"
+  summary: "Registre só um identificador ou mascare o valor."
+  before: "log.info(\"login\", senha)"
+  after: "log.info(\"login usuario={}\", idUsuario)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-senha-fixa-no-codigo"
+  summary: "Leia de variável de ambiente ou cofre e troque a credencial exposta."
+  before: "String dbPassword = \"admin123\";"
+  after: "String dbPassword = System.getenv(\"DB_PASSWORD\");"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-system-exit"
+  summary: "Lance uma exceção e deixe o framework tratar."
+  before: "System.exit(1);"
+  after: "throw new IllegalStateException(\"motivo\");"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-cookie-sem-secure"
+  summary: "Defina Secure, HttpOnly e SameSite no cookie."
+  before: "new Cookie(\"sid\", id)"
+  after: "c.setSecure(true); c.setHttpOnly(true);"
+  effort: S
+  regression-risk: LOW

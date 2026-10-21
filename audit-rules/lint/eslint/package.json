@@ -1,0 +1,22 @@
+{
+  "name": "sentinel-audit-eslint",
+  "private": true,
+  "description": "ESLint e plugins usados pelo EslintAnalyzer (instalados em /opt/eslint na imagem)",
+  "dependencies": {
+    "@html-eslint/eslint-plugin": "0.67.0",
+    "@html-eslint/parser": "0.67.0",
+    "@stylistic/eslint-plugin": "5.10.0",
+    "angular-eslint": "22.6.0",
+    "eslint": "9.39.5",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-no-unsanitized": "4.1.5",
+    "eslint-plugin-promise": "7.3.0",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-regexp": "3.3.1",
+    "eslint-plugin-security": "4.2.0",
+    "eslint-plugin-sonarjs": "4.2.2",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.0"
+  }
+}

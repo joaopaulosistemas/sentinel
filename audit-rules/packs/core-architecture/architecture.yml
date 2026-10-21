@@ -1,0 +1,69 @@
+# Política declarativa. Ative com um perfil: packs: [core-architecture]  (ver profiles/arquitetura-em-camadas.yml)
+layers:
+  - name: resource
+    paths: ["**/resource/**", "**/controller/**"]
+  - name: service
+    paths: ["**/service/**"]
+  - name: repository
+    paths: ["**/repository/**"]
+  - name: model
+    paths: ["**/model/**", "**/entity/**"]
+
+forbid:
+  - from: resource
+    to: repository
+    severity: high
+    message: "Resource/controller não acessa repositório: passe pela camada de serviço, onde ficam transação e regra de negócio."
+  - from: model
+    to: service
+    severity: high
+    message: "Entidades não conhecem serviços: inverta a dependência."
+  - from: repository
+    to: resource
+    severity: high
+    message: "Repositório não depende da camada web."
+
+conventions:
+  - id: endpoint-sem-autorizacao
+    title: "Endpoint sem controle de acesso declarado"
+    files: ["**/resource/**/*.java", "**/controller/**/*.java"]
+    exclude: ["**/*Test.java", "**/HealthResource.java"]
+    require: "@(RolesAllowed|Authenticated|PermitAll|PreAuthorize|Secured)"
+    severity: medium
+    category: security
+    message: "Declare o controle de acesso do endpoint (@RolesAllowed, @Authenticated ou @PermitAll de forma explícita)."
+  - id: sem-system-out
+    title: "System.out/err em código de produção"
+    files: ["**/*.java"]
+    exclude: ["**/*Test.java", "**/test/**", "**/cli/**"]
+    forbid: "System\\.(out|err)\\.print"
+    severity: low
+    category: observability
+    message: "Use o logger da aplicação em vez de System.out/err."
+
+required-files:
+  - path: README.md
+    severity: low
+    message: "Todo sistema precisa de um README com como rodar e como contribuir."
+  - path: .gitignore
+    severity: low
+
+components:
+  forbidden:
+    - dep: "log4j:log4j"
+      reason: "Log4j 1.x está descontinuado e tem vulnerabilidades sem correção; migre para SLF4J + Logback/Log4j 2."
+      severity: high
+    - dep: "commons-collections:commons-collections"
+      reason: "Versão 3.x tem gadget de desserialização conhecido; use commons-collections4."
+      severity: high
+    - dep: "moment"
+      reason: "Biblioteca em modo manutenção; prefira date-fns, Luxon ou Temporal."
+      severity: low
+  min-version:
+    - dep: "org.apache.logging.log4j:log4j-core"
+      version: ">=2.17.1"
+      reason: "Versões anteriores têm Log4Shell (CVE-2021-44228)."
+      severity: critical
+    - dep: "com.fasterxml.jackson.core:jackson-databind"
+      version: ">=2.13.0"
+      severity: medium

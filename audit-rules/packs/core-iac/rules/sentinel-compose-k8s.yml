@@ -1,0 +1,140 @@
+# Docker Compose e Kubernetes (YAML). Os arquivos de teste ficam em tests/sentinel-compose-k8s.yml.
+# Cada regra é restrita por nome de arquivo ou por chaves típicas do formato, para não disparar em outros YAML.
+rules:
+  - id: sentinel-compose-privileged
+    pattern-regex: '(?m)^[ \t]*privileged:[ \t]*true\b'
+    message: >
+      Contêiner privilegiado: tem quase os mesmos poderes do host. Remova; se precisa de uma capacidade específica,
+      use cap_add só com ela.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+
+  - id: sentinel-compose-docker-sock
+    pattern-regex: '/var/run/docker\.sock'
+    message: >
+      O socket do Docker montado no contêiner dá controle total do host a quem comprometer a aplicação. Evite;
+      se for indispensável, use um proxy do socket com permissões mínimas e somente leitura.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+
+  - id: sentinel-compose-network-host
+    pattern-regex: '(?m)^[ \t]*network_mode:[ \t]*["'']?host\b'
+    message: >
+      network_mode: host remove o isolamento de rede do contêiner (acessa todas as portas e interfaces do host).
+      Use a rede padrão e publique só as portas necessárias.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security
+
+  - id: sentinel-compose-segredo-em-env
+    pattern-regex: '(?mi)^[ \t]*-?[ \t]*\w*(?:PASSWORD|SECRET|API_?KEY|TOKEN)\w*[ \t]*[:=][ \t]*(?!\$\{)(?!["'']?\$)["'']?[A-Za-z0-9!@#%^&*_\-+.]{4,}["'']?[ \t]*$'
+    message: >
+      Possível segredo escrito direto no arquivo do Compose. Use variável do .env (${VARIAVEL}) ou secrets e
+      mantenha o .env fora do Git.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["docker-compose*.yml", "docker-compose*.yaml", "compose*.yml", "compose*.yaml"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+
+  - id: sentinel-k8s-host-network
+    pattern-regex: '(?m)^[ \t]*host(?:Network|PID|IPC):[ \t]*true\b'
+    message: >
+      O pod compartilha rede, PID ou IPC com o host (hostNetwork/hostPID/hostIPC), quebrando o isolamento. Remova
+      salvo agentes de infraestrutura que realmente precisem.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+
+  - id: sentinel-k8s-escalada-de-privilegio
+    pattern-regex: '(?m)^[ \t]*allowPrivilegeEscalation:[ \t]*true\b'
+    message: >
+      allowPrivilegeEscalation: true permite que um processo ganhe mais privilégios que o pai. Defina false no
+      securityContext do contêiner.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security
+      cwe: "CWE-269: Improper Privilege Management"
+
+  - id: sentinel-k8s-roda-como-root
+    pattern-regex: '(?m)^[ \t]*(?:runAsNonRoot:[ \t]*false|runAsUser:[ \t]*0)\b'
+    message: >
+      O contêiner roda como root (runAsUser: 0 ou runAsNonRoot: false). Use runAsNonRoot: true e um usuário sem
+      privilégios na imagem.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+
+  - id: sentinel-k8s-hostpath
+    pattern-regex: '(?m)^[ \t]*hostPath:[ \t]*$'
+    message: >
+      Volume hostPath monta uma pasta do nó dentro do pod: permite ler ou alterar arquivos do host. Prefira
+      PersistentVolumeClaim, emptyDir ou configMap/secret.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security
+      cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
+
+  - id: sentinel-k8s-capacidade-perigosa
+    pattern-regex: '(?m)(?:^[ \t]*|\{[ \t]*)add:[ \t]*(?:\[[^\]\n]*(?:ALL|SYS_ADMIN|NET_ADMIN|SYS_PTRACE)|\n(?:[ \t]*-[ \t]*\S+[ \t]*\n)*?[ \t]*-[ \t]*["'']?(?:ALL|SYS_ADMIN|NET_ADMIN|SYS_PTRACE)\b)'
+    message: >
+      Capability perigosa adicionada ao contêiner. Remova (drop: [ALL]) e adicione só a capacidade mínima
+      necessária.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+
+  - id: sentinel-k8s-imagem-latest
+    pattern-regex: '(?m)^[ \t]*image:[ \t]*["'']?[\w./\-]+:latest\b'
+    message: >
+      Imagem com a tag :latest num manifesto: o deploy deixa de ser reprodutível e o rollback não sabe voltar para
+      o que rodava. Fixe a versão (ou o digest).
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/.github/**"]
+    metadata:
+      category: security

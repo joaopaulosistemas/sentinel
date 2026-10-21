@@ -1,0 +1,12 @@
+package com.sentinel.audit.model;
+
+/**
+ * Categoria de um finding de auditoria.
+ */
+public enum Category {
+    SECURITY,
+    QUALITY,
+    ARCHITECTURE,
+    DEPENDENCY,
+    OBSERVABILITY
+}

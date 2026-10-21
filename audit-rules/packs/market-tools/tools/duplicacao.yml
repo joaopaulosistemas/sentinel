@@ -1,0 +1,9 @@
+# Código duplicado em Java, TypeScript/JavaScript, React, CSS/SCSS e HTML. Precisa de Node e de /opt/jscpd.
+- id: jscpd
+  name: "jscpd"
+  category: quality
+  applies-to: ["**/*.java", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.css", "**/*.scss", "**/*.html"]
+  stdout: true
+  command: [node, /opt/jscpd/sarif-jscpd.mjs]
+  severity-map: {warning: low, error: medium}
+  timeout-seconds: 900

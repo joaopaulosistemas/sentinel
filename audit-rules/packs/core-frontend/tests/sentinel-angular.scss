@@ -1,0 +1,6 @@
+.host {
+  // ruleid: sentinel-ng-deep
+  ::ng-deep .filho { color: red; }
+  // ok: sentinel-ng-deep
+  .filho { color: red; }
+}

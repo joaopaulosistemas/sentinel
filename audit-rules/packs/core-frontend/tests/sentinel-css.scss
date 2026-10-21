@@ -1,0 +1,10 @@
+// ruleid: sentinel-scss-import-obsoleto
+@import "variaveis";
+// ok: sentinel-scss-import-obsoleto
+@use "variaveis";
+.a {
+  // ruleid: sentinel-css-fonte-em-px
+  font-size: 14px;
+  // ok: sentinel-css-fonte-em-px
+  font-size: 0.875rem;
+}

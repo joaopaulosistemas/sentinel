@@ -1,0 +1,141 @@
+# Resiliência e boas práticas em integrações (HTTP, banco, concorrência): chamadas sem timeout travam threads
+# e propagam falha de um sistema para todos os que dependem dele.
+# Casos de teste: tests/sentinel-integracoes.{java,ts}
+rules:
+  - id: sentinel-int-httpclient-sem-timeout
+    patterns:
+      - pattern-either:
+          - pattern: HttpClient.newHttpClient()
+          - pattern: HttpClient.newBuilder(). ... .build()
+      - pattern-not: HttpClient.newBuilder(). ... .connectTimeout(...). ... .build()
+    message: >
+      HttpClient sem connectTimeout: se o destino não responder, a conexão espera indefinidamente e prende a thread.
+      Configure HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(N)).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-400: Uncontrolled Resource Consumption"
+
+  - id: sentinel-int-httprequest-sem-timeout
+    patterns:
+      - pattern: HttpRequest.newBuilder(...). ... .build()
+      - pattern-not: HttpRequest.newBuilder(...). ... .timeout(...). ... .build()
+    message: >
+      HttpRequest sem timeout: a espera pela resposta é ilimitada. Defina .timeout(Duration.ofSeconds(N)) em cada
+      requisição.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-400: Uncontrolled Resource Consumption"
+
+  - id: sentinel-int-resttemplate-sem-timeout
+    pattern: new RestTemplate()
+    message: >
+      RestTemplate criado sem configuração usa timeouts infinitos. Construa-o com RestTemplateBuilder
+      (setConnectTimeout/setReadTimeout) ou migre para o WebClient/RestClient com timeout.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-400: Uncontrolled Resource Consumption"
+
+  - id: sentinel-int-urlconnection-sem-timeout
+    patterns:
+      - pattern: (HttpURLConnection) $U.openConnection()
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $C.setConnectTimeout(...);
+            ...
+          }
+    message: >
+      HttpURLConnection sem setConnectTimeout/setReadTimeout aguarda sem limite. Defina os dois antes de conectar.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-400: Uncontrolled Resource Consumption"
+
+  - id: sentinel-int-jdbc-driver-manager
+    pattern: DriverManager.getConnection(...)
+    message: >
+      Conexão aberta direto pelo DriverManager, sem pool: cada chamada paga o custo de conectar e o número de
+      conexões não é limitado. Use o DataSource gerenciado pelo container (com pool).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: architecture
+
+  - id: sentinel-int-pool-ilimitado
+    pattern-either:
+      - pattern: Executors.newCachedThreadPool(...)
+      - pattern: Executors.newScheduledThreadPool(...)
+    message: >
+      Pool sem limite (newCachedThreadPool cria threads sem teto sob carga) ou criado à mão. Prefira um pool
+      dimensionado, ou virtual threads (Executors.newVirtualThreadPerTaskExecutor()).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-int-http-sem-tls
+    pattern-regex: '["''`]http://(?!www\.w3\.org|apache\.org|java\.sun\.com|xmlns\.jcp\.org|json-schema\.org|adaptivecards\.io|schemas\.|www\.springframework\.org|localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|host\.docker\.internal|[\w.-]*\.(local|internal|svc|cluster\.local)\b)[\w.-]+'
+    message: >
+      URL http:// (sem TLS) fixa no código: dados e credenciais trafegam em texto claro. Use https:// e leia o
+      endereço da configuração do ambiente.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java", "*.ts", "*.tsx"]
+      exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+
+  - id: sentinel-int-fetch-sem-timeout
+    patterns:
+      - pattern-either:
+          - pattern: fetch($U)
+          - pattern: fetch($U, $O)
+      - pattern-not: |
+          fetch($U, {..., signal: $S, ...})
+    message: >
+      fetch sem signal: não há como cancelar nem limitar o tempo da chamada. Use AbortSignal.timeout(ms)
+      (ou um AbortController) em { signal }.
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-400: Uncontrolled Resource Consumption"
+
+  - id: sentinel-int-axios-sem-timeout
+    patterns:
+      - pattern: |
+          axios.create({...})
+      - pattern-not: |
+          axios.create({..., timeout: $T, ...})
+    message: >
+      Instância do axios sem timeout (o padrão é ilimitado). Configure axios.create({ timeout: ... }).
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-400: Uncontrolled Resource Consumption"

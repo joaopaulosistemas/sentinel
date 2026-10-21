@@ -1,0 +1,8 @@
+<!-- ruleid: sentinel-ng-ngfor-sem-trackby -->
+<li *ngFor="let c of contas">{{ c.nome }}</li>
+<!-- ok: sentinel-ng-ngfor-sem-trackby -->
+<li *ngFor="let c of contas; trackBy: porId">{{ c.nome }}</li>
+<!-- ruleid: sentinel-ng-chamada-no-template -->
+<span>{{ calcularTotal(c) }}</span>
+<!-- ok: sentinel-ng-chamada-no-template -->
+<span>{{ total }}</span>

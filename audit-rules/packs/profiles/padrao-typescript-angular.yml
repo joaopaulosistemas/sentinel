@@ -1,0 +1,11 @@
+id: padrao-typescript-angular
+name: "Padrão TypeScript / Angular (clean code)"
+description: "Pacotes padrão mais o ts-clean-code, com os limites do padrão: método até 50 linhas, complexidade 10, aninhamento 3 e arquivo até 500 linhas. Para o lint de estrutura e nomes, aponte ESLINT_CONFIG para /opt/eslint/eslint.padrao-ts.config.mjs."
+packs: [core-security, core-iac, core-spring, core-quality, core-frontend, market-tools, ts-clean-code]
+rules:
+  "sentinel-tsp-*": {severity: low}
+thresholds:
+  max-function-lines: 50
+  max-complexity: 10
+  max-nesting: 3
+  max-component-lines: 500

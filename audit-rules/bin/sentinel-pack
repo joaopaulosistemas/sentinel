@@ -1,0 +1,11 @@
+#!/bin/sh
+# Ferramenta de linha de comando para autores de pacotes de regras (ver README, "Pacotes de regras").
+# Dentro da imagem da API:   sentinel-pack validate /app/audit-rules/packs
+# Fora dela, aponte SENTINEL_HOME para a pasta do quarkus-app (target/quarkus-app).
+set -eu
+HOME_DIR="${SENTINEL_HOME:-/app}"
+if [ ! -d "$HOME_DIR/app" ] || [ ! -d "$HOME_DIR/lib/main" ]; then
+  echo "Não encontrei $HOME_DIR/app e $HOME_DIR/lib/main. Defina SENTINEL_HOME como a pasta quarkus-app." >&2
+  exit 2
+fi
+exec java -cp "$HOME_DIR/app/*:$HOME_DIR/lib/main/*" com.sentinel.audit.pack.PackTool "$@"

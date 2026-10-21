@@ -1,0 +1,119 @@
+# Injeção (OWASP A03:2021). Usa taint mode: o dado "sujo" é qualquer string montada por
+# concatenação com uma variável, mesmo que a query seja montada em outra linha antes de ser usada.
+rules:
+  - id: sentinel-sql-injection
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: '"..." + $X'
+              - pattern: '$X + "..."'
+          - pattern-not: '"..." + "..."'
+      - patterns:
+          - pattern: String.format($FMT, ...)
+          - metavariable-regex:
+              metavariable: $FMT
+              regex: (?is).*\b(select|insert|update|delete|drop|where)\b.*
+    pattern-sinks:
+      - patterns:
+          - pattern: $OBJ.$M($ARG, ...)
+          - focus-metavariable: $ARG
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(executeQuery|executeUpdate|execute|executeLargeUpdate|prepareStatement|prepareCall|createQuery|createNativeQuery|addBatch)$
+    message: >
+      Possível SQL Injection (OWASP A03): a consulta é montada por concatenação ou String.format
+      com valores variáveis. Use PreparedStatement / parâmetros nomeados (?) em vez de concatenar.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-command-injection
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: '"..." + $X'
+              - pattern: '$X + "..."'
+          - pattern-not: '"..." + "..."'
+    pattern-sinks:
+      - pattern-either:
+          - pattern: Runtime.getRuntime().exec($CMD, ...)
+          - pattern: new ProcessBuilder($CMD, ...)
+    message: >
+      Possível Command Injection (OWASP A03): comando do sistema operacional montado com valor variável.
+      Valide contra uma lista de permitidos e passe argumentos como lista, nunca como texto concatenado.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-command-injection-variable
+    patterns:
+      - pattern-either:
+          - pattern: Runtime.getRuntime().exec($CMD)
+          - pattern: new ProcessBuilder($CMD)
+      - pattern-not: Runtime.getRuntime().exec("...")
+      - pattern-not: Runtime.getRuntime().exec(new String[]{...})
+      - pattern-not: new ProcessBuilder("...")
+      - metavariable-regex:
+          metavariable: $CMD
+          regex: ^[A-Za-z_][A-Za-z0-9_.()]*$
+    message: >
+      Possível Command Injection (OWASP A03): '$CMD' é passado direto para execução de processo.
+      Garanta que o valor não vem de entrada do usuário ou valide-o contra uma lista de permitidos.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-ldap-injection
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: '"..." + $X'
+              - pattern: '$X + "..."'
+          - pattern-not: '"..." + "..."'
+    pattern-sinks:
+      - patterns:
+          - pattern: $CTX.search($BASE, $FILTER, ...)
+          - focus-metavariable: $FILTER
+    message: >
+      Possível LDAP Injection (OWASP A03): filtro LDAP montado por concatenação.
+      Escape os valores (RFC 4515) ou use filtros parametrizados do JNDI.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-xpath-injection
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: '"..." + $X'
+              - pattern: '$X + "..."'
+          - pattern-not: '"..." + "..."'
+    pattern-sinks:
+      - patterns:
+          - pattern: $XPATH.evaluate($EXPR, ...)
+          - focus-metavariable: $EXPR
+    message: >
+      Possível XPath Injection (OWASP A03): expressão XPath montada por concatenação.
+      Use XPathVariableResolver (consultas parametrizadas) em vez de concatenar valores.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-643: Improper Neutralization of Data within XPath Expressions"
+      owasp: A03:2021 - Injection

@@ -1,0 +1,129 @@
+# OWASP API Security Top 10 e configurações inseguras comuns em serviços Java.
+rules:
+  - id: sentinel-api-ssrf
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., @$A(...) String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $A
+              regex: ^(QueryParam|PathParam|FormParam|HeaderParam|RequestParam)$
+          - focus-metavariable: $P
+    pattern-sinks:
+      - pattern: new java.net.URL(...)
+      - pattern: java.net.URI.create(...)
+      - pattern: HttpRequest.newBuilder(...)
+    message: >
+      Possível SSRF (OWASP API7/A10): uma URL é construída a partir de parâmetro da requisição.
+      Valide o host contra uma lista de permissão e bloqueie endereços internos (127.0.0.1, 10.x, 169.254.x).
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp: A10:2021 - Server-Side Request Forgery
+
+  - id: sentinel-api-path-traversal
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., @$A(...) String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $A
+              regex: ^(QueryParam|PathParam|FormParam|HeaderParam)$
+          - focus-metavariable: $P
+    pattern-sinks:
+      - pattern: new java.io.File(...)
+      - pattern: java.nio.file.Paths.get(...)
+      - pattern: java.nio.file.Path.of(...)
+      - pattern: new java.io.FileInputStream(...)
+    pattern-sanitizers:
+      - pattern: $X.normalize()
+      - pattern: $X.getFileName()
+    message: >
+      Possível Path Traversal: um parâmetro da requisição forma um caminho de arquivo. Normalize o caminho,
+      confira que continua dentro do diretório permitido (startsWith) ou use apenas o nome do arquivo.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp: A01:2021 - Broken Access Control
+
+  - id: sentinel-api-cors-wildcard
+    pattern-either:
+      - pattern: $R.header("Access-Control-Allow-Origin", "*")
+      - pattern: $R.addHeader("Access-Control-Allow-Origin", "*")
+      - pattern: $R.setHeader("Access-Control-Allow-Origin", "*")
+      - pattern: '@CrossOrigin(origins = "*")'
+      - pattern: '@CrossOrigin("*")'
+    message: >
+      CORS aberto para qualquer origem (OWASP API8 - Security Misconfiguration). Liste as origens permitidas;
+      com credenciais, o wildcard sequer é aceito pelos navegadores.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-942: Permissive Cross-domain Policy with Untrusted Domains"
+      owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-api-csrf-disabled
+    pattern-either:
+      - pattern: $H.csrf().disable()
+      - pattern: $H.csrf(AbstractHttpConfigurer::disable)
+    message: >
+      Proteção CSRF desligada. Aceitável só para APIs puramente stateless com token no header (sem cookies de sessão).
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-352: Cross-Site Request Forgery (CSRF)"
+      owasp: A01:2021 - Broken Access Control
+
+  - id: sentinel-api-tls-validation-disabled
+    pattern-either:
+      - pattern: |
+          new X509TrustManager() { ... public void checkServerTrusted(...) { } ... }
+      - pattern: |
+          new HostnameVerifier() { ... public boolean verify(...) { return true; } ... }
+      - pattern: $B.hostnameVerifier((...) -> true)
+      - pattern: HttpsURLConnection.setDefaultHostnameVerifier((...) -> true)
+    message: >
+      Validação de certificado/hostname TLS desativada: abre espaço para ataque man-in-the-middle.
+      Remova o TrustManager/HostnameVerifier permissivo e configure o truststore correto.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-295: Improper Certificate Validation"
+      owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-api-jwt-sem-verificacao
+    pattern-either:
+      - pattern: Jwts.parser().parse(...)
+      - pattern: JWT.decode(...)
+    message: >
+      JWT lido sem verificar a assinatura (parse/decode). Use parseClaimsJws / JWT.require(...).build().verify(...)
+      para garantir que o token não foi forjado.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-api-jwt-chave-fixa
+    pattern-either:
+      - pattern: $P.setSigningKey("...")
+      - pattern: Algorithm.HMAC256("...")
+      - pattern: Keys.hmacShaKeyFor("...".getBytes(...))
+    message: >
+      Chave de assinatura JWT escrita no código. Leia de variável de ambiente ou cofre de segredos e rotacione.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures

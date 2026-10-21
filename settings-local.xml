@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  settings.xml local para desenvolvimento fora da rede Sicoob.
+  Necessário pois o settings.xml do ambiente aponta para o Nexus interno.
+
+  WSL2 / Linux (validado ✅ — forma recomendada):
+    Pré-requisitos:
+      - Java 21:    sudo apt install openjdk-21-jdk
+      - Maven 3.9.6: instalar manualmente (NÃO usar apt install maven)
+          cd ~ && curl -O https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.6/apache-maven-3.9.6-bin.tar.gz
+          tar -xzf apache-maven-3.9.6-bin.tar.gz
+          echo 'export PATH="$HOME/apache-maven-3.9.6/bin:$PATH"' >> ~/.bashrc
+      - PostgreSQL 18 nativo: sudo apt install postgresql-18
+          (NÃO usar container Podman — rede isolada não é acessível pelo host WSL2)
+
+    Comando:
+      export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+      export PATH="$JAVA_HOME/bin:$PATH"
+      mvn quarkus:dev -s settings-local.xml -f audit-api/pom.xml
+
+  Windows (PowerShell):
+    $env:JAVA_HOME = "C:\java\jdk-21_windows-x64_bin\jdk-21.0.12.1"
+    $env:PATH = "$env:JAVA_HOME\bin;C:\maven396\apache-maven-3.9.6\bin;" + $env:PATH
+    mvn quarkus:dev -s settings-local.xml -f audit-api/pom.xml
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <mirrors>
+    <mirror>
+      <id>central-mirror</id>
+      <mirrorOf>*</mirrorOf>
+      <url>https://repo1.maven.org/maven2</url>
+    </mirror>
+  </mirrors>
+
+</settings>

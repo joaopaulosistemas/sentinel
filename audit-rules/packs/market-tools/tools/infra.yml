@@ -1,0 +1,37 @@
+# Docker e Kubernetes (e GitHub Actions, que o Checkov cobre junto).
+- id: checkov
+  name: "Checkov"
+  category: security
+  applies-to: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile",
+               "**/.github/workflows/*.yml", "**/.github/workflows/*.yaml",
+               "**/k8s/**/*.yaml", "**/k8s/**/*.yml", "**/kubernetes/**/*.yaml", "**/kubernetes/**/*.yml"]
+  command: [checkov, -d, "{project}", --framework, dockerfile, kubernetes, github_actions, -o, cli, -o, sarif, --output-file-path, "console,{output}", --quiet, --skip-download]
+  severity-map: {error: medium, warning: low, note: low}
+  timeout-seconds: 900
+
+- id: hadolint
+  name: "Hadolint"
+  category: quality
+  applies-to: ["**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile"]
+  stdout: true
+  command: [hadolint, -f, sarif, "{files}"]
+  timeout-seconds: 300
+
+- id: kube-linter
+  name: "kube-linter"
+  category: security
+  applies-to: ["**/k8s/**/*.yaml", "**/k8s/**/*.yml", "**/kubernetes/**/*.yaml", "**/kubernetes/**/*.yml",
+               "**/manifests/**/*.yaml", "**/manifests/**/*.yml"]
+  stdout: true
+  command: [kube-linter, lint, "{files}", --format, sarif]
+  timeout-seconds: 300
+
+- id: kube-score
+  name: "kube-score"
+  category: quality
+  applies-to: ["**/k8s/**/*.yaml", "**/k8s/**/*.yml", "**/kubernetes/**/*.yaml", "**/kubernetes/**/*.yml",
+               "**/manifests/**/*.yaml", "**/manifests/**/*.yml"]
+  stdout: true
+  command: [kube-score, score, -o, sarif, "{files}"]
+  severity-map: {error: medium, warning: low, note: low}
+  timeout-seconds: 300

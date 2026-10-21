@@ -1,0 +1,103 @@
+{
+  "formatVersion": 0,
+  "pmdVersion": "7.7.0",
+  "timestamp": "2026-10-20T02:55:08.297-03:00",
+  "files": [
+    {
+      "filename": "/proj/src/main/java/x/Bad.java",
+      "violations": [
+        {
+          "beginline": 5,
+          "begincolumn": 17,
+          "endline": 5,
+          "endcolumn": 23,
+          "description": "Avoid unused private fields such as \u0027unused\u0027.",
+          "rule": "UnusedPrivateField",
+          "ruleset": "Best Practices",
+          "priority": 3,
+          "externalInfoUrl": "https://docs.pmd-code.org/pmd-doc-7.7.0/pmd_rules_java_bestpractices.html#unusedprivatefield"
+        },
+        {
+          "beginline": 7,
+          "begincolumn": 29,
+          "endline": 7,
+          "endcolumn": 52,
+          "description": "Avoid empty catch blocks",
+          "rule": "EmptyCatchBlock",
+          "ruleset": "Error Prone",
+          "priority": 3,
+          "externalInfoUrl": "https://docs.pmd-code.org/pmd-doc-7.7.0/pmd_rules_java_errorprone.html#emptycatchblock"
+        },
+        {
+          "beginline": 8,
+          "begincolumn": 29,
+          "endline": 8,
+          "endcolumn": 37,
+          "description": "Use equals() to compare object references.",
+          "rule": "CompareObjectsWithEquals",
+          "ruleset": "Error Prone",
+          "priority": 3,
+          "externalInfoUrl": "https://docs.pmd-code.org/pmd-doc-7.7.0/pmd_rules_java_errorprone.html#compareobjectswithequals"
+        },
+        {
+          "beginline": 8,
+          "begincolumn": 29,
+          "endline": 8,
+          "endcolumn": 37,
+          "description": "Use equals() to compare strings instead of \u0027\u003d\u003d\u0027 or \u0027!\u003d\u0027",
+          "rule": "UseEqualsToCompareStrings",
+          "ruleset": "Error Prone",
+          "priority": 3,
+          "externalInfoUrl": "https://docs.pmd-code.org/pmd-doc-7.7.0/pmd_rules_java_errorprone.html#useequalstocomparestrings"
+        },
+        {
+          "beginline": 8,
+          "begincolumn": 34,
+          "endline": 8,
+          "endcolumn": 37,
+          "description": "Avoid using literals in if statements",
+          "rule": "AvoidLiteralsInIfCondition",
+          "ruleset": "Error Prone",
+          "priority": 3,
+          "externalInfoUrl": "https://docs.pmd-code.org/pmd-doc-7.7.0/pmd_rules_java_errorprone.html#avoidliteralsinifcondition"
+        },
+        {
+          "beginline": 8,
+          "begincolumn": 41,
+          "endline": 8,
+          "endcolumn": 47,
+          "description": "Usage of System.out/err",
+          "rule": "SystemPrintln",
+          "ruleset": "Best Practices",
+          "priority": 2,
+          "externalInfoUrl": "https://docs.pmd-code.org/pmd-doc-7.7.0/pmd_rules_java_bestpractices.html#systemprintln"
+        },
+        {
+          "beginline": 9,
+          "begincolumn": 13,
+          "endline": 9,
+          "endcolumn": 14,
+          "description": "Avoid unused local variables such as \u0027x\u0027.",
+          "rule": "UnusedLocalVariable",
+          "ruleset": "Best Practices",
+          "priority": 3,
+          "externalInfoUrl": "https://docs.pmd-code.org/pmd-doc-7.7.0/pmd_rules_java_bestpractices.html#unusedlocalvariable"
+        },
+        {
+          "beginline": 11,
+          "begincolumn": 18,
+          "endline": 11,
+          "endcolumn": 29,
+          "description": "Avoid unused private methods such as \u0027neverCalled()\u0027.",
+          "rule": "UnusedPrivateMethod",
+          "ruleset": "Best Practices",
+          "priority": 3,
+          "externalInfoUrl": "https://docs.pmd-code.org/pmd-doc-7.7.0/pmd_rules_java_bestpractices.html#unusedprivatemethod"
+        }
+      ]
+    }
+  ],
+  "suppressedViolations": [],
+  "processingErrors": [],
+  "configurationErrors": []
+}

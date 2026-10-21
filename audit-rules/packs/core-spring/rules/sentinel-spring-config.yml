@@ -1,0 +1,95 @@
+# Configuração do Spring Boot (application*.properties / yml). Casos de teste: tests/sentinel-spring-config.properties
+rules:
+  - id: sentinel-spring-actuator-exposto
+    pattern-regex: '(?m)^[ \t]*management\.endpoints\.web\.exposure\.include[ \t]*[=:][ \t]*["'']?\*'
+    message: >
+      Todos os endpoints do Actuator estão expostos pela web (inclui env, heapdump, beans). Exponha só o necessário
+      (health, info, metrics) e proteja o restante com autenticação.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-200: Exposure of Sensitive Information"
+
+  - id: sentinel-spring-actuator-exposto-yaml
+    pattern-regex: '(?m)^[ \t]*exposure:[ \t]*\n[ \t]+include:[ \t]*["'']?\*'
+    message: >
+      Todos os endpoints do Actuator estão expostos pela web (inclui env, heapdump, beans). Exponha só o necessário
+      (health, info, metrics) e proteja o restante com autenticação.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-200: Exposure of Sensitive Information"
+
+  - id: sentinel-spring-h2-console
+    pattern-regex: '(?m)^[ \t]*spring\.h2\.console\.enabled[ \t]*=[ \t]*true'
+    message: >
+      Console do H2 habilitado: dá acesso ao banco pelo navegador. Deixe só em perfil de desenvolvimento local.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-489: Active Debug Code"
+
+  - id: sentinel-spring-senha-em-properties
+    pattern-regex: '(?m)^[ \t]*(?:spring\.datasource\.password|spring\.security\.user\.password|[\w.\-]*(?:password|secret|api-key|apikey))[ \t]*=[ \t]*(?!\$\{)(?![ \t]*$)[^\s$#]{3,}'
+    message: >
+      Credencial escrita direto no arquivo de configuração. Use variável de ambiente (${DB_PASSWORD}), Spring Cloud
+      Config ou um cofre de segredos, e troque a credencial que já foi versionada.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+
+  - id: sentinel-spring-ddl-auto-perigoso
+    pattern-regex: '(?m)^[ \t]*spring\.jpa\.hibernate\.ddl-auto[ \t]*=[ \t]*(?:update|create|create-drop)\b'
+    message: >
+      O Hibernate altera ou recria o esquema do banco na subida (ddl-auto). Em produção isso perde dados ou deixa o
+      esquema divergir. Use none/validate e controle o esquema com Flyway ou Liquibase.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-spring-open-in-view
+    pattern-regex: '(?m)^[ \t]*spring\.jpa\.open-in-view[ \t]*=[ \t]*true\b'
+    message: >
+      open-in-view mantém a conexão com o banco aberta durante a renderização da resposta e esconde consultas
+      preguiçosas (N+1) fora da camada de serviço. Prefira false e carregue o necessário no serviço.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-spring-show-sql
+    pattern-regex: '(?m)^[ \t]*spring\.jpa\.show-sql[ \t]*=[ \t]*true\b'
+    message: >
+      show-sql escreve o SQL no console (sem parâmetros e sem nível de log). Use o logger org.hibernate.SQL em DEBUG
+      no perfil de desenvolvimento.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**"]
+    metadata:
+      category: quality

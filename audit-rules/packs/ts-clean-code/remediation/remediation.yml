@@ -1,0 +1,48 @@
+- key: "sentinel-tsp-privado-sem-underscore"
+  summary: "Renomeie o membro privado com underscore no início e atualize os usos dentro da classe (o editor faz isso com F2)."
+  before: "private idInstituicao: number;"
+  after: "private _idInstituicao: number;"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-tsp-publico-com-underscore"
+  summary: "Tire o underscore se o membro é público, ou troque para 'private' se só a classe usa."
+  before: "public _contaForm: FormControl;"
+  after: "public contaForm: FormControl;"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-tsp-metodo-sem-modificador"
+  summary: "Declare 'public' (usado pelo template ou por outras classes) ou 'private' com underscore (uso interno)."
+  before: "getContas(): void {"
+  after: "public getContas(): void {"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-tsp-enum-sem-sufixo"
+  summary: "Renomeie o enum para o singular terminado em 'Enum' e use MAIÚSCULAS_COM_UNDERLINE nos membros."
+  before: "export enum TipoPessoa { PESSOA_FISICA }"
+  after: "export enum TipoPessoaEnum { PESSOA_FISICA }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-tsp-interface-sem-padrao"
+  summary: "Use o prefixo 'I' (IConta) ou o sufixo 'Interface' (ContaInterface), o mesmo em todo o projeto."
+  before: "export interface Status { idGrupo: number; }"
+  after: "export interface StatusInterface { idGrupo: number; }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-tsp-ciclo-de-vida-com-logica"
+  summary: "Mova o código do hook para métodos privados com nome que diga o que fazem; o hook só chama esses métodos."
+  before: "public ngOnInit(): void { this.contaForm = new FormControl(null); this._getUsuarioLogado(); }"
+  after: "public ngOnInit(): void { this._initForm(); this._getUsuarioLogado(); }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-tsp-abreviacao"
+  summary: "Troque a abreviação pelo termo do domínio por extenso (num→numero, cod→codigo, desc→descricao) e use o mesmo nome em todo o sistema."
+  before: "filter.numContaCorrente = value;"
+  after: "filter.numeroContaCorrente = value;"
+  effort: M
+  regression-risk: MEDIUM

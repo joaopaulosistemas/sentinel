@@ -1,0 +1,18 @@
+# Imagem final sem USER não-root. O achado aponta a última linha FROM (o estágio que vai para produção);
+# USER de estágios anteriores do build não conta. Fica em arquivo próprio porque o 'semgrep --test' exige que toda
+# regra que dispara no arquivo de teste esteja anotada, então o teste dela é um Dockerfile sem USER.
+rules:
+  - id: sentinel-docker-sem-user
+    pattern-regex: (?ms)^FROM\b[^\n]*(?=\n|\z)(?!.*?^FROM\b)(?!.*?^\s*USER\s+(?!root\b)\S+)
+    message: >
+      O Dockerfile não define USER não-root: o processo roda como root dentro do container. Crie e use um usuário comum.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include:
+        - "*Dockerfile"
+        - "*Dockerfile.*"
+        - "*.dockerfile"
+    metadata:
+      category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"

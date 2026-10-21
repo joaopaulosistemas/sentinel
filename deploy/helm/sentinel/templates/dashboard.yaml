@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-dashboard
+spec:
+  replicas: {{ .Values.dashboard.replicas }}
+  selector:
+    matchLabels: { app: {{ .Release.Name }}-dashboard }
+  template:
+    metadata:
+      labels: { app: {{ .Release.Name }}-dashboard }
+    spec:
+      containers:
+        - name: dashboard
+          image: {{ .Values.dashboard.image | quote }}
+          ports:
+            - containerPort: 80
+          env:
+            - { name: API_UPSTREAM, value: "http://{{ .Release.Name }}-api:8080" }
+            - { name: API_KEY, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: API_KEY, optional: true } } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-dashboard
+spec:
+  selector: { app: {{ .Release.Name }}-dashboard }
+  ports:
+    - { port: 80, targetPort: 80 }

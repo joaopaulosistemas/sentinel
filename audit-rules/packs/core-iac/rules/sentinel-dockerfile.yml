@@ -1,0 +1,55 @@
+# Boas práticas e riscos em Dockerfiles.
+rules:
+  - id: sentinel-docker-imagem-latest
+    pattern: FROM $IMAGE:latest
+    message: >
+      Imagem base com a tag ':latest': o build deixa de ser reprodutível e pode trazer vulnerabilidades novas sem aviso.
+      Fixe uma versão (ou o digest sha256).
+    severity: WARNING
+    languages: [dockerfile]
+    metadata:
+      category: security
+      cwe: "CWE-1104: Use of Unmaintained Third Party Components"
+
+  - id: sentinel-docker-add-url
+    pattern-regex: (?im)^\s*ADD\s+(--\S+\s+)*https?://
+    message: >
+      ADD baixando arquivo remoto sem verificação de integridade. Use curl/wget com checagem de checksum (sha256sum -c).
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include:
+        - "*Dockerfile*"
+        - "*.dockerfile"
+    metadata:
+      category: security
+      cwe: "CWE-494: Download of Code Without Integrity Check"
+
+  - id: sentinel-docker-curl-pipe-shell
+    pattern-regex: (?i)^\s*RUN\s+.*\b(curl|wget)\b[^\n|]*\|\s*(sudo\s+)?(ba)?sh\b
+    message: >
+      Script remoto executado direto no shell (curl | sh). Baixe, confira o checksum e só então execute.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include:
+        - "*Dockerfile*"
+        - "*.dockerfile"
+    metadata:
+      category: security
+      cwe: "CWE-494: Download of Code Without Integrity Check"
+
+  - id: sentinel-docker-segredo-em-env
+    pattern-regex: (?i)^\s*(ENV|ARG)\s+\w*(PASSWORD|SECRET|TOKEN|API_?KEY)\w*(\s*=\s*|\s+)["']?[^\s$"'][^\s"']{3,}
+    message: >
+      Segredo definido em ENV/ARG com valor fixo: fica gravado nas camadas da imagem. Injete em tempo de execução
+      (secrets do orquestrador) ou use BuildKit --mount=type=secret.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include:
+        - "*Dockerfile*"
+        - "*.dockerfile"
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"

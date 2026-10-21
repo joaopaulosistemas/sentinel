@@ -1,0 +1,35 @@
+- name: java-catch-vazio
+  rules:
+    - "pmd-emptycatchblock"
+    - "sentinel-java-catch-vazio"
+  max-lines: 2
+
+- name: java-string-igualdade
+  rules:
+    - "pmd-useequalstocomparestrings"
+    - "sentinel-java-string-igualdade-literal"
+  max-lines: 1
+
+- name: ts-any-explicito
+  rules:
+    - "eslint-@typescript-eslint/no-explicit-any"
+    - "sentinel-ts-any-explicito"
+  max-lines: 1
+
+- name: ts-var
+  rules:
+    - "eslint-no-var"
+    - "sentinel-ts-var"
+  max-lines: 1
+
+- name: ts-igualdade-frouxa
+  rules:
+    - "eslint-eqeqeq"
+    - "sentinel-ts-igualdade-frouxa"
+  max-lines: 1
+
+- name: ts-console-log
+  rules:
+    - "eslint-no-console"
+    - "sentinel-ts-console-log"
+  max-lines: 1

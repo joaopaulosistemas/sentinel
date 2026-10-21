@@ -1,0 +1,224 @@
+# Clean code, anti-padrões e boas práticas em Java. Cada regra tem casos positivos e negativos em
+# tests/sentinel-java-clean-code.java (rode: semgrep --test --config rules tests).
+# Fora daqui de propósito: System.out/printStackTrace e controller acessando repositório, que o ArchitectureAnalyzer
+# (audit-api) já detecta; repetir contaria o mesmo problema duas vezes no score.
+rules:
+  - id: sentinel-java-catch-vazio
+    pattern-regex: 'catch\s*\([^)]*\)\s*\{\s*\}'
+    message: >
+      Bloco catch totalmente vazio engole a falha e esconde a causa de problemas em produção.
+      Registre no log, trate de fato ou propague a exceção. Se ignorar for intencional, diga o motivo em um
+      comentário dentro do bloco (e nomeie a variável 'ignored').
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-390: Detection of Error Condition Without Action"
+
+  - id: sentinel-java-catch-throwable
+    pattern-either:
+      - pattern: |
+          try { ... } catch (Throwable $E) { ... }
+      - pattern: |
+          try { ... } catch (Error $E) { ... }
+    message: >
+      Capturar Throwable/Error também captura falhas fatais da JVM (OutOfMemoryError, StackOverflowError).
+      Capture a exceção específica que você sabe tratar.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-java-retorna-null-colecao
+    patterns:
+      - pattern-either:
+          - pattern: |
+              List<$T> $M(...) { ... return null; ... }
+          - pattern: |
+              Set<$T> $M(...) { ... return null; ... }
+          - pattern: |
+              Map<$K, $V> $M(...) { ... return null; ... }
+          - pattern: |
+              Collection<$T> $M(...) { ... return null; ... }
+    message: >
+      Método que devolve coleção não deve devolver null: obriga todo chamador a checar e gera NullPointerException.
+      Devolva coleção vazia (List.of(), Collections.emptyList()).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-java-autowired-campo
+    patterns:
+      - pattern-inside: |
+          class $C { ... }
+      - pattern-either:
+          - pattern: |
+              @Autowired
+              $T $F;
+          - pattern: |
+              @Autowired
+              private $T $F;
+    message: >
+      Injeção por campo (@Autowired) esconde as dependências, impede campos final e dificulta testes.
+      Prefira injeção por construtor.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-java-estado-estatico-mutavel
+    patterns:
+      - pattern: public static $T $F = ...;
+      - pattern-not: public static final $T $F = ...;
+    message: >
+      Campo público estático e não final é estado global mutável: qualquer parte do sistema altera, o comportamento
+      depende da ordem de execução e não é seguro entre threads. Torne final ou encapsule.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-1327: Binding to an Unrestricted IP Address"
+
+  - id: sentinel-java-string-igualdade-literal
+    pattern-either:
+      - pattern: $X == "..."
+      - pattern: $X != "..."
+    message: >
+      Strings comparadas com == / != comparam referência, não conteúdo: o resultado varia conforme a origem do valor.
+      Use "literal".equals(valor) (que também evita NullPointerException).
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: quality
+      cwe: "CWE-597: Use of Wrong Operator in String Comparison"
+
+  - id: sentinel-java-transactional-privado
+    pattern: |
+      @Transactional
+      private $T $M(...) { ... }
+    message: >
+      @Transactional em método private é ignorado: o proxy do container só intercepta chamadas externas a métodos
+      não privados. A transação não existe. Torne o método acessível ao proxy ou mova para outro bean.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: quality
+
+  - id: sentinel-java-log-concatenado
+    patterns:
+      - pattern-either:
+          - pattern: $L.$LVL($A + $B)
+          - pattern: $L.$LVL($A + $B, $E)
+      - metavariable-regex:
+          metavariable: $L
+          regex: ^(log|LOG|logger|LOGGER|LOGGER_)$
+      - metavariable-regex:
+          metavariable: $LVL
+          regex: ^(trace|debug|info|warn|error)$
+    message: >
+      Mensagem de log montada com concatenação é calculada mesmo com o nível desligado e dificulta agrupar eventos.
+      Use mensagem parametrizada: LOG.infof("Auditoria %d concluída", id) ou log.info("Auditoria {}", id).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-java-thread-manual
+    pattern: new Thread(...)
+    message: >
+      Criar Thread manualmente não limita concorrência nem trata falhas. Use um ExecutorService
+      (ou virtual threads via Executors.newVirtualThreadPerTaskExecutor()) gerenciado pelo container.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-java-service-locator
+    patterns:
+      - pattern-either:
+          - pattern: $CTX.getBean(...)
+          - pattern: CDI.current().select(...)
+          - pattern: Arc.container().instance(...)
+      - metavariable-regex:
+          metavariable: $CTX
+          regex: (?i)^(applicationContext|context|ctx|beanFactory|appContext|CDI\.current\(\)|Arc\.container\(\))$|^CDI|^Arc
+    message: >
+      Service Locator: a classe busca suas dependências no container em vez de recebê-las. Esconde o acoplamento e
+      dificulta testes. Use injeção de dependência (construtor).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/config/**"]
+    metadata:
+      category: architecture
+
+  - id: sentinel-java-singleton-manual
+    pattern: public static $T getInstance() { ... }
+    message: >
+      Singleton implementado à mão cria estado global e atrapalha os testes. Em aplicações com container, deixe o
+      escopo (@ApplicationScoped / @Singleton) ser gerenciado por ele.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: architecture
+
+  - id: sentinel-java-simpledateformat-estatico
+    patterns:
+      - pattern-inside: |
+          class $C { ... }
+      - pattern-either:
+          - pattern: static SimpleDateFormat $F = ...;
+          - pattern: private static final SimpleDateFormat $F = ...;
+          - pattern: public static final SimpleDateFormat $F = ...;
+    message: >
+      SimpleDateFormat não é thread-safe: compartilhá-lo em campo estático corrompe datas sob concorrência.
+      Use java.time.format.DateTimeFormatter (imutável e seguro).
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: quality
+      cwe: "CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization"
+
+  - id: sentinel-comentario-pendencia
+    pattern-regex: (?i)(//|/\*|\*|#)\s*(TODO|FIXME|HACK|XXX)\b
+    message: >
+      Pendência deixada em comentário (TODO/FIXME/HACK). Registre como tarefa no backlog com responsável e prazo,
+      ou resolva: comentários de pendência tendem a ficar para sempre.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.java", "*.ts", "*.tsx"]
+      exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-codigo-comentado
+    pattern-regex: '(?m)^[ \t]*//[ \t]*(?:[\w.]+(?:<[^>]*>)?[ \t]+\w+[ \t]*=[^=].*;|[\w.]+\([^)]*\);|(?:if|for|while)[ \t]*\(.*\)[ \t]*\{?)[ \t]*$'
+    message: >
+      Código comentado. O histórico do git já guarda versões antigas: apague em vez de comentar, para não confundir
+      quem lê nem esconder o que está realmente em uso.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.java", "*.ts", "*.tsx"]
+      exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
+    metadata:
+      category: quality

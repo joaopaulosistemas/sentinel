@@ -1,0 +1,27 @@
+# CSS e SCSS. Casos de teste: tests/sentinel-css.scss
+rules:
+  - id: sentinel-css-fonte-em-px
+    pattern-regex: 'font-size\s*:\s*\d+px'
+    message: >
+      Tamanho de fonte em px não acompanha a configuração de fonte do navegador do usuário (acessibilidade). Use
+      rem.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.css", "*.scss"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+
+  - id: sentinel-scss-import-obsoleto
+    pattern-regex: '(?m)^\s*@import\s+["]'
+    message: >
+      @import do Sass está obsoleto e será removido. Use @use (com namespace) e @forward.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.scss"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+

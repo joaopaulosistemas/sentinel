@@ -1,0 +1,148 @@
+- key: "docker-imagem-latest"
+  summary: "Fixe a versão (ou o digest) da imagem base para builds reprodutíveis."
+  before: "FROM node:latest"
+  after: "FROM node:20.11-alpine"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+
+- key: "docker-add-url"
+  summary: "Baixe com curl/wget e confira o checksum antes de usar."
+  before: "ADD https://exemplo.com/app.tgz /tmp/"
+  after: "RUN curl -fsSLo app.tgz https://exemplo.com/app.tgz && echo \"<sha256>  app.tgz\" | sha256sum -c -"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+
+- key: "curl-pipe-shell"
+  summary: "Baixe o script, confira o checksum e só então execute."
+  before: "RUN curl -fsSL https://exemplo.com/i.sh | sh"
+  after: "RUN curl -fsSLo i.sh https://exemplo.com/i.sh && sha256sum -c i.sh.sha256 && sh i.sh"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+
+- key: "docker-segredo-em-env"
+  summary: "Não grave segredos na imagem: injete na execução ou use secrets do BuildKit."
+  before: "ENV DB_PASSWORD=hunter2"
+  after: "RUN --mount=type=secret,id=db_password ./configura.sh"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+
+- key: "docker-sem-user"
+  summary: "Rode o processo com usuário sem privilégios."
+  before: "FROM eclipse-temurin:21-jre"
+  after: |-
+    RUN useradd --system app
+    USER app
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+
+- key: "sentinel-docker-chmod-777"
+  summary: "Dê só a permissão necessária e a propriedade ao usuário da aplicação."
+  before: "RUN chmod -R 777 /app"
+  after: "RUN chown -R app:app /app && chmod -R 755 /app"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-docker-sudo"
+  summary: "Remova o sudo: o build já roda como root."
+  before: "RUN sudo apt-get clean"
+  after: "RUN apt-get clean"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-docker-segredo-em-arg"
+  summary: "Passe segredos com BuildKit (--secret) ou em tempo de execução."
+  before: "ARG DB_PASSWORD=admin123"
+  after: "RUN --mount=type=secret,id=db_password ..."
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-docker-expose-ssh"
+  summary: "Remova o sshd; use docker exec ou kubectl exec."
+  before: "EXPOSE 22"
+  after: "EXPOSE 8080"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-docker-apt-sem-no-recommends"
+  summary: "Acrescente --no-install-recommends e limpe o cache."
+  before: "RUN apt-get install -y curl"
+  after: "RUN apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-docker-apt-update-sozinho"
+  summary: "Junte update e install no mesmo RUN."
+  before: "RUN apt-get update"
+  after: "RUN apt-get update && apt-get install -y --no-install-recommends curl"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-compose-privileged"
+  summary: "Remova privileged e use cap_add só com a capacidade necessária."
+  before: "privileged: true"
+  after: "cap_add: [NET_ADMIN]"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-compose-docker-sock"
+  summary: "Evite montar o socket; se precisar, use um proxy somente leitura."
+  before: "- /var/run/docker.sock:/var/run/docker.sock"
+  after: "- /var/run/docker.sock:/var/run/docker.sock:ro  (com proxy)"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-compose-network-host"
+  summary: "Use a rede padrão e publique só as portas necessárias."
+  before: "network_mode: host"
+  after: "ports: [\"8080:8080\"]"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-compose-segredo-em-env"
+  summary: "Use variável do .env ou secrets, com o .env fora do Git."
+  before: "POSTGRES_PASSWORD: admin123"
+  after: "POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-k8s-host-network"
+  summary: "Remova hostNetwork/hostPID/hostIPC."
+  before: "hostNetwork: true"
+  after: "# remova; use Service/Ingress"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-k8s-escalada-de-privilegio"
+  summary: "Defina false no securityContext do contêiner."
+  before: "allowPrivilegeEscalation: true"
+  after: "allowPrivilegeEscalation: false"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-k8s-roda-como-root"
+  summary: "Use runAsNonRoot: true e um usuário sem privilégios na imagem."
+  before: "runAsUser: 0"
+  after: "runAsNonRoot: true\n  runAsUser: 10001"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-k8s-hostpath"
+  summary: "Use PersistentVolumeClaim, emptyDir ou configMap/secret."
+  before: "hostPath: { path: /data }"
+  after: "persistentVolumeClaim: { claimName: dados }"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-k8s-capacidade-perigosa"
+  summary: "Use drop: [ALL] e adicione só a capacidade mínima."
+  before: "add: [SYS_ADMIN]"
+  after: "drop: [ALL]"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-k8s-imagem-latest"
+  summary: "Fixe a versão (ou o digest) da imagem."
+  before: "image: app:latest"
+  after: "image: app:1.4.2"
+  effort: S
+  regression-risk: LOW

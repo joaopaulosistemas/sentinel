@@ -1,0 +1,36 @@
+rules:
+  - id: sentinel-system-out-println
+    pattern: System.out.println(...)
+    message: >
+      Uso de System.out.println detectado em código de produção.
+      Substitua por um logger adequado (SLF4J, Log4j, JBoss Logging) para
+      controle de nível, formatação estruturada e redirecionamento centralizado.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: quality
+      cwe: CWE-778
+      note: Logging inadequado dificulta diagnóstico em produção (OWASP A09:2021)
+
+  - id: sentinel-system-err-println
+    pattern: System.err.println(...)
+    message: >
+      Uso de System.err.println detectado. Use um logger com nível ERROR
+      em vez de System.err para que mensagens de erro apareçam nos logs estruturados.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: quality
+      cwe: CWE-778
+
+  - id: sentinel-print-stack-trace
+    pattern: $E.printStackTrace()
+    message: >
+      Uso de printStackTrace() detectado. Além de expor stack traces sensíveis,
+      o output vai para stderr sem controle de nível. Use LOG.error("mensagem", $E).
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: quality
+      cwe: CWE-209
+      owasp: A09:2021 - Security Logging and Monitoring Failures

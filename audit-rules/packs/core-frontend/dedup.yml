@@ -1,0 +1,26 @@
+- name: react-dangerously
+  rules:
+    - "eslint-react/no-danger"
+    - "sentinel-react-dangerously"
+  max-lines: 1
+
+- name: imagem-sem-alt
+  rules:
+    - "eslint-jsx-a11y/alt-text"
+    - "eslint-@angular-eslint/template/alt-text"
+    - "eslint-@html-eslint/require-img-alt"
+    - "sentinel-fe-img-sem-alt"
+  max-lines: 1
+
+- name: target-blank
+  rules:
+    - "eslint-react/jsx-no-target-blank"
+    - "eslint-@html-eslint/no-target-blank"
+    - "sentinel-fe-target-blank"
+  max-lines: 1
+
+- name: react-key-indice
+  rules:
+    - "eslint-react/no-array-index-key"
+    - "sentinel-ts-react-key-indice"
+  max-lines: 1

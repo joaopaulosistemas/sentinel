@@ -1,0 +1,8 @@
+# Java. O Checkstyle precisa de /opt/checkstyle (jar e checks.xml que a imagem Docker instala) e de uma JVM no PATH.
+- id: checkstyle
+  name: "Checkstyle"
+  category: quality
+  applies-to: ["**/*.java"]
+  command: [java, -jar, /opt/checkstyle/checkstyle.jar, -c, /opt/checkstyle/checks.xml, -f, sarif, -o, "{output}", "{files}"]
+  severity-map: {warning: low, error: medium}
+  timeout-seconds: 600

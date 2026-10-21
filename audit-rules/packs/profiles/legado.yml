@@ -1,0 +1,14 @@
+id: legado
+name: "Sistema legado (adoção gradual)"
+description: "Limites mais folgados e regras de estilo em modo sombra: aparecem no relatório, mas não pesam no score até serem promovidas."
+rules:
+  "sentinel-java-*": {shadow: true}
+  "sentinel-ts-*": {shadow: true}
+  sentinel-god-object: {severity: low}
+thresholds:
+  max-function-lines: 120
+  max-component-lines: 400
+  max-parameters: 8
+  max-complexity: 20
+  max-nesting: 6
+  max-findings: 100

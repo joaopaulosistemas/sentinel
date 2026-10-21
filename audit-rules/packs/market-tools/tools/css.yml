@@ -1,0 +1,8 @@
+# CSS e SCSS. O Stylelint precisa de /opt/stylelint (configuração e formatador SARIF que a imagem Docker instala).
+- id: stylelint
+  name: "Stylelint"
+  category: quality
+  applies-to: ["**/*.css", "**/*.scss"]
+  command: [stylelint, --config, /opt/stylelint/stylelintrc.json, --custom-formatter, /opt/stylelint/sarif-formatter.cjs, --allow-empty-input, --output-file, "{output}", "{files}"]
+  severity-map: {error: medium, warning: low}
+  timeout-seconds: 300

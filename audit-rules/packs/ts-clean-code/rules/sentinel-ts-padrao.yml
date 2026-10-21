@@ -1,0 +1,93 @@
+# Padrão de código TypeScript/Angular. Casos de teste: tests/sentinel-ts-padrao.ts
+# Os limites numéricos (50 linhas, complexidade 10, aninhamento 3) vêm do perfil padrao-typescript-angular.
+rules:
+  - id: sentinel-tsp-privado-sem-underscore
+    pattern-regex: '\bprivate\s+(?>(?:(?:readonly|static|async|get|set)\s+)*)(?!_|constructor\b|#)\w+'
+    message: >
+      Membro privado deve começar com underscore (ex.: private _idInstituicao). Assim, ao ler o código, fica claro
+      o que só a classe usa e o que o template ou outras classes podem acessar.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "*.model.ts", "*.interface.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-tsp-publico-com-underscore
+    pattern-regex: '\bpublic\s+(?>(?:(?:readonly|static|async|get|set)\s+)*)_\w+'
+    message: >
+      Underscore é reservado a membros privados. Se o membro é público (usado pelo template ou por outras classes),
+      tire o underscore; se só a classe usa, troque 'public' por 'private'.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-tsp-metodo-sem-modificador
+    pattern-regex: '(?m)^[ \t\xA0]+(?:(?:static|async|override|abstract)\s+)*(?!(?:if|for|while|switch|catch|function|constructor|super|return|else|do|with)\b)[A-Za-z_]\w*\s*\([^;{}=]*\)\s*(?::\s*[^;{}=]+?)?\s*\{[ \t]*$'
+    message: >
+      Método de classe sem modificador de acesso. Declare explicitamente 'public', 'private' (ou 'protected' em
+      exceção de herança): a intenção fica visível em quem lê.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "*.model.ts", "*.interface.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-tsp-enum-sem-sufixo
+    pattern-regex: '\benum\s+(?!\w*Enum\b)\w+'
+    message: >
+      Nome de enum no singular e terminado em 'Enum' (ex.: TipoPessoaEnum), com membros em MAIÚSCULAS_COM_UNDERLINE.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-tsp-interface-sem-padrao
+    pattern-regex: '\binterface\s+(?!I[A-Z])(?!\w*Interface\b)\w+'
+    message: >
+      Nome de interface começa com 'I' (IContaTarifaNaoPaga) ou termina com 'Interface' (StatusInterface). Escolha
+      um dos dois e use o mesmo em todo o projeto.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-tsp-ciclo-de-vida-com-logica
+    pattern-regex: '\bng(?:OnInit|OnChanges|OnDestroy|DoCheck|AfterViewInit|AfterViewChecked|AfterContentInit|AfterContentChecked)[\s\xA0]*\([^)]*\)[\s\xA0]*(?::[\s\xA0]*\w+[\s\xA0]*)?\{(?>(?:[\s\xA0]*(?:(?:await[\s\xA0]+)?this\._\w+\([^;{}]*\);|//[^\n]*))*)[\s\xA0]*(?![\s\xA0}])\S'
+    message: >
+      Hook de ciclo de vida (ngOnInit e similares) deve só chamar métodos privados, um por linha
+      (ex.: this._initForm(); this._getUsuarioLogado();). Mova a lógica para um método privado com nome que diga o
+      que ele faz.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-tsp-abreviacao
+    pattern-regex: '\b(?:num|cod|desc|qtd|vlr|dt|tp|cd)[A-Z]\w*'
+    message: >
+      Evite abreviações (num, cod, desc, qtd, vlr, dt...). Use o nome do domínio por extenso (numeroContaCorrente,
+      codigoTarifaLegado, descricao...), para que desenvolvedores e analistas falem a mesma língua.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality

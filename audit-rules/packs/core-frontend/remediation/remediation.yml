@@ -1,0 +1,185 @@
+- key: "fe-img-sem-alt"
+  summary: "Descreva a imagem em 'alt'. Se for só decoração, use alt=\"\" para o leitor de tela ignorá-la."
+  before: "<img src=\"logo.png\" />"
+  after: "<img src=\"logo.png\" alt=\"Logotipo da empresa\" />"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html"
+
+- key: "fe-click-sem-role"
+  summary: "Troque o div/span clicável por <button>. Se não puder, acrescente role, tabIndex e tratamento de teclado."
+  before: "<div onClick={abrir}>Abrir</div>"
+  after: "<button type=\"button\" onClick={abrir}>Abrir</button>"
+  effort: S
+  regression-risk: MEDIUM
+  refs:
+    - "https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html"
+
+- key: "fe-target-blank"
+  summary: "Acrescente rel=\"noopener noreferrer\" a todo link que abre em nova aba."
+  before: "<a href={url} target=\"_blank\">site</a>"
+  after: "<a href={url} target=\"_blank\" rel=\"noopener noreferrer\">site</a>"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://developer.mozilla.org/docs/Web/HTML/Attributes/rel/noopener"
+
+- key: "fe-html-sem-lang"
+  summary: "Declare o idioma da página no elemento <html>."
+  before: "<html>"
+  after: "<html lang=\"pt-BR\">"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://www.w3.org/WAI/WCAG21/Understanding/language-of-page.html"
+
+- key: "fe-zoom-bloqueado"
+  summary: "Remova user-scalable=no e maximum-scale=1 do viewport para permitir zoom."
+  before: "<meta name=\"viewport\" content=\"width=device-width, user-scalable=no\">"
+  after: "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+  effort: S
+  regression-risk: MEDIUM
+  refs:
+    - "https://www.w3.org/WAI/WCAG21/Understanding/resize-text.html"
+
+- key: "fe-outline-removido"
+  summary: "Não remova o foco sem substituir: estilize :focus-visible com contraste suficiente."
+  before: "button { outline: none; }"
+  after: "button:focus-visible { outline: 2px solid #0f62fe; outline-offset: 2px; }"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html"
+
+- key: "fe-100vh"
+  summary: "Use 100dvh (altura dinâmica da viewport) com 100vh como reserva."
+  before: "min-height: 100vh;"
+  after: "min-height: 100vh;\nmin-height: 100dvh;"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://developer.mozilla.org/docs/Web/CSS/length#dynamic"
+
+- key: "perf-await-em-laco"
+  summary: "Dispare as operações independentes juntas com Promise.all (ou limite a concorrência)."
+  before: "for (const id of ids) { await buscar(id); }"
+  after: "await Promise.all(ids.map((id) => buscar(id)));"
+  effort: S
+  regression-risk: MEDIUM
+  refs:
+    - "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/all"
+
+- key: "perf-consulta-em-laco"
+  summary: "Busque todos os registros de uma vez (findAllById, IN, JOIN FETCH) e agrupe em memória."
+  before: "for (Long id : ids) { repo.findById(id); }"
+  after: "Map<Long, X> porId = repo.findAllById(ids).stream().collect(toMap(X::getId, identity()));"
+  effort: M
+  regression-risk: MEDIUM
+  refs:
+    - "https://vladmihalcea.com/n-plus-1-query-problem/"
+
+- key: "sentinel-ng-bypass-security"
+  summary: "Remova o bypass e deixe o Angular sanitizar; se for indispensável, valide a origem do valor."
+  before: "this._san.bypassSecurityTrustHtml(valor)"
+  after: "[innerHTML]=\"valor\"  (sanitizado pelo Angular)"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-ng-nativeelement-html"
+  summary: "Use binding [innerHTML] ou Renderer2.setProperty."
+  before: "el.nativeElement.innerHTML = v;"
+  after: "this._renderer.setProperty(el.nativeElement, \"textContent\", v);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-ng-dom-direto"
+  summary: "Use @ViewChild/ElementRef ou binding no template."
+  before: "document.getElementById(\"x\")"
+  after: "@ViewChild(\"x\") x!: ElementRef;"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-ng-http-any"
+  summary: "Declare uma interface para a resposta."
+  before: "this._http.get<any>(url)"
+  after: "this._http.get<ContaInterface>(url)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-ng-deep"
+  summary: "Prefira variáveis CSS ou classes expostas pelo componente filho."
+  before: "::ng-deep .filho { color: red; }"
+  after: ".host { --cor-filho: red; }"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-ng-ngfor-sem-trackby"
+  summary: "Informe trackBy com o identificador do item."
+  before: "*ngFor=\"let c of contas\""
+  after: "*ngFor=\"let c of contas; trackBy: porId\""
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-ng-chamada-no-template"
+  summary: "Calcule uma vez (propriedade, computed) em vez de chamar método no template."
+  before: "{{ calcularTotal(c) }}"
+  after: "{{ total }}"
+  effort: M
+  regression-risk: LOW
+
+- key: "sentinel-react-dangerously"
+  summary: "Sanitize com DOMPurify ou renderize como texto/JSX."
+  before: "<div dangerouslySetInnerHTML={{ __html: html }} />"
+  after: "<div>{texto}</div>"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-react-componente-classe"
+  summary: "Migre para componente de função com hooks."
+  before: "class A extends React.Component"
+  after: "function A() { ... }"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-react-estado-derivado"
+  summary: "Use a prop diretamente ou resete o estado com key."
+  before: "useState(props.valor)"
+  after: "const valor = props.valor;"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-css-fonte-em-px"
+  summary: "Use rem."
+  before: "font-size: 14px;"
+  after: "font-size: 0.875rem;"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-scss-import-obsoleto"
+  summary: "Troque @import por @use."
+  before: "@import \"variaveis\";"
+  after: "@use \"variaveis\";"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-html-handler-inline"
+  summary: "Registre o evento no código (addEventListener ou binding do framework)."
+  before: "<button onclick=\"abrir()\">"
+  after: "<button id=\"abrir\">"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-html-script-http"
+  summary: "Carregue por HTTPS."
+  before: "<script src=\"http://cdn/a.js\">"
+  after: "<script src=\"https://cdn/a.js\">"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-html-script-sem-sri"
+  summary: "Acrescente integrity e crossorigin, ou hospede o arquivo."
+  before: "<script src=\"https://cdn/a.js\">"
+  after: "<script src=\"https://cdn/a.js\" integrity=\"sha384-...\" crossorigin=\"anonymous\">"
+  effort: S
+  regression-risk: LOW

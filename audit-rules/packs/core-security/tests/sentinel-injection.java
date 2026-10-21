@@ -1,0 +1,52 @@
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+
+class InjectionCases {
+
+    void sql(Connection c, Statement st, String nome) throws Exception {
+        // ruleid: sentinel-sql-injection
+        st.executeQuery("SELECT * FROM usuario WHERE nome = '" + nome + "'");
+        // ruleid: sentinel-sql-injection
+        st.executeUpdate(String.format("DELETE FROM usuario WHERE nome = '%s'", nome));
+        // ok: sentinel-sql-injection
+        PreparedStatement ps = c.prepareStatement("SELECT * FROM usuario WHERE nome = ?");
+        ps.setString(1, nome);
+        // ok: sentinel-sql-injection
+        st.executeQuery("SELECT 1 FROM " + "dual");
+    }
+
+    void comando(Runtime rt, String arquivo) throws Exception {
+        // ruleid: sentinel-command-injection
+        Runtime.getRuntime().exec("ls " + arquivo);
+        // ruleid: sentinel-command-injection
+        new ProcessBuilder("sh -c cat " + arquivo);
+        // ok: sentinel-command-injection
+        Runtime.getRuntime().exec("ls");
+    }
+
+    void comandoVariavel(String cmd) throws Exception {
+        // ruleid: sentinel-command-injection-variable
+        Runtime.getRuntime().exec(cmd);
+        // ruleid: sentinel-command-injection-variable
+        new ProcessBuilder(cmd);
+        // ok: sentinel-command-injection-variable
+        Runtime.getRuntime().exec("ls -l");
+        // ok: sentinel-command-injection-variable
+        Runtime.getRuntime().exec(new String[]{"ls", "-l"});
+    }
+
+    void ldap(javax.naming.directory.DirContext ctx, String user) throws Exception {
+        // ruleid: sentinel-ldap-injection
+        ctx.search("dc=empresa", "(uid=" + user + ")", null);
+        // ok: sentinel-ldap-injection
+        ctx.search("dc=empresa", "(uid={0})", new Object[]{user}, null);
+    }
+
+    void xpath(javax.xml.xpath.XPath xp, String id, org.w3c.dom.Document doc) throws Exception {
+        // ruleid: sentinel-xpath-injection
+        xp.evaluate("//usuario[@id='" + id + "']", doc);
+        // ok: sentinel-xpath-injection
+        xp.evaluate("//usuario", doc);
+    }
+}

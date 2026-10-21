@@ -1,0 +1,95 @@
+# Armadilhas de Angular. Casos de teste: tests/sentinel-angular.ts, .html e .scss
+rules:
+  - id: sentinel-ng-bypass-security
+    pattern-regex: 'bypassSecurityTrust(?:Html|Script|Style|Url|ResourceUrl)\s*\('
+    message: >
+      bypassSecurityTrust* desliga a sanitização do Angular para este valor: se ele vier do usuário ou de API, é
+      XSS. Evite; se for indispensável, valide a origem e documente o motivo.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting"
+
+  - id: sentinel-ng-nativeelement-html
+    pattern-regex: '\.nativeElement\.(?:innerHTML|outerHTML)\s*='
+    message: >
+      Escrever innerHTML/outerHTML pelo nativeElement ignora a sanitização do Angular (XSS). Use binding [innerHTML]
+      (sanitizado) ou Renderer2.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting"
+
+  - id: sentinel-ng-dom-direto
+    pattern-regex: '\bdocument\.(?:getElementById|querySelector|querySelectorAll|getElementsBy\w+)\s*\('
+    message: >
+      Acesso direto ao DOM num componente Angular quebra a renderização no servidor e os testes. Use @ViewChild,
+      Renderer2 ou binding no template.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ng-http-any
+    pattern-regex: '\.(?:get|post|put|patch|delete)<any>\s*\('
+    message: >
+      Chamada HttpClient tipada como any: a resposta chega sem contrato e erros de campo só aparecem em tempo de
+      execução. Declare uma interface para a resposta.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ng-deep
+    pattern-regex: '::ng-deep|/deep/|>>>'
+    message: >
+      ::ng-deep (e /deep/, >>>) está obsoleto e vaza estilo para fora do componente. Prefira variáveis CSS, classes
+      no componente filho ou ViewEncapsulation.None isolado.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.css", "*.scss", "*.sass", "*.less"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ng-ngfor-sem-trackby
+    pattern-regex: '\*ngFor\s*=\s*"(?![^"]*trackBy)[^"]*"'
+    message: >
+      *ngFor sem trackBy recria todos os elementos do DOM a cada mudança da lista. Informe trackBy com o id do item
+      (ou use @for com track no Angular 17+).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ng-chamada-no-template
+    pattern-regex: '\{\{\s*[A-Za-z_]\w*(?:\.\w+)*\([^)]*\)\s*\}\}'
+    message: >
+      Método chamado dentro de {{ }} roda a cada ciclo de detecção de mudanças. Calcule o valor uma vez
+      (propriedade, signal/computed) ou use um pipe puro.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+

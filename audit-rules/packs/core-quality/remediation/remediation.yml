@@ -1,0 +1,420 @@
+- key: "arch-god-object"
+  summary: "Separe responsabilidades: extraia grupos de métodos coesos para classes/serviços menores."
+  before: "class PedidoService { /* validação + cálculo + e-mail + relatório */ }"
+  after: "class PedidoValidator {}  class PedidoCalculator {}  class PedidoNotificador {}"
+  refs:
+    - "https://refactoring.guru/smells/large-class"
+
+- key: "too-many-injections"
+  summary: "Muitas dependências injetadas indicam classe com responsabilidades demais; quebre-a em partes menores."
+  before: "@Inject A a; @Inject B b; /* ... 8+ campos */"
+  after: "// divida a classe; cada parte recebe só o que usa"
+  refs:
+    - "https://refactoring.guru/smells/large-class"
+
+- key: "arch-controller-bypass-service"
+  summary: "O controller deve chamar um serviço, não o repositório: regra de negócio e transação ficam na camada de serviço."
+  before: "@Inject ContaRepository repo;  // dentro do Resource"
+  after: "@Inject ContaService service;  // Resource -> Service -> Repository"
+  refs:
+    - "https://martinfowler.com/bliki/PresentationDomainDataLayering.html"
+
+- key: "arch-magic-number"
+  summary: "Dê nome aos números: constantes ou configuração tornam a intenção clara e a mudança segura."
+  before: "if (tentativas > 3) bloquear();"
+  after: |-
+    private static final int MAX_TENTATIVAS = 3;
+    if (tentativas > MAX_TENTATIVAS) bloquear();
+  refs:
+    - "https://refactoring.guru/replace-magic-number-with-symbolic-constant"
+
+- key: "obs-system-out"
+  summary: "Use um logger com nível e contexto; System.out não é filtrável, não tem formato nem vai para o agregador de logs."
+  before: "System.out.println(\"erro: \" + e);"
+  after: |-
+    private static final Logger LOG = Logger.getLogger(MinhaClasse.class);
+    LOG.errorf(e, "Falha ao processar %s", id);
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+
+- key: "obs-print-stack-trace"
+  summary: "printStackTrace escreve no stderr sem contexto. Registre a exceção no logger e trate-a."
+  before: "e.printStackTrace();"
+  after: "LOG.error(\"Falha ao processar\", e);"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+
+- key: "sentinel-cc-funcao-longa"
+  summary: "Função longa faz coisas demais. Extraia trechos coesos para funções com nome que explique a intenção."
+  before: "void processa() { /* 80 linhas: valida, calcula, grava, notifica */ }"
+  after: "void processa() { valida(); var total = calcula(); grava(total); notifica(total); }"
+  refs:
+    - "https://refactoring.guru/smells/long-method"
+
+- key: "sentinel-cc-muitos-parametros"
+  summary: "Muitos parâmetros dificultam a leitura e o teste. Agrupe os que andam juntos em um objeto (record/interface)."
+  before: "criar(String nome, String doc, String rua, String cidade, String uf, String cep)"
+  after: |-
+    record Endereco(String rua, String cidade, String uf, String cep) {}
+    criar(String nome, String doc, Endereco endereco)
+  refs:
+    - "https://refactoring.guru/smells/long-parameter-list"
+
+- key: "sentinel-cc-complexidade"
+  summary: "Complexidade alta = muitos caminhos para testar. Use retornos antecipados, extraia condições com nome e troque cadeias de if/switch por tabela ou polimorfismo."
+  before: "if (a) { if (b) { for (...) { if (c) { ... } } } }"
+  after: |-
+    if (!a || !b) return;
+    itens.stream().filter(this::atende).forEach(this::trata);
+  refs:
+    - "https://refactoring.guru/smells/switch-statements"
+
+- key: "sentinel-cc-aninhamento"
+  summary: "Aninhamento profundo esconde o fluxo principal. Inverta condições (guard clauses) e extraia os blocos internos."
+  before: "if (x != null) { if (x.ativo()) { if (x.saldo() > 0) { pagar(x); } } }"
+  after: |-
+    if (x == null || !x.ativo() || x.saldo() <= 0) return;
+    pagar(x);
+  refs:
+    - "https://refactoring.guru/replace-nested-conditional-with-guard-clauses"
+
+- key: "sentinel-java-catch-vazio"
+  summary: "Nunca engula a exceção: registre com contexto, trate de verdade ou propague. Se ignorar for intencional, comente o motivo."
+  before: "catch (Exception e) { }"
+  after: |-
+    catch (IOException e) {
+        LOG.errorf(e, "Falha ao ler %s", arquivo);
+        throw new UncheckedIOException(e);
+    }
+  refs:
+    - "https://www.baeldung.com/java-exceptions"
+
+- key: "sentinel-java-catch-throwable"
+  summary: "Throwable inclui Error (OutOfMemoryError etc.), que não se deve capturar. Capture a exceção específica."
+  before: "catch (Throwable t) { ... }"
+  after: "catch (IOException | TimeoutException e) { ... }"
+  refs:
+    - "https://docs.oracle.com/javase/specs/jls/se21/html/jls-11.html"
+
+- key: "sentinel-java-retorna-null-colecao"
+  summary: "Devolva coleção vazia (ou Optional) em vez de null: quem chama não precisa checar."
+  before: "return null;   // List<Conta>"
+  after: "return List.of();"
+  refs:
+    - "https://www.baeldung.com/java-avoid-null-check"
+
+- key: "sentinel-java-autowired-campo"
+  summary: "Prefira injeção por construtor: dependências explícitas, objeto imutável e testável sem container."
+  before: "@Autowired private ContaRepository repo;"
+  after: |-
+    private final ContaRepository repo;
+    ContaService(ContaRepository repo) { this.repo = repo; }
+  refs:
+    - "https://docs.spring.io/spring-framework/reference/core/beans/dependencies/factory-collaborators.html"
+
+- key: "sentinel-java-estado-estatico-mutavel"
+  summary: "Estado estático mutável é compartilhado entre threads e requisições. Use um bean com escopo, estrutura concorrente ou imutabilidade."
+  before: "static List<String> cache = new ArrayList<>();"
+  after: "private final Map<String, String> cache = new ConcurrentHashMap<>();   // em um bean @ApplicationScoped"
+  refs:
+    - "https://www.baeldung.com/java-static-variables-thread-safety"
+
+- key: "sentinel-java-string-igualdade-literal"
+  summary: "Compare Strings com equals(), nunca com ==."
+  before: "if (status == \"ATIVO\") { ... }"
+  after: "if (\"ATIVO\".equals(status)) { ... }"
+  refs:
+    - "https://www.baeldung.com/java-string-equals-vs-equality-operator"
+
+- key: "sentinel-java-transactional-privado"
+  summary: "@Transactional só funciona em métodos públicos chamados de outro bean (proxy). Em método privado ou chamada interna é ignorado."
+  before: "@Transactional private void grava() { ... }"
+  after: "@Transactional public void grava() { ... }   // chamado por outro bean"
+  refs:
+    - "https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html"
+
+- key: "sentinel-java-log-concatenado"
+  summary: "Não concatene mensagens de log: o custo é pago mesmo com o nível desligado. Use parâmetros."
+  before: "LOG.debug(\"Conta \" + id + \" saldo \" + saldo);"
+  after: "LOG.debugf(\"Conta %s saldo %s\", id, saldo);"
+  refs:
+    - "https://www.slf4j.org/faq.html#logging_performance"
+
+- key: "sentinel-java-thread-manual"
+  summary: "Não crie threads soltas: use ExecutorService (ou virtual threads) com limite, nome e encerramento controlado."
+  before: "new Thread(() -> envia(msg)).start();"
+  after: "try (var ex = Executors.newVirtualThreadPerTaskExecutor()) { ex.submit(() -> envia(msg)); }"
+  refs:
+    - "https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html"
+
+- key: "sentinel-java-service-locator"
+  summary: "Service Locator esconde dependências. Receba o que precisa pelo construtor (injeção)."
+  before: "var s = CDI.current().select(Servico.class).get();"
+  after: "@Inject Servico servico;   // ou construtor"
+  refs:
+    - "https://martinfowler.com/articles/injection.html"
+
+- key: "sentinel-java-singleton-manual"
+  summary: "Singleton manual dificulta teste e é frágil com threads. Deixe o container gerenciar (@ApplicationScoped)."
+  before: "private static Foo INSTANCE; static Foo get() { ... }"
+  after: |-
+    @ApplicationScoped
+    class Foo { }
+  refs:
+    - "https://refactoring.guru/design-patterns/singleton"
+
+- key: "sentinel-java-simpledateformat-estatico"
+  summary: "SimpleDateFormat não é thread-safe. Use java.time (DateTimeFormatter é imutável e seguro)."
+  before: "static final SimpleDateFormat F = new SimpleDateFormat(\"dd/MM/yyyy\");"
+  after: "static final DateTimeFormatter F = DateTimeFormatter.ofPattern(\"dd/MM/yyyy\");"
+  refs:
+    - "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/format/DateTimeFormatter.html"
+
+- key: "sentinel-comentario-pendencia"
+  summary: "Pendência esquecida no código vira dívida invisível. Abra um ticket e referencie-o, ou resolva."
+  before: "// TODO arrumar isso depois"
+  after: "// TODO(PROJ-123): trocar pelo serviço novo até 12/2026"
+  refs:
+    - "https://refactoring.guru/smells/comments"
+
+- key: "sentinel-codigo-comentado"
+  summary: "Código comentado confunde e o histórico do git já o guarda. Apague."
+  before: "// var antigo = calculaVelho(x);"
+  after: "// (removido; veja o histórico do git)"
+  refs:
+    - "https://refactoring.guru/smells/comments"
+
+- key: "sentinel-ts-any-explicito"
+  summary: "any desliga a checagem de tipos. Use unknown e estreite com verificação, ou descreva o tipo."
+  before: "function f(x: any) { return x.id; }"
+  after: "function f(x: unknown) { if (isConta(x)) return x.id; }"
+  refs:
+    - "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+
+- key: "sentinel-ts-supressao-de-tipos"
+  summary: "@ts-ignore/@ts-nocheck escondem erros reais. Corrija o tipo; se precisar suprimir, use @ts-expect-error com motivo."
+  before: |-
+    // @ts-ignore
+    const x = obj.campo;
+  after: |-
+    // @ts-expect-error biblioteca sem tipos para campo (PROJ-123)
+    const x = obj.campo;
+  refs:
+    - "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-9.html"
+
+- key: "sentinel-ts-console-log"
+  summary: "Não deixe console.log em código de produção (vaza dados e polui). Use um logger com níveis ou remova."
+  before: "console.log(\"usuario\", usuario);"
+  after: "logger.debug(\"usuario carregado\", { id: usuario.id });"
+  refs:
+    - "https://owasp.org/www-project-top-ten/2017/A10_2017-Insufficient_Logging%2526Monitoring"
+
+- key: "sentinel-ts-catch-vazio"
+  summary: "Não engula erros: trate, registre ou propague."
+  before: "try { await salvar(); } catch (e) { }"
+  after: |-
+    try { await salvar(); } catch (e) {
+      logger.error("falha ao salvar", e);
+      throw e;
+    }
+  refs:
+    - "https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Statements/try...catch"
+
+- key: "sentinel-ts-var"
+  summary: "Use const (ou let). var tem escopo de função e içamento, fonte de bugs."
+  before: "var total = 0;"
+  after: "const total = 0;"
+  refs:
+    - "https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Statements/let"
+
+- key: "sentinel-ts-igualdade-frouxa"
+  summary: "Use === e !==. O == converte tipos e dá resultados inesperados."
+  before: "if (valor == 0) { ... }"
+  after: "if (valor === 0) { ... }"
+  refs:
+    - "https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Equality_comparisons_and_sameness"
+
+- key: "sentinel-ts-export-let"
+  summary: "export let expõe estado mutável para quem importa. Exporte const ou uma função de acesso."
+  before: "export let contador = 0;"
+  after: "export const contador = { valor: 0 };   // ou funções get/set"
+  refs:
+    - "https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Statements/export"
+
+- key: "sentinel-ts-subscribe-aninhado"
+  summary: "subscribe dentro de subscribe vaza assinaturas e cria condições de corrida. Componha com switchMap/mergeMap."
+  before: "a$.subscribe(a => b$(a).subscribe(b => usa(b)));"
+  after: "a$.pipe(switchMap(a => b$(a))).subscribe(b => usa(b));"
+  refs:
+    - "https://rxjs.dev/api/index/function/switchMap"
+
+- key: "sentinel-ts-useeffect-async"
+  summary: "O callback de useEffect não pode ser async (devolve Promise, não a função de limpeza). Declare uma função interna."
+  before: "useEffect(async () => { await carrega(); }, []);"
+  after: "useEffect(() => { (async () => { await carrega(); })(); }, []);"
+  refs:
+    - "https://react.dev/reference/react/useEffect"
+
+- key: "sentinel-ts-react-key-indice"
+  summary: "Índice como key quebra a reconciliação quando a lista muda de ordem. Use um id estável."
+  before: "itens.map((it, i) => <Linha key={i} />)"
+  after: "itens.map(it => <Linha key={it.id} />)"
+  refs:
+    - "https://react.dev/learn/rendering-lists#rules-of-keys"
+
+- key: "sentinel-ts-token-em-localstorage"
+  summary: "Qualquer script (XSS) lê o localStorage. Guarde tokens em cookie HttpOnly + SameSite, não em storage acessível ao JS."
+  before: "localStorage.setItem(\"token\", jwt);"
+  after: "// servidor: Set-Cookie: sid=...; HttpOnly; Secure; SameSite=Strict"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage"
+
+- key: "sentinel-int-httpclient-sem-timeout"
+  summary: "Defina sempre timeouts de conexão e de leitura: sem eles uma dependência lenta trava threads e derruba o serviço em cascata."
+  before: "HttpClient.newHttpClient();"
+  after: "HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();"
+  refs:
+    - "https://docs.oracle.com/en/java/javase/21/docs/api/java.net.http/java/net/http/HttpClient.Builder.html"
+
+- key: "sentinel-int-httprequest-sem-timeout"
+  summary: "Defina sempre timeouts de conexão e de leitura: sem eles uma dependência lenta trava threads e derruba o serviço em cascata."
+  before: "HttpRequest.newBuilder(uri).build();"
+  after: "HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(5)).build();"
+  refs:
+    - "https://docs.oracle.com/en/java/javase/21/docs/api/java.net.http/java/net/http/HttpRequest.Builder.html"
+
+- key: "sentinel-int-resttemplate-sem-timeout"
+  summary: "Defina sempre timeouts de conexão e de leitura: sem eles uma dependência lenta trava threads e derruba o serviço em cascata."
+  before: "new RestTemplate();"
+  after: |-
+    var f = new SimpleClientHttpRequestFactory();
+    f.setConnectTimeout(3000); f.setReadTimeout(5000);
+    new RestTemplate(f);
+  refs:
+    - "https://docs.spring.io/spring-framework/reference/integration/rest-clients.html"
+
+- key: "sentinel-int-urlconnection-sem-timeout"
+  summary: "Defina sempre timeouts de conexão e de leitura: sem eles uma dependência lenta trava threads e derruba o serviço em cascata."
+  before: "var c = (HttpURLConnection) url.openConnection();"
+  after: |-
+    var c = (HttpURLConnection) url.openConnection();
+    c.setConnectTimeout(3000); c.setReadTimeout(5000);
+  refs:
+    - "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/URLConnection.html"
+
+- key: "sentinel-int-jdbc-driver-manager"
+  summary: "DriverManager abre uma conexão nova a cada chamada. Use DataSource com pool (Agroal/HikariCP)."
+  before: "DriverManager.getConnection(url, user, pass);"
+  after: |-
+    @Inject DataSource ds;
+    try (var c = ds.getConnection()) { ... }
+  refs:
+    - "https://quarkus.io/guides/datasource"
+
+- key: "sentinel-int-pool-ilimitado"
+  summary: "Pool de threads/conexões ilimitado esgota memória sob carga. Defina um teto e uma fila limitada."
+  before: "Executors.newCachedThreadPool();"
+  after: "new ThreadPoolExecutor(4, 16, 60, SECONDS, new ArrayBlockingQueue<>(100));"
+  refs:
+    - "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ThreadPoolExecutor.html"
+
+- key: "sentinel-int-http-sem-tls"
+  summary: "Use HTTPS entre serviços: HTTP puro expõe credenciais e dados e permite adulteração."
+  before: "var url = \"http://servico.interno/api\";"
+  after: "var url = \"https://servico.interno/api\";"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
+
+- key: "sentinel-int-fetch-sem-timeout"
+  summary: "fetch não tem timeout próprio: use AbortSignal.timeout para a chamada não ficar pendurada."
+  before: "await fetch(url);"
+  after: "await fetch(url, { signal: AbortSignal.timeout(5000) });"
+  refs:
+    - "https://developer.mozilla.org/pt-BR/docs/Web/API/AbortSignal/timeout_static"
+
+- key: "sentinel-int-axios-sem-timeout"
+  summary: "O axios espera para sempre por padrão. Configure timeout."
+  before: "axios.get(url);"
+  after: "axios.get(url, { timeout: 5000 });"
+  refs:
+    - "https://axios-http.com/docs/req_config"
+
+- key: "proj-no-readme"
+  summary: "Crie um README com propósito, pré-requisitos, como executar, testar e implantar."
+  before: "(sem README)"
+  after: "# Nome\n\nO que faz\n\n## Como rodar\n## Como testar\n## Como implantar"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://www.makeareadme.com/"
+
+- key: "proj-readme-short"
+  summary: "Complete o README: propósito, como executar, testar e implantar."
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://www.makeareadme.com/"
+
+- key: "proj-no-tests"
+  summary: "Comece por testes nas regras de negócio e nos pontos de integração mais críticos; ligue a execução ao CI."
+  effort: L
+  regression-risk: LOW
+  refs:
+    - "https://martinfowler.com/articles/practical-test-pyramid.html"
+
+- key: "proj-no-ci"
+  summary: "Versione um pipeline que compile, rode testes e a auditoria a cada push/PR."
+  before: "(build manual)"
+  after: "on: [push, pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: ./mvnw verify"
+  effort: M
+  regression-risk: LOW
+  refs:
+    - "https://docs.github.com/actions"
+
+- key: "proj-no-lockfile"
+  summary: "Gere e versione o lockfile (npm install / yarn / pnpm) e use npm ci no CI."
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://docs.npmjs.com/cli/configuring-npm/package-lock-json"
+
+- key: "proj-committed-env"
+  summary: "Remova o arquivo do repositório e do histórico, rotacione as credenciais e versione só um .env.example."
+  before: ".env  (DB_PASSWORD=...)"
+  after: ".env.example  (DB_PASSWORD=)  +  .env no .gitignore"
+  effort: M
+  regression-risk: MEDIUM
+  refs:
+    - "https://docs.github.com/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository"
+
+- key: "proj-committed-key"
+  summary: "Trate a chave como comprometida: rotacione, remova do repositório e do histórico e guarde em cofre de segredos."
+  effort: M
+  regression-risk: HIGH
+  refs:
+    - "https://cwe.mitre.org/data/definitions/321.html"
+
+- key: "proj-no-gitignore"
+  summary: "Crie um .gitignore para a stack (gitignore.io) incluindo .env, build e dependências."
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://git-scm.com/docs/gitignore"
+
+- key: "proj-committed-artifacts"
+  summary: "Remova a pasta do controle de versão (git rm -r --cached) e adicione ao .gitignore."
+  before: "node_modules/ versionado"
+  after: "git rm -r --cached node_modules && echo node_modules/ >> .gitignore"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://git-scm.com/docs/git-rm"
+
+- key: "proj-docker-no-dockerignore"
+  summary: "Crie um .dockerignore com .git, node_modules, .env e artefatos de build."
+  before: "(sem .dockerignore)"
+  after: ".git\nnode_modules\n.env\ntarget\ndist"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://docs.docker.com/build/building/context/#dockerignore-files"

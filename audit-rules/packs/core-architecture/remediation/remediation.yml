@@ -1,0 +1,30 @@
+- key: "sentinel-arch-layer"
+  summary: "Respeite o sentido das dependências entre camadas: resource -> service -> repository. Mova a lógica para o serviço ou crie uma interface na camada correta."
+  before: "// UsuarioResource\nimport com.app.repository.UsuarioRepository;"
+  after: "// UsuarioResource\nimport com.app.service.UsuarioService;"
+  refs:
+    - "https://martinfowler.com/bliki/PresentationDomainDataLayering.html"
+
+- key: "sentinel-arch-conv-endpoint-sem-autorizacao"
+  summary: "Declare explicitamente quem pode chamar o endpoint; o padrão aberto esconde exposições acidentais."
+  before: "@Path(\"/pedidos\") public class PedidoResource { ... }"
+  after: "@Path(\"/pedidos\") @RolesAllowed(\"auditor\") public class PedidoResource { ... }"
+  refs:
+    - "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+
+- key: "sentinel-arch-required-file"
+  summary: "Adicione o arquivo exigido pela política do projeto."
+
+- key: "sentinel-comp-forbidden"
+  summary: "Troque a biblioteca por uma alternativa mantida e remova-a do manifesto, inclusive como dependência transitiva (mvn dependency:tree / npm ls)."
+
+- key: "sentinel-comp-min-version"
+  summary: "Atualize para a versão mínima exigida (ou superior) e rode os testes; em Maven, fixe pela seção dependencyManagement para valer também nas transitivas."
+  refs:
+    - "https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html"
+
+- key: "sentinel-comp-required"
+  summary: "Inclua a biblioteca exigida pela política nas dependências do projeto."
+
+- key: "sentinel-comp-not-approved"
+  summary: "Use uma biblioteca da lista aprovada ou peça a inclusão desta na política do pacote."

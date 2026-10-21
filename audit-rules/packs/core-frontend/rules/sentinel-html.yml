@@ -1,0 +1,42 @@
+# HTML. Casos de teste: tests/sentinel-html.html
+rules:
+  - id: sentinel-html-handler-inline
+    pattern-regex: '<\w+\b[^>]*\son(?:click|load|error|mouseover|submit|change|focus|blur)\s*='
+    message: >
+      Manipulador de evento escrito no HTML (onclick=...) impede uma política CSP estrita e mistura comportamento
+      com marcação. Registre o evento no código.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: security
+
+  - id: sentinel-html-script-http
+    pattern-regex: '<script\b[^>]*\ssrc\s*=\s*["]http://'
+    message: >
+      Script carregado por HTTP sem criptografia: quem controla a rede pode trocar o código. Use HTTPS.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+
+  - id: sentinel-html-script-sem-sri
+    pattern-regex: '<script\b(?![^>]*\bintegrity\s*=)[^>]*\ssrc\s*=\s*["]https://(?!localhost)[^"]+["][^>]*>'
+    message: >
+      Script de terceiros (CDN) sem integrity: se a CDN for comprometida, o código malicioso roda no seu site.
+      Acrescente integrity=\"sha384-...\" e crossorigin=\"anonymous\", ou hospede o arquivo.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: security
+      cwe: "CWE-353: Missing Support for Integrity Check"
+

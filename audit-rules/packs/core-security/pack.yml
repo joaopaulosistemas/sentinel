@@ -1,0 +1,7 @@
+id: core-security
+name: "Segurança (núcleo)"
+version: 1.0.0
+description: "Injeção, XSS, criptografia fraca, JWT, CORS/CSRF, desserialização e OWASP API/A01."
+author: Sentinel
+languages: [java, javascript, typescript]
+enabled-by-default: true

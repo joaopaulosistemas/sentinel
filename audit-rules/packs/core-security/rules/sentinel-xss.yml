@@ -1,0 +1,54 @@
+rules:
+  - id: sentinel-xss-jsp-unescaped-output
+    # JSP não é uma linguagem suportada pelo parser do Semgrep: usa o modo "generic".
+    pattern: <%= ... %>
+    paths:
+      include:
+        - "*.jsp"
+    message: >
+      Possível XSS (OWASP A03): saída não escapada em JSP via '<%= %>'.
+      Use '<c:out value="${...}" />' ou JSTL fn:escapeXml para escapar o HTML.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-xss-response-write
+    patterns:
+      - pattern: $RESP.getWriter().$M($INPUT)
+      - pattern-not: $RESP.getWriter().$M("...")
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(print|println|write|append)$
+    message: >
+      Possível XSS (OWASP A03): escrita direta de '$INPUT' na resposta HTTP sem escape.
+      Escape o conteúdo (ex.: OWASP Java Encoder, Encode.forHtml) antes de enviar ao cliente.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-xss-inner-html
+    patterns:
+      - pattern-either:
+          - pattern: $EL.innerHTML = $INPUT
+          - pattern: $EL.outerHTML = $INPUT
+          - pattern: $EL.insertAdjacentHTML($POS, $INPUT)
+          - pattern: document.write($INPUT)
+      - pattern-not: $EL.innerHTML = "..."
+      - pattern-not: $EL.outerHTML = "..."
+      - pattern-not: $EL.insertAdjacentHTML($POS, "...")
+      - pattern-not: document.write("...")
+    message: >
+      Possível XSS (OWASP A03): HTML inserido no DOM a partir de '$INPUT'.
+      Use textContent ou sanitize com DOMPurify antes de inserir.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection

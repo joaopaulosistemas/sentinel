@@ -1,0 +1,6 @@
+management:
+  endpoints:
+    web:
+      # ruleid: sentinel-spring-actuator-exposto-yaml
+      exposure:
+        include: "*"

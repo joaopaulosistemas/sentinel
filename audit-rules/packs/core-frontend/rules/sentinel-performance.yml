@@ -1,0 +1,27 @@
+# Performance: operações sequenciais e consultas em laço. Casos de teste: tests/sentinel-performance.ts e .java
+rules:
+  - id: sentinel-perf-await-em-laco
+    pattern-regex: '(?s)\b(?:for|while)\s*\((?![^)]*\bawait\b)[^)]*\)\s*\{[^{}]*\bawait\b'
+    message: >
+      'await' dentro de laço executa uma operação por vez. Se as iterações são independentes, dispare todas e
+      aguarde com Promise.all (ou limite a concorrência). Se a ordem importa, ignore este aviso.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**", "**/dist/**", "**/test/**", "**/scripts/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-perf-consulta-em-laco
+    pattern-regex: '(?s)(?:\b(?:for|while)\s*\([^)]*\)\s*\{[^{}]*\b\w*(?:Repository|repository|Repo|repo|Dao|dao)\.(?:find|get|load|query|select|count|exists)\w*\(|\.(?:forEach|map)\(\s*\w+\s*->\s*\w*(?:Repository|repository|Repo|repo|Dao|dao)\.(?:find|get|load|query|select|count|exists)\w*\()'
+    message: >
+      Consulta ao banco dentro de laço: indício de N+1 (uma ida ao banco por item). Busque todos de uma vez
+      (findAllById, IN, JOIN FETCH) e agrupe em memória.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java", "*.kt"]
+      exclude: ["**/test/**", "**/target/**", "**/generated/**"]
+    metadata:
+      category: quality

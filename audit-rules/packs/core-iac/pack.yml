@@ -1,0 +1,7 @@
+id: core-iac
+name: "Docker (núcleo)"
+version: 1.0.0
+description: "Dockerfile: imagem :latest, execução como root, ADD remoto e segredos no build. Kubernetes é coberto por kube-linter e Checkov (pacote market-tools)."
+author: Sentinel
+languages: [dockerfile]
+enabled-by-default: true

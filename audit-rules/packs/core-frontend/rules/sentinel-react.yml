@@ -1,0 +1,42 @@
+# Armadilhas de React. Casos de teste: tests/sentinel-react.tsx
+rules:
+  - id: sentinel-react-dangerously
+    pattern-regex: 'dangerouslySetInnerHTML'
+    message: >
+      dangerouslySetInnerHTML injeta HTML sem sanitização: com dado externo é XSS. Sanitize com DOMPurify ou
+      renderize como texto/JSX.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.tsx", "*.jsx"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting"
+
+  - id: sentinel-react-componente-classe
+    pattern-regex: 'class\s+\w+\s+extends\s+(?:React\.)?(?:Pure)?Component\b'
+    message: >
+      Componente de classe. Componentes de função com hooks são o padrão atual do React e simplificam testes e
+      reuso.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.tsx", "*.jsx"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+
+  - id: sentinel-react-estado-derivado
+    pattern-regex: 'useState\(\s*props\.\w+\s*\)'
+    message: >
+      Estado inicializado com uma prop não acompanha mudanças dela (fica desatualizado). Use a prop diretamente,
+      calcule o valor na renderização ou resete o estado com key.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.tsx", "*.jsx"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+

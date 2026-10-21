@@ -1,0 +1,37 @@
+- name: docker-imagem-latest
+  rules:
+    - "avd-ds-0001"
+    - "sentinel-docker-imagem-latest"
+    - "trivy-ds001"
+    - "hadolint-dl3007"
+    - "checkov-ckv_docker_7"
+  max-lines: 1
+
+- name: docker-usuario-root
+  rules:
+    - "avd-ds-0002"
+    - "sentinel-docker-sem-user"
+    - "trivy-ds002"
+    - "hadolint-dl3002"
+    - "checkov-ckv_docker_3"
+  max-lines: -1
+
+- name: k8s-imagem-latest
+  rules:
+    - "sentinel-k8s-imagem-latest"
+    - "kube-linter-latest-tag"
+    - "kube-score-container-image-tag"
+  max-lines: -1
+
+- name: k8s-host-network
+  rules:
+    - "sentinel-k8s-host-network"
+    - "kube-linter-host-network"
+  max-lines: -1
+
+- name: k8s-roda-como-root
+  rules:
+    - "sentinel-k8s-roda-como-root"
+    - "kube-linter-run-as-non-root"
+    - "kube-score-container-security-context-user-group-id"
+  max-lines: -1

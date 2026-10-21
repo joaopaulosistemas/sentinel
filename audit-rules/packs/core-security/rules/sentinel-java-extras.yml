@@ -1,0 +1,209 @@
+# Mais riscos em Java e Spring. Casos de teste: tests/sentinel-java-extras.java
+rules:
+  - id: sentinel-xxe-parser-xml
+    patterns:
+      - pattern-either:
+          - pattern: DocumentBuilderFactory.newInstance()
+          - pattern: SAXParserFactory.newInstance()
+          - pattern: XMLInputFactory.newInstance()
+          - pattern: TransformerFactory.newInstance()
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $F.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $F.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $F.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            ...
+          }
+    message: >
+      Parser XML criado sem desligar DTD e entidades externas: permite XXE (leitura de arquivos do servidor e SSRF).
+      Chame setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) (ou desligue SUPPORT_DTD no
+      StAX / ACCESS_EXTERNAL_DTD no Transformer) antes de usar.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-611: Improper Restriction of XML External Entity Reference"
+      owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-spel-injection
+    patterns:
+      - pattern-either:
+          - pattern: $P.parseExpression($X)
+          - pattern: new SpelExpressionParser().parseExpression($X)
+      - pattern-not: $P.parseExpression("...")
+      - metavariable-regex:
+          metavariable: $P
+          regex: (?i).*(spel|expression|parser).*
+    message: >
+      Expressão SpEL montada a partir de variável: se o valor vem do usuário, permite executar código arbitrário no
+      servidor. Use expressões fixas, um StandardEvaluationContext restrito (SimpleEvaluationContext) ou outra forma
+      de configuração.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-917: Expression Language Injection"
+
+  - id: sentinel-open-redirect
+    patterns:
+      - pattern-either:
+          - pattern: $R.sendRedirect($X)
+          - pattern: new RedirectView($X)
+      - pattern-not: $R.sendRedirect("...")
+      - pattern-not: new RedirectView("...")
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i).*(param|url|redirect|return|next|target|dest|uri).*
+    message: >
+      Redirecionamento para um destino que vem da requisição: o atacante usa seu domínio para phishing. Valide
+      contra uma lista de destinos permitidos ou aceite só caminhos relativos internos.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"
+
+  - id: sentinel-jackson-default-typing
+    pattern-either:
+      - pattern: $M.enableDefaultTyping(...)
+      - pattern: $M.activateDefaultTyping(...)
+    message: >
+      Tipagem padrão do Jackson habilitada: o JSON escolhe a classe a instanciar, o que viabiliza ataques de
+      desserialização (RCE) se houver gadgets no classpath. Use @JsonTypeInfo com subtipos permitidos
+      (PolymorphicTypeValidator restrito).
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-zip-slip
+    patterns:
+      - pattern: new File($D, $E.getName())
+      - pattern-either:
+          - pattern-inside: |
+              ZipEntry $E = ...;
+              ...
+          - pattern-inside: |
+              $T $M(..., ZipEntry $E, ...) {
+                ...
+              }
+      - pattern-not-inside: |
+          if (<... $E.getName().contains("..") ...>) { ... }
+          ...
+    message: >
+      Arquivo extraído usando o nome da entrada do ZIP sem validar: um ZIP com "../../x" grava fora da pasta de
+      destino (Zip Slip). Resolva o caminho, normalize e confira que continua dentro do diretório de destino.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+
+  - id: sentinel-crossorigin-aberto
+    pattern-regex: '@CrossOrigin(?!\s*\()|@CrossOrigin\s*\([^)]*"\*"'
+    message: >
+      @CrossOrigin sem origem definida (ou com "*") libera qualquer site a chamar esta API pelo navegador do usuário.
+      Liste as origens permitidas (origins = {"https://app.exemplo.com"}).
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-942: Permissive Cross-domain Policy with Untrusted Domains"
+
+  - id: sentinel-log-dado-sensivel
+    patterns:
+      - pattern: $LOG.$M(..., $X, ...)
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: ^(log|logger|LOG|LOGGER|slf4jLogger)$
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(trace|debug|info|warn|error)$
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i)^.*(password|senha|token|secret|apikey|cvv|cpf|cartao|authorization).*$
+    message: >
+      Dado sensível (senha, token, CPF, cartão...) enviado para o log. Logs são copiados, indexados e lidos por muita
+      gente: registre só um identificador ou mascare o valor (LGPD).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+
+  - id: sentinel-senha-fixa-no-codigo
+    patterns:
+      - pattern: String $V = "...";
+      - metavariable-regex:
+          metavariable: $V
+          regex: (?i)^.*(password|senha|secret|apikey|api_key|token).*$
+      - pattern-not: String $V = "";
+    message: >
+      Credencial escrita no código-fonte. Ela vai para o Git e para todo build. Leia de variável de ambiente, de
+      configuração externa ou de um cofre de segredos, e troque a que já foi exposta.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+
+  - id: sentinel-system-exit
+    pattern: System.exit(...)
+    message: >
+      System.exit() derruba a JVM inteira, inclusive o servidor de aplicação e outras requisições em andamento.
+      Em serviço, lance uma exceção e deixe o framework tratar; encerrar é responsabilidade do ciclo de vida da
+      aplicação.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/*Main*.java", "**/*Application*.java", "**/cli/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cookie-sem-secure
+    patterns:
+      - pattern: Cookie $C = new Cookie(...);
+      - pattern-not-inside: |
+          ...
+          $C.setSecure(true);
+          ...
+    message: >
+      Cookie criado sem setSecure(true): vai também por HTTP puro e pode ser interceptado. Defina Secure e HttpOnly
+      (e SameSite) em cookies de sessão ou autenticação.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"

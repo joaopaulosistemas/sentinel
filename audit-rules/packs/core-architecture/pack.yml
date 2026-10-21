@@ -1,0 +1,7 @@
+id: core-architecture
+name: "Arquitetura em camadas e política de componentes (exemplo)"
+version: 1.0.0
+description: "Modelo de política declarativa: camadas resource -> service -> repository, convenções de endpoint e bibliotecas proibidas. Copie e ajuste para a arquitetura do seu sistema."
+author: Sentinel
+languages: [java, typescript]
+enabled-by-default: false

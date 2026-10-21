@@ -1,0 +1,163 @@
+# Boas práticas e armadilhas em TypeScript, React e Angular.
+# Casos de teste: tests/sentinel-typescript.ts e sentinel-typescript-react.tsx
+rules:
+  - id: sentinel-ts-any-explicito
+    pattern-regex: '(?m)(:\s*any\b(?!\w)|\bas\s+any\b|<any>|\bany\[\])'
+    message: >
+      Uso explícito de 'any' desliga a checagem de tipos exatamente onde ela mais ajudaria. Use o tipo correto,
+      um tipo genérico ou 'unknown' (que obriga a verificar antes de usar).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/test/**", "**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ts-supressao-de-tipos
+    pattern-regex: '(?m)//\s*@ts-(ignore|nocheck)\b(?!\s*[:\-]?\s*\S{15,})'
+    message: >
+      Supressão de erros de tipo (@ts-ignore / @ts-nocheck) sem justificativa. Prefira @ts-expect-error com o motivo
+      (ele avisa quando deixa de ser necessário) ou corrija o tipo.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ts-console-log
+    pattern-either:
+      - pattern: console.log(...)
+      - pattern: console.debug(...)
+    message: >
+      console.log esquecido no código: polui o console do usuário e pode expor dados. Use um logger com nível
+      ou remova antes de publicar.
+    severity: INFO
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["*.spec.ts", "*.test.ts", "*.test.tsx", "**/test/**", "**/node_modules/**", "**/scripts/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ts-catch-vazio
+    pattern-regex: 'catch\s*(?:\([^)]*\))?\s*\{\s*\}'
+    message: >
+      Bloco catch totalmente vazio engole a falha. Trate o erro, registre ou propague. Se ignorar for intencional,
+      diga o motivo em um comentário dentro do bloco.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx", "*.js", "*.jsx"]
+      exclude: ["*.spec.ts", "*.test.ts", "*.test.tsx", "**/test/**", "**/node_modules/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-390: Detection of Error Condition Without Action"
+
+  - id: sentinel-ts-var
+    pattern-regex: '(?m)^[ \t]*(?:export[ \t]+)?var[ \t]+[\w$]+'
+    message: >
+      'var' tem escopo de função e sofre hoisting, fonte clássica de bugs. Use const (padrão) ou let.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx", "*.js", "*.jsx"]
+      exclude: ["**/node_modules/**", "*.d.ts"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ts-igualdade-frouxa
+    patterns:
+      - pattern-either:
+          - pattern: $A == $B
+          - pattern: $A != $B
+      - pattern-not: $A == null
+      - pattern-not: $A != null
+      - pattern-not: $A == undefined
+      - pattern-not: $A != undefined
+      - pattern-not: $A == void 0
+    message: >
+      '==' e '!=' convertem tipos antes de comparar ('0' == 0, '' == false). Use '===' e '!=='.
+      (Comparar com null/undefined usando == é a única exceção aceita.)
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-1025: Comparison Using Wrong Factors"
+
+  - id: sentinel-ts-export-let
+    pattern: export let $X = ...;
+    message: >
+      Variável mutável exportada vira estado global compartilhado entre módulos, difícil de rastrear e de testar.
+      Exporte const, ou exponha o valor por uma função.
+    severity: INFO
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: architecture
+
+  - id: sentinel-ts-subscribe-aninhado
+    pattern-either:
+      - pattern: |
+          $A.subscribe(($X) => { ... $B.subscribe(...); ... })
+      - pattern: |
+          $A.subscribe(() => { ... $B.subscribe(...); ... })
+      - pattern: |
+          $A.subscribe(function ($X) { ... $B.subscribe(...); ... })
+    message: >
+      subscribe dentro de subscribe (RxJS): difícil de ler, vaza assinaturas e não cancela a anterior.
+      Combine com switchMap/mergeMap/concatMap/forkJoin em um só fluxo.
+    severity: WARNING
+    languages: [typescript]
+    paths:
+      exclude: ["*.spec.ts", "**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ts-useeffect-async
+    pattern-regex: '\buseEffect\(\s*async\b'
+    message: >
+      useEffect com função async: o callback passa a devolver uma Promise em vez da função de limpeza, e o React
+      ignora/avisa. Declare uma função async dentro do efeito e chame-a.
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ts-react-key-indice
+    pattern-regex: '\bkey=\{\s*(?:i|idx|index|indice)\s*\}'
+    message: >
+      Usar o índice do array como 'key' faz o React reaproveitar o componente errado quando a lista é reordenada
+      ou filtrada (estado e foco "trocam de lugar"). Use um identificador estável do item.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.tsx", "*.jsx"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-ts-token-em-localstorage
+    patterns:
+      - pattern-either:
+          - pattern: localStorage.setItem($K, ...)
+          - pattern: sessionStorage.setItem($K, ...)
+      - metavariable-regex:
+          metavariable: $K
+          regex: (?i)["'`].*(token|jwt|senha|password|secret|credential).*["'`]
+    message: >
+      Token/credencial guardado em localStorage/sessionStorage fica acessível a qualquer script da página
+      (um único XSS leva a sessão). Prefira cookie HttpOnly + Secure + SameSite.
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["*.spec.ts", "*.test.ts", "*.test.tsx", "**/test/**", "**/node_modules/**"]
+    metadata:
+      category: security
+      cwe: "CWE-922: Insecure Storage of Sensitive Information"

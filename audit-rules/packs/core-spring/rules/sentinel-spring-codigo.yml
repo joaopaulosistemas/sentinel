@@ -1,0 +1,101 @@
+# Código Spring Boot / JPA. Casos de teste: tests/sentinel-spring-codigo.java
+rules:
+  - id: sentinel-spring-requestmapping-sem-method
+    patterns:
+      - pattern: |
+          @RequestMapping(...)
+          $RET $M(...) { ... }
+      - pattern-not: |
+          @RequestMapping(..., method = ..., ...)
+          $RET $M(...) { ... }
+    message: >
+      @RequestMapping sem 'method' aceita qualquer verbo HTTP (GET, POST, DELETE...) e abre caminho para CSRF e
+      chamadas inesperadas. Use @GetMapping, @PostMapping, @PutMapping ou @DeleteMapping.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-352: Cross-Site Request Forgery (CSRF)"
+
+  - id: sentinel-spring-requestbody-sem-valid
+    pattern-regex: '(?<!@Valid )(?<!@Validated )@RequestBody\b(?!\s+@Valid)(?!\s+@Validated)'
+    message: >
+      Corpo da requisição recebido sem validação. Acrescente @Valid (ou @Validated) ao parâmetro e declare as
+      restrições (@NotNull, @Size, @Email...) no DTO; sem isso entrada inválida chega à regra de negócio.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-20: Improper Input Validation"
+
+  - id: sentinel-spring-permitall-geral
+    pattern-regex: '\.anyRequest\(\)\s*\.permitAll\(\)'
+    message: >
+      anyRequest().permitAll() libera todas as rotas que você não listou antes. Use anyRequest().authenticated()
+      (ou denyAll()) e abra só as rotas públicas explicitamente.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-862: Missing Authorization"
+
+  - id: sentinel-spring-frameoptions-desligado
+    pattern-regex: 'frameOptions\s*\(\s*\)\s*\.\s*disable\s*\(|frameOptions\s*\(\s*\w+\s*->\s*\w+\s*\.\s*disable\s*\(|headers\s*\(\s*\w+\s*->\s*\w+\s*\.\s*frameOptions\s*\(\s*\w+\s*->\s*\w+\s*\.\s*disable'
+    message: >
+      O cabeçalho X-Frame-Options foi desligado: a aplicação pode ser embutida em iframe de outro site (clickjacking).
+      Use sameOrigin() se precisa de iframe próprio.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-1021: Improper Restriction of Rendered UI Layers"
+
+  - id: sentinel-spring-fetch-eager
+    pattern-regex: 'fetch\s*=\s*FetchType\.EAGER'
+    message: >
+      Associação JPA EAGER carrega a relação em toda consulta, mesmo quando ninguém usa (causa N+1 e consultas
+      pesadas). Deixe LAZY e use JOIN FETCH ou @EntityGraph onde precisar.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-spring-entidade-com-data
+    pattern-regex: '@Data\b(?:\s*@\w+(?:\([^)]*\))?)*\s*@Entity\b|@Entity\b(?:\s*@\w+(?:\([^)]*\))?)*\s*@Data\b'
+    message: >
+      @Data numa entidade JPA gera equals/hashCode/toString com todos os campos, incluindo relações preguiçosas:
+      dispara consultas, recursão infinita e quebra o equals de entidades gerenciadas. Use @Getter/@Setter e
+      equals/hashCode pelo id.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-spring-print-stack-trace
+    pattern: $E.printStackTrace()
+    message: >
+      printStackTrace() escreve na saída padrão, sem nível, sem contexto e fora do logger configurado. Use
+      log.error("mensagem", e) para o erro aparecer no sistema de logs.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality

@@ -1,0 +1,7 @@
+id: core-spring
+name: "Spring Boot e JPA (núcleo)"
+version: 1.0.0
+description: "Configuração insegura (actuator, console H2, senha em properties, ddl-auto), segurança (CSRF/CORS já cobertos no core-security; permitAll geral, frameOptions) e armadilhas de código Spring/JPA (@RequestBody sem @Valid, EAGER, @Data em entidade)."
+author: Sentinel
+languages: [java]
+enabled-by-default: true

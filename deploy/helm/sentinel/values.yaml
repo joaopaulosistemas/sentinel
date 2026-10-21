@@ -1,0 +1,49 @@
+# Valores padrão do chart Sentinel. Sobrescreva com -f meus-valores.yaml ou --set.
+api:
+  image: sentinel-audit-api:latest        # publique a imagem no seu registry
+  replicas: 1                             # >1 exige o agendador desligado em todas menos uma réplica (ver README)
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { memory: 3Gi }
+  cloneVolumeSize: 5Gi
+  env: {}                                 # variáveis extras (OSV_ENABLED, TRIVY_ENABLED, CLEANCODE_*, ...)
+
+dashboard:
+  image: sentinel-audit-dashboard:latest
+  replicas: 1
+
+# Segredos. Prefira existingSecret (criado por você/External Secrets) a colocar valores aqui.
+secrets:
+  existingSecret: ""                      # Secret com as chaves: DB_PASSWORD, API_KEY, GIT_TOKEN, WEBHOOK_SECRET
+  dbPassword: ""
+  apiKey: ""
+  gitToken: ""
+  webhookSecret: ""
+
+database:
+  # internal: sobe um PostgreSQL simples (StatefulSet) — bom para teste; em produção use um banco gerenciado.
+  internal: true
+  url: ""                                 # jdbc:postgresql://host:5432/sentinel_audit (obrigatório se internal=false)
+  user: sentinel_audit
+  storage: 10Gi
+
+# Pacotes de regras
+packs:
+  gitUrl: ""
+  gitRef: main
+  gitPath: ""
+  dirs: ""
+  disabled: ""
+  allowTools: false                       # permite pacotes executarem ferramentas externas (risco: ver README)
+  trustedToolPacks: "market-tools"      # pacotes embutidos cujas ferramentas (Bandit, Checkov...) rodam sem allowTools
+  publicKey: ""                           # chave pública Ed25519 (Base64)
+  requireSignature: false
+
+ingress:
+  enabled: false
+  className: ""
+  host: sentinel.exemplo.com
+  tls: { enabled: false, secretName: "" }
+
+securityContext:
+  runAsNonRoot: true

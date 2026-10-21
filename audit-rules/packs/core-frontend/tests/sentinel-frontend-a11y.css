@@ -1,0 +1,14 @@
+.a {
+  // ruleid: sentinel-fe-outline-removido
+  outline: none;
+}
+.b {
+  // ruleid: sentinel-fe-100vh
+  min-height: 100vh;
+}
+.c {
+  // ok: sentinel-fe-outline-removido
+  outline: 2px solid blue;
+  // ok: sentinel-fe-100vh
+  min-height: 100dvh;
+}

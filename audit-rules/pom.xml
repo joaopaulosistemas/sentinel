@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sentinel.audit</groupId>
+        <artifactId>sentinel-audit-tool</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>audit-rules</artifactId>
+    <packaging>pom</packaging>
+    <name>Sentinel Audit Rules</name>
+    <description>Regras Semgrep YAML para auditoria de código</description>
+    <!--
+        Este módulo não compila código Java.
+        As regras Semgrep ficam em src/main/resources/rules/ e são distribuídas
+        como artefato ZIP para uso com: semgrep - -config ./rules/
+    -->
+</project>

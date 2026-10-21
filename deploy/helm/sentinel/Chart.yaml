@@ -1,0 +1,6 @@
+apiVersion: v2
+name: sentinel
+description: Sentinel Audit Tool — API, dashboard e (opcionalmente) PostgreSQL
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

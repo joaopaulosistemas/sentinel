@@ -1,0 +1,92 @@
+{
+  "extends": [
+    "stylelint-config-standard-scss"
+  ],
+  "rules": {
+    "declaration-no-important": [
+      true,
+      {
+        "severity": "error"
+      }
+    ],
+    "selector-max-id": 0,
+    "max-nesting-depth": [
+      3,
+      {
+        "ignoreAtRules": [
+          "media",
+          "supports",
+          "include"
+        ]
+      }
+    ],
+    "selector-max-compound-selectors": 4,
+    "color-no-invalid-hex": [
+      true,
+      {
+        "severity": "error"
+      }
+    ],
+    "block-no-empty": [
+      true,
+      {
+        "severity": "error"
+      }
+    ],
+    "no-duplicate-selectors": true,
+    "declaration-block-no-duplicate-properties": [
+      true,
+      {
+        "severity": "error"
+      }
+    ],
+    "font-family-no-duplicate-names": true,
+    "unit-no-unknown": [
+      true,
+      {
+        "severity": "error"
+      }
+    ],
+    "property-no-unknown": [
+      true,
+      {
+        "severity": "error"
+      }
+    ],
+    "scss/at-extend-no-missing-placeholder": true,
+    "a11y/media-prefers-reduced-motion": true,
+    "a11y/no-outline-none": true,
+    "a11y/selector-pseudo-class-focus": true,
+    "a11y/content-property-no-static-value": true,
+    "a11y/font-size-is-readable": true,
+    "a11y/no-obsolete-attribute": true,
+    "a11y/no-obsolete-element": true,
+    "a11y/no-text-align-justify": true,
+    "declaration-property-value-disallowed-list": [
+      {
+        "transition": [
+          "/\\ball\\b/"
+        ],
+        "transition-property": [
+          "all"
+        ]
+      },
+      {
+        "severity": "warning",
+        "message": "Evite 'transition: all': anima propriedades de layout e custa desempenho. Liste só opacity/transform."
+      }
+    ]
+  },
+  "ignoreFiles": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/*.min.css",
+    "**/vendor/**"
+  ],
+  "defaultSeverity": "warning",
+  "plugins": [
+    "@double-great/stylelint-a11y"
+  ]
+}

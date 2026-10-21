@@ -1,0 +1,74 @@
+# Mais boas práticas e riscos em Dockerfile. Casos de teste: tests/sentinel-dockerfile-extras.dockerfile
+rules:
+  - id: sentinel-docker-chmod-777
+    pattern-regex: '(?im)^\s*RUN\b[^\n]*\bchmod\s+(?:-R\s+)?0?777\b'
+    message: >
+      chmod 777 dá escrita a qualquer usuário do contêiner. Dê só a permissão necessária (755 para pastas e
+      executáveis, 644 para arquivos) e a propriedade ao usuário da aplicação (chown).
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*Dockerfile*", "*.dockerfile"]
+    metadata:
+      category: security
+      cwe: "CWE-732: Incorrect Permission Assignment for Critical Resource"
+
+  - id: sentinel-docker-sudo
+    pattern-regex: '(?im)^\s*RUN\b[^\n]*\bsudo\b'
+    message: >
+      sudo dentro do Dockerfile é desnecessário (o build roda como root) e deixa a imagem com um caminho de
+      elevação de privilégio. Remova.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*Dockerfile*", "*.dockerfile"]
+    metadata:
+      category: security
+
+  - id: sentinel-docker-segredo-em-arg
+    pattern-regex: '(?im)^\s*ARG\s+\w*(?:PASSWORD|SECRET|TOKEN|API_?KEY|PRIVATE_?KEY)\w*\s*=\s*[^\s$]+'
+    message: >
+      Segredo com valor padrão num ARG: fica gravado no histórico da imagem (docker history). Passe segredos com
+      BuildKit (--secret) ou em tempo de execução, nunca no Dockerfile.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*Dockerfile*", "*.dockerfile"]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+
+  - id: sentinel-docker-expose-ssh
+    pattern-regex: '(?im)^\s*EXPOSE\b[^\n]*(?<![\d])22(?![\d])'
+    message: >
+      Porta 22 (SSH) exposta. Contêiner não deve rodar sshd: use docker exec / kubectl exec para acessar.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*Dockerfile*", "*.dockerfile"]
+    metadata:
+      category: security
+
+  - id: sentinel-docker-apt-sem-no-recommends
+    pattern-regex: '(?im)^\s*RUN\b[^\n]*apt-get\s+install\b(?![^\n]*--no-install-recommends)[^\n]*$'
+    message: >
+      apt-get install sem --no-install-recommends instala pacotes sugeridos e engorda a imagem (e a superfície de
+      ataque). Acrescente a opção e remova o cache (rm -rf /var/lib/apt/lists/*).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*Dockerfile*", "*.dockerfile"]
+    metadata:
+      category: quality
+
+  - id: sentinel-docker-apt-update-sozinho
+    pattern-regex: '(?im)^\s*RUN\s+apt-get\s+update\s*$'
+    message: >
+      apt-get update numa camada própria fica em cache e instala pacotes desatualizados depois. Junte no mesmo RUN
+      com o install (apt-get update && apt-get install ...).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*Dockerfile*", "*.dockerfile"]
+    metadata:
+      category: quality

@@ -1,0 +1,17 @@
+# O Semgrep não conta linhas nem métodos por classe. A detecção completa de God Object
+# (500+ linhas ou 20+ métodos públicos) é feita pelo ArchitectureAnalyzer do audit-api.
+# Esta regra cobre o sintoma de acoplamento alto: 8 ou mais dependências injetadas na mesma classe.
+rules:
+  - id: sentinel-too-many-injections
+    pattern-regex: '(?s)(?:@Inject\b[^;{}]*;.*?){8}'
+    paths:
+      include:
+        - "*.java"
+    message: >
+      Possível God Object: a classe tem 8 ou mais dependências injetadas (@Inject).
+      Considere dividir em componentes menores com responsabilidade única (SRP).
+    severity: WARNING
+    languages: [regex]
+    metadata:
+      category: quality
+      cwe: "CWE-1060: Excessive Number of Inefficient Server-Side Data Accesses"

@@ -1,0 +1,90 @@
+- key: "sentinel-spring-actuator-exposto"
+  summary: "Exponha só health e info; proteja o restante com autenticação."
+  before: "management.endpoints.web.exposure.include=*"
+  after: "management.endpoints.web.exposure.include=health,info"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-spring-h2-console"
+  summary: "Desligue o console do H2 fora do perfil de desenvolvimento local."
+  before: "spring.h2.console.enabled=true"
+  after: "spring.h2.console.enabled=false"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-spring-senha-em-properties"
+  summary: "Leia a credencial de variável de ambiente ou cofre de segredos e troque a que já foi versionada."
+  before: "spring.datasource.password=minhaSenha"
+  after: "spring.datasource.password=${DB_PASSWORD}"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-spring-ddl-auto-perigoso"
+  summary: "Use validate (ou none) e controle o esquema com Flyway ou Liquibase."
+  before: "spring.jpa.hibernate.ddl-auto=update"
+  after: "spring.jpa.hibernate.ddl-auto=validate"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-spring-open-in-view"
+  summary: "Desligue e carregue as relações necessárias na camada de serviço (JOIN FETCH)."
+  before: "spring.jpa.open-in-view=true"
+  after: "spring.jpa.open-in-view=false"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-spring-show-sql"
+  summary: "Use o logger org.hibernate.SQL em DEBUG no perfil de desenvolvimento."
+  before: "spring.jpa.show-sql=true"
+  after: "logging.level.org.hibernate.SQL=DEBUG"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-spring-requestmapping-sem-method"
+  summary: "Troque por @GetMapping, @PostMapping, @PutMapping ou @DeleteMapping."
+  before: "@RequestMapping(\"/contas\")"
+  after: "@GetMapping(\"/contas\")"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-spring-requestbody-sem-valid"
+  summary: "Acrescente @Valid ao parâmetro e as restrições no DTO."
+  before: "criar(@RequestBody ContaDto dto)"
+  after: "criar(@Valid @RequestBody ContaDto dto)"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-spring-permitall-geral"
+  summary: "Termine a cadeia com anyRequest().authenticated() e liste as rotas públicas antes."
+  before: ".anyRequest().permitAll()"
+  after: ".anyRequest().authenticated()"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-spring-frameoptions-desligado"
+  summary: "Use sameOrigin() se a aplicação precisa de iframe próprio."
+  before: ".frameOptions().disable()"
+  after: ".frameOptions().sameOrigin()"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-spring-fetch-eager"
+  summary: "Deixe LAZY e use JOIN FETCH ou @EntityGraph nas consultas que precisam da relação."
+  before: "@ManyToOne(fetch = FetchType.EAGER)"
+  after: "@ManyToOne(fetch = FetchType.LAZY)"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-spring-entidade-com-data"
+  summary: "Troque @Data por @Getter/@Setter e escreva equals/hashCode pelo id."
+  before: "@Data @Entity class Conta"
+  after: "@Getter @Setter @Entity class Conta"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-spring-print-stack-trace"
+  summary: "Registre o erro no logger do sistema."
+  before: "e.printStackTrace();"
+  after: "log.error(\"falha ao processar\", e);"
+  effort: S
+  regression-risk: LOW

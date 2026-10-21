@@ -1,0 +1,7 @@
+# Node.js (servidor). Para navegador, as regras do pacote core-frontend e o ESLint já cobrem.
+- id: njsscan
+  name: "njsscan"
+  category: security
+  applies-to: ["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.ts"]
+  command: [njsscan, --sarif, -o, "{output}", "{project}"]
+  timeout-seconds: 600

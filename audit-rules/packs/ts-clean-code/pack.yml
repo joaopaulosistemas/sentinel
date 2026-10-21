@@ -1,0 +1,7 @@
+id: ts-clean-code
+name: "Padrão de código TypeScript / Angular (clean code)"
+version: 1.0.0
+description: "Padrão da casa para TypeScript: modificador de acesso explícito, underscore em membros privados, nomes de enum e interface, hooks de ciclo de vida só com chamadas a métodos privados e sem abreviações. Desligado por padrão: ative pelo perfil padrao-typescript-angular."
+author: Sentinel
+languages: [typescript]
+enabled-by-default: false

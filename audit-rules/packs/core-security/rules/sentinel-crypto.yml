@@ -1,0 +1,67 @@
+# Criptografia fraca e desserialização insegura (OWASP A02 / A08).
+rules:
+  - id: sentinel-crypto-hash-fraco
+    pattern-either:
+      - pattern: MessageDigest.getInstance("MD5")
+      - pattern: MessageDigest.getInstance("MD2")
+      - pattern: MessageDigest.getInstance("SHA-1")
+      - pattern: MessageDigest.getInstance("SHA1")
+    message: >
+      Algoritmo de hash fraco (MD5/SHA-1). Use SHA-256 ou superior; para senhas, use bcrypt, scrypt ou Argon2.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-crypto-cifra-fraca
+    patterns:
+      - pattern: Cipher.getInstance($ALG)
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: (?i)^"(DES.*|RC[24].*|BLOWFISH.*|AES|AES/ECB.*)"$
+    message: >
+      Cifra fraca ou modo inseguro (DES, RC4, AES/ECB). Use AES/GCM/NoPadding com IV aleatório e único.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-crypto-random-previsivel
+    patterns:
+      - pattern-either:
+          - pattern: new java.util.Random()
+          - pattern: Math.random()
+      - pattern-inside: |
+          $RET $M(...) { ... }
+      - metavariable-regex:
+          metavariable: $M
+          regex: (?i).*(token|senha|password|secret|otp|session|nonce|salt|key).*
+    message: >
+      Gerador pseudoaleatório previsível usado onde segurança importa (token, senha, OTP). Use java.security.SecureRandom.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)"
+      owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-desserializacao-insegura
+    pattern-either:
+      - pattern: new ObjectInputStream(...).readObject()
+      - pattern: $O.readObject()
+    pattern-inside: |
+      ObjectInputStream $O = new ObjectInputStream(...);
+      ...
+    message: >
+      Desserialização nativa do Java (ObjectInputStream.readObject): permite execução de código se a entrada não for confiável.
+      Use JSON/Protobuf ou configure um filtro (ObjectInputFilter) com lista de classes permitidas.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures

@@ -1,0 +1,12 @@
+<!-- ruleid: sentinel-html-handler-inline -->
+<button onclick="abrir()">abrir</button>
+<!-- ok: sentinel-html-handler-inline -->
+<button id="abrir">abrir</button>
+<!-- ruleid: sentinel-html-script-http -->
+<script src="http://cdn.exemplo.com/a.js"></script>
+<!-- ruleid: sentinel-html-script-sem-sri -->
+<script src="https://cdn.exemplo.com/a.js"></script>
+<!-- ok: sentinel-html-script-sem-sri -->
+<script src="https://cdn.exemplo.com/a.js" integrity="sha384-abc" crossorigin="anonymous"></script>
+<!-- ok: sentinel-html-script-sem-sri -->
+<script src="/local.js"></script>

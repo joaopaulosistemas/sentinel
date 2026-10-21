@@ -1,0 +1,4 @@
+id: arquitetura-em-camadas
+name: "Padrão + arquitetura em camadas"
+description: "Pacotes padrão mais a política de camadas e componentes do pacote core-architecture."
+packs: [core-security, core-iac, core-spring, core-quality, core-architecture]

@@ -1,0 +1,28 @@
+rules:
+  - id: sentinel-owasp-a01-endpoint-sem-autorizacao
+    patterns:
+      - pattern: |
+          @Path($ENDPOINT)
+          class $CLASS { ... }
+      - pattern-not: |
+          @RolesAllowed(...)
+          class $CLASS { ... }
+      - pattern-not: |
+          @PermitAll
+          class $CLASS { ... }
+      - pattern-not: |
+          @Authenticated
+          class $CLASS { ... }
+      - pattern-not: |
+          @PreAuthorize(...)
+          class $CLASS { ... }
+    message: >
+      Possível Broken Access Control (OWASP A01): o recurso JAX-RS '$CLASS' não tem anotação
+      de autorização (@RolesAllowed, @PermitAll, @Authenticated). Se a proteção vem de um filtro
+      ou do gateway, documente isso; caso contrário, adicione controle de acesso explícito.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-284: Improper Access Control"
+      owasp: A01:2021 - Broken Access Control

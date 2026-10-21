@@ -1,0 +1,91 @@
+# Acessibilidade e boas práticas de marcação. Casos de teste: tests/sentinel-frontend-a11y.tsx
+rules:
+  - id: sentinel-fe-img-sem-alt
+    pattern-regex: '(?s)<img\b(?![^>]*\balt\s*=)[^>]*>'
+    message: >
+      Imagem sem atributo 'alt'. Leitores de tela leem o nome do arquivo. Descreva a imagem ou use alt="" se for
+      puramente decorativa.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.tsx", "*.jsx", "*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+
+  - id: sentinel-fe-click-sem-role
+    pattern-regex: '(?s)<(?:div|span)\b(?![^>]*\brole\s*=)[^>]*(?:\bonClick\s*=|\(click\)\s*=)'
+    message: >
+      div/span clicável sem 'role': não recebe foco nem aciona por teclado, e leitores de tela não o anunciam como
+      controle. Use <button>, ou acrescente role="button", tabIndex={0} e tratamento de Enter/Espaço.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.tsx", "*.jsx", "*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: quality
+
+  - id: sentinel-fe-target-blank
+    pattern-regex: '(?s)<a\b(?![^>]*\brel\s*=)[^>]*\btarget\s*=\s*\{?["'']_blank["'']'
+    message: >
+      Link com target="_blank" sem rel="noopener noreferrer". Em navegadores antigos a página aberta controla a
+      janela de origem (tabnabbing) e recebe o Referer.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.tsx", "*.jsx", "*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: security
+
+  - id: sentinel-fe-html-sem-lang
+    pattern-regex: '(?s)<html\b(?![^>]*\blang\s*=)[^>]*>'
+    message: >
+      <html> sem atributo 'lang'. Leitores de tela não sabem a pronúncia correta e tradutores erram o idioma.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.html"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-fe-zoom-bloqueado
+    pattern-regex: '(?i)(user-scalable\s*=\s*(?:no|0)|maximum-scale\s*=\s*1(?:\.0)?(?![\d.]))'
+    message: >
+      O viewport bloqueia o zoom do usuário. Pessoas com baixa visão dependem do zoom (WCAG 1.4.4). Se o bloqueio é
+      decisão de produto, desligue esta regra no perfil e registre o motivo.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.html", "*.tsx", "*.jsx"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-fe-outline-removido
+    pattern-regex: '(?m)\boutline\s*:\s*(?:none|0)\s*[;}]'
+    message: >
+      'outline: none' remove o indicador de foco do teclado. Se for substituir, ofereça um estilo equivalente em
+      :focus-visible (WCAG 2.4.7).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.css", "*.scss"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-fe-100vh
+    pattern-regex: '(?m)\b(?:min-|max-)?height\s*:\s*100vh\b'
+    message: >
+      100vh inclui a barra de endereço em navegadores móveis e corta o conteúdo no fim da página. Prefira 100dvh
+      (com 100vh de reserva para navegadores antigos).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.css", "*.scss"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**"]
+    metadata:
+      category: quality
