@@ -1,0 +1,39 @@
+# Vazamento de memória em componentes React. Casos de teste: tests/sentinel-memoria-react.jsx
+rules:
+  - id: sentinel-mem-react-effect-sem-cleanup
+    patterns:
+      - pattern-either:
+          - pattern: |
+              useEffect(() => {
+                ...
+                setInterval(...);
+                ...
+              }, ...)
+          - pattern: |
+              useEffect(() => {
+                ...
+                $T.addEventListener(...);
+                ...
+              }, ...)
+      - pattern-not: |
+          useEffect(() => {
+            ...
+            return () => { ... };
+          }, ...)
+      - pattern-not: |
+          useEffect(() => {
+            ...
+            return function $F() { ... };
+          }, ...)
+    message: >
+      useEffect cria um temporizador ou ouvinte de evento e não devolve função de limpeza. A cada nova renderização
+      (ou ao desmontar o componente) o anterior continua ativo e vaza memória. Retorne uma função que faça
+      clearInterval / removeEventListener.
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      include: ["*.tsx", "*.jsx"]
+      exclude: ["**/*.test.tsx", "**/node_modules/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-401: Missing Release of Memory after Effective Lifetime"

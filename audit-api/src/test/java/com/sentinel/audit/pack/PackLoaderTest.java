@@ -27,10 +27,10 @@ class PackLoaderTest {
         PackLoader.Discovery d = PackLoader.discover(TestPacks.builtinRoot());
 
         assertEquals(java.util.Map.of(), d.rejected(), "nenhum pacote embutido pode ser rejeitado");
-        assertEquals(List.of("core-architecture", "core-frontend", "core-iac", "core-quality", "core-security", "core-spring", "market-tools", "ts-clean-code"),
+        assertEquals(List.of("core-architecture", "core-frontend", "core-iac", "core-persistencia", "core-quality", "core-security", "core-spring", "market-tools", "ts-clean-code"),
                 d.packs().stream().map(RulePack::id).sorted().collect(Collectors.toList()));
         RulePack quality = d.packs().stream().filter(p -> p.id().equals("core-quality")).findFirst().get();
-        assertEquals(35, quality.semgrepRuleCount());
+        assertEquals(41, quality.semgrepRuleCount());
         assertNotNull(quality.rulesDir());
         assertTrue(quality.remediation().size() >= 40);
         assertTrue(quality.dedup().size() >= 6);
@@ -351,9 +351,9 @@ class PackLoaderTest {
     void pacoteMarketToolsEmbutidoEValidoETemAsFerramentas() {
         PackLoader.Report r = PackLoader.inspect(TestPacks.builtinRoot().resolve("market-tools"));
         assertTrue(r.ok(), r.errors().toString());
-        assertEquals(8, r.pack().tools().size());
+        assertEquals(11, r.pack().tools().size());
         assertTrue(r.pack().tools().stream().map(ToolSpec::id).toList()
-                .containsAll(List.of("njsscan", "stylelint", "checkov", "hadolint", "kube-linter", "kube-score", "checkstyle", "jscpd")));
+                .containsAll(List.of("njsscan", "stylelint", "checkov", "hadolint", "kube-linter", "kube-score", "checkstyle", "jscpd", "squawk", "sqlfluff", "dependency-cruiser")));
     }
 
     @Test

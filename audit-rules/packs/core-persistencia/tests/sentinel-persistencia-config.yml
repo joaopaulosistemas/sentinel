@@ -1,0 +1,6 @@
+logging:
+  level:
+    # ruleid: sentinel-jpa-log-sql-detalhado-yaml
+    org.hibernate.SQL: debug
+    # ok: sentinel-jpa-log-sql-detalhado-yaml
+    org.hibernate.type: warn

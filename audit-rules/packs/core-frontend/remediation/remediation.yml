@@ -183,3 +183,31 @@
   after: "<script src=\"https://cdn/a.js\" integrity=\"sha384-...\" crossorigin=\"anonymous\">"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-mem-setinterval-sem-clear"
+  summary: "Guarde o id e limpe o temporizador em ngOnDestroy."
+  before: "setInterval(() => this.atualizar(), 1000);"
+  after: "this.timer = setInterval(...);  // ngOnDestroy() { clearInterval(this.timer); }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-mem-addeventlistener-sem-remove"
+  summary: "Remova o ouvinte (com a mesma função) em ngOnDestroy."
+  before: "window.addEventListener('resize', this.onResize);"
+  after: "ngOnDestroy() { window.removeEventListener('resize', this.onResize); }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-mem-subscribe-sem-desinscrever"
+  summary: "Use takeUntilDestroyed(), o pipe async ou guarde a Subscription."
+  before: "this.dados$.subscribe(d => this.dados = d);"
+  after: "this.dados$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(d => this.dados = d);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-mem-react-effect-sem-cleanup"
+  summary: "Devolva uma função de limpeza no useEffect."
+  before: "useEffect(() => { setInterval(tick, 1000); }, []);"
+  after: "useEffect(() => { const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);"
+  effort: S
+  regression-risk: LOW

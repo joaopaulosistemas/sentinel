@@ -1,0 +1,140 @@
+# Vazamento e consumo excessivo de memória em Java. Casos de teste: tests/sentinel-memoria-java.java
+rules:
+  - id: sentinel-mem-threadlocal-sem-remove
+    patterns:
+      - pattern: ThreadLocal<$T> $TL = ...;
+      - pattern-not-inside: |
+          class $C {
+            ...
+            $RET $M(...) {
+              ...
+              $TL.remove();
+              ...
+            }
+            ...
+          }
+    message: >
+      ThreadLocal sem chamada a remove(). Em servidores com pool de threads o valor fica preso à thread e vaza
+      memória (e pode vazar dados entre requisições). Chame remove() em um finally ao fim do uso.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-401: Missing Release of Memory after Effective Lifetime"
+
+  - id: sentinel-mem-colecao-estatica
+    pattern-regex: '\bstatic\s+(?!final\b)(?:(?:private|public|protected)\s+)?(?:Map|HashMap|ConcurrentHashMap|List|ArrayList|LinkedList|Set|HashSet|Queue|Deque)\s*<[^;=]*>\s+\w+\s*=\s*new\b'
+    message: >
+      Coleção estática mutável: ela vive até o fim da aplicação e cresce sem limite se ninguém remover itens
+      (vazamento de memória clássico, comum em caches caseiros). Use um cache com tamanho e expiração (Caffeine) ou
+      guarde o estado em um bean com ciclo de vida.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-401: Missing Release of Memory after Effective Lifetime"
+
+  - id: sentinel-mem-cache-sem-limite
+    patterns:
+      - pattern-either:
+          - pattern: Caffeine.newBuilder().build()
+          - pattern: Caffeine.newBuilder(). ... .build()
+          - pattern: CacheBuilder.newBuilder().build()
+          - pattern: CacheBuilder.newBuilder(). ... .build()
+      - pattern-not: Caffeine.newBuilder(). ... .maximumSize(...). ... .build()
+      - pattern-not: Caffeine.newBuilder(). ... .maximumWeight(...). ... .build()
+      - pattern-not: Caffeine.newBuilder(). ... .expireAfterWrite(...). ... .build()
+      - pattern-not: Caffeine.newBuilder(). ... .expireAfterAccess(...). ... .build()
+      - pattern-not: Caffeine.newBuilder(). ... .weakValues(). ... .build()
+      - pattern-not: Caffeine.newBuilder(). ... .softValues(). ... .build()
+      - pattern-not: CacheBuilder.newBuilder(). ... .maximumSize(...). ... .build()
+      - pattern-not: CacheBuilder.newBuilder(). ... .expireAfterWrite(...). ... .build()
+      - pattern-not: CacheBuilder.newBuilder(). ... .expireAfterAccess(...). ... .build()
+    message: >
+      Cache sem tamanho máximo nem expiração: cresce até esgotar a memória. Defina maximumSize(...) e
+      expireAfterWrite(...) (ou expireAfterAccess).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-770: Allocation of Resources Without Limits or Throttling"
+
+  - id: sentinel-mem-executor-sem-shutdown
+    patterns:
+      - pattern: ExecutorService $EX = Executors.$M(...);
+      - pattern-not-inside: |
+          class $C {
+            ...
+            $RET $MET(...) {
+              ...
+              $EX.shutdown();
+              ...
+            }
+            ...
+          }
+      - pattern-not-inside: |
+          class $C {
+            ...
+            $RET $MET(...) {
+              ...
+              $EX.shutdownNow();
+              ...
+            }
+            ...
+          }
+      - pattern-not-inside: |
+          class $C {
+            ...
+            $RET $MET(...) {
+              ...
+              $EX.close();
+              ...
+            }
+            ...
+          }
+    message: >
+      ExecutorService criado e nunca encerrado: as threads continuam vivas (e com tudo o que referenciam) depois de
+      o objeto não ser mais usado. Chame shutdown() em um @PreDestroy ou use um executor gerenciado pelo Spring.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-404: Improper Resource Shutdown or Release"
+
+  - id: sentinel-mem-new-thread-solto
+    pattern: new Thread(...).start()
+    message: >
+      Thread criada e iniciada diretamente: sem limite de quantidade, cada uma reserva memória de pilha e, sob carga,
+      esgota a memória. Use um ExecutorService com tamanho fixo (ou virtual threads no Java 21).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-770: Allocation of Resources Without Limits or Throttling"
+
+  - id: sentinel-mem-leitura-total-de-arquivo
+    pattern-either:
+      - pattern: Files.readAllBytes(...)
+      - pattern: $IN.readAllBytes()
+      - pattern: IOUtils.toByteArray(...)
+    message: >
+      Arquivo ou fluxo lido inteiro para a memória. Com arquivos grandes (upload, exportação) isso derruba a
+      aplicação por falta de memória. Processe em blocos com streams (InputStream/BufferedReader) ou Files.lines.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-789: Memory Allocation with Excessive Size Value"

@@ -1,0 +1,76 @@
+- key: "sentinel-jpa-n-mais-um"
+  summary: "Busque todos os registros de uma vez antes do loop e consulte um Map."
+  before: "for (Long id : ids) { repo.findById(id); }"
+  after: "Map<Long, Conta> porId = repo.findAllById(ids).stream().collect(toMap(Conta::getId, c -> c));"
+  effort: M
+  regression-risk: LOW
+
+- key: "sentinel-jpa-escrita-em-loop"
+  summary: "Acumule os objetos e grave em lote com saveAll; configure hibernate.jdbc.batch_size."
+  before: "for (Conta c : contas) { repo.save(c); }"
+  after: "repo.saveAll(contas);  // spring.jpa.properties.hibernate.jdbc.batch_size=50"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-jpa-findall-sem-paginacao"
+  summary: "Receba um Pageable e devolva uma Page."
+  before: "repo.findAll()"
+  after: "repo.findAll(PageRequest.of(pagina, 50))"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-jpa-pageable-unpaged"
+  summary: "Use PageRequest com tamanho máximo em vez de desligar a paginação."
+  before: "repo.findAll(Pageable.unpaged())"
+  after: "repo.findAll(PageRequest.of(0, 100))"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-jpa-muitos-para-um-eager-padrao"
+  summary: "Declare LAZY e traga o relacionamento só onde precisa, com JOIN FETCH ou @EntityGraph."
+  before: "@ManyToOne private Cliente cliente;"
+  after: "@ManyToOne(fetch = FetchType.LAZY) private Cliente cliente;"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-sql-select-estrela"
+  summary: "Liste as colunas necessárias ou use uma projeção."
+  before: "SELECT * FROM conta"
+  after: "SELECT id, numero, saldo FROM conta"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-sql-like-curinga-inicial"
+  summary: "Use busca por prefixo, índice trigram (pg_trgm) ou busca de texto completo."
+  before: "WHERE nome LIKE '%silva'"
+  after: "WHERE nome ILIKE 'silva%'  -- ou índice GIN com pg_trgm"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-sql-order-by-aleatorio"
+  summary: "Sorteie por faixa de id ou use TABLESAMPLE."
+  before: "ORDER BY random() LIMIT 1"
+  after: "WHERE id >= (SELECT floor(random() * max(id)) FROM conta) ORDER BY id LIMIT 1"
+  effort: M
+  regression-risk: LOW
+
+- key: "sentinel-sql-delete-sem-where"
+  summary: "Acrescente a condição; para limpar a tabela inteira use TRUNCATE em migration."
+  before: "DELETE FROM conta"
+  after: "DELETE FROM conta WHERE criada_em < :limite"
+  effort: S
+  regression-risk: HIGH
+
+- key: "sentinel-sql-update-sem-where"
+  summary: "Acrescente a condição que limita as linhas alteradas."
+  before: "UPDATE conta SET saldo = 0"
+  after: "UPDATE conta SET saldo = 0 WHERE id = :id"
+  effort: S
+  regression-risk: HIGH
+
+- key: "sentinel-jpa-log-sql-detalhado"
+  summary: "Deixe o log do Hibernate em WARN em produção."
+  before: "logging.level.org.hibernate.SQL=DEBUG"
+  after: "logging.level.org.hibernate.SQL=WARN"
+  effort: S
+  regression-risk: LOW

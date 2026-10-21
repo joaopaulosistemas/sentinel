@@ -1,0 +1,10 @@
+{
+  "name": "sentinel-audit-extras",
+  "private": true,
+  "description": "Squawk (migrations Postgres) e Dependency-Cruiser (ciclos e módulos órfãos em TS/JS) usados pelo pacote market-tools; instalado em /opt/extras na imagem",
+  "dependencies": {
+    "dependency-cruiser": "17.3.1",
+    "squawk-cli": "2.61.0",
+    "typescript": "5.9.3"
+  }
+}

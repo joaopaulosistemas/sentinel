@@ -468,7 +468,7 @@ sentinel-audit-tool/
 │       └── resource/               ← Endpoints REST
 │
 ├── audit-rules/
-│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-quality, core-frontend, market-tools, ts-clean-code, core-architecture) e profiles/
+│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, market-tools, ts-clean-code, core-architecture) e profiles/
 │   ├── optional/                   ← Regras que duplicam os analisadores Java (desativadas)
 │   ├── lint/eslint/                ← Configuração do ESLint usada pelo analisador
 │   └── bin/sentinel-pack           ← Ferramenta de linha de comando para autores de pacotes
@@ -536,8 +536,8 @@ semgrep --test --config audit-rules/packs/core-quality/rules audit-rules/packs/c
 ## Pacotes de regras, perfis e arquitetura (plug and play)
 
 As regras não ficam mais no código: são **pacotes** (pastas com um `pack.yml`) que você adiciona, atualiza ou remove sem recompilar.
-Vêm prontos em `audit-rules/packs/`: `core-security` (30 regras Semgrep), `core-spring` (14, Spring Boot e JPA), `core-iac` (Dockerfile, Compose e Kubernetes),
-`core-quality` (35, clean code/integrações), `core-frontend` (24: Angular, React, HTML, CSS/SCSS, acessibilidade e performance), `market-tools` (njsscan e Stylelint, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
+Vêm prontos em `audit-rules/packs/`: `core-security` (30 regras Semgrep), `core-spring` (14, Spring Boot e JPA), `core-persistencia` (12: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
+`core-quality` (41, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (28: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
 
 ### Estrutura de um pacote
 
@@ -640,6 +640,8 @@ O Sentinel analisa **Angular, TypeScript, JavaScript, React, HTML, CSS, SCSS, Ja
 | Tecnologia | Analisadores |
 |---|---|
 | Java | PMD, **Checkstyle** (bugs prováveis, tamanho e complexidade); regras Semgrep de segurança (injeção, criptografia, OWASP API, XSS, **XXE, SpEL, redirect aberto, desserialização do Jackson, Zip Slip, dado sensível no log, senha fixa, cookie sem Secure**), clean code e integrações |
+| SQL / Banco | **Squawk** (migrations do Postgres: índice sem `CONCURRENTLY`, mudança de tipo, `NOT NULL`, `int` em vez de `bigint`...) e **SQLFluff** (estilo, dialeto Postgres) em `db/migration`, `migrations`, `db/changelog`; regras Semgrep `sentinel-sql-*` e `sentinel-jpa-*` (pacote `core-persistencia`) nas consultas dentro do código Java |
+| Memória | regras Semgrep `sentinel-mem-*`: `ThreadLocal` sem `remove()`, coleção estática, cache sem limite, executor sem `shutdown`, `new Thread`, leitura total de arquivo; no front, `setInterval`, `addEventListener`, `subscribe()` e `useEffect` sem limpeza |
 | Spring Boot / JPA | pacote `core-spring` (14 regras): Actuator exposto, console H2, senha em properties, `ddl-auto`, `open-in-view`, `@RequestMapping` sem método, `@RequestBody` sem `@Valid`, `permitAll()` geral, `frameOptions` desligado, `FetchType.EAGER`, `@Data` em entidade; `@CrossOrigin` aberto |
 | TypeScript / JavaScript | ESLint com `typescript-eslint`, `security`, `no-unsanitized`, `sonarjs`, **`promise` e `regexp` (ReDoS)**; regras Semgrep `sentinel-ts-*`; njsscan |
 | Angular | `angular-eslint` no código e nos **templates** (acessibilidade incluída); regras `sentinel-ng-*` (bypassSecurityTrust, nativeElement, `::ng-deep`, `*ngFor` sem `trackBy`, método no template) |
@@ -648,15 +650,18 @@ O Sentinel analisa **Angular, TypeScript, JavaScript, React, HTML, CSS, SCSS, Ja
 | CSS / SCSS | Stylelint (`standard-scss`, **acessibilidade com `stylelint-a11y`**, `!important`, `transition: all`, aninhamento) e regras `sentinel-css-*` / `sentinel-scss-*` |
 | Docker / Compose | `core-iac` (Dockerfile: `latest`, root, `ADD` remoto, `chmod 777`, segredo em `ARG`/`ENV`, SSH exposto, apt; **Compose: `privileged`, socket do Docker, `network_mode: host`, segredo no ambiente**), Hadolint, Checkov, Trivy (misconfig) |
 | Kubernetes | regras `sentinel-k8s-*` (`hostNetwork`, `hostPath`, root, escalada de privilégio, capabilities, `:latest`), kube-linter, **kube-score**, Checkov, Trivy |
+| Arquitetura (TS/JS) | **Dependency-Cruiser**: ciclos entre módulos, módulos órfãos e código de produção importando teste (roda sem `node_modules`) |
 | Qualquer linguagem | Gitleaks e histórico (segredos), OSV/Trivy (dependências vulneráveis), **jscpd (código duplicado)** |
 
 ### Ferramentas externas (`market-tools`)
 
-Pacote embutido que liga por SARIF: **njsscan** (segurança de JS/Node), **Stylelint** (CSS/SCSS), **Checkstyle** (Java), **jscpd** (código duplicado em Java, TS/JS, CSS/SCSS e HTML; limites em `JSCPD_MIN_LINES`/`JSCPD_MIN_TOKENS`), **Hadolint** (Dockerfile), **kube-linter** e **kube-score** (manifestos Kubernetes em `k8s/`, `kubernetes/`, `manifests/`) e **Checkov** (Dockerfile, Kubernetes e GitHub Actions). O ESLint tem analisador próprio. Cada ferramenta só roda se estiver instalada **e** se o projeto tiver arquivos do tipo que ela entende.
+Pacote embutido que liga por SARIF: **njsscan** (segurança de JS/Node), **Stylelint** (CSS/SCSS), **Checkstyle** (Java), **jscpd** (código duplicado em Java, TS/JS, CSS/SCSS e HTML; limites em `JSCPD_MIN_LINES`/`JSCPD_MIN_TOKENS`), **Squawk** e **SQLFluff** (SQL de migrations), **Dependency-Cruiser** (ciclos entre módulos TS/JS), **Hadolint** (Dockerfile), **kube-linter** e **kube-score** (manifestos Kubernetes em `k8s/`, `kubernetes/`, `manifests/`) e **Checkov** (Dockerfile, Kubernetes e GitHub Actions). O ESLint tem analisador próprio. Cada ferramenta só roda se estiver instalada **e** se o projeto tiver arquivos do tipo que ela entende.
 
-- Na imagem Docker: `WITH_ESLINT=true` (padrão) instala Node 20, ESLint e Stylelint; `WITH_MARKET_TOOLS=true` (padrão) instala njsscan, Checkov, Hadolint, kube-linter, kube-score e o Checkstyle (precisa da JVM que a imagem já tem); o jscpd vem junto com o ESLint. Fora do Docker, basta ter os executáveis no `PATH` e, para o Stylelint, a pasta `audit-rules/lint/stylelint` instalada em `/opt/stylelint`.
+- Na imagem Docker: `WITH_ESLINT=true` (padrão) instala Node 20, ESLint e Stylelint; `WITH_MARKET_TOOLS=true` (padrão) instala njsscan, Checkov, SQLFluff, Hadolint, kube-linter, kube-score e o Checkstyle (precisa da JVM que a imagem já tem); o jscpd, o Squawk e o Dependency-Cruiser (`/opt/extras`) vêm junto com o ESLint. Fora do Docker, basta ter os executáveis no `PATH` e, para o Stylelint, a pasta `audit-rules/lint/stylelint` instalada em `/opt/stylelint`.
 - Os findings entram com o nome da ferramenta e o id `<ferramenta>-<regra>` (ex.: `stylelint-declaration-no-important`, `eslint-react-hooks/rules-of-hooks`). Achados repetidos entre ferramentas (ESLint e Semgrep, Hadolint/Checkov e as regras de Dockerfile) são juntados (`dedup.yml`).
 - O Stylelint inclui regras de estilo: para não pesar no score, use um perfil `rules: { "stylelint-*": { shadow: true } }`.
+- O SQLFluff e o Squawk olham só arquivos `.sql`; o Squawk, só os de pastas de migration. Dialeto do SQLFluff: `postgres` (troque com `SQLFLUFF_DIALECT`). O Squawk ignora por padrão `prefer-robust-stmts`, `require-lock-timeout` e `require-statement-timeout` (política de ambiente); troque com `SQUAWK_EXCLUDE`. Para silenciar o estilo: `rules: { "sqlfluff-*": { shadow: true } }`.
+- O Dependency-Cruiser roda **sem** `node_modules` (só ciclos e órfãos entre arquivos do próprio projeto). Knip e depcheck ficaram de fora de propósito: sem as dependências instaladas eles acusam como "sem uso" pacotes que o código usa.
 - **Confiança:** `PACKS_TRUSTED_TOOL_PACKS=market-tools` (padrão) libera as ferramentas desse pacote sem ligar `PACKS_ALLOW_TOOLS`.
   Vale **só** para o pacote que vem na pasta do produto; um pacote externo com o mesmo id, mesmo mais novo, não herda a confiança.
   Para desligar tudo: `PACKS_TRUSTED_TOOL_PACKS=` (vazio) ou `PACKS_DISABLED=market-tools`.

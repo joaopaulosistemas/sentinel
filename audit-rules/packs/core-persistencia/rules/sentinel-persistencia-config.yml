@@ -1,0 +1,31 @@
+# Log de SQL em nível detalhado. Casos de teste: tests/sentinel-persistencia-config.properties
+rules:
+  - id: sentinel-jpa-log-sql-detalhado
+    pattern-regex: '(?mi)^[ \t]*logging\.level\.org\.hibernate\.(?:SQL|type[\w.]*|orm\.jdbc\.bind)[ \t]*[=:][ \t]*(?:debug|trace)'
+    message: >
+      Log do Hibernate em DEBUG/TRACE grava cada comando SQL (e, no TRACE, os valores dos parâmetros, que podem ser
+      dados pessoais) e custa desempenho. Deixe em WARN em produção e use ferramenta de métricas para achar consultas
+      lentas.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+
+  - id: sentinel-jpa-log-sql-detalhado-yaml
+    pattern-regex: '(?mi)^[ \t]*org\.hibernate\.(?:SQL|type[\w.]*|orm\.jdbc\.bind)[ \t]*:[ \t]*["'']?(?:debug|trace)'
+    message: >
+      Log do Hibernate em DEBUG/TRACE grava cada comando SQL (e, no TRACE, os valores dos parâmetros, que podem ser
+      dados pessoais) e custa desempenho. Deixe em WARN em produção e use ferramenta de métricas para achar consultas
+      lentas.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.yml", "*.yaml"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"

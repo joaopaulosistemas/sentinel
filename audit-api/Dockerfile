@@ -26,7 +26,7 @@ ARG GITLEAKS_VERSION=8.21.2
 ARG WITH_PMD=true
 ARG PMD_VERSION=7.7.0
 ARG WITH_ESLINT=true
-# Analisadores de mercado do pacote market-tools: njsscan e Checkov (cada um em venv próprio), Hadolint e kube-linter
+# Analisadores de mercado do pacote market-tools: njsscan, Checkov e SQLFluff (cada um em venv próprio), Hadolint e kube-linter
 # (binários) e Stylelint (CSS/SCSS, precisa do Node: vem junto com WITH_ESLINT). --build-arg WITH_MARKET_TOOLS=false
 # deixa a imagem menor.
 ARG HADOLINT_VERSION=2.12.0
@@ -55,7 +55,7 @@ RUN apt-get update \
        fi \
     && if [ "$WITH_MARKET_TOOLS" = "true" ]; then \
          apt-get install -y --no-install-recommends python3-venv \
-         && for spec in "njsscan:njsscan" "checkov:checkov"; do \
+         && for spec in "njsscan:njsscan" "checkov:checkov" "sqlfluff:sqlfluff"; do \
               bin="${spec%%:*}"; pkg="${spec#*:}"; \
               python3 -m venv "/opt/venvs/$bin" \
               && "/opt/venvs/$bin/bin/pip" install --no-cache-dir "$pkg" \
@@ -88,11 +88,13 @@ RUN chmod 755 /usr/local/bin/sentinel-pack
 COPY audit-rules/lint/eslint /opt/eslint
 COPY audit-rules/lint/stylelint /opt/stylelint
 COPY audit-rules/lint/jscpd /opt/jscpd
+COPY audit-rules/lint/extras /opt/extras
 COPY audit-rules/lint/checkstyle/checks.xml /opt/checkstyle/checks.xml
 RUN if [ "$WITH_ESLINT" = "true" ]; then \
       cd /opt/eslint && npm install --omit=dev --no-audit --no-fund && ln -s /opt/eslint/node_modules/.bin/eslint /usr/local/bin/eslint \
       && cd /opt/stylelint && npm install --omit=dev --no-audit --no-fund && ln -s /opt/stylelint/node_modules/.bin/stylelint /usr/local/bin/stylelint \
-      && cd /opt/jscpd && npm install --omit=dev --no-audit --no-fund; \
+      && cd /opt/jscpd && npm install --omit=dev --no-audit --no-fund \
+      && cd /opt/extras && npm install --omit=dev --no-audit --no-fund; \
     fi
 RUN mkdir -p /tmp/sentinel-audit-clones && chown -R audit:audit /app /tmp/sentinel-audit-clones
 USER audit

@@ -31,6 +31,12 @@ class AreaClassifierTest {
         assertEquals(AuditArea.SECURITY, AreaClassifier.classify("sentinel-ng-bypass-security", Category.SECURITY));
         assertEquals(AuditArea.SECURITY, AreaClassifier.classify("sentinel-spring-permitall-geral", Category.SECURITY));
         assertEquals(AuditArea.PERFORMANCE, AreaClassifier.classify("sentinel-spring-fetch-eager", Category.QUALITY));
+        assertEquals(AuditArea.PERFORMANCE, AreaClassifier.classify("sentinel-jpa-n-mais-um", Category.QUALITY));
+        assertEquals(AuditArea.PERFORMANCE, AreaClassifier.classify("sentinel-sql-select-estrela", Category.QUALITY));
+        assertEquals(AuditArea.MAINTAINABILITY, AreaClassifier.classify("sentinel-sql-delete-sem-where", Category.QUALITY));
+        assertEquals(AuditArea.PERFORMANCE, AreaClassifier.classify("sentinel-mem-cache-sem-limite", Category.QUALITY));
+        assertEquals(AuditArea.PERFORMANCE, AreaClassifier.classify("squawk-require-concurrent-index-creation", Category.QUALITY));
+        assertEquals(AuditArea.ARCHITECTURE, AreaClassifier.classify("dependency-cruiser-ciclo-de-dependencia", Category.QUALITY));
         assertEquals(AuditArea.SECURITY, AreaClassifier.classify("bandit-B602", Category.SECURITY));
     }
 

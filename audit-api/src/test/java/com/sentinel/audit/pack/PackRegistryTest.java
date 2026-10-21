@@ -196,7 +196,7 @@ class PackRegistryTest {
         AuditPolicy legado = r.policyFor("legado");
         assertEquals(120, legado.threshold("max-function-lines", 50));
         assertEquals(Boolean.TRUE, legado.overrideFor("sentinel-java-clean-code.alguma-regra").shadow());
-        assertEquals(List.of("core-frontend", "core-iac", "core-quality", "core-security", "core-spring", "market-tools"), ids(legado), "sem 'packs': só os habilitados por padrão");
+        assertEquals(List.of("core-frontend", "core-iac", "core-persistencia", "core-quality", "core-security", "core-spring", "market-tools"), ids(legado), "sem 'packs': só os habilitados por padrão");
 
         AuditPolicy camadas = r.policyFor("arquitetura-em-camadas");
         assertTrue(ids(camadas).contains("core-architecture"));

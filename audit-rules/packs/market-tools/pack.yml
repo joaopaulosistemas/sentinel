@@ -1,7 +1,7 @@
 id: market-tools
 name: "Analisadores de mercado (web, Docker e Kubernetes)"
-version: 4.0.0
-description: "Integra ferramentas conhecidas via SARIF: njsscan (JS/Node), Stylelint (CSS/SCSS), Checkstyle (Java), jscpd (código duplicado), Checkov, Hadolint (Dockerfile), kube-linter e kube-score (Kubernetes). Cada uma só roda se estiver instalada e se o projeto tiver arquivos do tipo que ela entende."
+version: 5.0.0
+description: "Integra ferramentas conhecidas via SARIF: njsscan (JS/Node), Stylelint (CSS/SCSS), Checkstyle (Java), jscpd (código duplicado), Squawk e SQLFluff (SQL de migrations), Dependency-Cruiser (ciclos entre módulos TS/JS), Checkov, Hadolint (Dockerfile), kube-linter e kube-score (Kubernetes). Cada uma só roda se estiver instalada e se o projeto tiver arquivos do tipo que ela entende."
 author: Sentinel
-languages: [java, javascript, typescript, css, scss, html, dockerfile, kubernetes]
+languages: [java, javascript, typescript, css, scss, html, sql, dockerfile, kubernetes]
 enabled-by-default: true

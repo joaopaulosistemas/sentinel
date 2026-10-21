@@ -1,0 +1,173 @@
+# Persistência (JPA/Spring Data/JDBC). Casos de teste: tests/sentinel-persistencia.java
+rules:
+  - id: sentinel-jpa-n-mais-um
+    patterns:
+      - pattern: $REPO.$M(...)
+      - metavariable-regex:
+          metavariable: $REPO
+          regex: '(?i)^(this\.)?\w*(repository|repositorio|repo|dao)$'
+      - metavariable-regex:
+          metavariable: $M
+          regex: '^(find|get|read|query|load|count|exists|search)\w*$'
+      - pattern-either:
+          - pattern-inside: |
+              for (...) { ... }
+          - pattern-inside: |
+              while (...) { ... }
+          - pattern-inside: |
+              $COLL.forEach($X -> { ... });
+          - pattern-inside: |
+              $COLL.stream().$OP($X -> { ... });
+    message: >
+      Consulta ao banco dentro de um loop (problema N+1): uma consulta por item em vez de uma só. Busque tudo de uma
+      vez (findAllById, consulta com IN, JOIN FETCH ou @EntityGraph) antes do loop e use um Map para consultar.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-1073: Non-SQL Invokable Control Element with Excessive Number of Data Resource Accesses"
+
+  - id: sentinel-jpa-escrita-em-loop
+    patterns:
+      - pattern: $REPO.$M(...)
+      - metavariable-regex:
+          metavariable: $REPO
+          regex: '(?i)^(this\.)?\w*(repository|repositorio|repo|dao)$'
+      - metavariable-regex:
+          metavariable: $M
+          regex: '^(save|persist|merge|delete|remove|update|insert)\w*$'
+      - metavariable-regex:
+          metavariable: $M
+          regex: '^(?!saveAll|deleteAll|deleteInBatch|deleteAllInBatch|deleteAllById).*$'
+      - pattern-either:
+          - pattern-inside: |
+              for (...) { ... }
+          - pattern-inside: |
+              while (...) { ... }
+          - pattern-inside: |
+              $COLL.forEach($X -> { ... });
+    message: >
+      Gravação ou exclusão dentro de um loop: cada item vira um comando separado. Acumule os objetos e use saveAll()
+      ou deleteAllInBatch(), com hibernate.jdbc.batch_size configurado, para enviar em lotes.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-1073: Non-SQL Invokable Control Element with Excessive Number of Data Resource Accesses"
+
+  - id: sentinel-jpa-findall-sem-paginacao
+    patterns:
+      - pattern: $REPO.findAll()
+      - metavariable-regex:
+          metavariable: $REPO
+          regex: '(?i)^(this\.)?\w*(repository|repositorio|repo|dao)$'
+    message: >
+      findAll() sem Pageable carrega a tabela inteira na memória. Receba um Pageable (findAll(pageable)) ou limite a
+      consulta; com a tabela crescendo isso vira lentidão e falta de memória.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-770: Allocation of Resources Without Limits or Throttling"
+
+  - id: sentinel-jpa-pageable-unpaged
+    pattern: Pageable.unpaged()
+    message: >
+      Pageable.unpaged() desliga a paginação e traz todas as linhas. Use PageRequest.of(pagina, tamanho) com um
+      tamanho máximo.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-770: Allocation of Resources Without Limits or Throttling"
+
+  - id: sentinel-jpa-muitos-para-um-eager-padrao
+    pattern-regex: '@(?:ManyToOne|OneToOne)\b(?!\s*\([^)]*\bfetch\s*=)'
+    message: >
+      @ManyToOne e @OneToOne carregam a entidade relacionada de forma EAGER por padrão, o que gera consultas extras
+      (e N+1) em toda listagem. Declare fetch = FetchType.LAZY e traga o relacionamento só quando precisar
+      (JOIN FETCH ou @EntityGraph).
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-1073: Non-SQL Invokable Control Element with Excessive Number of Data Resource Accesses"
+
+  - id: sentinel-sql-select-estrela
+    pattern-regex: '(?i)"\s*select\s+\*\s+from\b'
+    message: >
+      SELECT * traz todas as colunas, inclusive as que ninguém usa, e impede o banco de usar índice só de cobertura.
+      Liste as colunas necessárias (ou use uma projeção/DTO).
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-1049: Excessive Data Query Operations in a Large Data Table"
+
+  - id: sentinel-sql-like-curinga-inicial
+    pattern-regex: '(?i)\blike\s+(?:''%|%\s*:|concat\s*\(\s*''%'')'
+    message: >
+      LIKE com curinga no início ('%texto') impede o uso de índice B-tree e varre a tabela inteira. Prefira busca por
+      prefixo ('texto%'), índice trigram (pg_trgm) ou busca de texto completo.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-1049: Excessive Data Query Operations in a Large Data Table"
+
+  - id: sentinel-sql-order-by-aleatorio
+    pattern-regex: '(?i)order\s+by\s+(?:rand|random|newid)\s*\(\s*\)'
+    message: >
+      ORDER BY aleatório ordena a tabela inteira a cada chamada. Sorteie por faixa de id ou use TABLESAMPLE.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: performance
+      cwe: "CWE-1049: Excessive Data Query Operations in a Large Data Table"
+
+  - id: sentinel-sql-delete-sem-where
+    pattern-regex: '(?i)"\s*delete\s+from\s+[\w.]+\s*"'
+    message: >
+      DELETE sem WHERE apaga todas as linhas da tabela. Se a intenção é limpar a tabela, deixe isso explícito
+      (TRUNCATE em migration); senão, acrescente a condição.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: reliability
+      cwe: "CWE-1025: Comparison Using Wrong Factors"
+
+  - id: sentinel-sql-update-sem-where
+    pattern-regex: '(?i)"\s*update\s+[\w.]+\s+set\s+(?![^"]*\bwhere\b)[^"]*"'
+    message: >
+      UPDATE sem WHERE altera todas as linhas da tabela. Acrescente a condição ou confirme que a intenção é essa.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: reliability
+      cwe: "CWE-1025: Comparison Using Wrong Factors"

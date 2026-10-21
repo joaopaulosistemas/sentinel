@@ -1,0 +1,8 @@
+id: core-persistencia
+name: "Persistência e SQL (núcleo)"
+version: 1.0.0
+description: "Consultas que gastam muito: N+1 (repositório dentro de loop), findAll sem paginação, SELECT *, LIKE com curinga inicial, ORDER BY aleatório, DELETE/UPDATE sem WHERE, ManyToOne/OneToOne EAGER por padrão e log de SQL em DEBUG."
+author: Sentinel
+languages: [java]
+enabled-by-default: true
+# Regras estáticas. Casos de teste: tests/sentinel-persistencia.java e tests/sentinel-persistencia-config.properties

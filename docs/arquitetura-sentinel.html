@@ -160,7 +160,7 @@ a{color:var(--accent)}
     <tr><td>Arquitetura (pacotes)</td><td>Camadas proibidas, convenções, arquivos e bibliotecas obrigatórias (<code>architecture.yml</code>)</td><td>política do perfil</td></tr>
     <tr><td>Higiene do projeto</td><td>README, testes, CI, lockfile, segredos versionados, artefatos commitados</td><td>interno, só lê arquivos</td></tr>
     <tr><td>SARIF</td><td>Qualquer outra ferramenta, por arquivo importado ou comando permitido</td><td><code>tools/*.yml</code></td></tr>
-    <tr><td>Mercado (<code>market-tools</code>)</td><td>njsscan, Stylelint, Checkstyle, jscpd, Checkov, Hadolint, kube-linter e kube-score, cada um só quando o projeto tem arquivos do tipo que ele entende</td><td>executáveis instalados; pacote embutido confiável</td></tr>
+    <tr><td>Mercado (<code>market-tools</code>)</td><td>njsscan, Stylelint, Checkstyle, jscpd, Squawk, SQLFluff, Dependency-Cruiser, Checkov, Hadolint, kube-linter e kube-score, cada um só quando o projeto tem arquivos do tipo que ele entende</td><td>executáveis instalados; pacote embutido confiável</td></tr>
   </table></div>
 </section>
 
@@ -175,6 +175,9 @@ a{color:var(--accent)}
     <tr><td>Angular e React</td><td>ESLint (inclui templates Angular e acessibilidade), Semgrep (<code>core-frontend</code>)</td></tr>
     <tr><td>HTML</td><td>ESLint com html-eslint, Semgrep</td></tr>
     <tr><td>CSS / SCSS</td><td>Stylelint (com acessibilidade), Semgrep</td></tr>
+    <tr><td>SQL e consultas</td><td>Squawk e SQLFluff nas migrations; Semgrep (<code>core-persistencia</code>) nas consultas do código Java</td></tr>
+    <tr><td>Memória</td><td>Semgrep (<code>sentinel-mem-*</code>) em Java, Angular e React</td></tr>
+    <tr><td>Arquitetura TS/JS</td><td>Dependency-Cruiser: ciclos, módulos órfãos, produção importando teste</td></tr>
     <tr><td>Docker e Kubernetes</td><td>Semgrep (<code>core-iac</code>), Hadolint, kube-linter, kube-score, Checkov, Trivy</td></tr>
     <tr><td>Qualquer linguagem</td><td>Gitleaks, Trivy e OSV (dependências), jscpd (código duplicado)</td></tr>
   </table></div>
@@ -199,12 +202,13 @@ a{color:var(--accent)}
       <h3>Embutidos</h3>
       <ul>
         <li><code>core-security</code> · 30 regras (Java, TS/JS, OWASP)</li>
-        <li><code>core-quality</code> · 35 regras</li>
+        <li><code>core-quality</code> · 41 regras (clean code, integrações e vazamento de memória em Java)</li>
         <li><code>core-iac</code> · 11 regras (Dockerfile, Compose e Kubernetes)</li>
         <li><code>core-spring</code> · 14 regras (Spring Boot e JPA)</li>
-        <li><code>core-frontend</code> · 24 regras (Angular, React, HTML, CSS/SCSS)</li>
+        <li><code>core-persistencia</code> · 12 regras (N+1, paginação, SQL perigoso)</li>
+        <li><code>core-frontend</code> · 28 regras (Angular, React, HTML, CSS/SCSS e vazamento de memória)</li>
         <li><code>ts-clean-code</code> · 7 regras do padrão TypeScript, desligado por padrão</li>
-        <li><code>market-tools</code> · 8 ferramentas externas via SARIF</li>
+        <li><code>market-tools</code> · 11 ferramentas externas via SARIF</li>
         <li><code>core-architecture</code> · exemplo, desligado por padrão</li>
       </ul>
       <p style="margin-top:10px">Perfis em <code>profiles/*.yml</code> herdam uns dos outros (<code>extends</code>), escolhem pacotes e ajustam severidade, desligam ou colocam regras em <b>sombra</b>.</p>

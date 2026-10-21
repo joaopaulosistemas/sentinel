@@ -32,6 +32,11 @@ public final class AreaClassifier {
         PREFIXES.put("sentinel-html-script-", AuditArea.SECURITY);
         PREFIXES.put("sentinel-html-handler", AuditArea.SECURITY);
         PREFIXES.put("sentinel-spring-fetch-eager", AuditArea.PERFORMANCE);
+        PREFIXES.put("sentinel-jpa-", AuditArea.PERFORMANCE);
+        PREFIXES.put("sentinel-sql-delete", AuditArea.MAINTAINABILITY);
+        PREFIXES.put("sentinel-sql-update", AuditArea.MAINTAINABILITY);
+        PREFIXES.put("sentinel-sql-", AuditArea.PERFORMANCE);
+        PREFIXES.put("sentinel-mem-", AuditArea.PERFORMANCE);
         PREFIXES.put("sentinel-spring-open-in-view", AuditArea.PERFORMANCE);
         PREFIXES.put("sentinel-ng-ngfor", AuditArea.PERFORMANCE);
         PREFIXES.put("sentinel-ng-chamada", AuditArea.PERFORMANCE);
@@ -55,6 +60,9 @@ public final class AreaClassifier {
         PREFIXES.put("kube-score-", AuditArea.DEVOPS);
         PREFIXES.put("jscpd-", AuditArea.MAINTAINABILITY);
         PREFIXES.put("checkstyle-", AuditArea.CODE_QUALITY);
+        PREFIXES.put("squawk-", AuditArea.PERFORMANCE);
+        PREFIXES.put("sqlfluff-", AuditArea.CODE_QUALITY);
+        PREFIXES.put("dependency-cruiser-", AuditArea.ARCHITECTURE);
         PREFIXES.put("sentinel-docker-", AuditArea.DEVOPS);
         PREFIXES.put("sentinel-compose-", AuditArea.DEVOPS);
         PREFIXES.put("sentinel-k8s-", AuditArea.DEVOPS);

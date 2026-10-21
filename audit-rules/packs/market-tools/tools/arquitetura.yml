@@ -1,0 +1,10 @@
+# Arquitetura de código TS/JS (Angular e React): ciclos entre módulos, módulos órfãos e produção importando teste.
+# Precisa de /opt/extras (Dependency-Cruiser e o conversor SARIF que a imagem Docker instala).
+- id: dependency-cruiser
+  name: "Dependency-Cruiser"
+  category: quality
+  applies-to: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+  stdout: true
+  command: [node, /opt/extras/sarif-extras.mjs, depcruise]
+  severity-map: {warning: medium, note: info}
+  timeout-seconds: 600

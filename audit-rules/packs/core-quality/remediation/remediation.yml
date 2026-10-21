@@ -418,3 +418,45 @@
   regression-risk: LOW
   refs:
     - "https://docs.docker.com/build/building/context/#dockerignore-files"
+
+- key: "sentinel-mem-threadlocal-sem-remove"
+  summary: "Chame remove() em um finally ao fim do uso do ThreadLocal."
+  before: "USUARIO.set(u); processar();"
+  after: "try { USUARIO.set(u); processar(); } finally { USUARIO.remove(); }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-mem-colecao-estatica"
+  summary: "Troque a coleção estática por um cache com limite e expiração (Caffeine) ou por um bean."
+  before: "private static Map<String, Object> cache = new HashMap<>();"
+  after: "private final Cache<String, Object> cache = Caffeine.newBuilder().maximumSize(10_000).build();"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-mem-cache-sem-limite"
+  summary: "Defina tamanho máximo e expiração do cache."
+  before: "Caffeine.newBuilder().build()"
+  after: "Caffeine.newBuilder().maximumSize(10_000).expireAfterWrite(Duration.ofMinutes(10)).build()"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-mem-executor-sem-shutdown"
+  summary: "Encerre o executor quando o objeto sair de uso (@PreDestroy) ou use um executor gerenciado."
+  before: "private final ExecutorService pool = Executors.newFixedThreadPool(4);"
+  after: "@PreDestroy void parar() { pool.shutdown(); }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-mem-new-thread-solto"
+  summary: "Use um ExecutorService limitado (ou virtual threads no Java 21)."
+  before: "new Thread(tarefa).start();"
+  after: "executor.submit(tarefa);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-mem-leitura-total-de-arquivo"
+  summary: "Processe em blocos com streams."
+  before: "byte[] tudo = Files.readAllBytes(caminho);"
+  after: "try (Stream<String> linhas = Files.lines(caminho)) { linhas.forEach(this::processar); }"
+  effort: M
+  regression-risk: MEDIUM
