@@ -1,8 +1,10 @@
 name: Sentinel Evolution
 
 # Fecha o laço: lê o resultado do CI, classifica os problemas e abre PRs em branches evolucao/*.
-# Pré-requisito: segredo ANTHROPIC_API_KEY no repositório (Settings > Secrets and variables > Actions).
-# Sem o segredo o workflow só registra o aviso e termina com sucesso.
+# Pré-requisito: UM destes segredos no repositório (Settings > Secrets and variables > Actions):
+#   CLAUDE_CODE_OAUTH_TOKEN  usa a assinatura do Claude (gerado com `claude setup-token`), sem cobrança por API
+#   ANTHROPIC_API_KEY        cobrança por uso na API
+# Sem nenhum dos dois o workflow só registra o aviso e termina com sucesso.
 
 on:
   workflow_run:
@@ -38,12 +40,13 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GITHUB_REPOSITORY: ${{ github.repository }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
     steps:
       - name: Conferir o segredo
         id: chave
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::warning title=Sentinel Evolution::Segredo ANTHROPIC_API_KEY ausente: o agente não rodou."
+          if [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "::warning title=Sentinel Evolution::Nenhum segredo (CLAUDE_CODE_OAUTH_TOKEN ou ANTHROPIC_API_KEY): o agente não rodou."
             echo "pular=true" >> "$GITHUB_OUTPUT"
           else
             echo "pular=false" >> "$GITHUB_OUTPUT"
@@ -89,6 +92,7 @@ jobs:
         if: steps.chave.outputs.pular == 'false'
         uses: anthropics/claude-code-action@v1
         with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ github.token }}
           prompt: |

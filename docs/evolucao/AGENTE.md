@@ -15,7 +15,7 @@ CI termina na `main` → `evolucao.yml` junta as anotações de erro e o resumo 
 - Máximo de 60 turnos e 45 minutos por execução; `concurrency` impede duas execuções ao mesmo tempo.
 
 ## O que só você pode fazer (o ambiente do Claude não tem permissão de escrita nessas configurações)
-1. **Segredo da API.** Settings → Secrets and variables → Actions → New repository secret: `ANTHROPIC_API_KEY`. Sem ele o workflow só emite um aviso e termina.
+1. **Credencial do agente (use a sua assinatura, sem pagar API).** No seu computador, com o Claude Code instalado, rode `claude setup-token` e copie o token gerado. Em Settings → Secrets and variables → Actions → New repository secret, crie `CLAUDE_CODE_OAUTH_TOKEN` com ele. O consumo sai do limite do seu plano. (Alternativa paga por uso: `ANTHROPIC_API_KEY`.) Sem nenhum dos dois o workflow só emite um aviso e termina.
 2. **Permitir PRs pelo Actions.** Settings → Actions → General → Workflow permissions → marque *Read and write permissions* e *Allow GitHub Actions to create and approve pull requests*.
 3. **Proteger a `main`** para que só entre PR com o CI verde:
    ```
