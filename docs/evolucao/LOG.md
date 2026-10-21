@@ -36,3 +36,10 @@ Atualização na mesma volta: calibração nos repositórios do João (Frequency
 
 Verificado: bateria Java 364 testes verdes; Semgrep dos 8 pacotes.
 Não verificado: calibração só das regras (não do pipeline completo); sem revisão manual de todos os achados.
+
+## Volta 3 — 2026-10-21
+
+- Workflows validados com `actionlint`: o CI do projeto passou limpo; o modelo de PR tinha injeção de script (`github.head_ref` direto no `run`) e foi corrigido (valores externos por variável de ambiente).
+- Desempenho medido: varredura Semgrep com as 158 regras em 1.212 arquivos (WebGoat, 42 MB) levou 28 s; o tempo de casamento das regras soma 4,9 s e nenhuma regra isolada passa de 1,6 s (`sentinel-api-path-traversal`). Sem gargalo de regra.
+- Dashboard: 2 testes de acessibilidade com axe (vitest-axe) sobre a casca, o badge e a nota; sem violações (16 testes no total).
+- Nenhum eixo mudou de nota nesta volta. Os bloqueios que restam são externos: build real (Maven/Quarkus/Docker) e revisão manual de achados.

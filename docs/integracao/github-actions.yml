@@ -22,15 +22,24 @@ jobs:
           distribution: temurin
           java-version: "21"
       - name: Baixar o CLI
-        run: curl -fsSL -o sentinel-cli.jar "${{ secrets.SENTINEL_API_URL }}/cli/sentinel-audit-cli.jar" || { echo "Publique o jar do CLI no seu repositório de artefatos e ajuste esta linha"; exit 1; }
+        env:
+          SENTINEL_API_URL: ${{ secrets.SENTINEL_API_URL }}
+        run: curl -fsSL -o sentinel-cli.jar "$SENTINEL_API_URL/cli/sentinel-audit-cli.jar" || { echo "Publique o jar do CLI no seu repositório de artefatos e ajuste esta linha"; exit 1; }
       - name: Auditar (falha se piorar o código novo)
+        env:
+          # valores externos entram por variável de ambiente, nunca direto no script (evita injeção de comando)
+          SENTINEL_API_URL: ${{ secrets.SENTINEL_API_URL }}
+          SENTINEL_API_KEY: ${{ secrets.SENTINEL_API_KEY }}
+          SENTINEL_SYSTEM_ID: ${{ vars.SENTINEL_SYSTEM_ID }}
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
           java -jar sentinel-cli.jar \
-            --api-url "${{ secrets.SENTINEL_API_URL }}" \
-            --api-key "${{ secrets.SENTINEL_API_KEY }}" \
-            --system-id "${{ vars.SENTINEL_SYSTEM_ID }}" \
-            --branch "${{ github.head_ref }}" \
-            --base-ref "origin/${{ github.base_ref }}" \
+            --api-url "$SENTINEL_API_URL" \
+            --api-key "$SENTINEL_API_KEY" \
+            --system-id "$SENTINEL_SYSTEM_ID" \
+            --branch "$HEAD_REF" \
+            --base-ref "origin/$BASE_REF" \
             --fail-on-new HIGH \
             --sarif sentinel.sarif --junit sentinel.xml --pr-comment sentinel-comentario.md
       - name: Publicar no Code Scanning
