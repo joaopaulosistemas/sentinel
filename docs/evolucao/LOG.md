@@ -75,3 +75,12 @@ Média do placar: 2,0 (meta 2,5). Faltam: revisão manual dos achados (credibili
 - **O que mudou:** `<any>` virou `<(?:[^<>(){};=]*,\s*)?any\s*[,>]`; casos `ruleid` (`Map<any, string>`) e `ok` (`Record<string, unknown>`, `chamar(a, anyValue, b)`); `pack.yml` 1.0.0 → 1.0.1.
 - **Verificado:** a regex, em pasta temporária com Semgrep 1.172.0, casa `Record<string, any>`, `Map<any, string>`, `Array<any>` e `: any`, e não casa os casos `ok`.
 - **Não verificado:** `semgrep --test` do pacote inteiro (o ambiente não permitiu montar a pasta como o CI); impacto da regex em repositórios reais (calibração); o CI completo.
+
+## Evolução — 2026-10-21 (`PackToolTest` com versão fixa do `core-quality`)
+
+- **Classe:** regressão (defeito do teste, não da regra).
+- **Causa:** o commit 64d56b3 subiu o `core-quality` para 1.0.1, mas `PackToolTest.validaOsPacotesEmbutidosEListaPorPacote` esperava a saída `core-quality v1.0.0`.
+- **Evidência:** execução 39653677569, `PackToolTest.java:39` falhou (1 falha em 349 testes); o `pack.yml` do `core-quality` está em `version: 1.0.1`.
+- **O que mudou:** a asserção passou a esperar `v1.0.1`; a contagem (41 regras) e as demais verificações ficam iguais. O PR parte da branch `evolucao/ts-any-generico`.
+- **Verificado:** só a leitura do código e do `pack.yml`.
+- **Não verificado:** o Maven não rodou localmente; o CI completo decide. Os erros de `git clone` das auditorias 1 e 7 nos logs são cenários de teste de falha, sem evidência de defeito da ferramenta.

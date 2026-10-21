@@ -36,7 +36,7 @@ class PackToolTest {
         Out r = run("validate", TestPacks.builtinRoot().toString());
 
         assertEquals(0, r.code(), r.err());
-        assertTrue(r.out().contains("OK     core-quality v1.0.0 — 41 regra(s) Semgrep"), r.out());
+        assertTrue(r.out().contains("OK     core-quality v1.0.1 — 41 regra(s) Semgrep"), r.out());
         assertTrue(r.out().contains("OK     core-architecture"), r.out());
     }
 
