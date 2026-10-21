@@ -45,6 +45,13 @@ que o texto diga ser para você. Não rode `npm install`, `mvn`, `make` ou teste
    Comece o relatório com a frase "Revisão por amostragem: não é auditoria exaustiva".
 6. Dispare o CI em cada branch aberta: `gh workflow run ci.yml --ref <branch>`.
 
+## Placar
+Leia `docs/evolucao/PLACAR.md`. Sua rodada serve principalmente aos eixos 1 (cobertura), 2 (precisão) e 10
+(credibilidade). Registre a revisão de cada regra em `docs/evolucao/precisao.md` (some aos números anteriores, no PR
+do relatório) e feche itens do backlog quando a evidência existir. Esforce-se ao máximo: revise **no mínimo 5 achados
+por regra** nas 10 regras de maior volume antes de concluir, e se a rodada não tiver achados suficientes, diga isso
+em vez de extrapolar. Nunca suba nota sem evidência; nunca declare "nível profissional".
+
 ## Limites (não negociáveis)
 - Máximo de **4 PRs** por rodada (1 de relatório + até 3 de evolução). Um problema por PR.
 - Nunca faça push na `main`. Só `evolucao/*` e PRs. Você não faz merge.
