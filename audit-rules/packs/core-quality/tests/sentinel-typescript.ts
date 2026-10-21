@@ -39,6 +39,9 @@ export function catches(): void {
   try { run(); } catch (_) {}
 
   // ok: sentinel-ts-catch-vazio
+  try { run(); } catch (_erro) {}
+
+  // ok: sentinel-ts-catch-vazio
   try { run(); } catch (e) { report(e); }
 
   // ok: sentinel-ts-catch-vazio
