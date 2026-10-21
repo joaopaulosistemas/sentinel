@@ -1,12 +1,12 @@
 name: Sentinel Descoberta
 
-# Toda segunda e quinta-feira (e sob demanda): escolhe repositórios públicos novos, audita com a API real,
+# Toda segunda-feira (e sob demanda): escolhe repositórios públicos novos, audita com a API real,
 # gera o relatório bruto e deixa o agente revisar uma amostra, cruzar os resultados e abrir PRs de evolução
 # (regras, analisadores, relatório da rodada). Usa a mesma credencial do Sentinel Evolution.
 
 on:
   schedule:
-    - cron: "17 9 * * 1,4"
+    - cron: "17 9 * * 1"
   workflow_dispatch:
     inputs:
       quantidade:

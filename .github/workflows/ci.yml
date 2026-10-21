@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "41 7 * * 0"   # domingo: roda também a calibração pesada
   workflow_dispatch:   # o agente Sentinel Evolution dispara o CI na branch evolucao/* que abriu
 
 permissions:
@@ -149,8 +151,8 @@ jobs:
     name: Calibração em vários repositórios
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # pesado: roda na main, sob demanda e nos PRs do agente (que mexem em regras)
-    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'evolucao/')
+    # pesado (~15 min): só semanalmente, sob demanda e nos PRs do agente (que mexem em regras); não em todo push
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'evolucao/'))
     permissions:
       contents: read
       actions: read

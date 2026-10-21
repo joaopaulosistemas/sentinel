@@ -23,3 +23,7 @@ CI termina na `main` → `evolucao.yml` junta as anotações de erro e o resumo 
 
 ## Primeiro teste
 Actions → Sentinel Evolution → Run workflow (com `run_id` vazio analisa o último CI da `main`).
+
+## Orçamento de minutos do GitHub Actions
+Repositório privado no plano gratuito tem 2000 min/mês; ao acabar, os jobs nem iniciam ("recent account payments have failed or your spending limit needs to be increased").
+Para gastar pouco: a calibração (~15 min) roda só no domingo, sob demanda e nos PRs `evolucao/*`; o Evolution reage só a CI **com falha** e uma vez por semana (quarta) persegue o backlog do `PLACAR.md`; a Descoberta roda na segunda. Rodar tudo manualmente em sequência esgota a cota em poucos dias.
