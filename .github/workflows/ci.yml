@@ -50,7 +50,6 @@ jobs:
           for p in audit-rules/packs/*/; do
             [ -d "$p/tests" ] && [ -d "$p/rules" ] || continue
             echo "== $p"
-            # regras de SQL/XML (arquivos *-sql.yml) não são avaliadas pelo `semgrep --test`: têm verificador próprio
             tmp=$(mktemp -d)
             for f in "$p"rules/*.yml; do
               if [[ "$f" == *-sql.yml ]]; then
@@ -63,7 +62,6 @@ jobs:
             bash scripts/ci-anotar.sh "Semgrep $p" semgrep --test --metrics=off --disable-version-check --config "$tmp" "$p/tests"
             rm -rf "$tmp"
           done
-            semgrep --test --metrics=off --disable-version-check "${cfg[@]}" "$p/tests"
           done
 
   dashboard:
