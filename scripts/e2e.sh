@@ -64,6 +64,18 @@ score="$(printf '%s' "$resp" | python3 -c 'import json,sys; d=json.load(sys.stdi
 echo "findings=$total score=$score"
 [ "${total:-0}" -gt 0 ] || falhar "Auditoria concluída sem nenhum achado (esperava ao menos 1): ${resp:0:400}"
 
+# resumo dos achados por ferramenta/regra, publicado como aviso para calibração (não reprova o teste)
+curl -sS "${H[@]}" "$API/api/v1/audits/$aid/findings" | python3 -c '
+import json, sys, collections
+d = json.load(sys.stdin)
+ferr = collections.Counter(f.get("toolSource") for f in d)
+regras = collections.Counter((f.get("toolSource"), f.get("ruleId")) for f in d)
+sev = collections.Counter(f.get("severity") for f in d)
+linhas = ["total=%d" % len(d), "severidade=%s" % dict(sev), "ferramentas=%s" % dict(ferr), "top regras:"]
+linhas += ["  %d %s/%s" % (n, t, r) for (t, r), n in regras.most_common(15)]
+print("::notice title=Resumo dos achados do teste ponta a ponta::" + "%0A".join(linhas))
+'
+
 for ep in report sbom insights findings; do
   code="$(curl -sS -o /dev/null -w '%{http_code}' "${H[@]}" "$API/api/v1/audits/$aid/$ep")"
   [ "$code" = "200" ] || falhar "GET /audits/$aid/$ep devolveu HTTP $code"
