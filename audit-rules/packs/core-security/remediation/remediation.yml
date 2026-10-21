@@ -131,6 +131,20 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
 
+- key: "jwt-chave-fixa-js"
+  summary: "O segredo de assinatura não pode estar no código: leia de cofre/variável e permita rotação."
+  before: "jwt.sign(payload, 'segredo');"
+  after: "jwt.sign(payload, process.env.JWT_SECRET!);   // valide a variável na inicialização"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
+- key: "jwt-segredo-padrao-js"
+  summary: "Não use valor padrão para segredo: se a variável faltar, interrompa a inicialização."
+  before: "const s = process.env.JWT_SECRET || 'padrao';"
+  after: "const s = process.env.JWT_SECRET; if (!s) throw new Error('JWT_SECRET ausente');"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
 - key: "crypto-hash-fraco"
   summary: "Use SHA-256 ou superior; para senhas use bcrypt/scrypt/Argon2 (hash lento com salt)."
   before: "MessageDigest.getInstance(\"MD5\");"
