@@ -112,7 +112,7 @@ a{color:var(--accent)}
     <rect class="box b-warn" x="700" y="124" width="180" height="76" rx="6"/>
     <text x="714" y="148" class="lbl">audit-rules</text><text x="714" y="166" class="sub">packs/ · profiles/ · tools/</text><text x="714" y="180" class="sub">ou repositório Git central</text>
     <rect class="box b-ext" x="700" y="214" width="180" height="76" rx="6"/>
-    <text x="714" y="238" class="lbl">Ferramentas externas</text><text x="714" y="256" class="sub">semgrep · trivy · gitleaks</text><text x="714" y="270" class="sub">pmd · eslint · git</text>
+    <text x="714" y="238" class="lbl">Ferramentas externas</text><text x="714" y="256" class="sub">semgrep · trivy · gitleaks</text><text x="714" y="270" class="sub">pmd · eslint · stylelint · git</text>
     <rect class="box b-ext" x="700" y="304" width="180" height="60" rx="6"/>
     <text x="714" y="328" class="lbl">Repositório auditado</text><text x="714" y="346" class="sub">clone raso, só leitura</text>
 
@@ -155,12 +155,28 @@ a{color:var(--accent)}
     <tr><td>Semgrep</td><td>Regras dos pacotes (segurança, IaC, qualidade, frontend)</td><td><span class="pill p-ext">semgrep</span></td></tr>
     <tr><td>Dependências / Trivy</td><td>Vulnerabilidades conhecidas e imagens</td><td>OWASP Dependency · Trivy</td></tr>
     <tr><td>Segredos / Gitleaks / Histórico</td><td>Credenciais no código e em commits antigos</td><td>interno ou Gitleaks (substitui o interno)</td></tr>
-    <tr><td>CleanCode / PMD / ESLint</td><td>Complexidade, tamanho de função, regras Java e TypeScript</td><td>interno · PMD · ESLint</td></tr>
+    <tr><td>CleanCode / PMD / ESLint</td><td>Complexidade, tamanho de função, regras Java, TypeScript, Angular, React e HTML (ESLint com typescript-eslint, security, sonarjs, promise, regexp, angular-eslint, react-hooks, jsx-a11y e html-eslint)</td><td>interno · PMD · ESLint</td></tr>
     <tr><td>Architecture</td><td>God Object e acoplamento por classe</td><td>interno</td></tr>
     <tr><td>Arquitetura (pacotes)</td><td>Camadas proibidas, convenções, arquivos e bibliotecas obrigatórias (<code>architecture.yml</code>)</td><td>política do perfil</td></tr>
     <tr><td>Higiene do projeto</td><td>README, testes, CI, lockfile, segredos versionados, artefatos commitados</td><td>interno, só lê arquivos</td></tr>
     <tr><td>SARIF</td><td>Qualquer outra ferramenta, por arquivo importado ou comando permitido</td><td><code>tools/*.yml</code></td></tr>
-    <tr><td>Mercado (<code>market-tools</code>)</td><td>Bandit, Ruff, njsscan, gosec, Checkov, Hadolint e kube-linter, cada um só quando o projeto tem arquivos do tipo que ele entende</td><td>executáveis instalados; pacote embutido confiável</td></tr>
+    <tr><td>Mercado (<code>market-tools</code>)</td><td>njsscan, Stylelint, Checkstyle, jscpd, Checkov, Hadolint, kube-linter e kube-score, cada um só quando o projeto tem arquivos do tipo que ele entende</td><td>executáveis instalados; pacote embutido confiável</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>Tecnologias cobertas</h2>
+  <p class="lead" style="margin-bottom:14px">O escopo é fechado nestas tecnologias. Terraform, Python e Go ficaram de fora.</p>
+  <div class="scroll"><table>
+    <tr><th>Tecnologia</th><th>Quem analisa</th></tr>
+    <tr><td>Java</td><td>PMD, Checkstyle, Semgrep (<code>core-security</code>, <code>core-quality</code>)</td></tr>
+    <tr><td>Spring Boot / JPA</td><td>Semgrep (<code>core-spring</code>)</td></tr>
+    <tr><td>TypeScript / JavaScript</td><td>ESLint, Semgrep, njsscan, padrão <code>ts-clean-code</code></td></tr>
+    <tr><td>Angular e React</td><td>ESLint (inclui templates Angular e acessibilidade), Semgrep (<code>core-frontend</code>)</td></tr>
+    <tr><td>HTML</td><td>ESLint com html-eslint, Semgrep</td></tr>
+    <tr><td>CSS / SCSS</td><td>Stylelint (com acessibilidade), Semgrep</td></tr>
+    <tr><td>Docker e Kubernetes</td><td>Semgrep (<code>core-iac</code>), Hadolint, kube-linter, kube-score, Checkov, Trivy</td></tr>
+    <tr><td>Qualquer linguagem</td><td>Gitleaks, Trivy e OSV (dependências), jscpd (código duplicado)</td></tr>
   </table></div>
 </section>
 
@@ -182,11 +198,13 @@ a{color:var(--accent)}
     <div class="card">
       <h3>Embutidos</h3>
       <ul>
-        <li><code>core-security</code> · 20 regras</li>
+        <li><code>core-security</code> · 30 regras (Java, TS/JS, OWASP)</li>
         <li><code>core-quality</code> · 35 regras</li>
-        <li><code>core-iac</code> · 10 regras</li>
-        <li><code>core-frontend</code> · 9 regras</li>
-        <li><code>market-tools</code> · 7 ferramentas externas via SARIF</li>
+        <li><code>core-iac</code> · 11 regras (Dockerfile, Compose e Kubernetes)</li>
+        <li><code>core-spring</code> · 14 regras (Spring Boot e JPA)</li>
+        <li><code>core-frontend</code> · 24 regras (Angular, React, HTML, CSS/SCSS)</li>
+        <li><code>ts-clean-code</code> · 7 regras do padrão TypeScript, desligado por padrão</li>
+        <li><code>market-tools</code> · 8 ferramentas externas via SARIF</li>
         <li><code>core-architecture</code> · exemplo, desligado por padrão</li>
       </ul>
       <p style="margin-top:10px">Perfis em <code>profiles/*.yml</code> herdam uns dos outros (<code>extends</code>), escolhem pacotes e ajustam severidade, desligam ou colocam regras em <b>sombra</b>.</p>
