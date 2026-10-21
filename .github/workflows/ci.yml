@@ -117,7 +117,7 @@ jobs:
       - uses: azure/setup-helm@v4
       - name: Validar o chart Helm
         run: |
-          if ! (helm lint deploy/helm/sentinel && helm template sentinel deploy/helm/sentinel > /dev/null) > helm.log 2>&1; then
+          if ! (helm lint deploy/helm/sentinel --set secrets.dbPassword=ci && helm template sentinel deploy/helm/sentinel --set secrets.dbPassword=ci > /dev/null) > helm.log 2>&1; then
             r="$(tail -15 helm.log)"; r="${r//'%'/'%25'}"; r="${r//$'\n'/'%0A'}"
             echo "::error title=Helm falhou::${r:0:3500}"; exit 1
           fi
