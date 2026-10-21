@@ -46,23 +46,35 @@ jobs:
       - run: pip install semgrep==1.172.0
       - name: Rodar os testes de cada pacote
         run: |
-          set -e
+          falhas=0
+          anotar() {  # anotar <titulo> <arquivo-de-saida>: publica o final da saída como anotação de erro
+            local resumo
+            resumo="$(grep -E "✖|Missed|FALHOU|ERRO|rror" "$2" | head -20)"
+            [ -z "$resumo" ] && resumo="$(tail -20 "$2")"
+            resumo="${resumo//'%'/'%25'}"; resumo="${resumo//$'\n'/'%0A'}"
+            echo "::error title=$1::${resumo:0:3500}"
+          }
           for p in audit-rules/packs/*/; do
-            [ -d "$p/tests" ] && [ -d "$p/rules" ] || continue
-            echo "== $p"
+            [ -d "${p}tests" ] && [ -d "${p}rules" ] || continue
             tmp=$(mktemp -d)
-            for f in "$p"rules/*.yml; do
+            for f in "${p}"rules/*.yml; do
               if [[ "$f" == *-sql.yml ]]; then
                 # regras de SQL/XML não são avaliadas pelo `semgrep --test`: têm verificador próprio
-                bash scripts/ci-anotar.sh "SQL $f" python3 audit-rules/scripts/testar-regex-sql.py "$f" "$p/tests"
+                if ! python3 audit-rules/scripts/testar-regex-sql.py "$f" "${p}tests" > "$tmp.sql.log" 2>&1; then
+                  anotar "SQL $f" "$tmp.sql.log"; falhas=1
+                fi
               else
                 cp "$f" "$tmp"/
               fi
             done
-            bash scripts/ci-anotar.sh "Semgrep $p" semgrep --test --metrics=off --disable-version-check --config "$tmp" "$p/tests"
-            rm -rf "$tmp"
+            if semgrep --test --metrics=off --disable-version-check --config "$tmp" "${p}tests" > "$tmp.log" 2>&1; then
+              echo "::notice title=Semgrep $p::passou"
+            else
+              anotar "Semgrep $p" "$tmp.log"; falhas=1
+            fi
+            rm -rf "$tmp" "$tmp.log" "$tmp.sql.log"
           done
-          done
+          exit $falhas
 
   dashboard:
     name: Dashboard
