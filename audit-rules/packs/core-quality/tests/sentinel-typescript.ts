@@ -94,3 +94,6 @@ export function armazenamento(t: string): void {
   // ok: sentinel-ts-token-em-localstorage
   localStorage.setItem('tema', 'escuro');
 }
+
+// ruleid: sentinel-ts-any-explicito
+const mapa: Record<string, any> = {};
