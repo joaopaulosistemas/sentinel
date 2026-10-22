@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ["**/*.md", "docs/**", "evidencias/**"]   # só documentação: não gasta minutos
   pull_request:
   schedule:
     - cron: "41 7 * * 0"   # domingo: roda também a calibração pesada

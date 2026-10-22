@@ -1,5 +1,3 @@
-# Agente Sentinel Evolution — como funciona e como ligar
-
 # Agentes do Sentinel — como funcionam e como ligar
 
 Dois agentes (Claude, via `anthropics/claude-code-action`, com a sua assinatura) trabalham em direção ao placar de `docs/evolucao/PLACAR.md` (hoje 2,0; meta 2,5). **Nenhum deles declara "nível profissional"**: relatam evidências e lacunas; a decisão é sua.
