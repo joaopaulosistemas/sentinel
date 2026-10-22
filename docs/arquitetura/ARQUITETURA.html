@@ -1,0 +1,1147 @@
+<title>Arquitetura do Sentinel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&display=swap">
+<style>
+/* Layout: documento técnico com sumário fixo à esquerda e coluna de leitura de ~75ch; diagramas e tabelas largos rolam na própria caixa. */
+:root{
+  --bg:#f6f8fa; --surface:#ffffff; --ink:#18222b; --muted:#566574; --line:#d8dfe6;
+  --accent:#0b5f8a; --accent-soft:#e3f0f7; --code-bg:#eef2f6;
+  --f-head:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f161c; --surface:#151e26; --ink:#e4ebf1; --muted:#98a8b6; --line:#273540;
+    --accent:#6cb6e0; --accent-soft:#173244; --code-bg:#1b2731; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f161c; --surface:#151e26; --ink:#e4ebf1; --muted:#98a8b6; --line:#273540;
+  --accent:#6cb6e0; --accent-soft:#173244; --code-bg:#1b2731; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.65;
+  padding-block:0 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.shell{max-width:1180px;margin-inline:auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:48px;align-items:start}
+nav.toc{position:sticky;top:0;padding-top:32px;display:flex;flex-direction:column;gap:2px;font-size:.86rem;max-height:100vh;overflow-y:auto}
+nav.toc .t{font-family:var(--f-head);font-size:1.05rem;font-weight:600;margin:0 0 10px;letter-spacing:.01em}
+nav.toc a{color:var(--muted);text-decoration:none;padding:5px 10px;border-left:2px solid var(--line);line-height:1.35}
+nav.toc a:hover,nav.toc a.on{color:var(--ink);border-left-color:var(--accent);background:var(--accent-soft)}
+main{min-width:0;padding-top:40px}
+h1{font-family:var(--f-head);font-size:2.3rem;line-height:1.1;margin:0 0 18px;font-weight:600;letter-spacing:-.005em;text-wrap:balance}
+h2{font-family:var(--f-head);font-size:1.55rem;line-height:1.2;margin:56px 0 14px;padding-top:22px;border-top:1px solid var(--line);font-weight:600;text-wrap:balance;scroll-margin-top:16px}
+h3{font-family:var(--f-head);font-size:1.12rem;margin:34px 0 10px;font-weight:600;scroll-margin-top:16px}
+p,li{max-width:78ch}
+a{color:var(--accent)}
+blockquote{margin:16px 0;padding:10px 16px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 6px 6px 0}
+blockquote p{margin:6px 0;max-width:none}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+pre{overflow-x:auto}
+.tabela{overflow-x:auto;margin:14px 0 22px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.88rem;line-height:1.45}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--f-head);font-weight:600;background:var(--code-bg);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{min-width:9rem}
+figure.diagrama{margin:18px 0 26px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow-x:auto;text-align:center}
+figure.diagrama pre{margin:0;background:none;display:inline-block;text-align:left}
+ul,ol{padding-left:1.3rem}
+li{margin:3px 0}
+hr{display:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0}
+  nav.toc{position:static;max-height:none;padding-top:20px;flex-direction:row;flex-wrap:wrap;gap:6px}
+  nav.toc .t{width:100%}
+  nav.toc a{border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--surface)}
+  h1{font-size:1.8rem}
+}
+</style>
+<div class="shell">
+  <nav class="toc" aria-label="Sumário"><p class="t">Arquitetura</p>
+<a href="#1-desenho-macro">1. Desenho macro</a>
+<a href="#2-features-e-onde-vivem">2. Features e onde vivem</a>
+<a href="#3-backend-audit-api">3. Backend <code>audit-api</code></a>
+<a href="#4-cli-audit-cli">4. CLI <code>audit-cli</code></a>
+<a href="#5-frontend-audit-dashboard">5. Frontend <code>audit-dashboard</code></a>
+<a href="#6-regras-e-ferramentas-audit-rules">6. Regras e ferramentas <code>audit-rules</code></a>
+<a href="#7-implantacao-e-seguranca">7. Implantação e segurança</a>
+<a href="#8-automacao-ci-release-e-agentes">8. Automação: CI, release e agentes</a>
+<a href="#9-terceiros">9. Terceiros</a>
+<a href="#10-limites-deste-documento">10. Limites deste documento</a>
+  </nav>
+  <main>
+<h1 id="arquitetura-do-sentinel-audit-tool">Arquitetura do Sentinel Audit Tool</h1>
+<p>Mapa de todos os módulos, pacotes e classes, do desenho macro (quem fala com quem) ao micro (o que cada classe faz).
+Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
+<blockquote>
+<p><strong>Escopo.</strong> "Todos os projetos" aqui são os módulos do repositório <code>sentinel</code>: <code>audit-api</code> (backend), <code>audit-cli</code>, <code>audit-dashboard</code> (frontend), <code>audit-rules</code> (regras e configuração das ferramentas), <code>deploy</code> (Docker/Helm) e a automação (<code>.github</code>, <code>scripts</code>). O app <code>frequency</code> é outro repositório e não está neste documento.
+<strong>Origem.</strong> Escrito a partir do código da <code>main</code> (119 classes Java em <code>audit-api</code>, 4 em <code>audit-cli</code>, 33 arquivos TypeScript/TSX em <code>audit-dashboard/src</code>). Nomes de classe foram conferidos contra o código. Onde uma descrição vem só do comentário da classe e não da leitura do corpo, o texto diz "segundo o comentário".</p>
+</blockquote>
+<h2 id="1-desenho-macro">1. Desenho macro</h2>
+<h3 id="11-contexto-quem-usa-e-com-quem-o-sentinel-conversa">1.1 Contexto: quem usa e com quem o Sentinel conversa</h3>
+<figure class="diagrama"><pre class="mermaid">flowchart TB
+    subgraph Usuarios["Quem usa"]
+        direction LR
+        DEV["Time de desenvolvimento\ne segurança"]
+        AUT["Autor de regras"]
+        CIEXT["CI do projeto auditado\n(GitHub Actions, GitLab CI)"]
+    end
+
+    subgraph Sentinel["Sentinel Audit Tool"]
+        direction LR
+        DASH["audit-dashboard\nReact + Carbon"]
+        CLI["audit-cli\nJava"]
+        API["audit-api\nQuarkus / Java 21"]
+        DB[("PostgreSQL 16")]
+        RULES["audit-rules\npacotes e perfis"]
+    end
+
+    subgraph Externos["Fora do Sentinel"]
+        direction LR
+        GIT["GitHub / GitLab\nrepositório auditado"]
+        TOOLS["Ferramentas de terceiros\nno contêiner da API:\nSemgrep, Trivy, Gitleaks,\nESLint, PMD, Stylelint, SQLFluff..."]
+        OSV["OSV.dev\nbase de vulnerabilidades"]
+        NOTIF["Teams / Slack / webhook"]
+        IDP["Keycloak / OIDC\n(opcional)"]
+    end
+
+    DEV --&gt; DASH
+    CIEXT --&gt; CLI
+    AUT --&gt; RULES
+    DASH -- "REST /api/v1" --&gt; API
+    CLI -- "REST /api/v1" --&gt; API
+    API --&gt; DB
+    RULES -. "lido do disco" .-&gt; API
+    GIT -- "webhook de push" --&gt; API
+    API -- "git clone" --&gt; GIT
+    API -- "executa processos" --&gt; TOOLS
+    API -- "consulta CVE" --&gt; OSV
+    API -- "alertas" --&gt; NOTIF
+    API -. "valida token" .-&gt; IDP</pre></figure>
+<h3 id="12-conteineres-e-implantacao">1.2 Contêineres e implantação</h3>
+<figure class="diagrama"><pre class="mermaid">flowchart TB
+    subgraph Host["docker compose / Kubernetes (Helm)"]
+        NG["audit-dashboard\nNginx servindo a SPA\n:80"]
+        AP["audit-api\nJRE 21 + Semgrep + Trivy + Gitleaks\n+ Node (ESLint, Stylelint) + venvs Python\n:8080"]
+        PG[("postgres:16-alpine\n:5432")]
+    end
+    NG -- "proxy /api" --&gt; AP
+    AP -- "JDBC" --&gt; PG
+    AP -- "lê no disco" --&gt; PK["/opt: audit-rules/packs\n+ lint (eslint, stylelint, extras)"]
+    AP -- "clone temporário\n/tmp/sentinel-audit" --&gt; TMP["diretório efêmero\napagado ao fim"]</pre></figure>
+<h3 id="13-o-caminho-de-uma-auditoria-visao-de-passaro">1.3 O caminho de uma auditoria (visão de pássaro)</h3>
+<figure class="diagrama"><pre class="mermaid">flowchart LR
+    A["1 Pedido\nPOST /audits"] --&gt; B["2 Clone raso\nIngestionService"]
+    B --&gt; C["3 Evidências\nEvidenceStager"]
+    C --&gt; D["4 Analisadores\nem paralelo"]
+    D --&gt; E["5 Junta e limpa\nDeduplicador + política"]
+    E --&gt; F["6 Ciclo de vida\nnovo, corrigido, suprimido"]
+    F --&gt; G["7 Score\n6 dimensões"]
+    G --&gt; H["8 Grava\nfindings, SBOM, contexto"]
+    H --&gt; I["9 Avisa\nTeams / Slack"]
+    H --&gt; J["10 Consulta\nDashboard, CLI, relatório HTML"]</pre></figure>
+<hr />
+<h2 id="2-features-e-onde-vivem">2. Features e onde vivem</h2>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Backend (<code>audit-api</code>)</th>
+<th>Outros módulos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cadastrar sistemas e disparar auditorias</td>
+<td><code>SystemResource</code>, <code>AuditResource</code>, <code>AuditRequestService</code>, <code>AuditOrchestrationService</code></td>
+<td>Dashboard: <code>OverviewPage</code>; CLI: <code>AuditCli</code></td>
+</tr>
+<tr>
+<td>Auditoria automática por agenda</td>
+<td><code>AuditScheduler</code> (a cada 5 min)</td>
+<td>Dashboard: <code>ScheduleForm</code></td>
+</tr>
+<tr>
+<td>Auditoria por webhook de push</td>
+<td><code>WebhookResource</code>, <code>WebhookService</code></td>
+<td>GitHub / GitLab</td>
+</tr>
+<tr>
+<td>Análise de segurança e qualidade</td>
+<td><code>SemgrepAnalyzer</code>, <code>PmdAnalyzer</code>, <code>EslintAnalyzer</code>, <code>CleanCodeAnalyzer</code></td>
+<td><code>audit-rules/packs</code>, <code>audit-rules/lint</code></td>
+</tr>
+<tr>
+<td>Dependências vulneráveis (SCA) e SBOM</td>
+<td><code>OWASPDependencyAnalyzer</code>, <code>OsvClient</code>, <code>TrivyAnalyzer</code>, <code>SbomWriter</code></td>
+<td>OSV.dev, Trivy</td>
+</tr>
+<tr>
+<td>Segredos (arquivos e histórico)</td>
+<td><code>GitleaksAnalyzer</code>, <code>SecretsAnalyzer</code>, <code>HistorySecretsAnalyzer</code></td>
+<td>Gitleaks</td>
+</tr>
+<tr>
+<td>Arquitetura em camadas e componentes</td>
+<td><code>ArchitectureAnalyzer</code>, <code>ArchitecturePolicyAnalyzer</code></td>
+<td><code>architecture.yml</code> do pacote</td>
+</tr>
+<tr>
+<td>Evidências do banco e da execução</td>
+<td><code>EvidenceAnalyzer</code>, <code>EvidenceStager</code></td>
+<td>pasta <code>evidencias/&lt;sistema&gt;/</code></td>
+</tr>
+<tr>
+<td>Qualquer ferramenta que fale SARIF</td>
+<td><code>SarifAnalyzer</code>, <code>ToolSpec</code></td>
+<td><code>audit-rules/packs/market-tools/tools</code></td>
+</tr>
+<tr>
+<td>Pacotes e perfis de regras</td>
+<td>pacote <code>pack</code> (<code>PackLoader</code>, <code>PackRegistry</code>, <code>PackIntegrity</code>...)</td>
+<td><code>audit-rules/packs</code>, ferramenta <code>sentinel-pack</code></td>
+</tr>
+<tr>
+<td>Score de risco (6 dimensões)</td>
+<td><code>ScoringService</code>, <code>SourceSizer</code></td>
+<td>Dashboard: <code>ScoreGauge</code></td>
+</tr>
+<tr>
+<td>Novo × corrigido × suprimido, tendência</td>
+<td><code>FindingLifecycleService</code>, <code>Fingerprints</code>, <code>FindingResource</code></td>
+<td>Dashboard: <code>DiffSummary</code>, <code>TrendChart</code>, <code>SuppressModal</code></td>
+</tr>
+<tr>
+<td>Auditoria completa (áreas, dívida, plano)</td>
+<td>pacote <code>insights</code></td>
+<td>Dashboard: <code>InsightsPanel</code></td>
+</tr>
+<tr>
+<td>Relatório HTML</td>
+<td><code>ReportService</code></td>
+<td>Dashboard: <code>ReportsPage</code></td>
+</tr>
+<tr>
+<td>Orientação de correção por regra</td>
+<td><code>RemediationCatalog</code>, <code>RemediationDto</code></td>
+<td><code>remediation/</code> de cada pacote; <code>RemediationBlock</code></td>
+</tr>
+<tr>
+<td>Qualidade das regras (falso positivo)</td>
+<td><code>RuleQualityService</code>, <code>RuleResource</code></td>
+<td>Dashboard: <code>RankingPage</code></td>
+</tr>
+<tr>
+<td>Laboratório de regras</td>
+<td><code>RulePlaygroundService</code></td>
+<td><code>PackLoader</code></td>
+</tr>
+<tr>
+<td>Auditoria de PR (só o que mudou)</td>
+<td><code>ChangedFiles</code></td>
+<td><code>AuditCli</code> (<code>--fail-on-new</code>)</td>
+</tr>
+<tr>
+<td>Portão de qualidade em CI</td>
+<td>endpoints de <code>AuditResource</code></td>
+<td><code>AuditCli</code>, <code>SarifWriter</code>, <code>JUnitWriter</code>, <code>MarkdownWriter</code></td>
+</tr>
+<tr>
+<td>Notificações</td>
+<td><code>NotificationService</code></td>
+<td>Teams, Slack, webhook</td>
+</tr>
+<tr>
+<td>Autenticação</td>
+<td><code>ApiKeyFilter</code>; OIDC opcional (<code>-Poidc</code>)</td>
+<td>Keycloak</td>
+</tr>
+<tr>
+<td>Evolução automática do próprio Sentinel</td>
+<td>—</td>
+<td><code>.github/workflows</code>, <code>.github/agente</code>, <code>scripts</code>, <code>docs/evolucao</code></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3-backend-audit-api">3. Backend <code>audit-api</code></h2>
+<p>Pacote raiz: <code>com.sentinel.audit</code>. Quarkus 3.15, Java 21, Hibernate/Panache, PostgreSQL, CDI (<code>@ApplicationScoped</code>), REST (JAX-RS).</p>
+<h3 id="31-camadas-desenho-micro">3.1 Camadas (desenho micro)</h3>
+<figure class="diagrama"><pre class="mermaid">flowchart TB
+    RES["resource (borda REST)\nAuditResource, SystemResource, FindingResource,\nWebhookResource, PackResource, RuleResource,\nHealthResource, ApiKeyFilter, StartupChecks"]
+    DTO["dto\nrequests, responses e FindingMapper"]
+    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AuditScheduler,\nIngestionService, EvidenceStager, ScoringService,\nFindingLifecycleService, FindingDeduplicator, ReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService"]
+    ANA["analyzer (motores)\nCodeAnalyzer e 14 analisadores\n+ deps, evidence, quality"]
+    PCK["pack (regras e perfis)\nPackRegistry, PackLoader, PackIntegrity, ProfileLoader, AuditPolicy"]
+    INS["insights (auditoria completa)\nInsightsService, InsightsBuilder, ProjectProfiler"]
+    REP["repository (Panache)\nAuditedSystem, AuditRun, Finding, FindingSuppression"]
+    MOD["model (JPA)\nAuditedSystem, AuditRun, Finding, FindingSuppression,\nRiskScore e enums"]
+
+    RES --&gt; SVC
+    RES -.-&gt; DTO
+    SVC --&gt; ANA
+    SVC --&gt; PCK
+    SVC --&gt; INS
+    SVC --&gt; REP
+    ANA --&gt; PCK
+    REP --&gt; MOD</pre></figure>
+<p>Regra de leitura: a seta vai de quem chama para quem é chamado. <code>resource</code> nunca fala com <code>analyzer</code> diretamente; só <code>AuditOrchestrationService</code> orquestra os analisadores.</p>
+<h3 id="32-fluxo-de-uma-auditoria-sequencia">3.2 Fluxo de uma auditoria (sequência)</h3>
+<figure class="diagrama"><pre class="mermaid">sequenceDiagram
+    autonumber
+    participant U as Dashboard / CLI / Webhook / Agenda
+    participant AR as AuditResource
+    participant RQ as AuditRequestService
+    participant OR as AuditOrchestrationService
+    participant IN as IngestionService
+    participant ES as EvidenceStager
+    participant PR as PackRegistry
+    participant AZ as Analisadores (em paralelo)
+    participant DD as FindingDeduplicator
+    participant LC as FindingLifecycleService
+    participant SS as ScoringService
+    participant DB as PostgreSQL
+    participant NT as NotificationService
+
+    U-&gt;&gt;AR: POST /api/v1/audits (sistema, branch)
+    AR-&gt;&gt;RQ: cria a execução (PENDING)
+    RQ-&gt;&gt;DB: grava AuditRun
+    RQ--&gt;&gt;OR: evento AuditCreated
+    AR--&gt;&gt;U: 202 com o id
+    OR-&gt;&gt;DB: marca RUNNING
+    OR-&gt;&gt;IN: cloneRepository(url, branch)
+    IN--&gt;&gt;OR: pasta temporária
+    OR-&gt;&gt;ES: leva evidências para .sentinel/evidence
+    OR-&gt;&gt;PR: policyFor(perfil)
+    PR--&gt;&gt;OR: AuditPolicy (pacotes ativos, sobrescritas, limites)
+    OR-&gt;&gt;AZ: analyze(projeto, run, política)
+    AZ--&gt;&gt;OR: findings + AnalyzerRunInfo de cada um
+    OR-&gt;&gt;DD: junta duplicados entre ferramentas
+    OR-&gt;&gt;OR: policy.apply, filtro de arquivos alterados (PR)
+    OR-&gt;&gt;LC: marca novos, retira suprimidos
+    OR-&gt;&gt;SS: calcula RiskScore (com linhas de código)
+    OR-&gt;&gt;DB: persiste findings, score, SBOM e contexto
+    OR-&gt;&gt;NT: avisa se falhou, caiu o score ou há grave novo
+    OR-&gt;&gt;IN: apaga a pasta temporária
+    U-&gt;&gt;AR: GET /audits/{id} (consulta até COMPLETED)</pre></figure>
+<p>Pontos do código que valem saber (do comentário de <code>AuditOrchestrationService</code>): nenhuma entidade JPA é usada fora de transação; a execução espera o registro da auditoria ficar visível no banco; falha de um analisador não derruba a auditoria (vira <code>FALHOU</code> em <code>AnalyzerRunInfo</code>); campos de texto são truncados ao tamanho das colunas; só rodam analisadores que suportam a stack do sistema.</p>
+<h3 id="33-pacote-resource-borda-rest">3.3 Pacote <code>resource</code> (borda REST)</h3>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Classe</th>
+<th>O que faz</th>
+<th>Rotas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SystemResource</code></td>
+<td>Cadastro e consulta de sistemas, agenda, perfil, tendência, supressões</td>
+<td><code>/api/v1/systems</code>, <code>/{id}</code>, <code>/{id}/audits</code>, <code>/{id}/trend</code>, <code>/{id}/suppressions</code>, <code>/{id}/schedule</code>, <code>/{id}/profile</code></td>
+</tr>
+<tr>
+<td><code>AuditResource</code></td>
+<td>Cria auditoria e entrega resultado, achados, diferença, relatório, SBOM e visão completa</td>
+<td><code>/api/v1/audits</code>, <code>/{id}</code>, <code>/{id}/findings</code>, <code>/{id}/diff</code>, <code>/{id}/report</code>, <code>/{id}/sbom</code>, <code>/{id}/insights</code></td>
+</tr>
+<tr>
+<td><code>FindingResource</code></td>
+<td>Suprime um achado com justificativa</td>
+<td><code>POST /api/v1/findings/{id}/suppress</code></td>
+</tr>
+<tr>
+<td><code>WebhookResource</code></td>
+<td>Recebe push do GitHub e do GitLab</td>
+<td><code>/api/v1/webhooks/github</code>, <code>/gitlab</code></td>
+</tr>
+<tr>
+<td><code>PackResource</code></td>
+<td>Lista pacotes e perfis; recarrega do disco</td>
+<td><code>/api/v1/packs</code>, <code>/reload</code></td>
+</tr>
+<tr>
+<td><code>RuleResource</code></td>
+<td>Qualidade das regras e laboratório</td>
+<td><code>/api/v1/rules/quality</code>, <code>/playground</code></td>
+</tr>
+<tr>
+<td><code>HealthResource</code></td>
+<td>Verificação de saúde</td>
+<td><code>/api/v1/health</code></td>
+</tr>
+<tr>
+<td><code>ApiKeyFilter</code></td>
+<td>Exige a chave <code>X-API-Key</code> quando <code>API_KEY</code> está definida</td>
+<td>filtro global</td>
+</tr>
+<tr>
+<td><code>StartupChecks</code></td>
+<td>Avisa na partida sobre configuração insegura ou destrutiva</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="34-pacote-service-negocio">3.4 Pacote <code>service</code> (negócio)</h3>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Classe</th>
+<th>O que faz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AuditOrchestrationService</code></td>
+<td>Maestro: clona, roda analisadores em paralelo, deduplica, aplica política, calcula score, grava e notifica</td>
+</tr>
+<tr>
+<td><code>AuditRequestService</code></td>
+<td>Cria a execução (<code>PENDING</code>) e dispara o evento <code>AuditCreated</code></td>
+</tr>
+<tr>
+<td><code>AuditCreated</code></td>
+<td>Evento CDI "auditoria criada"</td>
+</tr>
+<tr>
+<td><code>AuditScheduler</code></td>
+<td>A cada 5 minutos dispara auditorias agendadas e recupera as que ficaram <code>RUNNING</code> por causa de um reinício</td>
+</tr>
+<tr>
+<td><code>IngestionService</code></td>
+<td>Clona o repositório (raso, com token e lista de hosts permitidos) e apaga a pasta ao fim</td>
+</tr>
+<tr>
+<td><code>ChangedFiles</code></td>
+<td>Lista arquivos alterados contra um branch base (auditoria de PR)</td>
+</tr>
+<tr>
+<td><code>EvidenceStager</code></td>
+<td>Copia as evidências do sistema para <code>.sentinel/evidence/</code> dentro do clone</td>
+</tr>
+<tr>
+<td><code>FindingDeduplicator</code></td>
+<td>Junta o mesmo problema vindo de ferramentas diferentes (fica o do Semgrep, com a maior severidade)</td>
+</tr>
+<tr>
+<td><code>Fingerprints</code></td>
+<td>Identidade estável de um achado entre auditorias</td>
+</tr>
+<tr>
+<td><code>FindingLifecycleService</code></td>
+<td>Marca o que é novo, aplica supressões, compara com a auditoria anterior (novo × corrigido) e calcula a tendência de score</td>
+</tr>
+<tr>
+<td><code>ScoringService</code></td>
+<td>Score por dimensão e geral</td>
+</tr>
+<tr>
+<td><code>SourceSizer</code></td>
+<td>Conta linhas de código (base do score por densidade)</td>
+</tr>
+<tr>
+<td><code>RemediationCatalog</code></td>
+<td>Devolve a orientação de correção pelo id da regra (vale a chave mais específica)</td>
+</tr>
+<tr>
+<td><code>ReportService</code></td>
+<td>Relatório HTML</td>
+</tr>
+<tr>
+<td><code>NotificationService</code></td>
+<td>Avisos para Teams, Slack ou webhook genérico</td>
+</tr>
+<tr>
+<td><code>WebhookService</code></td>
+<td>Valida a autenticidade, acha o sistema pelo repositório e dispara se o push é na branch configurada</td>
+</tr>
+<tr>
+<td><code>RuleQualityService</code></td>
+<td>Mede quais regras viram falso positivo com frequência</td>
+</tr>
+<tr>
+<td><code>RulePlaygroundService</code></td>
+<td>Valida e executa uma regra Semgrep sobre um trecho de código</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="35-pacote-analyzer-motores-de-analise">3.5 Pacote <code>analyzer</code> (motores de análise)</h3>
+<p>Contrato: <code>CodeAnalyzer</code> (<code>getName</code>, <code>supports(stack)</code>, <code>isAvailable()</code>, <code>analyze(...)</code>, <code>replaces()</code>). <code>replaces()</code> faz um analisador desligar outro que cobre o mesmo (com o Gitleaks no PATH, os analisadores internos de segredos não rodam). Cada execução devolve um <code>AnalyzerResult</code>.</p>
+<figure class="diagrama"><pre class="mermaid">classDiagram
+    class CodeAnalyzer {
+        &lt;&lt;interface&gt;&gt;
+        +analyze()
+        +supports(stack)
+        +isAvailable()
+        +replaces()
+    }
+    CodeAnalyzer &lt;|.. SemgrepAnalyzer
+    CodeAnalyzer &lt;|.. PmdAnalyzer
+    CodeAnalyzer &lt;|.. EslintAnalyzer
+    CodeAnalyzer &lt;|.. SarifAnalyzer
+    CodeAnalyzer &lt;|.. TrivyAnalyzer
+    CodeAnalyzer &lt;|.. GitleaksAnalyzer
+    CodeAnalyzer &lt;|.. SecretsAnalyzer
+    CodeAnalyzer &lt;|.. HistorySecretsAnalyzer
+    CodeAnalyzer &lt;|.. OWASPDependencyAnalyzer
+    CodeAnalyzer &lt;|.. ArchitectureAnalyzer
+    CodeAnalyzer &lt;|.. ArchitecturePolicyAnalyzer
+    CodeAnalyzer &lt;|.. CleanCodeAnalyzer
+    CodeAnalyzer &lt;|.. HygieneAnalyzer
+    CodeAnalyzer &lt;|.. EvidenceAnalyzer
+    SemgrepAnalyzer ..&gt; ExternalTools
+    PmdAnalyzer ..&gt; ExternalTools
+    TrivyAnalyzer ..&gt; ExternalTools
+    GitleaksAnalyzer ..&gt; ExternalTools
+    EslintAnalyzer ..&gt; ExternalTools
+    SarifAnalyzer ..&gt; ExternalTools
+    OWASPDependencyAnalyzer ..&gt; DependencyExtractor
+    OWASPDependencyAnalyzer ..&gt; OsvClient
+    ArchitecturePolicyAnalyzer ..&gt; DependencyExtractor
+    CleanCodeAnalyzer ..&gt; FunctionScanner
+    FunctionScanner ..&gt; SourceSanitizer
+    EvidenceAnalyzer ..&gt; SchemaChecks
+    EvidenceAnalyzer ..&gt; PgStatChecks
+    EvidenceAnalyzer ..&gt; PlanChecks
+    EvidenceAnalyzer ..&gt; CoverageChecks
+    EvidenceAnalyzer ..&gt; HeapChecks
+    SchemaChecks ..&gt; SchemaParser</pre></figure>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Classe</th>
+<th>O que analisa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SemgrepAnalyzer</code></td>
+<td>Roda o Semgrep com as regras dos pacotes ativos (segurança, qualidade, Spring, persistência, IaC, front); ignora bibliotecas embutidas (<code>node_modules</code>, <code>vendor</code>, <code>*.min.js</code>...)</td>
+</tr>
+<tr>
+<td><code>PmdAnalyzer</code></td>
+<td>Lint de Java com PMD (boas práticas, propensão a erro, design)</td>
+</tr>
+<tr>
+<td><code>EslintAnalyzer</code></td>
+<td>Lint de TypeScript/JavaScript com ESLint; só liga as regras do Angular se o projeto depende de <code>@angular/*</code></td>
+</tr>
+<tr>
+<td><code>SarifAnalyzer</code></td>
+<td>Importa o SARIF 2.1.0 de qualquer ferramenta declarada em <code>tools/*.yml</code> dos pacotes (Stylelint, SQLFluff, Hadolint, Checkov, Spectral, Squawk, Checkstyle, jscpd, Dependency-Cruiser, njsscan, kube-linter, kube-score)</td>
+</tr>
+<tr>
+<td><code>TrivyAnalyzer</code></td>
+<td>Vulnerabilidades em dependências e más configurações de IaC/Dockerfile/Kubernetes</td>
+</tr>
+<tr>
+<td><code>GitleaksAnalyzer</code></td>
+<td>Segredos em arquivos atuais e no histórico do Git</td>
+</tr>
+<tr>
+<td><code>SecretsAnalyzer</code></td>
+<td>Segredos no código (fallback interno quando não há Gitleaks)</td>
+</tr>
+<tr>
+<td><code>HistorySecretsAnalyzer</code></td>
+<td>Segredos que existiram em commits antigos (fallback interno)</td>
+</tr>
+<tr>
+<td><code>OWASPDependencyAnalyzer</code></td>
+<td>SCA: lê manifestos, consulta o OSV.dev e classifica pela nota CVSS</td>
+</tr>
+<tr>
+<td><code>ArchitectureAnalyzer</code></td>
+<td>Violações arquiteturais e de observabilidade em Java (camadas, entidade exposta em controller...)</td>
+</tr>
+<tr>
+<td><code>ArchitecturePolicyAnalyzer</code></td>
+<td>Aplica o <code>architecture.yml</code> do pacote: dependências proibidas entre camadas, convenções por arquivo, arquivos obrigatórios, política de versões de componentes</td>
+</tr>
+<tr>
+<td><code>CleanCodeAnalyzer</code></td>
+<td>Função longa, parâmetros demais, complexidade ciclomática, aninhamento (Java e TS/JS)</td>
+</tr>
+<tr>
+<td><code>HygieneAnalyzer</code></td>
+<td>README, testes, CI, lockfile, segredos versionados, artefatos de build commitados, <code>.dockerignore</code></td>
+</tr>
+<tr>
+<td><code>EvidenceAnalyzer</code></td>
+<td>Lê evidências geradas fora: dump do esquema, estatísticas e planos do Postgres, cobertura, histograma de memória</td>
+</tr>
+<tr>
+<td><code>ExternalTools</code></td>
+<td>Utilidades de execução de processos externos e de detecção de ferramenta no PATH</td>
+</tr>
+<tr>
+<td><code>AnalyzerResult</code></td>
+<td>Resultado imutável de um analisador (achados, nome, duração)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Subpacotes:</p>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Subpacote</th>
+<th>Classes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>analyzer.deps</code></td>
+<td><code>DependencyExtractor</code> (lê <code>pom.xml</code>, <code>package.json</code>, lockfiles...), <code>Dependency</code>, <code>OsvClient</code> (API do OSV.dev), <code>OsvVulnerability</code>, <code>Cvss</code> (nota base v3.x), <code>SbomWriter</code> (CycloneDX 1.5)</td>
+</tr>
+<tr>
+<td><code>analyzer.evidence</code></td>
+<td><code>SchemaParser</code> (DDL → tabelas, chaves, índices), <code>SchemaChecks</code>, <code>PgStatChecks</code> (CSV de <code>pg_stat_*</code>), <code>PlanChecks</code> (EXPLAIN JSON), <code>CoverageChecks</code> (JaCoCo, lcov), <code>HeapChecks</code>, <code>Csv</code>, <code>Ev</code> (monta os achados)</td>
+</tr>
+<tr>
+<td><code>analyzer.quality</code></td>
+<td><code>FunctionScanner</code> (acha funções e mede), <code>SourceSanitizer</code> (apaga comentários e strings antes de medir)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="36-pacote-pack-pacotes-de-regras-e-perfis">3.6 Pacote <code>pack</code> (pacotes de regras e perfis)</h3>
+<figure class="diagrama"><pre class="mermaid">flowchart LR
+    subgraph Fontes
+        EMB["audit-rules/packs\nembutidos"]
+        GIT["repositório Git central\nPackSources"]
+    end
+    EMB --&gt; REG
+    GIT --&gt; REG
+    REG["PackRegistry\ndescobre, valida, mantém"] --&gt; LDR["PackLoader\nlê e valida"]
+    LDR --&gt; INT["PackIntegrity\nSHA-256 + Ed25519"]
+    LDR --&gt; Y["Yamls\nleitura segura"]
+    LDR --&gt; RP["RulePack\n(PackManifest, ToolSpec,\nArchitecturePolicy, DedupTopic)"]
+    REG --&gt; PL["ProfileLoader"] --&gt; PF["Profile\n(RuleOverride)"]
+    REG --&gt; POL["AuditPolicy\npacotes ativos + sobrescritas + limites"]
+    POL --&gt; AZ["Analisadores"]
+    REG --&gt; RC["RemediationCatalog"]</pre></figure>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Classe</th>
+<th>O que faz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PackRegistry</code></td>
+<td>Descobre, valida e mantém pacotes e perfis; entrega a <code>AuditPolicy</code> de cada sistema; recarrega do disco</td>
+</tr>
+<tr>
+<td><code>PackLoader</code></td>
+<td>Lê e valida um pacote; a mensagem de erro lista todos os problemas, não só o primeiro</td>
+</tr>
+<tr>
+<td><code>PackIntegrity</code></td>
+<td><code>pack.lock</code> (SHA-256 de cada arquivo) e <code>pack.sig</code> (assinatura Ed25519 do lock)</td>
+</tr>
+<tr>
+<td><code>PackSources</code></td>
+<td>Obtém pacotes de um repositório Git central</td>
+</tr>
+<tr>
+<td><code>PackTool</code></td>
+<td>Linha de comando <code>sentinel-pack</code> para autores (criar, validar, testar)</td>
+</tr>
+<tr>
+<td><code>ProfileLoader</code> / <code>Profile</code></td>
+<td>Perfis (<code>profiles/*.yml</code>): pacotes ativos, sobrescritas e limites de clean code por grupo de sistemas</td>
+</tr>
+<tr>
+<td><code>AuditPolicy</code></td>
+<td>O que vale numa auditoria; aplica sobrescritas (desligar, mudar severidade, modo sombra) aos achados</td>
+</tr>
+<tr>
+<td><code>RulePack</code> / <code>PackManifest</code></td>
+<td>Pacote carregado e sua identidade (<code>pack.yml</code>)</td>
+</tr>
+<tr>
+<td><code>RuleOverride</code></td>
+<td>Ajuste de uma regra feito por um perfil</td>
+</tr>
+<tr>
+<td><code>ToolSpec</code></td>
+<td>Fonte SARIF declarada por um pacote, sem código Java</td>
+</tr>
+<tr>
+<td><code>ArchitecturePolicy</code></td>
+<td>Camadas e componentes declarados em YAML</td>
+</tr>
+<tr>
+<td><code>DedupTopic</code></td>
+<td>Grupo de regras de ferramentas diferentes que apontam o mesmo problema</td>
+</tr>
+<tr>
+<td><code>RemediationEntry</code></td>
+<td>Orientação de correção por regra</td>
+</tr>
+<tr>
+<td><code>Versions</code></td>
+<td>Comparação de versões para a política de componentes</td>
+</tr>
+<tr>
+<td><code>Yamls</code></td>
+<td>Leitura de YAML sem instanciar classes (evita o risco clássico do SnakeYAML)</td>
+</tr>
+<tr>
+<td><code>PackException</code></td>
+<td>Pacote inválido</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="37-score-de-risco">3.7 Score de risco</h3>
+<p><code>ScoringService</code> calcula cada dimensão e o geral.</p>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Dimensão</th>
+<th style="text-align: right;">Peso no geral</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Segurança (<code>SECURITY</code>)</td>
+<td style="text-align: right;">30%</td>
+</tr>
+<tr>
+<td>Qualidade (<code>QUALITY</code>)</td>
+<td style="text-align: right;">20%</td>
+</tr>
+<tr>
+<td>Arquitetura (<code>ARCHITECTURE</code>)</td>
+<td style="text-align: right;">20%</td>
+</tr>
+<tr>
+<td>Dependências (<code>DEPENDENCY</code>)</td>
+<td style="text-align: right;">10%</td>
+</tr>
+<tr>
+<td>Observabilidade (<code>OBSERVABILITY</code>)</td>
+<td style="text-align: right;">10%</td>
+</tr>
+<tr>
+<td>Desempenho (<code>PERFORMANCE</code>)</td>
+<td style="text-align: right;">10%</td>
+</tr>
+</tbody>
+</table></div>
+<p>A penalidade de severidades baixas repetidas da mesma regra tem teto de 20 pontos, e projetos grandes recebem um fator de densidade (a raiz de referência/linhas) sobre as penalidades, exceto as críticas. Por isso muitos achados de estilo quase não mexem na nota.</p>
+<h3 id="38-ciclo-de-vida-do-achado">3.8 Ciclo de vida do achado</h3>
+<figure class="diagrama"><pre class="mermaid">stateDiagram-v2
+    [*] --&gt; OPEN: achado gravado na auditoria
+    OPEN --&gt; SUPPRESSED: POST /findings/id/suppress\n(FALSE_POSITIVE, ACCEPTED_RISK, WONT_FIX)
+    SUPPRESSED --&gt; OPEN: DELETE /systems/id/suppressions/sid</pre></figure>
+<ul>
+<li>O código só grava dois estados: <code>OPEN</code> e <code>SUPPRESSED</code> (<code>FindingLifecycleService</code>). Os valores <code>ACKNOWLEDGED</code> e <code>FIXED</code> existem no enum <code>FindingStatus</code>, mas nenhum serviço os atribui hoje.</li>
+<li>"Novo" e "corrigido" não são estados gravados: saem da <strong>comparação com a auditoria anterior</strong> pela identidade estável (<code>Fingerprints</code>). Achado que está na atual e não estava é novo; achado que estava e sumiu é corrigido. O resultado é o <code>AuditDiffResponse</code> (<code>GET /audits/{id}/diff</code>).</li>
+<li>Suprimir ou reabrir recalcula o score da auditoria sem os achados suprimidos (<code>rescore</code>). <code>FindingSuppression</code> guarda a justificativa por sistema.</li>
+</ul>
+<h3 id="39-pacote-insights-auditoria-completa">3.9 Pacote <code>insights</code> (auditoria completa)</h3>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Classe</th>
+<th>O que faz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>InsightsService</code></td>
+<td>Monta a visão de uma execução a partir dos achados e do contexto gravado</td>
+</tr>
+<tr>
+<td><code>InsightsBuilder</code></td>
+<td>Transforma achados em relatório por área, tabela de dívida técnica (P0 a P3), quick wins e plano em fases</td>
+</tr>
+<tr>
+<td><code>ProjectProfiler</code></td>
+<td>Lê a árvore do projeto sem executar nada e monta o <code>ProjectMap</code></td>
+</tr>
+<tr>
+<td><code>AreaClassifier</code></td>
+<td>Mapeia um achado para uma <code>AuditArea</code></td>
+</tr>
+<tr>
+<td><code>AuditArea</code>, <code>AreaReport</code>, <code>DebtItem</code>, <code>RoadmapPhase</code>, <code>AuditInsights</code>, <code>AuditContextData</code>, <code>ProjectMap</code>, <code>AnalyzerRunInfo</code></td>
+<td>Estruturas de dados da visão completa (inclui a situação de cada analisador: <code>OK</code>, <code>FALHOU</code>, <code>INDISPONIVEL</code>, <code>SUBSTITUIDO</code>, <code>NAO_SUPORTADO</code>, <code>SEM_EVIDENCIA</code>)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="310-dados-model-repository-dto">3.10 Dados (<code>model</code>, <code>repository</code>, <code>dto</code>)</h3>
+<figure class="diagrama"><pre class="mermaid">erDiagram
+    AUDITED_SYSTEM ||--o{ AUDIT_RUN : "tem execuções"
+    AUDIT_RUN ||--o{ FINDING : "produz"
+    AUDITED_SYSTEM ||--o{ FINDING_SUPPRESSION : "tem supressões"
+    AUDIT_RUN {
+        enum status "PENDING, RUNNING, COMPLETED, FAILED"
+        embedded riskScore "uma nota por dimensão e a geral"
+    }
+    FINDING {
+        enum severity "CRITICAL, HIGH, MEDIUM, LOW, INFO"
+        enum category "SECURITY, QUALITY, ARCHITECTURE, DEPENDENCY, OBSERVABILITY, PERFORMANCE"
+        enum status "OPEN, ACKNOWLEDGED, FIXED, SUPPRESSED"
+        string ruleId
+        string toolSource
+        string fingerprint
+    }
+    FINDING_SUPPRESSION {
+        enum reason "FALSE_POSITIVE, ACCEPTED_RISK, WONT_FIX"
+    }
+    AUDITED_SYSTEM {
+        enum stack "JAVA, JAVASCRIPT, DOTNET, PYTHON, COBOL, MIXED"
+    }</pre></figure>
+<ul>
+<li><code>model</code>: <code>AuditedSystem</code>, <code>AuditRun</code>, <code>Finding</code>, <code>FindingSuppression</code> (entidades), <code>RiskScore</code> (objeto embutido em <code>AuditRun</code>), <code>Severity</code>, <code>Category</code>, <code>Stack</code>, <code>FindingStatus</code>, <code>AuditStatus</code>, <code>SuppressionReason</code> (enums).</li>
+<li><code>repository</code> (Panache): <code>AuditedSystemRepository</code>, <code>AuditRunRepository</code>, <code>FindingRepository</code>, <code>FindingSuppressionRepository</code>.</li>
+<li><code>dto</code>: <code>CreateSystemRequest</code>, <code>CreateAuditRequest</code>, <code>ProfileRequest</code>, <code>ScheduleRequest</code>, <code>SuppressRequest</code> (entradas); <code>SystemSummaryResponse</code>, <code>AuditRunResponse</code>, <code>FindingResponse</code>, <code>RiskScoreDto</code>, <code>RemediationDto</code>, <code>AuditDiffResponse</code>, <code>TrendPoint</code>, <code>SuppressionResponse</code> (saídas); <code>FindingMapper</code> converte entidade em resposta (inclui a orientação de correção).</li>
+</ul>
+<hr />
+<h2 id="4-cli-audit-cli">4. CLI <code>audit-cli</code></h2>
+<p>Um único pacote, <code>com.sentinel.audit.cli</code>, usado por pipelines de CI.</p>
+<figure class="diagrama"><pre class="mermaid">flowchart LR
+    CI["Pipeline do projeto"] --&gt; C["AuditCli"]
+    C -- "REST + X-API-Key" --&gt; API["audit-api"]
+    C --&gt; S["SarifWriter\nGitHub Code Scanning"]
+    C --&gt; J["JUnitWriter\nrelatório de teste"]
+    C --&gt; M["MarkdownWriter\ncomentário de PR"]
+    C -- "código de saída" --&gt; CI</pre></figure>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Classe</th>
+<th>O que faz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AuditCli</code></td>
+<td>Dispara a auditoria, acompanha a cada 10 s e aplica os portões: <code>--fail-below &lt;score&gt;</code>, <code>--fail-on &lt;severidade&gt;</code>, <code>--fail-on-new &lt;severidade&gt;</code>. Saída 0 = aprovado, 1 = reprovado pelo portão, 2 = erro, 3 = tempo esgotado</td>
+</tr>
+<tr>
+<td><code>SarifWriter</code></td>
+<td>Converte os achados para SARIF 2.1.0 (GitHub Code Scanning, Azure DevOps, GitLab, VS Code)</td>
+</tr>
+<tr>
+<td><code>JUnitWriter</code></td>
+<td>Cada achado vira um teste que falhou (JUnit XML)</td>
+</tr>
+<tr>
+<td><code>MarkdownWriter</code></td>
+<td>Resumo em Markdown para comentar em PR (o CLI só grava; quem posta é o pipeline)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="5-frontend-audit-dashboard">5. Frontend <code>audit-dashboard</code></h2>
+<p>React 18, TypeScript, IBM Carbon Design System, Vite, TanStack Query (dados do servidor), Zustand (filtros e seleção), React Router.</p>
+<figure class="diagrama"><pre class="mermaid">flowchart TB
+    subgraph rotas["App.tsx (rotas)"]
+        O["/ e /systems\nOverviewPage"]
+        SD["/systems/:id\nSystemDetailPage"]
+        RK["/ranking\nRankingPage"]
+        F["/findings\nFindingsPage"]
+        RP["/reports\nReportsPage"]
+    end
+    SHELL["AppShell (cabeçalho, menu, versão)"] --&gt; rotas
+    rotas --&gt; COMP["components"]
+    rotas --&gt; HK["hooks (TanStack Query)"]
+    COMP --&gt; HK
+    HK --&gt; CL["api/client.ts\nfetch + chave"]
+    CL -- "/api/v1" --&gt; API["audit-api"]
+    rotas --&gt; ST["store/useAuditStore\n(sistema, auditoria, filtros)"]</pre></figure>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Camada</th>
+<th>Arquivos</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Páginas</td>
+<td><code>OverviewPage</code>, <code>SystemDetailPage</code>, <code>RankingPage</code>, <code>FindingsPage</code>, <code>ReportsPage</code></td>
+<td>Lista de sistemas e cadastro; detalhe com nota, tendência e visão completa; ranking de sistemas e qualidade das regras; achados com filtros; relatórios</td>
+</tr>
+<tr>
+<td>Componentes</td>
+<td><code>FindingsTable</code>, <code>ScoreGauge</code>, <code>RiskBadge</code>, <code>TrendChart</code>, <code>DiffSummary</code>, <code>InsightsPanel</code>, <code>RemediationBlock</code>, <code>SuppressModal</code>, <code>SuppressionsList</code>, <code>ProfileForm</code>, <code>ScheduleForm</code>, <code>Layout/AppShell</code></td>
+<td>Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda</td>
+</tr>
+<tr>
+<td>Hooks</td>
+<td><code>useSystems</code> (<code>useSystem</code>, <code>useRuleQuality</code>), <code>useAuditRuns</code> (<code>useAudit</code>), <code>useFindings</code>, <code>useLifecycle</code> (tendência, diferença, supressões, visão completa, pacotes, perfil, agenda)</td>
+<td>Cada um encapsula uma consulta ou mutação ao servidor</td>
+</tr>
+<tr>
+<td>Estado</td>
+<td><code>store/useAuditStore</code></td>
+<td>Sistema e auditoria selecionados e filtros de achados</td>
+</tr>
+<tr>
+<td>Acesso à API</td>
+<td><code>api/client.ts</code></td>
+<td><code>apiFetch</code> e o objeto <code>api</code> com cada endpoint</td>
+</tr>
+<tr>
+<td>Apoio</td>
+<td><code>types/index.ts</code>, <code>utils/ranking.ts</code>, <code>vite-env.d.ts</code></td>
+<td>Tipos do contrato, cálculo do ranking</td>
+</tr>
+<tr>
+<td>Testes</td>
+<td><code>RiskBadge.test</code>, <code>ScoreGauge.test</code>, <code>AppShell.test</code>, <code>test/a11y.test</code> (axe)</td>
+<td>16 testes (Vitest + Testing Library)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Em produção a SPA é servida pelo Nginx (<code>nginx.conf.template</code>), que repassa <code>/api</code> para a API.</p>
+<hr />
+<h2 id="6-regras-e-ferramentas-audit-rules">6. Regras e ferramentas <code>audit-rules</code></h2>
+<figure class="diagrama"><pre class="mermaid">flowchart TB
+    subgraph packs["audit-rules/packs"]
+        P1["core-security"]
+        P2["core-quality"]
+        P3["core-frontend"]
+        P4["core-spring"]
+        P5["core-persistencia"]
+        P6["core-iac"]
+        P7["core-corporativo\n(desligado por padrão)"]
+        P8["core-architecture\n(desligado por padrão)"]
+        P9["market-tools\n(ferramentas via SARIF)"]
+        PF["profiles/\narquitetura-em-camadas,\ncorporativo-java-ee-angular,\nlegado, padrao-typescript-angular"]
+    end
+    subgraph pacote["Dentro de um pacote"]
+        PY["pack.yml (identidade e versão)"]
+        RU["rules/*.yml (Semgrep)"]
+        TE["tests/ (casos ruleid e ok)"]
+        RE["remediation/ (como corrigir)"]
+        DD["dedup.yml (duplicatas entre ferramentas)"]
+        TL["tools/*.yml (fontes SARIF)"]
+        AR["architecture.yml (camadas)"]
+    end
+    subgraph lint["audit-rules/lint"]
+        ES["eslint/"]
+        SL["stylelint/"]
+        CK["checkstyle/"]
+        EX["extras/ (sqlfluff, spectral, dependency-cruiser)"]
+        JS["jscpd/"]
+    end
+    packs --&gt; pacote
+    P9 --&gt; lint</pre></figure>
+<ul>
+<li>Cada pacote tem <code>pack.yml</code>, regras em <code>rules/</code>, casos de teste em <code>tests/</code> (<code>// ruleid:</code> deve casar, <code>// ok:</code> não) e uma entrada de remediação por regra.</li>
+<li><code>market-tools</code> declara as ferramentas externas (<code>tools/*.yml</code>: <code>api</code>, <code>arquitetura</code>, <code>css</code>, <code>duplicacao</code>, <code>infra</code>, <code>java</code>, <code>javascript</code>, <code>sql</code>), cada uma só roda se estiver instalada e se o projeto tiver arquivos do tipo que ela entende.</li>
+<li>Perfis (<code>profiles/*.yml</code>) escolhem pacotes, desligam ou mudam a severidade de regras e põem regras em modo sombra (aparecem, mas não reprovam).</li>
+<li>Verificação: <code>semgrep --test</code> por pacote e <code>audit-rules/scripts/testar-regex-sql.py</code> para regras de SQL/XML (que o <code>semgrep --test</code> não avalia). Calibração em repositórios reais: <code>audit-rules/calibracao</code>.</li>
+<li>Ferramenta de autor: <code>audit-rules/bin/sentinel-pack</code> (executa <code>PackTool</code>).</li>
+</ul>
+<hr />
+<h2 id="7-implantacao-e-seguranca">7. Implantação e segurança</h2>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker-compose.yml</code></td>
+<td><code>postgres</code> (16-alpine, só no localhost), <code>audit-api</code>, <code>audit-dashboard</code></td>
+</tr>
+<tr>
+<td><code>audit-api/Dockerfile</code></td>
+<td>Constrói com Maven (Java 21) e roda em JRE 21 com Git, Semgrep, Trivy, Gitleaks, Node (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; telemetria do Semgrep desligada</td>
+</tr>
+<tr>
+<td><code>deploy/helm/sentinel</code></td>
+<td>Chart com <code>api</code>, <code>dashboard</code>, <code>ingress</code>, <code>postgres</code> e <code>secret</code></td>
+</tr>
+<tr>
+<td>Autenticação</td>
+<td>Chave estática <code>X-API-Key</code> (<code>ApiKeyFilter</code>) ou OIDC/Keycloak em build com <code>-Poidc</code> (<code>QUARKUS_PROFILE=oidc</code>, com <code>API_KEY</code> vazia)</td>
+</tr>
+<tr>
+<td>Clone</td>
+<td><code>GIT_ALLOWED_HOSTS</code> limita os hosts; <code>GIT_TOKEN</code> com <code>GIT_TOKEN_HOSTS</code> só vai para os hosts listados; clone raso (<code>GIT_HISTORY_DEPTH</code>)</td>
+</tr>
+<tr>
+<td>Pacotes</td>
+<td>YAML lido sem instanciar classes (<code>Yamls</code>), integridade por SHA-256 e assinatura Ed25519 (<code>PackIntegrity</code>); <code>eslint.config.js</code> do projeto auditado nunca é carregado (seria código executado no servidor)</td>
+</tr>
+<tr>
+<td>Segredos</td>
+<td>O valor de um segredo achado nunca é gravado, só um hash curto</td>
+</tr>
+<tr>
+<td>Avisos</td>
+<td><code>StartupChecks</code> emite alerta de configuração insegura</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="8-automacao-ci-release-e-agentes">8. Automação: CI, release e agentes</h2>
+<figure class="diagrama"><pre class="mermaid">flowchart TB
+    PUSH["push na main / PR / domingo / manual"] --&gt; CI["ci.yml"]
+    CI --&gt; J1["API, CLI e pacotes de regras (Maven)"]
+    CI --&gt; J2["Testes Semgrep dos pacotes"]
+    CI --&gt; J3["Dashboard (tsc, Vitest, build)"]
+    CI --&gt; J4["Imagens Docker e Helm + teste ponta a ponta"]
+    CI --&gt; J5["Calibração em vários repositórios"]
+    CI --&gt; J6["Escopo dos PRs do agente"]
+    CI -- "falha" --&gt; EV["evolucao.yml\nSentinel Evolution"]
+    QUA["quarta-feira"] --&gt; EV
+    SEG["segunda-feira"] --&gt; DS["descoberta.yml\nSentinel Descoberta"]
+    EV --&gt; PRS["PRs evolucao/*"]
+    DS --&gt; PRS
+    PRS --&gt; HUM["Você revisa e faz o merge"]
+    HUM --&gt; TAG["tag vX.Y.Z"] --&gt; REL["release.yml\nimagens no GHCR, zip do CLI, SBOM"]
+    PL["docs/evolucao/PLACAR.md"] -. "meta dos agentes" .-&gt; EV
+    PL -. "meta dos agentes" .-&gt; DS</pre></figure>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Parte</th>
+<th>Arquivos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CI</td>
+<td><code>.github/workflows/ci.yml</code>, <code>scripts/ci-anotar.sh</code> (transforma falhas em anotações legíveis), <code>scripts/e2e.sh</code> (Postgres + API + auditoria do petclinic)</td>
+</tr>
+<tr>
+<td>Calibração</td>
+<td><code>scripts/calibracao.sh</code>, <code>scripts/comparar-calibracao.py</code>, <code>audit-rules/calibracao/esperado.json</code></td>
+</tr>
+<tr>
+<td>Release</td>
+<td><code>.github/workflows/release.yml</code>, <code>scripts/versoes-pacotes.sh</code></td>
+</tr>
+<tr>
+<td>Sentinel Evolution</td>
+<td><code>.github/workflows/evolucao.yml</code>, <code>.github/agente/sentinel-evolution.md</code>, <code>scripts/evolucao-entrada.sh</code></td>
+</tr>
+<tr>
+<td>Sentinel Descoberta</td>
+<td><code>.github/workflows/descoberta.yml</code>, <code>.github/agente/sentinel-descoberta.md</code>, <code>scripts/descobrir-repos.sh</code>, <code>scripts/relatorio-descoberta.py</code></td>
+</tr>
+<tr>
+<td>Memória e metas</td>
+<td><code>docs/evolucao/</code> (<code>PLACAR.md</code>, <code>LOG.md</code>, <code>calibracao.md</code>, <code>precisao.md</code>, <code>relatorios/</code>, <code>AGENTE.md</code>)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Os agentes só abrem PR em <code>evolucao/*</code>; o merge é manual. O job <code>Escopo dos PRs do agente</code> reprova PR que mexa em <code>.github/</code>, scripts de entrada/CI, <code>.gitignore</code> ou <code>.env*</code>.</p>
+<hr />
+<h2 id="9-terceiros">9. Terceiros</h2>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Terceiro</th>
+<th>Onde entra</th>
+<th>Obrigatório?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quarkus 3.15, Hibernate/Panache, JAX-RS</td>
+<td>Backend</td>
+<td>sim</td>
+</tr>
+<tr>
+<td>PostgreSQL 16</td>
+<td>Persistência</td>
+<td>sim</td>
+</tr>
+<tr>
+<td>React 18, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest</td>
+<td>Dashboard</td>
+<td>sim</td>
+</tr>
+<tr>
+<td>Semgrep</td>
+<td><code>SemgrepAnalyzer</code> (regras dos pacotes)</td>
+<td>recomendado; sem ele a análise de regras fica de fora</td>
+</tr>
+<tr>
+<td>Trivy</td>
+<td><code>TrivyAnalyzer</code> (SCA e IaC)</td>
+<td>opcional; substitui o SCA interno</td>
+</tr>
+<tr>
+<td>Gitleaks</td>
+<td><code>GitleaksAnalyzer</code> (segredos e histórico)</td>
+<td>opcional; substitui os analisadores internos de segredo</td>
+</tr>
+<tr>
+<td>PMD</td>
+<td><code>PmdAnalyzer</code></td>
+<td>opcional</td>
+</tr>
+<tr>
+<td>ESLint (+ Angular ESLint, html-eslint), Stylelint</td>
+<td><code>EslintAnalyzer</code>, <code>SarifAnalyzer</code></td>
+<td>opcional (stack web)</td>
+</tr>
+<tr>
+<td>SQLFluff, Squawk, Hadolint, Checkov, Spectral, Checkstyle, jscpd, Dependency-Cruiser, njsscan, kube-linter, kube-score</td>
+<td><code>SarifAnalyzer</code> via <code>market-tools</code></td>
+<td>opcionais; cada uma só roda se instalada</td>
+</tr>
+<tr>
+<td>OSV.dev</td>
+<td><code>OsvClient</code> (consulta de vulnerabilidades por dependência)</td>
+<td>opcional (<code>OSV_ENABLED</code>)</td>
+</tr>
+<tr>
+<td>GitHub / GitLab</td>
+<td>Clone e webhooks</td>
+<td>sim, para repositórios remotos</td>
+</tr>
+<tr>
+<td>Teams / Slack / webhook genérico</td>
+<td><code>NotificationService</code></td>
+<td>opcional</td>
+</tr>
+<tr>
+<td>Keycloak / OIDC</td>
+<td>Autenticação corporativa</td>
+<td>opcional</td>
+</tr>
+<tr>
+<td>GitHub Actions, GHCR, <code>anthropics/claude-code-action</code></td>
+<td>CI, release e agentes</td>
+<td>só para o desenvolvimento do próprio Sentinel</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="10-limites-deste-documento">10. Limites deste documento</h2>
+<ul>
+<li>Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (<code>AuditOrchestrationService</code>, <code>ScoringService</code>, camadas, dashboard). Classes grandes como <code>PackLoader</code> (641 linhas), <code>ArchitecturePolicyAnalyzer</code> (534) e <code>InsightsBuilder</code> (344) estão descritas pelo comentário de classe, não por leitura linha a linha.</li>
+<li>A lista de analisadores executados por padrão é a de <code>AuditOrchestrationService.runAnalyzers</code> (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.</li>
+<li>Os pesos e o teto do score vêm de <code>ScoringService</code> hoje; mudam com o código. Em caso de dúvida vale o código.</li>
+<li>Este documento não foi gerado automaticamente: se uma classe nascer, mudar de pacote ou sair, ele precisa de atualização manual (o agente de evolução pode propor isso num PR).</li>
+</ul>
+  </main>
+</div>
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('nav.toc a'));
+  var alvos=links.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
+  function marca(){
+    var y=window.scrollY+80,at=0;
+    alvos.forEach(function(el,i){if(el&&el.offsetTop<=y)at=i;});
+    links.forEach(function(a,i){a.classList.toggle('on',i===at);});
+  }
+  window.addEventListener('scroll',marca,{passive:true});marca();
+})();
+</script>
