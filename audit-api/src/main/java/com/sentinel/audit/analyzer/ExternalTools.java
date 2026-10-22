@@ -83,7 +83,7 @@ final class ExternalTools {
         }
     }
 
-    /** Arquivo em pasta de build, dependências ou testes: lint e métricas não valem a pena aí. */
+    /** Arquivo em pasta de build, dependências ou testes, ou biblioteca embutida: lint e métricas não valem a pena aí. */
     static boolean inIgnoredDir(String relPath) {
         if (relPath == null) {
             return false;
@@ -92,6 +92,36 @@ final class ExternalTools {
         for (int i = 0; i < parts.length - 1; i++) {      // o último segmento é o arquivo
             if (CleanCodeAnalyzer.IGNORED_DIRS.contains(parts[i])) {
                 return true;
+            }
+        }
+        return isVendoredLibrary(relPath);
+    }
+
+    private static final java.util.regex.Pattern VENDORED_NAME = java.util.regex.Pattern.compile(
+            "^(jquery[\\w.-]*|font-?awesome[\\w.-]*|patternfly[\\w.-]*|[\\w.-]+\\.min)\\.(js|css|map)$");
+    /** "bootstrap.js" também é o nome do arquivo de partida de aplicações Angular/Webpack: só vale como biblioteca em pasta de ativos. */
+    private static final java.util.regex.Pattern VENDORED_ASSET_NAME = java.util.regex.Pattern.compile(
+            "^bootstrap[\\w.-]*\\.(js|css)$");
+    private static final java.util.Set<String> ASSET_DIRS = java.util.Set.of("js", "css", "lib", "assets", "static", "public", "webapp");
+
+    /**
+     * Biblioteca de terceiros copiada para dentro do projeto (jQuery, Bootstrap, Font Awesome, PatternFly, {@code *.min.*}).
+     * Na rodada de 2026-10-22 elas responderam por 71% dos achados de um repositório e não são código do projeto.
+     */
+    static boolean isVendoredLibrary(String relPath) {
+        if (relPath == null || relPath.isBlank()) {
+            return false;
+        }
+        String[] parts = relPath.replace('\\', '/').toLowerCase(java.util.Locale.ROOT).split("/");
+        String name = parts[parts.length - 1];
+        if (VENDORED_NAME.matcher(name).matches()) {
+            return true;
+        }
+        if (VENDORED_ASSET_NAME.matcher(name).matches()) {
+            for (int i = 0; i < parts.length - 1; i++) {
+                if (ASSET_DIRS.contains(parts[i])) {
+                    return true;
+                }
             }
         }
         return false;
