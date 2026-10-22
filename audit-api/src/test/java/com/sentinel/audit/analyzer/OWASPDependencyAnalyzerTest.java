@@ -97,6 +97,19 @@ class OWASPDependencyAnalyzerTest {
     }
 
     @Test
+    void minorMaisNovoQueACorrecaoDoMesmoMajorNaoEhVulneravel() {
+        List<String> fixes = List.of("2.6.7", "3.1.1");
+        assertFalse(OWASPDependencyAnalyzer.isVulnerable("2.7.0", fixes));
+        assertFalse(OWASPDependencyAnalyzer.isVulnerable("2.6.7", fixes));
+        assertTrue(OWASPDependencyAnalyzer.isVulnerable("2.6.6", fixes));
+        assertTrue(OWASPDependencyAnalyzer.isVulnerable("2.5.0", fixes));
+        assertTrue(OWASPDependencyAnalyzer.isVulnerable("3.1.0", fixes));
+        assertFalse(OWASPDependencyAnalyzer.isVulnerable("3.2.0", fixes));
+        assertTrue(OWASPDependencyAnalyzer.isVulnerable("1.7.3", fixes));
+        assertFalse(OWASPDependencyAnalyzer.isVulnerable("4.0.0", fixes));
+    }
+
+    @Test
     void deveDetectarNpmVulneravelPelaVersaoDeclarada() throws IOException {
         Files.writeString(tempDir.resolve("package.json"),
                 "{\"dependencies\":{\"lodash\":\"^4.17.15\",\"moment\":\"2.29.4\",\"react\":\"latest\"},"

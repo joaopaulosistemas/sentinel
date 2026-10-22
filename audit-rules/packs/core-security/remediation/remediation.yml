@@ -111,6 +111,14 @@
     - "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
     - "https://cwe.mitre.org/data/definitions/532.html"
 
+- key: "cors-aberto-js"
+  summary: "Liste as origens confiáveis; origin: true e enableCors() sem argumentos aceitam qualquer origem."
+  before: "app.enableCors({ origin: '*' });"
+  after: "app.enableCors({ origin: (process.env.CORS_ORIGINS ?? '').split(',') });   // lista explícita por ambiente"
+  refs:
+    - "https://docs.nestjs.com/security/cors"
+    - "https://developer.mozilla.org/pt-BR/docs/Web/HTTP/CORS"
+
 - key: "csrf-disabled"
   summary: "Mantenha o CSRF ativo quando houver sessão/cookies; desligue só em API stateless com token no header."
   before: "http.csrf().disable();"
