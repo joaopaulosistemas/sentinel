@@ -94,6 +94,13 @@ Média do placar: 2,0 (meta 2,5). Faltam: revisão manual dos achados (credibili
 - **Custo de Actions reduzido**: calibração só no domingo, sob demanda e em PRs do agente; Evolution só em CI com falha e quarta-feira; Descoberta só na segunda.
 - **Limites conhecidos**: a regra de JWT não cobre o segredo padrão passado por função auxiliar (`arg({ default })`); a revisão manual cobriu 10 achados em 4 repositórios; o CI da `main` combinada ainda não foi conferido.
 
+## Descoberta — 2026-10-22 (5 repositórios NestJS)
+
+- **Revisão:** 81 achados lidos em 5 repositórios (`docs/evolucao/relatorios/2026-10-22.md`); `precisao.md` soma 91 achados em 9 repositórios. Eixo 10 continua 2 (faltam ≥ 100 achados em ≥ 10 repositórios).
+- **PRs de evolução:** #9 CORS aberto em Node/Nest (falso negativo), #10 segredo/token em log (falso negativo), #11 `isVulnerable` do node-fetch 2.7.0 (falso positivo HIGH).
+- **Pendente:** ruído de `no-super-linear-move` (112 em um repositório) e `detect-non-literal-fs-filename` (0/6 útil), aninhamento contando objeto literal, `CleanCodeAnalyzer` lendo `class X extends Base(...)` como função.
+- **Não verificado:** CI dos PRs; recall; regras não lidas listadas no relatório.
+
 ## Evolução — 2026-10-22 (backlog 10/2: `precisao.md`)
 
 - **Classe:** nenhuma falha. A entrada da execução 39734246964 veio sem anotações de erro nem resultado de jobs; fui ao backlog do `PLACAR.md`.
