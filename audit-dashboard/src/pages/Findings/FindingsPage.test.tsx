@@ -86,4 +86,46 @@ describe('FindingsPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: /portal-cooperado 1 achados/ }));
     expect(await screen.findByText('Sistema: portal-cooperado')).toBeInTheDocument();
   });
+
+  it('suprime vários achados de uma vez pela seleção', async () => {
+    const calls: { url: string; body: string }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const u = String(url);
+        if (u === '/api/v1/findings/suppress-batch') {
+          calls.push({ url: u, body: String(init?.body) });
+          return new Response(JSON.stringify({ requested: 2, suppressed: 2, failures: [] }), { status: 200 });
+        }
+        const body = u.startsWith('/api/v1/findings?')
+          ? {
+              total: 2,
+              bySystem: [],
+              items: [
+                { systemId: 1, systemName: 'a', auditId: 10, finding: finding(1, 'SQL por concatenação') },
+                { systemId: 2, systemName: 'b', auditId: 20, finding: finding(2, 'CORS aberto') },
+              ],
+            }
+          : [];
+        return new Response(JSON.stringify(body), { status: 200 });
+      }),
+    );
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/findings']}>
+          <FindingsPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findByText('SQL por concatenação');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar todos os findings desta lista' }));
+    expect(screen.getByText('2 selecionado(s)')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Suprimir selecionados…' }));
+    fireEvent.change(screen.getByLabelText(/Justificativa/), { target: { value: 'ferramenta errou nos dois casos' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suprimir 2' }));
+    await vi.waitFor(() => expect(calls).toHaveLength(1));
+    const sent = JSON.parse(calls[0].body);
+    expect(sent.findingIds).toEqual([1, 2]);
+    expect(sent.reason).toBe('FALSE_POSITIVE');
+  });
 });

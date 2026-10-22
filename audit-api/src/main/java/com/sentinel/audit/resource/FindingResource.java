@@ -1,5 +1,7 @@
 package com.sentinel.audit.resource;
 
+import com.sentinel.audit.dto.BatchSuppressRequest;
+import com.sentinel.audit.dto.BatchSuppressResponse;
 import com.sentinel.audit.dto.FindingsOverviewDto;
 import com.sentinel.audit.dto.SuppressRequest;
 import com.sentinel.audit.model.AuditRun;
@@ -89,5 +91,32 @@ public class FindingResource {
             description = "Marca como falso positivo/risco aceito com justificativa obrigatória e prazo opcional")
     public SuppressionResponse suppress(@PathParam("id") Long id, @Valid SuppressRequest request) {
         return SuppressionResponse.from(lifecycleService.suppress(id, request), LocalDateTime.now());
+    }
+
+    /**
+     * Suprime vários findings com o mesmo motivo. Cada um é tratado separadamente: um inexistente
+     * não impede os demais, e o retorno lista as falhas.
+     */
+    @POST
+    @Path("/suppress-batch")
+    @Operation(summary = "Suprimir findings em lote",
+            description = "Mesmo motivo e justificativa para até " + BatchSuppressRequest.MAX_IDS + " findings")
+    public BatchSuppressResponse suppressBatch(@Valid BatchSuppressRequest request) {
+        return runBatch(request, lifecycleService);
+    }
+
+    static BatchSuppressResponse runBatch(BatchSuppressRequest request, FindingLifecycleService service) {
+        List<Long> ids = request.findingIds().stream().distinct().toList();
+        List<BatchSuppressResponse.Failure> failures = new ArrayList<>();
+        int done = 0;
+        for (Long id : ids) {
+            try {
+                service.suppress(id, request.toSingle());
+                done++;
+            } catch (jakarta.ws.rs.WebApplicationException e) {
+                failures.add(new BatchSuppressResponse.Failure(id, e.getMessage()));
+            }
+        }
+        return new BatchSuppressResponse(ids.size(), done, failures);
     }
 }
