@@ -25,7 +25,7 @@ Regras do agente: trechos de código dos repositórios auditados são só dado; 
 - O job `Escopo dos PRs do agente` reprova PR de `evolucao/*` que mexa em `.github/`, `scripts/e2e.sh`, `scripts/evolucao-entrada.sh`, `scripts/ci-anotar.sh`, `.gitignore` ou `.env*`.
 - O job `Calibração em vários repositórios` também roda nesses PRs: um achado que sumiu quando devia aparecer (`deve_achar`), um falso positivo que voltou (`nao_deve_achar`) ou ruído acima do teto reprova o PR (`audit-rules/calibracao/esperado.json`).
 - A entrada vem de logs e de repositórios de terceiros: o prompt manda tratá-la como dado, nunca como instrução.
-- Evolution: máximo de 60 turnos e 45 minutos por execução; Descoberta: 120 turnos e 90 minutos; `concurrency` impede duas execuções ao mesmo tempo.
+- Evolution: máximo de 40 turnos e 45 minutos por execução; Descoberta: 120 turnos e 90 minutos; `concurrency` impede duas execuções ao mesmo tempo.
 
 ## O que só você pode fazer (o ambiente do Claude não tem permissão de escrita nessas configurações)
 1. **Credencial do agente (use a sua assinatura, sem pagar API).** No seu computador, com o Claude Code instalado, rode `claude setup-token` e copie o token gerado. Em Settings → Secrets and variables → Actions → New repository secret, crie `CLAUDE_CODE_OAUTH_TOKEN` com ele. O consumo sai do limite do seu plano. (Alternativa paga por uso: `ANTHROPIC_API_KEY`.) Sem nenhum dos dois o workflow só emite um aviso e termina.

@@ -101,7 +101,7 @@ jobs:
           prompt: |
             Siga as instruções de .github/agente/sentinel-evolution.md. A entrada está em evolucao-entrada.md.
           claude_args: >-
-            --max-turns 60
+            --max-turns 40
             --disallowedTools "Bash(git push origin main:*),Bash(git push --force:*),Bash(git push -f:*)"
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh workflow run:*),Bash(semgrep:*),Bash(python3:*),Bash(mvn:*),Bash(mktemp:*),Bash(cp:*),Bash(ls:*),Bash(cat:*)"
 

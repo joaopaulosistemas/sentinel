@@ -39,6 +39,14 @@ tabela se o PR trouxer a evidência (teste, saída de CI, medição). Nunca decl
 evidências e as lacunas. Itens que exigem `.github/` ou segredos: abra o PR com o que for possível e peça o resto ao
 humano no corpo do PR.
 
+## Economia (tokens, CI e commits)
+- **Um item por execução.** Escolha um único item do backlog (ou um único problema do CI) e termine-o; não abra o próximo.
+- **Leia o mínimo.** Use `grep`/`Glob` para achar o ponto exato e leia só trechos (`offset`/`limit`). Não releia arquivos que você acabou de editar. Não leia `LOG.md`, `calibracao.md` ou relatórios inteiros: só o fim do `LOG.md` e a linha do item no `PLACAR.md`.
+- **Valide localmente o que for barato** (teste da regra, `mvn -q -Dtest=ClasseAfetada test`) antes de subir; nada de rodar a suíte inteira no laço.
+- **Um commit por PR.** Junte código, teste, entrada no LOG e marcação do backlog em um commit só, com mensagem curta. Sem commits de "ajuste" empilhados; se precisar corrigir, use `git commit --amend` antes do primeiro push.
+- **Um disparo de CI por branch.** Faça `git push` uma única vez e dispare `gh workflow run ci.yml --ref <branch>` uma única vez. Só dispare de novo se o CI falhou e você corrigiu a causa.
+- **Se não houver evidência nova a produzir, pare** e escreva isso no resumo, em vez de gastar turnos.
+
 ## Limites (não negociáveis)
 - Nunca faça push na `main`. Só branches `evolucao/*` e PRs.
 - Não altere `.github/`, `scripts/e2e.sh`, `scripts/evolucao-entrada.sh`, nem permissões, segredos ou configuração de
