@@ -37,7 +37,7 @@ import java.util.Map;
  *   <li>{@code 0} — Auditoria concluída com sucesso (score >= threshold ou threshold não definido)</li>
  *   <li>{@code 1} — Score abaixo de {@code --fail-below}, ou findings que violam {@code --fail-on} /
  *       {@code --fail-on-new}</li>
- *   <li>{@code 2} — Auditoria falhou (status FAILED) ou erro de comunicação</li>
+ *   <li>{@code 2} — Auditoria falhou ou foi cancelada (status FAILED/CANCELLED) ou erro de comunicação</li>
  *   <li>{@code 3} — Timeout aguardando conclusão da auditoria</li>
  * </ul>
  */
@@ -99,6 +99,10 @@ public class AuditCli {
             }
 
             String status = finalResult.path("status").asText();
+            if ("CANCELLED".equals(status)) {
+                System.err.println("Auditoria CANCELADA antes de terminar.");
+                return 2;
+            }
             if ("FAILED".equals(status)) {
                 String reason = finalResult.path("errorMessage").asText("");
                 System.err.println("Auditoria FALHOU." + (reason.isBlank() ? "" : " Motivo: " + reason));
@@ -284,7 +288,7 @@ public class AuditCli {
 
             System.out.printf("[%d/%d] Status: %s%n", poll + 1, MAX_POLLS, status);
 
-            if ("COMPLETED".equals(status) || "FAILED".equals(status)) {
+            if ("COMPLETED".equals(status) || "FAILED".equals(status) || "CANCELLED".equals(status)) {
                 return result;
             }
         }

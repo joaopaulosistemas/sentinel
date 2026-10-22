@@ -80,4 +80,61 @@ class ReportServiceTest {
         assertFalse(html.contains("SQL <b>"), "título de terceiros escapado também na tabela de dívida");
         assertFalse(html.contains("Ruído</td>"), "suprimido não entra na dívida técnica");
     }
+
+    private static com.sentinel.audit.dto.FixPlanDto plan() {
+        return new com.sentinel.audit.dto.FixPlanDto(60, 71, 2, List.of(
+                new com.sentinel.audit.dto.FixPlanDto.Item("sql", "SQL <b>injection</b>", Severity.CRITICAL, Category.SECURITY, 2, 8.5,
+                        "A.java", 10, "usar parâmetros")));
+    }
+
+    @Test
+    void relatorioExecutivoMostraNotaMetaEPrioridades() {
+        AuditRun r = run();
+        RiskScore score = new RiskScore();
+        score.setOverall(60.0);
+        r.setRiskScore(score);
+        String html = new ReportService().generateExecutiveReport(r, List.of(
+                f("SQL", Severity.CRITICAL, FindingStatus.OPEN, false, "sql")), plan(), 2.0, 75);
+
+        assertTrue(html.contains("Relatório executivo"));
+        assertTrue(html.contains("faltam <strong>15 pontos</strong>"));
+        assertTrue(html.contains("+2 ponto(s)"));
+        assertTrue(html.contains("para cerca de <strong>71</strong>"));
+        assertTrue(html.contains("SQL &lt;b&gt;injection&lt;/b&gt;"), "conteúdo escapado");
+        assertFalse(html.contains("Findings ("), "não lista achado por achado");
+    }
+
+    @Test
+    void relatorioComparativoListaEvolucaoOuExplicaQuandoFaltaHistorico() {
+        var sev = java.util.Map.of(Severity.CRITICAL, 3L);
+        var a = new com.sentinel.audit.dto.TrendPoint(1L, "main", LocalDateTime.of(2026, 10, 1, 9, 0), 50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sev);
+        var b = new com.sentinel.audit.dto.TrendPoint(2L, "main", LocalDateTime.of(2026, 10, 8, 9, 0), 58.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, java.util.Map.of());
+        ReportService svc = new ReportService();
+
+        String html = svc.generateComparativeReport(run(), List.of(a, b), 30);
+        assertTrue(html.contains("últimos 30 dias"));
+        assertTrue(html.contains("+8.5 ponto(s)"));
+        assertTrue(html.contains("<td>#2</td>"));
+
+        assertTrue(svc.generateComparativeReport(run(), List.of(a), null).contains("ao menos duas auditorias"));
+    }
+
+    @Test
+    void csvProtegeContraInjecaoDeFormulaEAspas() {
+        Finding danger = f("=HYPERLINK(\"x\")", Severity.HIGH, FindingStatus.OPEN, true, "r,1");
+        String csv = new ReportService().generateCsv(List.of(danger, f("oculto", Severity.LOW, FindingStatus.SUPPRESSED, false, "x")));
+        assertTrue(csv.startsWith("severidade,categoria,regra,titulo,arquivo,linha,ferramenta,novo\r\n"));
+        assertTrue(csv.contains("\"'=HYPERLINK(\"\"x\"\")\""));
+        assertTrue(csv.contains("\"r,1\""));
+        assertFalse(csv.contains("oculto"), "suprimidos ficam de fora");
+        assertTrue(csv.contains(",sim\r\n"));
+    }
+
+    @Test
+    void tipoDeRelatorioAceitaPortuguesIngles() {
+        assertEquals(ReportService.Type.TECNICO, ReportService.Type.parse(null));
+        assertEquals(ReportService.Type.EXECUTIVO, ReportService.Type.parse(" Executivo "));
+        assertEquals(ReportService.Type.COMPARATIVO, ReportService.Type.parse("comparative"));
+        assertThrows(IllegalArgumentException.class, () -> ReportService.Type.parse("xyz"));
+    }
 }

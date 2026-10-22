@@ -43,4 +43,9 @@ public class AuditRunRepository implements PanacheRepository<AuditRun> {
     public List<AuditRun> findActive() {
         return list("status = ?1 OR status = ?2", AuditStatus.PENDING, AuditStatus.RUNNING);
     }
+
+    /** As últimas auditorias de qualquer sistema, da mais nova para a mais antiga. */
+    public List<AuditRun> findRecent(int limit) {
+        return find("ORDER BY id DESC").page(0, limit).list();
+    }
 }

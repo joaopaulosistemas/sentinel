@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuditProgressTrackerTest {
@@ -55,5 +56,18 @@ class AuditProgressTrackerTest {
         // chamadas tardias não podem recriar nem quebrar
         t.phase(5L, AuditProgressTracker.RELATORIO, "x");
         assertTrue(t.snapshot(5L).isEmpty());
+    }
+
+    @Test
+    void pedidoDeCancelamentoVaiAteOFimDaAuditoria() {
+        AuditProgressTracker t = new AuditProgressTracker();
+        assertFalse(t.isCancelRequested(9L));
+        t.requestCancel(9L);          // pode chegar antes de o andamento existir (auditoria ainda na fila)
+        assertTrue(t.isCancelRequested(9L));
+        assertFalse(t.isCancelRequested(10L));
+        t.finish(9L);
+        assertFalse(t.isCancelRequested(9L), "ao terminar, o pedido some e não afeta outra execução");
+        t.requestCancel(null);
+        assertFalse(t.isCancelRequested(null));
     }
 }

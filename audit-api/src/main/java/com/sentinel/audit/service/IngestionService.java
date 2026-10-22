@@ -166,6 +166,99 @@ public class IngestionService {
         }
     }
 
+    // ------------------------------------------------------------------ verificação rápida
+
+    /** Resultado da verificação de um repositório antes de cadastrá-lo ou auditá-lo. */
+    public record RepoCheck(boolean reachable, String defaultBranch, Boolean branchFound, String message) {}
+
+    private static final long CHECK_TIMEOUT_SECONDS = 20;
+
+    /**
+     * Confere, sem clonar, se o repositório responde e qual é a branch padrão ({@code git ls-remote --symref}).
+     * Usa as mesmas regras de URL, token e protocolo do clone. Nunca lança exceção por repositório inacessível:
+     * o motivo vem em {@link RepoCheck#message()}.
+     *
+     * @param branch branch que o usuário pretende auditar (opcional); se informada, diz se ela existe
+     */
+    public RepoCheck checkRepository(String repoUrl, String branch) {
+        URI uri;
+        try {
+            uri = validateRepoUrl(repoUrl);
+            validateBranch(branch);
+        } catch (IllegalArgumentException e) {
+            return new RepoCheck(false, null, null, e.getMessage());
+        }
+        String token = resolveToken(null);
+        boolean sendToken = !token.isBlank() && isTokenHost(uri.getHost());
+        Path logFile = null;
+        try {
+            Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
+            Files.createDirectories(basePath);
+            logFile = Files.createTempFile(basePath, "git-check-", ".log");
+            List<String> command = new ArrayList<>(List.of("git", "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
+                    "ls-remote", "--symref", "--", uri.toString(), "HEAD"));
+            if (branch != null && !branch.isBlank()) {
+                command.add("refs/heads/" + branch);
+            }
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectErrorStream(true);
+            pb.redirectOutput(logFile.toFile());
+            configureEnvironment(pb.environment(), sendToken ? token : null);
+            Process process = pb.start();
+            if (!process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return new RepoCheck(false, null, null, "O repositório não respondeu em " + CHECK_TIMEOUT_SECONDS + "s");
+            }
+            String output = Files.readString(logFile, StandardCharsets.UTF_8);
+            if (process.exitValue() != 0) {
+                return new RepoCheck(false, null, null, friendlyGitError(readTail(logFile, token)));
+            }
+            String defaultBranch = parseDefaultBranch(output);
+            Boolean branchFound = branch == null || branch.isBlank() ? null : branchListed(output, branch);
+            return new RepoCheck(true, defaultBranch, branchFound, null);
+        } catch (IOException e) {
+            return new RepoCheck(false, null, null, "Não foi possível executar o git neste servidor");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new RepoCheck(false, null, null, "Verificação interrompida");
+        } finally {
+            deleteQuietly(logFile);
+        }
+    }
+
+    static boolean branchListed(String lsRemoteOutput, String branch) {
+        String suffix = "\trefs/heads/" + branch;
+        return lsRemoteOutput.lines().anyMatch(l -> l.endsWith(suffix));
+    }
+
+    /** Extrai a branch padrão da saída de {@code git ls-remote --symref} ("ref: refs/heads/main\tHEAD"). */
+    static String parseDefaultBranch(String lsRemoteOutput) {
+        if (lsRemoteOutput == null) {
+            return null;
+        }
+        for (String line : lsRemoteOutput.split("\\R")) {
+            if (line.startsWith("ref: refs/heads/") && line.endsWith("\tHEAD")) {
+                return line.substring("ref: refs/heads/".length(), line.length() - "\tHEAD".length()).trim();
+            }
+        }
+        return null;
+    }
+
+    /** Traduz as falhas mais comuns do git em uma frase que o usuário entende. */
+    static String friendlyGitError(String raw) {
+        String t = raw == null ? "" : raw.toLowerCase(Locale.ROOT);
+        if (t.contains("not found") || t.contains("repository") && t.contains("does not exist")) {
+            return "Repositório não encontrado (confira o endereço ou, se for privado, o token configurado)";
+        }
+        if (t.contains("authentication failed") || t.contains("could not read username") || t.contains("403")) {
+            return "Sem permissão para acessar o repositório (configure o token do Git na API)";
+        }
+        if (t.contains("could not resolve host") || t.contains("unable to access")) {
+            return "Não foi possível alcançar o servidor do repositório";
+        }
+        return "Não foi possível acessar o repositório";
+    }
+
     // ------------------------------------------------------------------ validação
 
     URI validateRepoUrl(String repoUrl) {

@@ -7,5 +7,7 @@ public enum AuditStatus {
     PENDING,
     RUNNING,
     COMPLETED,
-    FAILED
+    FAILED,
+    /** Interrompida pelo usuário antes de terminar. */
+    CANCELLED
 }

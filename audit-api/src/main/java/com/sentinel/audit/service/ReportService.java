@@ -6,7 +6,9 @@ import com.sentinel.audit.insights.InsightsBuilder;
 import com.sentinel.audit.insights.InsightsService;
 import com.sentinel.audit.insights.RoadmapPhase;
 
+import com.sentinel.audit.dto.FixPlanDto;
 import com.sentinel.audit.dto.RemediationDto;
+import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.FindingStatus;
@@ -102,6 +104,155 @@ public class ReportService {
         h.append("<p class=\"foot\">Gerado pelo Sentinel Audit Tool. Ferramentas automáticas geram falsos positivos e não ")
                 .append("substituem a revisão humana.</p></body></html>");
         return h.toString();
+    }
+
+
+    // ------------------------------------------------------------------ tipos de relatório
+
+    /** Tipos de relatório HTML oferecidos pela API. */
+    public enum Type {
+        EXECUTIVO, TECNICO, COMPARATIVO;
+
+        /** Aceita o nome em português ou inglês, sem diferenciar maiúsculas; vazio = técnico. */
+        public static Type parse(String raw) {
+            if (raw == null || raw.isBlank()) return TECNICO;
+            return switch (raw.trim().toLowerCase(java.util.Locale.ROOT)) {
+                case "executivo", "executive" -> EXECUTIVO;
+                case "tecnico", "técnico", "technical" -> TECNICO;
+                case "comparativo", "comparative" -> COMPARATIVO;
+                default -> throw new IllegalArgumentException("Tipo de relatório desconhecido: " + raw
+                        + ". Use executivo, tecnico ou comparativo");
+            };
+        }
+    }
+
+    /**
+     * Relatório de uma página para quem decide: nota, quanto falta para a meta, riscos principais e o que
+     * corrigir primeiro. Não lista achado por achado.
+     */
+    public String generateExecutiveReport(AuditRun run, List<Finding> findings, FixPlanDto plan, Double scoreDelta, double target) {
+        List<Finding> active = FindingLifecycleService.active(findings);
+        StringBuilder h = pageStart("Relatório executivo", run);
+        h.append("<h1>Relatório executivo</h1><dl class=\"meta\">")
+                .append(meta("Sistema", esc(run.getSystem().getName())))
+                .append(meta("Auditoria", "#" + run.getId() + " · " + esc(run.getBranch())))
+                .append(meta("Concluída em", run.getCompletedAt() != null ? run.getCompletedAt().format(DATE_FMT) : "—"))
+                .append("</dl>");
+        h.append("<div class=\"summary\">");
+        double score = run.getRiskScore() != null && run.getRiskScore().getOverall() != null ? run.getRiskScore().getOverall() : plan.scoreNow();
+        h.append("<div class=\"score\">").append(fmt(score)).append("</div><p>Nota geral (0–100, maior = melhor). Meta: ")
+                .append(fmt(target)).append(score >= target ? " — <strong>meta atingida</strong>." : " — faltam <strong>"
+                        + fmt(target - score) + " pontos</strong>.").append("</p>");
+        if (scoreDelta != null) {
+            h.append("<p>Em relação à auditoria anterior: <strong>").append(scoreDelta > 0 ? "+" : "").append(fmt(scoreDelta))
+                    .append(" ponto(s)</strong>.</p>");
+        }
+        h.append("</div>");
+
+        Map<Severity, Long> bySeverity = active.stream().collect(Collectors.groupingBy(Finding::getSeverity, Collectors.counting()));
+        h.append("<h2>Riscos em aberto</h2><p class=\"badges\">");
+        for (Severity sev : Severity.values()) {
+            h.append("<span class=\"badge ").append(sev).append("\">").append(sev).append(": ")
+                    .append(bySeverity.getOrDefault(sev, 0L)).append("</span> ");
+        }
+        h.append("</p>");
+        if (plan.criticalCount() > 0) {
+            h.append("<p>Corrigir os ").append(plan.criticalCount()).append(" crítico(s) leva a nota de ")
+                    .append(fmt(plan.scoreNow())).append(" para cerca de <strong>").append(fmt(plan.scoreIfCriticalFixed())).append("</strong>.</p>");
+        }
+
+        h.append("<h2>O que corrigir primeiro</h2>");
+        if (plan.items().isEmpty()) {
+            h.append("<p>Nenhum problema ativo.</p>");
+        } else {
+            h.append("<table><tr><th>#</th><th>Problema</th><th>Severidade</th><th>Ocorrências</th><th>Ganho na nota</th></tr>");
+            int n = 1;
+            for (FixPlanDto.Item it : plan.items().stream().limit(5).toList()) {
+                h.append("<tr><td>").append(n++).append("</td><td>").append(esc(it.title())).append("</td><td><span class=\"badge ")
+                        .append(it.severity()).append("\">").append(it.severity()).append("</span></td><td>").append(it.occurrences())
+                        .append("</td><td>+").append(fmt(it.scoreGain())).append("</td></tr>");
+            }
+            h.append("</table>");
+        }
+        return pageEnd(h);
+    }
+
+    /** Evolução da nota e dos achados entre as auditorias concluídas do sistema no período (mais antiga primeiro). */
+    public String generateComparativeReport(AuditRun run, List<TrendPoint> points, Integer days) {
+        StringBuilder h = pageStart("Relatório comparativo", run);
+        h.append("<h1>Relatório comparativo</h1><dl class=\"meta\">")
+                .append(meta("Sistema", esc(run.getSystem().getName())))
+                .append(meta("Período", days == null ? "todas as auditorias concluídas" : "últimos " + days + " dias"))
+                .append(meta("Auditorias", String.valueOf(points.size())))
+                .append("</dl>");
+        if (points.size() < 2) {
+            h.append("<p class=\"hint\">É preciso ter ao menos duas auditorias concluídas no período para comparar. ")
+                    .append("Execute outra auditoria e gere este relatório de novo.</p>");
+            return pageEnd(h);
+        }
+        TrendPoint first = points.get(0);
+        TrendPoint last = points.get(points.size() - 1);
+        double delta = (last.overall() == null ? 0 : last.overall()) - (first.overall() == null ? 0 : first.overall());
+        h.append("<div class=\"summary\"><div class=\"score\">").append(fmt(last.overall())).append("</div><p>Nota atual. Variação no período: <strong>")
+                .append(delta > 0 ? "+" : "").append(fmt(delta)).append(" ponto(s)</strong> (de ").append(fmt(first.overall()))
+                .append(" para ").append(fmt(last.overall())).append(").</p></div>");
+        h.append("<h2>Auditoria a auditoria</h2><table><tr><th>Auditoria</th><th>Branch</th><th>Concluída em</th><th>Nota</th><th>Variação</th>")
+                .append("<th>Críticos</th><th>Altos</th><th>Médios</th></tr>");
+        Double previous = null;
+        for (TrendPoint p : points) {
+            Double change = previous == null || p.overall() == null ? null : p.overall() - previous;
+            h.append("<tr><td>#").append(p.auditId()).append("</td><td>").append(esc(p.branch())).append("</td><td>")
+                    .append(p.completedAt() == null ? "—" : p.completedAt().format(DATE_FMT)).append("</td><td>").append(fmt(p.overall()))
+                    .append("</td><td>").append(change == null ? "—" : (change > 0 ? "+" : "") + fmt(change)).append("</td><td>")
+                    .append(p.findings().getOrDefault(Severity.CRITICAL, 0L)).append("</td><td>")
+                    .append(p.findings().getOrDefault(Severity.HIGH, 0L)).append("</td><td>")
+                    .append(p.findings().getOrDefault(Severity.MEDIUM, 0L)).append("</td></tr>");
+            previous = p.overall();
+        }
+        h.append("</table>");
+        return pageEnd(h);
+    }
+
+    /** Todos os achados ativos em CSV (separador vírgula, UTF-8, campos protegidos contra injeção em planilha). */
+    public String generateCsv(List<Finding> findings) {
+        StringBuilder sb = new StringBuilder("severidade,categoria,regra,titulo,arquivo,linha,ferramenta,novo\r\n");
+        findings.stream().filter(f -> f.getStatus() != FindingStatus.SUPPRESSED)
+                .sorted(Comparator.comparing(Finding::getSeverity)).forEach(f -> sb
+                        .append(f.getSeverity()).append(',').append(f.getCategory()).append(',')
+                        .append(csv(f.getRuleId())).append(',').append(csv(f.getTitle())).append(',')
+                        .append(csv(f.getFilePath())).append(',').append(f.getLineNumber() == null ? "" : f.getLineNumber()).append(',')
+                        .append(csv(f.getToolSource())).append(',').append(Boolean.TRUE.equals(f.getIsNew()) ? "sim" : "nao").append("\r\n"));
+        return sb.toString();
+    }
+
+    /** Escapa um campo CSV e neutraliza fórmulas (=, +, -, @) que a planilha executaria ao abrir. */
+    static String csv(String value) {
+        if (value == null) return "";
+        String v = value.replace("\r", " ").replace("\n", " ");
+        if (!v.isEmpty() && "=+-@\t".indexOf(v.charAt(0)) >= 0) v = "'" + v;
+        return '"' + v.replace("\"", "\"\"") + '"';
+    }
+
+    private StringBuilder pageStart(String title, AuditRun run) {
+        return new StringBuilder(4096)
+                .append("<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\">")
+                .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
+                .append("<title>").append(title).append(" - ").append(esc(run.getSystem().getName())).append("</title>")
+                .append("<style>").append(CSS).append("</style></head><body>")
+                .append("<p class=\"noprint hint\">Para gerar o PDF: Imprimir (Ctrl+P) &rarr; Salvar como PDF.</p>");
+    }
+
+    private static String pageEnd(StringBuilder h) {
+        return h.append("<p class=\"foot\">Gerado pelo Sentinel Audit Tool. Ferramentas automáticas geram falsos positivos e não ")
+                .append("substituem a revisão humana.</p></body></html>").toString();
+    }
+
+    private static String fmt(Double v) {
+        return v == null ? "—" : fmt(v.doubleValue());
+    }
+
+    private static String fmt(double v) {
+        return v == Math.rint(v) ? String.valueOf((long) v) : String.format(java.util.Locale.ROOT, "%.1f", v);
     }
 
     private void appendFinding(StringBuilder h, int n, Finding f, boolean withRemediation) {

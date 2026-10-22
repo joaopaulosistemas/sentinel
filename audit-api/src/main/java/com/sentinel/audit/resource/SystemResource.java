@@ -19,6 +19,8 @@ import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.service.AuditProgressTracker;
+import com.sentinel.audit.service.IngestionService;
+import com.sentinel.audit.dto.RepoCheckRequest;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -46,6 +48,9 @@ public class SystemResource {
 
     @Inject
     PackRegistry packRegistry;
+
+    @Inject
+    IngestionService ingestionService;
 
     @Inject
     AuditedSystemRepository systemRepository;
@@ -89,6 +94,16 @@ public class SystemResource {
         system.setProfile(validProfile(request.getProfile()));
         systemRepository.persist(system);
         return Response.status(Response.Status.CREATED).entity(toSummary(system)).build();
+    }
+
+    /**
+     * Confere se o repositório responde e qual é a branch padrão, sem clonar.
+     */
+    @POST
+    @Path("/check-repo")
+    @Operation(summary = "Verificar repositório", description = "Testa o acesso ao repositório e descobre a branch padrão (git ls-remote), sem clonar")
+    public IngestionService.RepoCheck checkRepo(@Valid RepoCheckRequest request) {
+        return ingestionService.checkRepository(request.repoUrl(), request.branch());
     }
 
     /**
@@ -252,6 +267,7 @@ public class SystemResource {
         dto.setDescription(system.getDescription());
 
         List<AuditRun> runs = auditRunRepository.findBySystemId(system.getId());
+        dto.setScoreDelta(com.sentinel.audit.service.ScoreTrend.delta(runs));
         runs.stream()
             .filter(r -> r.getStatus() == AuditStatus.COMPLETED)
             .findFirst()
@@ -272,6 +288,7 @@ public class SystemResource {
     private AuditRunResponse toAuditRunResponse(AuditRun run) {
         AuditRunResponse dto = new AuditRunResponse();
         dto.setId(run.getId());
+        dto.setSystemId(run.getSystem().getId());
         dto.setSystemName(run.getSystem().getName());
         dto.setBranch(run.getBranch());
         dto.setStatus(run.getStatus());

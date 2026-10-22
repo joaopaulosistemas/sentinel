@@ -134,4 +134,35 @@ class IngestionServiceTest {
         assertFalse(Files.exists(tempDir.resolve("clone")));
         assertTrue(Files.exists(outside.resolve("keep.txt")), "o alvo do symlink não pode ser apagado");
     }
+
+    @Test
+    void extraiAbranchPadraoDaSaidaDoLsRemote() {
+        String out = "ref: refs/heads/develop\tHEAD\nabc123\tHEAD\nabc123\trefs/heads/develop\n";
+        assertEquals("develop", IngestionService.parseDefaultBranch(out));
+        assertNull(IngestionService.parseDefaultBranch("abc123\tHEAD\n"));
+        assertNull(IngestionService.parseDefaultBranch(null));
+    }
+
+    @Test
+    void brancheListadaPrecisaSerExata() {
+        String out = "abc\trefs/heads/main2\n";
+        assertFalse(IngestionService.branchListed(out, "main"));
+        assertTrue(IngestionService.branchListed(out, "main2"));
+    }
+
+    @Test
+    void traduzOsErrosMaisComunsDoGit() {
+        assertTrue(IngestionService.friendlyGitError("fatal: repository 'x' not found").contains("não encontrado"));
+        assertTrue(IngestionService.friendlyGitError("fatal: Authentication failed for 'x'").contains("permissão"));
+        assertTrue(IngestionService.friendlyGitError("fatal: unable to access: Could not resolve host").contains("alcançar"));
+        assertEquals("Não foi possível acessar o repositório", IngestionService.friendlyGitError("???"));
+    }
+
+    @Test
+    void verificacaoRejeitaUrlInsegura() {
+        IngestionService.RepoCheck c = service.checkRepository("http://inseguro/repo", null);
+        assertFalse(c.reachable());
+        assertTrue(c.message().contains("https"));
+        assertFalse(service.checkRepository("https://github.com/org/repo.git", "--upload-pack=x").reachable());
+    }
 }
