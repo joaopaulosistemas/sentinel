@@ -12,6 +12,7 @@ import {
   TableExpandHeader,
   Tag,
   Button,
+  Checkbox,
 } from '@carbon/react';
 import type { DataTableRenderProps, DataTableRow } from '@carbon/react';
 import React, { useState } from 'react';
@@ -67,7 +68,19 @@ type RowType = {
 };
 
 export function FindingsTable({ findings, systemName, systemOf }: FindingsTableProps) {
-  const [toSuppress, setToSuppress] = useState<FindingResponse | null>(null);
+  const [toSuppress, setToSuppress] = useState<FindingResponse[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const selectable = findings.filter((f) => f.status !== 'SUPPRESSED');
+  const selectedFindings = selectable.filter((f) => selected.has(f.id));
+  const allSelected = selectable.length > 0 && selectedFindings.length === selectable.length;
+  const toggle = (id: number, on: boolean) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  const toggleAll = (on: boolean) => setSelected(on ? new Set(selectable.map((f) => f.id)) : new Set());
   const rows: RowType[] = findings.map((f) => ({
     id: String(f.id),
     severity: f.severity,
@@ -82,6 +95,21 @@ export function FindingsTable({ findings, systemName, systemOf }: FindingsTableP
 
   return (
     <>
+    {selectedFindings.length > 0 && (
+      <div
+        role="region"
+        aria-label="Ações em lote"
+        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 1rem', background: '#edf5ff', marginBottom: '0.5rem' }}
+      >
+        <strong>{selectedFindings.length} selecionado(s)</strong>
+        <Button kind="primary" size="sm" onClick={() => setToSuppress(selectedFindings)}>
+          Suprimir selecionados…
+        </Button>
+        <Button kind="ghost" size="sm" onClick={() => setSelected(new Set())}>
+          Limpar seleção
+        </Button>
+      </div>
+    )}
     <DataTable rows={rows} headers={headers}>
       {(renderProps: DataTableRenderProps<RowType, string[]>) => {
         const {
@@ -98,6 +126,17 @@ export function FindingsTable({ findings, systemName, systemOf }: FindingsTableP
               <TableHead>
                 <TableRow>
                   <TableExpandHeader aria-label="Expandir linha" />
+                  <TableHeader aria-label="Seleção">
+                    <Checkbox
+                      id="select-all-findings"
+                      labelText="Selecionar todos os findings desta lista"
+                      hideLabel
+                      checked={allSelected}
+                      indeterminate={selectedFindings.length > 0 && !allSelected}
+                      disabled={selectable.length === 0}
+                      onChange={(_, { checked }) => toggleAll(checked)}
+                    />
+                  </TableHeader>
                   {tableHeaders.map((header) => {
                     const { key: hKey, ...headerProps } = getHeaderProps({ header });
                     return (
@@ -113,7 +152,9 @@ export function FindingsTable({ findings, systemName, systemOf }: FindingsTableP
                   const finding = rows.find((r) => r.id === row.id)?._finding;
                   if (!finding) return null;
 
-                  const rowProps = getRowProps({ row });
+                  // `key` não pode ser espalhado no JSX; o Fragment já tem a sua
+                  const { key: _rowKey, ...rowProps } = getRowProps({ row });
+                  void _rowKey;
 
                   return (
                     <React.Fragment key={row.id}>
@@ -122,6 +163,17 @@ export function FindingsTable({ findings, systemName, systemOf }: FindingsTableP
                         aria-label={`Expandir ${finding.title}`}
                         onExpand={rowProps.onExpand ?? (() => undefined)}
                       >
+                        <TableCell>
+                          {finding.status !== 'SUPPRESSED' && (
+                            <Checkbox
+                              id={`select-finding-${finding.id}`}
+                              labelText={`Selecionar ${finding.title}`}
+                              hideLabel
+                              checked={selected.has(finding.id)}
+                              onChange={(_, { checked }) => toggle(finding.id, checked)}
+                            />
+                          )}
+                        </TableCell>
                         <TableCell>
                           <RiskBadge severity={finding.severity} />
                         </TableCell>
@@ -166,7 +218,7 @@ export function FindingsTable({ findings, systemName, systemOf }: FindingsTableP
                           </Tag>
                         </TableCell>
                       </TableExpandRow>
-                      <TableExpandedRow colSpan={tableHeaders.length + 1} className="">
+                      <TableExpandedRow colSpan={tableHeaders.length + 2} className="">
                         <div style={{ padding: '1rem' }}>
                           <p>
                             <strong>Descrição:</strong> {finding.description}
@@ -208,7 +260,7 @@ export function FindingsTable({ findings, systemName, systemOf }: FindingsTableP
                           )}
                           {finding.status !== 'SUPPRESSED' && (
                             <div style={{ marginTop: '0.75rem' }}>
-                              <Button kind="tertiary" size="sm" onClick={() => setToSuppress(finding)}>
+                              <Button kind="tertiary" size="sm" onClick={() => setToSuppress([finding])}>
                                 Falso positivo / aceitar risco…
                               </Button>
                             </div>
@@ -224,7 +276,13 @@ export function FindingsTable({ findings, systemName, systemOf }: FindingsTableP
         );
       }}
     </DataTable>
-      <SuppressModal finding={toSuppress} onClose={() => setToSuppress(null)} />
+      <SuppressModal
+        findings={toSuppress}
+        onClose={() => {
+          setToSuppress([]);
+          setSelected(new Set());
+        }}
+      />
     </>
   );
 }

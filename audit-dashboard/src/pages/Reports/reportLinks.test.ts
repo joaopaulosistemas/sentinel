@@ -16,9 +16,13 @@ describe('endereço do relatório', () => {
     expect(reportUrl('', 1, 'html', { type: 'comparativo', days: 30 })).toBe('/api/v1/audits/1/report?type=comparativo&days=30');
     expect(reportUrl('', 1, 'html', { type: 'comparativo', days: 0 })).toBe('/api/v1/audits/1/report?type=comparativo');
   });
+  it('o PDF leva tipo e período como o HTML', () => {
+    expect(reportUrl('', 3, 'pdf')).toBe('/api/v1/audits/3/report.pdf');
+    expect(reportUrl('', 3, 'pdf', { type: 'comparativo', days: 7 })).toBe('/api/v1/audits/3/report.pdf?type=comparativo&days=7');
+  });
   it('só o relatório técnico tem CSV e SBOM', () => {
-    expect(formatsFor('tecnico').map((f) => f.id)).toEqual(['html', 'csv', 'sbom']);
-    expect(formatsFor('executivo').map((f) => f.id)).toEqual(['html']);
-    expect(formatsFor('comparativo').map((f) => f.id)).toEqual(['html']);
+    expect(formatsFor('tecnico').map((f) => f.id)).toEqual(['html', 'pdf', 'csv', 'sbom']);
+    expect(formatsFor('executivo').map((f) => f.id)).toEqual(['html', 'pdf']);
+    expect(formatsFor('comparativo').map((f) => f.id)).toEqual(['html', 'pdf']);
   });
 });

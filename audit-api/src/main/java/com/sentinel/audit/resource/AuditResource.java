@@ -23,6 +23,7 @@ import com.sentinel.audit.service.FixPlanner;
 import com.sentinel.audit.service.ScoreTrend;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.service.ScoringService;
+import com.sentinel.audit.service.PdfReportService;
 import com.sentinel.audit.service.ReportService;
 import com.sentinel.audit.service.AuditProgressTracker;
 import com.sentinel.audit.model.AuditStatus;
@@ -64,6 +65,9 @@ public class AuditResource {
 
     @Inject
     ReportService reportService;
+
+    @Inject
+    PdfReportService pdfReportService;
 
     @Inject
     ScoringService scoringService;
@@ -196,15 +200,48 @@ public class AuditResource {
             case EXECUTIVO -> reportService.generateExecutiveReport(run, findings,
                     FixPlanner.plan(FindingLifecycleService.active(findings), run.getLinesOfCode(), scoringService),
                     ScoreTrend.delta(auditRunRepository.findBySystemId(run.getSystem().getId())), TARGET_SCORE);
-            case COMPARATIVO -> {
-                java.time.LocalDateTime since = days == null || days <= 0 ? null : java.time.LocalDateTime.now().minusDays(days);
-                List<TrendPoint> points = lifecycleService.trend(run.getSystem().getId(), 100).stream()
-                        .filter(p -> since == null || (p.completedAt() != null && p.completedAt().isAfter(since)))
-                        .collect(Collectors.toList());
-                yield reportService.generateComparativeReport(run, points, days == null || days <= 0 ? null : days);
-            }
+            case COMPARATIVO -> reportService.generateComparativeReport(run, comparativePoints(run, days),
+                    days == null || days <= 0 ? null : days);
         };
         return Response.ok(html, MediaType.TEXT_HTML).build();
+    }
+
+    private List<TrendPoint> comparativePoints(AuditRun run, Integer days) {
+        java.time.LocalDateTime since = days == null || days <= 0 ? null : java.time.LocalDateTime.now().minusDays(days);
+        return lifecycleService.trend(run.getSystem().getId(), 100).stream()
+                .filter(p -> since == null || (p.completedAt() != null && p.completedAt().isAfter(since)))
+                .collect(Collectors.toList());
+    }
+
+    /** Mesmos relatórios em PDF, gerado no servidor. */
+    @GET
+    @Path("/{id}/report.pdf")
+    @Produces("application/pdf")
+    @Operation(summary = "Relatório PDF", description = "Relatório da auditoria em PDF: type=tecnico (padrão), executivo ou comparativo; days limita o período do comparativo")
+    public Response getReportPdf(@PathParam("id") Long id,
+                                 @QueryParam("type") String type,
+                                 @QueryParam("days") Integer days) {
+        AuditRun run = auditRunRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        ReportService.Type kind;
+        try {
+            kind = ReportService.Type.parse(type);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        }
+        List<Finding> findings = findingRepository.findByAuditRunId(id);
+        byte[] pdf = switch (kind) {
+            case TECNICO -> pdfReportService.technical(run, findings);
+            case EXECUTIVO -> pdfReportService.executive(run, findings,
+                    FixPlanner.plan(FindingLifecycleService.active(findings), run.getLinesOfCode(), scoringService),
+                    ScoreTrend.delta(auditRunRepository.findBySystemId(run.getSystem().getId())), TARGET_SCORE);
+            case COMPARATIVO -> pdfReportService.comparative(run, comparativePoints(run, days),
+                    days == null || days <= 0 ? null : days);
+        };
+        String name = "auditoria-" + id + "-" + kind.name().toLowerCase(java.util.Locale.ROOT) + ".pdf";
+        return Response.ok(pdf, "application/pdf")
+                .header("Content-Disposition", "inline; filename=\"" + name + "\"")
+                .build();
     }
 
     /**

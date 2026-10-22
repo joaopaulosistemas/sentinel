@@ -88,7 +88,7 @@ Repositório Git
 | **Qualidade das regras** | O painel consolidado mostra, por regra, quantos findings foram marcados como falso positivo. Pede revisão com 5+ ocorrências e 40%+ de falsos positivos (limites fixos no código, sem calibração ainda). Mede a decisão do time, não a verdade: se ninguém suprime, a taxa fica em zero. Findings de dependência não entram. |
 | **Orientação de correção** | Cada finding traz o que fazer, exemplo antes/depois e referência (catálogo estático por regra — não é IA). |
 | **Automação** | Auditoria periódica por sistema, auditoria a cada push (webhook GitHub/GitLab) e aviso em Teams/Slack/webhook genérico. Veja a seção abaixo. |
-| **Relatório e SBOM** | Relatório HTML pronto para imprimir/salvar como PDF no navegador. SBOM **CycloneDX 1.5** (JSON) por auditoria. |
+| **Relatório e SBOM** | Relatório em HTML e em **PDF** gerado no servidor (técnico, executivo e comparativo). SBOM **CycloneDX 1.5** (JSON) por auditoria. |
 | **Login corporativo** | Opcional via OIDC/Keycloak (perfil Maven `oidc`): autentica o usuário. **Não** há restrição por squad: quem autentica vê todos os sistemas. |
 | **Narrativa por IA** | **Não implementada.** Só faz sentido depois de a base de findings estar calibrada com o time de segurança; o ponto de extensão é o campo `aiRecommendation` do finding. |
 | **Testes** | Cobrem analisadores, scoring, ingestão, orquestração, ciclo de vida dos findings, webhooks, agendador, notificações, SBOM e relatório. O teste com PostgreSQL real (Testcontainers) existe mas só roda com Docker: `mvn verify -Pintegration`. |
@@ -780,7 +780,8 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 | `GET` | `/api/v1/findings` | Achados da última auditoria concluída de cada sistema (filtros: `systemId`, `severity`, `category`, `status`, `onlyNew`, `includeSuppressed`, `limit`, `offset`) |
 | `GET` | `/api/v1/audits/{id}/findings` | Findings (filtros: `severity`, `category`, `status`, `onlyNew`, `includeSuppressed`) |
 | `GET` | `/api/v1/audits/{id}/diff` | Novos / resolvidos / persistentes vs. auditoria anterior |
-| `GET` | `/api/v1/audits/{id}/report` | Relatório HTML (imprimível como PDF). `type=tecnico` (padrão, todos os achados), `executivo` (uma página: nota, meta, riscos e prioridades) ou `comparativo` (evolução entre auditorias; `days=` limita o período) |
+| `GET` | `/api/v1/audits/{id}/report.pdf` | Mesmos relatórios em PDF (`type=` e `days=` iguais ao HTML) |
+| `GET` | `/api/v1/audits/{id}/report` | Relatório HTML. `type=tecnico` (padrão, todos os achados), `executivo` (uma página: nota, meta, riscos e prioridades) ou `comparativo` (evolução entre auditorias; `days=` limita o período) |
 | `GET` | `/api/v1/audits/{id}/findings.csv` | Achados ativos em CSV (UTF-8, protegido contra injeção de fórmula em planilha) |
 | `GET` | `/api/v1/audits/{id}/sbom` | SBOM CycloneDX 1.5 (JSON) |
 | `GET` | `/api/v1/audits/{id}/insights` | Auditoria completa: parecer, áreas, dívida técnica P0–P3, quick wins, roadmap em 8 fases e o que não foi possível verificar |
@@ -789,6 +790,7 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 | `POST` | `/api/v1/rules/playground` | Valida e executa uma regra Semgrep sobre um trecho de código |
 | `GET` | `/api/v1/rules/quality` | Taxa de falso positivo por regra (a partir das supressões); marca as que merecem revisão |
 | `POST` | `/api/v1/findings/{id}/suppress` | Suprime com motivo, justificativa e validade |
+| `POST` | `/api/v1/findings/suppress-batch` | Suprime até 200 findings de uma vez (mesmo motivo/justificativa); devolve as falhas por id |
 | `POST` | `/api/v1/webhooks/github` · `/gitlab` | Disparo por push (autenticado por segredo próprio) |
 | `GET` | `/api/v1/health` | Health check |
 

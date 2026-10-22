@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { ScheduleRequest, SuppressRequest } from '../types';
+import type { BatchSuppressRequest, ScheduleRequest, SuppressRequest } from '../types';
 
 export function useTrend(systemId: number) {
   return useQuery({
@@ -41,6 +41,14 @@ export function useSuppressFinding() {
   return useMutation({
     mutationFn: ({ findingId, body }: { findingId: number; body: SuppressRequest }) =>
       api.suppressFinding(findingId, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSuppressFindings() {
+  const invalidate = useInvalidateLifecycle();
+  return useMutation({
+    mutationFn: (body: BatchSuppressRequest) => api.suppressFindings(body),
     onSuccess: invalidate,
   });
 }

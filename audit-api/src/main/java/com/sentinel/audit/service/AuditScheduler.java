@@ -41,6 +41,13 @@ public class AuditScheduler {
     @Inject
     AuditRequestService requestService;
 
+    /** Nulo em testes sem CDI: então toda auditoria ativa é tratada como interrompida. */
+    @Inject
+    ProgressStore progressStore;
+
+    /** Andamento sem batimento por este tempo indica que nenhuma réplica está mais executando a auditoria. */
+    static final long STALE_SECONDS = 90;
+
     /** O executor das auditorias vive na memória: o que estava rodando antes do start não vai terminar. */
     void onStart(@Observes StartupEvent event) {
         try {
@@ -56,6 +63,15 @@ public class AuditScheduler {
     @Transactional
     int recoverInterruptedRuns() {
         List<AuditRun> active = auditRunRepository.findActive();
+        if (progressStore != null) {
+            // Com várias réplicas, só é interrompida a auditoria que nenhuma delas atualiza mais.
+            LocalDateTime limit = LocalDateTime.now().minusSeconds(STALE_SECONDS);
+            java.util.Set<Long> alive = progressStore.aliveSince(limit);
+            active = active.stream()
+                    .filter(r -> !alive.contains(r.getId()))
+                    .filter(r -> r.getStartedAt() == null || r.getStartedAt().isBefore(limit))
+                    .toList();
+        }
         for (AuditRun run : active) {
             run.setStatus(AuditStatus.FAILED);
             run.setCompletedAt(LocalDateTime.now());
@@ -67,6 +83,15 @@ public class AuditScheduler {
     @Scheduled(every = "5m", delayed = "1m", identity = "sentinel-audit-scheduler",
             concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
     void tick() {
+        // Auditorias órfãs (a réplica que as executava caiu) são detectadas pela falta de batimento.
+        try {
+            int recovered = recoverInterruptedRuns();
+            if (recovered > 0) {
+                LOG.warnf("%d auditoria(s) sem batimento foram marcadas como FAILED", recovered);
+            }
+        } catch (RuntimeException e) {
+            LOG.warnf("Não foi possível recuperar auditorias interrompidas: %s", e.getMessage());
+        }
         if (enabled) {
             runDue(LocalDateTime.now());
         }

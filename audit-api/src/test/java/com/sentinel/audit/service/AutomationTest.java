@@ -255,6 +255,28 @@ class AutomationTest {
         assertEquals(AuditStatus.COMPLETED, ok.getStatus());
     }
 
+    @Test
+    void comVariasReplicasSoRecuperaQuemNaoTemBatimento() {
+        AuditedSystem s = system(1, "https://g/a.git", false, null, null);
+        AuditRun viva = run(s, "main", AuditStatus.RUNNING, LocalDateTime.now().minusMinutes(10));
+        AuditRun orfa = run(s, "main", AuditStatus.RUNNING, LocalDateTime.now().minusMinutes(10));
+        AuditRun recem = run(s, "main", AuditStatus.PENDING, LocalDateTime.now());
+
+        AuditScheduler scheduler = new AuditScheduler();
+        scheduler.auditRunRepository = requestService.auditRunRepository;
+        scheduler.progressStore = new ProgressStore() {
+            @Override
+            public java.util.Set<Long> aliveSince(LocalDateTime since) {
+                return java.util.Set.of(viva.getId());
+            }
+        };
+
+        assertEquals(1, scheduler.recoverInterruptedRuns());
+        assertEquals(AuditStatus.RUNNING, viva.getStatus());
+        assertEquals(AuditStatus.FAILED, orfa.getStatus());
+        assertEquals(AuditStatus.PENDING, recem.getStatus());
+    }
+
     // ------------------------------------------------------------------ notificação
 
     private static Notice completed(Double delta, boolean baseline, int newAtLeastMin) {

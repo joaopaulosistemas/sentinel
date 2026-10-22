@@ -329,3 +329,13 @@ export interface RepoCheck {
   branchFound: boolean | null;
   message: string | null;
 }
+
+export interface BatchSuppressRequest extends SuppressRequest {
+  findingIds: number[];
+}
+
+export interface BatchSuppressResponse {
+  requested: number;
+  suppressed: number;
+  failures: { findingId: number; message: string }[];
+}

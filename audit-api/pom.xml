@@ -66,6 +66,13 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- PDF direto dos relatórios (LGPL/MPL, sem serviço externo) -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+
         <!-- YAML dos pacotes de regras (versão gerenciada pelo BOM do Quarkus) -->
         <dependency>
             <groupId>org.yaml</groupId>

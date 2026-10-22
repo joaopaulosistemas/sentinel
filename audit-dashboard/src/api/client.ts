@@ -14,6 +14,8 @@ import type {
   ScheduleRequest,
   Suppression,
   SuppressRequest,
+  BatchSuppressRequest,
+  BatchSuppressResponse,
   SystemRequest,
   SystemSummaryResponse,
   TrendPoint,
@@ -143,6 +145,12 @@ export const api = {
 
   suppressFinding: (findingId: number, body: SuppressRequest) =>
     apiFetch<Suppression>(`/api/v1/findings/${findingId}/suppress`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  suppressFindings: (body: BatchSuppressRequest) =>
+    apiFetch<BatchSuppressResponse>('/api/v1/findings/suppress-batch', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
