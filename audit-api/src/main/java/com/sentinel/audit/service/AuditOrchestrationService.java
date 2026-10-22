@@ -78,6 +78,7 @@ public class AuditOrchestrationService {
     /** Tempo máximo de espera pelo commit do registro da auditoria. */
     private static final Duration RUN_VISIBILITY_TIMEOUT = Duration.ofSeconds(15);
     private static final long RUN_VISIBILITY_POLL_MILLIS = 200L;
+    private static final long CANCEL_POLL_MILLIS = 500L;
 
     // Limites das colunas da entidade Finding
     private static final int MAX_TITLE        = 500;
@@ -211,9 +212,11 @@ public class AuditOrchestrationService {
         try {
             AuditContext context = markRunning(auditRunId);
             progress.queued(auditRunId);
+            checkNotCancelled(auditRunId);
             progress.phase(auditRunId, AuditProgressTracker.CLONE, "Clonando " + context.repoUrl() + " (" + context.branch() + ")");
 
             clonedPath = ingestionService.cloneRepository(context.repoUrl(), context.branch(), null);
+            checkNotCancelled(auditRunId);
             evidenceStager.stage(context.systemName(), context.repoUrl(), clonedPath);
 
             // Referência leve apenas para os analisadores vincularem os findings;
@@ -224,6 +227,7 @@ public class AuditOrchestrationService {
             AuditPolicy policy = resolvePolicy(context.profile());
             progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
             Analysis analysis = runAnalyzers(clonedPath, runRef, context.stack(), policy);
+            checkNotCancelled(auditRunId);
             List<Finding> allFindings = policy.apply(FindingDeduplicator.apply(analysis.findings()));
             allFindings = onlyChangedFiles(allFindings, context, clonedPath);
 
@@ -241,6 +245,9 @@ public class AuditOrchestrationService {
                     auditRunId, allFindings.size(), riskScore.getOverall());
             notifySafely(auditRunId);
 
+        } catch (AuditCancelledException e) {
+            LOG.infof("Auditoria %d cancelada pelo usuário", auditRunId);
+            markCancelled(auditRunId);
         } catch (Exception e) {
             LOG.errorf(e, "Auditoria %d falhou: %s", auditRunId, e.getMessage());
             markFailed(auditRunId, e);
@@ -317,7 +324,7 @@ public class AuditOrchestrationService {
         progress.planned(runId, plan);
         List<Finding> allFindings = new ArrayList<>();
         for (int i = 0; i < futures.size(); i++) {
-            Outcome outcome = futures.get(i).join();
+            Outcome outcome = awaitOutcome(runId, futures.get(i), futures);
             AnalyzerResult result = outcome.result();
             allFindings.addAll(result.findings());
             runs.add(new AnalyzerRunInfo(started.get(i).getName(), outcome.error() == null ? "OK" : "FALHOU",
@@ -325,6 +332,66 @@ public class AuditOrchestrationService {
                     outcome.error() == null ? null : truncate(outcome.error(), 200)));
         }
         return new Analysis(allFindings, runs);
+    }
+
+    /** Espera o analisador, mas acorda a cada meio segundo para atender um pedido de cancelamento. */
+    private Outcome awaitOutcome(Long runId, CompletableFuture<Outcome> future, List<CompletableFuture<Outcome>> all) {
+        while (true) {
+            try {
+                return future.get(CANCEL_POLL_MILLIS, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                if (progress.isCancelRequested(runId)) {
+                    all.forEach(f -> f.cancel(true));
+                    throw new AuditCancelledException(runId);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrompido aguardando os analisadores da auditoria " + runId, e);
+            } catch (java.util.concurrent.ExecutionException e) {
+                throw new IllegalStateException("Falha inesperada aguardando um analisador", e.getCause());
+            }
+        }
+    }
+
+    private void checkNotCancelled(Long auditRunId) {
+        if (progress.isCancelRequested(auditRunId)) {
+            throw new AuditCancelledException(auditRunId);
+        }
+    }
+
+    /**
+     * Cancela uma auditoria pendente ou em execução. O status muda na hora (a tela já mostra "Cancelada") e a
+     * orquestração para na próxima verificação, descartando o que ainda estava sendo analisado.
+     *
+     * @return {@code false} se a auditoria não existe mais em andamento (já terminou ou nunca existiu)
+     */
+    public boolean cancel(Long auditRunId) {
+        if (!markCancelledByUser(auditRunId)) {
+            return false;
+        }
+        progress.requestCancel(auditRunId);
+        return true;
+    }
+
+    @Transactional
+    boolean markCancelledByUser(Long auditRunId) {
+        AuditRun run = auditRunRepository.findById(auditRunId);
+        if (run == null || (run.getStatus() != AuditStatus.PENDING && run.getStatus() != AuditStatus.RUNNING)) {
+            return false;
+        }
+        run.setStatus(AuditStatus.CANCELLED);
+        run.setCompletedAt(LocalDateTime.now());
+        run.setErrorMessage("Cancelada pelo usuário");
+        return true;
+    }
+
+    /** Garante o estado final quando a parada veio do pedido do usuário; nunca lança exceção. */
+    void markCancelled(Long auditRunId) {
+        try {
+            markCancelledByUser(auditRunId);
+        } catch (Exception e) {
+            LOG.errorf(e, "Não foi possível marcar a auditoria %d como CANCELLED", auditRunId);
+        }
     }
 
     private record Outcome(AnalyzerResult result, String error) {}
@@ -470,6 +537,9 @@ public class AuditOrchestrationService {
         if (run == null) {
             return null;
         }
+        if (run.getStatus() == AuditStatus.CANCELLED) {
+            throw new AuditCancelledException(auditRunId);
+        }
         run.setStatus(AuditStatus.RUNNING);
         run.setStartedAt(LocalDateTime.now());
         // Leituras do sistema (lazy) acontecem aqui, dentro da transação.
@@ -487,6 +557,10 @@ public class AuditOrchestrationService {
         AuditRun run = auditRunRepository.findById(auditRunId);
         if (run == null) {
             throw new IllegalStateException("Auditoria " + auditRunId + " não encontrada ao persistir resultados");
+        }
+        if (run.getStatus() == AuditStatus.CANCELLED) {
+            // O usuário cancelou no último instante: nada do que foi analisado deve ser gravado.
+            throw new AuditCancelledException(auditRunId);
         }
 
         for (Finding finding : findings) {

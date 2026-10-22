@@ -82,6 +82,23 @@ class AuditFlowIntegrationTest {
                 .body(Map.of("name", "x", "repoUrl", "http://inseguro/repo", "stack", "JAVA"))
                 .put("/api/v1/systems/" + systemId).then().statusCode(400);
 
+        // novos recursos: lista global, cancelamento, verificação de repositório, tipos de relatório, CSV
+        given().get("/api/v1/audits?limit=5").then().statusCode(200)
+                .body("id", hasItem(auditId)).body("find { it.id == " + auditId + " }.systemId", is(systemId));
+        given().post("/api/v1/audits/" + auditId + "/cancel").then().statusCode(409);   // já terminou (FAILED)
+        given().post("/api/v1/audits/999999/cancel").then().statusCode(404);
+        given().contentType("application/json").body(Map.of("repoUrl", "http://inseguro/repo"))
+                .post("/api/v1/systems/check-repo").then().statusCode(200)
+                .body("reachable", is(false)).body("message", not(emptyOrNullString()));
+        given().get("/api/v1/audits/" + auditId + "/report?type=executivo").then().statusCode(200)
+                .body(containsString("Relatório executivo"));
+        given().get("/api/v1/audits/" + auditId + "/report?type=comparativo&days=30").then().statusCode(200)
+                .body(containsString("Relatório comparativo"));
+        given().get("/api/v1/audits/" + auditId + "/report?type=xyz").then().statusCode(400);
+        given().get("/api/v1/audits/" + auditId + "/findings.csv").then().statusCode(200)
+                .body(startsWith("\uFEFFseveridade,"));
+        given().get("/api/v1/systems").then().statusCode(200).body("find { it.id == " + systemId + " }.scoreDelta", nullValue());
+
         // validação de entrada
         given().contentType("application/json")
                 .body(Map.of("systemId", systemId, "branch", "--upload-pack=x", "triggeredBy", "it"))

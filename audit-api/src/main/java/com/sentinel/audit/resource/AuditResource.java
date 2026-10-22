@@ -16,9 +16,12 @@ import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.repository.AuditRunRepository;
 import com.sentinel.audit.repository.FindingRepository;
+import com.sentinel.audit.service.AuditOrchestrationService;
 import com.sentinel.audit.service.AuditRequestService;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.service.FixPlanner;
+import com.sentinel.audit.service.ScoreTrend;
+import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.service.ScoringService;
 import com.sentinel.audit.service.ReportService;
 import com.sentinel.audit.service.AuditProgressTracker;
@@ -44,6 +47,9 @@ import java.util.stream.Collectors;
 @Tag(name = "Audits", description = "Execução e consulta de auditorias de código")
 public class AuditResource {
 
+    /** Meta de nota da organização, a mesma usada pelo dashboard. */
+    static final double TARGET_SCORE = 75;
+
     @Inject
     AuditProgressTracker progressTracker;
 
@@ -68,6 +74,9 @@ public class AuditResource {
     @Inject
     AuditRequestService requestService;
 
+    @Inject
+    AuditOrchestrationService orchestration;
+
     /**
      * Dispara uma nova auditoria de forma assíncrona.
      * Retorna 202 Accepted com o estado inicial da execução.
@@ -79,6 +88,33 @@ public class AuditResource {
         AuditRun run = requestService.request(request.getSystemId(), request.getBranch(), request.getBaseRef(), request.getTriggeredBy());
 
         return Response.accepted(toResponse(run)).build();
+    }
+
+    /**
+     * Últimas auditorias de todos os sistemas (mais nova primeiro), com o andamento das que estão em execução.
+     */
+    @GET
+    @Operation(summary = "Listar auditorias recentes", description = "Últimas auditorias de todos os sistemas, da mais nova para a mais antiga")
+    public List<AuditRunResponse> listRecent(@QueryParam("limit") @DefaultValue("8") int limit) {
+        int size = Math.max(1, Math.min(limit, 50));
+        return auditRunRepository.findRecent(size).stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    /**
+     * Cancela uma auditoria pendente ou em execução.
+     */
+    @POST
+    @Path("/{id}/cancel")
+    @Operation(summary = "Cancelar auditoria", description = "Interrompe uma auditoria pendente ou em execução; 409 se ela já terminou")
+    public Response cancel(@PathParam("id") Long id) {
+        AuditRun run = auditRunRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        if (!orchestration.cancel(run.getId())) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(java.util.Map.of("message", "A auditoria já terminou e não pode ser cancelada"))
+                    .build();
+        }
+        return Response.accepted(toResponse(auditRunRepository.findById(id))).build();
     }
 
     /**
@@ -135,20 +171,56 @@ public class AuditResource {
     }
 
     /**
-     * Gera e retorna um relatório HTML da auditoria.
+     * Gera e retorna um relatório HTML da auditoria. O tipo escolhe o conteúdo: técnico (padrão, com todos os
+     * achados), executivo (uma página para quem decide) ou comparativo (evolução entre auditorias do sistema).
      */
     @GET
     @Path("/{id}/report")
     @Produces(MediaType.TEXT_HTML)
-    @Operation(summary = "Relatório HTML", description = "Gera um relatório HTML completo da auditoria")
-    public Response getReport(@PathParam("id") Long id) {
+    @Operation(summary = "Relatório HTML", description = "Relatório da auditoria: type=tecnico (padrão), executivo ou comparativo; days limita o período do comparativo")
+    public Response getReport(@PathParam("id") Long id,
+                              @QueryParam("type") String type,
+                              @QueryParam("days") Integer days) {
         AuditRun run = auditRunRepository.findByIdOptional(id)
                 .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        ReportService.Type kind;
+        try {
+            kind = ReportService.Type.parse(type);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        }
 
         List<Finding> findings = findingRepository.findByAuditRunId(id);
-        String html = reportService.generateHtmlReport(run, findings);
-
+        String html = switch (kind) {
+            case TECNICO -> reportService.generateHtmlReport(run, findings);
+            case EXECUTIVO -> reportService.generateExecutiveReport(run, findings,
+                    FixPlanner.plan(FindingLifecycleService.active(findings), run.getLinesOfCode(), scoringService),
+                    ScoreTrend.delta(auditRunRepository.findBySystemId(run.getSystem().getId())), TARGET_SCORE);
+            case COMPARATIVO -> {
+                java.time.LocalDateTime since = days == null || days <= 0 ? null : java.time.LocalDateTime.now().minusDays(days);
+                List<TrendPoint> points = lifecycleService.trend(run.getSystem().getId(), 100).stream()
+                        .filter(p -> since == null || (p.completedAt() != null && p.completedAt().isAfter(since)))
+                        .collect(Collectors.toList());
+                yield reportService.generateComparativeReport(run, points, days == null || days <= 0 ? null : days);
+            }
+        };
         return Response.ok(html, MediaType.TEXT_HTML).build();
+    }
+
+    /**
+     * Achados ativos da auditoria em CSV, para abrir em planilha.
+     */
+    @GET
+    @Path("/{id}/findings.csv")
+    @Produces("text/csv")
+    @Operation(summary = "Achados em CSV", description = "Achados ativos da auditoria, prontos para planilha")
+    public Response getFindingsCsv(@PathParam("id") Long id) {
+        auditRunRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        String csv = reportService.generateCsv(findingRepository.findByAuditRunId(id));
+        return Response.ok("\uFEFF" + csv, "text/csv; charset=UTF-8")
+                .header("Content-Disposition", "attachment; filename=\"achados-auditoria-" + id + ".csv\"")
+                .build();
     }
 
     /**
@@ -200,6 +272,7 @@ public class AuditResource {
     private AuditRunResponse toResponse(AuditRun run) {
         AuditRunResponse dto = new AuditRunResponse();
         dto.setId(run.getId());
+        dto.setSystemId(run.getSystem().getId());
         dto.setSystemName(run.getSystem().getName());
         dto.setBranch(run.getBranch());
         dto.setBaseRef(run.getBaseRef());

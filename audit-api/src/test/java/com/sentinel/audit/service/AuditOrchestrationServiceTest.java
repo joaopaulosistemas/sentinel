@@ -306,4 +306,80 @@ class AuditOrchestrationServiceTest {
         assertEquals(AuditStatus.COMPLETED, run.getStatus());   // continua concluída
         assertNull(run.getErrorMessage());
     }
+
+    @Test
+    void cancelarDuranteOCloneParaAntesDaAnaliseESemGravarNada() {
+        service.ingestionService = new IngestionService() {
+            @Override
+            public Path cloneRepository(String repoUrl, String branch, String token) {
+                assertTrue(service.cancel(7L));   // o usuário clica em cancelar enquanto clona
+                return tempDir;
+            }
+
+            @Override
+            public void cleanupDirectory(Path dir) {
+                cleaned.add(dir);
+            }
+        };
+
+        service.runAudit(7L).join();               // cancelar não é falha: o future termina normalmente
+
+        assertEquals(AuditStatus.CANCELLED, run.getStatus());
+        assertEquals("Cancelada pelo usuário", run.getErrorMessage());
+        assertNotNull(run.getCompletedAt());
+        assertTrue(persisted.isEmpty());
+        assertNull(run.getRiskScore());
+        assertEquals(List.of(tempDir), cleaned, "o clone deve ser limpo");
+        assertTrue(notified.isEmpty(), "cancelamento não dispara aviso de conclusão");
+        assertFalse(service.progress.isCancelRequested(7L), "o pedido é limpo ao terminar");
+    }
+
+    @Test
+    void cancelarDuranteAAnaliseDescartaOResultado() throws Exception {
+        java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        service.semgrepAnalyzer = new SemgrepAnalyzer() {
+            @Override
+            public AnalyzerResult analyze(Path p, AuditRun r, com.sentinel.audit.pack.AuditPolicy policy) {
+                started.countDown();
+                try {
+                    release.await(20, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return result("Semgrep");
+            }
+        };
+
+        var future = service.runAudit(7L);
+        assertTrue(started.await(10, java.util.concurrent.TimeUnit.SECONDS));
+        assertTrue(service.cancel(7L));
+        future.get(10, java.util.concurrent.TimeUnit.SECONDS);   // para em até ~0,5 s, sem esperar o analisador lento
+        release.countDown();
+
+        assertEquals(AuditStatus.CANCELLED, run.getStatus());
+        assertTrue(persisted.isEmpty());
+        assertEquals(List.of(tempDir), cleaned);
+    }
+
+    @Test
+    void naoCancelaAuditoriaQueJaTerminou() {
+        service.runAudit(7L).join();
+        assertEquals(AuditStatus.COMPLETED, run.getStatus());
+
+        assertFalse(service.cancel(7L));
+        assertEquals(AuditStatus.COMPLETED, run.getStatus());
+        assertFalse(service.progress.isCancelRequested(7L));
+    }
+
+    @Test
+    void auditoriaCanceladaAntesDeComecarNaoVoltaARodar() {
+        run.setStatus(AuditStatus.CANCELLED);
+
+        service.runAudit(7L).join();
+
+        assertEquals(AuditStatus.CANCELLED, run.getStatus());
+        assertTrue(persisted.isEmpty());
+        assertTrue(cleaned.isEmpty(), "nem chegou a clonar");
+    }
 }

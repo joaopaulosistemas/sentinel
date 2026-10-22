@@ -11,6 +11,7 @@ import java.util.Map;
 public class AuditRunResponse {
 
     private Long id;
+    private Long systemId;
     private String systemName;
     private String branch;
     private String baseRef;
@@ -24,6 +25,14 @@ public class AuditRunResponse {
     private AuditProgressDto progress;
 
     public AuditRunResponse() {
+    }
+
+    public Long getSystemId() {
+        return systemId;
+    }
+
+    public void setSystemId(Long systemId) {
+        this.systemId = systemId;
     }
 
     public AuditProgressDto getProgress() {

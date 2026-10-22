@@ -134,6 +134,12 @@ class AuditCliTest {
     }
 
     @Test
+    void auditoriaCanceladaRetornaDoisSemEsperarOTimeout() {
+        auditJson = "{\"id\":5,\"status\":\"CANCELLED\",\"errorMessage\":\"Cancelada pelo usuário\"}";
+        assertEquals(2, run());
+    }
+
+    @Test
     void erroNaCriacaoRetornaDois() {
         createStatus = 401;
         assertEquals(2, run());

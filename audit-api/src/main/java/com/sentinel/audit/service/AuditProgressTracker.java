@@ -32,6 +32,8 @@ public class AuditProgressTracker {
     private static final int MAX_EVENTS = 60;
 
     private final Map<Long, State> states = new ConcurrentHashMap<>();
+    /** Auditorias que o usuário mandou cancelar; a orquestração consulta nos pontos de parada. */
+    private final java.util.Set<Long> cancelRequested = ConcurrentHashMap.newKeySet();
 
     private static final class State {
         String phase = FILA;
@@ -85,9 +87,20 @@ public class AuditProgressTracker {
         update(auditId, name, status, findings, durationMs, note, msg);
     }
 
-    /** A auditoria terminou (com sucesso ou não): o andamento deixa de existir. */
+    /** A auditoria terminou (com sucesso, falha ou cancelamento): o andamento deixa de existir. */
     public void finish(Long auditId) {
-        if (auditId != null) states.remove(auditId);
+        if (auditId == null) return;
+        states.remove(auditId);
+        cancelRequested.remove(auditId);
+    }
+
+    /** Pede o cancelamento; a orquestração para na próxima verificação. */
+    public void requestCancel(Long auditId) {
+        if (auditId != null) cancelRequested.add(auditId);
+    }
+
+    public boolean isCancelRequested(Long auditId) {
+        return auditId != null && cancelRequested.contains(auditId);
     }
 
     public Optional<AuditProgressDto> snapshot(Long auditId) {

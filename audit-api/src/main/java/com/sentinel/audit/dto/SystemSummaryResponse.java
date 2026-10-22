@@ -20,8 +20,18 @@ public class SystemSummaryResponse {
     private String scheduledBranch;
     private Boolean auditOnPush;
     private String profile;
+    /** Nota da última auditoria completa menos a anterior; nulo se houver menos de duas. */
+    private Double scoreDelta;
     private String repoUrl;
     private String description;
+
+    public Double getScoreDelta() {
+        return scoreDelta;
+    }
+
+    public void setScoreDelta(Double scoreDelta) {
+        this.scoreDelta = scoreDelta;
+    }
 
     public String getRepoUrl() {
         return repoUrl;
