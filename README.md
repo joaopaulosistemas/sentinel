@@ -7,6 +7,8 @@
 
 ## Objetivo
 
+> Mapa completo de módulos, pacotes e classes, com desenhos macro e micro: [`docs/arquitetura/ARQUITETURA.md`](docs/arquitetura/ARQUITETURA.md).
+
 Realizar uma **auditoria técnica completa dos projetos Sicoob**, identificando:
 
 - **Problemas reais** — vulnerabilidades, falhas de segurança, código defeituoso
