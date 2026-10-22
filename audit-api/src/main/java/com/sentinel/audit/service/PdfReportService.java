@@ -157,6 +157,39 @@ public class PdfReportService {
         });
     }
 
+    /** Seção genérica de tabela, usada pelos relatórios consolidados (todos os sistemas). */
+    public record TableSection(String heading, List<String> heads, List<List<String>> rows) {}
+
+    public byte[] tables(String title, List<String> intro, List<TableSection> sections) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Document doc = new Document(PageSize.A4.rotate(), 40, 40, 40, 40);
+        try {
+            PdfWriter.getInstance(doc, out);
+            doc.addTitle(clean(title));
+            doc.addCreator("Sentinel Audit Tool");
+            doc.open();
+            doc.add(new Paragraph(clean(title), H1));
+            for (String line : intro) {
+                doc.add(new Paragraph(clean(line), BODY));
+            }
+            for (TableSection s : sections) {
+                doc.add(h2(s.heading()));
+                if (s.rows().isEmpty()) {
+                    doc.add(new Paragraph("Nada a mostrar.", BODY));
+                } else {
+                    table(doc, s.heads(), s.rows());
+                }
+            }
+        } catch (DocumentException e) {
+            throw new IllegalStateException("Falha ao gerar o PDF: " + e.getMessage(), e);
+        } finally {
+            if (doc.isOpen()) {
+                doc.close();
+            }
+        }
+        return out.toByteArray();
+    }
+
     // ------------------------------------------------------------------ infraestrutura
 
     @FunctionalInterface
