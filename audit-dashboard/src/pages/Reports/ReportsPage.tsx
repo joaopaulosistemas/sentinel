@@ -2,13 +2,23 @@ import { Button, InlineNotification, SkeletonText } from '@carbon/react';
 import { useEffect, useState } from 'react';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
-import { type ReportFormat, reportFormats, reportUrl } from './reportLinks';
+import {
+  type ReportFormat,
+  type ReportPeriod,
+  type ReportType,
+  formatsFor,
+  reportPeriods,
+  reportTypes,
+  reportUrl,
+} from './reportLinks';
 
 interface ReportHistoryEntry {
   id: string;
   systemName: string;
   auditId: number;
   format?: ReportFormat;
+  type?: ReportType;
+  days?: ReportPeriod;
   generatedAt: string;
   url: string;
 }
@@ -50,6 +60,8 @@ export function ReportsPage() {
   const { data: systems, isLoading: loadingSystems } = useSystems();
   const [systemId, setSystemId] = useState<number | null>(null);
   const [auditId, setAuditId] = useState<number | null>(null);
+  const [type, setType] = useState<ReportType>('executivo');
+  const [days, setDays] = useState<ReportPeriod>(30);
   const [format, setFormat] = useState<ReportFormat>('html');
   const [history, setHistory] = useState<ReportHistoryEntry[]>(loadHistory);
 
@@ -61,9 +73,17 @@ export function ReportsPage() {
     setAuditId(completed.length > 0 ? completed[0].id : null);
   }, [systemId, runs?.length]);
 
+  const formats = formatsFor(type);
+
+  function pickType(next: ReportType) {
+    setType(next);
+    // CSV e SBOM só existem no técnico: volta para HTML ao sair dele.
+    if (!formatsFor(next).some((f) => f.id === format)) setFormat('html');
+  }
+
   function generate() {
     if (!auditId) return;
-    const url = reportUrl(BASE_URL, auditId, format);
+    const url = reportUrl(BASE_URL, auditId, format, { type, days });
     window.open(url, '_blank', 'noreferrer');
     const system = systems?.find((s) => s.id === systemId);
     const entry: ReportHistoryEntry = {
@@ -71,6 +91,8 @@ export function ReportsPage() {
       systemName: system?.name ?? `Sistema #${systemId ?? ''}`,
       auditId,
       format,
+      type,
+      days,
       generatedAt: new Date().toISOString(),
       url,
     };
@@ -88,13 +110,39 @@ export function ReportsPage() {
     <div style={{ padding: '2rem', display: 'grid', gap: '1.5rem' }}>
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 400, marginBottom: '0.25rem' }}>Relatórios</h1>
-        <p style={{ color: '#525252' }}>Escolha o sistema, a auditoria e o formato. O relatório abre em uma nova aba.</p>
+        <p style={{ color: '#525252' }}>Escolha o tipo, o sistema e o formato. O relatório abre em uma nova aba.</p>
       </div>
 
       <section aria-label="Novo relatório" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '1.25rem 1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
           <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
-            <div style={eyebrow}>1 · Sistema</div>
+            <div style={eyebrow}>1 · Tipo</div>
+            {reportTypes.map((t) => (
+              <button key={t.id} type="button" aria-pressed={type === t.id} onClick={() => pickType(t.id)} style={choice(type === t.id)}>
+                <strong style={{ fontWeight: 600 }}>{t.label}</strong>
+                <span style={{ fontSize: '0.75rem', color: '#525252' }}>{t.hint}</span>
+              </button>
+            ))}
+            {type === 'comparativo' && (
+              <label style={{ display: 'grid', gap: 4, fontSize: '0.8125rem', color: '#525252', marginTop: '0.5rem' }}>
+                Período
+                <select
+                  value={days}
+                  onChange={(e) => setDays(Number(e.target.value) as ReportPeriod)}
+                  style={{ height: 40, padding: '0 0.75rem', border: '1px solid #8d8d8d', background: '#fff', font: 'inherit' }}
+                >
+                  {reportPeriods.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
+            <div style={eyebrow}>2 · Sistema</div>
             {loadingSystems ? (
               <SkeletonText lineCount={3} />
             ) : (
@@ -108,7 +156,7 @@ export function ReportsPage() {
           </div>
 
           <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
-            <div style={eyebrow}>2 · Auditoria</div>
+            <div style={eyebrow}>3 · Auditoria</div>
             {systemId === null ? (
               <p style={{ color: '#525252' }}>Escolha um sistema primeiro.</p>
             ) : loadingRuns ? (
@@ -131,8 +179,8 @@ export function ReportsPage() {
           </div>
 
           <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
-            <div style={eyebrow}>3 · Formato</div>
-            {reportFormats.map((f) => (
+            <div style={eyebrow}>4 · Formato</div>
+            {formats.map((f) => (
               <button key={f.id} type="button" aria-pressed={format === f.id} onClick={() => setFormat(f.id)} style={choice(format === f.id)}>
                 <strong style={{ fontWeight: 600 }}>{f.label}</strong>
                 <span style={{ fontSize: '0.75rem', color: '#525252' }}>{f.hint}</span>
@@ -161,7 +209,9 @@ export function ReportsPage() {
             <div key={e.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 2fr) 110px 150px 170px auto', gap: '0.75rem', padding: '0.75rem 1rem', borderTop: '1px solid #e0e0e0', alignItems: 'center' }}>
               <strong style={{ fontWeight: 500 }}>{e.systemName}</strong>
               <span style={{ color: '#525252' }}>Auditoria #{e.auditId}</span>
-              <code style={{ fontSize: '0.75rem' }}>{e.format === 'sbom' ? 'SBOM' : 'HTML'}</code>
+              <code style={{ fontSize: '0.75rem' }}>
+                {e.format === 'sbom' ? 'SBOM' : e.format === 'csv' ? 'CSV' : `HTML · ${reportTypes.find((t) => t.id === e.type)?.label ?? 'Técnico'}`}
+              </code>
               <span style={{ fontSize: '0.8125rem', color: '#525252' }}>{new Date(e.generatedAt).toLocaleString('pt-BR')}</span>
               <a href={e.url} target="_blank" rel="noreferrer" style={{ justifySelf: 'end' }}>
                 Abrir novamente

@@ -764,17 +764,24 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 |--------|---------|-----------|
 | `GET` | `/api/v1/systems` | Lista todos os sistemas |
 | `POST` | `/api/v1/systems` | Cadastra novo sistema |
-| `GET` | `/api/v1/systems/{id}` | Detalhe do sistema |
+| `PUT` | `/api/v1/systems/{id}` | Edita nome, descrição, repositório, stack, time e perfil (o agendamento tem endpoint próprio) |
+| `POST` | `/api/v1/systems/check-repo` | Testa o repositório sem clonar (`git ls-remote --symref`): responde se está acessível, a branch padrão e se a branch pedida existe |
+| `GET` | `/api/v1/systems/{id}` | Detalhe do sistema (inclui `scoreDelta`: nota da última auditoria completa menos a anterior) |
 | `DELETE` | `/api/v1/systems/{id}` | Remove o sistema (e suas supressões) |
 | `PUT` | `/api/v1/systems/{id}/schedule` | Auditoria periódica / por push |
 | `GET` | `/api/v1/systems/{id}/audits` | Histórico de auditorias do sistema |
 | `GET` | `/api/v1/systems/{id}/trend` | Evolução do score |
 | `GET` | `/api/v1/systems/{id}/suppressions` | Findings suprimidos (`DELETE …/{suppressionId}` reabre) |
-| `POST` | `/api/v1/audits` | Dispara nova auditoria (assíncrono; PENDING → RUNNING → COMPLETED/FAILED, com `errorMessage` em caso de falha) |
-| `GET` | `/api/v1/audits/{id}` | Status e resultado da auditoria |
+| `POST` | `/api/v1/audits` | Dispara nova auditoria (assíncrono; PENDING → RUNNING → COMPLETED/FAILED/CANCELLED, com `errorMessage` em caso de falha) |
+| `GET` | `/api/v1/audits?limit=` | Últimas auditorias de todos os sistemas (mais nova primeiro), com o andamento das que estão rodando |
+| `POST` | `/api/v1/audits/{id}/cancel` | Cancela uma auditoria pendente ou em execução (`409` se já terminou) |
+| `GET` | `/api/v1/audits/{id}` | Status e resultado da auditoria; enquanto roda, traz `progress` (etapa, analisadores e eventos) |
+| `GET` | `/api/v1/audits/{id}/fix-plan` | O que corrigir primeiro: problemas por regra, com o ganho de nota de cada um |
+| `GET` | `/api/v1/findings` | Achados da última auditoria concluída de cada sistema (filtros: `systemId`, `severity`, `category`, `status`, `onlyNew`, `includeSuppressed`, `limit`, `offset`) |
 | `GET` | `/api/v1/audits/{id}/findings` | Findings (filtros: `severity`, `category`, `status`, `onlyNew`, `includeSuppressed`) |
 | `GET` | `/api/v1/audits/{id}/diff` | Novos / resolvidos / persistentes vs. auditoria anterior |
-| `GET` | `/api/v1/audits/{id}/report` | Relatório HTML (imprimível como PDF) |
+| `GET` | `/api/v1/audits/{id}/report` | Relatório HTML (imprimível como PDF). `type=tecnico` (padrão, todos os achados), `executivo` (uma página: nota, meta, riscos e prioridades) ou `comparativo` (evolução entre auditorias; `days=` limita o período) |
+| `GET` | `/api/v1/audits/{id}/findings.csv` | Achados ativos em CSV (UTF-8, protegido contra injeção de fórmula em planilha) |
 | `GET` | `/api/v1/audits/{id}/sbom` | SBOM CycloneDX 1.5 (JSON) |
 | `GET` | `/api/v1/audits/{id}/insights` | Auditoria completa: parecer, áreas, dívida técnica P0–P3, quick wins, roadmap em 8 fases e o que não foi possível verificar |
 | `GET` | `/api/v1/packs` · `POST /reload` | Pacotes e perfis carregados (rejeitados com motivo, avisos, integridade) · recarrega |

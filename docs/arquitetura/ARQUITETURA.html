@@ -779,7 +779,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     AUDIT_RUN ||--o{ FINDING : "produz"
     AUDITED_SYSTEM ||--o{ FINDING_SUPPRESSION : "tem supressões"
     AUDIT_RUN {
-        enum status "PENDING, RUNNING, COMPLETED, FAILED"
+        enum status "PENDING, RUNNING, COMPLETED, FAILED, CANCELLED"
         embedded riskScore "uma nota por dimensão e a geral"
     }
     FINDING {

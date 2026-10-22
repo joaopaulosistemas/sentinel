@@ -1,13 +1,15 @@
-import { DataTableSkeleton, Dropdown, InlineNotification, Pagination, Toggle } from '@carbon/react';
+import { Button, DataTableSkeleton, Dropdown, InlineNotification, Pagination, Tag, Toggle } from '@carbon/react';
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FindingsTable } from '../../components/FindingsTable';
 import { JourneySteps } from '../../components/JourneySteps';
 import { useAudit } from '../../hooks/useAuditRuns';
+import { useDiff } from '../../hooks/useLifecycle';
 import { useFindings, useFindingsOverview } from '../../hooks/useFindings';
 import { useSystems } from '../../hooks/useSystems';
 import { useAuditStore } from '../../store/useAuditStore';
 import type { Category, FindingResponse, FindingStatus, Severity } from '../../types';
+import { activeFilterChips, groupBySystem, type FilterKey } from '../../utils/findingsView';
 
 interface DropdownItem<T> {
   id: string;
@@ -37,7 +39,7 @@ const statusItems: DropdownItem<FindingStatus>[] = [
   { id: 'all', label: 'Todos os status', value: undefined },
   { id: 'OPEN', label: 'Aberto', value: 'OPEN' },
   { id: 'ACKNOWLEDGED', label: 'Reconhecido', value: 'ACKNOWLEDGED' },
-  { id: 'FIXED', label: 'Corrigido', value: 'FIXED' },
+  { id: 'FIXED', label: 'Resolvido', value: 'FIXED' },
   { id: 'SUPPRESSED', label: 'Suprimido', value: 'SUPPRESSED' },
 ];
 
@@ -68,9 +70,14 @@ export function FindingsPage() {
   const [includeSuppressed, setIncludeSuppressed] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [grouped, setGrouped] = useState(false);
+  const [showResolved, setShowResolved] = useState(false);
 
   const { data: systems } = useSystems();
   const { data: audit } = useAudit(auditId);
+  // Os resolvidos não estão na lista da auditoria (já não existem nela): vêm da comparação com a anterior.
+  const { data: diff } = useDiff(auditMode ? auditId : undefined);
+  const resolved = (diff?.resolvedFindings ?? []).map((f) => ({ ...f, status: 'FIXED' as const }));
 
   const filters = { severity, category, status, onlyNew, includeSuppressed };
   const single = useFindings(auditId, filters);
@@ -95,6 +102,53 @@ export function FindingsPage() {
   const systemByFinding = new Map(overview.data?.items.map((i) => [i.finding.id, i]) ?? []);
 
   const reset = () => setPage(1);
+
+  const chips = activeFilterChips({
+    systemName: auditMode
+      ? undefined
+      : systemId !== undefined
+        ? (overview.data?.bySystem.find((b) => b.systemId === systemId)?.systemName ?? currentSystem.name)
+        : undefined,
+    severity,
+    category,
+    status,
+    onlyNew,
+    includeSuppressed,
+  });
+
+  const clearFilter = (key: FilterKey) => {
+    if (key === 'system') setSystemId(undefined);
+    if (key === 'severity') setSeverity(undefined);
+    if (key === 'category') setCategory(undefined);
+    if (key === 'status') setStatus(undefined);
+    if (key === 'onlyNew') setOnlyNew(false);
+    if (key === 'includeSuppressed') setIncludeSuppressed(false);
+    reset();
+  };
+
+  const clearAll = () => {
+    setSystemId(undefined);
+    setSeverity(undefined);
+    setCategory(undefined);
+    setStatus(undefined);
+    setOnlyNew(false);
+    setIncludeSuppressed(false);
+    reset();
+  };
+
+  const systemOf = auditMode
+    ? undefined
+    : (f: FindingResponse) => {
+        const hit = systemByFinding.get(f.id);
+        if (!hit) return undefined;
+        return {
+          name: hit.systemName,
+          onClick: () => {
+            setSelectedAudit(hit.auditId);
+            navigate(`/systems/${hit.systemId}`);
+          },
+        };
+      };
 
   const pickSystem = (value: number | undefined) => {
     // Escolher um sistema sai do modo "uma auditoria" e volta a olhar a última de cada sistema.
@@ -209,6 +263,16 @@ export function FindingsPage() {
             reset();
           }}
         />
+        {!auditMode && (
+          <Toggle
+            id="group-by-system"
+            labelText="Agrupar"
+            labelA="Lista única"
+            labelB="Por sistema"
+            toggled={grouped}
+            onToggle={(v) => setGrouped(v)}
+          />
+        )}
         <Toggle
           id="include-suppressed"
           labelText="Suprimidos"
@@ -221,6 +285,23 @@ export function FindingsPage() {
           }}
         />
       </div>
+
+      {chips.length > 0 && (
+        <div
+          aria-label="Filtros ativos"
+          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}
+        >
+          <span style={{ fontSize: '0.8125rem', color: '#525252' }}>Filtros ativos:</span>
+          {chips.map((c) => (
+            <Tag key={c.key} type="blue" filter onClose={() => clearFilter(c.key)}>
+              {c.label}
+            </Tag>
+          ))}
+          <Button kind="ghost" size="sm" onClick={clearAll}>
+            Limpar filtros
+          </Button>
+        </div>
+      )}
 
       {loading ? (
         <DataTableSkeleton columnCount={7} rowCount={10} />
@@ -243,25 +324,23 @@ export function FindingsPage() {
         />
       ) : (
         <>
-          <FindingsTable
-            findings={rows}
-            systemName={auditMode ? audit?.systemName : undefined}
-            systemOf={
-              auditMode
-                ? undefined
-                : (f) => {
-                    const hit = systemByFinding.get(f.id);
-                    if (!hit) return undefined;
-                    return {
-                      name: hit.systemName,
-                      onClick: () => {
-                        setSelectedAudit(hit.auditId);
-                        navigate(`/systems/${hit.systemId}`);
-                      },
-                    };
-                  }
-            }
-          />
+          {grouped && !auditMode ? (
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+              {groupBySystem(overview.data?.items ?? []).map((g) => (
+                <section key={g.systemId} aria-label={`Achados de ${g.systemName}`}>
+                  <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                    {g.systemName}
+                    <span style={{ fontWeight: 400, color: '#525252', marginLeft: '0.5rem' }}>
+                      {g.findings.length} {g.findings.length === 1 ? 'achado nesta página' : 'achados nesta página'}
+                    </span>
+                  </h2>
+                  <FindingsTable findings={g.findings} systemOf={systemOf} />
+                </section>
+              ))}
+            </div>
+          ) : (
+            <FindingsTable findings={rows} systemName={auditMode ? audit?.systemName : undefined} systemOf={systemOf} />
+          )}
           <Pagination
             totalItems={total}
             pageSize={pageSize}
@@ -278,6 +357,19 @@ export function FindingsPage() {
             style={{ marginTop: '1rem' }}
           />
         </>
+      )}
+
+      {auditMode && resolved.length > 0 && (
+        <section aria-label="Resolvidos" style={{ marginTop: '2rem' }}>
+          <Button kind="tertiary" size="sm" aria-expanded={showResolved} onClick={() => setShowResolved(!showResolved)}>
+            {showResolved ? 'Ocultar' : 'Mostrar'} {resolved.length} {resolved.length === 1 ? 'achado resolvido' : 'achados resolvidos'} desde a auditoria anterior
+          </Button>
+          {showResolved && (
+            <div style={{ marginTop: '1rem' }}>
+              <FindingsTable findings={resolved} systemName={audit?.systemName} />
+            </div>
+          )}
+        </section>
       )}
     </div>
   );

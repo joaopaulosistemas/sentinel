@@ -50,7 +50,7 @@ export function AppShell({ children }: AppShellProps) {
             onClick={() => navigate('/ranking')}
             href="#"
           >
-            Painel consolidado
+            Ranking
           </SideNavLink>
           <SideNavLink
             isActive={location.pathname.startsWith('/findings')}
