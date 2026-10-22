@@ -24,3 +24,11 @@ export function useAudit(id: number) {
     refetchInterval: (query) => (query.state.data && isActive(query.state.data) ? POLL_MS : false),
   });
 }
+
+export function useFixPlan(auditId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['fixPlan', auditId],
+    queryFn: () => api.getFixPlan(auditId),
+    enabled: enabled && auditId > 0,
+  });
+}
