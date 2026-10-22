@@ -11,6 +11,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { useAudit } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
+import { JourneySteps } from '../../components/JourneySteps';
 import { FindingsTable } from '../../components/FindingsTable';
 import { useFindings } from '../../hooks/useFindings';
 import { useAuditStore } from '../../store/useAuditStore';
@@ -99,6 +100,9 @@ export function FindingsPage() {
 
   return (
     <div style={{ padding: '2rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <JourneySteps current={4} />
+      </div>
       <h1 style={{ fontSize: '1.75rem', fontWeight: 600, marginBottom: '1.5rem' }}>
         Findings
         {auditId > 0 && (

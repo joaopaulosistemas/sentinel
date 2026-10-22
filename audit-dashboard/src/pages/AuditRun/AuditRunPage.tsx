@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAudit } from '../../hooks/useAuditRuns';
+import { JourneySteps } from '../../components/JourneySteps';
 import { useAuditStore } from '../../store/useAuditStore';
 import type { AnalyzerProgressStatus, Severity } from '../../types';
 import {
@@ -89,9 +90,7 @@ export function AuditRunPage() {
   return (
     <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div>
-        <p style={{ fontSize: '0.75rem', color: '#525252' }}>
-          Etapa 3 de 5 · Acompanhar a execução
-        </p>
+        <JourneySteps current={done ? 3 : 2} />
         <h1 style={{ fontSize: '1.75rem', fontWeight: 400, margin: '0.25rem 0' }}>
           {run.systemName} · Auditoria #{run.id}
         </h1>
@@ -141,9 +140,7 @@ export function AuditRunPage() {
 
       {done && (
         <Tile>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
-            Etapa 4 de 5 · Resultado
-          </h2>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Resultado</h2>
           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div>
               <div style={{ fontSize: '3rem', fontWeight: 300, lineHeight: 1 }}>{run.riskScore?.overall ?? '—'}</div>

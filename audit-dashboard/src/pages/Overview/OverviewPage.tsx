@@ -13,6 +13,7 @@ import {
 } from '@carbon/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { JourneySteps } from '../../components/JourneySteps';
 import { RecentAudits } from '../../components/RecentAudits';
 import { ScoreGauge } from '../../components/ScoreGauge';
 import { StartAuditModal } from '../../components/StartAuditModal';
@@ -55,6 +56,9 @@ export function OverviewPage() {
 
   return (
     <div style={{ padding: '2rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <JourneySteps current={0} />
+      </div>
       <h1 style={{ marginBottom: '1.5rem', fontSize: '1.75rem', fontWeight: 600 }}>
         Visão Geral
       </h1>

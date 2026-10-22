@@ -92,6 +92,27 @@ public class SystemResource {
     }
 
     /**
+     * Atualiza os dados cadastrais do sistema. O agendamento e o perfil têm endpoints próprios.
+     */
+    @PUT
+    @Path("/{id}")
+    @Transactional
+    @Operation(summary = "Atualizar sistema", description = "Altera nome, descrição, repositório, stack, equipe e (se informado) o perfil de regras")
+    public SystemSummaryResponse updateSystem(@PathParam("id") Long id, @Valid CreateSystemRequest request) {
+        AuditedSystem system = systemRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        system.setName(request.getName());
+        system.setDescription(request.getDescription());
+        system.setRepoUrl(request.getRepoUrl());
+        system.setStack(request.getStack());
+        system.setTeam(request.getTeam());
+        if (request.getProfile() != null) {
+            system.setProfile(validProfile(request.getProfile()));
+        }
+        return toSummary(system);
+    }
+
+    /**
      * Busca um sistema específico pelo ID.
      */
     @GET
@@ -227,6 +248,8 @@ public class SystemResource {
         dto.setScheduledBranch(system.effectiveScheduledBranch());
         dto.setAuditOnPush(Boolean.TRUE.equals(system.getAuditOnPush()));
         dto.setProfile(system.effectiveProfile());
+        dto.setRepoUrl(system.getRepoUrl());
+        dto.setDescription(system.getDescription());
 
         List<AuditRun> runs = auditRunRepository.findBySystemId(system.getId());
         runs.stream()

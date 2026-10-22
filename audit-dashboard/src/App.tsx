@@ -5,6 +5,7 @@ import { FindingsPage } from './pages/Findings/FindingsPage';
 import { OverviewPage } from './pages/Overview/OverviewPage';
 import { RankingPage } from './pages/Ranking/RankingPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
+import { SystemsPage } from './pages/Systems/SystemsPage';
 import { SystemDetailPage } from './pages/SystemDetail/SystemDetailPage';
 
 export function App() {
@@ -12,7 +13,7 @@ export function App() {
     <AppShell>
       <Routes>
         <Route path="/" element={<OverviewPage />} />
-        <Route path="/systems" element={<OverviewPage />} />
+        <Route path="/systems" element={<SystemsPage />} />
         <Route path="/systems/:systemId" element={<SystemDetailPage />} />
         <Route path="/audits/:auditId" element={<AuditRunPage />} />
         <Route path="/ranking" element={<RankingPage />} />

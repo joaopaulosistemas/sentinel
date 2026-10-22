@@ -29,6 +29,17 @@ export interface SystemSummaryResponse {
   auditOnPush?: boolean | null;
   /** Perfil de regras do sistema; vazio/nulo = "default" */
   profile?: string | null;
+  repoUrl?: string | null;
+  description?: string | null;
+}
+
+export interface SystemRequest {
+  name: string;
+  description: string;
+  repoUrl: string;
+  stack: Stack;
+  team: string;
+  profile?: string;
 }
 
 export interface ProfileInfo {
