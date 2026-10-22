@@ -20,7 +20,12 @@ public final class FindingsOverview {
     private FindingsOverview() {}
 
     /** Achados de uma auditoria concluída, já ligados ao sistema dela. */
-    public record Source(Long systemId, String systemName, Long auditId, List<Finding> findings) {}
+    public record Source(Long systemId, String systemName, Long auditId, List<Finding> findings,
+                         String stack, java.time.LocalDateTime auditedAt) {
+        public Source(Long systemId, String systemName, Long auditId, List<Finding> findings) {
+            this(systemId, systemName, auditId, findings, null, null);
+        }
+    }
 
     public record Filter(Long systemId, Severity severity, Category category, FindingStatus status,
                          boolean onlyNew, boolean includeSuppressed) {}
@@ -34,16 +39,21 @@ public final class FindingsOverview {
 
         for (Source s : sources) {
             long n = 0;
+            long critical = 0;
+            long high = 0;
             for (Finding f : s.findings()) {
                 if (!matches(f, filter)) {
                     continue;
                 }
                 n++;
+                if (f.getSeverity() == Severity.CRITICAL) critical++;
+                if (f.getSeverity() == Severity.HIGH) high++;
                 if (filter.systemId() == null || filter.systemId().equals(s.systemId())) {
                     all.add(new FindingsOverviewDto.Item(s.systemId(), s.systemName(), s.auditId(), FindingMapper.toResponse(f)));
                 }
             }
-            counts.put(s.systemId(), new FindingsOverviewDto.SystemCount(s.systemId(), s.systemName(), s.auditId(), n));
+            counts.put(s.systemId(), new FindingsOverviewDto.SystemCount(s.systemId(), s.systemName(), s.auditId(), n,
+                    s.stack(), critical, high, s.auditedAt()));
         }
 
         // Os mais graves primeiro; empate resolvido por sistema e local, para a ordem não mudar entre chamadas.

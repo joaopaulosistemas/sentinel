@@ -56,6 +56,11 @@ public class AuditProgressTracker {
         String phase = FILA;
         final Map<String, AnalyzerProgress> analyzers = new LinkedHashMap<>();
         final List<Event> events = new ArrayList<>();
+        String repoUrl;
+        long filesRead;
+        long linesOfCode;
+        /** Achados por severidade de cada analisador concluído; a soma é o resultado parcial. */
+        final Map<String, Map<String, Integer>> severities = new LinkedHashMap<>();
     }
 
     public void queued(Long auditId) {
@@ -77,6 +82,18 @@ public class AuditProgressTracker {
         mirror(auditId, s);
     }
 
+    /** Repositório clonado e tamanho do que será analisado. */
+    public void sourceStats(Long auditId, String repoUrl, long filesRead, long linesOfCode) {
+        State s = state(auditId);
+        if (s == null) return;
+        synchronized (s) {
+            s.repoUrl = repoUrl;
+            s.filesRead = filesRead;
+            s.linesOfCode = linesOfCode;
+        }
+        mirror(auditId, s);
+    }
+
     /** Registra os analisadores previstos (já com os que não vão rodar), na ordem em que aparecem na tela. */
     public void planned(Long auditId, List<AnalyzerProgress> initial) {
         State s = state(auditId);
@@ -86,7 +103,7 @@ public class AuditProgressTracker {
             Map<String, AnalyzerProgress> ordered = new LinkedHashMap<>();
             for (AnalyzerProgress a : initial) {
                 AnalyzerProgress current = s.analyzers.get(a.name());
-                ordered.put(a.name(), current != null ? current : a);
+                ordered.put(a.name(), current != null ? current : withDescription(a));
             }
             s.analyzers.clear();
             s.analyzers.putAll(ordered);
@@ -101,6 +118,18 @@ public class AuditProgressTracker {
     }
 
     public void analyzerFinished(Long auditId, String name, String status, int findings, long durationMs, String note) {
+        analyzerFinished(auditId, name, status, findings, durationMs, note, Map.of());
+    }
+
+    /** Como acima, guardando também os achados do analisador por severidade (resultado parcial). */
+    public void analyzerFinished(Long auditId, String name, String status, int findings, long durationMs, String note,
+                                 Map<String, Integer> bySeverity) {
+        State st = state(auditId);
+        if (st != null && bySeverity != null) {
+            synchronized (st) {
+                st.severities.put(name, Map.copyOf(bySeverity));
+            }
+        }
         String msg = "FALHOU".equals(status)
                 ? name + " falhou" + (note == null ? "" : ": " + note)
                 : name + " concluído: " + findings + (findings == 1 ? " achado" : " achados");
@@ -172,7 +201,18 @@ public class AuditProgressTracker {
     }
 
     private static AuditProgressDto toDto(State s) {
-        return new AuditProgressDto(s.phase, List.copyOf(s.analyzers.values()), List.copyOf(s.events));
+        Map<String, Integer> total = new LinkedHashMap<>();
+        for (Map<String, Integer> one : s.severities.values()) {
+            one.forEach((sev, n) -> total.merge(sev, n, Integer::sum));
+        }
+        return new AuditProgressDto(s.phase, List.copyOf(s.analyzers.values()), List.copyOf(s.events),
+                s.repoUrl, s.filesRead, s.linesOfCode, total);
+    }
+
+    private static AnalyzerProgress withDescription(AnalyzerProgress a) {
+        if (a.description() != null && !a.description().isBlank()) return a;
+        return new AnalyzerProgress(a.name(), a.status(), a.findings(), a.durationMs(), a.note(),
+                AnalyzerCatalog.describe(a.name()));
     }
 
     /** Andamento de uma auditoria que roda em outra réplica. */
@@ -205,7 +245,10 @@ public class AuditProgressTracker {
         State s = state(auditId);
         if (s == null) return;
         synchronized (s) {
-            s.analyzers.put(name, new AnalyzerProgress(name, status, findings, durationMs, note));
+            AnalyzerProgress before = s.analyzers.get(name);
+            String description = before != null && before.description() != null && !before.description().isBlank()
+                    ? before.description() : AnalyzerCatalog.describe(name);
+            s.analyzers.put(name, new AnalyzerProgress(name, status, findings, durationMs, note, description));
             if (message != null) log(s, message);
         }
         mirror(auditId, s);

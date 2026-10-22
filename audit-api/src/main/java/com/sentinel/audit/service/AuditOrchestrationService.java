@@ -209,6 +209,7 @@ public class AuditOrchestrationService {
 
     private void executeAudit(Long auditRunId) {
         Path clonedPath = null;
+        String commitSha = null;
         try {
             AuditContext context = markRunning(auditRunId);
             progress.queued(auditRunId);
@@ -217,6 +218,9 @@ public class AuditOrchestrationService {
 
             clonedPath = ingestionService.cloneRepository(context.repoUrl(), context.branch(), null);
             checkNotCancelled(auditRunId);
+            SourceSizer.Stats sizing = SourceSizer.stats(clonedPath);
+            commitSha = ingestionService.headCommit(clonedPath);
+            progress.sourceStats(auditRunId, context.repoUrl(), sizing.files(), sizing.lines());
             evidenceStager.stage(context.systemName(), context.repoUrl(), clonedPath);
 
             // Referência leve apenas para os analisadores vincularem os findings;
@@ -234,10 +238,10 @@ public class AuditOrchestrationService {
             // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
             progress.phase(auditRunId, AuditProgressTracker.PONTUACAO, "Análise concluída: " + allFindings.size() + " achados; calculando a nota");
             FindingLifecycleService.apply(allFindings, loadBaselineSafely(auditRunId));
-            long linesOfCode = SourceSizer.countLines(clonedPath);
+            long linesOfCode = sizing.lines();
             RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
             progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
-            persistResultsAndComplete(auditRunId, allFindings, riskScore, linesOfCode);
+            persistResultsAndComplete(auditRunId, allFindings, riskScore, linesOfCode, commitSha);
             saveSbomSafely(auditRunId, context, clonedPath);
             saveContextSafely(auditRunId, clonedPath, analysis.runs());
 
@@ -310,7 +314,7 @@ public class AuditOrchestrationService {
                         progress.analyzerStarted(runId, analyzer.getName());
                         AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
                         progress.analyzerFinished(runId, analyzer.getName(), "OK", r.findings().size(),
-                                r.duration() == null ? 0 : r.duration().toMillis(), null);
+                                r.duration() == null ? 0 : r.duration().toMillis(), null, severityCounts(r.findings()));
                         return new Outcome(r, null);
                     }, executor)
                     .exceptionally(error -> {
@@ -352,6 +356,17 @@ public class AuditOrchestrationService {
                 throw new IllegalStateException("Falha inesperada aguardando um analisador", e.getCause());
             }
         }
+    }
+
+    /** Achados por severidade (nome da severidade → quantidade), para o resultado parcial na tela. */
+    private static java.util.Map<String, Integer> severityCounts(List<Finding> findings) {
+        java.util.Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+        for (Finding f : findings) {
+            if (f.getSeverity() != null) {
+                counts.merge(f.getSeverity().name(), 1, Integer::sum);
+            }
+        }
+        return counts;
     }
 
     private void checkNotCancelled(Long auditRunId) {
@@ -554,7 +569,7 @@ public class AuditOrchestrationService {
     }
 
     @Transactional
-    void persistResultsAndComplete(Long auditRunId, List<Finding> findings, RiskScore riskScore, long linesOfCode) {
+    void persistResultsAndComplete(Long auditRunId, List<Finding> findings, RiskScore riskScore, long linesOfCode, String commitSha) {
         AuditRun run = auditRunRepository.findById(auditRunId);
         if (run == null) {
             throw new IllegalStateException("Auditoria " + auditRunId + " não encontrada ao persistir resultados");
@@ -572,6 +587,7 @@ public class AuditOrchestrationService {
 
         run.setRiskScore(riskScore);
         run.setLinesOfCode(linesOfCode);
+        run.setCommitSha(commitSha);
         run.setStatus(AuditStatus.COMPLETED);
         run.setCompletedAt(LocalDateTime.now());
     }

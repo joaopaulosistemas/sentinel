@@ -31,7 +31,14 @@ public final class SourceSizer {
     private SourceSizer() {
     }
 
+    /** Tamanho do código analisado: arquivos considerados e linhas não vazias. */
+    public record Stats(long files, long lines) {}
+
     public static long countLines(Path root) {
+        return stats(root).lines();
+    }
+
+    public static Stats stats(Path root) {
         long[] total = {0};
         int[] files = {0};
         try {
@@ -75,6 +82,6 @@ public final class SourceSizer {
         } catch (IOException | RuntimeException e) {
             // devolve o que contou até aqui
         }
-        return total[0];
+        return new Stats(files[0], total[0]);
     }
 }

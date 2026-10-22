@@ -166,10 +166,37 @@ public class IngestionService {
         }
     }
 
+    /** SHA do commit em que o clone está, ou nulo se não for possível descobrir. */
+    public String headCommit(Path repoDir) {
+        if (repoDir == null) {
+            return null;
+        }
+        try {
+            Process process = new ProcessBuilder("git", "-C", repoDir.toString(), "rev-parse", "HEAD")
+                    .redirectErrorStream(true).start();
+            if (!process.waitFor(10, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return null;
+            }
+            String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            return process.exitValue() == 0 && out.matches("[0-9a-f]{7,64}") ? out : null;
+        } catch (IOException e) {
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
+    }
+
     // ------------------------------------------------------------------ verificação rápida
 
     /** Resultado da verificação de um repositório antes de cadastrá-lo ou auditá-lo. */
-    public record RepoCheck(boolean reachable, String defaultBranch, Boolean branchFound, String message) {}
+    public record RepoCheck(boolean reachable, String defaultBranch, Boolean branchFound, String message, Long fileCount) {
+
+        public RepoCheck(boolean reachable, String defaultBranch, Boolean branchFound, String message) {
+            this(reachable, defaultBranch, branchFound, message, null);
+        }
+    }
 
     private static final long CHECK_TIMEOUT_SECONDS = 20;
 
@@ -215,7 +242,8 @@ public class IngestionService {
             }
             String defaultBranch = parseDefaultBranch(output);
             Boolean branchFound = branch == null || branch.isBlank() ? null : branchListed(output, branch);
-            return new RepoCheck(true, defaultBranch, branchFound, null);
+            String target = branch != null && !branch.isBlank() && Boolean.TRUE.equals(branchFound) ? branch : defaultBranch;
+            return new RepoCheck(true, defaultBranch, branchFound, null, countFiles(uri.toString(), target, sendToken ? token : null));
         } catch (IOException e) {
             return new RepoCheck(false, null, null, "Não foi possível executar o git neste servidor");
         } catch (InterruptedException e) {
@@ -223,6 +251,47 @@ public class IngestionService {
             return new RepoCheck(false, null, null, "Verificação interrompida");
         } finally {
             deleteQuietly(logFile);
+        }
+    }
+
+    /**
+     * Conta os arquivos da branch sem baixar o conteúdo (clone raso, sem blobs, só a árvore). Melhor esforço: se
+     * demorar mais que o limite ou falhar, devolve nulo e a verificação segue sem o número.
+     */
+    Long countFiles(String repoUrl, String branch, String token) {
+        Path dir = null;
+        try {
+            Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
+            dir = basePath.resolve("count-" + UUID.randomUUID()).normalize();
+            List<String> clone = new ArrayList<>(List.of("git", "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
+                    "clone", "--depth", "1", "--filter=blob:none", "--no-checkout", "--single-branch"));
+            if (branch != null && !branch.isBlank()) {
+                clone.addAll(List.of("--branch", branch));
+            }
+            clone.addAll(List.of("--", repoUrl, dir.toString()));
+            ProcessBuilder pb = new ProcessBuilder(clone).redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            configureEnvironment(pb.environment(), token);
+            Process cloneProc = pb.start();
+            if (!cloneProc.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS) || cloneProc.exitValue() != 0) {
+                cloneProc.destroyForcibly();
+                return null;
+            }
+            Process ls = new ProcessBuilder("git", "-C", dir.toString(), "ls-tree", "-r", "--name-only", "HEAD")
+                    .redirectErrorStream(true).start();
+            long count;
+            try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(ls.getInputStream(), StandardCharsets.UTF_8))) {
+                count = reader.lines().count();
+            }
+            ls.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            return count;
+        } catch (IOException | RuntimeException e) {
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } finally {
+            cleanupDirectory(dir);
         }
     }
 

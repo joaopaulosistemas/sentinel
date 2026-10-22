@@ -23,6 +23,18 @@ public class AuditRunResponse {
     private String errorMessage;
     /** Só vem preenchido enquanto a auditoria está em execução. */
     private AuditProgressDto progress;
+    private String triggeredBy;
+    /** Perfil de regras do sistema (o efetivo, "default" quando não há). */
+    private String profile;
+    private String commitSha;
+    private Long linesOfCode;
+    /** Achados ativos (sem os suprimidos). */
+    private Long totalFindings;
+    /** Novos desde a auditoria anterior e resolvidos desde ela; nulos quando não há anterior ou não foi calculado. */
+    private Integer newFindings;
+    private Integer resolvedFindings;
+    private Long previousAuditId;
+    private Double scoreDelta;
 
     public AuditRunResponse() {
     }
@@ -121,5 +133,77 @@ public class AuditRunResponse {
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public String getTriggeredBy() {
+        return triggeredBy;
+    }
+
+    public void setTriggeredBy(String triggeredBy) {
+        this.triggeredBy = triggeredBy;
+    }
+
+    public String getProfile() {
+        return profile;
+    }
+
+    public void setProfile(String profile) {
+        this.profile = profile;
+    }
+
+    public String getCommitSha() {
+        return commitSha;
+    }
+
+    public void setCommitSha(String commitSha) {
+        this.commitSha = commitSha;
+    }
+
+    public Long getLinesOfCode() {
+        return linesOfCode;
+    }
+
+    public void setLinesOfCode(Long linesOfCode) {
+        this.linesOfCode = linesOfCode;
+    }
+
+    public Long getTotalFindings() {
+        return totalFindings;
+    }
+
+    public void setTotalFindings(Long totalFindings) {
+        this.totalFindings = totalFindings;
+    }
+
+    public Integer getNewFindings() {
+        return newFindings;
+    }
+
+    public void setNewFindings(Integer newFindings) {
+        this.newFindings = newFindings;
+    }
+
+    public Integer getResolvedFindings() {
+        return resolvedFindings;
+    }
+
+    public void setResolvedFindings(Integer resolvedFindings) {
+        this.resolvedFindings = resolvedFindings;
+    }
+
+    public Long getPreviousAuditId() {
+        return previousAuditId;
+    }
+
+    public void setPreviousAuditId(Long previousAuditId) {
+        this.previousAuditId = previousAuditId;
+    }
+
+    public Double getScoreDelta() {
+        return scoreDelta;
+    }
+
+    public void setScoreDelta(Double scoreDelta) {
+        this.scoreDelta = scoreDelta;
     }
 }

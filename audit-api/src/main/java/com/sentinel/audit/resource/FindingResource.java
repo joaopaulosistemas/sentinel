@@ -75,7 +75,8 @@ public class FindingResource {
             }
             AuditRun run = latest.get(0);
             sources.add(new FindingsOverview.Source(system.getId(), system.getName(), run.getId(),
-                    findingRepository.findByAuditRunId(run.getId())));
+                    findingRepository.findByAuditRunId(run.getId()),
+                    system.getStack() == null ? null : system.getStack().name(), run.getCompletedAt()));
         }
         return FindingsOverview.build(sources,
                 new FindingsOverview.Filter(systemId, severity, category, status, onlyNew, includeSuppressed), limit, offset);
