@@ -75,6 +75,34 @@ export interface AuditRunResponse {
   startedAt: string;
   completedAt: string | null;
   errorMessage?: string | null;
+  /** Só vem enquanto a auditoria está em execução */
+  progress?: AuditProgress | null;
+}
+
+export type AuditPhase = 'FILA' | 'CLONE' | 'ANALISE' | 'PONTUACAO' | 'RELATORIO';
+
+export type AnalyzerProgressStatus =
+  | 'ESPERANDO'
+  | 'EXECUTANDO'
+  | 'OK'
+  | 'FALHOU'
+  | 'INDISPONIVEL'
+  | 'NAO_SUPORTADO'
+  | 'SUBSTITUIDO'
+  | 'SEM_EVIDENCIA';
+
+export interface AnalyzerProgress {
+  name: string;
+  status: AnalyzerProgressStatus;
+  findings: number;
+  durationMs: number;
+  note: string | null;
+}
+
+export interface AuditProgress {
+  phase: AuditPhase;
+  analyzers: AnalyzerProgress[];
+  events: Array<{ at: string; message: string }>;
 }
 
 export interface FindingResponse {

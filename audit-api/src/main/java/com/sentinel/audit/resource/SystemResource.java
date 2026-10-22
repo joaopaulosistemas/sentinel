@@ -18,6 +18,7 @@ import com.sentinel.audit.repository.FindingSuppressionRepository;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.dto.TrendPoint;
+import com.sentinel.audit.service.AuditProgressTracker;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -39,6 +40,9 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Systems", description = "Gerenciamento de sistemas auditados")
 public class SystemResource {
+
+    @Inject
+    AuditProgressTracker progressTracker;
 
     @Inject
     PackRegistry packRegistry;
@@ -265,6 +269,9 @@ public class SystemResource {
         }
 
         dto.setFindingsSummary(findingRepository.countBySeverityForRun(run.getId()));
+        if (run.getStatus() == AuditStatus.RUNNING || run.getStatus() == AuditStatus.PENDING) {
+            progressTracker.snapshot(run.getId()).ifPresent(dto::setProgress);
+        }
         return dto;
     }
 }

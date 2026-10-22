@@ -6,7 +6,11 @@ import {
   Pagination,
 } from '@carbon/react';
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
+import { api } from '../../api/client';
+import { useAudit } from '../../hooks/useAuditRuns';
+import { useSystems } from '../../hooks/useSystems';
 import { FindingsTable } from '../../components/FindingsTable';
 import { useFindings } from '../../hooks/useFindings';
 import { useAuditStore } from '../../store/useAuditStore';
@@ -47,10 +51,36 @@ const statusItems: DropdownItem<FindingStatus>[] = [
 ];
 
 export function FindingsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const auditIdFromQuery = Number(searchParams.get('auditId') ?? '0');
   const storeAuditId = useAuditStore((s) => s.selectedAuditId);
+  const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
   const auditId = auditIdFromQuery > 0 ? auditIdFromQuery : (storeAuditId ?? 0);
+
+  const { data: audit } = useAudit(auditId);
+  const { data: systems } = useSystems();
+  const [switching, setSwitching] = useState<string | null>(null);
+  const currentSystem = systems?.find((sys) => sys.name === audit?.systemName) ?? null;
+
+  // Trocar de sistema leva à última auditoria concluída dele.
+  const pickSystem = async (systemId: number) => {
+    setSwitching(null);
+    const runs = await queryClient.fetchQuery({
+      queryKey: ['auditRuns', systemId],
+      queryFn: () => api.getAuditRuns(systemId),
+    });
+    const latest = runs
+      .filter((r) => r.status === 'COMPLETED')
+      .sort((a, b) => b.id - a.id)[0];
+    if (!latest) {
+      setSwitching('Este sistema ainda não tem auditoria concluída.');
+      return;
+    }
+    setSelectedAudit(latest.id);
+    setSearchParams({ auditId: String(latest.id) });
+    setPage(1);
+  };
 
   const [severityFilter, setSeverityFilter] = useState<Severity | undefined>(undefined);
   const [categoryFilter, setCategoryFilter] = useState<Category | undefined>(undefined);
@@ -73,10 +103,14 @@ export function FindingsPage() {
         Findings
         {auditId > 0 && (
           <span style={{ fontSize: '1rem', color: '#6f6f6f', marginLeft: '0.75rem' }}>
-            — Auditoria #{auditId}
+            — {audit?.systemName ? `${audit.systemName} · ` : ''}Auditoria #{auditId}
           </span>
         )}
       </h1>
+
+      {switching && (
+        <InlineNotification kind="warning" title="Sem resultado" subtitle={switching} style={{ marginBottom: '1rem' }} />
+      )}
 
       {auditId === 0 && (
         <InlineNotification
@@ -96,6 +130,18 @@ export function FindingsPage() {
           flexWrap: 'wrap',
         }}
       >
+        <Dropdown
+          id="system-filter"
+          label="Sistema"
+          titleText="Sistema"
+          items={systems ?? []}
+          itemToString={(item) => item?.name ?? ''}
+          selectedItem={currentSystem}
+          onChange={({ selectedItem }) => {
+            if (selectedItem) void pickSystem(selectedItem.id);
+          }}
+          style={{ minWidth: '240px' }}
+        />
         <Dropdown
           id="severity-filter"
           label="Severidade"
@@ -161,7 +207,7 @@ export function FindingsPage() {
 
       {/* Content */}
       {isLoading && auditId > 0 ? (
-        <DataTableSkeleton columnCount={6} rowCount={10} />
+        <DataTableSkeleton columnCount={7} rowCount={10} />
       ) : error ? (
         <InlineNotification
           kind="error"
@@ -170,7 +216,7 @@ export function FindingsPage() {
         />
       ) : auditId > 0 ? (
         <>
-          <FindingsTable findings={paginated} />
+          <FindingsTable findings={paginated} systemName={audit?.systemName} />
           <Pagination
             totalItems={totalItems}
             pageSize={PAGE_SIZE}

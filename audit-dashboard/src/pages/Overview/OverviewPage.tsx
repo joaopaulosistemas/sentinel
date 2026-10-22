@@ -2,7 +2,6 @@ import {
   Button,
   DataTableSkeleton,
   InlineNotification,
-  Modal,
   Table,
   TableBody,
   TableCell,
@@ -10,23 +9,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TextInput,
   Tile,
 } from '@carbon/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../../api/client';
+import { RecentAudits } from '../../components/RecentAudits';
 import { ScoreGauge } from '../../components/ScoreGauge';
+import { StartAuditModal } from '../../components/StartAuditModal';
 import { useSystems } from '../../hooks/useSystems';
 import { useAuditStore } from '../../store/useAuditStore';
 import type { SystemSummaryResponse } from '../../types';
-
-interface TriggerModalState {
-  open: boolean;
-  system: SystemSummaryResponse | null;
-  branch: string;
-}
 
 const stackLabels: Record<string, string> = {
   JAVA: 'Java',
@@ -39,24 +31,10 @@ const stackLabels: Record<string, string> = {
 
 export function OverviewPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const setSelectedSystem = useAuditStore((s) => s.setSelectedSystem);
   const { data: systems, isLoading, error } = useSystems();
 
-  const [modal, setModal] = useState<TriggerModalState>({
-    open: false,
-    system: null,
-    branch: 'main',
-  });
-
-  const triggerMutation = useMutation({
-    mutationFn: (vars: { systemId: number; branch: string }) =>
-      api.triggerAudit({ ...vars, triggeredBy: 'dashboard-user' }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['systems'] });
-      setModal({ open: false, system: null, branch: 'main' });
-    },
-  });
+  const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
 
   if (isLoading) return <DataTableSkeleton columnCount={7} rowCount={5} />;
 
@@ -117,6 +95,8 @@ export function OverviewPage() {
           <ScoreGauge score={avgScore} size="lg" />
         </Tile>
       </div>
+
+      <RecentAudits systems={systems ?? []} />
 
       {/* Systems Table */}
       <TableContainer title="Sistemas" description="Todos os sistemas cadastrados no Sentinel Audit Tool">
@@ -179,7 +159,7 @@ export function OverviewPage() {
                   <Button
                     kind="ghost"
                     size="sm"
-                    onClick={() => setModal({ open: true, system, branch: 'main' })}
+                    onClick={() => setAuditTarget(system)}
                   >
                     Nova Auditoria
                   </Button>
@@ -190,41 +170,7 @@ export function OverviewPage() {
         </Table>
       </TableContainer>
 
-      {/* Trigger Audit Modal */}
-      <Modal
-        open={modal.open}
-        modalHeading={`Nova Auditoria — ${modal.system?.name ?? ''}`}
-        primaryButtonText="Iniciar"
-        secondaryButtonText="Cancelar"
-        primaryButtonDisabled={triggerMutation.isPending}
-        onRequestClose={() => setModal({ open: false, system: null, branch: 'main' })}
-        onRequestSubmit={() => {
-          if (modal.system) {
-            triggerMutation.mutate({ systemId: modal.system.id, branch: modal.branch });
-          }
-        }}
-      >
-        <TextInput
-          id="branch-input"
-          labelText="Branch"
-          value={modal.branch}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setModal((prev) => ({ ...prev, branch: e.target.value }))
-          }
-        />
-        {triggerMutation.isError && (
-          <InlineNotification
-            kind="error"
-            title="Erro ao iniciar auditoria"
-            subtitle={
-              triggerMutation.error instanceof Error
-                ? triggerMutation.error.message
-                : 'Erro desconhecido'
-            }
-            style={{ marginTop: '1rem' }}
-          />
-        )}
-      </Modal>
+      <StartAuditModal system={auditTarget} onClose={() => setAuditTarget(null)} />
     </div>
   );
 }

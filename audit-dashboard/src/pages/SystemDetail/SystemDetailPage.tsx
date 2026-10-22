@@ -5,7 +5,9 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { StartAuditModal } from '../../components/StartAuditModal';
 import { DiffSummary } from '../../components/DiffSummary';
 import { InsightsPanel } from '../../components/InsightsPanel';
 import { ProfileForm } from '../../components/ProfileForm';
@@ -60,6 +62,7 @@ export function SystemDetailPage() {
   const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
 
   const id = Number(systemId);
+  const [starting, setStarting] = useState(false);
   const { data: system, isLoading: loadingSystem, error: systemError } = useSystem(id);
   const { data: auditRuns, isLoading: loadingRuns } = useAuditRuns(id);
 
@@ -97,7 +100,11 @@ export function SystemDetailPage() {
         <h1 style={{ fontSize: '1.75rem', fontWeight: 600, margin: 0 }}>{system.name}</h1>
         <Tag type="blue">{stackLabels[system.stack]}</Tag>
         <Tag type="warm-gray">{system.team}</Tag>
+        <Button size="sm" style={{ marginLeft: 'auto' }} onClick={() => setStarting(true)}>
+          Nova auditoria
+        </Button>
       </div>
+      <StartAuditModal system={starting ? system : null} onClose={() => setStarting(false)} />
 
       {/* Score section */}
       <div
@@ -227,6 +234,11 @@ export function SystemDetailPage() {
                     >
                       {run.errorMessage}
                     </span>
+                  )}
+                  {(run.status === 'PENDING' || run.status === 'RUNNING') && (
+                    <Button kind="ghost" size="sm" style={{ marginLeft: 'auto' }} onClick={() => navigate(`/audits/${run.id}`)}>
+                      Acompanhar
+                    </Button>
                   )}
                   {run.status === 'COMPLETED' && (
                     <Button

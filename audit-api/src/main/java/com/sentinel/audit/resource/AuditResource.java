@@ -18,6 +18,8 @@ import com.sentinel.audit.repository.FindingRepository;
 import com.sentinel.audit.service.AuditRequestService;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.service.ReportService;
+import com.sentinel.audit.service.AuditProgressTracker;
+import com.sentinel.audit.model.AuditStatus;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -38,6 +40,9 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Audits", description = "Execução e consulta de auditorias de código")
 public class AuditResource {
+
+    @Inject
+    AuditProgressTracker progressTracker;
 
     @Inject
     InsightsService insightsService;
@@ -197,6 +202,9 @@ public class AuditResource {
         }
 
         dto.setFindingsSummary(findingRepository.countBySeverityForRun(run.getId()));
+        if (run.getStatus() == AuditStatus.RUNNING || run.getStatus() == AuditStatus.PENDING) {
+            progressTracker.snapshot(run.getId()).ifPresent(dto::setProgress);
+        }
         return dto;
     }
 }
