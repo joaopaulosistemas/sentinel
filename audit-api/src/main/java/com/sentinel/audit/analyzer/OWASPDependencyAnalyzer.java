@@ -224,7 +224,8 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
     /**
      * Uma versão é vulnerável se for menor que a versão corrigida da <i>sua</i> linha de release
      * (mesmo major.minor). Se a linha não tiver correção listada, é vulnerável quando for anterior
-     * à <b>maior</b> versão corrigida conhecida (ex.: log4j-core 2.14.1 &lt; 2.17.1).
+     * à <b>maior</b> versão corrigida conhecida <i>do mesmo major</i> (ex.: log4j-core 2.14.1 &lt; 2.17.1; node-fetch
+     * 2.7.0 não é vulnerável, pois 2.6.7 já corrigiu o major 2). Sem correção no major, vale a maior de todas.
      */
     static boolean isVulnerable(String version, List<String> fixedVersions) {
         int[] v = parseVersion(version);
@@ -232,6 +233,7 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
             return false;
         }
         int[] highestFix = null;
+        int[] highestFixSameMajor = null;
         for (String fixed : fixedVersions) {
             int[] f = parseVersion(fixed);
             if (f.length >= 2 && v.length >= 2 && f[0] == v[0] && f[1] == v[1]) {
@@ -240,8 +242,13 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
             if (highestFix == null || compare(f, highestFix) > 0) {
                 highestFix = f;
             }
+            if (f.length >= 1 && f[0] == v[0]
+                    && (highestFixSameMajor == null || compare(f, highestFixSameMajor) > 0)) {
+                highestFixSameMajor = f;
+            }
         }
-        return highestFix != null && compare(v, highestFix) < 0;
+        int[] reference = highestFixSameMajor != null ? highestFixSameMajor : highestFix;
+        return reference != null && compare(v, reference) < 0;
     }
 
     /** Extrai os componentes numéricos iniciais ("5.3.18.RELEASE" → [5,3,18]; "2.13.4.2" → [2,13,4,2]). */
