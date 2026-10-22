@@ -5,6 +5,7 @@ import {
   HeaderNavigation,
   HeaderMenuItem,
   SkipToContent,
+  Theme,
 } from '@carbon/react';
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -28,6 +29,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <>
+      <Theme theme="g100">
       <Header aria-label="Sentinel Audit Tool">
         <SkipToContent />
         <HeaderName href="#" prefix="Sentinel" onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
@@ -52,8 +54,9 @@ export function AppShell({ children }: AppShellProps) {
           v{__APP_VERSION__}
         </span>
       </Header>
+      </Theme>
 
-      <Content>{children}</Content>
+      <Content style={{ background: '#f4f4f4', minHeight: '100vh' }}>{children}</Content>
     </>
   );
 }
