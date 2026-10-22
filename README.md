@@ -7,7 +7,7 @@
 
 ## Objetivo
 
-> Mapa completo de módulos, pacotes e classes, com desenhos macro e micro: [`docs/arquitetura/ARQUITETURA.md`](docs/arquitetura/ARQUITETURA.md).
+> **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [evidências offline](docs/evidencias/README.md)
 
 Realizar uma **auditoria técnica completa dos projetos Sicoob**, identificando:
 
@@ -543,8 +543,8 @@ semgrep --test --config audit-rules/packs/core-quality/rules audit-rules/packs/c
 ## Pacotes de regras, perfis e arquitetura (plug and play)
 
 As regras não ficam mais no código: são **pacotes** (pastas com um `pack.yml`) que você adiciona, atualiza ou remove sem recompilar.
-Vêm prontos em `audit-rules/packs/`: `core-security` (30 regras Semgrep), `core-spring` (14, Spring Boot e JPA), `core-persistencia` (12: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
-`core-quality` (41, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (28: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
+Vêm prontos em `audit-rules/packs/`: `core-security` (35 regras Semgrep), `core-spring` (16, Spring Boot e JPA), `core-persistencia` (12: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
+`core-quality` (41, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (29: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
 
 ### Estrutura de um pacote
 
@@ -822,3 +822,7 @@ Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dad
   - Os dois só abrem PR; o merge é manual. O placar com critérios verificáveis está em `docs/evolucao/PLACAR.md` (hoje 2,0; meta 2,5). **O Sentinel ainda não está no nível profissional**; os agentes relatam evidências e lacunas e não declaram esse nível.
 - **Pacotes**: `core-quality` 1.0.2 (`@ts-nocheck` em código gerado deixa de ser achado; `any` como argumento genérico) e `core-security` 1.0.1 (JWT com segredo fixo ou padrão em JS/TS). As regras do Angular no ESLint só valem quando o projeto depende de `@angular/*`.
 - **Limite do GitHub Actions**: repositório privado no plano gratuito tem 2000 min/mês; sem minutos os jobs não iniciam. Veja o orçamento em `docs/evolucao/AGENTE.md`.
+- **Quando os agentes rodam**: Descoberta toda segunda; Evolution quando o CI da `main` falha e às quartas (backlog); CI completo com calibração aos domingos e em PRs `evolucao/*`. Pushes só de documentação não disparam o CI.
+- **Descoberta, rodada 2**: 4 repositórios novos (`audit-rules/calibracao/descobertos.txt`), 4 PRs verdes mesclados. A revisão manual soma 10 achados em 4 repositórios (`precisao.md`); isso é indicativo, não uma medição estatística de precisão.
+- **Mapa da arquitetura**: `docs/arquitetura/ARQUITETURA.md` descreve API, dashboard, CLI, pacotes de regras e automação, com 13 diagramas e a ligação entre funcionalidades e componentes.
+- **Situação**: placar 2,0 (meta 2,5). O CI da `main` após os merges #4–#7 ainda não foi confirmado, pois os minutos do GitHub Actions acabaram no mês.
