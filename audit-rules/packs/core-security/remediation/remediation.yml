@@ -103,6 +103,22 @@
   refs:
     - "https://developer.mozilla.org/pt-BR/docs/Web/HTTP/CORS"
 
+- key: "log-segredo-js"
+  summary: "Não registre senha, token ou segredo; registre só um identificador que não sirva como credencial."
+  before: "console.log('Token:', token);"
+  after: "this.logger.log(`Redefinição de senha solicitada para o usuário ${user.id}`);"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+    - "https://cwe.mitre.org/data/definitions/532.html"
+
+- key: "cors-aberto-js"
+  summary: "Liste as origens confiáveis; origin: true e enableCors() sem argumentos aceitam qualquer origem."
+  before: "app.enableCors({ origin: '*' });"
+  after: "app.enableCors({ origin: (process.env.CORS_ORIGINS ?? '').split(',') });   // lista explícita por ambiente"
+  refs:
+    - "https://docs.nestjs.com/security/cors"
+    - "https://developer.mozilla.org/pt-BR/docs/Web/HTTP/CORS"
+
 - key: "csrf-disabled"
   summary: "Mantenha o CSRF ativo quando houver sessão/cookies; desligue só em API stateless com token no header."
   before: "http.csrf().disable();"
@@ -130,6 +146,20 @@
   after: "Algorithm.HMAC256(System.getenv(\"JWT_SECRET\"));"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
+- key: "jwt-chave-fixa-js"
+  summary: "O segredo de assinatura não pode estar no código: leia de cofre/variável e permita rotação."
+  before: "jwt.sign(payload, 'segredo');"
+  after: "jwt.sign(payload, process.env.JWT_SECRET!);   // valide a variável na inicialização"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
+- key: "jwt-segredo-padrao-js"
+  summary: "Não use valor padrão para segredo: se a variável faltar, interrompa a inicialização."
+  before: "const s = process.env.JWT_SECRET || 'padrao';"
+  after: "const s = process.env.JWT_SECRET; if (!s) throw new Error('JWT_SECRET ausente');"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
 
 - key: "crypto-hash-fraco"
   summary: "Use SHA-256 ou superior; para senhas use bcrypt/scrypt/Argon2 (hash lento com salt)."

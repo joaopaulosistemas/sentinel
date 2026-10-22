@@ -1,0 +1,30 @@
+rules:
+  - id: sentinel-log-segredo-js
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: $LOGGER.$M(..., $ARG, ...)
+              - metavariable-regex:
+                  metavariable: $ARG
+                  regex: "^[^'\"`]*(?:[Pp]ass(?:word|wd)|[Ss]enha|[Ss]ecret|[Tt]oken|[Aa]pi_?[Kk]ey|[Aa]uthorization|[Pp]rivate_?[Kk]ey|[Cc]redential|PASSWORD|SECRET|TOKEN|API_?KEY)(?![a-z])"
+          - patterns:
+              - pattern: $LOGGER.$M(..., `...${$INTERP}...`, ...)
+              - metavariable-regex:
+                  metavariable: $INTERP
+                  regex: ".*(?:[Pp]ass(?:word|wd)|[Ss]enha|[Ss]ecret|[Tt]oken|[Aa]pi_?[Kk]ey|[Aa]uthorization|[Pp]rivate_?[Kk]ey|[Cc]redential|PASSWORD|SECRET|TOKEN|API_?KEY)(?![a-z])"
+      - metavariable-regex:
+          metavariable: $LOGGER
+          regex: ^(console|(this\.)?_?logger|log)$
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(log|info|debug|warn|error|verbose|trace)$
+    message: >
+      Segredo, token ou senha enviado ao log (CWE-532). Logs costumam ir para agregadores e para quem tem acesso de
+      leitura, e o valor vale como credencial enquanto não expirar. Remova o valor do log ou registre só um
+      identificador (por exemplo, os 4 últimos caracteres ou o id do usuário).
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+      owasp: A09:2021 - Security Logging and Monitoring Failures

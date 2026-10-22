@@ -1,0 +1,97 @@
+name: Release
+
+# Gera o release quando uma tag semântica (v0.x.y) é criada, mas só se o CI estiver verde no mesmo commit.
+# Publica: imagens Docker (GHCR), zip do CLI, SBOM e as versões dos pacotes de regras nas notas.
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  conferir-ci:
+    name: CI verde neste commit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Esperar o CI do commit e exigir sucesso
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 1 60); do
+            linha="$(gh run list -R "$GITHUB_REPOSITORY" --workflow CI --commit "$GITHUB_SHA" --limit 1 --json status,conclusion -q '.[0] | "\(.status) \(.conclusion)"')"
+            case "$linha" in
+              "completed success") echo "CI verde"; exit 0;;
+              completed*) echo "::error title=Release bloqueado::o CI deste commit terminou como: $linha"; exit 1;;
+            esac
+            sleep 30
+          done
+          echo "::error title=Release bloqueado::não achei uma execução concluída do CI para $GITHUB_SHA"; exit 1
+
+  publicar:
+    name: Imagens, CLI, SBOM e notas
+    needs: conferir-ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Versão
+        id: v
+        run: echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Empacotar o CLI (os testes já passaram no CI deste commit)
+        run: |
+          mvn -B -ntp -DskipTests -pl audit-cli -am package
+          mkdir -p dist-release
+          cp audit-cli/target/sentinel-audit-cli.jar dist-release/
+          cp docs/integracao/github-actions.yml docs/integracao/pre-commit-config.yaml dist-release/
+          (cd dist-release && zip -q "../sentinel-audit-cli-${{ steps.v.outputs.tag }}.zip" *)
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Imagens Docker
+        run: |
+          dono="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          tag="${{ steps.v.outputs.tag }}"
+          docker build -f audit-api/Dockerfile -t "ghcr.io/$dono/sentinel-audit-api:$tag" -t "ghcr.io/$dono/sentinel-audit-api:latest" .
+          docker build -t "ghcr.io/$dono/sentinel-audit-dashboard:$tag" -t "ghcr.io/$dono/sentinel-audit-dashboard:latest" audit-dashboard
+          docker push --all-tags "ghcr.io/$dono/sentinel-audit-api"
+          docker push --all-tags "ghcr.io/$dono/sentinel-audit-dashboard"
+
+      - name: SBOM (CycloneDX) do código-fonte
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: sentinel-sbom-${{ steps.v.outputs.tag }}.cdx.json
+          upload-artifact: false
+
+      - name: Notas e release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.v.outputs.tag }}"
+          {
+            echo "## Pacotes de regras nesta versão"
+            bash scripts/versoes-pacotes.sh
+            echo
+            echo "## Imagens"
+            dono="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+            echo "- \`ghcr.io/$dono/sentinel-audit-api:$tag\`"
+            echo "- \`ghcr.io/$dono/sentinel-audit-dashboard:$tag\`"
+          } > notas-extra.md
+          gh release create "$tag" --generate-notes --notes-file notas-extra.md \
+            "sentinel-audit-cli-$tag.zip" "sentinel-sbom-$tag.cdx.json"

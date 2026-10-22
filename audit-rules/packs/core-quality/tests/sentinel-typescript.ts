@@ -94,3 +94,15 @@ export function armazenamento(t: string): void {
   // ok: sentinel-ts-token-em-localstorage
   localStorage.setItem('tema', 'escuro');
 }
+
+// ruleid: sentinel-ts-any-explicito
+const mapa: Record<string, any> = {};
+
+// ruleid: sentinel-ts-any-explicito
+const pares: Map<any, string> = new Map();
+
+// ok: sentinel-ts-any-explicito
+const tipado: Record<string, unknown> = {};
+
+// ok: sentinel-ts-any-explicito
+const resultado = chamar(a, anyValue, b);

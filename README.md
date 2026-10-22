@@ -7,6 +7,8 @@
 
 ## Objetivo
 
+> **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [evidências offline](docs/evidencias/README.md)
+
 Realizar uma **auditoria técnica completa dos projetos Sicoob**, identificando:
 
 - **Problemas reais** — vulnerabilidades, falhas de segurança, código defeituoso
@@ -57,11 +59,12 @@ Repositório Git
 │                                                             │
 │  ┌──────────────┐  ┌───────────────┐  ┌─────────────────┐  │
 │  │  Ingestion   │→ │   Analyzers   │→ │  Risk Scoring   │  │
-│  │  Git Clone   │  │  Secrets      │  │  Segurança 35%  │  │
-│  │  (https)     │  │  OWASP Deps   │  │  Qualidade 25%  │  │
+│  │  Git Clone   │  │  Secrets      │  │  Segurança 30%  │  │
+│  │  (https)     │  │  Deps (SCA)   │  │  Qualidade 20%  │  │
 │  │              │  │  Arquitetura  │  │  Arquit.   20%  │  │
 │  └──────────────┘  │  Semgrep SAST │  │  Deps      10%  │  │
-│                    └───────────────┘  │  Observab. 10%  │  │
+│                    │  + 10 outros  │  │  Observab. 10%  │  │
+│                    └───────────────┘  │  Perform.  10%  │  │
 │                                       └─────────────────┘  │
 │                              │                              │
 │              ┌───────────────┼───────────────┐             │
@@ -185,12 +188,12 @@ Este projeto foi construído durante o **Bobathon de Modernização Java** — u
 | **Backend** | Java + Quarkus | 21 + 3.15 |
 | **Persistência** | PostgreSQL + Hibernate Panache | 16 (compose) / 18 (nativo) |
 | **API** | Jakarta EE / JAX-RS + OpenAPI | 10 / 3.1 |
-| **Frontend** | React + TypeScript | 18 + 5.5 |
+| **Frontend** | React + TypeScript + Vite + Vitest | 18 + 5.5 + 5.4 + 2.1 |
 | **Design System** | IBM Carbon Design System | 1.71 |
-| **SAST** | Semgrep (opcional) | 1.x |
-| **Segurança de Deps** | Lista interna de CVEs (SCA simplificado) | — |
+| **SAST** | Semgrep (opcional; fixado na imagem Docker e no CI) | 1.172.0 |
+| **Segurança de Deps** | Trivy (preferido) ou SCA interno com consulta ao OSV.dev; OWASP Dependency-Check opcional | — |
 | **Containers** | Docker / Podman + Compose | — |
-| **CI/CD** | CLI Java (fat-jar) | — |
+| **CI/CD** | CLI Java (fat-jar); GitHub Actions do próprio projeto (`ci.yml`, `release.yml`, agentes) | — |
 
 ---
 
@@ -468,25 +471,30 @@ sentinel-audit-tool/
 │       └── resource/               ← Endpoints REST
 │
 ├── audit-rules/
-│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, market-tools, ts-clean-code, core-architecture) e profiles/
+│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, core-corporativo, market-tools, ts-clean-code, core-architecture) e profiles/
 │   ├── optional/                   ← Regras que duplicam os analisadores Java (desativadas)
 │   ├── lint/eslint/                ← Configuração do ESLint usada pelo analisador
 │   └── bin/sentinel-pack           ← Ferramenta de linha de comando para autores de pacotes
 │
-├── deploy/helm/sentinel/           ← Chart Helm (API, dashboard, PostgreSQL opcional) — não validado com `helm lint`
+├── deploy/helm/sentinel/           ← Chart Helm (API, dashboard, PostgreSQL opcional) — `helm lint` e `helm template` rodam no CI
 │
 ├── audit-dashboard/                ← Frontend React 18 + IBM Carbon DS
 │   ├── Dockerfile + nginx.conf.template
 │   └── src/
-│       ├── pages/                  ← Overview, SystemDetail, Findings, Reports
-│       ├── components/             ← AppShell, RiskBadge, ScoreGauge, FindingsTable
-│       ├── hooks/                  ← TanStack Query (useSystems, useFindings...)
+│       ├── pages/                  ← Overview, Ranking, SystemDetail, Findings, Reports
+│       ├── components/             ← Layout/AppShell, RiskBadge, ScoreGauge, FindingsTable, InsightsPanel, TrendChart, SuppressModal, ProfileForm, ScheduleForm
+│       ├── hooks/                  ← TanStack Query (useSystems, useFindings, useAuditRuns, useLifecycle)
 │       ├── store/                  ← Zustand (filtros, sistema selecionado)
 │       ├── api/                    ← Client tipado para o backend
 │       └── types/                  ← Interfaces TypeScript
 │
-└── audit-cli/                      ← CLI Java para integração CI/CD
-    └── src/main/java/.../AuditCli.java
+├── audit-cli/                      ← CLI Java para integração CI/CD
+│   └── src/main/java/.../AuditCli.java
+│
+├── .github/workflows/              ← ci.yml, evolucao.yml, descoberta.yml, release.yml
+├── .github/agente/                 ← instruções dos agentes Sentinel Evolution e Sentinel Descoberta
+├── scripts/                        ← e2e, calibração, descoberta de repositórios, relatórios, anotações de CI
+└── docs/evolucao/                  ← PLACAR, LOG, calibração, precisão medida, relatórios das rodadas, guia dos agentes
 ```
 
 ---
@@ -536,8 +544,8 @@ semgrep --test --config audit-rules/packs/core-quality/rules audit-rules/packs/c
 ## Pacotes de regras, perfis e arquitetura (plug and play)
 
 As regras não ficam mais no código: são **pacotes** (pastas com um `pack.yml`) que você adiciona, atualiza ou remove sem recompilar.
-Vêm prontos em `audit-rules/packs/`: `core-security` (30 regras Semgrep), `core-spring` (14, Spring Boot e JPA), `core-persistencia` (12: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
-`core-quality` (41, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (28: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
+Vêm prontos em `audit-rules/packs/`: `core-security` (35 regras Semgrep), `core-spring` (16, Spring Boot e JPA), `core-persistencia` (12: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
+`core-quality` (41, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (29: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
 
 ### Estrutura de um pacote
 
@@ -805,6 +813,17 @@ Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dad
 
 - **CI do projeto** (`.github/workflows/ci.yml`): API/CLI, testes Semgrep dos pacotes e dashboard. Modelos para o projeto auditado em `docs/integracao/` (GitHub Actions com gate de código novo e SARIF, pre-commit).
 - **Calibração em repositórios públicos** (`docs/evolucao/calibracao.md`): corrigidos 2 falsos positivos (`SELECT *` em `EXISTS`, `<html>` sem `lang` em fragmentos Thymeleaf), 1 falha de detecção (desserialização) e nova regra `sentinel-command-injection-shell`. O Semgrep passou a ignorar bibliotecas de terceiros embutidas (`libs`, `vendor`, `*.min.js`).
-- **Dashboard**: 14 testes (vitest + Testing Library) e versão no cabeçalho.
+- **Dashboard**: 16 testes (vitest + Testing Library, inclui acessibilidade com axe) e versão no cabeçalho.
 - **Verificador de regras SQL/XML** (`audit-rules/scripts/testar-regex-sql.py`), porque o `semgrep --test` não avalia essas regras.
 - Placar e histórico em `docs/evolucao/LOG.md`.
+- **Verificação em CI real**: Maven (suíte Java), imagens Docker da API e do dashboard, `helm lint`/`helm template`, teste ponta a ponta (Postgres + API + auditoria do petclinic) e calibração em repositórios públicos rodam no GitHub Actions.
+- **Agentes de evolução** (`docs/evolucao/AGENTE.md`):
+  - **Sentinel Evolution** lê o CI com falha e abre PRs `evolucao/*` com a correção, testes positivo e negativo e entrada no LOG; uma vez por semana, com o CI verde, persegue o backlog do placar.
+  - **Sentinel Descoberta** escolhe repositórios públicos novos, audita com a API real, revisa uma amostra à mão, cruza os resultados e propõe regras, ajustes e analisadores, além de um relatório por rodada (`docs/evolucao/relatorios/`) e a taxa de acerto medida por regra (`docs/evolucao/precisao.md`).
+  - Os dois só abrem PR; o merge é manual. O placar com critérios verificáveis está em `docs/evolucao/PLACAR.md` (hoje 2,0; meta 2,5). **O Sentinel ainda não está no nível profissional**; os agentes relatam evidências e lacunas e não declaram esse nível.
+- **Pacotes**: `core-quality` 1.0.2 (`@ts-nocheck` em código gerado deixa de ser achado; `any` como argumento genérico) e `core-security` 1.0.1 (JWT com segredo fixo ou padrão em JS/TS). As regras do Angular no ESLint só valem quando o projeto depende de `@angular/*`.
+- **Limite do GitHub Actions**: repositório privado no plano gratuito tem 2000 min/mês; sem minutos os jobs não iniciam. Veja o orçamento em `docs/evolucao/AGENTE.md`.
+- **Quando os agentes rodam**: Descoberta toda segunda; Evolution quando o CI da `main` falha e às quartas (backlog); CI completo com calibração aos domingos e em PRs `evolucao/*`. Pushes só de documentação não disparam o CI.
+- **Descoberta, rodada 2**: 4 repositórios novos (`audit-rules/calibracao/descobertos.txt`), 4 PRs verdes mesclados. A revisão manual soma 10 achados em 4 repositórios (`precisao.md`); isso é indicativo, não uma medição estatística de precisão.
+- **Mapa da arquitetura**: `docs/arquitetura/ARQUITETURA.md` descreve API, dashboard, CLI, pacotes de regras e automação, com 13 diagramas e a ligação entre funcionalidades e componentes.
+- **Situação**: placar 2,0 (meta 2,5). O CI da `main` após os merges #4–#7 ainda não foi confirmado, pois os minutos do GitHub Actions acabaram no mês.

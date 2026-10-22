@@ -96,13 +96,19 @@ export default tseslint.config(
     },
     languageOptions: jsxA11y.flatConfigs.recommended.languageOptions,
   },
-  // Angular: código (componentes, diretivas, serviços)
-  {
-    files: ["**/*.ts"],
-    ignores: ["**/*.spec.ts"],
-    extends: [...angular.configs.tsRecommended],
-    processor: angular.processInlineTemplates,
-  },
+  // Angular: código (componentes, diretivas, serviços). O EslintAnalyzer define SENTINEL_ESLINT_ANGULAR=0 quando o
+  // projeto não depende de @angular/*; sem isso, NestJS/Express receberiam regras como prefer-inject (injeção por
+  // construtor é o padrão do Nest) e a nota seria distorcida (calibração: 112 achados em 3 repositórios sem Angular).
+  ...(process.env.SENTINEL_ESLINT_ANGULAR === "0"
+    ? []
+    : [
+        {
+          files: ["**/*.ts"],
+          ignores: ["**/*.spec.ts"],
+          extends: [...angular.configs.tsRecommended],
+          processor: angular.processInlineTemplates,
+        },
+      ]),
   // HTML puro (páginas, index.html): acessibilidade e boas práticas. Templates Angular usam a regra acima.
   {
     files: ["**/*.html"],
@@ -136,6 +142,21 @@ export default tseslint.config(
       "@html-eslint/no-inline-styles": "warn",
       "@html-eslint/no-accesskey-attrs": "warn",
       "@html-eslint/prefer-https": "warn",
+    },
+  },
+  // Templates de motor do servidor (Thymeleaf, Freemarker, JSP em pastas templates/fragments/views) são trechos
+  // de página, montados por um layout: não têm <html lang>, <title>, <meta> nem fecham todas as tags sozinhos.
+  // Calibração no spring-petclinic: 33 + 12 + 8 achados desse tipo.
+  {
+    files: ["**/templates/**/*.html", "**/fragments/**/*.html", "**/views/**/*.html"],
+    rules: {
+      "@html-eslint/require-lang": "off",
+      "@html-eslint/require-title": "off",
+      "@html-eslint/require-meta-viewport": "off",
+      "@html-eslint/require-meta-charset": "off",
+      "@html-eslint/require-closing-tags": "off",
+      "@html-eslint/no-multiple-h1": "off",
+      "@html-eslint/no-skip-heading-levels": "off",
     },
   },
   // Angular: templates, com acessibilidade

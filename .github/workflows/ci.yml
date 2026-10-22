@@ -3,7 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ["**/*.md", "docs/**", "evidencias/**"]   # só documentação: não gasta minutos
   pull_request:
+  schedule:
+    - cron: "41 7 * * 0"   # domingo: roda também a calibração pesada
+  workflow_dispatch:   # o agente Sentinel Evolution dispara o CI na branch evolucao/* que abriu
 
 permissions:
   contents: read
@@ -13,9 +17,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  mudancas:
+    name: O que mudou
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.f.outputs.backend }}
+      regras: ${{ steps.f.outputs.regras }}
+      dashboard: ${{ steps.f.outputs.dashboard }}
+      imagens: ${{ steps.f.outputs.imagens }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Só em PR: pula o que a mudança não toca. Push na main, agenda e execução manual rodam tudo
+      # (o release depende do CI completo da main).
+      - id: f
+        run: |
+          tudo() { for k in backend regras dashboard imagens; do echo "$k=true"; done >> "$GITHUB_OUTPUT"; }
+          if [ "${{ github.event_name }}" != "pull_request" ]; then tudo; exit 0; fi
+          arq="$(git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" || true)"
+          [ -z "$arq" ] && { tudo; exit 0; }
+          tem() { echo "$arq" | grep -qE "$1" && echo true || echo false; }
+          echo "backend=$(tem '^(audit-api/|audit-cli/|audit-rules/|pom\.xml|scripts/|\.github/)')" >> "$GITHUB_OUTPUT"
+          echo "regras=$(tem '^(audit-rules/|scripts/|\.github/)')" >> "$GITHUB_OUTPUT"
+          echo "dashboard=$(tem '^(audit-dashboard/|\.github/)')" >> "$GITHUB_OUTPUT"
+          echo "imagens=$(tem '^(audit-api/|audit-dashboard/|audit-rules/|deploy/|pom\.xml|docker-compose\.yml|scripts/|\.github/)')" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Escopo do CI::$(echo "$arq" | wc -l) arquivo(s) alterado(s)"
+
   backend:
     name: API, CLI e pacotes de regras
     runs-on: ubuntu-latest
+    needs: mudancas
+    if: needs.mudancas.outputs.backend == 'true'
+    timeout-minutes: 30
+    env:
+      SEMGREP_SEND_METRICS: "off"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -23,12 +60,22 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements-ci.txt
+      # alguns testes (PackToolTest, RulePlaygroundServiceTest) executam o Semgrep de verdade
+      - run: pip install -r scripts/requirements-ci.txt
       - name: Compilar e testar
         run: bash scripts/ci-anotar.sh "Maven" mvn -B -ntp verify
 
   regras:
     name: Testes Semgrep dos pacotes
     runs-on: ubuntu-latest
+    needs: mudancas
+    if: needs.mudancas.outputs.regras == 'true'
+    timeout-minutes: 15
     env:
       SEMGREP_SEND_METRICS: "off"
     steps:
@@ -36,32 +83,47 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install semgrep
+          cache: pip
+          cache-dependency-path: scripts/requirements-ci.txt
+      - run: pip install -r scripts/requirements-ci.txt
       - name: Rodar os testes de cada pacote
         run: |
-          set -e
+          falhas=0
+          anotar() {  # anotar <titulo> <arquivo-de-saida>: publica o final da saída como anotação de erro
+            local resumo
+            resumo="$(grep -E "✖|Missed|FALHOU|ERRO|rror" "$2" | head -20)"
+            [ -z "$resumo" ] && resumo="$(tail -20 "$2")"
+            resumo="${resumo//'%'/'%25'}"; resumo="${resumo//$'\n'/'%0A'}"
+            echo "::error title=$1::${resumo:0:3500}"
+          }
           for p in audit-rules/packs/*/; do
-            [ -d "$p/tests" ] && [ -d "$p/rules" ] || continue
-            echo "== $p"
-            # regras de SQL/XML (arquivos *-sql.yml) não são avaliadas pelo `semgrep --test`: têm verificador próprio
+            [ -d "${p}tests" ] && [ -d "${p}rules" ] || continue
             tmp=$(mktemp -d)
-            for f in "$p"rules/*.yml; do
+            for f in "${p}"rules/*.yml; do
               if [[ "$f" == *-sql.yml ]]; then
                 # regras de SQL/XML não são avaliadas pelo `semgrep --test`: têm verificador próprio
-                bash scripts/ci-anotar.sh "SQL $f" python3 audit-rules/scripts/testar-regex-sql.py "$f" "$p/tests"
+                if ! python3 audit-rules/scripts/testar-regex-sql.py "$f" "${p}tests" > "$tmp.sql.log" 2>&1; then
+                  anotar "SQL $f" "$tmp.sql.log"; falhas=1
+                fi
               else
                 cp "$f" "$tmp"/
               fi
             done
-            bash scripts/ci-anotar.sh "Semgrep $p" semgrep --test --metrics=off --disable-version-check --config "$tmp" "$p/tests"
-            rm -rf "$tmp"
+            if semgrep --test --metrics=off --disable-version-check --config "$tmp" "${p}tests" > "$tmp.log" 2>&1; then
+              echo "::notice title=Semgrep $p::passou"
+            else
+              anotar "Semgrep $p" "$tmp.log"; falhas=1
+            fi
+            rm -rf "$tmp" "$tmp.log" "$tmp.sql.log"
           done
-            semgrep --test --metrics=off --disable-version-check "${cfg[@]}" "$p/tests"
-          done
+          exit $falhas
 
   dashboard:
     name: Dashboard
     runs-on: ubuntu-latest
+    needs: mudancas
+    if: needs.mudancas.outputs.dashboard == 'true'
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: audit-dashboard
@@ -76,3 +138,113 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test --if-present
       - run: npm run build
+
+  imagens:
+    name: Imagens Docker e Helm
+    runs-on: ubuntu-latest
+    needs: mudancas
+    if: needs.mudancas.outputs.imagens == 'true'
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Cache das camadas da API
+        uses: actions/cache@v4
+        with:
+          path: /tmp/buildx-api
+          key: buildx-api-${{ hashFiles('audit-api/Dockerfile', 'pom.xml', 'audit-api/pom.xml', 'audit-cli/pom.xml', 'audit-rules/pom.xml') }}
+          restore-keys: buildx-api-
+      - name: Cache das camadas do dashboard
+        uses: actions/cache@v4
+        with:
+          path: /tmp/buildx-dash
+          key: buildx-dash-${{ hashFiles('audit-dashboard/Dockerfile', 'audit-dashboard/package-lock.json') }}
+          restore-keys: buildx-dash-
+      - name: Construir a imagem da API
+        run: |
+          if ! docker buildx build --load -f audit-api/Dockerfile -t sentinel-audit-api:ci --cache-from type=local,src=/tmp/buildx-api --cache-to type=local,dest=/tmp/buildx-api-novo,mode=max . > build-api.log 2>&1; then
+            r="$(grep -E "ERROR|error|failed|Failed" build-api.log | head -15)"; [ -z "$r" ] && r="$(tail -15 build-api.log)"
+            r="${r//'%'/'%25'}"; r="${r//$'\n'/'%0A'}"
+            echo "::error title=Imagem da API falhou::${r:0:3500}"; exit 1
+          fi
+      - name: Construir a imagem do dashboard
+        run: |
+          if ! docker buildx build --load -t sentinel-audit-dashboard:ci --cache-from type=local,src=/tmp/buildx-dash --cache-to type=local,dest=/tmp/buildx-dash-novo,mode=max audit-dashboard > build-dash.log 2>&1; then
+            r="$(grep -E "ERROR|error|failed|Failed" build-dash.log | head -15)"; [ -z "$r" ] && r="$(tail -15 build-dash.log)"
+            r="${r//'%'/'%25'}"; r="${r//$'\n'/'%0A'}"
+            echo "::error title=Imagem do dashboard falhou::${r:0:3500}"; exit 1
+          fi
+      - name: Trocar o cache de camadas pelo novo
+        run: |
+          [ -d /tmp/buildx-api-novo ] && rm -rf /tmp/buildx-api && mv /tmp/buildx-api-novo /tmp/buildx-api || true
+          [ -d /tmp/buildx-dash-novo ] && rm -rf /tmp/buildx-dash && mv /tmp/buildx-dash-novo /tmp/buildx-dash || true
+      - name: Teste ponta a ponta (API + Postgres + auditoria real)
+        run: bash scripts/e2e.sh
+      - uses: azure/setup-helm@v4
+      - name: Validar o chart Helm
+        run: |
+          if ! (helm lint deploy/helm/sentinel --set secrets.dbPassword=ci && helm template sentinel deploy/helm/sentinel --set secrets.dbPassword=ci > /dev/null) > helm.log 2>&1; then
+            r="$(tail -15 helm.log)"; r="${r//'%'/'%25'}"; r="${r//$'\n'/'%0A'}"
+            echo "::error title=Helm falhou::${r:0:3500}"; exit 1
+          fi
+
+  escopo-agente:
+    name: Escopo dos PRs do agente
+    runs-on: ubuntu-latest
+    # só vale para branches evolucao/*: o agente não pode mexer em CI, scripts de e2e nem em segredos
+    if: startsWith(github.head_ref || github.ref_name, 'evolucao/')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Conferir os arquivos alterados
+        run: |
+          base="origin/main"
+          proibidos="$(git diff --name-only "$base"...HEAD | grep -E '^(\.github/|scripts/(e2e|evolucao-entrada|ci-anotar)\.sh$|\.gitignore$|\.env)' || true)"
+          if [ -n "$proibidos" ]; then
+            r="${proibidos//$'\n'/%0A}"
+            echo "::error title=PR do agente mexeu em arquivo protegido::${r}"
+            exit 1
+          fi
+          echo "ok: nenhum arquivo protegido alterado"
+
+  calibracao:
+    name: Calibração em vários repositórios
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # pesado (~15 min): só semanalmente, sob demanda e nos PRs do agente (que mexem em regras); não em todo push
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'evolucao/'))
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Cache das camadas da API (só leitura; quem grava é o job de imagens)
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/buildx-api
+          key: buildx-api-${{ hashFiles('audit-api/Dockerfile', 'pom.xml', 'audit-api/pom.xml', 'audit-cli/pom.xml', 'audit-rules/pom.xml') }}
+          restore-keys: buildx-api-
+      - name: Construir a imagem da API
+        run: docker buildx build --load -f audit-api/Dockerfile -t sentinel-audit-api:ci --cache-from type=local,src=/tmp/buildx-api . > build-api.log 2>&1 || { tail -15 build-api.log; exit 1; }
+      - name: Auditar os repositórios de teste (e o próprio Sentinel)
+        env:
+          GIT_TOKEN: ${{ github.token }}
+        run: bash scripts/calibracao.sh
+      - name: Baixar o resultado da última execução verde da main
+        run: |
+          id="$(gh run list -R "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 1 --json databaseId -q '.[0].databaseId')"
+          mkdir -p anterior
+          if [ -n "$id" ]; then gh run download "$id" -R "$GITHUB_REPOSITORY" -n calibracao-historico -D anterior || echo "sem histórico anterior"; else echo "sem execução anterior"; fi
+      - name: Comparar e conferir as verdades conhecidas
+        run: python3 scripts/comparar-calibracao.py calibracao-saida anterior audit-rules/calibracao/esperado.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: calibracao-historico
+          path: calibracao-saida
+          retention-days: 90
+
