@@ -27,7 +27,7 @@ class FindingsOverviewTest {
     }
 
     private static final FindingsOverview.Filter NONE =
-            new FindingsOverview.Filter(null, null, null, null, false, false);
+            new FindingsOverview.Filter(null, java.util.Set.of(), null, null, false, false);
 
     private final List<FindingsOverview.Source> sources = List.of(
             new FindingsOverview.Source(1L, "api", 10L, List.of(
@@ -47,9 +47,34 @@ class FindingsOverviewTest {
     }
 
     @Test
+    void variasSeveridadesEResumoComCriticosEAltos() {
+        FindingsOverviewDto r = FindingsOverview.build(sources,
+                new FindingsOverview.Filter(null, java.util.Set.of(Severity.CRITICAL, Severity.HIGH), null, null, false, false), 20, 0);
+        assertEquals(3, r.total());
+        assertEquals(1, r.bySystem().get(0).critical());
+        assertEquals(1, r.bySystem().get(0).high());
+        assertEquals(1, r.bySystem().get(1).critical());
+        assertEquals(0, r.bySystem().get(1).high());
+
+        FindingsOverviewDto soAltos = FindingsOverview.build(sources,
+                new FindingsOverview.Filter(null, java.util.Set.of(Severity.HIGH), null, null, false, false), 20, 0);
+        assertEquals(1, soAltos.total());
+    }
+
+    @Test
+    void resumoTrazStackEDataDaAuditoria() {
+        java.time.LocalDateTime at = java.time.LocalDateTime.of(2026, 10, 22, 9, 0);
+        List<FindingsOverview.Source> one = List.of(new FindingsOverview.Source(1L, "api", 10L,
+                List.of(f(Severity.CRITICAL, "B.java", FindingStatus.OPEN, false)), "JAVA", at));
+        FindingsOverviewDto r = FindingsOverview.build(one, NONE, 20, 0);
+        assertEquals("JAVA", r.bySystem().get(0).stack());
+        assertEquals(at, r.bySystem().get(0).auditedAt());
+    }
+
+    @Test
     void filtroDeSistemaMantemOResumoDosOutros() {
         FindingsOverviewDto r = FindingsOverview.build(sources,
-                new FindingsOverview.Filter(2L, null, null, null, false, false), 20, 0);
+                new FindingsOverview.Filter(2L, java.util.Set.of(), null, null, false, false), 20, 0);
         assertEquals(1, r.total());
         assertEquals("portal", r.items().get(0).systemName());
         assertEquals(2, r.bySystem().get(0).count()); // api continua com seus 2 ativos no resumo
@@ -59,7 +84,7 @@ class FindingsOverviewTest {
     @Test
     void somenteNovosEPaginacao() {
         FindingsOverviewDto novos = FindingsOverview.build(sources,
-                new FindingsOverview.Filter(null, null, null, null, true, false), 20, 0);
+                new FindingsOverview.Filter(null, java.util.Set.of(), null, null, true, false), 20, 0);
         assertEquals(2, novos.total());
 
         FindingsOverviewDto pagina = FindingsOverview.build(sources, NONE, 2, 2);
@@ -72,7 +97,7 @@ class FindingsOverviewTest {
     @Test
     void suprimidosAparecemSoSePedidos() {
         FindingsOverviewDto r = FindingsOverview.build(sources,
-                new FindingsOverview.Filter(null, null, null, null, false, true), 20, 0);
+                new FindingsOverview.Filter(null, java.util.Set.of(), null, null, false, true), 20, 0);
         assertEquals(4, r.total());
     }
 }

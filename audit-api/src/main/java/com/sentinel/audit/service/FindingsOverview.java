@@ -27,8 +27,10 @@ public final class FindingsOverview {
         }
     }
 
-    public record Filter(Long systemId, Severity severity, Category category, FindingStatus status,
-                         boolean onlyNew, boolean includeSuppressed) {}
+    /** @param severities vazio ou nulo = qualquer severidade */
+    public record Filter(Long systemId, java.util.Set<Severity> severities, Category category, FindingStatus status,
+                         boolean onlyNew, boolean includeSuppressed) {
+    }
 
     public static FindingsOverviewDto build(List<Source> sources, Filter filter, int limit, int offset) {
         int safeLimit = Math.max(1, Math.min(limit, MAX_LIMIT));
@@ -70,7 +72,7 @@ public final class FindingsOverview {
 
     /** O resumo por sistema ignora o filtro de sistema (senão todos os outros apareceriam com zero). */
     private static boolean matches(Finding f, Filter filter) {
-        if (filter.severity() != null && f.getSeverity() != filter.severity()) return false;
+        if (filter.severities() != null && !filter.severities().isEmpty() && !filter.severities().contains(f.getSeverity())) return false;
         if (filter.category() != null && f.getCategory() != filter.category()) return false;
         if (filter.status() != null && f.getStatus() != filter.status()) return false;
         if (!filter.includeSuppressed() && filter.status() != FindingStatus.SUPPRESSED
