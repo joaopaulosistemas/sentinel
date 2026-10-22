@@ -10,25 +10,25 @@ const sys = (id: number, name: string, score: number | null, critical: number): 
 const list = [sys(1, 'a', 80, 0), sys(2, 'b', 40, 2), sys(3, 'c', null, 0), sys(4, 'd', 60, 5)];
 
 describe('ordenação do ranking', () => {
-  it('por nota põe o pior primeiro e o nunca auditado antes de todos', () => {
-    expect(sortSystems(list, 'nota').map((s) => s.name)).toEqual(['c', 'b', 'd', 'a']);
+  it('por nota põe a melhor primeiro e o nunca auditado por último', () => {
+    expect(sortSystems(list, 'nota').map((s) => s.name)).toEqual(['a', 'd', 'b', 'c']);
   });
   it('por críticos põe o maior número primeiro', () => {
-    expect(sortSystems(list, 'criticos').map((s) => s.name)).toEqual(['d', 'b', 'c', 'a']);
+    expect(sortSystems(list, 'criticos').map((s) => s.name)).toEqual(['d', 'b', 'a', 'c']);
   });
   it('não altera a lista original', () => {
     sortSystems(list, 'nota');
     expect(list.map((s) => s.name)).toEqual(['a', 'b', 'c', 'd']);
   });
 
-  it('por tendência põe as maiores quedas primeiro e quem não tem histórico por último', () => {
+  it('por tendência põe os maiores ganhos primeiro e quem não tem histórico por último', () => {
     const withDelta = [
       { ...sys(1, 'a', 80, 0), scoreDelta: 3 },
       { ...sys(2, 'b', 40, 2), scoreDelta: -4 },
       sys(3, 'c', null, 0),
       { ...sys(4, 'd', 60, 5), scoreDelta: 0 },
     ];
-    expect(sortSystems(withDelta, 'tendencia').map((s) => s.name)).toEqual(['b', 'd', 'a', 'c']);
+    expect(sortSystems(withDelta, 'tendencia').map((s) => s.name)).toEqual(['a', 'd', 'b', 'c']);
   });
 });
 
