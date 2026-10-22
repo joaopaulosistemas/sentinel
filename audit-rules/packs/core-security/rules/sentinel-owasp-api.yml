@@ -69,6 +69,28 @@ rules:
       cwe: "CWE-942: Permissive Cross-domain Policy with Untrusted Domains"
       owasp: A05:2021 - Security Misconfiguration
 
+  - id: sentinel-api-cors-aberto-js
+    pattern-either:
+      - pattern: '$APP.enableCors({..., origin: "*", ...})'
+      - pattern: '$APP.enableCors({..., origin: true, ...})'
+      - pattern: $APP.enableCors()
+      - pattern: 'cors({..., origin: "*", ...})'
+      - pattern: 'cors({..., origin: true, ...})'
+      - pattern: cors()
+      - pattern: 'NestFactory.create($MODULE, {..., cors: true, ...})'
+      - pattern: $RES.header("Access-Control-Allow-Origin", "*")
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", "*")
+      - pattern: $RES.set("Access-Control-Allow-Origin", "*")
+    message: >
+      CORS aberto para qualquer origem em Node/Nest/Express (OWASP API8 - Security Misconfiguration). `origin: true`
+      e a configuração padrão refletem a origem de quem chama, o que equivale ao curinga. Liste as origens permitidas.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-942: Permissive Cross-domain Policy with Untrusted Domains"
+      owasp: A05:2021 - Security Misconfiguration
+
   - id: sentinel-api-csrf-disabled
     pattern-either:
       - pattern: $H.csrf().disable()
