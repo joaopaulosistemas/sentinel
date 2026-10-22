@@ -14,7 +14,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { CheckIcon, CrossIcon, SpinnerIcon } from '../../components/StatusIcons';
-import { JourneySteps } from '../../components/JourneySteps';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { usePacks } from '../../hooks/useLifecycle';
 import { useSystems } from '../../hooks/useSystems';
@@ -117,7 +116,6 @@ export function SystemsPage() {
 
   return (
     <div style={{ padding: '1.5rem 2rem 3rem', display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 1440, margin: '0 auto' }}>
-      <JourneySteps current={0} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Sistemas</h1>

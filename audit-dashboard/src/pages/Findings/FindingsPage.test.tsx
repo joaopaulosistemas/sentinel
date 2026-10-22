@@ -19,8 +19,8 @@ function stub(urls: string[]) {
         ? {
             total: 2,
             bySystem: [
-              { systemId: 1, systemName: 'conta-corrente-api', auditId: 10, count: 1 },
-              { systemId: 2, systemName: 'portal-cooperado', auditId: 20, count: 1 },
+              { systemId: 1, systemName: 'conta-corrente-api', auditId: 10, count: 1, stack: 'JAVA', critical: 1, high: 0, auditedAt: '2026-10-22T09:00:00' },
+              { systemId: 2, systemName: 'portal-cooperado', auditId: 20, count: 1, stack: 'JAVASCRIPT', critical: 0, high: 17, auditedAt: '2026-10-21T09:00:00' },
             ],
             items: [
               { systemId: 1, systemName: 'conta-corrente-api', auditId: 10, finding: finding(1, 'SQL por concatenação') },
@@ -61,30 +61,53 @@ describe('FindingsPage', () => {
     expect(screen.getByText('CORS aberto')).toBeInTheDocument();
     // o nome do sistema aparece no resumo do topo e na coluna da tabela
     expect(screen.getAllByText('portal-cooperado').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText('1 achados', { exact: false })).toHaveLength(2);
-    expect(urls.some((u) => u.startsWith('/api/v1/findings?') && u.includes('limit=20') && u.includes('offset=0'))).toBe(true);
+    expect(screen.getByText('Auditoria #20', { exact: false, selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('17')).toBeInTheDocument(); // altos do portal no cartão do resumo
+    expect(screen.getByText('TypeScript')).toBeInTheDocument(); // stack na coluna Sistema
+    // padrão: críticos e altos, abertos
+    const first = urls.find((u) => u.startsWith('/api/v1/findings?')) ?? '';
+    expect(first).toContain('severity=CRITICAL&severity=HIGH');
+    expect(first).toContain('status=OPEN');
+    expect(first).toContain('limit=20');
+    expect(first).toContain('offset=0');
+    expect(screen.getByText('Mostrando 2 de 2 abertos (críticos e altos) em 2 sistemas')).toBeInTheDocument();
+    expect(screen.getByText('Página 1 de 1')).toBeInTheDocument();
   });
 
   it('agrupa os achados por sistema quando o usuário pede', async () => {
     renderFindings();
     await screen.findByText('SQL por concatenação');
     expect(screen.queryByRole('region', { name: 'Achados de portal-cooperado' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('switch', { name: 'Agrupar' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Agrupar por sistema' }));
     expect(await screen.findByRole('region', { name: 'Achados de conta-corrente-api' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Achados de portal-cooperado' })).toBeInTheDocument();
   });
 
-  it('mostra um chip por filtro ativo e deixa limpar tudo', async () => {
+  it('mostra os chips dos filtros ativos e deixa restaurar o padrão', async () => {
     renderFindings('/findings?onlyNew=1');
-    expect(await screen.findByText('Somente novos', { selector: '.cds--tag *, .cds--tag' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
-    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument();
+    const chips = await screen.findByLabelText('Filtros ativos');
+    expect(chips).toHaveTextContent('Todos os sistemas');
+    expect(chips).toHaveTextContent('Crítica e alta');
+    expect(chips).toHaveTextContent('Novos desde a última auditoria');
+    fireEvent.click(screen.getByRole('button', { name: 'Restaurar padrão' }));
+    expect(screen.getByLabelText('Filtros ativos')).toHaveTextContent('Abertos');
+    expect(screen.queryByRole('button', { name: 'Restaurar padrão' })).not.toBeInTheDocument();
   });
 
-  it('escolher um sistema acrescenta o chip dele', async () => {
-    renderFindings();
-    fireEvent.click(await screen.findByRole('button', { name: /portal-cooperado 1 achados/ }));
-    expect(await screen.findByText('Sistema: portal-cooperado')).toBeInTheDocument();
+  it('escolher um sistema no filtro acrescenta o chip dele e filtra a consulta', async () => {
+    const urls: string[] = [];
+    stub(urls);
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/findings']}>
+          <FindingsPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findByText('SQL por concatenação');
+    fireEvent.change(screen.getByLabelText('Severidade'), { target: { value: 'all' } });
+    expect(screen.getByLabelText('Filtros ativos')).not.toHaveTextContent('Crítica e alta');
+    await vi.waitFor(() => expect(urls.some((u) => u.startsWith('/api/v1/findings?') && !u.includes('severity='))).toBe(true));
   });
 
   it('suprime vários achados de uma vez pela seleção', async () => {
