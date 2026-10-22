@@ -17,3 +17,19 @@ export function useFindings(auditId: number, filter?: FindingsFilter) {
     enabled: auditId > 0,
   });
 }
+
+export interface OverviewFilter extends FindingsFilter {
+  systemId?: number;
+  limit: number;
+  offset: number;
+}
+
+/** Achados da última auditoria concluída de cada sistema, juntos. */
+export function useFindingsOverview(filter: OverviewFilter, enabled = true) {
+  return useQuery({
+    queryKey: ['findingsOverview', filter],
+    queryFn: () => api.getFindingsOverview(filter),
+    enabled,
+    placeholderData: (previous) => previous,
+  });
+}

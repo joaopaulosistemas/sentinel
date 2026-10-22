@@ -24,6 +24,8 @@ interface FindingsTableProps {
   findings: FindingResponse[];
   /** Sistema ao qual a auditoria pertence; mostrado em cada linha para não haver dúvida de onde vem o achado. */
   systemName?: string;
+  /** Sistema de cada achado, quando a lista mistura vários sistemas. Tem prioridade sobre systemName. */
+  systemOf?: (finding: FindingResponse) => { name: string; onClick?: () => void } | undefined;
 }
 
 type TagType = 'red' | 'warm-gray' | 'green' | 'purple';
@@ -64,12 +66,12 @@ type RowType = {
   _finding: FindingResponse;
 };
 
-export function FindingsTable({ findings, systemName }: FindingsTableProps) {
+export function FindingsTable({ findings, systemName, systemOf }: FindingsTableProps) {
   const [toSuppress, setToSuppress] = useState<FindingResponse | null>(null);
   const rows: RowType[] = findings.map((f) => ({
     id: String(f.id),
     severity: f.severity,
-    system: systemName ?? '',
+    system: systemOf?.(f)?.name ?? systemName ?? '',
     title: f.title,
     filePath: f.filePath,
     lineNumber: f.lineNumber,
@@ -123,7 +125,23 @@ export function FindingsTable({ findings, systemName }: FindingsTableProps) {
                         <TableCell>
                           <RiskBadge severity={finding.severity} />
                         </TableCell>
-                        <TableCell>{systemName ?? '—'}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const sys = systemOf?.(finding);
+                            if (sys?.onClick) {
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={sys.onClick}
+                                  style={{ background: 'none', border: 0, padding: 0, color: '#0f62fe', cursor: 'pointer', fontSize: 'inherit' }}
+                                >
+                                  {sys.name}
+                                </button>
+                              );
+                            }
+                            return sys?.name ?? systemName ?? '—';
+                          })()}
+                        </TableCell>
                         <TableCell>
                           {finding.title}{' '}
                           {finding.shadow === true && (

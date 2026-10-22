@@ -1,20 +1,35 @@
 package com.sentinel.audit.resource;
 
+import com.sentinel.audit.dto.FindingsOverviewDto;
 import com.sentinel.audit.dto.SuppressRequest;
+import com.sentinel.audit.model.AuditRun;
+import com.sentinel.audit.model.AuditedSystem;
+import com.sentinel.audit.model.Category;
+import com.sentinel.audit.model.FindingStatus;
+import com.sentinel.audit.model.Severity;
+import com.sentinel.audit.repository.AuditRunRepository;
+import com.sentinel.audit.repository.AuditedSystemRepository;
+import com.sentinel.audit.repository.FindingRepository;
+import com.sentinel.audit.service.FindingsOverview;
 import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.service.FindingLifecycleService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Ações sobre findings individuais. */
 @Path("/api/v1/findings")
@@ -25,6 +40,44 @@ public class FindingResource {
 
     @Inject
     FindingLifecycleService lifecycleService;
+
+    @Inject
+    AuditedSystemRepository systemRepository;
+
+    @Inject
+    AuditRunRepository auditRunRepository;
+
+    @Inject
+    FindingRepository findingRepository;
+
+    /**
+     * Achados de todos os sistemas juntos, da última auditoria concluída de cada um.
+     */
+    @GET
+    @Operation(summary = "Findings de todos os sistemas",
+            description = "Última auditoria concluída de cada sistema, com filtros, resumo por sistema e paginação")
+    public FindingsOverviewDto overview(
+            @QueryParam("systemId") Long systemId,
+            @QueryParam("severity") Severity severity,
+            @QueryParam("category") Category category,
+            @QueryParam("status") FindingStatus status,
+            @QueryParam("onlyNew") @DefaultValue("false") boolean onlyNew,
+            @QueryParam("includeSuppressed") @DefaultValue("false") boolean includeSuppressed,
+            @QueryParam("limit") @DefaultValue("20") int limit,
+            @QueryParam("offset") @DefaultValue("0") int offset) {
+        List<FindingsOverview.Source> sources = new ArrayList<>();
+        for (AuditedSystem system : systemRepository.listAll()) {
+            List<AuditRun> latest = auditRunRepository.findLatestCompleted(system.getId(), 1);
+            if (latest.isEmpty()) {
+                continue;
+            }
+            AuditRun run = latest.get(0);
+            sources.add(new FindingsOverview.Source(system.getId(), system.getName(), run.getId(),
+                    findingRepository.findByAuditRunId(run.getId())));
+        }
+        return FindingsOverview.build(sources,
+                new FindingsOverview.Filter(systemId, severity, category, status, onlyNew, includeSuppressed), limit, offset);
+    }
 
     /**
      * Retira o finding do score (falso positivo, risco aceito ou "não será corrigido"), com justificativa.

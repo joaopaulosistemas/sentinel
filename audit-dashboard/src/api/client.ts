@@ -5,6 +5,7 @@ import type {
   PacksResponse,
   Category,
   FindingResponse,
+  FindingsOverview,
   FixPlan,
   FindingStatus,
   Severity,
@@ -99,6 +100,26 @@ export const api = {
   },
 
   getFixPlan: (auditId: number) => apiFetch<FixPlan>(`/api/v1/audits/${auditId}/fix-plan`),
+
+  getFindingsOverview: (params: {
+    systemId?: number;
+    severity?: Severity;
+    category?: Category;
+    status?: FindingStatus;
+    onlyNew?: boolean;
+    includeSuppressed?: boolean;
+    limit: number;
+    offset: number;
+  }) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== false)
+          .map(([k, v]) => [k, String(v)]),
+      ) as Record<string, string>,
+    ).toString();
+    return apiFetch<FindingsOverview>(`/api/v1/findings?${qs}`);
+  },
 
   getDiff: (auditId: number) => apiFetch<AuditDiff>(`/api/v1/audits/${auditId}/diff`),
 
