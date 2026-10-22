@@ -106,7 +106,8 @@ def main():
     a = ap.parse_args()
     casos = carregar_gabarito(a.conjunto)
     tabela, media = medir(carregar_achados(a.achados), casos)
-    base = json.load(open(a.baseline)) if a.baseline and os.path.exists(a.baseline) else None
+    # a linha de base é do conjunto completo; nos subconjuntos ela só confundiria a leitura
+    base = json.load(open(a.baseline)) if a.baseline and a.conjunto == "todos" and os.path.exists(a.baseline) else None
     texto = markdown(tabela, media, base)
     print(texto)
     if a.markdown:
