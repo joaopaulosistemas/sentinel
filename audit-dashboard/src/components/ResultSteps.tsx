@@ -1,18 +1,27 @@
-import { Button, InlineNotification, SkeletonText, Tag } from '@carbon/react';
-import { useState } from 'react';
+import { InlineNotification, SkeletonText } from '@carbon/react';
+import { Link } from 'react-router-dom';
+import { Fragment, useState } from 'react';
 import { useFixPlan } from '../hooks/useAuditRuns';
 import type { AuditRunResponse, Category, Severity } from '../types';
 import { TARGET_SCORE, categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
 
 const toneColor = { good: '#198038', warn: '#8a6a00', bad: '#a2191f' } as const;
-const sevLabel: Record<Severity, string> = { CRITICAL: 'Crítica', HIGH: 'Alta', MEDIUM: 'Média', LOW: 'Baixa', INFO: 'Info' };
-const sevTag: Record<Severity, 'red' | 'magenta' | 'warm-gray' | 'gray' | 'blue'> = {
-  CRITICAL: 'red',
-  HIGH: 'magenta',
-  MEDIUM: 'warm-gray',
-  LOW: 'gray',
-  INFO: 'blue',
+const sevBadge: Record<Severity, { label: string; bg: string; fg: string }> = {
+  CRITICAL: { label: 'CRÍTICA', bg: '#a2191f', fg: '#ffffff' },
+  HIGH: { label: 'ALTA', bg: '#ff832b', fg: '#161616' },
+  MEDIUM: { label: 'MÉDIA', bg: '#f1c21b', fg: '#161616' },
+  LOW: { label: 'BAIXA', bg: '#c6c6c6', fg: '#161616' },
+  INFO: { label: 'INFO', bg: '#a6c8ff', fg: '#161616' },
 };
+
+/** Texto com trechos entre ** ** em negrito. */
+function Emphasis({ text }: { text: string }) {
+  return (
+    <>
+      {text.split('**').map((part, i) => (i % 2 === 1 ? <strong key={i} style={{ fontWeight: 600, color: '#161616' }}>{part}</strong> : <Fragment key={i}>{part}</Fragment>))}
+    </>
+  );
+}
 
 const scoreColor = (n: number) => (n >= TARGET_SCORE ? '#198038' : n >= 50 ? '#8a6a00' : '#a2191f');
 
@@ -35,29 +44,44 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
 
   const v = verdict(plan);
   const cats = categoriesByScore(run.riskScore);
-  const items = plan.items.filter((i) => category === null || i.category === category);
+  const items = plan.items.filter((i) => category === null || i.category === category).slice(0, 4);
   const box = { background: '#fff', border: '1px solid #e0e0e0', padding: '1.25rem 1.5rem' } as const;
   const eyebrow = { fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#525252' } as const;
 
   return (
     <div style={{ display: 'grid', gap: '1.5rem' }}>
       <section aria-labelledby="etapa-1" style={{ ...box, borderLeft: `4px solid ${toneColor[v.tone]}`, display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{ textAlign: 'center', minWidth: 110 }}>
-          <div style={{ fontSize: '3.5rem', lineHeight: 1, fontWeight: 300, color: toneColor[v.tone] }}>{Math.round(plan.scoreNow)}</div>
-          <div style={{ fontSize: '0.75rem', color: '#525252' }}>de 100 · meta {TARGET_SCORE}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
+          <span style={{ fontSize: 56, lineHeight: 1, fontWeight: 300, color: toneColor[v.tone] }}>{Math.round(plan.scoreNow)}</span>
+          <span style={{ fontSize: 12, color: '#525252' }}>
+            de 100
+            {run.scoreDelta != null && run.previousAuditId != null && (
+              <>
+                {' · '}
+                <span style={{ color: run.scoreDelta >= 0 ? '#198038' : '#a2191f', fontWeight: 600 }}>
+                  {run.scoreDelta >= 0 ? '+' : ''}{Math.round(run.scoreDelta)}
+                </span>{' '}
+                vs #{run.previousAuditId}
+              </>
+            )}
+          </span>
         </div>
-        <div style={{ flex: 1, minWidth: 260 }}>
-          <div id="etapa-1" style={eyebrow}>1 · Veredito</div>
-          <div style={{ fontSize: '1.25rem', margin: '0.25rem 0' }}>{v.headline}</div>
-          <div style={{ color: '#525252' }}>{v.detail}</div>
+        <div style={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span id="etapa-1" style={eyebrow}>Etapa 1 · Veredito</span>
+          <span style={{ fontSize: 20 }}><Emphasis text={v.headline} /></span>
+          <span style={{ color: '#525252' }}><Emphasis text={v.detail} /></span>
         </div>
-        <Button onClick={onOpenFindings}>Ver todos os achados</Button>
+        {plan.items.length > 0 && (
+          <a href="#criticos" style={{ height: 40, display: 'inline-flex', alignItems: 'center', padding: '0 20px', background: '#161616', color: '#fff', textDecoration: 'none' }}>
+            Ver o que corrigir primeiro
+          </a>
+        )}
       </section>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 7fr)', gap: '1.5rem' }}>
         <section aria-labelledby="etapa-2" style={{ ...box, display: 'grid', gap: '0.75rem', alignContent: 'start' }}>
           <div>
-            <div id="etapa-2" style={eyebrow}>2 · Onde está o risco</div>
+            <div id="etapa-2" style={eyebrow}>Etapa 2 · Onde está o risco</div>
             <div style={{ fontWeight: 600 }}>Por categoria, da pior para a melhor</div>
           </div>
           {cats.map((c) => {
@@ -70,7 +94,7 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
                 onClick={() => setCategory(active ? null : c.category)}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '130px 1fr 40px',
+                  gridTemplateColumns: '150px 1fr 40px',
                   gap: '0.75rem',
                   alignItems: 'center',
                   padding: '0.5rem 0.625rem',
@@ -89,13 +113,24 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
               </button>
             );
           })}
-          <span style={{ fontSize: '0.75rem', color: '#525252' }}>Clique em uma categoria para filtrar a lista ao lado.</span>
+          <span style={{ fontSize: '0.75rem', color: '#525252' }}>Clique numa categoria para filtrar a lista ao lado.</span>
         </section>
 
-        <section aria-labelledby="etapa-3" style={box}>
-          <div id="etapa-3" style={eyebrow}>3 · O que corrigir primeiro</div>
-          <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
-            {category ? `Problemas de ${categoryLabels[category]}` : 'Em ordem de ganho de nota'}
+        <section id="criticos" aria-labelledby="etapa-3" style={box}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span id="etapa-3" style={eyebrow}>Etapa 3 · O que corrigir primeiro</span>
+              <span style={{ fontSize: 16, fontWeight: 600 }}>
+                {category
+                  ? `Achados de ${categoryLabels[category]}`
+                  : plan.criticalCount > 0
+                    ? `${plan.criticalCount === 1 ? 'O crítico primeiro' : `Os ${plan.criticalCount} críticos primeiro`}, por ganho de nota`
+                    : 'Em ordem de ganho de nota'}
+              </span>
+            </div>
+            <Link to={`/findings?auditId=${run.id}`} onClick={onOpenFindings} style={{ fontSize: 13 }}>
+              {run.totalFindings != null ? `Ver todos os ${run.totalFindings} achados` : 'Ver todos os achados'}
+            </Link>
           </div>
           {items.length === 0 ? (
             <p style={{ color: '#525252' }}>Nada a corrigir nesta categoria.</p>
@@ -121,8 +156,10 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
                     {item.howToFix && <span style={{ color: '#393939' }}>Como corrigir: {item.howToFix}</span>}
                   </div>
                   <div style={{ display: 'grid', gap: 4, justifyItems: 'end' }}>
-                    <Tag type={sevTag[item.severity]} size="sm">{sevLabel[item.severity]}</Tag>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#198038' }}>nota +{item.scoreGain.toFixed(1)}</span>
+                    <span style={{ background: sevBadge[item.severity].bg, color: sevBadge[item.severity].fg, padding: '2px 8px', fontSize: 12, fontWeight: 600 }}>
+                      {sevBadge[item.severity].label}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#198038' }}>nota +{item.scoreGain.toFixed(1)}</span>
                   </div>
                 </li>
               ))}

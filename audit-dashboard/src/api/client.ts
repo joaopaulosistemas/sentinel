@@ -117,7 +117,8 @@ export const api = {
 
   getFindingsOverview: (params: {
     systemId?: number;
-    severity?: Severity;
+    /** Várias severidades de uma vez (ex.: crítica e alta) */
+    severity?: Severity[];
     category?: Category;
     status?: FindingStatus;
     onlyNew?: boolean;
@@ -125,14 +126,13 @@ export const api = {
     limit: number;
     offset: number;
   }) => {
-    const qs = new URLSearchParams(
-      Object.fromEntries(
-        Object.entries(params)
-          .filter(([, v]) => v !== undefined && v !== false)
-          .map(([k, v]) => [k, String(v)]),
-      ) as Record<string, string>,
-    ).toString();
-    return apiFetch<FindingsOverview>(`/api/v1/findings?${qs}`);
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === false) continue;
+      if (Array.isArray(v)) v.forEach((item) => qs.append(k, String(item)));
+      else qs.append(k, String(v));
+    }
+    return apiFetch<FindingsOverview>(`/api/v1/findings?${qs.toString()}`);
   },
 
   getDiff: (auditId: number) => apiFetch<AuditDiff>(`/api/v1/audits/${auditId}/diff`),

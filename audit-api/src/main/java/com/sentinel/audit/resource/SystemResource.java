@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import com.sentinel.audit.service.AuditRunMapper;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.CreateSystemRequest;
 import com.sentinel.audit.dto.ProfileRequest;
@@ -42,6 +43,10 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Systems", description = "Gerenciamento de sistemas auditados")
 public class SystemResource {
+
+    @Inject
+    AuditRunMapper runMapper;
+
 
     @Inject
     AuditProgressTracker progressTracker;
@@ -222,7 +227,7 @@ public class SystemResource {
                 .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
 
         return auditRunRepository.findBySystemId(id).stream()
-                .map(this::toAuditRunResponse)
+                .map(r -> runMapper.toResponse(r, true))
                 .collect(Collectors.toList());
     }
 
@@ -282,36 +287,6 @@ public class SystemResource {
                 dto.setOpenHigh(counts.getOrDefault(Severity.HIGH, 0L));
             });
 
-        return dto;
-    }
-
-    private AuditRunResponse toAuditRunResponse(AuditRun run) {
-        AuditRunResponse dto = new AuditRunResponse();
-        dto.setId(run.getId());
-        dto.setSystemId(run.getSystem().getId());
-        dto.setSystemName(run.getSystem().getName());
-        dto.setBranch(run.getBranch());
-        dto.setStatus(run.getStatus());
-        dto.setStartedAt(run.getStartedAt());
-        dto.setCompletedAt(run.getCompletedAt());
-        dto.setErrorMessage(run.getErrorMessage());
-
-        if (run.getRiskScore() != null) {
-            dto.setRiskScore(new RiskScoreDto(
-                    run.getRiskScore().getOverall(),
-                    run.getRiskScore().getSecurity(),
-                    run.getRiskScore().getQuality(),
-                    run.getRiskScore().getArchitecture(),
-                    run.getRiskScore().getDependencies(),
-                    run.getRiskScore().getObservability(),
-                    run.getRiskScore().getPerformance()
-            ));
-        }
-
-        dto.setFindingsSummary(findingRepository.countBySeverityForRun(run.getId()));
-        if (run.getStatus() == AuditStatus.RUNNING || run.getStatus() == AuditStatus.PENDING) {
-            progressTracker.snapshot(run.getId()).ifPresent(dto::setProgress);
-        }
         return dto;
     }
 }

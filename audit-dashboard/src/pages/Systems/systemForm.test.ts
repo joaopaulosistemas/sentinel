@@ -45,3 +45,19 @@ describe('formulário de sistema', () => {
     expect(scheduleChanged({ ...values, auditOnPush: false }, system)).toBe(true);
   });
 });
+
+import { repoSlug, scheduleText } from './systemForm';
+
+describe('textos da lista de sistemas', () => {
+  it('scheduleText cobre manual, intervalo, push e os dois', () => {
+    expect(scheduleText({ auditIntervalHours: 0, scheduledBranch: null, auditOnPush: false })).toBe('manual');
+    expect(scheduleText({ auditIntervalHours: 12, scheduledBranch: 'develop', auditOnPush: false })).toBe('a cada 12 h · develop');
+    expect(scheduleText({ auditIntervalHours: 0, scheduledBranch: 'main', auditOnPush: true })).toBe('a cada push · main');
+    expect(scheduleText({ auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true })).toBe('a cada 24 h · main · push');
+  });
+
+  it('repoSlug tira o host e o .git', () => {
+    expect(repoSlug('https://github.com/sicoob/conta-corrente.git')).toBe('sicoob/conta-corrente');
+    expect(repoSlug(null)).toBe('');
+  });
+});

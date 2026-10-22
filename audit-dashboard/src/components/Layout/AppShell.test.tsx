@@ -25,8 +25,8 @@ describe('AppShell', () => {
         </AppShell>
       </MemoryRouter>,
     );
-    for (const nome of ['Visão Geral', 'Ranking', 'Findings', 'Relatórios']) {
-      expect(screen.getByText(nome)).toBeInTheDocument();
+    for (const nome of ['Visão geral', 'Sistemas', 'Findings', 'Ranking', 'Relatórios']) {
+      expect(screen.getAllByText(nome)[0]).toBeInTheDocument();
     }
   });
 });

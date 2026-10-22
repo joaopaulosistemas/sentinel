@@ -18,7 +18,8 @@ export function useFindings(auditId: number, filter?: FindingsFilter) {
   });
 }
 
-export interface OverviewFilter extends FindingsFilter {
+export interface OverviewFilter extends Omit<FindingsFilter, 'severity'> {
+  severity?: Severity[];
   systemId?: number;
   limit: number;
   offset: number;

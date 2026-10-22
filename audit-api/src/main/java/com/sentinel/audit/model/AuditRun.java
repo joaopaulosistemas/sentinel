@@ -43,6 +43,10 @@ public class AuditRun {
     @Column(name = "lines_of_code")
     private Long linesOfCode;
 
+    /** Commit auditado (SHA completo); nulo em auditorias antigas. */
+    @Column(name = "commit_sha", length = 64)
+    private String commitSha;
+
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 
@@ -125,6 +129,14 @@ public class AuditRun {
 
     public void setStatus(AuditStatus status) {
         this.status = status;
+    }
+
+    public String getCommitSha() {
+        return commitSha;
+    }
+
+    public void setCommitSha(String commitSha) {
+        this.commitSha = commitSha;
     }
 
     public Long getLinesOfCode() {

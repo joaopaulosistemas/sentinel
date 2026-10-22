@@ -60,7 +60,7 @@ public class FindingResource {
             description = "Última auditoria concluída de cada sistema, com filtros, resumo por sistema e paginação")
     public FindingsOverviewDto overview(
             @QueryParam("systemId") Long systemId,
-            @QueryParam("severity") Severity severity,
+            @QueryParam("severity") List<Severity> severity,
             @QueryParam("category") Category category,
             @QueryParam("status") FindingStatus status,
             @QueryParam("onlyNew") @DefaultValue("false") boolean onlyNew,
@@ -75,10 +75,11 @@ public class FindingResource {
             }
             AuditRun run = latest.get(0);
             sources.add(new FindingsOverview.Source(system.getId(), system.getName(), run.getId(),
-                    findingRepository.findByAuditRunId(run.getId())));
+                    findingRepository.findByAuditRunId(run.getId()),
+                    system.getStack() == null ? null : system.getStack().name(), run.getCompletedAt()));
         }
         return FindingsOverview.build(sources,
-                new FindingsOverview.Filter(systemId, severity, category, status, onlyNew, includeSuppressed), limit, offset);
+                new FindingsOverview.Filter(systemId, severity == null ? java.util.Set.of() : java.util.Set.copyOf(severity), category, status, onlyNew, includeSuppressed), limit, offset);
     }
 
     /**

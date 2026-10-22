@@ -1,50 +1,48 @@
-import {
-  Button,
-  DataTableSkeleton,
-  InlineNotification,
-  Select,
-  SelectItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tile,
-} from '@carbon/react';
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { DataTableSkeleton, InlineNotification } from '@carbon/react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../../api/client';
 import { JourneySteps } from '../../components/JourneySteps';
 import { RecentAudits } from '../../components/RecentAudits';
-import { ScoreGauge } from '../../components/ScoreGauge';
-import { StartAuditModal } from '../../components/StartAuditModal';
 import { useRecentAudits } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
-import { useAuditStore } from '../../store/useAuditStore';
-import type { SystemSummaryResponse } from '../../types';
+import type { AuditRunResponse, SystemSummaryResponse } from '../../types';
 import { isActiveRun } from '../../utils/auditProgress';
-import { STALE_DAYS, isStale, systemsNeedingAttention } from '../../utils/systemAttention';
+import { STALE_DAYS, attentionRows, isStale, scoreColor } from '../../utils/systemAttention';
 
-const stackLabels: Record<string, string> = {
-  JAVA: 'Java',
-  JAVASCRIPT: 'JavaScript',
-  DOTNET: '.NET',
-  PYTHON: 'Python',
-  COBOL: 'COBOL',
-  MIXED: 'Misto',
-};
+const names = (list: string[]) => (list.length <= 2 ? list.join(', ') : `${list.slice(0, 2).join(', ')} e mais ${list.length - 2}`);
 
+/** Visão geral: quatro números, quem precisa de atenção e as últimas auditorias; daqui se inicia uma auditoria. */
 export function OverviewPage() {
-  const navigate = useNavigate();
-  const setSelectedSystem = useAuditStore((s) => s.setSelectedSystem);
+  const queryClient = useQueryClient();
   const { data: systems, isLoading, error } = useSystems();
   const { data: recent } = useRecentAudits(20);
   const [pickedId, setPickedId] = useState('');
+  const [started, setStarted] = useState<AuditRunResponse | null>(null);
 
-  const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
+  const list: SystemSummaryResponse[] = systems ?? [];
+  const picked = list.find((s) => String(s.id) === pickedId) ?? list[0] ?? null;
 
-  if (isLoading) return <DataTableSkeleton columnCount={7} rowCount={5} />;
+  const start = useMutation({
+    mutationFn: (system: SystemSummaryResponse) =>
+      api.triggerAudit({ systemId: system.id, branch: system.scheduledBranch || 'main', triggeredBy: 'dashboard-user' }),
+    onSuccess: (run) => {
+      setStarted(run);
+      void queryClient.invalidateQueries({ queryKey: ['systems'] });
+      void queryClient.invalidateQueries({ queryKey: ['auditRuns'] });
+      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
+    },
+  });
+
+  // O aviso some sozinho; a auditoria continua na lista de baixo.
+  useEffect(() => {
+    if (!started) return undefined;
+    const t = setTimeout(() => setStarted(null), 10_000);
+    return () => clearTimeout(t);
+  }, [started]);
+
+  if (isLoading) return <DataTableSkeleton columnCount={4} rowCount={5} />;
 
   if (error) {
     return (
@@ -56,200 +54,136 @@ export function OverviewPage() {
     );
   }
 
-  const totalSystems = systems?.length ?? 0;
-  const totalCritical = systems?.reduce((acc, s) => acc + s.openCritical, 0) ?? 0;
-  const scores = systems?.map((s) => s.lastAuditScore).filter((s): s is number => s !== null) ?? [];
-  const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-
-  const running = (recent ?? []).filter(isActiveRun).length;
+  const total = list.length;
+  const criticalSystems = list.filter((s) => s.openCritical > 0);
+  const totalCritical = list.reduce((acc, s) => acc + s.openCritical, 0);
+  const scores = list.map((s) => s.lastAuditScore).filter((s): s is number => s !== null);
+  const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  const deltas = list.map((s) => s.scoreDelta).filter((d): d is number => d != null);
+  const avgDelta = deltas.length > 0 ? Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length) : null;
+  const runningRuns = (recent ?? []).filter(isActiveRun);
   const now = Date.now();
-  const stale = (systems ?? []).filter((s) => isStale(s, now)).length;
-  const attention = systemsNeedingAttention(systems ?? [], now);
-  const picked = (systems ?? []).find((s) => String(s.id) === pickedId) ?? null;
+  const staleSystems = list.filter((s) => isStale(s, now));
+  const attention = attentionRows(list, now);
 
-  const kpi = (label: string, value: React.ReactNode, hint?: string) => (
-    <Tile>
-      <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '0.5rem' }}>{label}</p>
-      <div style={{ fontSize: '2.5rem', fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
-      {hint && <p style={{ fontSize: '0.75rem', color: '#525252', marginTop: '0.25rem' }}>{hint}</p>}
-    </Tile>
-  );
+  const kpis = [
+    {
+      label: 'Nota média',
+      value: avg ?? '-',
+      color: scoreColor(avg),
+      note: avgDelta !== null && avgDelta !== 0 ? `${avgDelta > 0 ? '+' : ''}${avgDelta} desde a auditoria anterior` : `${total} ${total === 1 ? 'sistema' : 'sistemas'}`,
+    },
+    {
+      label: 'Achados críticos abertos',
+      value: totalCritical,
+      color: totalCritical > 0 ? '#a2191f' : '#198038',
+      note: totalCritical > 0 ? `em ${criticalSystems.length} ${criticalSystems.length === 1 ? 'sistema' : 'sistemas'}` : 'nenhum em aberto',
+    },
+    {
+      label: 'Em execução agora',
+      value: runningRuns.length,
+      color: '#0f62fe',
+      note: runningRuns.length > 0 ? names([...new Set(runningRuns.map((r) => r.systemName))]) : 'nenhuma auditoria',
+    },
+    {
+      label: `Sem auditar há mais de ${STALE_DAYS} dias`,
+      value: staleSystems.length,
+      color: '#161616',
+      note: staleSystems.length > 0 ? names(staleSystems.map((s) => s.name)) : 'todos em dia',
+    },
+  ];
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <div style={{ marginBottom: '1rem' }}>
-        <JourneySteps current={0} />
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 600, margin: 0 }}>Visão Geral</h1>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-          <Select
+    <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <JourneySteps current={0} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Visão geral</h1>
+          <span style={{ color: '#525252' }}>
+            Situação {total === 1 ? 'do 1 sistema cadastrado' : `dos ${total} sistemas cadastrados`} · atualizada agora
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <label htmlFor="overview-system" style={{ fontSize: 13, color: '#525252' }}>Sistema</label>
+          <select
             id="overview-system"
-            labelText="Auditar um sistema"
-            size="md"
-            value={pickedId}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPickedId(e.target.value)}
+            value={picked ? String(picked.id) : ''}
+            onChange={(e) => setPickedId(e.target.value)}
+            disabled={list.length === 0}
+            style={{ height: 40, padding: '0 12px', background: '#fff', border: '1px solid #8d8d8d', fontSize: 14, minWidth: 220 }}
           >
-            <SelectItem value="" text="Escolha o sistema…" />
-            {(systems ?? []).map((s) => (
-              <SelectItem key={s.id} value={String(s.id)} text={s.name} />
+            {list.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
             ))}
-          </Select>
-          <Button disabled={!picked} onClick={() => setAuditTarget(picked)}>
-            Nova auditoria
-          </Button>
+          </select>
+          <button
+            type="button"
+            disabled={!picked || start.isPending}
+            onClick={() => picked && start.mutate(picked)}
+            style={{ height: 40, padding: '0 20px', background: !picked || start.isPending ? '#c6c6c6' : '#0f62fe', color: '#fff', border: 0, fontSize: 14, cursor: !picked || start.isPending ? 'not-allowed' : 'pointer' }}
+          >
+            {start.isPending ? 'Iniciando…' : 'Iniciar auditoria'}
+          </button>
         </div>
       </div>
 
-      {/* Indicadores */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1rem',
-          marginBottom: '2rem',
-        }}
-      >
-        {kpi('Nota média', <ScoreGauge score={avgScore} size="lg" />, `${totalSystems} ${totalSystems === 1 ? 'sistema' : 'sistemas'}`)}
-        {kpi(
-          'Críticos abertos',
-          <span style={{ color: totalCritical > 0 ? '#da1e28' : '#24a148' }}>{totalCritical}</span>,
-        )}
-        {kpi(
-          'Em execução agora',
-          <span style={{ color: running > 0 ? '#0043ce' : undefined }}>{running}</span>,
-          running > 0 ? 'atualiza sozinho' : 'nenhuma auditoria em andamento',
-        )}
-        {kpi(
-          `Sem auditar há mais de ${STALE_DAYS} dias`,
-          <span style={{ color: stale > 0 ? '#8a6a00' : '#24a148' }}>{stale}</span>,
-          'inclui os nunca auditados',
-        )}
-      </div>
+      {start.isError && (
+        <InlineNotification
+          kind="error"
+          title="Não foi possível iniciar a auditoria"
+          subtitle={start.error instanceof Error ? start.error.message : 'Erro desconhecido'}
+          onCloseButtonClick={() => start.reset()}
+        />
+      )}
 
-      <Tile style={{ padding: 0, marginBottom: '2rem' }}>
-        <div style={{ padding: '1rem 1rem 0.75rem', borderBottom: '1px solid #e0e0e0' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Precisam de atenção</h2>
+      {started && (
+        <div role="status" style={{ background: '#fff', border: '1px solid #e0e0e0', borderLeft: '4px solid #0f62fe', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <span>
+            <strong style={{ fontWeight: 600 }}>Auditoria #{started.id} iniciada</strong> em {started.systemName}. Ela já aparece em "Últimas auditorias" abaixo.
+          </span>
+          <Link to={`/audits/${started.id}`} style={{ fontWeight: 500 }}>Acompanhar execução</Link>
         </div>
-        {attention.length === 0 ? (
-          <p style={{ padding: '1rem', color: '#198038' }}>Tudo em ordem: nenhum sistema pede ação agora.</p>
-        ) : (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {attention.map(({ system, reasons }) => (
-              <li
-                key={system.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  flexWrap: 'wrap',
-                  padding: '0.75rem 1rem',
-                  borderBottom: '1px solid #e0e0e0',
-                }}
-              >
-                <span style={{ display: 'grid', gap: 2 }}>
-                  <strong style={{ fontWeight: 600 }}>{system.name}</strong>
-                  <span style={{ fontSize: '0.8125rem', color: '#525252' }}>{reasons.join(' · ')}</span>
-                </span>
-                <span style={{ display: 'flex', gap: '0.5rem' }}>
-                  <Button kind="ghost" size="sm" onClick={() => navigate(`/systems/${system.id}`)}>
-                    Ver sistema
-                  </Button>
-                  <Button size="sm" onClick={() => setAuditTarget(system)}>
-                    Auditar agora
-                  </Button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Tile>
+      )}
 
-      <RecentAudits />
+      <section aria-label="Indicadores" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 1, background: '#e0e0e0', border: '1px solid #e0e0e0' }}>
+        {kpis.map((k) => (
+          <div key={k.label} style={{ background: '#fff', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 12, color: '#525252' }}>{k.label}</span>
+            <span style={{ fontSize: 32, fontWeight: 300, color: k.color }}>{k.value}</span>
+            <span style={{ fontSize: 12, color: '#525252' }}>{k.note}</span>
+          </div>
+        ))}
+      </section>
 
-      {/* Systems Table */}
-      <TableContainer title="Sistemas" description="Todos os sistemas cadastrados no Sentinel Audit Tool">
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeader>Nome</TableHeader>
-              <TableHeader>Stack</TableHeader>
-              <TableHeader>Time</TableHeader>
-              <TableHeader>Score</TableHeader>
-              <TableHeader>Críticos</TableHeader>
-              <TableHeader>Altos</TableHeader>
-              <TableHeader>Última Auditoria</TableHeader>
-              <TableHeader>Ações</TableHeader>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {(systems ?? []).map((system) => (
-              <TableRow key={system.id}>
-                <TableCell>
-                  <button
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: '#0f62fe',
-                      textDecoration: 'underline',
-                      padding: 0,
-                      fontSize: 'inherit',
-                    }}
-                    onClick={() => {
-                      setSelectedSystem(system.id);
-                      navigate(`/systems/${system.id}`);
-                    }}
-                  >
-                    {system.name}
-                  </button>
-                </TableCell>
-                <TableCell>{stackLabels[system.stack] ?? system.stack}</TableCell>
-                <TableCell>{system.team}</TableCell>
-                <TableCell>
-                  <ScoreGauge score={system.lastAuditScore} size="sm" />
-                </TableCell>
-                <TableCell>
-                  <span style={{ color: system.openCritical > 0 ? '#da1e28' : undefined, fontWeight: 600 }}>
-                    {system.openCritical}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span style={{ color: system.openHigh > 0 ? '#ff832b' : undefined }}>
-                    {system.openHigh}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {system.lastAuditDate
-                    ? new Date(system.lastAuditDate).toLocaleDateString('pt-BR')
-                    : '—'}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    kind="ghost"
-                    size="sm"
-                    onClick={() => setAuditTarget(system)}
-                  >
-                    Nova Auditoria
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 24, alignItems: 'start' }}>
+        <section aria-label="Precisam de atenção" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e0e0e0' }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Precisam de atenção</h2>
+            <span style={{ fontSize: 12, color: '#525252' }}>Do menor para o maior nota</span>
+          </div>
+          {attention.length === 0 ? (
+            <p style={{ padding: '1rem', color: '#525252' }}>Nenhum sistema cadastrado ainda.</p>
+          ) : (
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              {attention.map(({ system, score, reason }) => (
+                <li key={system.id} style={{ borderBottom: '1px solid #e0e0e0' }}>
+                  <Link to={`/systems/${system.id}`} style={{ display: 'grid', gridTemplateColumns: '44px 1fr auto', gap: 12, alignItems: 'center', padding: '12px 16px', textDecoration: 'none', color: '#161616' }}>
+                    <span style={{ fontSize: 22, fontWeight: 300, color: scoreColor(score) }}>{score ?? '-'}</span>
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                      <span style={{ fontWeight: 600 }}>{system.name}</span>
+                      <span style={{ fontSize: 12, color: '#525252' }}>{reason}</span>
+                    </span>
+                    <span style={{ color: '#0f62fe', fontSize: 13 }}>Ver sistema</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-      <StartAuditModal system={auditTarget} onClose={() => setAuditTarget(null)} />
+        <RecentAudits />
+      </div>
     </div>
   );
 }

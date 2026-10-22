@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import com.sentinel.audit.service.AuditRunMapper;
 import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.FindingMapper;
@@ -48,6 +49,10 @@ import java.util.stream.Collectors;
 @Tag(name = "Audits", description = "Execução e consulta de auditorias de código")
 public class AuditResource {
 
+    @Inject
+    AuditRunMapper runMapper;
+
+
     /** Meta de nota da organização, a mesma usada pelo dashboard. */
     static final double TARGET_SCORE = 75;
 
@@ -91,7 +96,7 @@ public class AuditResource {
     public Response createAudit(@Valid CreateAuditRequest request) {
         AuditRun run = requestService.request(request.getSystemId(), request.getBranch(), request.getBaseRef(), request.getTriggeredBy());
 
-        return Response.accepted(toResponse(run)).build();
+        return Response.accepted(runMapper.toResponse(run)).build();
     }
 
     /**
@@ -101,7 +106,7 @@ public class AuditResource {
     @Operation(summary = "Listar auditorias recentes", description = "Últimas auditorias de todos os sistemas, da mais nova para a mais antiga")
     public List<AuditRunResponse> listRecent(@QueryParam("limit") @DefaultValue("8") int limit) {
         int size = Math.max(1, Math.min(limit, 50));
-        return auditRunRepository.findRecent(size).stream().map(this::toResponse).collect(Collectors.toList());
+        return auditRunRepository.findRecent(size).stream().map(runMapper::toResponse).collect(Collectors.toList());
     }
 
     /**
@@ -118,7 +123,7 @@ public class AuditResource {
                     .entity(java.util.Map.of("message", "A auditoria já terminou e não pode ser cancelada"))
                     .build();
         }
-        return Response.accepted(toResponse(auditRunRepository.findById(id))).build();
+        return Response.accepted(runMapper.toResponse(auditRunRepository.findById(id))).build();
     }
 
     /**
@@ -130,7 +135,7 @@ public class AuditResource {
     public AuditRunResponse getAudit(@PathParam("id") Long id) {
         AuditRun run = auditRunRepository.findByIdOptional(id)
                 .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
-        return toResponse(run);
+        return runMapper.toResponse(run, true);
     }
 
     /**
@@ -304,36 +309,5 @@ public class AuditResource {
                 .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
         List<Finding> active = FindingLifecycleService.active(findingRepository.findByAuditRunId(run.getId()));
         return FixPlanner.plan(active, run.getLinesOfCode(), scoringService);
-    }
-
-    private AuditRunResponse toResponse(AuditRun run) {
-        AuditRunResponse dto = new AuditRunResponse();
-        dto.setId(run.getId());
-        dto.setSystemId(run.getSystem().getId());
-        dto.setSystemName(run.getSystem().getName());
-        dto.setBranch(run.getBranch());
-        dto.setBaseRef(run.getBaseRef());
-        dto.setStatus(run.getStatus());
-        dto.setStartedAt(run.getStartedAt());
-        dto.setCompletedAt(run.getCompletedAt());
-        dto.setErrorMessage(run.getErrorMessage());
-
-        if (run.getRiskScore() != null) {
-            dto.setRiskScore(new RiskScoreDto(
-                    run.getRiskScore().getOverall(),
-                    run.getRiskScore().getSecurity(),
-                    run.getRiskScore().getQuality(),
-                    run.getRiskScore().getArchitecture(),
-                    run.getRiskScore().getDependencies(),
-                    run.getRiskScore().getObservability(),
-                    run.getRiskScore().getPerformance()
-            ));
-        }
-
-        dto.setFindingsSummary(findingRepository.countBySeverityForRun(run.getId()));
-        if (run.getStatus() == AuditStatus.RUNNING || run.getStatus() == AuditStatus.PENDING) {
-            progressTracker.snapshot(run.getId()).ifPresent(dto::setProgress);
-        }
-        return dto;
     }
 }

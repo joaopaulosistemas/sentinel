@@ -10,15 +10,19 @@ const system = (over: Partial<SystemSummaryResponse>): SystemSummaryResponse => 
   id: 1, name: 'x', stack: 'JAVA', team: 'T', lastAuditScore: 90, lastAuditDate: daysAgo(1), openCritical: 0, openHigh: 0, ...over,
 });
 
-function renderPage(systems: SystemSummaryResponse[]) {
+function renderPage(systems: SystemSummaryResponse[], onCall?: (url: string, init?: RequestInit) => void) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => {
+    vi.fn(async (url: string, init?: RequestInit) => {
       const u = String(url);
+      onCall?.(u, init);
+      if (init?.method === 'POST' && u === '/api/v1/audits') {
+        return new Response(JSON.stringify({ id: 77, systemId: 5, systemName: 'conta', branch: 'develop', status: 'PENDING', riskScore: null, findingsSummary: {}, startedAt: daysAgo(0), completedAt: null }), { status: 202 });
+      }
       if (u.startsWith('/api/v1/audits')) {
         return new Response(
           JSON.stringify([
-            { id: 9, systemId: 2, systemName: 'portal', branch: 'main', status: 'RUNNING', riskScore: null, findingsSummary: {}, startedAt: daysAgo(0), completedAt: null },
+            { id: 9, systemId: 2, systemName: 'portal', branch: 'main', status: 'PENDING', riskScore: null, findingsSummary: {}, startedAt: daysAgo(0), completedAt: null },
             { id: 8, systemId: 1, systemName: 'conta', branch: 'main', status: 'COMPLETED', riskScore: { overall: 61 }, findingsSummary: {}, startedAt: daysAgo(1), completedAt: daysAgo(1) },
           ]),
           { status: 200 },
@@ -39,43 +43,53 @@ function renderPage(systems: SystemSummaryResponse[]) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('OverviewPage', () => {
-  it('mostra os quatro indicadores e quem precisa de atenção, do mais urgente ao menos', async () => {
+  it('mostra os quatro indicadores e todos os sistemas, do menor para o maior nota', async () => {
     renderPage([
       system({ id: 1, name: 'conta', openCritical: 3, lastAuditScore: 61 }),
-      system({ id: 2, name: 'portal', lastAuditDate: daysAgo(9) }),
-      system({ id: 3, name: 'saudavel' }),
+      system({ id: 2, name: 'portal', lastAuditScore: 54, lastAuditDate: daysAgo(9) }),
+      system({ id: 3, name: 'saudavel', lastAuditScore: 90 }),
     ]);
     expect(await screen.findByText('Precisam de atenção')).toBeInTheDocument();
     expect(screen.getByText('Nota média')).toBeInTheDocument();
-    expect(screen.getByText('Críticos abertos')).toBeInTheDocument();
+    expect(screen.getByText('Achados críticos abertos')).toBeInTheDocument();
     expect(screen.getByText('Em execução agora')).toBeInTheDocument();
     expect(screen.getByText(/Sem auditar há mais de 5 dias/)).toBeInTheDocument();
 
-    const panel = screen.getByText('Precisam de atenção').closest('.cds--tile') as HTMLElement;
+    const panel = screen.getByLabelText('Precisam de atenção');
     const items = within(panel).getAllByRole('listitem');
-    expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent('conta');
-    expect(items[0]).toHaveTextContent('3 críticos abertos');
-    expect(items[1]).toHaveTextContent('sem auditar há 9 dias');
-    expect(within(panel).queryByText('saudavel')).not.toBeInTheDocument();
+    expect(items).toHaveLength(3);
+    expect(items[0]).toHaveTextContent('portal');
+    expect(items[0]).toHaveTextContent('não é auditado há 9 dias');
+    expect(items[1]).toHaveTextContent('conta');
+    expect(items[1]).toHaveTextContent('3 críticos');
+    expect(items[2]).toHaveTextContent('Sem críticos · dentro da meta');
   });
 
-  it('conta as auditorias em execução agora', async () => {
-    renderPage([system({})]);
-    const tile = (await screen.findByText('Em execução agora')).closest('.cds--tile') as HTMLElement;
-    expect(await within(tile).findByText('1')).toBeInTheDocument();
+  it('conta as auditorias em execução agora e mostra o passo na tabela', async () => {
+    renderPage([system({ id: 2, name: 'portal' })]);
+    const kpi = (await screen.findByText('Em execução agora')).parentElement as HTMLElement;
+    expect(await within(kpi).findByText('1')).toBeInTheDocument();
+    expect(within(kpi).getByText('portal')).toBeInTheDocument();
+    expect(await screen.findByText('Na fila')).toBeInTheDocument();
+    expect(screen.getByText('Atualizando sozinha a cada 3 s')).toBeInTheDocument();
   });
 
-  it('só habilita Nova auditoria depois de escolher o sistema', async () => {
-    renderPage([system({ id: 5, name: 'conta' })]);
-    const button = await screen.findByRole('button', { name: 'Nova auditoria' });
-    expect(button).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Auditar um sistema'), { target: { value: '5' } });
-    expect(button).toBeEnabled();
+  it('Iniciar auditoria dispara a auditoria do sistema escolhido e avisa com link para acompanhar', async () => {
+    const calls: Array<{ url: string; method: string; body?: string }> = [];
+    renderPage([system({ id: 5, name: 'conta', scheduledBranch: 'develop' })], (u, init) => {
+      calls.push({ url: u, method: init?.method ?? 'GET', body: init?.body as string | undefined });
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Iniciar auditoria' }));
+    expect(await screen.findByText('Auditoria #77 iniciada')).toBeInTheDocument();
+    const post = calls.find((c) => c.method === 'POST');
+    expect(post?.url).toBe('/api/v1/audits');
+    expect(JSON.parse(post?.body ?? '{}')).toMatchObject({ systemId: 5, branch: 'develop' });
+    expect(screen.getByRole('link', { name: 'Acompanhar execução' })).toHaveAttribute('href', '/audits/77');
   });
 
-  it('sem nenhum sistema com problema diz que está tudo em ordem', async () => {
-    renderPage([system({})]);
-    expect(await screen.findByText(/nenhum sistema pede ação agora/)).toBeInTheDocument();
+  it('com a nota subindo mostra a variação no resumo', async () => {
+    renderPage([system({ id: 1, name: 'conta', lastAuditScore: 63, scoreDelta: 2 })]);
+    expect(await screen.findByText('+2 desde a auditoria anterior')).toBeInTheDocument();
+    expect(screen.getByText('nota subiu 2 pontos', { exact: false })).toBeInTheDocument();
   });
 });

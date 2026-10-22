@@ -783,6 +783,7 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 | `GET` | `/api/v1/audits/{id}/report.pdf` | Mesmos relatórios em PDF (`type=` e `days=` iguais ao HTML) |
 | `GET` | `/api/v1/audits/{id}/report` | Relatório HTML. `type=tecnico` (padrão, todos os achados), `executivo` (uma página: nota, meta, riscos e prioridades) ou `comparativo` (evolução entre auditorias; `days=` limita o período) |
 | `GET` | `/api/v1/audits/{id}/findings.csv` | Achados ativos em CSV (UTF-8, protegido contra injeção de fórmula em planilha) |
+| `GET` | `/api/v1/reports/portfolio` | Relatório de **todos os sistemas** (ou de um, com `systemId=`): `type=executivo\|tecnico\|comparativo`, `format=html\|pdf\|csv`, `days=` limita o período |
 | `GET` | `/api/v1/audits/{id}/sbom` | SBOM CycloneDX 1.5 (JSON) |
 | `GET` | `/api/v1/audits/{id}/insights` | Auditoria completa: parecer, áreas, dívida técnica P0–P3, quick wins, roadmap em 8 fases e o que não foi possível verificar |
 | `GET` | `/api/v1/packs` · `POST /reload` | Pacotes e perfis carregados (rejeitados com motivo, avisos, integridade) · recarrega |

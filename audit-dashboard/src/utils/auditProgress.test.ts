@@ -101,3 +101,39 @@ describe('estimativa de tempo', () => {
     expect(isActiveRun({ status: 'CANCELLED' })).toBe(false);
   });
 });
+
+import { clock, etaText, phaseViews, shortRepo } from './auditProgress';
+
+describe('apoio à tela de execução', () => {
+  it('clock formata mm:ss', () => {
+    expect(clock(56)).toBe('00:56');
+    expect(clock(125)).toBe('02:05');
+  });
+
+  it('shortRepo tira protocolo, credencial e .git', () => {
+    expect(shortRepo('https://github.com/org/repo.git')).toBe('github.com/org/repo');
+    expect(shortRepo('git@github.com:org/repo.git')).toBe('github.com:org/repo');
+    expect(shortRepo(null)).toBeNull();
+  });
+
+  it('etaText usa minutos a partir de 60 s', () => {
+    expect(etaText(null)).toContain('estimando');
+    expect(etaText(42)).toBe('faltam cerca de 40 s');
+    expect(etaText(100)).toBe('faltam cerca de 2 min');
+  });
+
+  it('phaseViews marca concluídas, ativa e pendentes', () => {
+    const v = phaseViews(
+      { status: 'RUNNING', progress: { phase: 'ANALISE', analyzers: [], events: [], repoUrl: 'https://github.com/a/b' } },
+      { done: 3, total: 12 },
+    );
+    expect(v.map((p) => p.state)).toEqual(['done', 'done', 'active', 'pending', 'pending']);
+    expect(v[1].sub).toBe('concluído');
+    expect(v[2].sub).toBe('3 de 12 analisadores');
+  });
+
+  it('na falha a fase corrente fica interrompida', () => {
+    const v = phaseViews({ status: 'FAILED', progress: { phase: 'CLONE', analyzers: [], events: [] } }, { done: 0, total: 0 });
+    expect(v[1].state).toBe('failed');
+  });
+});

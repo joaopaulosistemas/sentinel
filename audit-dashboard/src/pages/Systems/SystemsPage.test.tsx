@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SystemsPage } from './SystemsPage';
 
-function renderPage(check: unknown) {
+function renderPage(check: unknown, systems: unknown[] = []) {
   const calls: Array<{ url: string; method: string; body?: string }> = [];
   vi.stubGlobal(
     'fetch',
@@ -15,7 +15,7 @@ function renderPage(check: unknown) {
       if (u.includes('/packs')) return new Response(JSON.stringify({ packs: [], profiles: [] }), { status: 200 });
       if (u.endsWith('/schedule')) return new Response(JSON.stringify({ id: 7, name: 'api', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 }), { status: 200 });
       if ((init?.method ?? 'GET') === 'POST') return new Response(JSON.stringify({ id: 7, name: 'api', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 }), { status: 201 });
-      return new Response(JSON.stringify([]), { status: 200 });
+      return new Response(JSON.stringify(systems), { status: 200 });
     }),
   );
   render(
@@ -67,5 +67,23 @@ describe('SystemsPage', () => {
     await waitFor(() => expect(calls.some((c) => c.url.endsWith('/systems/7/schedule') && c.method === 'PUT')).toBe(true));
     const schedule = calls.find((c) => c.url.endsWith('/schedule'));
     expect(JSON.parse(schedule?.body ?? '{}')).toEqual({ auditIntervalHours: 0, branch: 'develop', auditOnPush: false });
+  });
+
+  it('Editar abre o painel ao lado da lista, com a linha destacada, e fechar some com ele', async () => {
+    renderPage({}, [
+      { id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/sicoob/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true },
+    ]);
+    expect(await screen.findByText('sicoob/conta-corrente')).toBeInTheDocument();
+    expect(screen.getByText('a cada 24 h · main · push')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Editar sistema')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    const panel = await screen.findByLabelText('Editar sistema');
+    expect(panel).toHaveTextContent('Editando');
+    expect(screen.getByLabelText(/Nome do sistema/)).toHaveValue('conta-corrente-api');
+    expect(screen.getByRole('button', { name: 'Salvar e auditar agora' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar painel' }));
+    expect(screen.queryByLabelText('Editar sistema')).not.toBeInTheDocument();
   });
 });

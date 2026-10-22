@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FindingResponse } from '../types';
-import { activeFilterChips, groupBySystem } from './findingsView';
+import { activeFilterChips, footerText, groupBySystem } from './findingsView';
 
 const f = (id: number) => ({ id }) as FindingResponse;
 
@@ -18,12 +18,26 @@ describe('findingsView', () => {
     expect(groupBySystem([])).toEqual([]);
   });
 
-  it('cria um chip por filtro ligado e nenhum sem filtros', () => {
-    expect(activeFilterChips({})).toEqual([]);
+  it('mostra os chips do estado padrão e acrescenta categoria e sistema', () => {
+    const base = { showSystem: true, severity: 'critHigh' as const, situation: 'open' as const };
+    expect(activeFilterChips(base).map((c) => c.label)).toEqual(['Todos os sistemas', 'Crítica e alta', 'Abertos']);
     expect(
-      activeFilterChips({ systemName: 'conta', severity: 'CRITICAL', status: 'FIXED', onlyNew: true, includeSuppressed: false }).map(
-        (c) => c.label,
-      ),
-    ).toEqual(['Sistema: conta', 'Severidade: Crítico', 'Status: Resolvido', 'Somente novos']);
+      activeFilterChips({ ...base, systemName: 'conta', category: 'SECURITY', situation: 'new' }).map((c) => [c.key, c.label]),
+    ).toEqual([
+      ['system', 'conta'],
+      ['severity', 'Crítica e alta'],
+      ['category', 'Segurança'],
+      ['situation', 'Novos desde a última auditoria'],
+    ]);
+  });
+
+  it('"Todas" não gera chip e o chip do sistema some quando não se aplica', () => {
+    expect(activeFilterChips({ showSystem: false, severity: 'all', situation: 'all' })).toEqual([]);
+  });
+
+  it('monta o texto do rodapé', () => {
+    expect(footerText(9, 142, 'open', 'critHigh', 4)).toBe('Mostrando 9 de 142 abertos (críticos e altos) em 4 sistemas');
+    expect(footerText(1, 1, 'all', 'all', 1)).toBe('Mostrando 1 de 1 achados em 1 sistema');
+    expect(footerText(2, 2, 'suppressed', 'HIGH', 0)).toBe('Mostrando 2 de 2 suprimidos (altos)');
   });
 });

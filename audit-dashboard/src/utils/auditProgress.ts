@@ -98,3 +98,65 @@ export function remainingSeconds(elapsed: number | null, average: number | null)
   const left = average - elapsed;
   return left > 0 ? left : null;
 }
+
+/** mm:ss a partir de segundos (o relógio da tela de execução). */
+export function clock(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** Segundos entre dois horários do servidor; zero se algum for inválido. */
+export function secondsBetween(from: string, to: string): number {
+  const a = Date.parse(from);
+  const b = Date.parse(to);
+  return Number.isNaN(a) || Number.isNaN(b) ? 0 : Math.max(0, Math.round((b - a) / 1000));
+}
+
+/** "github.com/org/repo" a partir de uma URL de clone. */
+export function shortRepo(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.replace(/^[a-z]+:\/\//i, '').replace(/^[^@/]+@/, '').replace(/\.git$/, '') || null;
+}
+
+/** Texto curto de quanto falta, em minutos ou segundos. */
+export function etaText(left: number | null): string {
+  if (left === null) return 'estimando o tempo restante';
+  const s = Math.max(5, Math.round(left / 5) * 5);
+  return `faltam cerca de ${s >= 60 ? `${Math.ceil(s / 60)} min` : `${s} s`}`;
+}
+
+export interface PhaseView {
+  n: number;
+  id: AuditPhase;
+  name: string;
+  sub: string;
+  state: 'done' | 'active' | 'pending' | 'failed';
+}
+
+/** As cinco fases com o estado e o texto de apoio de cada uma, como no protótipo. */
+export function phaseViews(
+  run: Pick<AuditRunResponse, 'status' | 'progress'>,
+  counts: { done: number; total: number },
+): PhaseView[] {
+  const index = phaseIndex(run);
+  const failed = run.status === 'FAILED' || run.status === 'CANCELLED';
+  const repo = shortRepo(run.progress?.repoUrl);
+  const subs: Record<AuditPhase, string> = {
+    FILA: 'aguardando vaga',
+    CLONE: repo ?? 'baixando o código',
+    ANALISE: counts.total > 0 ? `${counts.done} de ${counts.total} analisadores` : 'rodando as ferramentas',
+    PONTUACAO: 'nota por dimensão',
+    RELATORIO: 'insights e plano de ação',
+  };
+  return PHASES.map((p, i) => {
+    const state: PhaseView['state'] =
+      i < index ? 'done' : i === index ? (failed ? 'failed' : 'active') : 'pending';
+    return {
+      n: i + 1,
+      id: p.id,
+      name: p.label,
+      state,
+      sub: state === 'done' ? 'concluído' : state === 'pending' ? 'pendente' : state === 'failed' ? 'interrompida' : subs[p.id],
+    };
+  });
+}

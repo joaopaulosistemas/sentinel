@@ -14,13 +14,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRuleQuality, useSystems } from '../../hooks/useSystems';
 import type { SystemSummaryResponse } from '../../types';
-import { formatTrend, rankSystems, summarizeTeams } from '../../utils/ranking';
+import { formatTrend, summarizeTeams } from '../../utils/ranking';
+import { timeAgo } from '../../utils/timeAgo';
 
-type SortKey = 'atencao' | 'nota' | 'criticos' | 'tendencia';
+export type SortKey = 'nota' | 'criticos' | 'tendencia';
 
 const TARGET = 75;
 const sortOptions: Array<{ key: SortKey; label: string }> = [
-  { key: 'atencao', label: 'Atenção' },
   { key: 'nota', label: 'Nota' },
   { key: 'criticos', label: 'Críticos' },
   { key: 'tendencia', label: 'Tendência' },
@@ -30,16 +30,15 @@ const trendColor = { up: '#198038', down: '#a2191f', flat: '#525252', none: '#6f
 
 const barColor = (n: number) => (n >= TARGET ? '#198038' : n >= 50 ? '#8a6a00' : '#a2191f');
 
-/** Ordem da lista: atenção (regra do painel), pior nota primeiro, ou mais críticos primeiro. */
+/** Ordem da lista: melhor nota primeiro, mais críticos primeiro, ou maior ganho de nota primeiro. Sem dado vai para o fim. */
 export function sortSystems(systems: SystemSummaryResponse[], by: SortKey): SystemSummaryResponse[] {
-  if (by === 'atencao') return rankSystems(systems);
   const list = [...systems];
-  // Maiores quedas primeiro; quem não tem histórico vai para o fim.
+  const byName = (a: SystemSummaryResponse, b: SystemSummaryResponse) => a.name.localeCompare(b.name);
   if (by === 'tendencia') {
-    return list.sort((a, b) => (a.scoreDelta ?? Infinity) - (b.scoreDelta ?? Infinity) || a.name.localeCompare(b.name));
+    return list.sort((a, b) => (b.scoreDelta ?? -Infinity) - (a.scoreDelta ?? -Infinity) || byName(a, b));
   }
-  if (by === 'nota') return list.sort((a, b) => (a.lastAuditScore ?? -1) - (b.lastAuditScore ?? -1));
-  return list.sort((a, b) => (b.openCritical ?? 0) - (a.openCritical ?? 0) || (a.lastAuditScore ?? -1) - (b.lastAuditScore ?? -1));
+  if (by === 'nota') return list.sort((a, b) => (b.lastAuditScore ?? -1) - (a.lastAuditScore ?? -1) || byName(a, b));
+  return list.sort((a, b) => (b.openCritical ?? 0) - (a.openCritical ?? 0) || (b.lastAuditScore ?? -1) - (a.lastAuditScore ?? -1) || byName(a, b));
 }
 
 function scoreTag(score: number | null | undefined) {
@@ -51,7 +50,7 @@ function scoreTag(score: number | null | undefined) {
 /** Visão consolidada: onde olhar primeiro (sistemas) e como cada time está (times). */
 export function RankingPage() {
   const navigate = useNavigate();
-  const [sortBy, setSortBy] = useState<SortKey>('atencao');
+  const [sortBy, setSortBy] = useState<SortKey>('nota');
   const { data, isLoading, error } = useSystems();
   const { data: rules } = useRuleQuality();
 
@@ -76,7 +75,7 @@ export function RankingPage() {
         <div>
           <h1 style={{ marginBottom: '0.25rem', fontSize: '1.75rem', fontWeight: 400 }}>Ranking dos sistemas</h1>
           <p style={{ color: '#525252' }}>
-            Compare os sistemas pela nota da última auditoria. A linha escura marca a meta de {TARGET}.
+            Compare os sistemas pela nota da última auditoria. Meta da organização: {TARGET}.
           </p>
         </div>
         <div role="group" aria-label="Ordenar por" style={{ display: 'flex' }}>
@@ -108,7 +107,7 @@ export function RankingPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '56px minmax(160px, 2fr) minmax(200px, 3fr) 100px 90px 90px',
+            gridTemplateColumns: '56px minmax(180px, 2fr) minmax(220px, 3fr) 90px 110px 130px',
             gap: '0.75rem',
             padding: '0.75rem 1rem',
             background: '#e8e8e8',
@@ -118,10 +117,10 @@ export function RankingPage() {
         >
           <span>Posição</span>
           <span>Sistema</span>
-          <span>Nota</span>
+          <span>Nota (a linha marca a meta {TARGET})</span>
           <span>Tendência</span>
           <span>Críticos</span>
-          <span>Altos</span>
+          <span>Última auditoria</span>
         </div>
         {ranking.map((s, i) => {
           const score = s.lastAuditScore;
@@ -136,7 +135,7 @@ export function RankingPage() {
                 width: '100%',
                 cursor: 'pointer',
                 display: 'grid',
-                gridTemplateColumns: '56px minmax(160px, 2fr) minmax(200px, 3fr) 100px 90px 90px',
+                gridTemplateColumns: '56px minmax(180px, 2fr) minmax(220px, 3fr) 90px 110px 130px',
                 gap: '0.75rem',
                 alignItems: 'center',
                 padding: '0.875rem 1rem',
@@ -163,7 +162,7 @@ export function RankingPage() {
                 {formatTrend(s.scoreDelta).text}
               </span>
               <span style={{ fontWeight: 600, color: (s.openCritical ?? 0) > 0 ? '#a2191f' : '#198038' }}>{s.openCritical ?? 0}</span>
-              <span style={{ color: (s.openHigh ?? 0) > 0 ? '#c74e00' : undefined }}>{s.openHigh ?? 0}</span>
+              <span style={{ fontSize: '0.8125rem', color: '#525252' }}>{timeAgo(s.lastAuditDate)}</span>
             </button>
           );
         })}

@@ -353,7 +353,7 @@ public class ReportService {
         return "<dt>" + k + "</dt><dd>" + v + "</dd>";
     }
 
-    private static String esc(String text) {
+    static String esc(String text) {
         if (text == null) {
             return "";
         }
@@ -361,7 +361,7 @@ public class ReportService {
                 .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
-    private static final String CSS =
+    static final String CSS =
             "body{font-family:Arial,sans-serif;margin:32px;color:#222;line-height:1.4}"
             + "h1{color:#003641}h2{color:#00525f;border-bottom:2px solid #00525f;padding-bottom:4px;margin-top:32px}"
             + "h3{font-size:15px;margin:0 0 4px}.hint{background:#fff8e1;padding:8px;border-radius:4px;font-size:13px}"

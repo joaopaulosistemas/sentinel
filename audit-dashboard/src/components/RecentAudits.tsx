@@ -1,19 +1,24 @@
-import { Tag, Tile } from '@carbon/react';
 import { Link } from 'react-router-dom';
 import { useRecentAudits } from '../hooks/useAuditRuns';
 import type { AuditRunResponse } from '../types';
 import { analyzerCounts, isActiveRun, phaseIndex, PHASES } from '../utils/auditProgress';
-import { auditStatusConfig } from '../utils/auditStatus';
+import { scoreColor } from '../utils/systemAttention';
+import { timeAgo } from '../utils/timeAgo';
+import { SpinnerIcon } from './StatusIcons';
 
-function stepText(run: AuditRunResponse): string {
+/** "Na fila", "Clonando", "Analisando 4/12", "Pontuando" — onde a auditoria em andamento está. */
+export function stepText(run: AuditRunResponse): string {
   const i = phaseIndex(run);
-  const base = PHASES[Math.min(i, PHASES.length - 1)].label;
-  if (run.progress && run.progress.phase === 'ANALISE') {
-    const { done, total } = analyzerCounts(run.progress.analyzers);
-    if (total > 0) return `${base} ${done}/${total}`;
+  if (run.status === 'PENDING' || i === 0) return 'Na fila';
+  if (i === 1) return 'Clonando';
+  if (i === 2) {
+    const { done, total } = analyzerCounts(run.progress?.analyzers ?? []);
+    return total > 0 ? `Analisando ${done}/${total}` : 'Analisando';
   }
-  return base;
+  return i === 3 ? 'Pontuando' : (PHASES[Math.min(i, PHASES.length - 1)]?.label ?? 'Em execução');
 }
+
+const cell = { padding: '12px 8px' } as const;
 
 /** Últimas auditorias de todos os sistemas, numa única consulta; atualiza sozinha enquanto houver alguma em andamento. */
 export function RecentAudits() {
@@ -23,18 +28,11 @@ export function RecentAudits() {
   const live = (data ?? []).some(isActiveRun);
 
   return (
-    <Tile style={{ padding: 0, marginBottom: '2rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1rem 1rem 0.75rem',
-          borderBottom: '1px solid #e0e0e0',
-        }}
-      >
-        <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Últimas auditorias</h2>
-        <span style={{ fontSize: '0.75rem', color: '#525252' }}>
+    <section aria-label="Últimas auditorias" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Últimas auditorias</h2>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#525252' }}>
+          <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: live ? '#0f62fe' : '#198038' }} />
           {live ? 'Atualizando sozinha a cada 3 s' : 'Atualizada agora'}
         </span>
       </div>
@@ -43,38 +41,49 @@ export function RecentAudits() {
       ) : rows.length === 0 ? (
         <p style={{ padding: '1rem', color: '#525252' }}>Nenhuma auditoria ainda. Inicie a primeira em um sistema.</p>
       ) : (
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {rows.map((run) => {
-            const cfg = auditStatusConfig[run.status];
-            return (
-              <li
-                key={run.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '90px minmax(0, 2fr) 150px minmax(0, 1fr) 70px',
-                  gap: '1rem',
-                  alignItems: 'center',
-                  padding: '0.75rem 1rem',
-                  borderBottom: '1px solid #e0e0e0',
-                  background: isActiveRun(run) ? '#edf5ff' : undefined,
-                }}
-              >
-                <Link to={`/audits/${run.id}`}>#{run.id}</Link>
-                <span style={{ fontWeight: 500 }}>{run.systemName}</span>
-                <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <Tag type={cfg.type} size="sm">
-                    {cfg.label}
-                  </Tag>
-                </span>
-                <span style={{ color: '#525252', fontSize: '0.8125rem' }}>
-                  {isActiveRun(run) ? stepText(run) : new Date(run.startedAt).toLocaleString('pt-BR')}
-                </span>
-                <span style={{ textAlign: 'right', fontWeight: 600 }}>{run.riskScore?.overall ?? '—'}</span>
-              </li>
-            );
-          })}
-        </ul>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+            <thead>
+              <tr style={{ background: '#e8e8e8', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
+                <th style={{ padding: '10px 16px' }}>Auditoria</th>
+                <th style={{ padding: '10px 8px' }}>Sistema</th>
+                <th style={{ padding: '10px 8px' }}>Situação</th>
+                <th style={{ padding: '10px 16px', textAlign: 'right' }}>Nota</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((run) => {
+                const active = isActiveRun(run);
+                const score = run.riskScore ? Math.round(run.riskScore.overall) : null;
+                return (
+                  <tr key={run.id} style={{ borderBottom: '1px solid #e0e0e0', background: active ? '#edf5ff' : '#fff' }}>
+                    <td style={{ padding: '12px 16px' }}>
+                      <Link to={`/audits/${run.id}`} style={{ fontWeight: 500, textDecoration: 'none' }}>#{run.id}</Link>
+                      <div style={{ fontSize: 12, color: '#525252' }}>{timeAgo(run.startedAt)}</div>
+                    </td>
+                    <td style={{ ...cell, fontWeight: 500 }}>{run.systemName}</td>
+                    <td style={cell}>
+                      {active ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0043ce', fontWeight: 500 }}>
+                          <SpinnerIcon size={14} color="#0043ce" />
+                          {stepText(run)}
+                        </span>
+                      ) : run.status === 'COMPLETED' ? (
+                        <span style={{ color: '#044317', fontWeight: 500 }}>Concluída</span>
+                      ) : run.status === 'FAILED' ? (
+                        <span style={{ color: '#a2191f', fontWeight: 500 }}>Falhou</span>
+                      ) : (
+                        <span style={{ color: '#525252', fontWeight: 500 }}>Cancelada</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
-    </Tile>
+    </section>
   );
 }

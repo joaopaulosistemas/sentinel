@@ -8,19 +8,24 @@ export interface Verdict {
   detail: string;
 }
 
-/** Frase do veredito: diz o que pesa e o que fazer, sem exigir que a pessoa leia a lista inteira. */
+/**
+ * Frase do veredito: diz o que pesa e o que fazer, sem exigir que a pessoa leia a lista inteira.
+ * Trechos entre ** ** são o destaque (negrito) de quem exibe.
+ */
 export function verdict(plan: FixPlan): Verdict {
   const now = Math.round(plan.scoreNow);
   const tone = now >= TARGET_SCORE ? 'good' : now >= 50 ? 'warn' : 'bad';
   if (plan.criticalCount > 0) {
     const after = Math.round(plan.scoreIfCriticalFixed);
     const plural = plan.criticalCount === 1 ? 'problema crítico' : 'problemas críticos';
-    const meta =
-      after >= TARGET_SCORE ? ` e a nota passa da meta de ${TARGET_SCORE}` : ` (meta: ${TARGET_SCORE})`;
+    const headline =
+      now >= TARGET_SCORE
+        ? `Dentro da meta, mas com **${plan.criticalCount} ${plural}** em aberto.`
+        : `Atenção: **${plan.criticalCount} ${plural}** ${plan.criticalCount === 1 ? 'impede' : 'impedem'} a nota de passar de ${TARGET_SCORE}.`;
     return {
       tone,
-      headline: `${plan.criticalCount} ${plural} para resolver primeiro`,
-      detail: `Corrigindo só os críticos, a nota estimada vai de ${now} para ${after}${meta}.`,
+      headline,
+      detail: `Corrigindo só os críticos, a nota estimada ${after >= now ? 'sobe' : 'fica'} para **${after}**. Meta do sistema: ${TARGET_SCORE}.`,
     };
   }
   if (plan.items.length === 0) {

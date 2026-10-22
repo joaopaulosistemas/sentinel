@@ -145,3 +145,12 @@ Os números locais usam o Semgrep 1.172.0 dos pacotes; o CI confirma.
 **Descoberta:** `descobrir-repos.sh` passa a buscar aplicações (tamanho mínimo, sem starter/boilerplate/demo), com calendário 2:1:1:1 entre
 Java/Spring, Angular, Docker/K8s e React. **Agentes:** prompts atualizados (ruído antes de regra nova, benchmark como gate, revisão humana por amostra em
 `docs/evolucao/revisao-humana.md`, Evolution só em item de produto com diff). **Placar:** critérios dos eixos 1, 2 e 10 reescritos com medida objetiva; notas mantidas em 2.
+
+## Dashboard 12.3.0 — paridade com o protótipo de telas
+
+Revisão tela a tela do protótipo (8 telas) e implementação do que faltava: navegação superior, ícones de status e de carregamento animados
+(respeitam `prefers-reduced-motion`), tela de execução (faixa de fases, cartões por analisador, resultado parcial, eventos, decorrido e estimativa),
+tela de resultado (veredito com destaque, ganho por correção, categorias), visão geral, sistemas (lista e painel lateral de edição), detalhe do sistema,
+achados (várias severidades, filtros ativos, resumo por sistema, origem), ranking (meta, ordenação por nota, críticos e tendência) e relatórios em 3 passos.
+API: `commitSha`, linhas e arquivos lidos, severidades parciais, descrição dos analisadores, novos/resolvidos/variação por auditoria,
+`GET /api/v1/reports/portfolio` (todos os sistemas, em HTML, PDF e CSV). Histórico de relatórios segue no navegador.
