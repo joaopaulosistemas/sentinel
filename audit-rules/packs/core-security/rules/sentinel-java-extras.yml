@@ -193,7 +193,10 @@ rules:
 
   - id: sentinel-cookie-sem-secure
     patterns:
-      - pattern: Cookie $C = new Cookie(...);
+      - pattern-either:
+          - pattern: $T $C = new Cookie(...);
+          - pattern: $T $C = new javax.servlet.http.Cookie(...);
+          - pattern: $T $C = new jakarta.servlet.http.Cookie(...);
       - pattern-not-inside: |
           ...
           $C.setSecure(true);
@@ -208,3 +211,16 @@ rules:
     metadata:
       category: security
       cwe: "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+
+  - id: sentinel-cookie-secure-desligado
+    pattern: $C.setSecure(false)
+    message: >
+      Cookie com setSecure(false) explícito: ele também viaja por HTTP puro. Use setSecure(true) (e HttpOnly/SameSite).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+      owasp: A05:2021 - Security Misconfiguration

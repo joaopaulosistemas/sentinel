@@ -33,7 +33,9 @@ export default tseslint.config(
       "security/detect-unsafe-regex": "warn",
       "security/detect-non-literal-regexp": "warn",
       "security/detect-child-process": "warn",
-      "security/detect-non-literal-fs-filename": "warn",
+      // desligadas pela medição (precisao.md, 2026-10-22): 0 verdadeiros positivos em 6 achados lidos de cada uma;
+      // a regra de fs aponta todo path.join de CLI e script, e a "super-linear-move" 112 vezes em scripts de instalação
+      "security/detect-non-literal-fs-filename": "off",
       "security/detect-pseudoRandomBytes": "error",
       "security/detect-buffer-noassert": "error",
       "security/detect-new-buffer": "error",
@@ -64,7 +66,7 @@ export default tseslint.config(
       "promise/no-return-in-finally": "warn",
       // expressões regulares: ReDoS e erros
       "regexp/no-super-linear-backtracking": "error",
-      "regexp/no-super-linear-move": "warn",
+      "regexp/no-super-linear-move": "off",
       "regexp/no-trivially-nested-quantifier": "warn",
       "regexp/no-misleading-capturing-group": "warn",
       "regexp/no-empty-alternative": "warn",

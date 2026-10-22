@@ -16,15 +16,38 @@ rules:
       owasp: A03:2021 - Injection
 
   - id: sentinel-xss-response-write
-    patterns:
-      - pattern: $RESP.getWriter().$M($INPUT)
-      - pattern-not: $RESP.getWriter().$M("...")
-      - metavariable-regex:
-          metavariable: $M
-          regex: ^(print|println|write|append)$
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getParameterValues(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getHeaders(...)
+      - pattern: $REQ.getParameterNames()
+      - pattern: $REQ.getParameterMap()
+      - pattern: $REQ.getRequestURL()
+      - pattern: $REQ.getQueryString()
+      - pattern: $REQ.getRequestURI()
+      - pattern: $REQ.getCookies()
+      - pattern: $C.getValue()
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., String $P, ...) { ... }
+          - focus-metavariable: $P
+    pattern-sinks:
+      - patterns:
+          - pattern: $RESP.getWriter().$W(...)
+          - metavariable-regex:
+              metavariable: $W
+              regex: ^(print|println|write|append|printf|format)$
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $ENC.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(encodeFor(HTML|HTMLAttribute|JavaScript|CSS|URL|XML|XMLAttribute)|forHtml(Content|Attribute|UnquotedAttribute)?|forJavaScript|forCssString|forUriComponent|escapeHtml4?|escapeXml(10|11)?|escapeEcmaScript|htmlEscape|sanitize)$
     message: >
-      Possível XSS (OWASP A03): escrita direta de '$INPUT' na resposta HTTP sem escape.
-      Escape o conteúdo (ex.: OWASP Java Encoder, Encode.forHtml) antes de enviar ao cliente.
+      Possível XSS (OWASP A03): dado vindo da requisição é escrito na resposta HTTP sem escape.
+      Escape o conteúdo no contexto certo (OWASP Java Encoder `Encode.forHtml`, ESAPI `encodeForHTML`, Spring `HtmlUtils.htmlEscape`) antes de enviar ao cliente.
     severity: WARNING
     languages: [java]
     metadata:

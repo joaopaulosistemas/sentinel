@@ -51,8 +51,9 @@ public final class FunctionScanner {
             String before = clean.substring(Math.max(0, m.start(1) - 40), m.start(1));
             Matcher prev = PREV_TOKEN.matcher(before);
             if (prev.find() && ("new".equals(prev.group(1)) || "record".equals(prev.group(1))
-                    || "class".equals(prev.group(1)) || "interface".equals(prev.group(1)))) {
-                continue;                                            // classe anônima, record, declaração de tipo
+                    || "class".equals(prev.group(1)) || "interface".equals(prev.group(1))
+                    || "extends".equals(prev.group(1)) || "implements".equals(prev.group(1)))) {
+                continue;                                            // classe anônima, record, declaração de tipo, "extends Base(...)"
             }
             int open = m.end() - 1;
             int close = matchClosing(clean, open, '(', ')');
@@ -128,20 +129,58 @@ public final class FunctionScanner {
         return 1 + count(DECISION, body) + count(NULLISH, body) + count(TERNARY, body);
     }
 
-    /** Níveis de blocos aninhados dentro do corpo (o corpo em si não conta). */
+    /**
+     * Níveis de blocos aninhados dentro do corpo (o corpo em si não conta). Chaves de objeto literal, de tipo
+     * anônimo ({@code x: { a: string }}) e de desestruturação não são blocos de lógica e não contam: medido em
+     * repositórios reais, um esquema Swagger de 11 níveis aparecia como "aninhamento 11".
+     */
     static int nesting(String body) {
+        java.util.ArrayDeque<Boolean> pilha = new java.util.ArrayDeque<>();   // true = bloco de lógica
         int depth = 0;
         int max = 0;
         for (int i = 0; i < body.length(); i++) {
             char c = body.charAt(i);
             if (c == '{') {
-                depth++;
-                max = Math.max(max, depth);
+                boolean bloco = !abreLiteral(body, i);
+                pilha.push(bloco);
+                if (bloco) {
+                    depth++;
+                    max = Math.max(max, depth);
+                }
             } else if (c == '}') {
-                depth = Math.max(0, depth - 1);
+                if (!pilha.isEmpty() && pilha.pop()) {
+                    depth = Math.max(0, depth - 1);
+                }
             }
         }
         return max;
+    }
+
+    /** A chave em {@code idx} abre um objeto literal/tipo (e não um bloco)? Olha o caractere significativo anterior. */
+    private static boolean abreLiteral(String s, int idx) {
+        int j = idx - 1;
+        while (j >= 0 && Character.isWhitespace(s.charAt(j))) {
+            j--;
+        }
+        if (j < 0) {
+            return false;
+        }
+        char p = s.charAt(j);
+        if ("(,=:[?&|!+*%".indexOf(p) >= 0) {
+            return true;
+        }
+        if (p == '-') {
+            return !(j > 0 && s.charAt(j - 1) == '-');
+        }
+        if (Character.isLetter(p)) {
+            int k = j;
+            while (k >= 0 && (Character.isLetterOrDigit(s.charAt(k)) || s.charAt(k) == '_' || s.charAt(k) == '$')) {
+                k--;
+            }
+            String palavra = s.substring(k + 1, j + 1);
+            return "return".equals(palavra) || "yield".equals(palavra) || "await".equals(palavra) || "typeof".equals(palavra);
+        }
+        return false;
     }
 
     /** Conta parâmetros no nível de topo (vírgulas dentro de <>, (), [], {} não separam parâmetros). */

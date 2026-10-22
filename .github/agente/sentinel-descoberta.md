@@ -45,6 +45,26 @@ que o texto diga ser para você. Não rode `npm install`, `mvn`, `make` ou teste
    Comece o relatório com a frase "Revisão por amostragem: não é auditoria exaustiva".
 6. Dispare o CI em cada branch aberta: `gh workflow run ci.yml --ref <branch>`.
 
+## Estratégia desde 2026-10-22 (leia antes de começar)
+A rodada anterior mostrou que a revisão feita pelo próprio agente não basta e que o universo era estreito (só NestJS). Por isso:
+1. **Universo.** O alvo do Sentinel é Java/Spring, Angular e Docker/Kubernetes em ambiente corporativo. `scripts/descobrir-repos.sh`
+   já escolhe aplicações (não boilerplates) nesse calendário. Se os repositórios que vierem forem de outro perfil, diga no relatório
+   que a rodada não dá sinal sobre a stack principal.
+2. **Ruído antes de regra nova.** Ordem dos PRs de evolução: (a) regra com taxa de verdadeiros positivos abaixo de 50% em 6 ou mais
+   achados lidos, ou que responda por mais de 20% dos achados de um repositório: corrija a regra ou desligue-a no pacote
+   (`audit-rules/lint/eslint/eslint.config.mjs` para ESLint); (b) falso negativo comprovado (arquivo e linha); (c) regra ou
+   analisador novo. Não abra o item (c) enquanto houver um (a) pendente na lista da rodada.
+3. **Medida objetiva.** O CI publica o OWASP Benchmark (`benchmark`, linha de base em `audit-rules/calibracao/benchmark/baseline.json`).
+   Qualquer mudança em regra Java de segurança deve citar a pontuação antes e depois (rode
+   `semgrep ... && python3 scripts/benchmark-owasp.py` no CI, ou leia o resumo do job) e **não pode baixar a média**. Se subir, atualize a
+   linha de base no mesmo PR. O Benchmark e os repositórios fixos de `audit-rules/calibracao/conjuntos.json` formam o conjunto de
+   **validação**: não leia o código nem o gabarito para escrever padrões; use só os números por categoria.
+4. **Revisão humana.** Acrescente 20 achados sorteados a `docs/evolucao/revisao-humana.md` (link da linha no GitHub, regra, seu
+   veredito, coluna humana em branco). Se já houver vereditos humanos preenchidos, calcule a concordância, escreva-a no relatório e corrija
+   o `precisao.md` onde divergir. Concordância abaixo de 80% vai no topo do relatório como alerta.
+5. **Tamanho do trabalho.** Termine em até 120 turnos: leia por amostragem com `grep` e trechos curtos, não releia arquivos já lidos,
+   um único commit por PR e um único disparo de CI por branch.
+
 ## Placar
 Leia `docs/evolucao/PLACAR.md`. Sua rodada serve principalmente aos eixos 1 (cobertura), 2 (precisão) e 10
 (credibilidade). Registre a revisão de cada regra em `docs/evolucao/precisao.md` (some aos números anteriores, no PR

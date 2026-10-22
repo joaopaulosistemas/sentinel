@@ -201,4 +201,26 @@ class FunctionScannerTest {
         assertDoesNotThrow(() -> ts("function f( { ((( "));
         assertTrue(java("class A { void m() { run(); ").isEmpty());   // chave não fecha: ignora em vez de chutar
     }
+
+    @Test
+    void classeQueEstendeChamadaNaoEFuncao() {
+        // "class X extends Base('jwt') {" não é a função "Base"
+        assertTrue(names(ts("class Guard extends AuthGuard('jwt') { run() { return 1; } }")).stream()
+                .noneMatch("AuthGuard"::equals));
+        assertTrue(names(ts("class Guard extends AuthGuard('jwt') { run() { return 1; } }")).contains("run"));
+    }
+
+    @Test
+    void objetoLiteralNaoContaComoAninhamento() {
+        // esquema de documentação: 4 níveis de objeto, nenhum bloco de lógica
+        assertEquals(0, ts("""
+                function schema() {
+                    return { a: { b: { c: { d: 1 } } } };
+                }
+                """).get(0).nesting());
+        // objeto como argumento e como tipo anônimo também não contam
+        assertEquals(0, ts("function f() { g({ x: { y: 1 } }); const t: { a: string } = h(); }").get(0).nesting());
+        // blocos de lógica continuam contando
+        assertEquals(2, ts("function f() { if (a) { for (const x of y) { g({ z: 1 }); } } }").get(0).nesting());
+    }
 }

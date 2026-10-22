@@ -39,6 +39,14 @@ tabela se o PR trouxer a evidência (teste, saída de CI, medição). Nunca decl
 evidências e as lacunas. Itens que exigem `.github/` ou segredos: abra o PR com o que for possível e peça o resto ao
 humano no corpo do PR.
 
+## Produto antes de documentação (desde 2026-10-22)
+- Com o CI verde, escolha **um item de produto** do backlog do `PLACAR.md` (eixos de menor nota; os itens `1/2` do OWASP Benchmark entram aqui).
+  Item que só marque uma caixa ou só toque documentação **não conta**: se o primeiro item aberto já estiver cumprido, passe ao próximo.
+- Marcar `[x]` exige no mesmo PR um diff de código, de regra ou de teste que o prove, e a medida antes e depois quando houver
+  (job `benchmark`, calibração, cobertura).
+- Mudança em regra Java de segurança: o job `benchmark` do CI não pode baixar a média; se subir, atualize `audit-rules/calibracao/benchmark/baseline.json` para cima.
+- Não leia nem copie o código do OWASP Benchmark para escrever padrões (é o conjunto de validação); trabalhe com os números por categoria e com exemplos sintéticos seus.
+
 ## Economia (tokens, CI e commits)
 - **Um item por execução.** Escolha um único item do backlog (ou um único problema do CI) e termine-o; não abra o próximo.
 - **Leia o mínimo.** Use `grep`/`Glob` para achar o ponto exato e leia só trechos (`offset`/`limit`). Não releia arquivos que você acabou de editar. Não leia `LOG.md`, `calibracao.md` ou relatórios inteiros: só o fim do `LOG.md` e a linha do item no `PLACAR.md`.

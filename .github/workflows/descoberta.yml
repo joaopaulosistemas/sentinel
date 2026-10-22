@@ -130,7 +130,7 @@ jobs:
           prompt: |
             Siga as instruções de .github/agente/sentinel-descoberta.md. A entrada está na pasta descoberta/.
           claude_args: >-
-            --max-turns 120
+            --max-turns 140
             --disallowedTools "Bash(git push origin main:*),Bash(git push --force:*),Bash(git push -f:*),Bash(npm:*),Bash(npx:*),Bash(curl:*),Bash(wget:*)"
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh workflow run:*),Bash(semgrep:*),Bash(python3:*),Bash(mvn:*),Bash(mktemp:*),Bash(mkdir:*),Bash(cp:*),Bash(ls:*),Bash(cat:*),Bash(head:*),Bash(sed:*),Bash(wc:*)"
 

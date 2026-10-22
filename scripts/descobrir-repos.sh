@@ -6,24 +6,29 @@
 set -u
 N="${1:-6}"; PERFIL="${2:-auto}"
 HIST="audit-rules/calibracao/descobertos.txt"; touch "$HIST"
-PERFIS=(java-spring angular react typescript-node docker-k8s)
+# Calendário ponderado pelo que importa para o Sentinel (Java/Spring e Angular em ambiente corporativo; Docker/K8s):
+# 2 de cada 5 semanas Java/Spring, 1 Angular, 1 Docker/K8s, 1 alterna React ou Node. Os perfis que já têm muita evidência
+# (TypeScript no servidor, já com 9 repositórios revisados) só entram se pedidos com o parâmetro `perfil`.
+PERFIS=(java-spring angular java-spring docker-k8s react)
 if [ "$PERFIL" = auto ]; then PERFIL="${PERFIS[$(( 10#$(date +%V) % ${#PERFIS[@]} ))]}"; fi
 echo "perfil: $PERFIL" >&2
 
+# Procuramos aplicações de verdade, não esqueletos: tamanho mínimo, atividade recente e termos de domínio de negócio.
+# Termos de negócio puxam sistemas com regra de negócio, camadas e persistência (o que um sistema corporativo tem).
 case "$PERFIL" in
-  java-spring)     LANG=java;       TERMOS=("spring boot" "spring boot jpa" "quarkus") ;;
-  angular)         LANG=typescript; TERMOS=("angular" "angular ngrx") ;;
-  react)           LANG=typescript; TERMOS=("react" "react redux" "next.js") ;;
-  typescript-node) LANG=typescript; TERMOS=("express api" "nestjs" "node api") ;;
-  docker-k8s)      LANG=dockerfile; TERMOS=("docker compose" "kubernetes manifests" "helm chart") ;;
+  java-spring)     LANG=java;       TERMOS=("spring boot microservices" "spring boot jpa rest api" "spring security jwt" "jakarta ee" "spring boot banking" "spring boot ecommerce" "spring boot erp") ;;
+  angular)         LANG=typescript; TERMOS=("angular admin" "angular erp" "angular ngrx enterprise" "angular dashboard") ;;
+  react)           LANG=typescript; TERMOS=("react admin" "react redux enterprise" "next.js dashboard") ;;
+  typescript-node) LANG=typescript; TERMOS=("nestjs microservices" "express api" "node api") ;;
+  docker-k8s)      LANG=dockerfile; TERMOS=("docker compose production" "kubernetes manifests" "helm chart") ;;
   *) echo "perfil desconhecido: $PERFIL" >&2; exit 2 ;;
 esac
 
 DESDE="$(date -d '-18 months' +%Y-%m-%d 2>/dev/null || date -v-18m +%Y-%m-%d)"
 TMP="$(mktemp)"
 for termo in "${TERMOS[@]}"; do
-  gh search repos "$termo" --language="$LANG" --stars="200..8000" --updated=">=$DESDE" --archived=false \
-    --limit 40 --json fullName,size,isFork,license -q '.[]|select(.isFork|not)|select(.size<60000)|.fullName' >> "$TMP" 2>/dev/null
+  gh search repos "$termo" --language="$LANG" --stars="300..30000" --updated=">=$DESDE" --archived=false \
+    --limit 60 --json fullName,size,isFork,license -q '.[]|select(.isFork|not)|select(.size>=800 and .size<150000)|select(.fullName|test("(starter|boilerplate|template|tutorial|example|demo|course|learn|awesome|sample|bootcamp|cheatsheet|workshop|kata|playground)";"i")|not)|.fullName' >> "$TMP" 2>/dev/null
   sleep 2
 done
 # remove repetidos, o histórico, os repositórios fixos da calibração, e embaralha

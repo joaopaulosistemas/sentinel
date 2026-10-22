@@ -1,26 +1,30 @@
-# Injeção (OWASP A03:2021). Usa taint mode: o dado "sujo" é qualquer string montada por
-# concatenação com uma variável, mesmo que a query seja montada em outra linha antes de ser usada.
+# Injeção (OWASP A03:2021). Usa taint mode: o dado "sujo" vem da requisição (getParameter, cabeçalho, cookie,
+# parâmetros de método) e segue por concatenação, String.format e variáveis até a chamada perigosa. Concatenar
+# constantes não é achado (medido no OWASP Benchmark).
 rules:
   - id: sentinel-sql-injection
     mode: taint
     pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getParameterValues(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getHeaders(...)
+      - pattern: $REQ.getParameterNames()
+      - pattern: $REQ.getParameterMap()
+      - pattern: $REQ.getRequestURL()
+      - pattern: $REQ.getQueryString()
+      - pattern: $C.getValue()
       - patterns:
-          - pattern-either:
-              - pattern: '"..." + $X'
-              - pattern: '$X + "..."'
-          - pattern-not: '"..." + "..."'
-      - patterns:
-          - pattern: String.format($FMT, ...)
-          - metavariable-regex:
-              metavariable: $FMT
-              regex: (?is).*\b(select|insert|update|delete|drop|where)\b.*
+          - pattern-inside: |
+              $RET $M(..., String $P, ...) { ... }
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern: $OBJ.$M($ARG, ...)
           - focus-metavariable: $ARG
           - metavariable-regex:
               metavariable: $M
-              regex: ^(executeQuery|executeUpdate|execute|executeLargeUpdate|prepareStatement|prepareCall|createQuery|createNativeQuery|addBatch)$
+              regex: ^(executeQuery|executeUpdate|execute|executeLargeUpdate|prepareStatement|prepareCall|createQuery|createNativeQuery|addBatch|query|queryForObject|queryForList|queryForMap|queryForRowSet|update|batchUpdate)$
     message: >
       Possível SQL Injection (OWASP A03): a consulta é montada por concatenação ou String.format
       com valores variáveis. Use PreparedStatement / parâmetros nomeados (?) em vez de concatenar.
@@ -46,6 +50,48 @@ rules:
     message: >
       Possível Command Injection (OWASP A03): comando do sistema operacional montado com valor variável.
       Valide contra uma lista de permitidos e passe argumentos como lista, nunca como texto concatenado.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-command-injection-requisicao
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getParameterValues(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getHeaders(...)
+      - pattern: $REQ.getParameterNames()
+      - pattern: $REQ.getParameterMap()
+      - pattern: $REQ.getRequestURL()
+      - pattern: $REQ.getQueryString()
+      - pattern: $C.getValue()
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., @$A(...) String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $A
+              regex: ^(RequestParam|PathVariable|RequestHeader|QueryParam|PathParam|FormParam|HeaderParam)$
+          - focus-metavariable: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.exec($CMD, ...)
+              - pattern: new ProcessBuilder($CMD, ...)
+              - pattern: $PB.command($CMD, ...)
+          - focus-metavariable: $CMD
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $ENC.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(encodeFor(OS|Shell)|quote|escapeShell.*)$
+    message: >
+      Possível Command Injection (CWE-78): dado da requisição chega à execução de um comando do sistema operacional.
+      Valide contra uma lista de permitidos e passe os argumentos como lista, nunca como texto concatenado.
     severity: ERROR
     languages: [java]
     metadata:
@@ -98,11 +144,19 @@ rules:
   - id: sentinel-ldap-injection
     mode: taint
     pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getParameterValues(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getHeaders(...)
+      - pattern: $REQ.getParameterNames()
+      - pattern: $REQ.getParameterMap()
+      - pattern: $REQ.getRequestURL()
+      - pattern: $REQ.getQueryString()
+      - pattern: $C.getValue()
       - patterns:
-          - pattern-either:
-              - pattern: '"..." + $X'
-              - pattern: '$X + "..."'
-          - pattern-not: '"..." + "..."'
+          - pattern-inside: |
+              $RET $M(..., String $P, ...) { ... }
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern: $CTX.search($BASE, $FILTER, ...)
@@ -120,11 +174,19 @@ rules:
   - id: sentinel-xpath-injection
     mode: taint
     pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getParameterValues(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getHeaders(...)
+      - pattern: $REQ.getParameterNames()
+      - pattern: $REQ.getParameterMap()
+      - pattern: $REQ.getRequestURL()
+      - pattern: $REQ.getQueryString()
+      - pattern: $C.getValue()
       - patterns:
-          - pattern-either:
-              - pattern: '"..." + $X'
-              - pattern: '$X + "..."'
-          - pattern-not: '"..." + "..."'
+          - pattern-inside: |
+              $RET $M(..., String $P, ...) { ... }
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern: $XPATH.evaluate($EXPR, ...)

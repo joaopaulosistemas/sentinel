@@ -272,3 +272,55 @@
   after: "el.textContent = location.search"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-servlet-path-traversal"
+  summary: "Não monte caminho com dado da requisição. Use só o nome do arquivo e confira que o caminho final fica dentro do diretório permitido."
+  before: "new File(\"/dados/\" + request.getParameter(\"arquivo\"))"
+  after: |-
+    Path base = Paths.get("/dados").toRealPath();
+    Path alvo = base.resolve(Paths.get(nome).getFileName()).normalize();
+    if (!alvo.startsWith(base)) throw new SecurityException("caminho fora do diretório permitido");
+  refs:
+    - "https://owasp.org/www-community/attacks/Path_Traversal"
+    - "https://cwe.mitre.org/data/definitions/22.html"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-servlet-trust-boundary"
+  summary: "Valide o dado (tipo, tamanho, lista permitida) antes de guardar na sessão e não use dado do cliente como nome do atributo."
+  before: "session.setAttribute(\"usuario\", request.getParameter(\"usuario\"));"
+  after: |-
+    String usuario = request.getParameter("usuario");
+    if (!usuario.matches("[a-z0-9._-]{3,32}")) throw new IllegalArgumentException();
+    session.setAttribute("usuario", usuario);
+  refs:
+    - "https://cwe.mitre.org/data/definitions/501.html"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-command-injection-requisicao"
+  summary: "Não passe dado da requisição ao sistema operacional. Valide contra lista permitida e use argumentos separados no ProcessBuilder."
+  before: "Runtime.getRuntime().exec(request.getParameter(\"host\"));"
+  after: |-
+    if (!host.matches("[A-Za-z0-9.-]{1,253}")) throw new IllegalArgumentException();
+    new ProcessBuilder("ping", "-c", "1", host).start();
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-cookie-secure-desligado"
+  summary: "Troque setSecure(false) por setSecure(true) e defina HttpOnly e SameSite."
+  before: "cookie.setSecure(false);"
+  after: "cookie.setSecure(true); cookie.setHttpOnly(true);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-crypto-random-servidor"
+  summary: "Se o valor protege algo (token, sessão, senha provisória), troque por SecureRandom."
+  before: "new java.util.Random().nextInt()"
+  after: "new java.security.SecureRandom().nextInt()"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/330.html"
+  effort: S
+  regression-risk: LOW
