@@ -2,10 +2,8 @@ import {
   Content,
   Header,
   HeaderName,
-  SideNav,
-  SideNavItems,
-  SideNavLink,
-  SideNavMenu,
+  HeaderNavigation,
+  HeaderMenuItem,
   SkipToContent,
 } from '@carbon/react';
 import React from 'react';
@@ -15,6 +13,15 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
+const ITENS = [
+  { nome: 'Visão geral', rota: '/', exata: true },
+  { nome: 'Sistemas', rota: '/systems' },
+  { nome: 'Findings', rota: '/findings' },
+  { nome: 'Ranking', rota: '/ranking' },
+  { nome: 'Relatórios', rota: '/reports' },
+];
+
+/** Cabeçalho escuro com a navegação principal em linha, como no protótipo. */
 export function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,60 +30,28 @@ export function AppShell({ children }: AppShellProps) {
     <>
       <Header aria-label="Sentinel Audit Tool">
         <SkipToContent />
-        <HeaderName prefix="SENTINEL" onClick={() => navigate('/')}>
+        <HeaderName href="#" prefix="Sentinel" onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
           Audit Tool
         </HeaderName>
+        <HeaderNavigation aria-label="Navegação principal">
+          {ITENS.map((i) => (
+            <HeaderMenuItem
+              key={i.rota}
+              href={i.rota}
+              isActive={i.exata ? location.pathname === i.rota : location.pathname.startsWith(i.rota)}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                navigate(i.rota);
+              }}
+            >
+              {i.nome}
+            </HeaderMenuItem>
+          ))}
+        </HeaderNavigation>
         <span style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
           v{__APP_VERSION__}
         </span>
       </Header>
-
-      <SideNav
-        aria-label="Navegação principal"
-        isFixedNav
-        expanded
-        isPersistent
-      >
-        <SideNavItems>
-          <SideNavLink
-            isActive={location.pathname === '/'}
-            onClick={() => navigate('/')}
-            href="#"
-          >
-            Visão Geral
-          </SideNavLink>
-          <SideNavLink
-            isActive={location.pathname.startsWith('/ranking')}
-            onClick={() => navigate('/ranking')}
-            href="#"
-          >
-            Ranking
-          </SideNavLink>
-          <SideNavLink
-            isActive={location.pathname.startsWith('/findings')}
-            onClick={() => navigate('/findings')}
-            href="#"
-          >
-            Findings
-          </SideNavLink>
-          <SideNavLink
-            isActive={location.pathname.startsWith('/reports')}
-            onClick={() => navigate('/reports')}
-            href="#"
-          >
-            Relatórios
-          </SideNavLink>
-          <SideNavMenu title="Sistemas" defaultExpanded={false}>
-            <SideNavLink
-              isActive={location.pathname.startsWith('/systems')}
-              onClick={() => navigate('/systems')}
-              href="#"
-            >
-              Todos os Sistemas
-            </SideNavLink>
-          </SideNavMenu>
-        </SideNavItems>
-      </SideNav>
 
       <Content>{children}</Content>
     </>

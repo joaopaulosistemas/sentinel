@@ -58,8 +58,11 @@ describe('AuditRunPage', () => {
       },
     });
     expect(await screen.findByText('Semgrep')).toBeInTheDocument();
-    expect(screen.getByText('Executando')).toBeInTheDocument();
-    expect(screen.getByText('Ferramenta ausente')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Concluído' })).toBeInTheDocument();
+    expect(screen.getByText('Resultado parcial')).toBeInTheDocument();
+    expect(screen.getAllByText('executando').length).toBeGreaterThan(0);
+    expect(screen.getByText('ferramenta ausente')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Executando' })).toBeInTheDocument();
     expect(screen.getByText('Semgrep concluído: 12 achados')).toBeInTheDocument();
     expect(screen.getByText(/1 de 2 analisadores concluídos/)).toBeInTheDocument();
   });
@@ -81,12 +84,14 @@ describe('AuditRunPage', () => {
         ],
       },
     );
-    expect(await screen.findByText('3 problemas críticos para resolver primeiro')).toBeInTheDocument();
-    expect(screen.getByText(/vai de 63 para 74/)).toBeInTheDocument();
+    expect(await screen.findByText('3 problemas críticos')).toBeInTheDocument();
+    expect(screen.getByText('74')).toBeInTheDocument();
+    expect(screen.getByText('Etapa 1 · Veredito')).toBeInTheDocument();
+    expect(screen.getByText(/resultado da auditoria #215/)).toBeInTheDocument();
     expect(screen.getByText('SQL montado por concatenação')).toBeInTheDocument();
     expect(screen.getByText('nota +4.5')).toBeInTheDocument();
     expect(screen.getByText(/\+1 ocorrências/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ver todos os achados' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver todos os achados' })).toBeInTheDocument();
     expect(screen.getByText(/4 min 12 s/)).toBeInTheDocument();
 
     // filtrar por categoria mostra só os problemas dela

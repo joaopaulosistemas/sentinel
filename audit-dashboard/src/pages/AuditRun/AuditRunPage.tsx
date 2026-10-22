@@ -1,42 +1,33 @@
-import { Button, InlineNotification, Modal, ProgressBar, ProgressIndicator, ProgressStep, SkeletonText, Tag } from '@carbon/react';
+import { Button, InlineNotification, Modal, SkeletonText } from '@carbon/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
+import { AnalyzerCard, EventLog, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
 import { JourneySteps } from '../../components/JourneySteps';
+import { CheckIcon, CrossIcon, DashIcon, SpinnerIcon } from '../../components/StatusIcons';
 import { ResultSteps } from '../../components/ResultSteps';
 import { useAuditStore } from '../../store/useAuditStore';
-import type { AnalyzerProgressStatus } from '../../types';
-import { auditStatusConfig } from '../../utils/auditStatus';
+import type { AuditProgress } from '../../types';
+import { timeAgo } from '../../utils/timeAgo';
 import { reportUrl } from '../Reports/reportLinks';
 import {
   PHASES,
   analyzerCounts,
   averageDurationSeconds,
   remainingSeconds,
-  analyzerStatusLabel,
+  clock,
   elapsedSeconds,
+  etaText,
   formatDuration,
   phaseIndex,
+  phaseViews,
   progressPercent,
 } from '../../utils/auditProgress';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';
-
-type TagType = 'warm-gray' | 'blue' | 'green' | 'red' | 'gray' | 'outline';
-
-const statusTag: Record<AnalyzerProgressStatus, TagType> = {
-  ESPERANDO: 'warm-gray',
-  EXECUTANDO: 'blue',
-  OK: 'green',
-  FALHOU: 'red',
-  INDISPONIVEL: 'gray',
-  NAO_SUPORTADO: 'gray',
-  SUBSTITUIDO: 'gray',
-  SEM_EVIDENCIA: 'gray',
-};
 
 /** Painel de acompanhamento: o que a auditoria está fazendo agora e, ao terminar, o resumo do resultado. */
 export function AuditRunPage() {
@@ -49,6 +40,7 @@ export function AuditRunPage() {
   const finished = run?.status === 'COMPLETED' || run?.status === 'FAILED' || run?.status === 'CANCELLED';
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [rerun, setRerun] = useState(false);
+  const lastProgress = useRef<AuditProgress | null>(null);
   // Histórico do mesmo sistema: base da estimativa de tempo.
   const { data: history } = useAuditRuns(run?.systemId ?? 0);
 
@@ -60,6 +52,8 @@ export function AuditRunPage() {
       void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
     },
   });
+
+  if (run?.progress) lastProgress.current = run.progress;
 
   // Ao terminar, as listas que mostram nota e situação precisam do dado novo.
   useEffect(() => {
@@ -90,7 +84,9 @@ export function AuditRunPage() {
 
   const index = phaseIndex(run);
   const percent = progressPercent(run);
-  const analyzers = run.progress?.analyzers ?? [];
+  // O servidor só devolve o andamento enquanto a auditoria roda; ao concluir, guarda-se o último visto.
+  const progress = run.progress ?? lastProgress.current;
+  const analyzers = progress?.analyzers ?? [];
   const counts = analyzerCounts(analyzers);
   const seconds = elapsedSeconds(run);
   const failed = run.status === 'FAILED';
@@ -99,87 +95,129 @@ export function AuditRunPage() {
   const active = !done && !failed && !cancelled;
   const average = averageDurationSeconds((history ?? []).filter((r) => r.id !== run.id));
   const left = active ? remainingSeconds(seconds, average) : null;
-  const events = [...(run.progress?.events ?? [])].reverse();
-  const currentHint = done
-    ? 'Auditoria concluída'
+  const phases = phaseViews({ status: run.status, progress }, counts);
+  const stepText = done
+    ? 'Concluída'
     : failed
-      ? 'A auditoria não terminou'
+      ? 'A auditoria falhou'
       : cancelled
         ? 'Auditoria cancelada'
-        : (PHASES[index]?.hint ?? '');
+        : index === 2 && counts.total > 0
+          ? `Análise · ${counts.done} de ${counts.total} analisadores concluídos`
+          : (PHASES[index]?.label ?? '');
+  const barColor = failed ? '#da1e28' : cancelled ? '#8d8d8d' : done ? '#198038' : '#0f62fe';
+  const started = run.startedAt ? new Date(run.startedAt) : null;
+  const startedAt = started && !Number.isNaN(started.getTime())
+    ? started.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    : null;
+  const pill = active
+    ? { bg: '#d0e2ff', fg: '#0043ce', label: 'Em execução', icon: <SpinnerIcon size={12} color="#0043ce" /> }
+    : done
+      ? { bg: '#a7f0ba', fg: '#044317', label: 'Concluída', icon: <CheckIcon size={12} color="#044317" /> }
+      : failed
+        ? { bg: '#ffd7d9', fg: '#750e13', label: 'Falhou', icon: <CrossIcon size={12} color="#750e13" /> }
+        : { bg: '#e0e0e0', fg: '#161616', label: 'Cancelada', icon: <DashIcon size={12} color="#161616" /> };
+
+  const mono = "'IBM Plex Mono', ui-monospace, monospace";
+  const box = { background: '#fff', border: '1px solid #e0e0e0' } as const;
+  const rerunModal = (
+    <StartAuditModal
+      system={rerun ? { id: run.systemId ?? 0, name: run.systemName, scheduledBranch: run.branch } : null}
+      onClose={() => setRerun(false)}
+    />
+  );
 
   const openFindings = () => {
     setSelectedAudit(run.id);
     navigate(`/findings?auditId=${run.id}`);
   };
 
-  return (
-    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div>
-        <JourneySteps current={done ? 3 : 2} />
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 400, margin: '0.25rem 0' }}>
-          {run.systemName} · Auditoria #{run.id}
-        </h1>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <Tag type={auditStatusConfig[run.status].type}>{auditStatusConfig[run.status].label}</Tag>
-          <span style={{ color: '#525252' }}>branch {run.branch}</span>
-          {seconds !== null && <span style={{ color: '#525252' }}>· {formatDuration(seconds)}</span>}
-          {left !== null && (
-            <span style={{ color: '#525252' }} title="Estimativa pela média das últimas auditorias deste sistema">
-              · faltam cerca de {formatDuration(Math.round(left / 5) * 5 || 5)}
+
+  if (done) {
+    const sha = run.commitSha ? run.commitSha.slice(0, 7) : null;
+    return (
+      <div style={{ padding: '1.5rem 2rem 3rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 1440, margin: '0 auto' }}>
+        <JourneySteps current={3} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <nav aria-label="Caminho" style={{ fontSize: 12, color: '#525252' }}>
+              <Link to="/systems">Sistemas</Link> / {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName} / Auditoria #{run.id}
+            </nav>
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName} · resultado da auditoria #{run.id}</h1>
+            <span style={{ color: '#525252' }}>
+              Branch <span style={{ fontFamily: mono }}>{run.branch}</span>
+              {sha && <> · commit {sha}</>}
+              {' · '}concluída {timeAgo(run.completedAt)}
+              {seconds !== null && <> · {formatDuration(seconds)}</>}
             </span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button kind="tertiary" href={reportUrl(BASE_URL, run.id, 'html')} target="_blank" rel="noreferrer">
+              Baixar relatório
+            </Button>
+            {run.systemId !== undefined && <Button onClick={() => setRerun(true)}>Auditar de novo</Button>}
+          </div>
+        </div>
+        <ResultSteps run={run} onOpenFindings={openFindings} />
+        {rerunModal}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '1.5rem 2rem 3rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 1440, margin: '0 auto' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <nav aria-label="Caminho" style={{ fontSize: 12, color: '#525252' }}>
+            {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName}
+            {'  /  '}Auditoria #{run.id}
+          </nav>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName}</h1>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: pill.bg, color: pill.fg, padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500 }}>
+              {pill.icon}
+              {pill.label}
+            </span>
+          </div>
+          <div style={{ color: '#525252', display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 13 }}>
+            <span>Branch <span style={{ fontFamily: mono }}>{run.branch}</span></span>
+            {run.triggeredBy && (
+              <span>Iniciada por <strong style={{ fontWeight: 500, color: '#161616' }}>{run.triggeredBy}</strong>{startedAt ? ` às ${startedAt}` : ''}</span>
+            )}
+            {run.profile && <span>Perfil <span style={{ fontFamily: mono }}>{run.profile}</span></span>}
+            {run.commitSha && <span>Commit <span style={{ fontFamily: mono }}>{run.commitSha.slice(0, 7)}</span></span>}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {active && (
+            <Button kind="danger--tertiary" onClick={() => setConfirmCancel(true)}>
+              Cancelar auditoria
+            </Button>
           )}
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {active && (
-              <Button kind="danger--tertiary" size="sm" onClick={() => setConfirmCancel(true)}>
-                Cancelar auditoria
-              </Button>
-            )}
-            {done && (
-              <Button
-                kind="tertiary"
-                size="sm"
-                href={reportUrl(BASE_URL, run.id, 'html')}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Baixar relatório
-              </Button>
-            )}
-            {!active && run.systemId !== undefined && (
-              <Button size="sm" onClick={() => setRerun(true)}>
-                Auditar de novo
-              </Button>
-            )}
-          </span>
+          {!active && run.systemId !== undefined && (
+            <Button onClick={() => setRerun(true)}>
+              Auditar de novo
+            </Button>
+          )}
         </div>
       </div>
 
-      <ProgressIndicator currentIndex={Math.min(index, PHASES.length - 1)} spaceEqually aria-label="Etapas da auditoria">
-        {PHASES.map((p, i) => (
-          <ProgressStep
-            key={p.id}
-            label={p.label}
-            complete={done || i < index}
-            current={!done && !failed && i === index}
-            invalid={failed && i === index}
-          />
-        ))}
-      </ProgressIndicator>
-
-      <ProgressBar
-        label={currentHint}
-        helperText={
-          done || failed
-            ? undefined
-            : counts.total > 0
-              ? `${counts.done} de ${counts.total} analisadores concluídos`
-              : undefined
-        }
-        value={percent}
-        max={100}
-        status={failed || cancelled ? 'error' : done ? 'finished' : 'active'}
-      />
+      <section aria-label="Andamento" style={{ ...box, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <PhaseStrip phases={phases} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, fontSize: 13 }}>
+            <span><strong style={{ fontWeight: 600 }}>{percent}%</strong> &nbsp;·&nbsp; {stepText}</span>
+            <span style={{ color: '#525252' }}>
+              {seconds !== null && <>Decorrido <span style={{ fontFamily: mono, color: '#161616' }}>{clock(seconds)}</span></>}
+              {active && <> &nbsp;·&nbsp; <span title="Estimativa pela média das últimas auditorias deste sistema">{etaText(left)}</span></>}
+              {done && <> &nbsp;·&nbsp; finalizada</>}
+            </span>
+          </div>
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Progresso da auditoria" style={{ height: 8, background: '#e0e0e0' }}>
+            <div style={{ height: 8, background: barColor, width: `${percent}%`, transition: 'width 300ms ease' }} />
+          </div>
+        </div>
+      </section>
 
       {failed && (
         <InlineNotification
@@ -199,65 +237,30 @@ export function AuditRunPage() {
         />
       )}
 
-      {done && <ResultSteps run={run} onOpenFindings={openFindings} />}
-
       {active && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)', gap: '1.5rem' }}>
-          <section aria-label="Analisadores">
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Analisadores</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
+          <section aria-label="Analisadores" style={{ flex: '999 1 640px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+              Analisadores
+              {counts.total > 0 && (
+                <span style={{ fontWeight: 400, color: '#525252' }}> · {counts.done} de {counts.total} concluídos{active ? ', rodando em paralelo' : ''}</span>
+              )}
+            </h2>
             {analyzers.length === 0 ? (
-              <p style={{ color: '#525252' }}>Os analisadores aparecem aqui assim que o código for baixado.</p>
+              <p style={{ color: '#525252', margin: 0 }}>
+                {active ? 'Os analisadores aparecem aqui assim que o código for baixado.' : 'O detalhe por analisador só fica disponível enquanto a auditoria roda.'}
+              </p>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.5rem' }}>
-                {analyzers.map((a) => (
-                  <li
-                    key={a.name}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: '1rem',
-                      padding: '0.75rem 1rem',
-                      background: '#fff',
-                      border: '1px solid #e0e0e0',
-                    }}
-                  >
-                    <span style={{ display: 'flex', flexDirection: 'column' }}>
-                      <strong style={{ fontWeight: 500 }}>{a.name}</strong>
-                      {a.note && <span style={{ fontSize: '0.75rem', color: '#525252' }}>{a.note}</span>}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {a.status === 'OK' && (
-                        <span style={{ fontSize: '0.75rem', color: '#525252' }}>
-                          {a.findings} {a.findings === 1 ? 'achado' : 'achados'}
-                        </span>
-                      )}
-                      <Tag type={statusTag[a.status]} size="sm">
-                        {analyzerStatusLabel[a.status]}
-                      </Tag>
-                    </span>
-                  </li>
-                ))}
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 12 }}>
+                {analyzers.map((a) => <AnalyzerCard key={a.name} a={a} />)}
               </ul>
             )}
           </section>
 
-          <section aria-label="Registro de eventos">
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>O que já aconteceu</h2>
-            {events.length === 0 ? (
-              <p style={{ color: '#525252' }}>Aguardando o início.</p>
-            ) : (
-              <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.375rem' }}>
-                {events.map((e, i) => (
-                  <li key={`${e.at}-${i}`} style={{ fontSize: '0.8125rem' }}>
-                    <span style={{ fontFamily: 'monospace', color: '#6f6f6f', marginRight: '0.5rem' }}>
-                      {e.at.slice(11, 19)}
-                    </span>
-                    {e.message}
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
+          <aside aria-label="Resultado e eventos" style={{ flex: '1 1 340px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <PartialResult run={run} progress={progress} />
+            <EventLog startedAt={run.startedAt} events={progress?.events ?? []} />
+          </aside>
         </div>
       )}
 
@@ -282,10 +285,7 @@ export function AuditRunPage() {
           />
         )}
       </Modal>
-      <StartAuditModal
-        system={rerun ? { id: run.systemId ?? 0, name: run.systemName, scheduledBranch: run.branch } : null}
-        onClose={() => setRerun(false)}
-      />
+      {rerunModal}
     </div>
   );
 }

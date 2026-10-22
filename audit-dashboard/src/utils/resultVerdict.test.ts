@@ -7,15 +7,15 @@ const plan = (over: Partial<FixPlan>): FixPlan => ({ scoreNow: 63, scoreIfCritic
 describe('veredito do resultado', () => {
   it('com críticos mostra quantos e o ganho de corrigir só eles', () => {
     const v = verdict(plan({}));
-    expect(v.headline).toBe('3 problemas críticos para resolver primeiro');
-    expect(v.detail).toBe('Corrigindo só os críticos, a nota estimada vai de 63 para 74 (meta: 75).');
+    expect(v.headline).toBe('Atenção: **3 problemas críticos** impedem a nota de passar de 75.');
+    expect(v.detail).toBe('Corrigindo só os críticos, a nota estimada sobe para **74**. Meta do sistema: 75.');
     expect(v.tone).toBe('warn');
   });
 
   it('singular e meta atingida', () => {
     const v = verdict(plan({ criticalCount: 1, scoreIfCriticalFixed: 80 }));
-    expect(v.headline).toBe('1 problema crítico para resolver primeiro');
-    expect(v.detail).toContain('passa da meta de 75');
+    expect(v.headline).toBe('Atenção: **1 problema crítico** impede a nota de passar de 75.');
+    expect(v.detail).toContain('**80**');
   });
 
   it('sem críticos aponta o maior ganho', () => {

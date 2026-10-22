@@ -91,6 +91,17 @@ export interface AuditRunResponse {
   errorMessage?: string | null;
   /** Só vem enquanto a auditoria está em execução */
   progress?: AuditProgress | null;
+  triggeredBy?: string | null;
+  profile?: string | null;
+  commitSha?: string | null;
+  linesOfCode?: number | null;
+  /** Achados ativos (sem os suprimidos) */
+  totalFindings?: number | null;
+  /** Comparação com a auditoria anterior; só vem em auditorias concluídas que têm anterior */
+  newFindings?: number | null;
+  resolvedFindings?: number | null;
+  previousAuditId?: number | null;
+  scoreDelta?: number | null;
 }
 
 export type AuditPhase = 'FILA' | 'CLONE' | 'ANALISE' | 'PONTUACAO' | 'RELATORIO';
@@ -111,12 +122,19 @@ export interface AnalyzerProgress {
   findings: number;
   durationMs: number;
   note: string | null;
+  /** O que a ferramenta verifica, em uma frase */
+  description?: string | null;
 }
 
 export interface AuditProgress {
   phase: AuditPhase;
   analyzers: AnalyzerProgress[];
   events: Array<{ at: string; message: string }>;
+  repoUrl?: string | null;
+  filesRead?: number;
+  linesOfCode?: number;
+  /** Achados parciais por severidade, já com o que as ferramentas concluídas encontraram */
+  severities?: Partial<Record<Severity, number>>;
 }
 
 export interface FindingResponse {
@@ -317,12 +335,23 @@ export interface FixPlan {
 
 export interface FindingsOverview {
   total: number;
-  bySystem: Array<{ systemId: number; systemName: string; auditId: number; count: number }>;
+  bySystem: Array<{
+    systemId: number;
+    systemName: string;
+    auditId: number;
+    count: number;
+    stack?: string | null;
+    critical?: number;
+    high?: number;
+    auditedAt?: string | null;
+  }>;
   items: Array<{ systemId: number; systemName: string; auditId: number; finding: FindingResponse }>;
 }
 
 /** Resultado da verificação rápida de um repositório (sem clonar). */
 export interface RepoCheck {
+  /** Arquivos versionados no repositório, quando deu para contar */
+  fileCount?: number | null;
   reachable: boolean;
   defaultBranch: string | null;
   /** Só vem quando se perguntou por uma branch */

@@ -1,0 +1,27 @@
+/* Animações dos indicadores de andamento (spinner e pulso). Respeitam "reduzir movimento". */
+@keyframes sentinel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes sentinel-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.sentinel-spin {
+  animation: sentinel-spin 900ms linear infinite;
+}
+.sentinel-pulse {
+  animation: sentinel-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sentinel-spin,
+  .sentinel-pulse {
+    animation: none;
+  }
+}
