@@ -340,6 +340,7 @@ public class AuditOrchestrationService {
             try {
                 return future.get(CANCEL_POLL_MILLIS, java.util.concurrent.TimeUnit.MILLISECONDS);
             } catch (java.util.concurrent.TimeoutException e) {
+                progress.heartbeat(runId);
                 if (progress.isCancelRequested(runId)) {
                     all.forEach(f -> f.cancel(true));
                     throw new AuditCancelledException(runId);
