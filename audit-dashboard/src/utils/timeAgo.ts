@@ -30,3 +30,15 @@ export function startLabel(iso: string | null | undefined, now: number = Date.no
   if (t.getTime() >= startOfToday - 86_400_000) return `ontem ${hhmm}`;
   return `${two(t.getDate())}/${two(t.getMonth() + 1)} ${hhmm}`;
 }
+
+/** "hoje 09:10", "ontem 17:42" ou "18/10 11:05"; usado na lista de relatórios gerados. */
+export function whenLabel(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  const two = (n: number) => String(n).padStart(2, '0');
+  const hm = `${two(d.getHours())}:${two(d.getMinutes())}`;
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86_400_000);
+  if (diff === 0) return `hoje ${hm}`;
+  if (diff === 1) return `ontem ${hm}`;
+  return `${two(d.getDate())}/${two(d.getMonth() + 1)} ${hm}`;
+}

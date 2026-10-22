@@ -69,20 +69,24 @@ public class PortfolioReportService {
         long below = sorted.stream().filter(s -> s.overall() != null && s.overall() < target).count();
         long critical = sorted.stream().mapToLong(SystemSnapshot::critical).sum();
         List<List<String>> rows = new ArrayList<>();
-        StringBuilder csv = new StringBuilder("sistema,stack,auditoria,nota,criticos,altos,ultima_auditoria\r\n");
+        StringBuilder csv = new StringBuilder("sistema,stack,auditoria,nota,variacao,criticos,altos,ultima_auditoria\r\n");
         for (SystemSnapshot s : sorted) {
-            rows.add(List.of(s.name(), nz(s.stack()), "#" + s.auditId(), fmt(s.overall()),
+            Double change = change(s.points());
+            String changeText = change == null ? "-" : (change > 0 ? "+" : "") + fmt(change);
+            rows.add(List.of(s.name(), nz(s.stack()), "#" + s.auditId(), fmt(s.overall()), changeText,
                     String.valueOf(s.critical()), String.valueOf(s.high()), date(s.completedAt())));
             csv.append(ReportService.csv(s.name())).append(',').append(ReportService.csv(s.stack())).append(',')
-                    .append(s.auditId()).append(',').append(fmt(s.overall())).append(',').append(s.critical()).append(',')
+                    .append(s.auditId()).append(',').append(fmt(s.overall())).append(',')
+                    .append(change == null ? "" : fmt(change)).append(',').append(s.critical()).append(',')
                     .append(s.high()).append(',').append(date(s.completedAt())).append("\r\n");
         }
         List<String> intro = List.of(
                 systems.size() + " sistema(s) com auditoria concluída. Meta da organização: " + fmt(target) + ".",
-                below + " abaixo da meta; " + critical + " achado(s) crítico(s) no total.");
+                below + " abaixo da meta; " + critical + " achado(s) crítico(s) no total. "
+                        + "Variação = mudança da nota dentro do período escolhido.");
         return new Doc("Relatório executivo - todos os sistemas", intro,
                 List.of(new PdfReportService.TableSection("Sistemas, do menor para o maior risco",
-                        List.of("Sistema", "Stack", "Auditoria", "Nota", "Críticos", "Altos", "Última auditoria"), rows)),
+                        List.of("Sistema", "Stack", "Auditoria", "Nota", "Variação", "Críticos", "Altos", "Última auditoria"), rows)),
                 csv.toString());
     }
 
@@ -174,6 +178,16 @@ public class PortfolioReportService {
         }
         return h.append("<p class=\"foot\">Gerado pelo Sentinel Audit Tool. Ferramentas automáticas geram falsos positivos e não ")
                 .append("substituem a revisão humana.</p></body></html>").toString();
+    }
+
+    /** Nota da última auditoria do período menos a da primeira; vazio com menos de duas auditorias. */
+    private static Double change(List<TrendPoint> points) {
+        if (points.size() < 2) {
+            return null;
+        }
+        Double first = points.get(0).overall();
+        Double last = points.get(points.size() - 1).overall();
+        return first == null || last == null ? null : last - first;
     }
 
     private static String date(LocalDateTime t) {

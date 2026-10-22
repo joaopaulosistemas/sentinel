@@ -50,8 +50,9 @@ public class ReportResource {
     @GET
     @Path("/portfolio")
     @Operation(summary = "Relatório de todos os sistemas",
-            description = "type=executivo|tecnico|comparativo, format=html|pdf|csv; days limita o período do comparativo")
-    public Response portfolio(@QueryParam("type") String type,
+            description = "type=executivo|tecnico|comparativo, format=html|pdf|csv; days limita o período; systemId restringe a um sistema")
+    public Response portfolio(@QueryParam("systemId") Long systemId,
+                              @QueryParam("type") String type,
                               @QueryParam("format") String format,
                               @QueryParam("days") Integer days) {
         ReportService.Type kind;
@@ -66,6 +67,9 @@ public class ReportResource {
         LocalDateTime since = period == null ? null : LocalDateTime.now().minusDays(period);
         List<SystemSnapshot> systems = new ArrayList<>();
         for (AuditedSystem system : systemRepository.listAll()) {
+            if (systemId != null && !systemId.equals(system.getId())) {
+                continue;
+            }
             List<AuditRun> latest = auditRunRepository.findLatestCompleted(system.getId(), 1);
             if (latest.isEmpty()) {
                 continue;

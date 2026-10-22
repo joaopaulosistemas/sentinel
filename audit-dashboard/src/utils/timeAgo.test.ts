@@ -29,3 +29,13 @@ describe('startLabel', () => {
     expect(startLabel(new Date(2026, 9, 19, 14, 0).toISOString(), ref)).toBe('19/10 14:00');
   });
 });
+
+describe('whenLabel', () => {
+  it('diz hoje, ontem ou a data', async () => {
+    const { whenLabel } = await import('./timeAgo');
+    const ref = new Date('2026-10-22T12:00:00');
+    expect(whenLabel('2026-10-22T09:10:00', ref)).toBe('hoje 09:10');
+    expect(whenLabel('2026-10-21T17:42:00', ref)).toBe('ontem 17:42');
+    expect(whenLabel('2026-10-18T11:05:00', ref)).toBe('18/10 11:05');
+  });
+});

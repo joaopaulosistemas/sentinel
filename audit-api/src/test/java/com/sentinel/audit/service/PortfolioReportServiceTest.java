@@ -62,13 +62,14 @@ class PortfolioReportServiceTest {
         assertTrue(html.indexOf("Conta &lt;Corrente&gt;") < html.indexOf("Pagamentos"));
         assertTrue(html.contains("1 abaixo da meta"));
         assertTrue(html.contains("3 achado(s) crítico(s)"));
+        assertTrue(html.contains("<td>+7</td>"));
     }
 
     @Test
     void executivoCsvTemUmaLinhaPorSistema() {
         String csv = text(ReportService.Type.EXECUTIVO, Format.CSV);
         assertEquals(3, csv.trim().split("\r\n").length);
-        assertTrue(csv.startsWith("sistema,stack,auditoria,nota,criticos,altos,ultima_auditoria"));
+        assertTrue(csv.startsWith("sistema,stack,auditoria,nota,variacao,criticos,altos,ultima_auditoria"));
     }
 
     @Test
