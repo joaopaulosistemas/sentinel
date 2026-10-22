@@ -103,6 +103,14 @@
   refs:
     - "https://developer.mozilla.org/pt-BR/docs/Web/HTTP/CORS"
 
+- key: "log-segredo-js"
+  summary: "Não registre senha, token ou segredo; registre só um identificador que não sirva como credencial."
+  before: "console.log('Token:', token);"
+  after: "this.logger.log(`Redefinição de senha solicitada para o usuário ${user.id}`);"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+    - "https://cwe.mitre.org/data/definitions/532.html"
+
 - key: "cors-aberto-js"
   summary: "Liste as origens confiáveis; origin: true e enableCors() sem argumentos aceitam qualquer origem."
   before: "app.enableCors({ origin: '*' });"
