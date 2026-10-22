@@ -243,6 +243,7 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 if (attrs.isRegularFile() && !attrs.isSymbolicLink() && attrs.size() <= MAX_FILE_BYTES
                         && isSourceFile(file.getFileName().toString())
+                        && !ExternalTools.isVendoredLibrary(root.relativize(file).toString())
                         && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
                     files.add(file);
                 }
