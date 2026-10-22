@@ -1,11 +1,12 @@
-import { Button, InlineNotification, ProgressBar, ProgressIndicator, ProgressStep, SkeletonText, Tag, Tile } from '@carbon/react';
+import { InlineNotification, ProgressBar, ProgressIndicator, ProgressStep, SkeletonText, Tag } from '@carbon/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAudit } from '../../hooks/useAuditRuns';
 import { JourneySteps } from '../../components/JourneySteps';
+import { ResultSteps } from '../../components/ResultSteps';
 import { useAuditStore } from '../../store/useAuditStore';
-import type { AnalyzerProgressStatus, Severity } from '../../types';
+import type { AnalyzerProgressStatus } from '../../types';
 import {
   PHASES,
   analyzerCounts,
@@ -28,13 +29,6 @@ const statusTag: Record<AnalyzerProgressStatus, TagType> = {
   SUBSTITUIDO: 'gray',
   SEM_EVIDENCIA: 'gray',
 };
-
-const severities: Array<{ key: Severity; label: string; color: string }> = [
-  { key: 'CRITICAL', label: 'Críticos', color: '#da1e28' },
-  { key: 'HIGH', label: 'Altos', color: '#ff832b' },
-  { key: 'MEDIUM', label: 'Médios', color: '#8a6a00' },
-  { key: 'LOW', label: 'Baixos', color: '#24a148' },
-];
 
 /** Painel de acompanhamento: o que a auditoria está fazendo agora e, ao terminar, o resumo do resultado. */
 export function AuditRunPage() {
@@ -138,29 +132,7 @@ export function AuditRunPage() {
         />
       )}
 
-      {done && (
-        <Tile>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Resultado</h2>
-          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div>
-              <div style={{ fontSize: '3rem', fontWeight: 300, lineHeight: 1 }}>{run.riskScore?.overall ?? '—'}</div>
-              <div style={{ fontSize: '0.75rem', color: '#525252' }}>nota de 0 a 100</div>
-            </div>
-            {severities.map((s) => (
-              <div key={s.key}>
-                <div style={{ fontSize: '1.75rem', fontWeight: 300, color: s.color }}>{run.findingsSummary?.[s.key] ?? 0}</div>
-                <div style={{ fontSize: '0.75rem', color: '#525252' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-            <Button onClick={openFindings}>Ver o que corrigir</Button>
-            <Button kind="tertiary" onClick={() => navigate('/')}>
-              Voltar para a visão geral
-            </Button>
-          </div>
-        </Tile>
-      )}
+      {done && <ResultSteps run={run} onOpenFindings={openFindings} />}
 
       {!done && !failed && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)', gap: '1.5rem' }}>

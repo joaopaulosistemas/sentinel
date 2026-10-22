@@ -1,7 +1,7 @@
 export type Stack = 'JAVA' | 'JAVASCRIPT' | 'DOTNET' | 'PYTHON' | 'COBOL' | 'MIXED';
 export type AuditStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
-export type Category = 'SECURITY' | 'QUALITY' | 'ARCHITECTURE' | 'DEPENDENCY' | 'OBSERVABILITY';
+export type Category = 'SECURITY' | 'QUALITY' | 'ARCHITECTURE' | 'DEPENDENCY' | 'OBSERVABILITY' | 'PERFORMANCE';
 export type FindingStatus = 'OPEN' | 'ACKNOWLEDGED' | 'FIXED' | 'SUPPRESSED';
 export type SuppressionReason = 'FALSE_POSITIVE' | 'ACCEPTED_RISK' | 'WONT_FIX';
 
@@ -286,4 +286,26 @@ export interface AuditInsights {
   unverified: string[];
   analyzers: AnalyzerRunInfo[];
   projectMap: ProjectMapInfo | null;
+}
+
+// ---------------------------------------------------------------- plano de correção
+
+export interface FixPlanItem {
+  ruleId: string | null;
+  title: string;
+  severity: Severity;
+  category: Category;
+  occurrences: number;
+  /** quanto a nota geral sobe se todas as ocorrências forem corrigidas */
+  scoreGain: number;
+  exampleFile: string | null;
+  exampleLine: number | null;
+  howToFix: string | null;
+}
+
+export interface FixPlan {
+  scoreNow: number;
+  scoreIfCriticalFixed: number;
+  criticalCount: number;
+  items: FixPlanItem[];
 }

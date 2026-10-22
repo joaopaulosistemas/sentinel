@@ -5,6 +5,7 @@ import type {
   PacksResponse,
   Category,
   FindingResponse,
+  FixPlan,
   FindingStatus,
   Severity,
   RuleQuality,
@@ -96,6 +97,8 @@ export const api = {
     const url = `/api/v1/audits/${auditId}/findings${qs ? `?${qs}` : ''}`;
     return apiFetch<FindingResponse[]>(url);
   },
+
+  getFixPlan: (auditId: number) => apiFetch<FixPlan>(`/api/v1/audits/${auditId}/fix-plan`),
 
   getDiff: (auditId: number) => apiFetch<AuditDiff>(`/api/v1/audits/${auditId}/diff`),
 

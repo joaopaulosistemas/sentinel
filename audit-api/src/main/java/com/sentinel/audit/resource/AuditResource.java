@@ -3,6 +3,7 @@ package com.sentinel.audit.resource;
 import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.FindingMapper;
+import com.sentinel.audit.dto.FixPlanDto;
 import com.sentinel.audit.dto.CreateAuditRequest;
 import com.sentinel.audit.dto.FindingResponse;
 import com.sentinel.audit.dto.RiskScoreDto;
@@ -17,6 +18,8 @@ import com.sentinel.audit.repository.AuditRunRepository;
 import com.sentinel.audit.repository.FindingRepository;
 import com.sentinel.audit.service.AuditRequestService;
 import com.sentinel.audit.service.FindingLifecycleService;
+import com.sentinel.audit.service.FixPlanner;
+import com.sentinel.audit.service.ScoringService;
 import com.sentinel.audit.service.ReportService;
 import com.sentinel.audit.service.AuditProgressTracker;
 import com.sentinel.audit.model.AuditStatus;
@@ -55,6 +58,9 @@ public class AuditResource {
 
     @Inject
     ReportService reportService;
+
+    @Inject
+    ScoringService scoringService;
 
     @Inject
     FindingLifecycleService lifecycleService;
@@ -176,6 +182,19 @@ public class AuditResource {
         AuditRun run = auditRunRepository.findByIdOptional(id)
                 .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
         return insightsService.forRun(run);
+    }
+
+    /**
+     * O que corrigir primeiro: problemas por regra, com quanto a nota sobe ao resolver cada um.
+     */
+    @GET
+    @Path("/{id}/fix-plan")
+    @Operation(summary = "Plano de correção", description = "Problemas ordenados pelo ganho de nota, com a orientação de correção")
+    public FixPlanDto getFixPlan(@PathParam("id") Long id) {
+        AuditRun run = auditRunRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        List<Finding> active = FindingLifecycleService.active(findingRepository.findByAuditRunId(run.getId()));
+        return FixPlanner.plan(active, run.getLinesOfCode(), scoringService);
     }
 
     private AuditRunResponse toResponse(AuditRun run) {

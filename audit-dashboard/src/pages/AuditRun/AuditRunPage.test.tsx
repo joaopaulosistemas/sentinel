@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AuditRunResponse } from '../../types';
+import type { AuditRunResponse, FixPlan } from '../../types';
 import { AuditRunPage } from './AuditRunPage';
 
-function renderPage(run: Partial<AuditRunResponse>) {
+function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan) {
   const full: AuditRunResponse = {
     id: 215,
     systemName: 'conta-corrente-api',
@@ -17,7 +17,12 @@ function renderPage(run: Partial<AuditRunResponse>) {
     completedAt: null,
     ...run,
   };
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(full), { status: 200 })));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) =>
+      new Response(JSON.stringify(String(url).endsWith('/fix-plan') ? plan : full), { status: 200 }),
+    ),
+  );
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
@@ -52,16 +57,35 @@ describe('AuditRunPage', () => {
     expect(screen.getByText(/1 de 2 analisadores concluídos/)).toBeInTheDocument();
   });
 
-  it('concluída mostra a nota e o caminho para corrigir', async () => {
-    renderPage({
-      status: 'COMPLETED',
-      completedAt: '2026-10-22T10:04:12',
-      riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 },
-      findingsSummary: { CRITICAL: 3, HIGH: 38, MEDIUM: 5, LOW: 1, INFO: 0 },
-    });
-    await waitFor(() => expect(screen.getByText('63')).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Ver o que corrigir' })).toBeInTheDocument();
+  it('concluída mostra veredito, categorias e o que corrigir primeiro', async () => {
+    renderPage(
+      {
+        status: 'COMPLETED',
+        completedAt: '2026-10-22T10:04:12',
+        riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 },
+      },
+      {
+        scoreNow: 63,
+        scoreIfCriticalFixed: 74,
+        criticalCount: 3,
+        items: [
+          { ruleId: 'sql-injection', title: 'SQL montado por concatenação', severity: 'CRITICAL', category: 'SECURITY', occurrences: 2, scoreGain: 4.5, exampleFile: 'ContaRepository.java', exampleLine: 212, howToFix: 'usar parâmetros nomeados' },
+          { ruleId: 'cors', title: 'CORS aberto', severity: 'HIGH', category: 'DEPENDENCY', occurrences: 1, scoreGain: 1, exampleFile: 'main.ts', exampleLine: 12, howToFix: null },
+        ],
+      },
+    );
+    expect(await screen.findByText('3 problemas críticos para resolver primeiro')).toBeInTheDocument();
+    expect(screen.getByText(/vai de 63 para 74/)).toBeInTheDocument();
+    expect(screen.getByText('SQL montado por concatenação')).toBeInTheDocument();
+    expect(screen.getByText('nota +4.5')).toBeInTheDocument();
+    expect(screen.getByText(/\+1 ocorrências/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver todos os achados' })).toBeInTheDocument();
     expect(screen.getByText(/4 min 12 s/)).toBeInTheDocument();
+
+    // filtrar por categoria mostra só os problemas dela
+    fireEvent.click(screen.getByRole('button', { name: /Dependências/ }));
+    expect(screen.queryByText('SQL montado por concatenação')).not.toBeInTheDocument();
+    expect(screen.getByText('CORS aberto')).toBeInTheDocument();
   });
 
   it('falha mostra o motivo', async () => {
