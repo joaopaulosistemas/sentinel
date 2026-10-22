@@ -103,3 +103,30 @@ export function scheduleChanged(values: SystemFormValues, system: SystemSummaryR
     values.auditOnPush !== !!system.auditOnPush
   );
 }
+
+/** Texto curto do agendamento para a lista: "a cada 24 h · main · push", "a cada push · main" ou "manual". */
+export function scheduleText(s: Pick<SystemSummaryResponse, 'auditIntervalHours' | 'scheduledBranch' | 'auditOnPush'>): string {
+  const parts: string[] = [];
+  if (s.auditIntervalHours) parts.push(`a cada ${s.auditIntervalHours} h`);
+  else if (s.auditOnPush) parts.push('a cada push');
+  if (parts.length === 0) return 'manual';
+  if (s.scheduledBranch) parts.push(s.scheduledBranch);
+  if (s.auditIntervalHours && s.auditOnPush) parts.push('push');
+  return parts.join(' · ');
+}
+
+/** "org/repo" a partir da URL https do repositório. */
+export function repoSlug(url: string | null | undefined): string {
+  if (!url) return '';
+  return url.replace(/^https?:\/\/[^/]+\//i, '').replace(/\.git$/, '');
+}
+
+/** Nome curto da stack na lista. */
+export const stackShort: Record<Stack, string> = {
+  JAVA: 'Java',
+  JAVASCRIPT: 'TypeScript',
+  DOTNET: '.NET',
+  PYTHON: 'Python',
+  COBOL: 'COBOL',
+  MIXED: 'Misto',
+};
