@@ -108,3 +108,40 @@ Média do placar: 2,0 (meta 2,5). Faltam: revisão manual dos achados (credibili
 - **O que mudou:** só a marcação `[x]` do item no backlog. Nota do eixo 10 continua 2.
 - **Não verificado:** o CI da `main` (jobs sem resultado na entrada, provavelmente por falta de minutos do Actions). Só documentação, nenhum teste rodado.
 
+
+## 2026-10-22 — Mudança de estratégia: medição independente e universo Java
+
+**Diagnóstico** (a pedido, revisando a forma de trabalho dos agentes): universo estreito (9 repositórios, todos NestJS/Express), revisão
+feita pelo mesmo tipo de agente que escreve a regra, amostras de 5 a 8 achados por regra, recall sem medição, regras nascidas de 1 ou 2
+repositórios, ruído em regras com 0 verdadeiros positivos, e um Evolution que fechava item de backlog só documentando.
+
+**Medição nova:** `scripts/benchmark-owasp.py` mede TPR, FPR e pontuação (TPR − FPR) por categoria no OWASP Benchmark (2.740 casos Java com
+gabarito oficial; o CSV de rótulos está em `audit-rules/calibracao/benchmark/`). Roda no CI (job `benchmark`), com linha de base e gate
+de regressão (−0,02). Casos 1–1370 = treino, 1371–2740 = validação.
+
+**Resultado, regras Java de segurança** (média das 11 categorias):
+
+| | Antes | Depois |
+|---|---:|---:|
+| Treino | 0,00 | 0,48 |
+| Validação | 0,00 | 0,42 |
+| Todos | 0,00 | 0,44 |
+
+Antes, o Sentinel não detectava criptografia fraca, hash fraco, número aleatório fraco, cookie sem `Secure`, path traversal nem trust boundary
+(0 achados nesses 6 casos de categoria) e a regra de XSS marcava quase todo arquivo. Mudanças em `core-security` (1.1.0):
+fontes de taint para servlet/Spring (`getParameter`, cabeçalhos, cookies, parâmetros de método), sanitizadores de encoder, regras de criptografia
+e hash que aceitam o provedor e variações de caixa (`DESede`, `AES` sem modo, `SHA1`), cookie com `setSecure(false)`, `java.util.Random` em código de servidor,
+path traversal, trust boundary e command injection por requisição. As regras de injeção de SQL, LDAP e XPath deixam de tratar a
+concatenação de constantes como origem.
+
+**Limites assumidos:** parte dos casos "seguros" do Benchmark esconde o valor constante atrás de código morto (ex.: um ternário que sempre escolhe
+a constante) e a análise de taint do Semgrep não avalia isso; por isso o FPR de path traversal, trust boundary e XSS ainda fica em 35–60%.
+O treino influenciou as regras; a validação ficou 0,06 abaixo, sinal de pouco sobreajuste, mas existe. O Benchmark mede só Java.
+Os números locais usam o Semgrep 1.172.0 dos pacotes; o CI confirma.
+
+**Ruído cortado:** `regexp/no-super-linear-move` e `security/detect-non-literal-fs-filename` desligadas (0/6 verdadeiros positivos cada).
+`FunctionScanner`: classe `extends Base(...)` não é mais lida como função; objeto literal e tipo anônimo não contam como aninhamento (testes novos).
+
+**Descoberta:** `descobrir-repos.sh` passa a buscar aplicações (tamanho mínimo, sem starter/boilerplate/demo), com calendário 2:1:1:1 entre
+Java/Spring, Angular, Docker/K8s e React. **Agentes:** prompts atualizados (ruído antes de regra nova, benchmark como gate, revisão humana por amostra em
+`docs/evolucao/revisao-humana.md`, Evolution só em item de produto com diff). **Placar:** critérios dos eixos 1, 2 e 10 reescritos com medida objetiva; notas mantidas em 2.

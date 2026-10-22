@@ -53,3 +53,93 @@ rules:
     metadata:
       category: security
       cwe: "CWE-79: Cross-site Scripting"
+
+  - id: sentinel-servlet-path-traversal
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getParameterValues(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getHeaders(...)
+      - pattern: $REQ.getParameterNames()
+      - pattern: $REQ.getParameterMap()
+      - pattern: $REQ.getRequestURL()
+      - pattern: $REQ.getQueryString()
+      - pattern: $REQ.getRequestURI()
+      - pattern: $C.getValue()
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., @$A(...) String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $A
+              regex: ^(RequestParam|PathVariable|RequestHeader|QueryParam|PathParam|FormParam|HeaderParam)$
+          - focus-metavariable: $P
+    pattern-sinks:
+      - pattern: new java.io.File(...)
+      - pattern: new File(...)
+      - pattern: java.nio.file.Paths.get(...)
+      - pattern: java.nio.file.Path.of(...)
+      - pattern: new java.io.FileInputStream(...)
+      - pattern: new java.io.FileOutputStream(...)
+      - pattern: new java.io.FileReader(...)
+      - pattern: new java.io.FileWriter(...)
+      - pattern: new FileInputStream(...)
+      - pattern: new FileOutputStream(...)
+    pattern-sanitizers:
+      - pattern: $X.getName()
+      - pattern: $X.getFileName()
+      - pattern: org.apache.commons.io.FilenameUtils.getName(...)
+      - pattern: $ENC.encodeForHTML(...)
+    message: >
+      Possível Path Traversal (CWE-22): um dado da requisição (parâmetro, cabeçalho ou cookie) forma o caminho de um arquivo.
+      Use só o nome do arquivo (`getFileName()`), normalize e confira que o caminho final continua dentro do diretório permitido.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp: A01:2021 - Broken Access Control
+
+  - id: sentinel-servlet-trust-boundary
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getParameterValues(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getHeaders(...)
+      - pattern: $REQ.getParameterNames()
+      - pattern: $REQ.getParameterMap()
+      - pattern: $REQ.getRequestURL()
+      - pattern: $REQ.getQueryString()
+      - pattern: $REQ.getRequestURI()
+      - pattern: $C.getValue()
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., @$A(...) String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $A
+              regex: ^(RequestParam|PathVariable|RequestHeader|QueryParam|PathParam|FormParam|HeaderParam)$
+          - focus-metavariable: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.getSession(...).setAttribute($K, $V)
+              - pattern: $REQ.getSession(...).putValue($K, $V)
+              - pattern: (HttpSession $S).setAttribute($K, $V)
+              - pattern: (HttpSession $S).putValue($K, $V)
+          - focus-metavariable: [$K, $V]
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $ENC.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(encodeFor(HTML|HTMLAttribute|JavaScript|CSS|URL|XML)|forHtml|escapeHtml4?|htmlEscape|valueOf|parseInt|parseLong)$
+    message: >
+      Violação de fronteira de confiança (CWE-501): um dado não validado da requisição é colocado na sessão.
+      Valide (lista permitida, tipo e tamanho) antes de guardar na sessão, e nunca use dado do cliente como chave do atributo.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-501: Trust Boundary Violation"
+      owasp: A04:2021 - Insecure Design

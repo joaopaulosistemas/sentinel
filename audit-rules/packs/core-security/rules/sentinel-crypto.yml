@@ -1,28 +1,32 @@
 # Criptografia fraca e desserialização insegura (OWASP A02 / A08).
 rules:
   - id: sentinel-crypto-hash-fraco
-    pattern-either:
-      - pattern: MessageDigest.getInstance("MD5")
-      - pattern: MessageDigest.getInstance("MD2")
-      - pattern: MessageDigest.getInstance("SHA-1")
-      - pattern: MessageDigest.getInstance("SHA1")
+    patterns:
+      - pattern-either:
+          - pattern: MessageDigest.getInstance($ALG, ...)
+          - pattern: java.security.MessageDigest.getInstance($ALG, ...)
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: (?i)^"(MD2|MD4|MD5|SHA-?1)"$
     message: >
       Algoritmo de hash fraco (MD5/SHA-1). Use SHA-256 ou superior; para senhas, use bcrypt, scrypt ou Argon2.
     severity: WARNING
     languages: [java]
     metadata:
       category: security
-      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      cwe: "CWE-328: Use of Weak Hash"
       owasp: A02:2021 - Cryptographic Failures
 
   - id: sentinel-crypto-cifra-fraca
     patterns:
-      - pattern: Cipher.getInstance($ALG)
+      - pattern-either:
+          - pattern: Cipher.getInstance($ALG, ...)
+          - pattern: javax.crypto.Cipher.getInstance($ALG, ...)
       - metavariable-regex:
           metavariable: $ALG
-          regex: (?i)^"(DES.*|RC[24].*|BLOWFISH.*|AES|AES/ECB.*)"$
+          regex: (?i)^"((DES|DESEDE|3DES|TRIPLEDES|RC2|RC4|ARCFOUR|BLOWFISH)(/.*)?|AES|[A-Z0-9]+/ECB(/.*)?)"$
     message: >
-      Cifra fraca ou modo inseguro (DES, RC4, AES/ECB). Use AES/GCM/NoPadding com IV aleatório e único.
+      Cifra fraca ou modo inseguro (DES/3DES, RC4, Blowfish, AES/ECB ou AES sem modo, que cai em ECB). Use AES/GCM/NoPadding com IV aleatório e único.
     severity: ERROR
     languages: [java]
     metadata:
@@ -62,3 +66,32 @@ rules:
       category: security
       cwe: "CWE-502: Deserialization of Untrusted Data"
       owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-crypto-random-servidor
+    patterns:
+      - pattern-either:
+          - pattern: new java.util.Random(...)
+          - pattern: new Random(...)
+          - pattern: Math.random()
+          - pattern: java.lang.Math.random()
+      - pattern-either:
+          - pattern-inside: |
+              class $C extends HttpServlet { ... }
+          - pattern-inside: |
+              @RestController
+              class $C { ... }
+          - pattern-inside: |
+              @Controller
+              class $C { ... }
+          - pattern-inside: |
+              @Service
+              class $C { ... }
+    message: >
+      java.util.Random e Math.random() são previsíveis. Em código de servidor, se o valor protege algo (token, identificador de sessão,
+      senha provisória, código de confirmação), use java.security.SecureRandom. Se for só sorteio ou jitter, ignore este aviso com justificativa.
+    severity: INFO
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-330: Use of Insufficiently Random Values"
+      owasp: A02:2021 - Cryptographic Failures

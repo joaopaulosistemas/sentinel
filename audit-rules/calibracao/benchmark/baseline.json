@@ -1,0 +1,104 @@
+{
+ "media": 0.444,
+ "categorias": {
+  "pathtraver": {
+   "vuln": 133,
+   "seguro": 135,
+   "tp": 97,
+   "fp": 81,
+   "tpr": 0.729,
+   "fpr": 0.6,
+   "pontuacao": 0.129
+  },
+  "hash": {
+   "vuln": 129,
+   "seguro": 107,
+   "tp": 89,
+   "fp": 0,
+   "tpr": 0.69,
+   "fpr": 0.0,
+   "pontuacao": 0.69
+  },
+  "trustbound": {
+   "vuln": 83,
+   "seguro": 43,
+   "tp": 60,
+   "fp": 20,
+   "tpr": 0.723,
+   "fpr": 0.465,
+   "pontuacao": 0.258
+  },
+  "crypto": {
+   "vuln": 130,
+   "seguro": 116,
+   "tp": 97,
+   "fp": 0,
+   "tpr": 0.746,
+   "fpr": 0.0,
+   "pontuacao": 0.746
+  },
+  "cmdi": {
+   "vuln": 126,
+   "seguro": 125,
+   "tp": 64,
+   "fp": 56,
+   "tpr": 0.508,
+   "fpr": 0.448,
+   "pontuacao": 0.06
+  },
+  "sqli": {
+   "vuln": 272,
+   "seguro": 232,
+   "tp": 234,
+   "fp": 143,
+   "tpr": 0.86,
+   "fpr": 0.616,
+   "pontuacao": 0.244
+  },
+  "weakrand": {
+   "vuln": 218,
+   "seguro": 275,
+   "tp": 218,
+   "fp": 0,
+   "tpr": 1.0,
+   "fpr": 0.0,
+   "pontuacao": 1.0
+  },
+  "ldapi": {
+   "vuln": 27,
+   "seguro": 32,
+   "tp": 23,
+   "fp": 18,
+   "tpr": 0.852,
+   "fpr": 0.562,
+   "pontuacao": 0.29
+  },
+  "xss": {
+   "vuln": 246,
+   "seguro": 209,
+   "tp": 195,
+   "fp": 102,
+   "tpr": 0.793,
+   "fpr": 0.488,
+   "pontuacao": 0.305
+  },
+  "securecookie": {
+   "vuln": 36,
+   "seguro": 31,
+   "tp": 36,
+   "fp": 0,
+   "tpr": 1.0,
+   "fpr": 0.0,
+   "pontuacao": 1.0
+  },
+  "xpathi": {
+   "vuln": 15,
+   "seguro": 20,
+   "tp": 7,
+   "fp": 6,
+   "tpr": 0.467,
+   "fpr": 0.3,
+   "pontuacao": 0.167
+  }
+ }
+}

@@ -1,0 +1,12 @@
+{
+  "_comentario": "Separação entre treino (onde agentes podem ler código e escrever regras) e validação (só números). Regra criada olhando o treino é medida na validação; se a nota cai na validação, é sobreajuste.",
+  "treino": {
+    "repositorios": "audit-rules/calibracao/descobertos.txt",
+    "benchmark_owasp": "casos BenchmarkTest00001 a BenchmarkTest01370 (usados pelo desenvolvimento das regras Java de 2026-10-22)"
+  },
+  "validacao": {
+    "repositorios_fixos": ["spring-projects/spring-petclinic", "WebGoat/WebGoat", "gothinkster/angular-realworld-example-app", "gothinkster/react-redux-realworld-example-app"],
+    "benchmark_owasp": "casos BenchmarkTest01371 a BenchmarkTest02740",
+    "regra": "Agentes não clonam nem leem o código destes conjuntos para escrever regras; só usam os números que o CI publica (calibração e OWASP Benchmark)."
+  }
+}
