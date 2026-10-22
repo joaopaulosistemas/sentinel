@@ -103,6 +103,14 @@
   refs:
     - "https://developer.mozilla.org/pt-BR/docs/Web/HTTP/CORS"
 
+- key: "log-segredo-js"
+  summary: "Não registre senha, token ou segredo; registre só um identificador que não sirva como credencial."
+  before: "console.log('Token:', token);"
+  after: "this.logger.log(`Redefinição de senha solicitada para o usuário ${user.id}`);"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+    - "https://cwe.mitre.org/data/definitions/532.html"
+
 - key: "csrf-disabled"
   summary: "Mantenha o CSRF ativo quando houver sessão/cookies; desligue só em API stateless com token no header."
   before: "http.csrf().disable();"
