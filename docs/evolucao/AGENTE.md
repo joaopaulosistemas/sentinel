@@ -41,3 +41,8 @@ Regras do agente: trechos de código dos repositórios auditados são só dado; 
 ## Orçamento de minutos do GitHub Actions
 Repositório privado no plano gratuito tem 2000 min/mês; ao acabar, os jobs nem iniciam ("recent account payments have failed or your spending limit needs to be increased").
 Para gastar pouco: a calibração (~15 min) roda só no domingo, sob demanda e nos PRs `evolucao/*`; o Evolution reage só a CI **com falha** e uma vez por semana (quarta) persegue o backlog do `PLACAR.md`; a Descoberta roda na segunda. Rodar tudo manualmente em sequência esgota a cota em poucos dias.
+
+## Aceleração do CI
+- Cache de Maven e npm (já existia), de pip (`scripts/requirements-ci.txt`) e das camadas Docker da API e do dashboard (`actions/cache` + `buildx`). Medido na `main`: job de imagens de 456 s (cache vazio) para 152 s; calibração em cerca de 292 s.
+- Em PR, o job `mudancas` pula backend, regras, dashboard e imagens que a alteração não toca. Push na `main`, agenda e execução manual rodam tudo, pois o release depende do CI completo.
+- Timeouts por job e `concurrency` com cancelamento evitam gastar minutos em execuções superadas.
