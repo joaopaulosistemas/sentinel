@@ -6,6 +6,10 @@
 #   cp .env.example .env        # defina POSTGRES_PASSWORD, API_KEY e GIT_TOKEN
 #   docker compose up -d --build
 #
+# Rede corporativa com inspeção SSL: coloque o CA raiz da empresa (PEM, .crt)
+# em audit-api/certs/ antes do build. Se precisar de proxy, defina HTTP_PROXY,
+# HTTPS_PROXY e NO_PROXY no .env (são repassados como build args).
+#
 # Só o banco (para rodar a API com `mvn quarkus:dev`):
 #   docker compose up -d postgres
 #   export DB_URL=jdbc:postgresql://127.0.0.1:5433/sentinel_audit DB_PASSWORD=<POSTGRES_PASSWORD>
@@ -40,6 +44,14 @@ services:
       dockerfile: audit-api/Dockerfile
       args:
         WITH_ESLINT: ${WITH_ESLINT:-true}   # Node 20 + ESLint + Stylelint (stack web)
+        WITH_SEMGREP: ${WITH_SEMGREP:-true}
+        WITH_TRIVY: ${WITH_TRIVY:-true}
+        WITH_GITLEAKS: ${WITH_GITLEAKS:-true}
+        WITH_PMD: ${WITH_PMD:-true}
+        WITH_MARKET_TOOLS: ${WITH_MARKET_TOOLS:-true}
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
     container_name: sentinel-audit-api
     restart: unless-stopped
     depends_on:
@@ -100,6 +112,10 @@ services:
   audit-dashboard:
     build:
       context: ./audit-dashboard
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
     container_name: sentinel-audit-dashboard
     restart: unless-stopped
     depends_on:

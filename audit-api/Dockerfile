@@ -1,7 +1,20 @@
 # Build a partir da RAIZ do projeto (o módulo depende do pom pai):
 #   docker build -f audit-api/Dockerfile -t sentinel-audit-api .
+#
+# VERSÃO SEM VERIFICAÇÃO DE SSL (para redes com inspeção SSL, sem instalar o CA da empresa).
+# Com INSECURE_SSL=true (padrão), a verificação de certificado é DESLIGADA apenas durante o build
+# (Maven, apt, curl, pip, npm e git). As configurações inseguras são removidas ao final, então a
+# imagem pronta não carrega nada disso. Para voltar ao normal: --build-arg INSECURE_SSL=false
 FROM docker.io/maven:3.9-eclipse-temurin-21-alpine AS build
+ARG INSECURE_SSL=true
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
 WORKDIR /build
+# Maven sem verificação de SSL (3.9 usa o transporte nativo; as flags wagon cobrem plugins antigos)
+RUN if [ "$INSECURE_SSL" = "true" ]; then \
+      echo 'export MAVEN_OPTS="$MAVEN_OPTS -Daether.connector.https.securityMode=insecure -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true"' > /root/.mavenrc; \
+    fi
 # Camada de dependências (cache): copia só os poms antes do código-fonte
 COPY pom.xml .
 COPY audit-api/pom.xml audit-api/pom.xml
@@ -12,6 +25,10 @@ COPY audit-api/src audit-api/src
 RUN mvn -B -q -pl audit-api -am package -DskipTests
 
 FROM docker.io/eclipse-temurin:21-jre-jammy
+ARG INSECURE_SSL=true
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
 # git: clonar os repositórios auditados. curl: healthcheck.
 # Semgrep (SAST): instalado por padrão; para uma imagem menor use --build-arg WITH_SEMGREP=false
 # (sem ele o SAST é ignorado com um aviso no log).
@@ -34,8 +51,18 @@ ARG KUBE_LINTER_VERSION=0.7.2
 ARG KUBE_SCORE_VERSION=1.19.0
 ARG CHECKSTYLE_VERSION=10.21.4
 ARG WITH_MARKET_TOOLS=true
+
+# SSL desligado SOMENTE durante o build (removido mais abaixo, antes de USER audit)
+RUN if [ "$INSECURE_SSL" = "true" ]; then \
+      printf 'insecure\n' > /root/.curlrc \
+      && printf 'strict-ssl=false\n' > /root/.npmrc \
+      && printf '[global]\ntrusted-host = pypi.org files.pythonhosted.org pypi.python.org\n' > /etc/pip.conf \
+      && printf 'Acquire::https::Verify-Peer "false";\nAcquire::https::Verify-Host "false";\n' > /etc/apt/apt.conf.d/99insecure; \
+    fi
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git curl ca-certificates gnupg python3 python3-pip \
+    && if [ "$INSECURE_SSL" = "true" ]; then git config --system http.sslVerify false; fi \
     && if [ "$WITH_SEMGREP" = "true" ]; then pip3 install --no-cache-dir semgrep; fi \
     && if [ "$WITH_TRIVY" = "true" ]; then \
          curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg \
@@ -96,6 +123,9 @@ RUN if [ "$WITH_ESLINT" = "true" ]; then \
       && cd /opt/jscpd && npm install --omit=dev --no-audit --no-fund \
       && cd /opt/extras && npm install --omit=dev --no-audit --no-fund; \
     fi
+# Remove as configurações inseguras: a imagem final volta a verificar SSL normalmente
+RUN rm -f /root/.curlrc /root/.npmrc /etc/pip.conf /etc/apt/apt.conf.d/99insecure \
+    && (git config --system --unset-all http.sslVerify || true)
 RUN mkdir -p /tmp/sentinel-audit-clones && chown -R audit:audit /app /tmp/sentinel-audit-clones
 USER audit
 EXPOSE 8080
