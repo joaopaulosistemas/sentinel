@@ -128,7 +128,9 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
      */
     static final List<String> VENDORED_EXCLUDES = List.of(
             "node_modules", "vendor", "vendors", "third_party", "thirdparty", "bower_components", "libs",
-            "*.min.js", "*.min.css", "*.bundle.js", "*.pack.js");
+            "*.min.js", "*.min.css", "*.bundle.js", "*.pack.js",
+            "jquery*.js", "jquery*.css", "font-awesome*.css", "fontawesome*.css", "patternfly*.css", "patternfly*.js",
+            "js/bootstrap*.js", "css/bootstrap*.css");
 
     /**
      * Executa o Semgrep e devolve o JSON de saída, ou {@code null} se a execução falhou.

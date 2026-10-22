@@ -24,7 +24,35 @@ rules:
           - focus-metavariable: $ARG
           - metavariable-regex:
               metavariable: $M
-              regex: ^(executeQuery|executeUpdate|execute|executeLargeUpdate|prepareStatement|prepareCall|createQuery|createNativeQuery|addBatch|query|queryForObject|queryForList|queryForMap|queryForRowSet|update|batchUpdate)$
+              regex: ^(executeQuery|executeUpdate|executeLargeUpdate|prepareStatement|prepareCall|createQuery|createNativeQuery|addBatch|queryForObject|queryForList|queryForMap|queryForRowSet|batchUpdate)$
+      # execute, update e query também existem em Runnable, MessageDigest, Elasticsearch e serviços de domínio:
+      # só valem em receptor JDBC (tipo conhecido ou nome que o denuncie, para campos estáticos de outra classe).
+      - patterns:
+          - pattern: $R.$M($ARG, ...)
+          - focus-metavariable: $ARG
+          - metavariable-regex:
+              metavariable: $R
+              regex: (?i)^(.*\.)?\w*(jdbc|template|stmt|statement)\w*$
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(execute|update|query)$
+      - patterns:
+          - pattern-either:
+              - pattern: (java.sql.Statement $S).execute($ARG, ...)
+              - pattern: (Statement $S).execute($ARG, ...)
+          - focus-metavariable: $ARG
+      - patterns:
+          - pattern-either:
+              - pattern: (JdbcTemplate $S).$M($ARG, ...)
+              - pattern: (JdbcOperations $S).$M($ARG, ...)
+              - pattern: (NamedParameterJdbcTemplate $S).$M($ARG, ...)
+              - pattern: (org.springframework.jdbc.core.JdbcTemplate $S).$M($ARG, ...)
+              - pattern: (org.springframework.jdbc.core.JdbcOperations $S).$M($ARG, ...)
+              - pattern: (org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate $S).$M($ARG, ...)
+          - focus-metavariable: $ARG
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(execute|update|query)$
     message: >
       Possível SQL Injection (OWASP A03): a consulta é montada por concatenação ou String.format
       com valores variáveis. Use PreparedStatement / parâmetros nomeados (?) em vez de concatenar.

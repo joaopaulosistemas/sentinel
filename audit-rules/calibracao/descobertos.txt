@@ -7,3 +7,8 @@ brocoders/nestjs-boilerplate
 buqiyuan/nest-admin
 ppetzold/nestjs-paginate
 squareboat/nestjs-boilerplate
+Snailclimb/spring-security-jwt-guide
+hoangtien2k3/ecommerce-microservices
+jboss-developer/jboss-eap-quickstarts
+jeddict/jeddict-modeler
+yangzongzhuan/RuoYi-Vue
