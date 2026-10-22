@@ -57,6 +57,8 @@ class AuditFlowIntegrationTest {
         given().get("/api/v1/systems/" + systemId + "/trend").then().statusCode(200);
         given().get("/api/v1/systems/" + systemId + "/suppressions").then().statusCode(200).body("size()", is(0));
         given().get("/api/v1/audits/" + auditId + "/findings").then().statusCode(200);
+        // visão de todos os sistemas: auditoria FAILED não entra (só concluídas)
+        given().get("/api/v1/findings").then().statusCode(200).body("total", is(0)).body("items.size()", is(0));
         given().get("/api/v1/audits/" + auditId + "/fix-plan").then().statusCode(200)
                 .body("items.size()", is(0)).body("criticalCount", is(0));
         given().get("/api/v1/audits/" + auditId + "/report").then().statusCode(200).body(containsString("Sistema IT"));

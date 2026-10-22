@@ -1,26 +1,20 @@
-import {
-  Button,
-  DatePicker,
-  DatePickerInput,
-  Dropdown,
-  InlineNotification,
-  SkeletonText,
-  Tile,
-} from '@carbon/react';
+import { Button, InlineNotification, SkeletonText } from '@carbon/react';
 import { useEffect, useState } from 'react';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
+import { type ReportFormat, reportFormats, reportUrl } from './reportLinks';
 
 interface ReportHistoryEntry {
   id: string;
   systemName: string;
   auditId: number;
+  format?: ReportFormat;
   generatedAt: string;
   url: string;
 }
 
 const STORAGE_KEY = 'sentinel_report_history';
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 function loadHistory(): ReportHistoryEntry[] {
   try {
@@ -31,45 +25,52 @@ function loadHistory(): ReportHistoryEntry[] {
 }
 
 function saveHistory(entries: ReportHistoryEntry[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch {
+    /* armazenamento indisponível: o histórico só não persiste */
+  }
 }
 
+const eyebrow = { fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#525252' } as const;
+const choice = (active: boolean) =>
+  ({
+    all: 'unset',
+    boxSizing: 'border-box',
+    cursor: 'pointer',
+    padding: '0.625rem 0.75rem',
+    border: `1px solid ${active ? '#0f62fe' : '#e0e0e0'}`,
+    background: active ? '#edf5ff' : '#fff',
+    display: 'grid',
+    gap: 2,
+  }) as const;
+
+/** Relatórios em três passos: sistema, auditoria e formato. O histórico fica neste navegador. */
 export function ReportsPage() {
   const { data: systems, isLoading: loadingSystems } = useSystems();
-  const [selectedSystemId, setSelectedSystemId] = useState<number | null>(null);
-  const [selectedAuditId, setSelectedAuditId] = useState<number | null>(null);
+  const [systemId, setSystemId] = useState<number | null>(null);
+  const [auditId, setAuditId] = useState<number | null>(null);
+  const [format, setFormat] = useState<ReportFormat>('html');
   const [history, setHistory] = useState<ReportHistoryEntry[]>(loadHistory);
-  const [, setDateRange] = useState<[string, string]>(['', '']);
 
-  const { data: auditRuns, isLoading: loadingRuns } = useAuditRuns(selectedSystemId ?? 0);
+  const { data: runs, isLoading: loadingRuns } = useAuditRuns(systemId ?? 0);
+  const completed = (runs ?? []).filter((r) => r.status === 'COMPLETED');
 
-  // Reset audit selection when system changes
+  // Ao escolher o sistema, já deixa selecionada a auditoria mais recente.
   useEffect(() => {
-    setSelectedAuditId(null);
-  }, [selectedSystemId]);
+    setAuditId(completed.length > 0 ? completed[0].id : null);
+  }, [systemId, runs?.length]);
 
-  const systemItems =
-    systems?.map((s) => ({ id: String(s.id), label: s.name, value: s.id })) ?? [];
-
-  const completedRuns =
-    auditRuns
-      ?.filter((r) => r.status === 'COMPLETED')
-      .map((r) => ({
-        id: String(r.id),
-        label: `#${r.id} — ${r.branch} — ${new Date(r.startedAt).toLocaleString('pt-BR')}`,
-        value: r.id,
-      })) ?? [];
-
-  function handleGenerate() {
-    if (!selectedAuditId) return;
-    const url = `${BASE_URL}/api/v1/audits/${selectedAuditId}/report`;
+  function generate() {
+    if (!auditId) return;
+    const url = reportUrl(BASE_URL, auditId, format);
     window.open(url, '_blank', 'noreferrer');
-
-    const system = systems?.find((s) => s.id === selectedSystemId);
+    const system = systems?.find((s) => s.id === systemId);
     const entry: ReportHistoryEntry = {
-      id: `${selectedAuditId}-${Date.now()}`,
-      systemName: system?.name ?? `Sistema #${selectedSystemId ?? ''}`,
-      auditId: selectedAuditId,
+      id: `${auditId}-${format}-${Date.now()}`,
+      systemName: system?.name ?? `Sistema #${systemId ?? ''}`,
+      auditId,
+      format,
       generatedAt: new Date().toISOString(),
       url,
     };
@@ -84,130 +85,91 @@ export function ReportsPage() {
   }
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1 style={{ fontSize: '1.75rem', fontWeight: 600, marginBottom: '1.5rem' }}>
-        Relatórios
-      </h1>
+    <div style={{ padding: '2rem', display: 'grid', gap: '1.5rem' }}>
+      <div>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 400, marginBottom: '0.25rem' }}>Relatórios</h1>
+        <p style={{ color: '#525252' }}>Escolha o sistema, a auditoria e o formato. O relatório abre em uma nova aba.</p>
+      </div>
 
-      {/* Generator form */}
-      <Tile style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.25rem' }}>
-          Gerar Relatório
-        </h2>
+      <section aria-label="Novo relatório" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '1.25rem 1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
+            <div style={eyebrow}>1 · Sistema</div>
+            {loadingSystems ? (
+              <SkeletonText lineCount={3} />
+            ) : (
+              (systems ?? []).map((s) => (
+                <button key={s.id} type="button" aria-pressed={systemId === s.id} onClick={() => setSystemId(s.id)} style={choice(systemId === s.id)}>
+                  <strong style={{ fontWeight: 600 }}>{s.name}</strong>
+                  <span style={{ fontSize: '0.75rem', color: '#525252' }}>{s.team || 'Sem time'}</span>
+                </button>
+              ))
+            )}
+          </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '480px' }}>
-          {loadingSystems ? (
-            <SkeletonText lineCount={2} />
-          ) : (
-            <Dropdown
-              id="report-system"
-              titleText="Sistema"
-              label="Selecione um sistema"
-              items={systemItems}
-              itemToString={(item) => item?.label ?? ''}
-              selectedItem={systemItems.find((i) => i.value === selectedSystemId) ?? null}
-              onChange={({ selectedItem }) => setSelectedSystemId(selectedItem?.value ?? null)}
-            />
-          )}
+          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
+            <div style={eyebrow}>2 · Auditoria</div>
+            {systemId === null ? (
+              <p style={{ color: '#525252' }}>Escolha um sistema primeiro.</p>
+            ) : loadingRuns ? (
+              <SkeletonText lineCount={3} />
+            ) : completed.length === 0 ? (
+              <InlineNotification kind="info" title="Nenhuma auditoria concluída" subtitle="Execute uma auditoria para este sistema primeiro." hideCloseButton />
+            ) : (
+              completed.slice(0, 6).map((r, i) => (
+                <button key={r.id} type="button" aria-pressed={auditId === r.id} onClick={() => setAuditId(r.id)} style={choice(auditId === r.id)}>
+                  <strong style={{ fontWeight: 600 }}>
+                    #{r.id}
+                    {i === 0 ? ' · mais recente' : ''}
+                  </strong>
+                  <span style={{ fontSize: '0.75rem', color: '#525252' }}>
+                    {r.branch} · {new Date(r.startedAt).toLocaleString('pt-BR')} · nota {r.riskScore?.overall ?? '—'}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
 
-          {selectedSystemId !== null && (
-            <>
-              {loadingRuns ? (
-                <SkeletonText lineCount={1} />
-              ) : completedRuns.length === 0 ? (
-                <InlineNotification
-                  kind="info"
-                  title="Nenhuma auditoria concluída"
-                  subtitle="Execute uma auditoria para este sistema primeiro."
-                />
-              ) : (
-                <Dropdown
-                  id="report-audit"
-                  titleText="Auditoria"
-                  label="Selecione uma auditoria"
-                  items={completedRuns}
-                  itemToString={(item) => item?.label ?? ''}
-                  selectedItem={completedRuns.find((i) => i.value === selectedAuditId) ?? null}
-                  onChange={({ selectedItem }) => setSelectedAuditId(selectedItem?.value ?? null)}
-                />
-              )}
-            </>
-          )}
-
-          <DatePicker
-            datePickerType="range"
-            dateFormat="d/m/Y"
-            onChange={(dates) => {
-              if (dates.length === 2) {
-                setDateRange([
-                  dates[0].toISOString().split('T')[0],
-                  dates[1].toISOString().split('T')[0],
-                ]);
-              }
-            }}
-          >
-            <DatePickerInput id="date-start" labelText="Data de início" placeholder="dd/mm/aaaa" />
-            <DatePickerInput id="date-end" labelText="Data de fim" placeholder="dd/mm/aaaa" />
-          </DatePicker>
-
-          <Button
-            disabled={!selectedAuditId}
-            onClick={handleGenerate}
-          >
-            Gerar Relatório HTML
-          </Button>
+          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
+            <div style={eyebrow}>3 · Formato</div>
+            {reportFormats.map((f) => (
+              <button key={f.id} type="button" aria-pressed={format === f.id} onClick={() => setFormat(f.id)} style={choice(format === f.id)}>
+                <strong style={{ fontWeight: 600 }}>{f.label}</strong>
+                <span style={{ fontSize: '0.75rem', color: '#525252' }}>{f.hint}</span>
+              </button>
+            ))}
+            <Button disabled={!auditId} onClick={generate} style={{ marginTop: '0.5rem' }}>
+              Gerar relatório
+            </Button>
+          </div>
         </div>
-      </Tile>
+      </section>
 
-      {/* History */}
-      <Tile style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0 }}>
-            Histórico de Relatórios
-          </h2>
+      <section aria-label="Histórico" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1rem', borderBottom: '1px solid #e0e0e0' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Gerados neste navegador</h2>
           {history.length > 0 && (
             <Button kind="ghost" size="sm" onClick={clearHistory}>
               Limpar histórico
             </Button>
           )}
         </div>
-
         {history.length === 0 ? (
-          <p style={{ color: '#6f6f6f' }}>Nenhum relatório gerado ainda.</p>
+          <p style={{ color: '#525252', padding: '1rem' }}>Nenhum relatório gerado ainda.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {history.map((entry) => (
-              <div
-                key={entry.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  padding: '0.625rem 0.75rem',
-                  background: '#f4f4f4',
-                  borderRadius: '4px',
-                }}
-              >
-                <span style={{ fontWeight: 600 }}>{entry.systemName}</span>
-                <span style={{ color: '#6f6f6f', fontSize: '0.875rem' }}>
-                  Auditoria #{entry.auditId}
-                </span>
-                <span style={{ color: '#6f6f6f', fontSize: '0.8125rem' }}>
-                  {new Date(entry.generatedAt).toLocaleString('pt-BR')}
-                </span>
-                <a
-                  href={entry.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ marginLeft: 'auto', color: '#0f62fe', fontSize: '0.875rem' }}
-                >
-                  Abrir novamente
-                </a>
-              </div>
-            ))}
-          </div>
+          history.map((e) => (
+            <div key={e.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 2fr) 110px 150px 170px auto', gap: '0.75rem', padding: '0.75rem 1rem', borderTop: '1px solid #e0e0e0', alignItems: 'center' }}>
+              <strong style={{ fontWeight: 500 }}>{e.systemName}</strong>
+              <span style={{ color: '#525252' }}>Auditoria #{e.auditId}</span>
+              <code style={{ fontSize: '0.75rem' }}>{e.format === 'sbom' ? 'SBOM' : 'HTML'}</code>
+              <span style={{ fontSize: '0.8125rem', color: '#525252' }}>{new Date(e.generatedAt).toLocaleString('pt-BR')}</span>
+              <a href={e.url} target="_blank" rel="noreferrer" style={{ justifySelf: 'end' }}>
+                Abrir novamente
+              </a>
+            </div>
+          ))
         )}
-      </Tile>
+      </section>
     </div>
   );
 }

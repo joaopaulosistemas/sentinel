@@ -309,3 +309,11 @@ export interface FixPlan {
   criticalCount: number;
   items: FixPlanItem[];
 }
+
+// ---------------------------------------------------------------- achados de todos os sistemas
+
+export interface FindingsOverview {
+  total: number;
+  bySystem: Array<{ systemId: number; systemName: string; auditId: number; count: number }>;
+  items: Array<{ systemId: number; systemName: string; auditId: number; finding: FindingResponse }>;
+}

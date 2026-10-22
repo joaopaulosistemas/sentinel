@@ -1,23 +1,13 @@
-import {
-  DataTableSkeleton,
-  Dropdown,
-  Toggle,
-  InlineNotification,
-  Pagination,
-} from '@carbon/react';
+import { DataTableSkeleton, Dropdown, InlineNotification, Pagination, Toggle } from '@carbon/react';
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import { api } from '../../api/client';
-import { useAudit } from '../../hooks/useAuditRuns';
-import { useSystems } from '../../hooks/useSystems';
-import { JourneySteps } from '../../components/JourneySteps';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FindingsTable } from '../../components/FindingsTable';
-import { useFindings } from '../../hooks/useFindings';
+import { JourneySteps } from '../../components/JourneySteps';
+import { useAudit } from '../../hooks/useAuditRuns';
+import { useFindings, useFindingsOverview } from '../../hooks/useFindings';
+import { useSystems } from '../../hooks/useSystems';
 import { useAuditStore } from '../../store/useAuditStore';
-import type { Category, FindingStatus, Severity } from '../../types';
-
-const PAGE_SIZE = 20;
+import type { Category, FindingResponse, FindingStatus, Severity } from '../../types';
 
 interface DropdownItem<T> {
   id: string;
@@ -51,99 +41,122 @@ const statusItems: DropdownItem<FindingStatus>[] = [
   { id: 'SUPPRESSED', label: 'Suprimido', value: 'SUPPRESSED' },
 ];
 
+interface SystemItem {
+  id: string;
+  name: string;
+  value: number | undefined;
+}
+
+const ALL_SYSTEMS: SystemItem = { id: 'all', name: 'Todos os sistemas', value: undefined };
+
+/**
+ * Achados. Sem auditoria na URL, mostra os de todos os sistemas (última auditoria concluída de cada um) e deixa
+ * filtrar por sistema; com `?auditId=`, mostra os daquela auditoria.
+ */
 export function FindingsPage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryClient = useQueryClient();
-  const auditIdFromQuery = Number(searchParams.get('auditId') ?? '0');
-  const storeAuditId = useAuditStore((s) => s.selectedAuditId);
+  const auditId = Number(searchParams.get('auditId') ?? '0');
   const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
-  const auditId = auditIdFromQuery > 0 ? auditIdFromQuery : (storeAuditId ?? 0);
+  const auditMode = auditId > 0;
 
-  const { data: audit } = useAudit(auditId);
-  const { data: systems } = useSystems();
-  const [switching, setSwitching] = useState<string | null>(null);
-  const currentSystem = systems?.find((sys) => sys.name === audit?.systemName) ?? null;
-
-  // Trocar de sistema leva à última auditoria concluída dele.
-  const pickSystem = async (systemId: number) => {
-    setSwitching(null);
-    const runs = await queryClient.fetchQuery({
-      queryKey: ['auditRuns', systemId],
-      queryFn: () => api.getAuditRuns(systemId),
-    });
-    const latest = runs
-      .filter((r) => r.status === 'COMPLETED')
-      .sort((a, b) => b.id - a.id)[0];
-    if (!latest) {
-      setSwitching('Este sistema ainda não tem auditoria concluída.');
-      return;
-    }
-    setSelectedAudit(latest.id);
-    setSearchParams({ auditId: String(latest.id) });
-    setPage(1);
-  };
-
-  const [severityFilter, setSeverityFilter] = useState<Severity | undefined>(undefined);
-  const [categoryFilter, setCategoryFilter] = useState<Category | undefined>(undefined);
-  const [statusFilter, setStatusFilter] = useState<FindingStatus | undefined>(undefined);
+  const [systemId, setSystemId] = useState<number | undefined>(undefined);
+  const [severity, setSeverity] = useState<Severity | undefined>(undefined);
+  const [category, setCategory] = useState<Category | undefined>(undefined);
+  const [status, setStatus] = useState<FindingStatus | undefined>(undefined);
   const [onlyNew, setOnlyNew] = useState(searchParams.get('onlyNew') === '1');
   const [includeSuppressed, setIncludeSuppressed] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-  const { data: findings, isLoading, error } = useFindings(
-    auditId,
-    { severity: severityFilter, category: categoryFilter, status: statusFilter, onlyNew, includeSuppressed },
+  const { data: systems } = useSystems();
+  const { data: audit } = useAudit(auditId);
+
+  const filters = { severity, category, status, onlyNew, includeSuppressed };
+  const single = useFindings(auditId, filters);
+  const overview = useFindingsOverview(
+    { ...filters, systemId, limit: pageSize, offset: (page - 1) * pageSize },
+    !auditMode,
   );
 
-  const totalItems = findings?.length ?? 0;
-  const paginated = findings?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? [];
+  const systemItems: SystemItem[] = [ALL_SYSTEMS, ...(systems ?? []).map((s) => ({ id: String(s.id), name: s.name, value: s.id }))];
+  const currentSystem = auditMode
+    ? (systemItems.find((s) => s.name === audit?.systemName) ?? ALL_SYSTEMS)
+    : (systemItems.find((s) => s.value === systemId) ?? ALL_SYSTEMS);
+
+  const loading = auditMode ? single.isLoading : overview.isLoading;
+  const error = auditMode ? single.error : overview.error;
+
+  const rows: FindingResponse[] = auditMode
+    ? (single.data ?? []).slice((page - 1) * pageSize, page * pageSize)
+    : (overview.data?.items.map((i) => i.finding) ?? []);
+  const total = auditMode ? (single.data?.length ?? 0) : (overview.data?.total ?? 0);
+
+  const systemByFinding = new Map(overview.data?.items.map((i) => [i.finding.id, i]) ?? []);
+
+  const reset = () => setPage(1);
+
+  const pickSystem = (value: number | undefined) => {
+    // Escolher um sistema sai do modo "uma auditoria" e volta a olhar a última de cada sistema.
+    if (auditMode) setSearchParams({});
+    setSystemId(value);
+    reset();
+  };
 
   return (
     <div style={{ padding: '2rem' }}>
       <div style={{ marginBottom: '1rem' }}>
         <JourneySteps current={4} />
       </div>
-      <h1 style={{ fontSize: '1.75rem', fontWeight: 600, marginBottom: '1.5rem' }}>
+      <h1 style={{ fontSize: '1.75rem', fontWeight: 600, marginBottom: '0.25rem' }}>
         Findings
-        {auditId > 0 && (
-          <span style={{ fontSize: '1rem', color: '#6f6f6f', marginLeft: '0.75rem' }}>
-            — {audit?.systemName ? `${audit.systemName} · ` : ''}Auditoria #{auditId}
-          </span>
-        )}
+        <span style={{ fontSize: '1rem', color: '#6f6f6f', marginLeft: '0.75rem' }}>
+          {auditMode
+            ? `— ${audit?.systemName ? `${audit.systemName} · ` : ''}Auditoria #${auditId}`
+            : `— ${currentSystem.name}`}
+        </span>
       </h1>
+      <p style={{ color: '#525252', marginBottom: '1.5rem' }}>
+        {auditMode
+          ? 'Achados desta auditoria.'
+          : 'Da última auditoria concluída de cada sistema. Escolha um sistema para focar.'}
+      </p>
 
-      {switching && (
-        <InlineNotification kind="warning" title="Sem resultado" subtitle={switching} style={{ marginBottom: '1rem' }} />
+      {!auditMode && overview.data && overview.data.bySystem.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+          {overview.data.bySystem.map((s) => {
+            const active = systemId === s.systemId;
+            return (
+              <button
+                key={s.systemId}
+                type="button"
+                aria-pressed={active}
+                onClick={() => pickSystem(active ? undefined : s.systemId)}
+                style={{
+                  padding: '0.5rem 0.875rem',
+                  background: active ? '#edf5ff' : '#fff',
+                  border: `1px solid ${active ? '#0f62fe' : '#e0e0e0'}`,
+                  cursor: 'pointer',
+                  font: 'inherit',
+                }}
+              >
+                <strong style={{ fontWeight: 600 }}>{s.systemName}</strong>
+                <span style={{ marginLeft: '0.5rem', color: '#525252' }}>{s.count} achados</span>
+              </button>
+            );
+          })}
+        </div>
       )}
 
-      {auditId === 0 && (
-        <InlineNotification
-          kind="info"
-          title="Selecione uma auditoria"
-          subtitle="Acesse um sistema e clique em 'Ver Findings' para visualizar os resultados."
-          style={{ marginBottom: '1rem' }}
-        />
-      )}
-
-      {/* Filters */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '1rem',
-          marginBottom: '1.5rem',
-          flexWrap: 'wrap',
-        }}
-      >
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <Dropdown
           id="system-filter"
           label="Sistema"
           titleText="Sistema"
-          items={systems ?? []}
+          items={systemItems}
           itemToString={(item) => item?.name ?? ''}
           selectedItem={currentSystem}
-          onChange={({ selectedItem }) => {
-            if (selectedItem) void pickSystem(selectedItem.id);
-          }}
+          onChange={({ selectedItem }) => pickSystem(selectedItem?.value)}
           style={{ minWidth: '240px' }}
         />
         <Dropdown
@@ -152,10 +165,10 @@ export function FindingsPage() {
           titleText="Severidade"
           items={severityItems}
           itemToString={(item) => item?.label ?? ''}
-          selectedItem={severityItems.find((i) => i.value === severityFilter) ?? severityItems[0]}
+          selectedItem={severityItems.find((i) => i.value === severity) ?? severityItems[0]}
           onChange={({ selectedItem }) => {
-            setSeverityFilter(selectedItem?.value);
-            setPage(1);
+            setSeverity(selectedItem?.value);
+            reset();
           }}
           style={{ minWidth: '200px' }}
         />
@@ -165,10 +178,10 @@ export function FindingsPage() {
           titleText="Categoria"
           items={categoryItems}
           itemToString={(item) => item?.label ?? ''}
-          selectedItem={categoryItems.find((i) => i.value === categoryFilter) ?? categoryItems[0]}
+          selectedItem={categoryItems.find((i) => i.value === category) ?? categoryItems[0]}
           onChange={({ selectedItem }) => {
-            setCategoryFilter(selectedItem?.value);
-            setPage(1);
+            setCategory(selectedItem?.value);
+            reset();
           }}
           style={{ minWidth: '200px' }}
         />
@@ -178,10 +191,10 @@ export function FindingsPage() {
           titleText="Status"
           items={statusItems}
           itemToString={(item) => item?.label ?? ''}
-          selectedItem={statusItems.find((i) => i.value === statusFilter) ?? statusItems[0]}
+          selectedItem={statusItems.find((i) => i.value === status) ?? statusItems[0]}
           onChange={({ selectedItem }) => {
-            setStatusFilter(selectedItem?.value);
-            setPage(1);
+            setStatus(selectedItem?.value);
+            reset();
           }}
           style={{ minWidth: '200px' }}
         />
@@ -193,7 +206,7 @@ export function FindingsPage() {
           toggled={onlyNew}
           onToggle={(v) => {
             setOnlyNew(v);
-            setPage(1);
+            reset();
           }}
         />
         <Toggle
@@ -204,13 +217,12 @@ export function FindingsPage() {
           toggled={includeSuppressed}
           onToggle={(v) => {
             setIncludeSuppressed(v);
-            setPage(1);
+            reset();
           }}
         />
       </div>
 
-      {/* Content */}
-      {isLoading && auditId > 0 ? (
+      {loading ? (
         <DataTableSkeleton columnCount={7} rowCount={10} />
       ) : error ? (
         <InlineNotification
@@ -218,22 +230,55 @@ export function FindingsPage() {
           title="Erro ao carregar findings"
           subtitle={error instanceof Error ? error.message : 'Erro desconhecido'}
         />
-      ) : auditId > 0 ? (
+      ) : total === 0 ? (
+        <InlineNotification
+          kind="info"
+          title="Nenhum achado com esses filtros"
+          subtitle={
+            auditMode
+              ? 'Tente remover algum filtro.'
+              : 'Pode ser que nenhum sistema tenha auditoria concluída ainda, ou que os filtros sejam restritivos.'
+          }
+          hideCloseButton
+        />
+      ) : (
         <>
-          <FindingsTable findings={paginated} systemName={audit?.systemName} />
+          <FindingsTable
+            findings={rows}
+            systemName={auditMode ? audit?.systemName : undefined}
+            systemOf={
+              auditMode
+                ? undefined
+                : (f) => {
+                    const hit = systemByFinding.get(f.id);
+                    if (!hit) return undefined;
+                    return {
+                      name: hit.systemName,
+                      onClick: () => {
+                        setSelectedAudit(hit.auditId);
+                        navigate(`/systems/${hit.systemId}`);
+                      },
+                    };
+                  }
+            }
+          />
           <Pagination
-            totalItems={totalItems}
-            pageSize={PAGE_SIZE}
+            totalItems={total}
+            pageSize={pageSize}
             pageSizes={[10, 20, 50]}
             page={page}
-            onChange={({ page: p, pageSize }) => {
-              setPage(p);
-              if (pageSize !== PAGE_SIZE) setPage(1);
+            onChange={({ page: p, pageSize: size }) => {
+              if (size !== pageSize) {
+                setPageSize(size);
+                setPage(1);
+              } else {
+                setPage(p);
+              }
             }}
             style={{ marginTop: '1rem' }}
           />
         </>
-      ) : null}
+      )}
     </div>
   );
 }
