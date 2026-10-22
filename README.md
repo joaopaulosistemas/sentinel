@@ -468,12 +468,12 @@ sentinel-audit-tool/
 │       └── resource/               ← Endpoints REST
 │
 ├── audit-rules/
-│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, market-tools, ts-clean-code, core-architecture) e profiles/
+│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, core-corporativo, market-tools, ts-clean-code, core-architecture) e profiles/
 │   ├── optional/                   ← Regras que duplicam os analisadores Java (desativadas)
 │   ├── lint/eslint/                ← Configuração do ESLint usada pelo analisador
 │   └── bin/sentinel-pack           ← Ferramenta de linha de comando para autores de pacotes
 │
-├── deploy/helm/sentinel/           ← Chart Helm (API, dashboard, PostgreSQL opcional) — não validado com `helm lint`
+├── deploy/helm/sentinel/           ← Chart Helm (API, dashboard, PostgreSQL opcional) — `helm lint` e `helm template` rodam no CI
 │
 ├── audit-dashboard/                ← Frontend React 18 + IBM Carbon DS
 │   ├── Dockerfile + nginx.conf.template
@@ -485,8 +485,13 @@ sentinel-audit-tool/
 │       ├── api/                    ← Client tipado para o backend
 │       └── types/                  ← Interfaces TypeScript
 │
-└── audit-cli/                      ← CLI Java para integração CI/CD
-    └── src/main/java/.../AuditCli.java
+├── audit-cli/                      ← CLI Java para integração CI/CD
+│   └── src/main/java/.../AuditCli.java
+│
+├── .github/workflows/              ← ci.yml, evolucao.yml, descoberta.yml, release.yml
+├── .github/agente/                 ← instruções dos agentes Sentinel Evolution e Sentinel Descoberta
+├── scripts/                        ← e2e, calibração, descoberta de repositórios, relatórios, anotações de CI
+└── docs/evolucao/                  ← PLACAR, LOG, calibração, precisão medida, relatórios das rodadas, guia dos agentes
 ```
 
 ---
@@ -805,6 +810,13 @@ Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dad
 
 - **CI do projeto** (`.github/workflows/ci.yml`): API/CLI, testes Semgrep dos pacotes e dashboard. Modelos para o projeto auditado em `docs/integracao/` (GitHub Actions com gate de código novo e SARIF, pre-commit).
 - **Calibração em repositórios públicos** (`docs/evolucao/calibracao.md`): corrigidos 2 falsos positivos (`SELECT *` em `EXISTS`, `<html>` sem `lang` em fragmentos Thymeleaf), 1 falha de detecção (desserialização) e nova regra `sentinel-command-injection-shell`. O Semgrep passou a ignorar bibliotecas de terceiros embutidas (`libs`, `vendor`, `*.min.js`).
-- **Dashboard**: 14 testes (vitest + Testing Library) e versão no cabeçalho.
+- **Dashboard**: 16 testes (vitest + Testing Library, inclui acessibilidade com axe) e versão no cabeçalho.
 - **Verificador de regras SQL/XML** (`audit-rules/scripts/testar-regex-sql.py`), porque o `semgrep --test` não avalia essas regras.
 - Placar e histórico em `docs/evolucao/LOG.md`.
+- **Verificação em CI real**: Maven (suíte Java), imagens Docker da API e do dashboard, `helm lint`/`helm template`, teste ponta a ponta (Postgres + API + auditoria do petclinic) e calibração em repositórios públicos rodam no GitHub Actions.
+- **Agentes de evolução** (`docs/evolucao/AGENTE.md`):
+  - **Sentinel Evolution** lê o CI com falha e abre PRs `evolucao/*` com a correção, testes positivo e negativo e entrada no LOG; uma vez por semana, com o CI verde, persegue o backlog do placar.
+  - **Sentinel Descoberta** escolhe repositórios públicos novos, audita com a API real, revisa uma amostra à mão, cruza os resultados e propõe regras, ajustes e analisadores, além de um relatório por rodada (`docs/evolucao/relatorios/`) e a taxa de acerto medida por regra (`docs/evolucao/precisao.md`).
+  - Os dois só abrem PR; o merge é manual. O placar com critérios verificáveis está em `docs/evolucao/PLACAR.md` (hoje 2,0; meta 2,5). **O Sentinel ainda não está no nível profissional**; os agentes relatam evidências e lacunas e não declaram esse nível.
+- **Pacotes**: `core-quality` 1.0.2 (`@ts-nocheck` em código gerado deixa de ser achado; `any` como argumento genérico) e `core-security` 1.0.1 (JWT com segredo fixo ou padrão em JS/TS). As regras do Angular no ESLint só valem quando o projeto depende de `@angular/*`.
+- **Limite do GitHub Actions**: repositório privado no plano gratuito tem 2000 min/mês; sem minutos os jobs não iniciam. Veja o orçamento em `docs/evolucao/AGENTE.md`.

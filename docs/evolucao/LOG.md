@@ -84,3 +84,13 @@ Média do placar: 2,0 (meta 2,5). Faltam: revisão manual dos achados (credibili
 - **O que mudou:** a asserção passou a esperar `v1.0.1`; a contagem (41 regras) e as demais verificações ficam iguais. O PR parte da branch `evolucao/ts-any-generico`.
 - **Verificado:** só a leitura do código e do `pack.yml`.
 - **Não verificado:** o Maven não rodou localmente; o CI completo decide. Os erros de `git clone` das auditorias 1 e 7 nos logs são cenários de teste de falha, sem evidência de defeito da ferramenta.
+
+## 2026-10-21/22 — agentes em funcionamento, placar e limite do Actions
+
+- **Sentinel Evolution validado de ponta a ponta** com defeitos plantados em branches descartáveis: o agente classificou, corrigiu, abriu PR e disparou o CI; quando o CI reprovou (`PackToolTest` com versão fixa), abriu um segundo PR que corrigiu e deixou o CI verde. Descoberta: sem a opção "Allow GitHub Actions to create and approve pull requests" o agente empurra a branch mas não abre o PR.
+- **Sentinel Descoberta criado** (`descoberta.yml`, `scripts/descobrir-repos.sh`, `scripts/relatorio-descoberta.py`, `.github/agente/sentinel-descoberta.md`). Primeira rodada com resultado: 4 repositórios, 4 PRs (#4 ESLint do Angular só com `@angular/*`, #5 JWT com segredo fixo, #6 `@ts-nocheck` em código gerado, #7 relatório). A rodada anterior terminou em 71 s sem PR e sem rastro; passou a existir uma anotação com o resumo final do agente.
+- **Merge dos 4 PRs na `main`** a pedido. O CI da `main` depois do merge **não rodou**: os jobs não iniciaram porque a cota gratuita de 2000 min/mês do Actions acabou. Pendente: rodar o CI da `main` quando houver minutos.
+- **Placar** movido para `docs/evolucao/PLACAR.md` com critério verificável por eixo e backlog; `docs/evolucao/precisao.md` criado. Média continua 2,0 (todos os eixos em 2), meta 2,5.
+- **Custo de Actions reduzido**: calibração só no domingo, sob demanda e em PRs do agente; Evolution só em CI com falha e quarta-feira; Descoberta só na segunda.
+- **Limites conhecidos**: a regra de JWT não cobre o segredo padrão passado por função auxiliar (`arg({ default })`); a revisão manual cobriu 10 achados em 4 repositórios; o CI da `main` combinada ainda não foi conferido.
+

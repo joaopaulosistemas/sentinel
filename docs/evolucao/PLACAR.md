@@ -1,7 +1,7 @@
 # Placar do Sentinel rumo ao nível profissional
 
 Escala por eixo: 0 ausente · 1 frágil · 2 funciona e é testado · 3 validado com evidência externa (repositórios reais, CI real, medição).
-**Meta: média ≥ 2,5 com nenhum eixo abaixo de 2.** Hoje: **2,0** (eixos 1–9 em 2, eixo 10 em 2 → ver tabela).
+**Meta: média ≥ 2,5 com nenhum eixo abaixo de 2.** Hoje: **2,0** (todos os eixos em 2; nenhum em 3 ainda).
 
 ## Regras do jogo (valem para os dois agentes)
 1. O placar só sobe com **evidência no repositório** (teste, saída de CI, relatório com números). Nunca por opinião.
