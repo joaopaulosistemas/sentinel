@@ -94,3 +94,10 @@ Média do placar: 2,0 (meta 2,5). Faltam: revisão manual dos achados (credibili
 - **Custo de Actions reduzido**: calibração só no domingo, sob demanda e em PRs do agente; Evolution só em CI com falha e quarta-feira; Descoberta só na segunda.
 - **Limites conhecidos**: a regra de JWT não cobre o segredo padrão passado por função auxiliar (`arg({ default })`); a revisão manual cobriu 10 achados em 4 repositórios; o CI da `main` combinada ainda não foi conferido.
 
+## Evolução — 2026-10-22 (backlog 10/2: `precisao.md`)
+
+- **Classe:** nenhuma falha. A entrada da execução 39734246964 veio sem anotações de erro nem resultado de jobs; fui ao backlog do `PLACAR.md`.
+- **Evidência:** o primeiro item aberto (criar e alimentar `precisao.md`) já estava cumprido: `docs/evolucao/precisao.md` existe com 8 regras e 10 achados revisados em 4 repositórios.
+- **O que mudou:** só a marcação `[x]` do item no backlog. Nota do eixo 10 continua 2.
+- **Não verificado:** o CI da `main` (jobs sem resultado na entrada, provavelmente por falta de minutos do Actions). Só documentação, nenhum teste rodado.
+

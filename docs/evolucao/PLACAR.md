@@ -26,7 +26,7 @@ Escala por eixo: 0 ausente · 1 frágil · 2 funciona e é testado · 3 validado
 
 ## Backlog (o agente pega o primeiro item aberto do eixo de menor nota; empate: o de menor esforço)
 Marque `[x]` no PR que fecha o item, com a evidência.
-- [ ] 10/2 Criar `docs/evolucao/precisao.md` e alimentá-lo a cada rodada da Descoberta (regra, revisados, VP, FP)
+- [x] 10/2 Criar `docs/evolucao/precisao.md` e alimentá-lo a cada rodada da Descoberta (regra, revisados, VP, FP) — arquivo existe com 8 regras e 10 achados em 4 repositórios (rodada de 2026-10-21); nota do eixo 10 segue 2 (faltam ≥ 100 achados em ≥ 10 repositórios)
 - [ ] 8 Métricas Prometheus da API (`/q/metrics`: auditorias, duração, achados) com teste
 - [ ] 9 Corrigir N+1 em `RuleQualityService` e `AuditScheduler` com teste que conta consultas
 - [ ] 9 Cobertura JaCoCo no Maven e meta de 70% nos pacotes de regra e pontuação
