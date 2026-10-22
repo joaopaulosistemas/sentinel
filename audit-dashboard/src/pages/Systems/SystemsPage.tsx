@@ -10,8 +10,8 @@ import {
   TextInput,
 } from '@carbon/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { CheckIcon, CrossIcon, SpinnerIcon } from '../../components/StatusIcons';
 import { JourneySteps } from '../../components/JourneySteps';
@@ -40,6 +40,7 @@ export function SystemsPage() {
   const queryClient = useQueryClient();
   const { data: systems, isLoading, error } = useSystems();
   const { data: packs } = usePacks();
+  const [params, setParams] = useSearchParams();
 
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<SystemSummaryResponse | 'new' | null>(null);
@@ -79,6 +80,16 @@ export function SystemsPage() {
       if (auditNow) setAuditTarget(system);
     },
   });
+
+  // "Editar sistema" na tela do sistema chega aqui com ?edit=ID: abre o painel desse sistema.
+  const editId = params.get('edit');
+  useEffect(() => {
+    if (!editId || !systems) return;
+    const target = systems.find((s) => String(s.id) === editId);
+    if (target) open(target);
+    setParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, systems]);
 
   if (isLoading) return <DataTableSkeleton columnCount={6} rowCount={5} />;
   if (error) {

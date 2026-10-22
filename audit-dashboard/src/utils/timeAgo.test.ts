@@ -17,3 +17,15 @@ describe('timeAgo', () => {
     expect(timeAgo('lixo', now)).toBe('-');
   });
 });
+
+import { startLabel } from './timeAgo';
+
+describe('startLabel', () => {
+  const ref = new Date(2026, 9, 22, 12, 0, 0).getTime();
+  it('mostra o início como na lista de auditorias', () => {
+    expect(startLabel(new Date(2026, 9, 22, 11, 48).toISOString(), ref)).toBe('há 12 min');
+    expect(startLabel(new Date(2026, 9, 22, 9, 30).toISOString(), ref)).toBe('hoje 09:30');
+    expect(startLabel(new Date(2026, 9, 21, 14, 0).toISOString(), ref)).toBe('ontem 14:00');
+    expect(startLabel(new Date(2026, 9, 19, 14, 0).toISOString(), ref)).toBe('19/10 14:00');
+  });
+});
