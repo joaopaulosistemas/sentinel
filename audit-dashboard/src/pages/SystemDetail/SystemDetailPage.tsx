@@ -1,4 +1,5 @@
 import {
+  ActionableNotification,
   Button,
   InlineNotification,
   SkeletonText,
@@ -18,9 +19,9 @@ import { TrendChart } from '../../components/TrendChart';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
 import { useSystem } from '../../hooks/useSystems';
 import { useAuditStore } from '../../store/useAuditStore';
-import type { AuditRunResponse, AuditStatus, Severity, Stack } from '../../types';
-
-type TagType = 'warm-gray' | 'blue' | 'green' | 'red';
+import type { AuditRunResponse, Severity, Stack } from '../../types';
+import { analyzerCounts, PHASES, phaseIndex, progressPercent } from '../../utils/auditProgress';
+import { auditStatusConfig } from '../../utils/auditStatus';
 
 const stackLabels: Record<Stack, string> = {
   JAVA: 'Java',
@@ -29,13 +30,6 @@ const stackLabels: Record<Stack, string> = {
   PYTHON: 'Python',
   COBOL: 'COBOL',
   MIXED: 'Misto',
-};
-
-const auditStatusConfig: Record<AuditStatus, { label: string; type: TagType }> = {
-  PENDING: { label: 'Pendente', type: 'warm-gray' },
-  RUNNING: { label: 'Em execução', type: 'blue' },
-  COMPLETED: { label: 'Concluída', type: 'green' },
-  FAILED: { label: 'Falhou', type: 'red' },
 };
 
 const dimensionLabels: Array<{ key: keyof NonNullable<AuditRunResponse['riskScore']>; label: string }> = [
@@ -56,6 +50,16 @@ const severityColors: Record<Severity, string> = {
   INFO: '#0f62fe',
 };
 
+/** Etapa atual de uma auditoria em andamento, com a contagem de analisadores durante a análise. */
+function stepLabel(run: AuditRunResponse): string {
+  const base = PHASES[Math.min(phaseIndex(run), PHASES.length - 1)].label;
+  if (run.progress?.phase === 'ANALISE') {
+    const { done, total } = analyzerCounts(run.progress.analyzers);
+    if (total > 0) return `${base} ${done}/${total}`;
+  }
+  return base;
+}
+
 export function SystemDetailPage() {
   const { systemId } = useParams<{ systemId: string }>();
   const navigate = useNavigate();
@@ -63,6 +67,7 @@ export function SystemDetailPage() {
 
   const id = Number(systemId);
   const [starting, setStarting] = useState(false);
+  const [started, setStarted] = useState<AuditRunResponse | null>(null);
   const { data: system, isLoading: loadingSystem, error: systemError } = useSystem(id);
   const { data: auditRuns, isLoading: loadingRuns } = useAuditRuns(id);
 
@@ -104,7 +109,21 @@ export function SystemDetailPage() {
           Nova auditoria
         </Button>
       </div>
-      <StartAuditModal system={starting ? system : null} onClose={() => setStarting(false)} />
+      <StartAuditModal system={starting ? system : null} onClose={() => setStarting(false)} onStarted={setStarted} />
+      {started && (
+        <ActionableNotification
+          inline
+          lowContrast
+          kind="info"
+          role="status"
+          title={`Auditoria #${started.id} iniciada`}
+          subtitle={`na branch ${started.branch}. Ela já aparece em “Últimas Auditorias” e se atualiza sozinha.`}
+          actionButtonLabel="Acompanhar execução"
+          onActionButtonClick={() => navigate(`/audits/${started.id}`)}
+          onCloseButtonClick={() => setStarted(null)}
+          style={{ marginBottom: '1.5rem', maxWidth: 'none' }}
+        />
+      )}
 
       {/* Score section */}
       <div
@@ -214,6 +233,16 @@ export function SystemDetailPage() {
                   <span style={{ color: '#6f6f6f', fontSize: '0.8125rem' }}>
                     {new Date(run.startedAt).toLocaleString('pt-BR')}
                   </span>
+                  {(run.status === 'PENDING' || run.status === 'RUNNING') && (
+                    <span style={{ display: 'grid', gap: 4, minWidth: 220 }}>
+                      <span style={{ fontSize: '0.8125rem', color: '#0043ce', fontWeight: 500 }}>
+                        Em execução · {stepLabel(run)}
+                      </span>
+                      <span style={{ height: 6, background: '#e0e0e0' }}>
+                        <span style={{ display: 'block', height: 6, width: `${progressPercent(run)}%`, background: '#0f62fe' }} />
+                      </span>
+                    </span>
+                  )}
                   {run.riskScore && (
                     <span style={{ marginLeft: 'auto', fontWeight: 600 }}>
                       Score: {run.riskScore.overall}

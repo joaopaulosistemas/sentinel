@@ -14,16 +14,19 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRuleQuality, useSystems } from '../../hooks/useSystems';
 import type { SystemSummaryResponse } from '../../types';
-import { rankSystems, summarizeTeams } from '../../utils/ranking';
+import { formatTrend, rankSystems, summarizeTeams } from '../../utils/ranking';
 
-type SortKey = 'atencao' | 'nota' | 'criticos';
+type SortKey = 'atencao' | 'nota' | 'criticos' | 'tendencia';
 
 const TARGET = 75;
 const sortOptions: Array<{ key: SortKey; label: string }> = [
   { key: 'atencao', label: 'Atenção' },
   { key: 'nota', label: 'Nota' },
   { key: 'criticos', label: 'Críticos' },
+  { key: 'tendencia', label: 'Tendência' },
 ];
+
+const trendColor = { up: '#198038', down: '#a2191f', flat: '#525252', none: '#6f6f6f' } as const;
 
 const barColor = (n: number) => (n >= TARGET ? '#198038' : n >= 50 ? '#8a6a00' : '#a2191f');
 
@@ -31,6 +34,10 @@ const barColor = (n: number) => (n >= TARGET ? '#198038' : n >= 50 ? '#8a6a00' :
 export function sortSystems(systems: SystemSummaryResponse[], by: SortKey): SystemSummaryResponse[] {
   if (by === 'atencao') return rankSystems(systems);
   const list = [...systems];
+  // Maiores quedas primeiro; quem não tem histórico vai para o fim.
+  if (by === 'tendencia') {
+    return list.sort((a, b) => (a.scoreDelta ?? Infinity) - (b.scoreDelta ?? Infinity) || a.name.localeCompare(b.name));
+  }
   if (by === 'nota') return list.sort((a, b) => (a.lastAuditScore ?? -1) - (b.lastAuditScore ?? -1));
   return list.sort((a, b) => (b.openCritical ?? 0) - (a.openCritical ?? 0) || (a.lastAuditScore ?? -1) - (b.lastAuditScore ?? -1));
 }
@@ -101,7 +108,7 @@ export function RankingPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '56px minmax(160px, 2fr) minmax(200px, 3fr) 90px 90px',
+            gridTemplateColumns: '56px minmax(160px, 2fr) minmax(200px, 3fr) 100px 90px 90px',
             gap: '0.75rem',
             padding: '0.75rem 1rem',
             background: '#e8e8e8',
@@ -112,6 +119,7 @@ export function RankingPage() {
           <span>Posição</span>
           <span>Sistema</span>
           <span>Nota</span>
+          <span>Tendência</span>
           <span>Críticos</span>
           <span>Altos</span>
         </div>
@@ -128,7 +136,7 @@ export function RankingPage() {
                 width: '100%',
                 cursor: 'pointer',
                 display: 'grid',
-                gridTemplateColumns: '56px minmax(160px, 2fr) minmax(200px, 3fr) 90px 90px',
+                gridTemplateColumns: '56px minmax(160px, 2fr) minmax(200px, 3fr) 100px 90px 90px',
                 gap: '0.75rem',
                 alignItems: 'center',
                 padding: '0.875rem 1rem',
@@ -151,6 +159,9 @@ export function RankingPage() {
                   <span style={{ width: 32, fontWeight: 600, color: barColor(score) }}>{Math.round(score)}</span>
                 </span>
               )}
+              <span style={{ fontWeight: 500, color: trendColor[formatTrend(s.scoreDelta).tone], fontSize: '0.8125rem' }}>
+                {formatTrend(s.scoreDelta).text}
+              </span>
               <span style={{ fontWeight: 600, color: (s.openCritical ?? 0) > 0 ? '#a2191f' : '#198038' }}>{s.openCritical ?? 0}</span>
               <span style={{ color: (s.openHigh ?? 0) > 0 ? '#c74e00' : undefined }}>{s.openHigh ?? 0}</span>
             </button>

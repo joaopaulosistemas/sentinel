@@ -33,7 +33,7 @@ type TagType = 'red' | 'warm-gray' | 'green' | 'purple';
 const statusLabels: Record<FindingStatus, string> = {
   OPEN: 'Aberto',
   ACKNOWLEDGED: 'Reconhecido',
-  FIXED: 'Corrigido',
+  FIXED: 'Resolvido',
   SUPPRESSED: 'Suprimido',
 };
 

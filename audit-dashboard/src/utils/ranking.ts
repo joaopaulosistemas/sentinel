@@ -61,3 +61,17 @@ export function summarizeTeams(systems: SystemSummaryResponse[]): TeamSummary[] 
       a.team.localeCompare(b.team),
   );
 }
+
+export interface Trend {
+  text: string;
+  tone: 'up' | 'down' | 'flat' | 'none';
+}
+
+/** Variação da nota desde a auditoria anterior, pronta para exibir (▲ sobe, ▼ cai, — igual, "novo" sem histórico). */
+export function formatTrend(delta: number | null | undefined): Trend {
+  if (delta === null || delta === undefined) return { text: 'sem histórico', tone: 'none' };
+  const rounded = Math.round(delta * 10) / 10;
+  if (rounded > 0) return { text: `▲ +${rounded}`, tone: 'up' };
+  if (rounded < 0) return { text: `▼ ${rounded}`, tone: 'down' };
+  return { text: '— 0', tone: 'flat' };
+}

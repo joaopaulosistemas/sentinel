@@ -78,3 +78,23 @@ export function formatDuration(totalSeconds: number): string {
   const s = totalSeconds % 60;
   return m > 0 ? `${m} min ${String(s).padStart(2, '0')} s` : `${s} s`;
 }
+
+export const isActiveRun = (run: Pick<AuditRunResponse, 'status'>) => run.status === 'PENDING' || run.status === 'RUNNING';
+
+/** Duração média, em segundos, das últimas auditorias concluídas (até 5); nulo se não houver nenhuma. */
+export function averageDurationSeconds(runs: Array<Pick<AuditRunResponse, 'status' | 'startedAt' | 'completedAt'>>): number | null {
+  const durations = runs
+    .filter((r) => r.status === 'COMPLETED' && r.startedAt && r.completedAt)
+    .slice(0, 5)
+    .map((r) => (Date.parse(r.completedAt as string) - Date.parse(r.startedAt)) / 1000)
+    .filter((d) => Number.isFinite(d) && d > 0);
+  if (durations.length === 0) return null;
+  return Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
+}
+
+/** Quanto falta, pela média das auditorias anteriores; nulo quando não dá para estimar ou já passou da média. */
+export function remainingSeconds(elapsed: number | null, average: number | null): number | null {
+  if (elapsed === null || average === null) return null;
+  const left = average - elapsed;
+  return left > 0 ? left : null;
+}

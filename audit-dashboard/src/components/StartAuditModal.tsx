@@ -3,14 +3,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import type { AuditRunResponse } from '../types';
 
 interface Props {
   system: { id: number; name: string; scheduledBranch?: string | null } | null;
   onClose: () => void;
+  /** Se informado, a tela continua onde está (a auditoria aparece na lista); sem isto, vai para o acompanhamento. */
+  onStarted?: (run: AuditRunResponse) => void;
 }
 
 /** Pede o branch, dispara a auditoria e leva para o acompanhamento. */
-export function StartAuditModal({ system, onClose }: Props) {
+export function StartAuditModal({ system, onClose, onStarted }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [branch, setBranch] = useState('main');
@@ -26,9 +29,11 @@ export function StartAuditModal({ system, onClose }: Props) {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
       // Sem isto a lista de auditorias só mostrava a nova depois de um refresh.
       void queryClient.invalidateQueries({ queryKey: ['auditRuns'] });
+      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
       mutation.reset();
       onClose();
-      navigate(`/audits/${run.id}`);
+      if (onStarted) onStarted(run);
+      else navigate(`/audits/${run.id}`);
       void vars;
     },
   });
@@ -37,7 +42,7 @@ export function StartAuditModal({ system, onClose }: Props) {
     <Modal
       open={system !== null}
       modalHeading={`Nova auditoria — ${system?.name ?? ''}`}
-      primaryButtonText="Iniciar e acompanhar"
+      primaryButtonText={onStarted ? "Iniciar auditoria" : "Iniciar e acompanhar"}
       secondaryButtonText="Cancelar"
       primaryButtonDisabled={mutation.isPending || branch.trim() === ''}
       onRequestClose={() => {

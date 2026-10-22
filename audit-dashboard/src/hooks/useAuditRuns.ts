@@ -16,6 +16,15 @@ export function useAuditRuns(systemId: number) {
   });
 }
 
+/** Últimas auditorias de todos os sistemas; atualiza sozinha enquanto houver alguma em andamento. */
+export function useRecentAudits(limit = 8) {
+  return useQuery({
+    queryKey: ['recentAudits', limit],
+    queryFn: () => api.getRecentAudits(limit),
+    refetchInterval: (query) => (query.state.data?.some(isActive) ? POLL_MS : false),
+  });
+}
+
 export function useAudit(id: number) {
   return useQuery({
     queryKey: ['audit', id],

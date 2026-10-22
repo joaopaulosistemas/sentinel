@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FindingsPage } from './FindingsPage';
@@ -35,6 +35,17 @@ function stub(urls: string[]) {
 
 afterEach(() => vi.unstubAllGlobals());
 
+function renderFindings(url = '/findings') {
+  stub([]);
+  return render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={[url]}>
+        <FindingsPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
 describe('FindingsPage', () => {
   it('sem auditoria na URL mostra os achados de todos os sistemas, com o sistema de cada um', async () => {
     const urls: string[] = [];
@@ -52,5 +63,27 @@ describe('FindingsPage', () => {
     expect(screen.getAllByText('portal-cooperado').length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText('1 achados', { exact: false })).toHaveLength(2);
     expect(urls.some((u) => u.startsWith('/api/v1/findings?') && u.includes('limit=20') && u.includes('offset=0'))).toBe(true);
+  });
+
+  it('agrupa os achados por sistema quando o usuário pede', async () => {
+    renderFindings();
+    await screen.findByText('SQL por concatenação');
+    expect(screen.queryByRole('region', { name: 'Achados de portal-cooperado' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('switch', { name: 'Agrupar' }));
+    expect(await screen.findByRole('region', { name: 'Achados de conta-corrente-api' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Achados de portal-cooperado' })).toBeInTheDocument();
+  });
+
+  it('mostra um chip por filtro ativo e deixa limpar tudo', async () => {
+    renderFindings('/findings?onlyNew=1');
+    expect(await screen.findByText('Somente novos', { selector: '.cds--tag *, .cds--tag' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument();
+  });
+
+  it('escolher um sistema acrescenta o chip dele', async () => {
+    renderFindings();
+    fireEvent.click(await screen.findByRole('button', { name: /portal-cooperado 1 achados/ }));
+    expect(await screen.findByText('Sistema: portal-cooperado')).toBeInTheDocument();
   });
 });

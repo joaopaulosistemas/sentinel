@@ -9,6 +9,7 @@ import type {
   FixPlan,
   FindingStatus,
   Severity,
+  RepoCheck,
   RuleQuality,
   ScheduleRequest,
   Suppression,
@@ -73,6 +74,17 @@ export const api = {
 
   getAuditRuns: (systemId: number) =>
     apiFetch<AuditRunResponse[]>(`/api/v1/systems/${systemId}/audits`),
+
+  getRecentAudits: (limit = 8) => apiFetch<AuditRunResponse[]>(`/api/v1/audits?limit=${limit}`),
+
+  cancelAudit: (id: number) =>
+    apiFetch<AuditRunResponse>(`/api/v1/audits/${id}/cancel`, { method: 'POST' }),
+
+  checkRepo: (repoUrl: string, branch?: string) =>
+    apiFetch<RepoCheck>('/api/v1/systems/check-repo', {
+      method: 'POST',
+      body: JSON.stringify({ repoUrl, branch: branch || undefined }),
+    }),
 
   getAudit: (id: number) => apiFetch<AuditRunResponse>(`/api/v1/audits/${id}`),
 

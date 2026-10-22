@@ -200,13 +200,15 @@ sequenceDiagram
 
 Pontos do código que valem saber (do comentário de `AuditOrchestrationService`): nenhuma entidade JPA é usada fora de transação; a execução espera o registro da auditoria ficar visível no banco; falha de um analisador não derruba a auditoria (vira `FALHOU` em `AnalyzerRunInfo`); campos de texto são truncados ao tamanho das colunas; só rodam analisadores que suportam a stack do sistema.
 
+**Andamento e cancelamento.** `AuditProgressTracker` guarda em memória a etapa, os analisadores e os eventos das auditorias em execução, e a lista de cancelamentos pedidos. Cancelar (`POST /audits/{id}/cancel`) muda o status para `CANCELLED` na hora e a orquestração para na próxima verificação (entre as etapas e a cada 0,5 s enquanto espera os analisadores), descarta o que foi analisado e limpa o clone. Limitação conhecida: o andamento vive na memória de uma instância; com várias réplicas da API, só a que executa a auditoria conhece o andamento e aceita o cancelamento. Se a API reiniciar, `AuditScheduler.recoverInterruptedRuns()` marca as auditorias que ficaram em andamento como `FAILED`.
+
 ### 3.3 Pacote `resource` (borda REST)
 
 | Classe | O que faz | Rotas |
 |---|---|---|
-| `SystemResource` | Cadastro e consulta de sistemas, agenda, perfil, tendência, supressões | `/api/v1/systems`, `/{id}`, `/{id}/audits`, `/{id}/trend`, `/{id}/suppressions`, `/{id}/schedule`, `/{id}/profile` |
-| `AuditResource` | Cria auditoria e entrega resultado, achados, diferença, relatório, SBOM e visão completa | `/api/v1/audits`, `/{id}`, `/{id}/findings`, `/{id}/diff`, `/{id}/report`, `/{id}/sbom`, `/{id}/insights` |
-| `FindingResource` | Suprime um achado com justificativa | `POST /api/v1/findings/{id}/suppress` |
+| `SystemResource` | Cadastro, edição e consulta de sistemas, verificação do repositório, agenda, perfil, tendência, supressões | `/api/v1/systems`, `/check-repo`, `/{id}`, `/{id}/audits`, `/{id}/trend`, `/{id}/suppressions`, `/{id}/schedule`, `/{id}/profile` |
+| `AuditResource` | Cria, lista e cancela auditorias; entrega resultado com andamento, achados, diferença, plano de correção, relatórios (técnico, executivo, comparativo, CSV), SBOM e visão completa | `/api/v1/audits`, `/{id}`, `/{id}/cancel`, `/{id}/fix-plan`, `/{id}/findings`, `/{id}/findings.csv`, `/{id}/diff`, `/{id}/report`, `/{id}/sbom`, `/{id}/insights` |
+| `FindingResource` | Suprime um achado com justificativa; lista os achados de todos os sistemas | `POST /api/v1/findings/{id}/suppress`, `GET /api/v1/findings` |
 | `WebhookResource` | Recebe push do GitHub e do GitLab | `/api/v1/webhooks/github`, `/gitlab` |
 | `PackResource` | Lista pacotes e perfis; recarrega do disco | `/api/v1/packs`, `/reload` |
 | `RuleResource` | Qualidade das regras e laboratório | `/api/v1/rules/quality`, `/playground` |
@@ -395,7 +397,7 @@ erDiagram
     AUDIT_RUN ||--o{ FINDING : "produz"
     AUDITED_SYSTEM ||--o{ FINDING_SUPPRESSION : "tem supressões"
     AUDIT_RUN {
-        enum status "PENDING, RUNNING, COMPLETED, FAILED"
+        enum status "PENDING, RUNNING, COMPLETED, FAILED, CANCELLED"
         embedded riskScore "uma nota por dimensão e a geral"
     }
     FINDING {

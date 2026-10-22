@@ -1,21 +1,29 @@
-import { InlineNotification, ProgressBar, ProgressIndicator, ProgressStep, SkeletonText, Tag } from '@carbon/react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { Button, InlineNotification, Modal, ProgressBar, ProgressIndicator, ProgressStep, SkeletonText, Tag } from '@carbon/react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAudit } from '../../hooks/useAuditRuns';
+import { api } from '../../api/client';
+import { StartAuditModal } from '../../components/StartAuditModal';
+import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
 import { JourneySteps } from '../../components/JourneySteps';
 import { ResultSteps } from '../../components/ResultSteps';
 import { useAuditStore } from '../../store/useAuditStore';
 import type { AnalyzerProgressStatus } from '../../types';
+import { auditStatusConfig } from '../../utils/auditStatus';
+import { reportUrl } from '../Reports/reportLinks';
 import {
   PHASES,
   analyzerCounts,
+  averageDurationSeconds,
+  remainingSeconds,
   analyzerStatusLabel,
   elapsedSeconds,
   formatDuration,
   phaseIndex,
   progressPercent,
 } from '../../utils/auditProgress';
+
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 type TagType = 'warm-gray' | 'blue' | 'green' | 'red' | 'gray' | 'outline';
 
@@ -38,13 +46,27 @@ export function AuditRunPage() {
   const id = Number(auditId);
   const { data: run, isLoading, error } = useAudit(id);
   const queryClient = useQueryClient();
-  const finished = run?.status === 'COMPLETED' || run?.status === 'FAILED';
+  const finished = run?.status === 'COMPLETED' || run?.status === 'FAILED' || run?.status === 'CANCELLED';
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [rerun, setRerun] = useState(false);
+  // Histórico do mesmo sistema: base da estimativa de tempo.
+  const { data: history } = useAuditRuns(run?.systemId ?? 0);
+
+  const cancel = useMutation({
+    mutationFn: () => api.cancelAudit(id),
+    onSuccess: () => {
+      setConfirmCancel(false);
+      void queryClient.invalidateQueries({ queryKey: ['audit', id] });
+      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
+    },
+  });
 
   // Ao terminar, as listas que mostram nota e situação precisam do dado novo.
   useEffect(() => {
     if (finished) {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
       void queryClient.invalidateQueries({ queryKey: ['auditRuns'] });
+      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
     }
   }, [finished, queryClient]);
 
@@ -72,9 +94,19 @@ export function AuditRunPage() {
   const counts = analyzerCounts(analyzers);
   const seconds = elapsedSeconds(run);
   const failed = run.status === 'FAILED';
+  const cancelled = run.status === 'CANCELLED';
   const done = run.status === 'COMPLETED';
+  const active = !done && !failed && !cancelled;
+  const average = averageDurationSeconds((history ?? []).filter((r) => r.id !== run.id));
+  const left = active ? remainingSeconds(seconds, average) : null;
   const events = [...(run.progress?.events ?? [])].reverse();
-  const currentHint = done ? 'Auditoria concluída' : failed ? 'A auditoria não terminou' : (PHASES[index]?.hint ?? '');
+  const currentHint = done
+    ? 'Auditoria concluída'
+    : failed
+      ? 'A auditoria não terminou'
+      : cancelled
+        ? 'Auditoria cancelada'
+        : (PHASES[index]?.hint ?? '');
 
   const openFindings = () => {
     setSelectedAudit(run.id);
@@ -89,11 +121,37 @@ export function AuditRunPage() {
           {run.systemName} · Auditoria #{run.id}
         </h1>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <Tag type={done ? 'green' : failed ? 'red' : 'blue'}>
-            {done ? 'Concluída' : failed ? 'Falhou' : run.status === 'PENDING' ? 'Na fila' : 'Em execução'}
-          </Tag>
+          <Tag type={auditStatusConfig[run.status].type}>{auditStatusConfig[run.status].label}</Tag>
           <span style={{ color: '#525252' }}>branch {run.branch}</span>
           {seconds !== null && <span style={{ color: '#525252' }}>· {formatDuration(seconds)}</span>}
+          {left !== null && (
+            <span style={{ color: '#525252' }} title="Estimativa pela média das últimas auditorias deste sistema">
+              · faltam cerca de {formatDuration(Math.round(left / 5) * 5 || 5)}
+            </span>
+          )}
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {active && (
+              <Button kind="danger--tertiary" size="sm" onClick={() => setConfirmCancel(true)}>
+                Cancelar auditoria
+              </Button>
+            )}
+            {done && (
+              <Button
+                kind="tertiary"
+                size="sm"
+                href={reportUrl(BASE_URL, run.id, 'html')}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Baixar relatório
+              </Button>
+            )}
+            {!active && run.systemId !== undefined && (
+              <Button size="sm" onClick={() => setRerun(true)}>
+                Auditar de novo
+              </Button>
+            )}
+          </span>
         </div>
       </div>
 
@@ -120,7 +178,7 @@ export function AuditRunPage() {
         }
         value={percent}
         max={100}
-        status={failed ? 'error' : done ? 'finished' : 'active'}
+        status={failed || cancelled ? 'error' : done ? 'finished' : 'active'}
       />
 
       {failed && (
@@ -132,9 +190,18 @@ export function AuditRunPage() {
         />
       )}
 
+      {cancelled && (
+        <InlineNotification
+          kind="warning"
+          title="Auditoria cancelada"
+          subtitle="Nada foi gravado: a nota do sistema continua a da última auditoria concluída."
+          hideCloseButton
+        />
+      )}
+
       {done && <ResultSteps run={run} onOpenFindings={openFindings} />}
 
-      {!done && !failed && (
+      {active && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)', gap: '1.5rem' }}>
           <section aria-label="Analisadores">
             <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Analisadores</h2>
@@ -193,6 +260,32 @@ export function AuditRunPage() {
           </section>
         </div>
       )}
+
+      <Modal
+        danger
+        open={confirmCancel}
+        modalHeading="Cancelar esta auditoria?"
+        primaryButtonText="Sim, cancelar"
+        secondaryButtonText="Continuar auditando"
+        primaryButtonDisabled={cancel.isPending}
+        onRequestClose={() => setConfirmCancel(false)}
+        onRequestSubmit={() => cancel.mutate()}
+      >
+        <p>O que já foi analisado será descartado e a nota do sistema não muda. Você pode iniciar outra auditoria depois.</p>
+        {cancel.isError && (
+          <InlineNotification
+            kind="error"
+            title="Não foi possível cancelar"
+            subtitle={cancel.error instanceof Error ? cancel.error.message : 'Erro desconhecido'}
+            hideCloseButton
+            style={{ marginTop: '1rem' }}
+          />
+        )}
+      </Modal>
+      <StartAuditModal
+        system={rerun ? { id: run.systemId ?? 0, name: run.systemName, scheduledBranch: run.branch } : null}
+        onClose={() => setRerun(false)}
+      />
     </div>
   );
 }

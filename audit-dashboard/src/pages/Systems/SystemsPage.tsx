@@ -1,8 +1,13 @@
 import {
   Button,
   DataTableSkeleton,
+  Checkbox,
+  ComposedModal,
   InlineNotification,
-  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  NumberInput,
   Search,
   Select,
   SelectItem,
@@ -25,7 +30,16 @@ import { StartAuditModal } from '../../components/StartAuditModal';
 import { usePacks } from '../../hooks/useLifecycle';
 import { useSystems } from '../../hooks/useSystems';
 import type { SystemSummaryResponse } from '../../types';
-import { emptyForm, formFrom, stackOptions, toRequest, validate, type SystemFormValues } from './systemForm';
+import {
+  emptyForm,
+  formFrom,
+  scheduleChanged,
+  stackOptions,
+  toRequest,
+  toSchedule,
+  validate,
+  type SystemFormValues,
+} from './systemForm';
 
 /** Cadastro e edição de sistemas: lista com busca e um formulário único para criar ou editar. */
 export function SystemsPage() {
@@ -48,13 +62,22 @@ export function SystemsPage() {
     setValues(target === 'new' ? emptyForm : formFrom(target));
     setTouched(false);
     save.reset();
+    check.reset();
   };
+
+  // Confere se o endereço responde e qual é a branch padrão, sem clonar.
+  const check = useMutation({
+    mutationFn: () => api.checkRepo(values.repoUrl.trim(), values.scheduledBranch.trim() || undefined),
+  });
 
   const save = useMutation({
     mutationFn: async (vars: { auditNow: boolean }) => {
       const body = toRequest(values);
-      const system =
-        editing && editing !== 'new' ? await api.updateSystem(editing.id, body) : await api.createSystem(body);
+      const current = editing && editing !== 'new' ? editing : null;
+      let system = current ? await api.updateSystem(current.id, body) : await api.createSystem(body);
+      if (scheduleChanged(values, current)) {
+        system = await api.updateSchedule(system.id, toSchedule(values));
+      }
       return { system, auditNow: vars.auditNow };
     },
     onSuccess: ({ system, auditNow }) => {
@@ -157,92 +180,184 @@ export function SystemsPage() {
         </Table>
       )}
 
-      <Modal
-        open={editing !== null}
-        size="md"
-        modalHeading={isNew ? 'Novo sistema' : `Editar ${editing?.name ?? ''}`}
-        modalLabel="Cadastro de sistemas"
-        primaryButtonText={isNew ? 'Salvar e auditar agora' : 'Salvar'}
-        secondaryButtonText="Cancelar"
-        primaryButtonDisabled={save.isPending}
-        onRequestClose={() => setEditing(null)}
-        onRequestSubmit={() => {
-          setTouched(true);
-          if (!invalid) save.mutate({ auditNow: isNew });
-        }}
-      >
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          <TextInput
-            id="sys-name"
-            labelText="Nome do sistema *"
-            value={values.name}
-            invalid={touched && !!errors.name}
-            invalidText={errors.name}
-            onChange={(e) => setValues({ ...values, name: e.target.value })}
-          />
-          <TextInput
-            id="sys-repo"
-            labelText="Repositório Git (https) *"
-            placeholder="https://github.com/org/repositorio"
-            value={values.repoUrl}
-            invalid={touched && !!errors.repoUrl}
-            invalidText={errors.repoUrl}
-            onChange={(e) => setValues({ ...values, repoUrl: e.target.value })}
-          />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <Select
-              id="sys-stack"
-              labelText="Stack"
-              value={values.stack}
-              onChange={(e) => setValues({ ...values, stack: e.target.value as SystemFormValues['stack'] })}
-            >
-              {stackOptions.map((o) => (
-                <SelectItem key={o.value} value={o.value} text={o.label} />
-              ))}
-            </Select>
+      <ComposedModal open={editing !== null} size="md" onClose={() => setEditing(null)} preventCloseOnClickOutside>
+        <ModalHeader title={isNew ? 'Novo sistema' : `Editar ${editing?.name ?? ''}`} label="Cadastro de sistemas" />
+        <ModalBody hasForm>
+          <div style={{ display: 'grid', gap: '1rem' }}>
             <TextInput
-              id="sys-team"
-              labelText="Equipe"
-              value={values.team}
-              onChange={(e) => setValues({ ...values, team: e.target.value })}
+              id="sys-name"
+              labelText="Nome do sistema *"
+              value={values.name}
+              invalid={touched && !!errors.name}
+              invalidText={errors.name}
+              onChange={(e) => setValues({ ...values, name: e.target.value })}
             />
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              <TextInput
+                id="sys-repo"
+                labelText="Repositório Git (https) *"
+                placeholder="https://github.com/org/repositorio"
+                value={values.repoUrl}
+                invalid={touched && !!errors.repoUrl}
+                invalidText={errors.repoUrl}
+                onChange={(e) => {
+                  setValues({ ...values, repoUrl: e.target.value });
+                  check.reset();
+                }}
+              />
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Button
+                  kind="tertiary"
+                  size="sm"
+                  disabled={!!validate(values).repoUrl || check.isPending}
+                  onClick={() => check.mutate()}
+                >
+                  {check.isPending ? 'Verificando…' : 'Verificar repositório'}
+                </Button>
+                {check.isError && (
+                  <span role="status" style={{ color: '#a2191f', fontSize: '0.8125rem' }}>
+                    Não foi possível verificar agora: {check.error instanceof Error ? check.error.message : 'erro desconhecido'}
+                  </span>
+                )}
+                {check.data?.reachable && (
+                  <span role="status" style={{ color: '#198038', fontSize: '0.8125rem' }}>
+                    ✔ Alcançável
+                    {check.data.defaultBranch ? ` · branch padrão: ${check.data.defaultBranch}` : ''}
+                    {check.data.branchFound === false ? ` · a branch "${values.scheduledBranch.trim()}" não existe` : ''}
+                  </span>
+                )}
+                {check.data && !check.data.reachable && (
+                  <span role="status" style={{ color: '#a2191f', fontSize: '0.8125rem' }}>
+                    ✘ {check.data.message ?? 'Repositório inacessível'}
+                  </span>
+                )}
+                {check.data?.reachable &&
+                  check.data.defaultBranch &&
+                  values.scheduledBranch.trim() !== check.data.defaultBranch && (
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      onClick={() => setValues({ ...values, scheduledBranch: check.data?.defaultBranch ?? '' })}
+                    >
+                      Auditar a branch {check.data.defaultBranch}
+                    </Button>
+                  )}
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <Select
+                id="sys-stack"
+                labelText="Stack"
+                value={values.stack}
+                onChange={(e) => setValues({ ...values, stack: e.target.value as SystemFormValues['stack'] })}
+              >
+                {stackOptions.map((o) => (
+                  <SelectItem key={o.value} value={o.value} text={o.label} />
+                ))}
+              </Select>
+              <TextInput
+                id="sys-team"
+                labelText="Equipe"
+                value={values.team}
+                onChange={(e) => setValues({ ...values, team: e.target.value })}
+              />
+            </div>
+            <Select
+              id="sys-profile"
+              labelText="Perfil de regras"
+              helperText="Define quais pacotes de regras valem. Vale a partir da próxima auditoria."
+              value={values.profile}
+              onChange={(e) => setValues({ ...values, profile: e.target.value })}
+            >
+              <SelectItem value="default" text="default" />
+              {profiles
+                .filter((p) => p.id !== 'default')
+                .map((p) => (
+                  <SelectItem key={p.id} value={p.id} text={p.name || p.id} />
+                ))}
+            </Select>
+            <TextArea
+              id="sys-desc"
+              labelText="Descrição"
+              rows={2}
+              value={values.description}
+              onChange={(e) => setValues({ ...values, description: e.target.value })}
+            />
+
+            <fieldset style={{ border: '1px solid #e0e0e0', padding: '0.75rem 1rem', display: 'grid', gap: '0.75rem' }}>
+              <legend style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#525252' }}>
+                Auditoria automática
+              </legend>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'end' }}>
+                <NumberInput
+                  id="sys-hours"
+                  label="A cada (horas, 0 = manual)"
+                  min={0}
+                  max={720}
+                  step={1}
+                  value={values.auditIntervalHours}
+                  invalid={!!errors.auditIntervalHours}
+                  invalidText={errors.auditIntervalHours}
+                  onChange={(_e: unknown, state: { value: string | number }) =>
+                    setValues({ ...values, auditIntervalHours: Number(state.value) || 0 })
+                  }
+                />
+                <TextInput
+                  id="sys-branch"
+                  labelText="Branch auditada (vazio = main)"
+                  value={values.scheduledBranch}
+                  invalid={!!errors.scheduledBranch}
+                  invalidText={errors.scheduledBranch}
+                  onChange={(e) => {
+                    setValues({ ...values, scheduledBranch: e.target.value });
+                    check.reset();
+                  }}
+                />
+              </div>
+              <Checkbox
+                id="sys-push"
+                labelText="Auditar a cada push (exige o webhook configurado no repositório)"
+                checked={values.auditOnPush}
+                onChange={(_e, { checked }) => setValues({ ...values, auditOnPush: checked })}
+              />
+            </fieldset>
+
+            {save.isError && (
+              <InlineNotification
+                kind="error"
+                title="Não foi possível salvar"
+                subtitle={save.error instanceof Error ? save.error.message : 'Erro desconhecido'}
+                hideCloseButton
+              />
+            )}
           </div>
-          <Select
-            id="sys-profile"
-            labelText="Perfil de regras"
-            helperText="Define quais pacotes de regras valem. Vale a partir da próxima auditoria."
-            value={values.profile}
-            onChange={(e) => setValues({ ...values, profile: e.target.value })}
+        </ModalBody>
+        <ModalFooter>
+          <Button kind="secondary" onClick={() => setEditing(null)}>
+            Cancelar
+          </Button>
+          <Button
+            kind="tertiary"
+            disabled={save.isPending}
+            onClick={() => {
+              setTouched(true);
+              if (!invalid) save.mutate({ auditNow: false });
+            }}
           >
-            <SelectItem value="default" text="default" />
-            {profiles
-              .filter((p) => p.id !== 'default')
-              .map((p) => (
-                <SelectItem key={p.id} value={p.id} text={p.name || p.id} />
-              ))}
-          </Select>
-          <TextArea
-            id="sys-desc"
-            labelText="Descrição"
-            rows={2}
-            value={values.description}
-            onChange={(e) => setValues({ ...values, description: e.target.value })}
-          />
-          {!isNew && (
-            <p style={{ fontSize: '0.8125rem', color: '#525252' }}>
-              O agendamento (a cada N horas e a cada push) fica na página do sistema.
-            </p>
-          )}
-          {save.isError && (
-            <InlineNotification
-              kind="error"
-              title="Não foi possível salvar"
-              subtitle={save.error instanceof Error ? save.error.message : 'Erro desconhecido'}
-              hideCloseButton
-            />
-          )}
-        </div>
-      </Modal>
+            Salvar
+          </Button>
+          <Button
+            kind="primary"
+            disabled={save.isPending}
+            onClick={() => {
+              setTouched(true);
+              if (!invalid) save.mutate({ auditNow: true });
+            }}
+          >
+            Salvar e auditar agora
+          </Button>
+        </ModalFooter>
+      </ComposedModal>
 
       <StartAuditModal system={auditTarget} onClose={() => setAuditTarget(null)} />
     </div>

@@ -1,5 +1,5 @@
 export type Stack = 'JAVA' | 'JAVASCRIPT' | 'DOTNET' | 'PYTHON' | 'COBOL' | 'MIXED';
-export type AuditStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type AuditStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
 export type Category = 'SECURITY' | 'QUALITY' | 'ARCHITECTURE' | 'DEPENDENCY' | 'OBSERVABILITY' | 'PERFORMANCE';
 export type FindingStatus = 'OPEN' | 'ACKNOWLEDGED' | 'FIXED' | 'SUPPRESSED';
@@ -31,6 +31,8 @@ export interface SystemSummaryResponse {
   profile?: string | null;
   repoUrl?: string | null;
   description?: string | null;
+  /** Nota da última auditoria completa menos a anterior; nulo com menos de duas */
+  scoreDelta?: number | null;
 }
 
 export interface SystemRequest {
@@ -78,6 +80,7 @@ export interface ScheduleRequest {
 
 export interface AuditRunResponse {
   id: number;
+  systemId?: number;
   systemName: string;
   branch: string;
   status: AuditStatus;
@@ -316,4 +319,13 @@ export interface FindingsOverview {
   total: number;
   bySystem: Array<{ systemId: number; systemName: string; auditId: number; count: number }>;
   items: Array<{ systemId: number; systemName: string; auditId: number; finding: FindingResponse }>;
+}
+
+/** Resultado da verificação rápida de um repositório (sem clonar). */
+export interface RepoCheck {
+  reachable: boolean;
+  defaultBranch: string | null;
+  /** Só vem quando se perguntou por uma branch */
+  branchFound: boolean | null;
+  message: string | null;
 }

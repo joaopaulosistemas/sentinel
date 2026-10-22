@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AuditRunResponse, FixPlan } from '../../types';
 import { AuditRunPage } from './AuditRunPage';
 
-function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan) {
+function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan, history: Array<Partial<AuditRunResponse>> = []) {
   const full: AuditRunResponse = {
     id: 215,
     systemName: 'conta-corrente-api',
@@ -17,14 +17,20 @@ function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan) {
     completedAt: null,
     ...run,
   };
+  const calls: Array<{ url: string; method: string }> = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) =>
-      new Response(JSON.stringify(String(url).endsWith('/fix-plan') ? plan : full), { status: 200 }),
-    ),
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      calls.push({ url: u, method: init?.method ?? 'GET' });
+      if (u.endsWith('/fix-plan')) return new Response(JSON.stringify(plan), { status: 200 });
+      if (u.includes('/systems/') && u.endsWith('/audits')) return new Response(JSON.stringify(history), { status: 200 });
+      if (u.endsWith('/cancel')) return new Response(JSON.stringify({ ...full, status: 'CANCELLED' }), { status: 202 });
+      return new Response(JSON.stringify(full), { status: 200 });
+    }),
   );
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/audits/215']}>
         <Routes>
@@ -33,6 +39,7 @@ function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan) {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...view, calls };
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -91,5 +98,43 @@ describe('AuditRunPage', () => {
   it('falha mostra o motivo', async () => {
     renderPage({ status: 'FAILED', errorMessage: 'IllegalStateException: repositório inacessível' });
     expect(await screen.findByText(/repositório inacessível/)).toBeInTheDocument();
+  });
+
+  it('cancelar pede confirmação e chama a API', async () => {
+    const { calls } = renderPage({ systemId: 3, progress: { phase: 'CLONE', analyzers: [], events: [] } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar auditoria' }));
+    expect(await screen.findByText('Cancelar esta auditoria?')).toBeInTheDocument();
+    expect(calls.some((c) => c.method === 'POST')).toBe(false); // ainda não cancelou
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sim, cancelar' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.endsWith('/audits/215/cancel'))).toBe(true));
+  });
+
+  it('cancelada mostra o aviso e oferece auditar de novo', async () => {
+    renderPage({ status: 'CANCELLED', systemId: 3, completedAt: '2026-10-22T10:00:30', errorMessage: 'Cancelada pelo usuário' });
+    expect(await screen.findByText('Auditoria cancelada', { selector: '.cds--inline-notification__title' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Auditar de novo' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancelar auditoria' })).not.toBeInTheDocument();
+  });
+
+  it('em execução estima o que falta pela média das auditorias anteriores do sistema', async () => {
+    const start = new Date(Date.now() - 60_000).toISOString().slice(0, 19);
+    const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 19);
+    renderPage(
+      { systemId: 3, startedAt: start, progress: { phase: 'ANALISE', analyzers: [], events: [{ at: fmt(Date.now()), message: 'x' }] } },
+      undefined,
+      [{ id: 200, status: 'COMPLETED', startedAt: '2026-10-21T10:00:00', completedAt: '2026-10-21T10:04:00' }],
+    );
+    expect(await screen.findByText(/faltam cerca de/)).toBeInTheDocument();
+  });
+
+  it('concluída oferece baixar o relatório e auditar de novo', async () => {
+    renderPage(
+      { status: 'COMPLETED', systemId: 3, completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } },
+      { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] },
+    );
+    const link = await screen.findByRole('link', { name: 'Baixar relatório' });
+    expect(link).toHaveAttribute('href', '/api/v1/audits/215/report');
+    expect(screen.getByRole('button', { name: 'Auditar de novo' })).toBeInTheDocument();
   });
 });
