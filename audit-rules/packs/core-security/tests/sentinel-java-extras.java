@@ -75,7 +75,27 @@ class Extras {
         String dbPassword2 = System.getenv("DB_PASSWORD");
         // ok: sentinel-senha-fixa-no-codigo
         String nome = "Joao";
+        // ruleid: sentinel-senha-fixa-no-codigo
+        String jwtSecretKey = "k3y-s3gr3d0-Longo-9f2a";
+        // ruleid: sentinel-senha-fixa-no-codigo
+        String accessKeySecret = "changeme";
     }
+
+    // nomes de campo, cabeçalho, prefixo e chave de cache não são credencial
+    // ok: sentinel-senha-fixa-no-codigo
+    static final String PASSWORD = "password";
+    // ok: sentinel-senha-fixa-no-codigo
+    static final String TOKEN_PREFIX = "Bearer ";
+    // ok: sentinel-senha-fixa-no-codigo
+    static final String TOKEN_HEADER = "Authorization";
+    // ok: sentinel-senha-fixa-no-codigo
+    static final String PASSWORD_HEADER = "X-PASSWORD";
+    // ok: sentinel-senha-fixa-no-codigo
+    static final String LOGIN_TOKEN_KEY = "login_tokens:";
+    // ok: sentinel-senha-fixa-no-codigo
+    static final String CREDENTIALS_ANNOTATION = "com.exemplo.seguranca.Credentials";
+    // ok: sentinel-senha-fixa-no-codigo
+    static final String SECRET_REF = "${app.secret}";
 
     void sair() {
         // ruleid: sentinel-system-exit

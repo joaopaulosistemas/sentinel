@@ -161,10 +161,15 @@ rules:
 
   - id: sentinel-senha-fixa-no-codigo
     patterns:
-      - pattern: String $V = "...";
+      - pattern: String $V = "$VAL";
       - metavariable-regex:
           metavariable: $V
           regex: (?i)^.*(password|senha|secret|apikey|api_key|token).*$
+      # o nome da variável só indica credencial; o valor não pode ser o nome de um campo, cabeçalho, prefixo ou
+      # chave de cache ("password", "X-PASSWORD", "Bearer ", "login_tokens:", "a.b.Credentials", "${...}")
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: (?i)^(?!(bearer|authorization|jwt|token|password|senha|secret|apikey|api_key|passwd|pwd|username)$)(?!x-)(?!.*[:\s]$)(?!\$\{)(?!\w+(\.\w+)+$).+$
       - pattern-not: String $V = "";
     message: >
       Credencial escrita no código-fonte. Ela vai para o Git e para todo build. Leia de variável de ambiente, de
