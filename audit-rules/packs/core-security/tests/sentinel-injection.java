@@ -1,6 +1,9 @@
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.security.MessageDigest;
+import java.util.concurrent.Executor;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 class InjectionCases {
 
@@ -14,6 +17,33 @@ class InjectionCases {
         ps.setString(1, nome);
         // ok: sentinel-sql-injection
         st.executeQuery("SELECT 1 FROM " + "dual");
+    }
+
+    void sqlGenerico(Statement st, JdbcTemplate jdbc, String nome) throws Exception {
+        // ruleid: sentinel-sql-injection
+        st.execute("DELETE FROM usuario WHERE nome = '" + nome + "'");
+        // ruleid: sentinel-sql-injection
+        jdbc.update("UPDATE usuario SET ativo = 0 WHERE nome = '" + nome + "'");
+        // ruleid: sentinel-sql-injection
+        jdbc.query("SELECT * FROM usuario WHERE nome = '" + nome + "'", (rs, i) -> rs.getString(1));
+        // ok: sentinel-sql-injection
+        jdbc.update("UPDATE usuario SET ativo = 0 WHERE nome = ?", nome);
+    }
+
+    interface Servico {
+        void update(String id);
+        void execute(String tarefa);
+    }
+
+    void naoEhSql(Servico servico, MessageDigest md, Executor exec, String id) throws Exception {
+        // ok: sentinel-sql-injection
+        servico.update(id);
+        // ok: sentinel-sql-injection
+        servico.execute(id);
+        // ok: sentinel-sql-injection
+        md.update(id.getBytes("UTF-8"));
+        // ok: sentinel-sql-injection
+        exec.execute(() -> servico.update(id));
     }
 
     void comando(Runtime rt, String arquivo) throws Exception {
