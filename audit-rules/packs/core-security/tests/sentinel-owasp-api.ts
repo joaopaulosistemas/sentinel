@@ -31,3 +31,36 @@ const segredo = process.env.JWT_SECRET || 'padrao';
 const outro = process.env.APP_SECRET ?? 'padrao';
 // ok: sentinel-api-jwt-segredo-padrao-js
 const porta = process.env.PORT || '3000';
+
+async function iniciar(app: any, origens: string[]) {
+  // ruleid: sentinel-api-cors-aberto-js
+  app.enableCors({ origin: '*' });
+  // ruleid: sentinel-api-cors-aberto-js
+  app.enableCors({ origin: true, credentials: true });
+  // ruleid: sentinel-api-cors-aberto-js
+  app.enableCors();
+  // ok: sentinel-api-cors-aberto-js
+  app.enableCors({ origin: origens });
+  // ok: sentinel-api-cors-aberto-js
+  app.enableCors({ origin: ['https://portal.exemplo.com.br'] });
+}
+
+const servidor = express();
+// ruleid: sentinel-api-cors-aberto-js
+servidor.use(cors());
+// ruleid: sentinel-api-cors-aberto-js
+servidor.use(cors({ origin: '*' }));
+// ok: sentinel-api-cors-aberto-js
+servidor.use(cors({ origin: 'https://portal.exemplo.com.br' }));
+
+// ruleid: sentinel-api-cors-aberto-js
+const app1 = await NestFactory.create(AppModule, { cors: true });
+// ok: sentinel-api-cors-aberto-js
+const app2 = await NestFactory.create(AppModule, { logger: false });
+
+function responder(res: any) {
+  // ruleid: sentinel-api-cors-aberto-js
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  // ok: sentinel-api-cors-aberto-js
+  res.setHeader('Access-Control-Allow-Origin', 'https://portal.exemplo.com.br');
+}
