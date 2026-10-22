@@ -9,6 +9,7 @@ import com.sentinel.audit.analyzer.EslintAnalyzer;
 import com.sentinel.audit.analyzer.GitleaksAnalyzer;
 import com.sentinel.audit.analyzer.HygieneAnalyzer;
 import com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer;
+import com.sentinel.audit.dto.AuditProgressDto;
 import com.sentinel.audit.insights.AnalyzerRunInfo;
 import com.sentinel.audit.insights.AuditContextData;
 import com.sentinel.audit.insights.ProjectMap;
@@ -154,6 +155,10 @@ public class AuditOrchestrationService {
     @Inject
     AuditRunRepository auditRunRepository;
 
+    /** Andamento mostrado na tela; o valor inicial serve a testes que montam o serviço sem CDI. */
+    @Inject
+    AuditProgressTracker progress = new AuditProgressTracker();
+
     /** Executor para a orquestração e para os analisadores (tarefas bloqueantes de I/O). */
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
@@ -205,6 +210,8 @@ public class AuditOrchestrationService {
         Path clonedPath = null;
         try {
             AuditContext context = markRunning(auditRunId);
+            progress.queued(auditRunId);
+            progress.phase(auditRunId, AuditProgressTracker.CLONE, "Clonando " + context.repoUrl() + " (" + context.branch() + ")");
 
             clonedPath = ingestionService.cloneRepository(context.repoUrl(), context.branch(), null);
             evidenceStager.stage(context.systemName(), context.repoUrl(), clonedPath);
@@ -215,14 +222,17 @@ public class AuditOrchestrationService {
             runRef.setId(auditRunId);
 
             AuditPolicy policy = resolvePolicy(context.profile());
+            progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
             Analysis analysis = runAnalyzers(clonedPath, runRef, context.stack(), policy);
             List<Finding> allFindings = policy.apply(FindingDeduplicator.apply(analysis.findings()));
             allFindings = onlyChangedFiles(allFindings, context, clonedPath);
 
             // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
+            progress.phase(auditRunId, AuditProgressTracker.PONTUACAO, "Análise concluída: " + allFindings.size() + " achados; calculando a nota");
             FindingLifecycleService.apply(allFindings, loadBaselineSafely(auditRunId));
             long linesOfCode = SourceSizer.countLines(clonedPath);
             RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
+            progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
             persistResultsAndComplete(auditRunId, allFindings, riskScore, linesOfCode);
             saveSbomSafely(auditRunId, context, clonedPath);
             saveContextSafely(auditRunId, clonedPath, analysis.runs());
@@ -237,6 +247,7 @@ public class AuditOrchestrationService {
             notifySafely(auditRunId);
             throw new IllegalStateException("Auditoria " + auditRunId + " falhou", e);
         } finally {
+            progress.finish(auditRunId);
             if (clonedPath != null) {
                 ingestionService.cleanupDirectory(clonedPath);
             }
@@ -264,29 +275,46 @@ public class AuditOrchestrationService {
             }
         }
 
+        Long runId = runRef.getId();
         List<CodeAnalyzer> started = new ArrayList<>();
         List<CompletableFuture<Outcome>> futures = new ArrayList<>();
+        List<AuditProgressDto.AnalyzerProgress> plan = new ArrayList<>();
+        for (AnalyzerRunInfo r : runs) {
+            plan.add(new AuditProgressDto.AnalyzerProgress(r.name(), r.status(), 0, 0, r.note()));
+        }
         for (CodeAnalyzer analyzer : analyzers) {
             if (stack != null && !analyzer.supports(stack)) {
                 LOG.infof("Analisador %s ignorado: não suporta a stack %s", analyzer.getName(), stack);
                 runs.add(new AnalyzerRunInfo(analyzer.getName(), "NAO_SUPORTADO", 0, 0, "não se aplica à stack " + stack));
+                plan.add(new AuditProgressDto.AnalyzerProgress(analyzer.getName(), "NAO_SUPORTADO", 0, 0, "não se aplica à stack " + stack));
                 continue;
             }
             if (analyzer instanceof EvidenceAnalyzer ev && !ev.hasEvidence(projectPath)) {
                 runs.add(new AnalyzerRunInfo(analyzer.getName(), "SEM_EVIDENCIA", 0, 0,
                         "nenhum arquivo em " + EvidenceAnalyzer.DIR + " (dump do banco, estatísticas, cobertura ou histograma de memória)"));
+                plan.add(new AuditProgressDto.AnalyzerProgress(analyzer.getName(), "SEM_EVIDENCIA", 0, 0,
+                        "nenhum arquivo em " + EvidenceAnalyzer.DIR));
                 continue;
             }
             started.add(analyzer);
+            plan.add(new AuditProgressDto.AnalyzerProgress(analyzer.getName(), "ESPERANDO", 0, 0, null));
             futures.add(CompletableFuture
-                    .supplyAsync(() -> new Outcome(analyzer.analyze(projectPath, runRef, policy), null), executor)
+                    .supplyAsync(() -> {
+                        progress.analyzerStarted(runId, analyzer.getName());
+                        AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
+                        progress.analyzerFinished(runId, analyzer.getName(), "OK", r.findings().size(),
+                                r.duration() == null ? 0 : r.duration().toMillis(), null);
+                        return new Outcome(r, null);
+                    }, executor)
                     .exceptionally(error -> {
                         LOG.errorf(error, "Analisador %s falhou; seguindo sem seus resultados", analyzer.getName());
+                        progress.analyzerFinished(runId, analyzer.getName(), "FALHOU", 0, 0, truncate(error.getMessage(), 200));
                         return new Outcome(new AnalyzerResult(List.of(), analyzer.getName(), Duration.ZERO),
                                 error.getMessage());
                     }));
         }
 
+        progress.planned(runId, plan);
         List<Finding> allFindings = new ArrayList<>();
         for (int i = 0; i < futures.size(); i++) {
             Outcome outcome = futures.get(i).join();

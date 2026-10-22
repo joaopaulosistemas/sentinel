@@ -29,6 +29,17 @@ export interface SystemSummaryResponse {
   auditOnPush?: boolean | null;
   /** Perfil de regras do sistema; vazio/nulo = "default" */
   profile?: string | null;
+  repoUrl?: string | null;
+  description?: string | null;
+}
+
+export interface SystemRequest {
+  name: string;
+  description: string;
+  repoUrl: string;
+  stack: Stack;
+  team: string;
+  profile?: string;
 }
 
 export interface ProfileInfo {
@@ -75,6 +86,34 @@ export interface AuditRunResponse {
   startedAt: string;
   completedAt: string | null;
   errorMessage?: string | null;
+  /** Só vem enquanto a auditoria está em execução */
+  progress?: AuditProgress | null;
+}
+
+export type AuditPhase = 'FILA' | 'CLONE' | 'ANALISE' | 'PONTUACAO' | 'RELATORIO';
+
+export type AnalyzerProgressStatus =
+  | 'ESPERANDO'
+  | 'EXECUTANDO'
+  | 'OK'
+  | 'FALHOU'
+  | 'INDISPONIVEL'
+  | 'NAO_SUPORTADO'
+  | 'SUBSTITUIDO'
+  | 'SEM_EVIDENCIA';
+
+export interface AnalyzerProgress {
+  name: string;
+  status: AnalyzerProgressStatus;
+  findings: number;
+  durationMs: number;
+  note: string | null;
+}
+
+export interface AuditProgress {
+  phase: AuditPhase;
+  analyzers: AnalyzerProgress[];
+  events: Array<{ at: string; message: string }>;
 }
 
 export interface FindingResponse {

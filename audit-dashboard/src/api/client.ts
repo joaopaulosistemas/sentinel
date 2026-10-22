@@ -7,11 +7,11 @@ import type {
   FindingResponse,
   FindingStatus,
   Severity,
-  Stack,
   RuleQuality,
   ScheduleRequest,
   Suppression,
   SuppressRequest,
+  SystemRequest,
   SystemSummaryResponse,
   TrendPoint,
 } from '../types';
@@ -124,15 +124,15 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  createSystem: (body: {
-    name: string;
-    description: string;
-    repoUrl: string;
-    stack: Stack;
-    team: string;
-  }) =>
+  createSystem: (body: SystemRequest) =>
     apiFetch<SystemSummaryResponse>('/api/v1/systems', {
       method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  updateSystem: (id: number, body: SystemRequest) =>
+    apiFetch<SystemSummaryResponse>(`/api/v1/systems/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(body),
     }),
 };

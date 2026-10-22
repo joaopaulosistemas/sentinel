@@ -18,6 +18,7 @@ import com.sentinel.audit.repository.FindingSuppressionRepository;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.dto.TrendPoint;
+import com.sentinel.audit.service.AuditProgressTracker;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -39,6 +40,9 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Systems", description = "Gerenciamento de sistemas auditados")
 public class SystemResource {
+
+    @Inject
+    AuditProgressTracker progressTracker;
 
     @Inject
     PackRegistry packRegistry;
@@ -85,6 +89,27 @@ public class SystemResource {
         system.setProfile(validProfile(request.getProfile()));
         systemRepository.persist(system);
         return Response.status(Response.Status.CREATED).entity(toSummary(system)).build();
+    }
+
+    /**
+     * Atualiza os dados cadastrais do sistema. O agendamento e o perfil têm endpoints próprios.
+     */
+    @PUT
+    @Path("/{id}")
+    @Transactional
+    @Operation(summary = "Atualizar sistema", description = "Altera nome, descrição, repositório, stack, equipe e (se informado) o perfil de regras")
+    public SystemSummaryResponse updateSystem(@PathParam("id") Long id, @Valid CreateSystemRequest request) {
+        AuditedSystem system = systemRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        system.setName(request.getName());
+        system.setDescription(request.getDescription());
+        system.setRepoUrl(request.getRepoUrl());
+        system.setStack(request.getStack());
+        system.setTeam(request.getTeam());
+        if (request.getProfile() != null) {
+            system.setProfile(validProfile(request.getProfile()));
+        }
+        return toSummary(system);
     }
 
     /**
@@ -223,6 +248,8 @@ public class SystemResource {
         dto.setScheduledBranch(system.effectiveScheduledBranch());
         dto.setAuditOnPush(Boolean.TRUE.equals(system.getAuditOnPush()));
         dto.setProfile(system.effectiveProfile());
+        dto.setRepoUrl(system.getRepoUrl());
+        dto.setDescription(system.getDescription());
 
         List<AuditRun> runs = auditRunRepository.findBySystemId(system.getId());
         runs.stream()
@@ -265,6 +292,9 @@ public class SystemResource {
         }
 
         dto.setFindingsSummary(findingRepository.countBySeverityForRun(run.getId()));
+        if (run.getStatus() == AuditStatus.RUNNING || run.getStatus() == AuditStatus.PENDING) {
+            progressTracker.snapshot(run.getId()).ifPresent(dto::setProgress);
+        }
         return dto;
     }
 }

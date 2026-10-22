@@ -66,6 +66,18 @@ class AuditFlowIntegrationTest {
                 .put("/api/v1/systems/" + systemId + "/schedule")
                 .then().statusCode(200).body("auditIntervalHours", is(24)).body("auditOnPush", is(true));
 
+        // edição cadastral mantém o agendamento e devolve os dados novos
+        given().contentType("application/json")
+                .body(Map.of("name", "Sistema IT 2", "repoUrl", "https://127.0.0.1:1/org/outro.git",
+                        "stack", "MIXED", "team", "Time B"))
+                .put("/api/v1/systems/" + systemId)
+                .then().statusCode(200)
+                .body("name", equalTo("Sistema IT 2")).body("team", equalTo("Time B"))
+                .body("auditIntervalHours", is(24));
+        given().contentType("application/json")
+                .body(Map.of("name", "x", "repoUrl", "http://inseguro/repo", "stack", "JAVA"))
+                .put("/api/v1/systems/" + systemId).then().statusCode(400);
+
         // validação de entrada
         given().contentType("application/json")
                 .body(Map.of("systemId", systemId, "branch", "--upload-pack=x", "triggeredBy", "it"))

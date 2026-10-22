@@ -20,6 +20,24 @@ public class SystemSummaryResponse {
     private String scheduledBranch;
     private Boolean auditOnPush;
     private String profile;
+    private String repoUrl;
+    private String description;
+
+    public String getRepoUrl() {
+        return repoUrl;
+    }
+
+    public void setRepoUrl(String repoUrl) {
+        this.repoUrl = repoUrl;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     public SystemSummaryResponse() {
     }

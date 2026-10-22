@@ -22,6 +22,8 @@ import { SuppressModal } from './SuppressModal';
 
 interface FindingsTableProps {
   findings: FindingResponse[];
+  /** Sistema ao qual a auditoria pertence; mostrado em cada linha para não haver dúvida de onde vem o achado. */
+  systemName?: string;
 }
 
 type TagType = 'red' | 'warm-gray' | 'green' | 'purple';
@@ -42,6 +44,7 @@ const statusTypes: Record<FindingStatus, TagType> = {
 
 const headers = [
   { key: 'severity', header: 'Severidade' },
+  { key: 'system', header: 'Sistema' },
   { key: 'title', header: 'Título' },
   { key: 'filePath', header: 'Arquivo' },
   { key: 'lineNumber', header: 'Linha' },
@@ -52,6 +55,7 @@ const headers = [
 type RowType = {
   id: string;
   severity: string;
+  system: string;
   title: string;
   filePath: string;
   lineNumber: number;
@@ -60,11 +64,12 @@ type RowType = {
   _finding: FindingResponse;
 };
 
-export function FindingsTable({ findings }: FindingsTableProps) {
+export function FindingsTable({ findings, systemName }: FindingsTableProps) {
   const [toSuppress, setToSuppress] = useState<FindingResponse | null>(null);
   const rows: RowType[] = findings.map((f) => ({
     id: String(f.id),
     severity: f.severity,
+    system: systemName ?? '',
     title: f.title,
     filePath: f.filePath,
     lineNumber: f.lineNumber,
@@ -118,6 +123,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                         <TableCell>
                           <RiskBadge severity={finding.severity} />
                         </TableCell>
+                        <TableCell>{systemName ?? '—'}</TableCell>
                         <TableCell>
                           {finding.title}{' '}
                           {finding.shadow === true && (

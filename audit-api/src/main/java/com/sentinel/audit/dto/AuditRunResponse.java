@@ -20,8 +20,18 @@ public class AuditRunResponse {
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
     private String errorMessage;
+    /** Só vem preenchido enquanto a auditoria está em execução. */
+    private AuditProgressDto progress;
 
     public AuditRunResponse() {
+    }
+
+    public AuditProgressDto getProgress() {
+        return progress;
+    }
+
+    public void setProgress(AuditProgressDto progress) {
+        this.progress = progress;
     }
 
     public String getBaseRef() {
