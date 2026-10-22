@@ -59,11 +59,12 @@ Repositório Git
 │                                                             │
 │  ┌──────────────┐  ┌───────────────┐  ┌─────────────────┐  │
 │  │  Ingestion   │→ │   Analyzers   │→ │  Risk Scoring   │  │
-│  │  Git Clone   │  │  Secrets      │  │  Segurança 35%  │  │
-│  │  (https)     │  │  OWASP Deps   │  │  Qualidade 25%  │  │
+│  │  Git Clone   │  │  Secrets      │  │  Segurança 30%  │  │
+│  │  (https)     │  │  Deps (SCA)   │  │  Qualidade 20%  │  │
 │  │              │  │  Arquitetura  │  │  Arquit.   20%  │  │
 │  └──────────────┘  │  Semgrep SAST │  │  Deps      10%  │  │
-│                    └───────────────┘  │  Observab. 10%  │  │
+│                    │  + 10 outros  │  │  Observab. 10%  │  │
+│                    └───────────────┘  │  Perform.  10%  │  │
 │                                       └─────────────────┘  │
 │                              │                              │
 │              ┌───────────────┼───────────────┐             │
@@ -187,12 +188,12 @@ Este projeto foi construído durante o **Bobathon de Modernização Java** — u
 | **Backend** | Java + Quarkus | 21 + 3.15 |
 | **Persistência** | PostgreSQL + Hibernate Panache | 16 (compose) / 18 (nativo) |
 | **API** | Jakarta EE / JAX-RS + OpenAPI | 10 / 3.1 |
-| **Frontend** | React + TypeScript | 18 + 5.5 |
+| **Frontend** | React + TypeScript + Vite + Vitest | 18 + 5.5 + 5.4 + 2.1 |
 | **Design System** | IBM Carbon Design System | 1.71 |
-| **SAST** | Semgrep (opcional) | 1.x |
-| **Segurança de Deps** | Lista interna de CVEs (SCA simplificado) | — |
+| **SAST** | Semgrep (opcional; fixado na imagem Docker e no CI) | 1.172.0 |
+| **Segurança de Deps** | Trivy (preferido) ou SCA interno com consulta ao OSV.dev; OWASP Dependency-Check opcional | — |
 | **Containers** | Docker / Podman + Compose | — |
-| **CI/CD** | CLI Java (fat-jar) | — |
+| **CI/CD** | CLI Java (fat-jar); GitHub Actions do próprio projeto (`ci.yml`, `release.yml`, agentes) | — |
 
 ---
 
@@ -480,9 +481,9 @@ sentinel-audit-tool/
 ├── audit-dashboard/                ← Frontend React 18 + IBM Carbon DS
 │   ├── Dockerfile + nginx.conf.template
 │   └── src/
-│       ├── pages/                  ← Overview, SystemDetail, Findings, Reports
-│       ├── components/             ← AppShell, RiskBadge, ScoreGauge, FindingsTable
-│       ├── hooks/                  ← TanStack Query (useSystems, useFindings...)
+│       ├── pages/                  ← Overview, Ranking, SystemDetail, Findings, Reports
+│       ├── components/             ← Layout/AppShell, RiskBadge, ScoreGauge, FindingsTable, InsightsPanel, TrendChart, SuppressModal, ProfileForm, ScheduleForm
+│       ├── hooks/                  ← TanStack Query (useSystems, useFindings, useAuditRuns, useLifecycle)
 │       ├── store/                  ← Zustand (filtros, sistema selecionado)
 │       ├── api/                    ← Client tipado para o backend
 │       └── types/                  ← Interfaces TypeScript
