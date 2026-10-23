@@ -82,10 +82,16 @@ export const api = {
   cancelAudit: (id: number) =>
     apiFetch<AuditRunResponse>(`/api/v1/audits/${id}/cancel`, { method: 'POST' }),
 
-  checkRepo: (repoUrl: string, branch?: string) =>
+  checkRepo: (repoUrl: string, branch?: string, access?: { systemId?: number; gitToken?: string; gitTokenHosts?: string }) =>
     apiFetch<RepoCheck>('/api/v1/systems/check-repo', {
       method: 'POST',
-      body: JSON.stringify({ repoUrl, branch: branch || undefined }),
+      body: JSON.stringify({
+        repoUrl,
+        branch: branch || undefined,
+        systemId: access?.systemId,
+        gitToken: access?.gitToken || undefined,
+        gitTokenHosts: access?.gitTokenHosts || undefined,
+      }),
     }),
 
   getAudit: (id: number) => apiFetch<AuditRunResponse>(`/api/v1/audits/${id}`),

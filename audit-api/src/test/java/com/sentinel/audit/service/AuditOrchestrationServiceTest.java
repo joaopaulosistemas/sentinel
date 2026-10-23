@@ -63,6 +63,7 @@ class AuditOrchestrationServiceTest {
         run.setStatus(AuditStatus.PENDING);
 
         service = new AuditOrchestrationService();
+        service.secretBox = new SecretBox("chave-de-teste");
         service.scoringService = new ScoringService();
         service.evidenceStager = new EvidenceStager();
         service.evidenceAnalyzer = new com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer();
@@ -105,7 +106,7 @@ class AuditOrchestrationServiceTest {
         };
         service.ingestionService = new IngestionService() {
             @Override
-            public Path cloneRepository(String repoUrl, String branch, String token) {
+            public Path cloneRepository(String repoUrl, String branch, String token, String hosts, Integer historyDepth) {
                 if (cloneError != null) {
                     throw cloneError;
                 }
@@ -311,7 +312,7 @@ class AuditOrchestrationServiceTest {
     void cancelarDuranteOCloneParaAntesDaAnaliseESemGravarNada() {
         service.ingestionService = new IngestionService() {
             @Override
-            public Path cloneRepository(String repoUrl, String branch, String token) {
+            public Path cloneRepository(String repoUrl, String branch, String token, String hosts, Integer historyDepth) {
                 assertTrue(service.cancel(7L));   // o usuário clica em cancelar enquanto clona
                 return tempDir;
             }

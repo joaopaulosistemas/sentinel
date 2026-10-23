@@ -94,6 +94,9 @@ public class AuditOrchestrationService {
     IngestionService ingestionService;
 
     @Inject
+    SecretBox secretBox;
+
+    @Inject
     SemgrepAnalyzer semgrepAnalyzer;
 
     @Inject
@@ -171,7 +174,8 @@ public class AuditOrchestrationService {
     /**
      * Dados mínimos da auditoria, lidos dentro de uma transação e seguros para uso fora dela.
      */
-    record AuditContext(String repoUrl, String branch, Stack stack, String systemName, String profile, String baseRef) {}
+    record AuditContext(String repoUrl, String branch, Stack stack, String systemName, String profile, String baseRef,
+                        String gitToken, String gitTokenHosts, Integer gitHistoryDepth) {}
 
     /**
      * Inicia a auditoria somente depois do commit da transação que a criou.
@@ -216,7 +220,7 @@ public class AuditOrchestrationService {
             checkNotCancelled(auditRunId);
             progress.phase(auditRunId, AuditProgressTracker.CLONE, "Clonando " + context.repoUrl() + " (" + context.branch() + ")");
 
-            clonedPath = ingestionService.cloneRepository(context.repoUrl(), context.branch(), null);
+            clonedPath = ingestionService.cloneRepository(context.repoUrl(), context.branch(), context.gitToken(), context.gitTokenHosts(), context.gitHistoryDepth());
             checkNotCancelled(auditRunId);
             SourceSizer.Stats sizing = SourceSizer.stats(clonedPath);
             commitSha = ingestionService.headCommit(clonedPath);
@@ -497,7 +501,7 @@ public class AuditOrchestrationService {
         if (context.baseRef() == null || context.baseRef().isBlank()) {
             return findings;
         }
-        ChangedFiles.Result changed = ingestionService.changedFiles(context.repoUrl(), clonedPath, context.baseRef());
+        ChangedFiles.Result changed = ingestionService.changedFiles(context.repoUrl(), clonedPath, context.baseRef(), context.gitToken(), context.gitTokenHosts());
         if (changed.files() == null) {
             LOG.warnf("Auditoria de PR: não foi possível comparar com '%s' (%s); todos os achados foram mantidos",
                     context.baseRef(), changed.note());
@@ -565,7 +569,10 @@ public class AuditOrchestrationService {
                 run.getSystem().getStack(),
                 run.getSystem().getName(),
                 run.getSystem().effectiveProfile(),
-                run.getBaseRef());
+                run.getBaseRef(),
+                secretBox.decrypt(run.getSystem().getGitTokenEnc()),
+                run.getSystem().getGitTokenHosts(),
+                run.getSystem().getGitHistoryDepth());
     }
 
     @Transactional

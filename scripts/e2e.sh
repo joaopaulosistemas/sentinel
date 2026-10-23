@@ -27,7 +27,7 @@ for _ in $(seq 1 30); do docker exec sentinel-e2e-db pg_isready -U sentinel_audi
 
 docker run -d --name sentinel-e2e-api --network "$NET" -p 127.0.0.1:18080:8080 \
   -e DB_URL=jdbc:postgresql://sentinel-e2e-db:5432/sentinel_audit -e DB_USER=sentinel_audit -e DB_PASSWORD=e2e \
-  -e API_KEY="$KEY" -e GIT_ALLOWED_HOSTS=github.com -e SCHEDULER_ENABLED=false \
+  -e API_KEY="$KEY" -e SCHEDULER_ENABLED=false \
   -e OSV_ENABLED=false -e TRIVY_ENABLED=false -e GITLEAKS_ENABLED=true \
   sentinel-audit-api:ci >/dev/null || falhar "API não subiu"
 

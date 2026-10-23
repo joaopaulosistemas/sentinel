@@ -14,11 +14,10 @@ dashboard:
 
 # Segredos. Prefira existingSecret (criado por você/External Secrets) a colocar valores aqui.
 secrets:
-  existingSecret: ""                      # Secret com as chaves: DB_PASSWORD, API_KEY, GIT_TOKEN, WEBHOOK_SECRET
+  existingSecret: ""                      # Secret com as chaves: DB_PASSWORD, API_KEY, SECRETS_KEY
   dbPassword: ""
   apiKey: ""
-  gitToken: ""
-  webhookSecret: ""
+  secretsKey: ""                          # cifra, no banco, os tokens e segredos cadastrados em cada sistema (vazio = usa a apiKey)
 
 database:
   # internal: sobe um PostgreSQL simples (StatefulSet) — bom para teste; em produção use um banco gerenciado.

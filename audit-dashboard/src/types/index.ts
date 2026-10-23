@@ -33,6 +33,20 @@ export interface SystemSummaryResponse {
   description?: string | null;
   /** Nota da última auditoria completa menos a anterior; nulo com menos de duas */
   scoreDelta?: number | null;
+  /** Há token Git salvo (o token em si nunca vem da API) */
+  gitTokenSet?: boolean | null;
+  /** Hosts que recebem o token, separados por vírgula */
+  gitTokenHosts?: string | null;
+  /** Há segredo de webhook salvo (o segredo em si nunca vem da API) */
+  webhookSecretSet?: boolean | null;
+  /** Há URL de notificação salva (a URL em si nunca vem da API) */
+  /** Commits do histórico baixados no clone; vazio = 100, 0/1 = clone raso */
+  gitHistoryDepth?: number | null;
+  notifyUrlSet?: boolean | null;
+  notifyFormat?: string | null;
+  notifyMinScoreDrop?: number | null;
+  notifyMinSeverity?: string | null;
+  notifyPublicUrl?: string | null;
 }
 
 export interface SystemRequest {
@@ -42,6 +56,21 @@ export interface SystemRequest {
   stack: Stack;
   team: string;
   profile?: string;
+  /** Vazio/ausente mantém o token salvo */
+  gitToken?: string;
+  gitTokenHosts?: string;
+  clearGitToken?: boolean;
+  /** Vazio/ausente mantém o segredo salvo */
+  webhookSecret?: string;
+  clearWebhookSecret?: boolean;
+  /** Vazio/ausente mantém a URL salva */
+  gitHistoryDepth?: number;
+  notifyUrl?: string;
+  clearNotifyUrl?: boolean;
+  notifyFormat?: string;
+  notifyMinScoreDrop?: number;
+  notifyMinSeverity?: string;
+  notifyPublicUrl?: string;
 }
 
 export interface ProfileInfo {

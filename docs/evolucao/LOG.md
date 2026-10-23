@@ -154,3 +154,11 @@ tela de resultado (veredito com destaque, ganho por correção, categorias), vis
 achados (várias severidades, filtros ativos, resumo por sistema, origem), ranking (meta, ordenação por nota, críticos e tendência) e relatórios em 3 passos.
 API: `commitSha`, linhas e arquivos lidos, severidades parciais, descrição dos analisadores, novos/resolvidos/variação por auditoria,
 `GET /api/v1/reports/portfolio` (todos os sistemas, em HTML, PDF e CSV). Histórico de relatórios segue no navegador.
+
+## Dashboard 12.4.0 — configurações no cadastro de cada sistema
+
+Saíram do `.env` e foram para a tela Sistemas: token Git e hosts do token (cifrado no banco com `SECRETS_KEY`, ou `API_KEY` se vazia; nunca volta pela API),
+profundidade do histórico de commits, segredo do webhook de push (por sistema; o webhook só aceita assinatura de um sistema dono do repositório)
+e as notificações (URL do Teams/Slack cifrada, formato, queda mínima de nota, severidade mínima, endereço do dashboard; só https público).
+`GIT_ALLOWED_HOSTS` deixou de existir: o host de cada repositório é o do endereço cadastrado.
+O token que estava em `.env.example` foi removido; **ele continua no histórico do Git e precisa ser revogado**.

@@ -30,7 +30,6 @@ class HistorySecretsAnalyzerTest {
 
     private HistorySecretsAnalyzer analyzer() {
         HistorySecretsAnalyzer a = new HistorySecretsAnalyzer();
-        a.historyDepth = 50;
         a.timeoutSeconds = 60;
         return a;
     }
@@ -82,9 +81,10 @@ class HistorySecretsAnalyzerTest {
         Files.writeString(repo.resolve("A.java"), "String password = \"SuperSecreta123\";\n");
         git("add", "."); git("commit", "-q", "-m", "c1");
         Files.writeString(repo.resolve("A.java"), "x\n"); git("commit", "-qam", "c2");
-        HistorySecretsAnalyzer a = analyzer();
-        a.historyDepth = 1;
-        assertTrue(a.analyze(repo, new AuditRun()).findings().isEmpty());
+        Path shallow = Files.createTempDirectory("shallow-").resolve("clone");
+        new ProcessBuilder("git", "clone", "-q", "--depth", "1", repo.toUri().toString(), shallow.toString())
+                .redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start().waitFor();
+        assertTrue(analyzer().analyze(shallow, new AuditRun()).findings().isEmpty());
     }
 
     @Test

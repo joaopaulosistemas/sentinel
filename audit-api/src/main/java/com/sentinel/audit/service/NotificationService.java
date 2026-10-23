@@ -12,7 +12,6 @@ import com.sentinel.audit.repository.AuditRunRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
@@ -22,15 +21,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Locale;
-import java.util.Optional;
 
 /**
  * Avisa um canal (Teams, Slack ou um webhook genérico) quando algo relevante acontece numa auditoria:
  * falha, queda de score ou findings graves <b>novos</b>. Auditorias sem novidade não geram mensagem,
  * para o canal não virar ruído.
  * <p>
- * A URL do webhook vem só da configuração ({@code NOTIFY_WEBHOOK_URL}); nunca de dados enviados pela API.
- * Falha ao notificar nunca afeta a auditoria.
+ * A configuração é de cada sistema (cadastro do sistema); a URL do webhook fica cifrada e só aceita https para
+ * endereços públicos (nada de localhost nem rede interna). Falha ao notificar nunca afeta a auditoria.
  */
 @ApplicationScoped
 public class NotificationService {
@@ -38,24 +36,11 @@ public class NotificationService {
     private static final Logger LOG = Logger.getLogger(NotificationService.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @ConfigProperty(name = "sentinel.audit.notify.webhook-url")
-    Optional<String> webhookUrl;
+    @Inject
+    SecretBox secretBox;
 
-    /** slack | teams | generic */
-    @ConfigProperty(name = "sentinel.audit.notify.format", defaultValue = "slack")
-    String format;
-
-    /** Queda mínima de score (em pontos) que justifica aviso. */
-    @ConfigProperty(name = "sentinel.audit.notify.min-score-drop", defaultValue = "5")
-    double minScoreDrop;
-
-    /** Severidade mínima dos findings novos que justificam aviso. */
-    @ConfigProperty(name = "sentinel.audit.notify.min-new-severity", defaultValue = "HIGH")
-    String minNewSeverity;
-
-    /** URL pública do dashboard, para o link da mensagem (ex.: https://audit.sicoob.com.br). */
-    @ConfigProperty(name = "sentinel.audit.notify.public-url")
-    Optional<String> publicUrl;
+    /** Configuração de aviso de um sistema (a URL já decifrada). */
+    public record Settings(String url, String format, double minScoreDrop, String minSeverity, String publicUrl) {}
 
     @Inject
     AuditRunRepository auditRunRepository;
@@ -73,12 +58,14 @@ public class NotificationService {
     /** Chamado ao fim da auditoria (concluída ou falha). Nunca lança exceção. */
     public void notifyFinished(Long auditRunId) {
         try {
-            if (webhookUrl.isEmpty() || webhookUrl.get().isBlank()) {
+            Settings settings = settingsFor(auditRunId);
+            if (settings == null || settings.url() == null || settings.url().isBlank()) {
                 return;
             }
-            Notice notice = loadNotice(auditRunId);
-            if (notice != null && shouldNotify(notice, minScoreDrop)) {
-                send(webhookUrl.get(), buildPayload(format, notice, publicUrl.orElse(null)));
+            Notice notice = loadNotice(auditRunId, settings.minSeverity());
+            if (notice != null && shouldNotify(notice, settings.minScoreDrop())) {
+                validateTarget(settings.url());
+                send(settings.url(), buildPayload(settings.format(), notice, settings.publicUrl()));
             }
         } catch (Exception e) {
             LOG.warnf("Não foi possível enviar a notificação da auditoria %d: %s", auditRunId, e.getMessage());
@@ -86,7 +73,53 @@ public class NotificationService {
     }
 
     @Transactional
-    Notice loadNotice(Long auditRunId) {
+    Settings settingsFor(Long auditRunId) {
+        AuditRun run = auditRunRepository.findById(auditRunId);
+        if (run == null || !run.getSystem().hasNotifyUrl()) {
+            return null;
+        }
+        var system = run.getSystem();
+        String url = secretBox.decrypt(system.getNotifyUrlEnc());
+        return new Settings(url,
+                system.getNotifyFormat() == null ? "slack" : system.getNotifyFormat(),
+                system.getNotifyMinScoreDrop() == null ? 5 : system.getNotifyMinScoreDrop(),
+                system.getNotifyMinSeverity() == null ? "HIGH" : system.getNotifyMinSeverity(),
+                system.getNotifyPublicUrl());
+    }
+
+    /**
+     * Aceita só https para endereço público: o destino é digitado por quem cadastra o sistema, então não pode apontar
+     * para a própria máquina nem para a rede interna (SSRF).
+     */
+    public static void validateTarget(String url) {
+        URI uri;
+        try {
+            uri = URI.create(url);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("URL de notificação inválida");
+        }
+        if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || uri.getUserInfo() != null) {
+            throw new IllegalArgumentException("A URL de notificação deve ser https://, sem usuário e senha");
+        }
+        try {
+            for (java.net.InetAddress a : java.net.InetAddress.getAllByName(uri.getHost())) {
+                if (a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress() || a.isSiteLocalAddress()
+                        || a.isMulticastAddress() || isUniqueLocalV6(a)) {
+                    throw new IllegalArgumentException("A URL de notificação não pode apontar para rede interna ou local");
+                }
+            }
+        } catch (java.net.UnknownHostException e) {
+            throw new IllegalArgumentException("Não foi possível resolver o endereço da notificação: " + uri.getHost());
+        }
+    }
+
+    private static boolean isUniqueLocalV6(java.net.InetAddress a) {
+        byte[] b = a.getAddress();
+        return b.length == 16 && (b[0] & 0xfe) == 0xfc;
+    }
+
+    @Transactional
+    Notice loadNotice(Long auditRunId, String minNewSeverity) {
         AuditRun run = auditRunRepository.findById(auditRunId);
         if (run == null) {
             return null;

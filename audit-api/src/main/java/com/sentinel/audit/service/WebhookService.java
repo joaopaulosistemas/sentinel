@@ -36,6 +36,9 @@ public class WebhookService {
     @Inject
     AuditRequestService requestService;
 
+    @Inject
+    SecretBox secretBox;
+
     // ------------------------------------------------------------------ autenticidade
 
     /** GitHub: cabeçalho {@code X-Hub-Signature-256: sha256=<hmac hex do corpo>}. */
@@ -70,6 +73,12 @@ public class WebhookService {
         if (payload.path("deleted").asBoolean(false) || ZERO_SHA.equals(payload.path("after").asText(""))) {
             return null;                                     // branch apagada
         }
+        List<String> urls = repoUrls(payload);
+        return urls.isEmpty() ? null : new Push(urls, ref.substring("refs/heads/".length()));
+    }
+
+    /** Endereços do repositório que o payload (GitHub ou GitLab) informa. */
+    public static List<String> repoUrls(JsonNode payload) {
         List<String> urls = new ArrayList<>();
         for (String field : List.of("clone_url", "html_url", "git_http_url", "web_url")) {
             for (String parent : List.of("repository", "project")) {
@@ -79,7 +88,20 @@ public class WebhookService {
                 }
             }
         }
-        return urls.isEmpty() ? null : new Push(urls, ref.substring("refs/heads/".length()));
+        return urls;
+    }
+
+    /** Sistemas cujo repositório é um dos endereços e que têm segredo de webhook cadastrado. */
+    public List<AuditedSystem> withSecret(List<String> repoUrls) {
+        List<String> wanted = repoUrls.stream().map(WebhookService::normalizeRepo).toList();
+        return systemRepository.listAll().stream()
+                .filter(s -> s.hasWebhookSecret() && wanted.contains(normalizeRepo(s.getRepoUrl())))
+                .toList();
+    }
+
+    /** Segredo do webhook do sistema (decifrado), ou {@code null}. */
+    public String secretOf(AuditedSystem system) {
+        return secretBox.decrypt(system.getWebhookSecretEnc());
     }
 
     /** Remove esquema, credenciais, ".git" e "/" final e usa minúsculas: formas diferentes da mesma URL ficam iguais. */
@@ -103,9 +125,17 @@ public class WebhookService {
 
     /** @return quantas auditorias foram disparadas */
     public int trigger(Push push, String source) {
+        return trigger(push, source, null);
+    }
+
+    /** @param allowedIds só estes sistemas podem ser disparados (os que validaram a assinatura); {@code null} = todos */
+    public int trigger(Push push, String source, java.util.Set<Long> allowedIds) {
         List<String> wanted = push.repoUrls().stream().map(WebhookService::normalizeRepo).toList();
         int started = 0;
         for (AuditedSystem system : systemRepository.listAll()) {
+            if (allowedIds != null && !allowedIds.contains(system.getId())) {
+                continue;
+            }
             if (!Boolean.TRUE.equals(system.getAuditOnPush())
                     || !wanted.contains(normalizeRepo(system.getRepoUrl()))
                     || !system.effectiveScheduledBranch().equals(push.branch())) {

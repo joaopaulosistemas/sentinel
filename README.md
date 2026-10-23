@@ -81,7 +81,7 @@ Repositório Git
 |------|----------|
 | **Trivy e Gitleaks (opcionais)** | Se `trivy` e `gitleaks` estiverem no PATH (a imagem Docker já os instala; `WITH_TRIVY`/`WITH_GITLEAKS=false` desligam), eles **substituem** o SCA e os analisadores de segredos internos, com muito mais cobertura (inclusive IaC/Dockerfile/Kubernetes no Trivy e histórico completo no Gitleaks). Sem eles, os analisadores internos descritos abaixo continuam como fallback. `TRIVY_SCANNERS=vuln` desliga a checagem de IaC do Trivy (que se sobrepõe às regras Semgrep de Dockerfile/Terraform e pode contar o mesmo problema duas vezes). O Trivy baixa sua base de vulnerabilidades na primeira execução; em rede fechada use `TRIVY_SKIP_DB_UPDATE=true` com a base no cache. O valor de um segredo nunca é gravado: só um hash curto. **Duplicatas entre ferramentas:** o mesmo problema reportado pelo Semgrep e pelo Trivy é juntado em um só (fica o do Semgrep, com a maior severidade e uma nota citando o outro). Hoje isso cobre só dois casos conhecidos (Dockerfile com `:latest` e sem `USER`); regras sem equivalência declarada nunca são tocadas, então ainda pode haver duplicatas em IaC/Terraform. Para ampliar, acrescente um tópico em `FindingDeduplicator`. |
 | **SCA interno (fallback)** | Lê `pom.xml`, `package-lock.json`/`package.json`, Gradle, `requirements.txt` e `.csproj` e consulta o **OSV.dev** (só nome/versão saem da rede). Sem rede, desliga com `OSV_ENABLED=false` ou usa um espelho em `OSV_URL`; nesse caso cai para uma lista interna pequena. Pacotes sem versão fixa (ranges) são avaliados pela versão mínima declarada. |
-| **Secrets** | Regex nos arquivos do commit **e no histórico do Git** (últimos `GIT_HISTORY_DEPTH` commits, padrão 100; `0`/`1` desliga). Segredo removido do código mas presente no histórico continua sendo reportado — e precisa ser **revogado**, não só apagado. |
+| **Secrets** | Regex nos arquivos do commit **e no histórico do Git** (últimos commits definidos no cadastro do sistema, padrão 100; `0`/`1` desliga). Segredo removido do código mas presente no histórico continua sendo reportado — e precisa ser **revogado**, não só apagado. |
 | **Semgrep (SAST)** | A imagem Docker da API instala o Semgrep (build arg `WITH_SEMGREP`, padrão ligado). Fora do Docker, só roda se o `semgrep` estiver no PATH; sem ele o SAST é ignorado com um WARNING. Regras em `audit-rules/` (injeção, XSS, OWASP A01, OWASP API Top 10, criptografia, Dockerfile, Terraform). |
 | **Acompanhamento** | Cada finding tem uma identidade estável entre auditorias: o painel mostra **novos, resolvidos e persistentes**, e a **tendência** do score. |
 | **Falso positivo / risco aceito** | Suprime-se um finding com motivo, justificativa e (opcional) validade. Suprimidos saem do score e da listagem padrão, mas ficam registrados e aparecem no relatório. |
@@ -307,7 +307,7 @@ Variáveis úteis (todas opcionais em dev):
 | `API_KEY` | Se definida, **toda** a API exige `X-API-Key: <chave>` (ou `Authorization: Bearer`). `/api/v1/health` é livre. Sem ela a API fica aberta e um aviso é logado. |
 | `DB_URL` / `DB_USER` / `DB_PASSWORD` | Banco. Com o Postgres do Compose use `DB_URL=jdbc:postgresql://localhost:5433/sentinel_audit`. |
 | `DB_SCHEMA_MODE` | Padrão `update`. **Nunca** use `drop-and-create` fora de testes: apaga os dados a cada start. |
-| `GIT_TOKEN`, `GIT_TOKEN_HOSTS`, `GIT_ALLOWED_HOSTS` | Token só é enviado aos hosts listados; só URLs `https://` são aceitas. |
+| Token Git (cadastro do sistema) | Fica cifrado no banco com `SECRETS_KEY` e nunca volta pela API; só é enviado aos hosts listados no sistema (padrão `github.com`); só URLs `https://` são aceitas. |
 | `CORS_ORIGINS` | Origens permitidas (padrão `http://localhost:3000`). |
 | `SEMGREP_CONFIG` | Regras do Semgrep (padrão: regras dos pacotes em `audit-rules/packs`; sem pacotes, `p/default`). |
 
@@ -388,7 +388,7 @@ npm run dev
 ```bash
 # WSL2 / Linux
 cd sentinel-audit-tool
-cp .env.example .env        # defina POSTGRES_PASSWORD (obrigatória), API_KEY e, se precisar, GIT_TOKEN
+cp .env.example .env        # defina POSTGRES_PASSWORD (obrigatória), API_KEY e, se quiser uma chave própria para os segredos cadastrados, SECRETS_KEY
 
 podman-compose up -d        # ou: docker compose up -d
 ```
@@ -733,18 +733,18 @@ Regras que sustentam isso:
 
 ## Auditoria automática, webhooks e notificações
 
-**Periódica:** na tela do sistema, em *Auditoria automática*, defina o intervalo em horas e a branch. O agendador (`SCHEDULER_ENABLED=true`) dispara quando vence e nunca empilha uma auditoria sobre outra em andamento.
+**Periódica:** na tela do sistema, em *Auditoria automática*, defina o intervalo em horas e a branch. O agendador dispara quando vence e nunca empilha uma auditoria sobre outra em andamento.
 
 **A cada push:** marque *Auditar a cada push* no sistema e cadastre o webhook no repositório:
 
 | Plataforma | URL | Segredo |
 |-----------|-----|---------|
-| GitHub | `https://<sua-api>/api/v1/webhooks/github` (JSON, evento *push*) | campo *Secret* = `WEBHOOK_SECRET` (assinatura HMAC-SHA256) |
-| GitLab | `https://<sua-api>/api/v1/webhooks/gitlab` | *Secret token* = `WEBHOOK_SECRET` |
+| GitHub | `https://<sua-api>/api/v1/webhooks/github` (JSON, evento *push*) | campo *Secret* = segredo cadastrado no sistema (assinatura HMAC-SHA256) |
+| GitLab | `https://<sua-api>/api/v1/webhooks/gitlab` | *Secret token* = segredo cadastrado no sistema |
 
-Sem `WEBHOOK_SECRET`, os webhooks ficam desativados. Só a branch configurada no sistema dispara; tags e branches apagadas são ignoradas.
+O segredo é de cada sistema (tela Sistemas > Auditoria automática; há um botão "Gerar segredo"); sistema sem segredo não recebe webhook. Só a branch configurada no sistema dispara; tags e branches apagadas são ignoradas.
 
-**Notificações:** defina `NOTIFY_WEBHOOK_URL` (Incoming Webhook do Teams ou Slack) e `NOTIFY_FORMAT` (`teams`, `slack` ou `generic`). O aviso só sai quando há motivo: auditoria falhou, score caiu `NOTIFY_MIN_SCORE_DROP` pontos ou mais, ou surgiu finding novo de severidade `NOTIFY_MIN_NEW_SEVERITY`+. Falha no envio nunca altera o resultado da auditoria.
+**Notificações:** na tela Sistemas, em *Notificações*, informe a URL do Incoming Webhook do Teams ou Slack (guardada cifrada; só https público), o formato (`teams`, `slack` ou `generic`), a queda mínima de nota e a severidade mínima dos achados novos. O aviso só sai quando há motivo: a auditoria falhou, a nota caiu o bastante ou surgiu achado novo da severidade escolhida (ou maior). Falha no envio nunca altera o resultado da auditoria.
 
 ## Login corporativo (OIDC/Keycloak) — opcional
 

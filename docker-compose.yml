@@ -3,7 +3,7 @@
 # =============================================================
 #
 # Uso:
-#   cp .env.example .env        # defina POSTGRES_PASSWORD, API_KEY e GIT_TOKEN
+#   cp .env.example .env        # defina POSTGRES_PASSWORD e API_KEY
 #   docker compose up -d --build
 #
 # Rede corporativa com inspeção SSL: coloque o CA raiz da empresa (PEM, .crt)
@@ -62,10 +62,7 @@ services:
       DB_USER: sentinel_audit
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       API_KEY: ${API_KEY:-}
-      GIT_TOKEN: ${GIT_TOKEN:-}
-      GIT_TOKEN_HOSTS: ${GIT_TOKEN_HOSTS:-github.com}
-      GIT_ALLOWED_HOSTS: ${GIT_ALLOWED_HOSTS:-}
-      GIT_HISTORY_DEPTH: ${GIT_HISTORY_DEPTH:-100}
+      SECRETS_KEY: ${SECRETS_KEY:-}
       OSV_ENABLED: ${OSV_ENABLED:-true}
       OSV_URL: ${OSV_URL:-https://api.osv.dev}
       TRIVY_ENABLED: ${TRIVY_ENABLED:-true}
@@ -81,13 +78,6 @@ services:
       CLEANCODE_MAX_PARAMETERS: ${CLEANCODE_MAX_PARAMETERS:-5}
       CLEANCODE_MAX_COMPLEXITY: ${CLEANCODE_MAX_COMPLEXITY:-10}
       CLEANCODE_MAX_NESTING: ${CLEANCODE_MAX_NESTING:-4}
-      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
-      NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}
-      NOTIFY_FORMAT: ${NOTIFY_FORMAT:-slack}
-      NOTIFY_MIN_SCORE_DROP: ${NOTIFY_MIN_SCORE_DROP:-5}
-      NOTIFY_MIN_NEW_SEVERITY: ${NOTIFY_MIN_NEW_SEVERITY:-HIGH}
-      PUBLIC_URL: ${PUBLIC_URL:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       PACKS_DIRS: ${PACKS_DIRS:-}
       PACKS_GIT_URL: ${PACKS_GIT_URL:-}

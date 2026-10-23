@@ -33,7 +33,146 @@ public class CreateSystemRequest {
     @Pattern(regexp = "^$|^[a-z0-9][a-z0-9-]{1,62}$", message = "perfil inválido (minúsculas, números e hífen)")
     private String profile;
 
+    /** Token Git de leitura. Vazio/ausente = mantém o que já está salvo. Nunca é devolvido pela API. */
+    @Size(max = 500)
+    private String gitToken;
+
+    /** Hosts que recebem o token, separados por vírgula (padrão: github.com). */
+    @Size(max = 500)
+    @Pattern(regexp = "^$|^[A-Za-z0-9.-]+(\\s*,\\s*[A-Za-z0-9.-]+)*$", message = "hosts inválidos: use nomes separados por vírgula")
+    private String gitTokenHosts;
+
+    /** Segredo dos webhooks de push (GitHub "Secret" / GitLab "Secret token"). Vazio = mantém o salvo. */
+    @Size(max = 200)
+    private String webhookSecret;
+
+    private Boolean clearWebhookSecret;
+
+    public String getWebhookSecret() {
+        return webhookSecret;
+    }
+
+    public void setWebhookSecret(String webhookSecret) {
+        this.webhookSecret = webhookSecret;
+    }
+
+    public Boolean getClearWebhookSecret() {
+        return clearWebhookSecret;
+    }
+
+    public void setClearWebhookSecret(Boolean clearWebhookSecret) {
+        this.clearWebhookSecret = clearWebhookSecret;
+    }
+
+    /** URL do webhook de notificação (Teams/Slack). Vazio = mantém a salva. */
+    @Size(max = 800)
+    private String notifyUrl;
+
+    private Boolean clearNotifyUrl;
+
+    @Pattern(regexp = "^$|^(?i)(slack|teams|generic)$", message = "formato deve ser slack, teams ou generic")
+    private String notifyFormat;
+
+    @jakarta.validation.constraints.DecimalMin("0")
+    @jakarta.validation.constraints.DecimalMax("100")
+    private Double notifyMinScoreDrop;
+
+    @Pattern(regexp = "^$|^(?i)(critical|high|medium|low|info)$", message = "severidade inválida")
+    private String notifyMinSeverity;
+
+    @Size(max = 500)
+    @Pattern(regexp = "^$|^https?://[^\\s]+$", message = "use um endereço http(s)://")
+    private String notifyPublicUrl;
+
+    public String getNotifyUrl() {
+        return notifyUrl;
+    }
+
+    public void setNotifyUrl(String notifyUrl) {
+        this.notifyUrl = notifyUrl;
+    }
+
+    public Boolean getClearNotifyUrl() {
+        return clearNotifyUrl;
+    }
+
+    public void setClearNotifyUrl(Boolean clearNotifyUrl) {
+        this.clearNotifyUrl = clearNotifyUrl;
+    }
+
+    public String getNotifyFormat() {
+        return notifyFormat;
+    }
+
+    public void setNotifyFormat(String notifyFormat) {
+        this.notifyFormat = notifyFormat;
+    }
+
+    public Double getNotifyMinScoreDrop() {
+        return notifyMinScoreDrop;
+    }
+
+    public void setNotifyMinScoreDrop(Double notifyMinScoreDrop) {
+        this.notifyMinScoreDrop = notifyMinScoreDrop;
+    }
+
+    public String getNotifyMinSeverity() {
+        return notifyMinSeverity;
+    }
+
+    public void setNotifyMinSeverity(String notifyMinSeverity) {
+        this.notifyMinSeverity = notifyMinSeverity;
+    }
+
+    public String getNotifyPublicUrl() {
+        return notifyPublicUrl;
+    }
+
+    public void setNotifyPublicUrl(String notifyPublicUrl) {
+        this.notifyPublicUrl = notifyPublicUrl;
+    }
+
+    /** Commits do histórico a baixar (vazio = 100; 0 ou 1 = clone raso, sem varrer o histórico). */
+    @jakarta.validation.constraints.Min(0)
+    @jakarta.validation.constraints.Max(5000)
+    private Integer gitHistoryDepth;
+
+    public Integer getGitHistoryDepth() {
+        return gitHistoryDepth;
+    }
+
+    public void setGitHistoryDepth(Integer gitHistoryDepth) {
+        this.gitHistoryDepth = gitHistoryDepth;
+    }
+
+    /** Apaga o token salvo. */
+    private Boolean clearGitToken;
+
     public CreateSystemRequest() {
+    }
+
+    public String getGitToken() {
+        return gitToken;
+    }
+
+    public void setGitToken(String gitToken) {
+        this.gitToken = gitToken;
+    }
+
+    public String getGitTokenHosts() {
+        return gitTokenHosts;
+    }
+
+    public void setGitTokenHosts(String gitTokenHosts) {
+        this.gitTokenHosts = gitTokenHosts;
+    }
+
+    public Boolean getClearGitToken() {
+        return clearGitToken;
+    }
+
+    public void setClearGitToken(Boolean clearGitToken) {
+        this.clearGitToken = clearGitToken;
     }
 
     public String getProfile() {

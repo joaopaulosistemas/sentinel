@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Uma senha apagada num commit posterior continua exposta no histórico (e deve ser revogada).
  * Segredos que ainda estão na versão atual já são reportados pelo {@link SecretsAnalyzer} e aqui são ignorados.
- * Exige que o clone tenha histórico: veja {@code sentinel.audit.git.history-depth}.
+ * Varre os commits que vieram no clone; quantos vêm é definido no cadastro do sistema (histórico de commits).
  */
 @ApplicationScoped
 public class HistorySecretsAnalyzer implements CodeAnalyzer {
@@ -37,9 +37,6 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
     private static final int MAX_FINDINGS = 200;
     private static final long MAX_LOG_BYTES = 200L * 1024 * 1024;
 
-    @ConfigProperty(name = "sentinel.audit.git.history-depth", defaultValue = "100")
-    int historyDepth;
-
     @ConfigProperty(name = "sentinel.audit.git.history-timeout-seconds", defaultValue = "120")
     long timeoutSeconds;
 
@@ -47,7 +44,7 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun) {
         Instant start = Instant.now();
         List<Finding> findings = new ArrayList<>();
-        if (historyDepth > 1 && Files.isDirectory(projectPath.resolve(".git"))) {
+        if (Files.isDirectory(projectPath.resolve(".git")) && commitCount(projectPath) > 1) {
             try {
                 findings = scanHistory(projectPath, auditRun);
             } catch (InterruptedException e) {
@@ -70,10 +67,25 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
         return true;
     }
 
+    /** Commits disponíveis no clone: 1 = clone raso (histórico desligado no cadastro do sistema), nada a varrer. */
+    private int commitCount(Path repo) {
+        try {
+            Process p = new ProcessBuilder("git", "-C", repo.toString(), "rev-list", "--count", "HEAD")
+                    .redirectError(ProcessBuilder.Redirect.DISCARD).start();
+            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            return p.waitFor(30, TimeUnit.SECONDS) && p.exitValue() == 0 ? Integer.parseInt(out) : 0;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return 0;
+        } catch (IOException | NumberFormatException e) {
+            return 0;
+        }
+    }
+
     private List<Finding> scanHistory(Path repo, AuditRun auditRun) throws IOException, InterruptedException {
         Path log = Files.createTempFile("git-history-", ".log");
         try {
-            ProcessBuilder pb = new ProcessBuilder("git", "-C", repo.toString(), "log", "-n", String.valueOf(historyDepth),
+            ProcessBuilder pb = new ProcessBuilder("git", "-C", repo.toString(), "log",
                     "-p", "-U0", "--no-color", "--no-ext-diff", "--no-textconv", "--diff-filter=AM",
                     "--format=@@commit %H", "--");
             pb.redirectOutput(log.toFile());

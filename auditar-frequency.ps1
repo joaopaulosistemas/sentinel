@@ -1,12 +1,13 @@
 # Audita o repositório Frequency no Sentinel.
 # Uso (na pasta do projeto, onde está o .env):  .\auditar-frequency.ps1
-# Parâmetros opcionais:  -Branch main  -Api http://localhost:8080
+# Parâmetros opcionais:  -Branch main  -Api http://localhost:8080  -GitToken <token de leitura, se o repositório for privado>
 param(
   [string]$Repo   = "https://github.com/joaopaulosistemas/frequency.git",
   [string]$Nome   = "Frequency",
   [string]$Branch = "main",
   [string]$Api    = "http://localhost:8080",
-  [string]$EnvFile = ".\.env"
+  [string]$EnvFile = ".\.env",
+  [string]$GitToken = ""
 )
 $ErrorActionPreference = "Stop"
 
@@ -17,11 +18,7 @@ if (Test-Path $EnvFile) {
   if ($m) { $h["X-API-Key"] = $m.Matches[0].Groups[1].Value.Trim() }
 }
 
-# Repositório privado precisa de GIT_TOKEN no .env
-$temToken = (Test-Path $EnvFile) -and (Select-String -Path $EnvFile -Pattern "^GIT_TOKEN=.+" -Quiet)
-if (-not $temToken) {
-  Write-Warning "GIT_TOKEN vazio no .env. Se o repositório for privado, a auditoria vai falhar no clone."
-}
+# Repositório privado: o token Git fica no cadastro do sistema (tela Sistemas > Git) ou em -GitToken.
 
 # API no ar?
 try { Invoke-RestMethod "$Api/api/v1/health" | Out-Null }
@@ -34,7 +31,9 @@ try {
   $sistema = @($lista) | Where-Object { $_.name -eq $Nome } | Select-Object -First 1
 } catch { }
 if (-not $sistema) {
-  $body = @{ name = $Nome; description = "PWA de ingles"; repoUrl = $Repo; stack = "JAVASCRIPT"; team = "Pessoal" } | ConvertTo-Json
+  $dados = @{ name = $Nome; description = "PWA de ingles"; repoUrl = $Repo; stack = "JAVASCRIPT"; team = "Pessoal" }
+  if ($GitToken) { $dados["gitToken"] = $GitToken }
+  $body = $dados | ConvertTo-Json
   $sistema = Invoke-RestMethod -Method Post "$Api/api/v1/systems" -Headers $h -Body $body
   Write-Host "Sistema cadastrado: id $($sistema.id)"
 } else {

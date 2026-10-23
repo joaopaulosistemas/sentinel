@@ -26,7 +26,7 @@ import java.util.Optional;
 public class ApiKeyFilter implements ContainerRequestFilter {
 
     private static final String HEALTH_PATH = "api/v1/health";
-    /** Webhooks se autenticam por assinatura HMAC / token próprio (WEBHOOK_SECRET), não pela API key. */
+    /** Webhooks se autenticam por assinatura HMAC / token próprio (segredo cadastrado no sistema), não pela API key. */
     private static final String WEBHOOK_PATH = "api/v1/webhooks/";
 
     @ConfigProperty(name = "sentinel.audit.api-key")

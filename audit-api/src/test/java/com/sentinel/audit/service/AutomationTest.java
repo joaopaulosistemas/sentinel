@@ -87,6 +87,7 @@ class AutomationTest {
         webhook = new WebhookService();
         webhook.systemRepository = systemRepo;
         webhook.requestService = requestService;
+        webhook.secretBox = new SecretBox("chave-de-teste");
     }
 
     private static String hmac(String secret, String body) throws Exception {
@@ -163,6 +164,23 @@ class AutomationTest {
         int n = webhook.trigger(new WebhookService.Push(List.of("https://github.com/Org/Repo"), "main"), "webhook-github");
 
         assertEquals(1, n);
+        assertEquals(List.of("1|main|webhook-github"), requested);
+    }
+
+    @Test
+    void segredoEPorSistemaESoQuemTemSegredoRecebeWebhook() throws Exception {
+        AuditedSystem a = system(1, "https://github.com/org/repo.git", true, null, null);
+        a.setWebhookSecretEnc(webhook.secretBox.encrypt("segredo-do-a"));
+        system(2, "https://github.com/org/repo.git", true, null, null);          // mesmo repositório, sem segredo
+        system(3, "https://github.com/org/outro.git", true, null, null);
+
+        List<AuditedSystem> withSecret = webhook.withSecret(List.of("https://github.com/Org/Repo"));
+        assertEquals(List.of(a), withSecret);
+        assertEquals("segredo-do-a", webhook.secretOf(a));
+        assertTrue(WebhookService.validGithubSignature(webhook.secretOf(a), "{}".getBytes(StandardCharsets.UTF_8), hmac("segredo-do-a", "{}")));
+        assertFalse(WebhookService.validGithubSignature(webhook.secretOf(a), "{}".getBytes(StandardCharsets.UTF_8), hmac("outro", "{}")));
+        assertEquals(1, webhook.trigger(new WebhookService.Push(List.of("https://github.com/org/repo"), "main"), "webhook-github",
+                java.util.Set.of(1L)));
         assertEquals(List.of("1|main|webhook-github"), requested);
     }
 
@@ -328,33 +346,43 @@ class AutomationTest {
     @Test
     void notifyFinishedNuncaLancaEEnviaSoQuandoConfigurado() {
         List<String> sent = new ArrayList<>();
+        NotificationService.Settings[] settings = {null};
         NotificationService svc = new NotificationService() {
-            @Override Notice loadNotice(Long id) {
+            @Override Settings settingsFor(Long id) { return settings[0]; }
+            @Override Notice loadNotice(Long id, String minSeverity) {
                 return new Notice(id, 1L, "Portal", "main", AuditStatus.FAILED, "x", null, null, false, 0, 0, 0, null);
             }
             @Override protected void send(String url, String json) { sent.add(url); }
         };
-        svc.format = "slack";
-        svc.minScoreDrop = 5;
-        svc.publicUrl = Optional.empty();
 
-        svc.webhookUrl = Optional.empty();
         svc.notifyFinished(9L);
-        assertTrue(sent.isEmpty());                                   // sem URL: não faz nada
+        assertTrue(sent.isEmpty());                                   // sistema sem URL: não faz nada
 
-        svc.webhookUrl = Optional.of("https://hooks.exemplo.com/abc");
+        settings[0] = new NotificationService.Settings("https://8.8.8.8/abc", "slack", 5, "HIGH", null);
         svc.notifyFinished(9L);
-        assertEquals(List.of("https://hooks.exemplo.com/abc"), sent);
+        assertEquals(List.of("https://8.8.8.8/abc"), sent);
+
+        settings[0] = new NotificationService.Settings("https://127.0.0.1/abc", "slack", 5, "HIGH", null);
+        sent.clear();
+        svc.notifyFinished(9L);
+        assertTrue(sent.isEmpty(), "destino local é recusado");
 
         NotificationService quebrado = new NotificationService() {
+            @Override Settings settingsFor(Long id) { return new Settings("https://8.8.8.8/abc", "slack", 5, "HIGH", null); }
             @Override protected void send(String url, String json) throws java.io.IOException { throw new java.io.IOException("500"); }
-            @Override Notice loadNotice(Long id) {
+            @Override Notice loadNotice(Long id, String minSeverity) {
                 return new Notice(id, 1L, "P", "main", AuditStatus.FAILED, "x", null, null, false, 0, 0, 0, null);
             }
         };
-        quebrado.format = "slack";
-        quebrado.webhookUrl = Optional.of("https://hooks.exemplo.com/abc");
-        quebrado.publicUrl = Optional.empty();
         quebrado.notifyFinished(9L);                                  // não lança
+    }
+
+    @Test
+    void destinoDaNotificacaoSoAceitaHttpsPublico() {
+        assertDoesNotThrow(() -> NotificationService.validateTarget("https://8.8.8.8/hook"));
+        for (String bad : List.of("http://8.8.8.8/hook", "https://localhost/x", "https://127.0.0.1/x", "https://10.0.0.5/x",
+                "https://192.168.1.2/x", "https://169.254.169.254/latest", "https://[::1]/x", "https://u:p@8.8.8.8/x", "ftp://8.8.8.8/x")) {
+            assertThrows(IllegalArgumentException.class, () -> NotificationService.validateTarget(bad), bad);
+        }
     }
 }

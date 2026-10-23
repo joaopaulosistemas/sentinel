@@ -56,6 +56,42 @@ public class AuditedSystem {
     @Column(name = "profile", length = 63)
     private String profile;
 
+    /** Token Git de leitura deste sistema, cifrado (ver SecretBox). Nunca sai pela API. */
+    @Column(name = "git_token_enc", length = 1000)
+    private String gitTokenEnc;
+
+    /** Hosts que podem receber o token, separados por vírgula; vazio = github.com. */
+    @Column(name = "git_token_hosts", length = 500)
+    private String gitTokenHosts;
+
+    /** Commits baixados no clone (varredura de segredos no histórico); vazio = 100; 0 ou 1 = clone raso. */
+    @Column(name = "git_history_depth")
+    private Integer gitHistoryDepth;
+
+    /** Segredo dos webhooks de push deste sistema, cifrado (ver SecretBox). Nunca sai pela API. */
+    @Column(name = "webhook_secret_enc", length = 1000)
+    private String webhookSecretEnc;
+
+    /** Notificações (Teams/Slack/genérico). A URL do webhook é um segredo e fica cifrada (ver SecretBox). */
+    @Column(name = "notify_url_enc", length = 1000)
+    private String notifyUrlEnc;
+
+    /** slack | teams | generic; vazio = slack. */
+    @Column(name = "notify_format", length = 20)
+    private String notifyFormat;
+
+    /** Queda mínima de nota (pontos) que justifica aviso; vazio = 5. */
+    @Column(name = "notify_min_score_drop")
+    private Double notifyMinScoreDrop;
+
+    /** Severidade mínima dos achados novos que justificam aviso; vazio = HIGH. */
+    @Column(name = "notify_min_severity", length = 20)
+    private String notifyMinSeverity;
+
+    /** Endereço do dashboard, para o link da mensagem. */
+    @Column(name = "notify_public_url", length = 500)
+    private String notifyPublicUrl;
+
     @OneToMany(mappedBy = "system", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<AuditRun> runs = new ArrayList<>();
 
@@ -71,6 +107,90 @@ public class AuditedSystem {
     }
 
     public AuditedSystem() {
+    }
+
+    public String getGitTokenEnc() {
+        return gitTokenEnc;
+    }
+
+    public void setGitTokenEnc(String gitTokenEnc) {
+        this.gitTokenEnc = gitTokenEnc;
+    }
+
+    public String getGitTokenHosts() {
+        return gitTokenHosts;
+    }
+
+    public void setGitTokenHosts(String gitTokenHosts) {
+        this.gitTokenHosts = gitTokenHosts;
+    }
+
+    public String getWebhookSecretEnc() {
+        return webhookSecretEnc;
+    }
+
+    public void setWebhookSecretEnc(String webhookSecretEnc) {
+        this.webhookSecretEnc = webhookSecretEnc;
+    }
+
+    public boolean hasWebhookSecret() {
+        return webhookSecretEnc != null && !webhookSecretEnc.isBlank();
+    }
+
+    public String getNotifyUrlEnc() {
+        return notifyUrlEnc;
+    }
+
+    public void setNotifyUrlEnc(String notifyUrlEnc) {
+        this.notifyUrlEnc = notifyUrlEnc;
+    }
+
+    public String getNotifyFormat() {
+        return notifyFormat;
+    }
+
+    public void setNotifyFormat(String notifyFormat) {
+        this.notifyFormat = notifyFormat;
+    }
+
+    public Double getNotifyMinScoreDrop() {
+        return notifyMinScoreDrop;
+    }
+
+    public void setNotifyMinScoreDrop(Double notifyMinScoreDrop) {
+        this.notifyMinScoreDrop = notifyMinScoreDrop;
+    }
+
+    public String getNotifyMinSeverity() {
+        return notifyMinSeverity;
+    }
+
+    public void setNotifyMinSeverity(String notifyMinSeverity) {
+        this.notifyMinSeverity = notifyMinSeverity;
+    }
+
+    public String getNotifyPublicUrl() {
+        return notifyPublicUrl;
+    }
+
+    public void setNotifyPublicUrl(String notifyPublicUrl) {
+        this.notifyPublicUrl = notifyPublicUrl;
+    }
+
+    public boolean hasNotifyUrl() {
+        return notifyUrlEnc != null && !notifyUrlEnc.isBlank();
+    }
+
+    public Integer getGitHistoryDepth() {
+        return gitHistoryDepth;
+    }
+
+    public void setGitHistoryDepth(Integer gitHistoryDepth) {
+        this.gitHistoryDepth = gitHistoryDepth;
+    }
+
+    public boolean hasGitToken() {
+        return gitTokenEnc != null && !gitTokenEnc.isBlank();
     }
 
     public String getProfile() {
