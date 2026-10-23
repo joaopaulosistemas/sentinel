@@ -31,4 +31,26 @@ class SecretBoxTest {
         assertFalse(box.available());
         assertThrows(IllegalStateException.class, () -> box.encrypt("x"));
     }
+
+    @Test
+    void semChaveNoAmbienteCriaUmArquivoDeChaveEReusaNaProximaSubida(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Path file = dir.resolve("sub/secrets.key");
+        SecretBox first = new SecretBox(file);
+        assertTrue(first.available());
+        assertTrue(java.nio.file.Files.isRegularFile(file));
+        String enc = first.encrypt("ghp_SEGREDO");
+
+        SecretBox second = new SecretBox(file);                 // outra subida da API
+        assertEquals("ghp_SEGREDO", second.decrypt(enc));
+        assertFalse(java.nio.file.Files.readString(file).isBlank());
+    }
+
+    @Test
+    void arquivoDeChaveQueNaoPodeSerGravadoDeixaOSegredoIndisponivel(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Path blocker = dir.resolve("arquivo");
+        java.nio.file.Files.writeString(blocker, "x");
+        SecretBox box = new SecretBox(blocker.resolve("dentro/secrets.key"));   // pai é um arquivo, não pasta
+        assertFalse(box.available());
+        assertThrows(IllegalStateException.class, () -> box.encrypt("x"));
+    }
 }

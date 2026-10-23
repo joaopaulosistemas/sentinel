@@ -198,3 +198,8 @@ Motor: regras em observação ou promovidas do sistema são gravadas numa pasta 
 Dashboard: aba **Revisão do Claude** em Informações de Auditoria (sugestões e regras, com os botões de cada etapa e a evidência da observação).
 Limites assumidos: o teste de amostra é registrado por uma pessoa (o Sentinel não roda o Semgrep sobre a amostra); a promoção ao pacote compartilhado é manual no repositório dos pacotes.
 Verificado: `vitest` (126), `tsc`, funil e validação de regra executados isoladamente (11 casos). Não verificado aqui: Quarkus/Maven (entidades, serviço, API, integração com o Semgrep rodam só no CI).
+## Dashboard 12.7.1 — mensagem de erro da API chega na tela
+
+Os erros 4xx da API (como "Para guardar o token, defina SECRETS_KEY") saíam com corpo vazio, e o cadastro só mostrava "HTTP 400: Bad Request". `ApiErrorMapper` devolve a mensagem em JSON (só 4xx, nunca 5xx) e o cliente do dashboard também aceita corpo em texto curto. Verificado: `vitest` e `tsc`; o mapeador roda só no CI.
+
+Também na 12.7.1: o token Git digitado na tela não exige mais `SECRETS_KEY` no `.env`. Sem `SECRETS_KEY` nem `API_KEY`, a API cria uma chave aleatória (32 bytes) em `/var/lib/sentinel/secrets.key`, num volume próprio (`audit_secrets`), e a reutiliza. A chave fica fora do banco, então um dump do banco sozinho não abre os tokens; perder o volume exige digitar os tokens de novo. No Helm continua valendo o Secret (`SECRETS_KEY`). Testes novos em `SecretBoxTest` rodam só no CI.
