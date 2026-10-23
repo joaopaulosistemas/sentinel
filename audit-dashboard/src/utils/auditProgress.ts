@@ -16,6 +16,7 @@ export const analyzerStatusLabel: Record<AnalyzerProgressStatus, string> = {
   INDISPONIVEL: 'Ferramenta ausente',
   NAO_SUPORTADO: 'Não se aplica',
   SUBSTITUIDO: 'Coberto por outro',
+  DESLIGADO: 'Desligado neste sistema',
   SEM_EVIDENCIA: 'Sem evidência',
 };
 

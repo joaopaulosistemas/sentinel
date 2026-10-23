@@ -91,6 +91,9 @@ public class AuditOrchestrationService {
     private static final int MAX_ERROR_MESSAGE = 1000;
 
     @Inject
+    com.sentinel.audit.tuning.SystemTuningService tuningService;
+
+    @Inject
     IngestionService ingestionService;
 
     @Inject
@@ -175,7 +178,7 @@ public class AuditOrchestrationService {
      * Dados mínimos da auditoria, lidos dentro de uma transação e seguros para uso fora dela.
      */
     record AuditContext(String repoUrl, String branch, Stack stack, String systemName, String profile, String baseRef,
-                        String gitToken, String gitTokenHosts, Integer gitHistoryDepth) {}
+                        String gitToken, String gitTokenHosts, Integer gitHistoryDepth, Long systemId) {}
 
     /**
      * Inicia a auditoria somente depois do commit da transação que a criou.
@@ -232,7 +235,7 @@ public class AuditOrchestrationService {
             AuditRun runRef = new AuditRun();
             runRef.setId(auditRunId);
 
-            AuditPolicy policy = resolvePolicy(context.profile());
+            AuditPolicy policy = resolvePolicy(context.profile(), loadTuning(context.systemId()));
             progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
             Analysis analysis = runAnalyzers(clonedPath, runRef, context.stack(), policy);
             checkNotCancelled(auditRunId);
@@ -279,11 +282,14 @@ public class AuditOrchestrationService {
                 pmdAnalyzer, eslintAnalyzer, sarifAnalyzer, architecturePolicyAnalyzer, hygieneAnalyzer,
                 evidenceAnalyzer)
                 .filter(Objects::nonNull).toList();
-        List<CodeAnalyzer> analyzers = selectAnalyzers(candidates);
+        // Analisador desligado para este sistema sai antes da escolha, para não "substituir" outro por engano.
+        List<CodeAnalyzer> analyzers = selectAnalyzers(candidates.stream().filter(c -> !policy.analyzerDisabled(c.getName())).toList());
 
         List<AnalyzerRunInfo> runs = new ArrayList<>();
         for (CodeAnalyzer c : candidates) {
-            if (!c.isAvailable()) {
+            if (policy.analyzerDisabled(c.getName())) {
+                runs.add(new AnalyzerRunInfo(c.getName(), "DESLIGADO", 0, 0, "desligado nos ajustes deste sistema"));
+            } else if (!c.isAvailable()) {
                 runs.add(new AnalyzerRunInfo(c.getName(), "INDISPONIVEL", 0, 0, "ferramenta ausente neste ambiente"));
             } else if (!analyzers.contains(c)) {
                 runs.add(new AnalyzerRunInfo(c.getName(), "SUBSTITUIDO", 0, 0, "outro analisador cobre o mesmo"));
@@ -420,12 +426,32 @@ public class AuditOrchestrationService {
 
     /** Perfil apagado/renomeado depois de cadastrado não pode derrubar a auditoria: cai no perfil padrão, com aviso. */
     AuditPolicy resolvePolicy(String profile) {
+        return resolvePolicy(profile, com.sentinel.audit.pack.SystemTuning.EMPTY);
+    }
+
+    /** Ajustes do sistema; qualquer falha na leitura vale como "sem ajustes" para nunca derrubar a auditoria. */
+    private com.sentinel.audit.pack.SystemTuning loadTuning(Long systemId) {
+        if (tuningService == null || systemId == null) {
+            return com.sentinel.audit.pack.SystemTuning.EMPTY;
+        }
         try {
-            return packRegistry.policyFor(profile);
+            return tuningService.load(systemId);
+        } catch (RuntimeException e) {
+            LOG.warnf("Não foi possível ler os ajustes do sistema %d: %s", systemId, e.getMessage());
+            return com.sentinel.audit.pack.SystemTuning.EMPTY;
+        }
+    }
+
+    /** Perfil do sistema com os ajustes do próprio sistema por cima; sem ajustes é exatamente o perfil. */
+    AuditPolicy resolvePolicy(String profile, com.sentinel.audit.pack.SystemTuning tuning) {
+        AuditPolicy base;
+        try {
+            base = packRegistry.policyFor(profile);
         } catch (IllegalArgumentException e) {
             LOG.warnf("%s; usando o perfil padrão", e.getMessage());
-            return packRegistry.policyFor(null);
+            base = packRegistry.policyFor(null);
         }
+        return base.withTuning(tuning, packRegistry.snapshot().packs());
     }
 
     /**
@@ -572,7 +598,8 @@ public class AuditOrchestrationService {
                 run.getBaseRef(),
                 secretBox.decrypt(run.getSystem().getGitTokenEnc()),
                 run.getSystem().getGitTokenHosts(),
-                run.getSystem().getGitHistoryDepth());
+                run.getSystem().getGitHistoryDepth(),
+                run.getSystem().getId());
     }
 
     @Transactional

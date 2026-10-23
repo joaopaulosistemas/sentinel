@@ -20,12 +20,15 @@ public final class AuditPolicy {
     private final Map<String, RuleOverride> exact = new LinkedHashMap<>();
     private final Map<Pattern, RuleOverride> globs = new LinkedHashMap<>();
     private final Map<String, Integer> thresholds;
+    private final Map<String, RuleOverride> rawOverrides;
+    private SystemTuning tuning = SystemTuning.EMPTY;
 
     public AuditPolicy(String profileId, List<RulePack> packs, Map<String, RuleOverride> overrides,
                        Map<String, Integer> thresholds) {
         this.profileId = profileId;
         this.packs = List.copyOf(packs);
         this.thresholds = Map.copyOf(thresholds);
+        this.rawOverrides = Map.copyOf(overrides);
         for (Map.Entry<String, RuleOverride> e : overrides.entrySet()) {
             String key = e.getKey().toLowerCase(Locale.ROOT);
             if (key.contains("*")) {
@@ -59,6 +62,52 @@ public final class AuditPolicy {
 
     public boolean isToolPackTrusted(String packId) {
         return trustedToolPacks.contains(packId);
+    }
+
+    /**
+     * Política do sistema: a do perfil mais os ajustes dele. Sem ajustes devolve esta mesma política, sem copiar nada,
+     * o que garante que um sistema que nunca foi ajustado audita exatamente como antes.
+     *
+     * @param allPacks todos os pacotes carregados, para ligar um que o perfil não inclui
+     */
+    public AuditPolicy withTuning(SystemTuning t, List<RulePack> allPacks) {
+        if (t == null || t.isEmpty()) {
+            return this;
+        }
+        List<RulePack> merged = new ArrayList<>();
+        for (RulePack p : allPacks) {
+            boolean active = packs.stream().anyMatch(x -> x.id().equals(p.id()));
+            if (t.enablePacks().contains(p.id())) {
+                active = true;
+            }
+            if (t.disablePacks().contains(p.id())) {
+                active = false;
+            }
+            if (active) {
+                merged.add(p);
+            }
+        }
+        Map<String, RuleOverride> rules = new LinkedHashMap<>(rawOverrides);
+        rules.putAll(t.rules());
+        Map<String, Integer> limits = new LinkedHashMap<>(thresholds);
+        limits.putAll(t.thresholds());
+        AuditPolicy out = new AuditPolicy(profileId, merged, rules, limits).withTrustedToolPacks(trustedToolPacks);
+        out.tuning = t;
+        return out;
+    }
+
+    /** Sobrescritas do perfil, sem os ajustes do sistema (para a tela mostrar o que vem do perfil). */
+    public Map<String, RuleOverride> baseOverrides() {
+        return rawOverrides;
+    }
+
+    public Map<String, Integer> thresholds() {
+        return thresholds;
+    }
+
+    /** Este analisador foi desligado para o sistema? */
+    public boolean analyzerDisabled(String name) {
+        return tuning.analyzerDisabled(name);
     }
 
     public String profileId() {
