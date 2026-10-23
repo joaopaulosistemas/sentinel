@@ -96,6 +96,8 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - audit_clones:/tmp/sentinel-audit-clones
+      # Chave que cifra os tokens cadastrados na tela quando SECRETS_KEY/API_KEY estão vazias. Faça backup junto com o banco.
+      - audit_secrets:/var/lib/sentinel
       # Evidências offline: ./evidencias/<nome-do-sistema>/ (somente leitura). Veja docs/evidencias/README.md
       - ${EVIDENCE_HOST_DIR:-./evidencias}:/evidence:ro
 
@@ -122,3 +124,5 @@ volumes:
     name: sentinel-audit-postgres-data
   audit_clones:
     name: sentinel-audit-clones
+  audit_secrets:
+    name: sentinel-audit-secrets

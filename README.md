@@ -307,7 +307,7 @@ Variáveis úteis (todas opcionais em dev):
 | `API_KEY` | Se definida, **toda** a API exige `X-API-Key: <chave>` (ou `Authorization: Bearer`). `/api/v1/health` é livre. Sem ela a API fica aberta e um aviso é logado. |
 | `DB_URL` / `DB_USER` / `DB_PASSWORD` | Banco. Com o Postgres do Compose use `DB_URL=jdbc:postgresql://localhost:5433/sentinel_audit`. |
 | `DB_SCHEMA_MODE` | Padrão `update`. **Nunca** use `drop-and-create` fora de testes: apaga os dados a cada start. |
-| Token Git (cadastro do sistema) | Fica cifrado no banco com `SECRETS_KEY` e nunca volta pela API; só é enviado aos hosts listados no sistema (padrão `github.com`); só URLs `https://` são aceitas. |
+| Token Git (cadastro do sistema) | Fica cifrado no banco e nunca volta pela API. A chave vem de `SECRETS_KEY` (ou `API_KEY`); se as duas estiverem vazias, a API cria uma chave aleatória no volume `audit_secrets` (`/var/lib/sentinel/secrets.key`) e a reutiliza, então o token pode ser digitado só na tela. Guarde esse volume junto com o banco: sem a chave os tokens salvos não abrem; só é enviado aos hosts listados no sistema (padrão `github.com`); só URLs `https://` são aceitas. |
 | `CORS_ORIGINS` | Origens permitidas (padrão `http://localhost:3000`). |
 | `SEMGREP_CONFIG` | Regras do Semgrep (padrão: regras dos pacotes em `audit-rules/packs`; sem pacotes, `p/default`). |
 

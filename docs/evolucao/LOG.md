@@ -188,3 +188,9 @@ API: `GET/PUT /api/v1/engine-config/{id}` (caminho próprio, como o do MCP) devo
 Dashboard: abas **Motor de regras** e **Analisadores** no cadastro, com "N ajustes em relação ao perfil" e "Voltar ao perfil". O cadastro/edição de sistema agora abre em **pop-up** (Esc e clique fora fecham) em vez do painel lateral.
 Decisões: a nota continua sendo calculada só pelo motor; o Claude não ajusta nada aqui. Criar regra local do sistema ficou para a fase 4 (junto do funil de promoção). Entre ajuste do sistema e do perfil, a mesma chave do sistema vence; chave exata continua valendo mais que curinga.
 Verificado: `vitest` (119), `tsc`, compilação e execução isolada de `SystemTuning`/`TuningJson`. Não verificado aqui: Quarkus/Maven (testes de política com pacotes reais e a tabela nova rodam só no CI).
+
+## Dashboard 12.7.1 — mensagem de erro da API chega na tela
+
+Os erros 4xx da API (como "Para guardar o token, defina SECRETS_KEY") saíam com corpo vazio, e o cadastro só mostrava "HTTP 400: Bad Request". `ApiErrorMapper` devolve a mensagem em JSON (só 4xx, nunca 5xx) e o cliente do dashboard também aceita corpo em texto curto. Verificado: `vitest` e `tsc`; o mapeador roda só no CI.
+
+Também na 12.7.1: o token Git digitado na tela não exige mais `SECRETS_KEY` no `.env`. Sem `SECRETS_KEY` nem `API_KEY`, a API cria uma chave aleatória (32 bytes) em `/var/lib/sentinel/secrets.key`, num volume próprio (`audit_secrets`), e a reutiliza. A chave fica fora do banco, então um dump do banco sozinho não abre os tokens; perder o volume exige digitar os tokens de novo. No Helm continua valendo o Secret (`SECRETS_KEY`). Testes novos em `SecretBoxTest` rodam só no CI.

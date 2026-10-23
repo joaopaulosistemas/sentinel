@@ -126,7 +126,7 @@ RUN if [ "$WITH_ESLINT" = "true" ]; then \
 # Remove as configurações inseguras: a imagem final volta a verificar SSL normalmente
 RUN rm -f /root/.curlrc /root/.npmrc /etc/pip.conf /etc/apt/apt.conf.d/99insecure \
     && (git config --system --unset-all http.sslVerify || true)
-RUN mkdir -p /tmp/sentinel-audit-clones && chown -R audit:audit /app /tmp/sentinel-audit-clones
+RUN mkdir -p /tmp/sentinel-audit-clones /var/lib/sentinel && chown -R audit:audit /app /tmp/sentinel-audit-clones /var/lib/sentinel
 USER audit
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \

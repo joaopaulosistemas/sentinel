@@ -41,14 +41,17 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     // A API devolve mensagens úteis (validação, regra de negócio); mostra em vez de só o código HTTP.
     let detail = '';
+    let raw = '';
     try {
-      const body = await res.json();
+      raw = await res.text();
+      const body = JSON.parse(raw);
       detail = body?.message || body?.title || body?.detail || '';
       if (!detail && Array.isArray(body?.violations)) {
         detail = body.violations.map((v: { message?: string }) => v.message).filter(Boolean).join('; ');
       }
     } catch {
-      /* corpo vazio ou não JSON */
+      // Corpo que não é JSON: se for um texto curto, é a própria mensagem do servidor.
+      if (raw && raw.length <= 300 && !raw.trimStart().startsWith('<')) detail = raw.trim();
     }
     throw new Error(detail || `HTTP ${res.status}: ${res.statusText}`);
   }

@@ -320,7 +320,7 @@ public class SystemResource {
                 throw new BadRequestException(e.getMessage());
             }
             if (!secretBox.available()) {
-                throw new BadRequestException("Para guardar a URL, defina SECRETS_KEY (ou API_KEY) no ambiente da API.");
+                throw new BadRequestException("Não foi possível guardar a URL: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
             }
             system.setNotifyUrlEnc(secretBox.encrypt(notifyUrl.trim()));
         }
@@ -330,14 +330,14 @@ public class SystemResource {
         String webhook = request.getWebhookSecret();
         if (webhook != null && !webhook.isBlank()) {
             if (!secretBox.available()) {
-                throw new BadRequestException("Para guardar o segredo, defina SECRETS_KEY (ou API_KEY) no ambiente da API.");
+                throw new BadRequestException("Não foi possível guardar o segredo: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
             }
             system.setWebhookSecretEnc(secretBox.encrypt(webhook.trim()));
         }
         String token = request.getGitToken();
         if (token != null && !token.isBlank()) {
             if (!secretBox.available()) {
-                throw new BadRequestException("Para guardar o token, defina SECRETS_KEY (ou API_KEY) no ambiente da API.");
+                throw new BadRequestException("Não foi possível guardar o token: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
             }
             system.setGitTokenEnc(secretBox.encrypt(token.trim()));
         }
