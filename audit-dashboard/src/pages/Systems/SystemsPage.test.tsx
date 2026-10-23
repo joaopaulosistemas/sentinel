@@ -71,7 +71,7 @@ describe('SystemsPage', () => {
     expect(JSON.parse(schedule?.body ?? '{}')).toEqual({ auditIntervalHours: 0, branch: 'develop', auditOnPush: false });
   });
 
-  it('Editar abre o painel ao lado da lista, com a linha destacada, e fechar some com ele', async () => {
+  it('Editar abre o cadastro em pop-up, com a linha destacada, e fechar some com ele', async () => {
     renderPage({}, [
       { id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/sicoob/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true },
     ]);
@@ -80,13 +80,18 @@ describe('SystemsPage', () => {
     expect(screen.queryByLabelText('Editar sistema')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
-    const panel = await screen.findByLabelText('Editar sistema');
+    const panel = await screen.findByRole('dialog', { name: 'Editar sistema' });
     expect(panel).toHaveTextContent('Editando');
     expect(screen.getByLabelText(/Nome do sistema/)).toHaveValue('conta-corrente-api');
     expect(screen.getByRole('button', { name: 'Salvar e auditar agora' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Fechar painel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
     expect(screen.queryByLabelText('Editar sistema')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    await screen.findByRole('dialog', { name: 'Editar sistema' });
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Editar sistema' })).not.toBeInTheDocument();
   });
 
   it('guarda token, hosts, histórico, webhook e notificação no cadastro do sistema', async () => {
@@ -137,7 +142,7 @@ describe('SystemsPage', () => {
     ]);
     fireEvent.click(await screen.findByRole('button', { name: 'Novo sistema' }));
     expect(await screen.findByRole('tab', { name: 'Claude (MCP)' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Fechar painel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
 
     fireEvent.click(await screen.findByRole('button', { name: /Editar/ }));
     const tab = await screen.findByRole('tab', { name: 'Claude (MCP)' });

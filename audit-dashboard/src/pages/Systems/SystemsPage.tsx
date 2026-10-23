@@ -102,6 +102,17 @@ export function SystemsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, systems]);
 
+  // Esc fecha o pop-up de cadastro.
+  const modalOpen = editing !== null;
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setEditing(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modalOpen]);
+
   if (isLoading) return <DataTableSkeleton columnCount={6} rowCount={5} />;
   if (error) {
     return (
@@ -226,13 +237,24 @@ export function SystemsPage() {
         </section>
 
         {editing !== null && (
-          <aside aria-label="Editar sistema" style={{ flex: '1 1 440px', maxWidth: 560, minWidth: 0, background: '#fff', border: '1px solid #e0e0e0', borderTop: '3px solid #0f62fe', display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(22,22,22,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setEditing(null);
+            }}
+          >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Editar sistema"
+            style={{ width: 'min(720px, 100%)', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: '#fff', borderTop: '3px solid #0f62fe', display: 'flex', flexDirection: 'column' }}
+          >
             <div style={{ padding: '16px 24px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 12, color: '#525252' }}>{isNew ? 'Cadastrando' : 'Editando'}</div>
                 <h2 style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 400 }}>{isNew ? 'Novo sistema' : editing.name}</h2>
               </div>
-              <button type="button" aria-label="Fechar painel" onClick={() => setEditing(null)} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
+              <button type="button" aria-label="Fechar" onClick={() => setEditing(null)} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#161616" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             </div>
@@ -546,7 +568,7 @@ export function SystemsPage() {
               )}
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid #e0e0e0' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid #e0e0e0', position: 'sticky', bottom: 0, background: '#fff', marginTop: 'auto' }}>
               <button type="button" onClick={() => setEditing(null)} style={{ ...footerButton, background: '#fff', color: '#161616', borderRight: '1px solid #e0e0e0' }}>
                 Cancelar
               </button>
@@ -575,7 +597,8 @@ export function SystemsPage() {
             </div>
               </>
             )}
-          </aside>
+          </div>
+          </div>
         )}
       </div>
 
