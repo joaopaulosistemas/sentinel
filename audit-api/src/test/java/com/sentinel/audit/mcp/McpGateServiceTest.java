@@ -55,10 +55,18 @@ class McpGateServiceTest {
     }
 
     @Test
-    void semEscolhaTodasAsFerramentasDeLeituraEstaoLigadas() {
+    void semEscolhaSoAsFerramentasDeLeituraEstaoLigadas() {
         List<McpTool> tools = gate.enabledTools(access(true, "k"));
-        assertEquals(McpTool.values().length, tools.size());
-        assertEquals(tools.size(), gate.enabledTools(null).size());
+        assertFalse(tools.isEmpty());
+        assertTrue(tools.stream().noneMatch(McpTool::writes));
+        assertEquals(tools, gate.enabledTools(null));
+    }
+
+    @Test
+    void ferramentaQueGravaSoLigaQuandoEscolhida() {
+        McpAccess a = access(true, "k");
+        a.setTools("status_auditoria,propor_regra");
+        assertEquals(List.of(McpTool.STATUS_AUDITORIA, McpTool.PROPOR_REGRA), gate.enabledTools(a));
     }
 
     @Test
@@ -69,9 +77,8 @@ class McpGateServiceTest {
     }
 
     @Test
-    void nenhumaFerramentaDestaFaseEscreve() {
-        for (McpTool t : McpTool.values()) {
-            assertFalse(t.writes(), t.wire());
-        }
+    void soDuasFerramentasGravamEAmbasNaAreaDeRevisao() {
+        List<McpTool> writers = java.util.Arrays.stream(McpTool.values()).filter(McpTool::writes).toList();
+        assertEquals(List.of(McpTool.REGISTRAR_SUGESTAO, McpTool.PROPOR_REGRA), writers);
     }
 }

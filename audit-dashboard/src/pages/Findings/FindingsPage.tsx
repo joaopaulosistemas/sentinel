@@ -1,6 +1,7 @@
 import { DataTableSkeleton, InlineNotification } from '@carbon/react';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ClaudeReviewPanel } from '../../components/ClaudeReviewPanel';
 import { FindingsTable, type FindingOrigin } from '../../components/FindingsTable';
 import { useAudit } from '../../hooks/useAuditRuns';
 import { useFindings, useFindingsOverview } from '../../hooks/useFindings';
@@ -32,10 +33,10 @@ const categoryOptions: Array<{ value: Category | ''; label: string }> = [
   { value: 'PERFORMANCE', label: 'Desempenho' },
 ];
 
-/** Só "Achados e nota" funciona por enquanto; as outras duas abas entram nas fases seguintes do plano. */
+/** "Reauditoria" entra na próxima fase do plano. */
 const ABAS = [
   { id: 'achados', nome: 'Achados e nota', ativa: true },
-  { id: 'sugestoes', nome: 'Sugestões do Claude', ativa: false },
+  { id: 'revisao', nome: 'Revisão do Claude', ativa: true },
   { id: 'reauditoria', nome: 'Reauditoria', ativa: false },
 ];
 
@@ -65,6 +66,7 @@ export function FindingsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [grouped, setGrouped] = useState(false);
   const [showResolved, setShowResolved] = useState(false);
+  const [aba, setAba] = useState<'achados' | 'revisao'>('achados');
 
   const { data: systems } = useSystems();
   const { data: audit } = useAudit(auditId);
@@ -180,19 +182,20 @@ export function FindingsPage() {
             type="button"
             role="tab"
             id={`aba-${a.id}`}
-            aria-selected={a.ativa}
+            aria-selected={a.id === aba}
             aria-disabled={!a.ativa}
+            onClick={() => a.ativa && setAba(a.id as 'achados' | 'revisao')}
             disabled={!a.ativa}
             title={a.ativa ? undefined : 'Chega em uma próxima fase'}
             style={{
               background: 'none',
               border: 0,
-              borderBottom: a.ativa ? '3px solid #0f62fe' : '3px solid transparent',
+              borderBottom: a.id === aba ? '3px solid #0f62fe' : '3px solid transparent',
               padding: '10px 16px',
               fontSize: 14,
-              fontWeight: a.ativa ? 600 : 400,
+              fontWeight: a.id === aba ? 600 : 400,
               color: a.ativa ? '#161616' : '#a8a8a8',
-              cursor: a.ativa ? 'default' : 'not-allowed',
+              cursor: a.ativa ? 'pointer' : 'not-allowed',
             }}
           >
             {a.nome}
@@ -200,6 +203,10 @@ export function FindingsPage() {
         ))}
       </div>
 
+      {aba === 'revisao' ? (
+        <ClaudeReviewPanel systems={systems ?? []} initialSystemId={systemId} />
+      ) : (
+        <>
       <section aria-label="Filtros" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, alignItems: 'end' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -352,6 +359,8 @@ export function FindingsPage() {
             </div>
           )}
         </section>
+      )}
+        </>
       )}
     </div>
   );

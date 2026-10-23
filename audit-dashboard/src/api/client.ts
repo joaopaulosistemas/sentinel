@@ -11,6 +11,7 @@ import type {
   Severity,
   RepoCheck,
   RuleQuality,
+  ClaudeReview,
   EngineConfig,
   EngineTuning,
   McpCall,
@@ -206,6 +207,14 @@ export const api = {
 
   updateEngineConfig: (systemId: number, body: EngineTuning) =>
     apiFetch<EngineConfig>(`/api/v1/engine-config/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  getClaudeReview: (systemId: number) => apiFetch<ClaudeReview>(`/api/v1/claude-review/${systemId}`),
+
+  reviewAction: (systemId: number, path: string, body?: unknown) =>
+    apiFetch<ClaudeReview>(`/api/v1/claude-review/${systemId}/${path}`, {
+      method: 'POST',
+      body: JSON.stringify(body ?? {}),
+    }),
 
   getMcpCalls: (systemId: number, limit = 20) =>
     apiFetch<McpCall[]>(`/api/v1/mcp-access/${systemId}/calls?limit=${limit}`),

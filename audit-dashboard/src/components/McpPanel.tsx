@@ -81,8 +81,9 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
       <p style={{ margin: 0, color: '#525252', fontSize: 14 }}>
-        O Claude consulta o resultado deste sistema por MCP, só para ler. A nota continua sendo calculada apenas pelo motor de regras:
-        o que o Claude sugerir não entra nela.
+        O Claude consulta o resultado deste sistema por MCP. As ferramentas de leitura vêm ligadas; as que escrevem
+        (registrar_sugestao e propor_regra) ficam desligadas até você liberar, e só gravam na aba Revisão do Claude.
+        A nota continua sendo calculada apenas pelo motor de regras: o que o Claude sugerir não entra nela.
       </p>
 
       {error && <InlineNotification kind="error" title="Não foi possível salvar" subtitle={error.message} hideCloseButton />}

@@ -91,6 +91,9 @@ public class AuditOrchestrationService {
     private static final int MAX_ERROR_MESSAGE = 1000;
 
     @Inject
+    com.sentinel.audit.review.LocalRuleMaterializer localRules;
+
+    @Inject
     com.sentinel.audit.tuning.SystemTuningService tuningService;
 
     @Inject
@@ -217,6 +220,7 @@ public class AuditOrchestrationService {
     private void executeAudit(Long auditRunId) {
         Path clonedPath = null;
         String commitSha = null;
+        AuditPolicy policy = null;
         try {
             AuditContext context = markRunning(auditRunId);
             progress.queued(auditRunId);
@@ -235,7 +239,10 @@ public class AuditOrchestrationService {
             AuditRun runRef = new AuditRun();
             runRef.setId(auditRunId);
 
-            AuditPolicy policy = resolvePolicy(context.profile(), loadTuning(context.systemId()));
+            policy = resolvePolicy(context.profile(), loadTuning(context.systemId()));
+            if (localRules != null) {
+                policy = localRules.apply(policy, context.systemId());
+            }
             progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
             Analysis analysis = runAnalyzers(clonedPath, runRef, context.stack(), policy);
             checkNotCancelled(auditRunId);
@@ -266,6 +273,9 @@ public class AuditOrchestrationService {
             throw new IllegalStateException("Auditoria " + auditRunId + " falhou", e);
         } finally {
             progress.finish(auditRunId);
+            if (localRules != null) {
+                localRules.cleanup(policy);
+            }
             if (clonedPath != null) {
                 ingestionService.cleanupDirectory(clonedPath);
             }
