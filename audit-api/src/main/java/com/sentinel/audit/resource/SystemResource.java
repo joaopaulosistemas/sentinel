@@ -75,6 +75,9 @@ public class SystemResource {
     @Inject
     FindingSuppressionRepository suppressionRepository;
 
+    @Inject
+    com.sentinel.audit.mcp.McpGateService mcpGate;
+
     /**
      * Lista todos os sistemas cadastrados com um resumo da última auditoria.
      */
@@ -172,6 +175,7 @@ public class SystemResource {
                 .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
         // As supressões referenciam o sistema (FK): precisam sair antes.
         suppressionRepository.findBySystemId(id).forEach(suppressionRepository::delete);
+        mcpGate.purge(id);
         systemRepository.delete(system);
         return Response.noContent().build();
     }
