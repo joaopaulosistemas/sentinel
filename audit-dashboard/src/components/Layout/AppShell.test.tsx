@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import pkg from '../../../package.json';
@@ -25,8 +25,13 @@ describe('AppShell', () => {
         </AppShell>
       </MemoryRouter>,
     );
-    for (const nome of ['Visão geral', 'Sistemas', 'Findings', 'Ranking', 'Relatórios']) {
-      expect(screen.getAllByText(nome)[0]).toBeInTheDocument();
-    }
+    const nav = screen.getByRole('navigation', { name: 'Navegação principal' });
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual([
+      'Visão geral',
+      'Sistemas',
+      'Informações de Auditoria',
+      'Ranking de Sistemas',
+      'Relatórios',
+    ]);
   });
 });

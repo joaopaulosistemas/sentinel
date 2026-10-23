@@ -1,6 +1,7 @@
 import { Button } from '@carbon/react';
 import React, { useState } from 'react';
 import type { FindingResponse, FindingStatus } from '../types';
+import { originLabel } from '../utils/findingOrigin';
 import { severityPill } from '../utils/findingsView';
 import { RemediationBlock } from './RemediationBlock';
 import { SuppressModal } from './SuppressModal';
@@ -155,7 +156,10 @@ export function FindingsTable({ findings, systemName, auditId, systemOf }: Findi
                           Sombra
                         </span>
                       )}
-                      <div style={{ fontSize: 12, color: '#525252', fontFamily: mono }}>{f.ruleId ?? f.toolSource}</div>
+                      <div style={{ fontSize: 12, color: '#525252', fontFamily: mono }}>
+                        <span style={{ fontFamily: 'inherit', fontWeight: 600 }}>{originLabel(f.toolSource)}</span>
+                        {f.ruleId ? ` · ${f.ruleId}` : ''}
+                      </div>
                     </td>
                     <td style={{ ...td, fontFamily: mono, fontSize: 12, color: '#393939', wordBreak: 'break-all' }}>
                       {f.filePath}
