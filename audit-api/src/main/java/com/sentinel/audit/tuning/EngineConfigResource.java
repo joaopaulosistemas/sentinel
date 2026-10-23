@@ -108,12 +108,13 @@ public class EngineConfigResource {
 
     private EngineConfigResponse view(AuditedSystem system, SystemTuning tuning) {
         String profileId = system.effectiveProfile();
-        AuditPolicy base;
+        AuditPolicy resolved;
         try {
-            base = packRegistry.policyFor(profileId);
+            resolved = packRegistry.policyFor(profileId);
         } catch (IllegalArgumentException e) {
-            base = packRegistry.policyFor(null);
+            resolved = packRegistry.policyFor(null);
         }
+        final AuditPolicy base = resolved;
         AuditPolicy effective = base.withTuning(tuning, packRegistry.snapshot().packs());
         List<String> inProfile = base.packs().stream().map(p -> p.id()).toList();
         List<String> active = effective.packs().stream().map(p -> p.id()).toList();
