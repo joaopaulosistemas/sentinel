@@ -235,7 +235,7 @@ public class AuditOrchestrationService {
             AuditRun runRef = new AuditRun();
             runRef.setId(auditRunId);
 
-            AuditPolicy policy = resolvePolicy(context.profile(), tuningService.load(context.systemId()));
+            AuditPolicy policy = resolvePolicy(context.profile(), loadTuning(context.systemId()));
             progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
             Analysis analysis = runAnalyzers(clonedPath, runRef, context.stack(), policy);
             checkNotCancelled(auditRunId);
@@ -427,6 +427,19 @@ public class AuditOrchestrationService {
     /** Perfil apagado/renomeado depois de cadastrado não pode derrubar a auditoria: cai no perfil padrão, com aviso. */
     AuditPolicy resolvePolicy(String profile) {
         return resolvePolicy(profile, com.sentinel.audit.pack.SystemTuning.EMPTY);
+    }
+
+    /** Ajustes do sistema; qualquer falha na leitura vale como "sem ajustes" para nunca derrubar a auditoria. */
+    private com.sentinel.audit.pack.SystemTuning loadTuning(Long systemId) {
+        if (tuningService == null || systemId == null) {
+            return com.sentinel.audit.pack.SystemTuning.EMPTY;
+        }
+        try {
+            return tuningService.load(systemId);
+        } catch (RuntimeException e) {
+            LOG.warnf("Não foi possível ler os ajustes do sistema %d: %s", systemId, e.getMessage());
+            return com.sentinel.audit.pack.SystemTuning.EMPTY;
+        }
     }
 
     /** Perfil do sistema com os ajustes do próprio sistema por cima; sem ajustes é exatamente o perfil. */
