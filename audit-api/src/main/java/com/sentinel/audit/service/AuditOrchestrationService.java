@@ -501,7 +501,7 @@ public class AuditOrchestrationService {
         if (context.baseRef() == null || context.baseRef().isBlank()) {
             return findings;
         }
-        ChangedFiles.Result changed = ingestionService.changedFiles(context.repoUrl(), clonedPath, context.baseRef());
+        ChangedFiles.Result changed = ingestionService.changedFiles(context.repoUrl(), clonedPath, context.baseRef(), context.gitToken(), context.gitTokenHosts());
         if (changed.files() == null) {
             LOG.warnf("Auditoria de PR: não foi possível comparar com '%s' (%s); todos os achados foram mantidos",
                     context.baseRef(), changed.note());

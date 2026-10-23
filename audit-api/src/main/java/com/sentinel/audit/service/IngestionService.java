@@ -416,11 +416,11 @@ public class IngestionService {
     }
 
     /** Arquivos alterados no clone em relação ao branch base (auditoria de PR). Usa as mesmas credenciais e restrições do clone. */
-    public ChangedFiles.Result changedFiles(String repoUrl, Path clonedPath, String baseRef) {
+    public ChangedFiles.Result changedFiles(String repoUrl, Path clonedPath, String baseRef, String tokenOverride, String hosts) {
         URI uri = validateRepoUrl(repoUrl);
-        String token = resolveToken(null);
+        String token = resolveToken(tokenOverride);
         Map<String, String> env = new java.util.HashMap<>();
-        configureEnvironment(env, !token.isBlank() && isTokenHost(uri.getHost()) ? token : null);
+        configureEnvironment(env, !token.isBlank() && isTokenHost(uri.getHost(), hosts) ? token : null);
         return ChangedFiles.compute(clonedPath, baseRef,
                 List.of("-c", "protocol.allow=never", "-c", "protocol.https.allow=always", "-c", "core.symlinks=false"),
                 env, cloneTimeoutSeconds);
