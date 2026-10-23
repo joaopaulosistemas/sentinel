@@ -44,11 +44,17 @@ public class McpToolService {
     @Inject
     ObjectMapper mapper;
 
+    @Inject
+    com.sentinel.audit.review.ReviewService review;
+
     /**
      * @return o resultado em JSON
      * @throws IllegalArgumentException argumento inválido (a mensagem é segura para mostrar ao cliente)
      */
     public String run(McpTool tool, Long systemId, DataLevel level, JsonNode args) {
+        if (tool.writes()) {
+            return writeTool(tool, systemId, args);
+        }
         AuditRun run = latest(systemId);
         Map<String, Object> result;
         if (run == null) {
@@ -61,6 +67,7 @@ public class McpToolService {
                 case DIFF_AUDITORIA -> McpShaper.diff(lifecycleService.diff(run.getId()), level);
                 case O_QUE_CORRIGIR_PRIMEIRO -> McpShaper.fixPlan(
                         FixPlanner.plan(active(run), run.getLinesOfCode(), scoringService), level);
+                case REGISTRAR_SUGESTAO, PROPOR_REGRA -> throw new IllegalStateException("ferramenta de escrita fora do caminho de escrita");
             };
         }
         try {
@@ -68,6 +75,35 @@ public class McpToolService {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Não foi possível montar a resposta", e);
         }
+    }
+
+    /** Ferramentas que gravam, só na área Revisão do Claude. Nunca tocam em achado, regra do motor ou nota. */
+    private String writeTool(McpTool tool, Long systemId, JsonNode args) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (tool == McpTool.REGISTRAR_SUGESTAO) {
+            var s = review.addSuggestion(systemId, text(args, "titulo"), text(args, "detalhe"), text(args, "regra"),
+                    text(args, "arquivo"), args.path("linha").isInt() ? args.path("linha").asInt() : null);
+            result.put("registrada", true);
+            result.put("id", s.getId());
+            result.put("mensagem", "Sugestão registrada em Revisão do Claude. Ela não entra na nota; uma pessoa vai avaliá-la.");
+        } else {
+            var p = review.propose(systemId, text(args, "id"), text(args, "titulo"), text(args, "motivo"), text(args, "regraSemgrep"));
+            result.put("registrada", true);
+            result.put("id", p.getId());
+            result.put("etapa", p.getStage().name());
+            result.put("mensagem", "Regra proposta. Ela só passa a rodar depois de revisada por uma pessoa e aprovada no teste de amostra, "
+                    + "e fica fora da nota durante a observação.");
+        }
+        try {
+            return mapper.writeValueAsString(result);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Não foi possível montar a resposta", e);
+        }
+    }
+
+    private static String text(JsonNode args, String field) {
+        JsonNode n = args.path(field);
+        return n.isTextual() ? n.asText() : null;
     }
 
     private AuditRun latest(Long systemId) {

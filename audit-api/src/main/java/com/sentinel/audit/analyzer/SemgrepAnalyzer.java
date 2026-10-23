@@ -73,7 +73,10 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         }
 
         try {
-            List<String> configs = resolveConfigs(policy);
+            List<String> configs = new ArrayList<>(resolveConfigs(policy));
+            if (policy != null && policy.localRulesDir() != null) {
+                configs.add(policy.localRulesDir().toString());   // regras locais do sistema (observação ou promovidas)
+            }
             String jsonOutput = configs.isEmpty() ? null : runSemgrep(projectPath, configs);
             if (jsonOutput != null) {
                 findings = parseSemgrepOutput(jsonOutput, projectPath, auditRun);

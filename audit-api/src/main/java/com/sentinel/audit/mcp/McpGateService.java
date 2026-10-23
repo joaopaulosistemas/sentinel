@@ -98,7 +98,8 @@ public class McpGateService {
             return Arrays.stream(McpTool.values()).filter(t -> !t.writes()).toList();
         }
         Set<String> chosen = Arrays.stream(access.getTools().split(",")).map(String::trim).collect(Collectors.toSet());
-        return Arrays.stream(McpTool.values()).filter(t -> !t.writes() && chosen.contains(t.wire())).toList();
+        // As que gravam só entram quando a pessoa as escolheu de propósito.
+        return Arrays.stream(McpTool.values()).filter(t -> chosen.contains(t.wire())).toList();
     }
 
     /**

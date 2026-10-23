@@ -488,3 +488,50 @@ export interface EngineConfig {
   thresholds: EngineThresholdState[];
   knownRules: Array<{ id: string; count: number }>;
 }
+
+export type SuggestionStatus = 'OPEN' | 'ADDRESSED' | 'DISMISSED';
+
+export type RuleStage = 'PROPOSED' | 'REVIEWED' | 'SAMPLE_PASSED' | 'OBSERVING' | 'PROMOTED' | 'DISCARDED';
+
+export interface ReviewSuggestion {
+  id: number;
+  title: string;
+  detail: string | null;
+  ruleRef: string | null;
+  file: string | null;
+  line: number | null;
+  status: SuggestionStatus;
+  createdAt: string;
+}
+
+export interface RuleEvidence {
+  hits: number;
+  falsePositives: number;
+  auditsSinceStart: number;
+  precision: number;
+}
+
+export interface RuleProposalView {
+  id: number;
+  slug: string;
+  title: string;
+  rationale: string | null;
+  semgrepYaml: string;
+  stage: RuleStage;
+  stageLabel: string;
+  copiedFromId: number | null;
+  sampleNote: string | null;
+  observationStartedAt: string | null;
+  decisionNote: string | null;
+  evidence: RuleEvidence;
+  minPrecision: number;
+  minHits: number;
+  sharedEligible: boolean;
+  runsInAudits: boolean;
+}
+
+export interface ClaudeReview {
+  openSuggestions: number;
+  suggestions: ReviewSuggestion[];
+  proposals: RuleProposalView[];
+}

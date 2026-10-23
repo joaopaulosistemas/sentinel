@@ -22,6 +22,7 @@ public final class AuditPolicy {
     private final Map<String, Integer> thresholds;
     private final Map<String, RuleOverride> rawOverrides;
     private SystemTuning tuning = SystemTuning.EMPTY;
+    private java.nio.file.Path localRulesDir;
 
     public AuditPolicy(String profileId, List<RulePack> packs, Map<String, RuleOverride> overrides,
                        Map<String, Integer> thresholds) {
@@ -103,6 +104,26 @@ public final class AuditPolicy {
 
     public Map<String, Integer> thresholds() {
         return thresholds;
+    }
+
+    /** Pasta com as regras Semgrep locais do sistema, ou {@code null}. */
+    public java.nio.file.Path localRulesDir() {
+        return localRulesDir;
+    }
+
+    /**
+     * Acrescenta as regras locais do sistema. As que estão em observação ({@code shadowIds}) entram em modo sombra,
+     * a menos que o próprio sistema já tenha um ajuste explícito para elas.
+     */
+    public AuditPolicy withLocalRules(java.nio.file.Path dir, java.util.Set<String> shadowIds) {
+        Map<String, RuleOverride> rules = new LinkedHashMap<>(rawOverrides);
+        for (String id : shadowIds) {
+            rules.putIfAbsent(id.toLowerCase(Locale.ROOT), new RuleOverride(null, false, true));
+        }
+        AuditPolicy out = new AuditPolicy(profileId, packs, rules, thresholds).withTrustedToolPacks(trustedToolPacks);
+        out.tuning = tuning;
+        out.localRulesDir = dir;
+        return out;
     }
 
     /** Este analisador foi desligado para o sistema? */

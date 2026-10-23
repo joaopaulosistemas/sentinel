@@ -10,8 +10,9 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * Ferramentas que o Sentinel oferece por MCP. Nesta fase todas só leem: nenhuma inicia auditoria, suprime achado
- * ou muda regra. As que escrevem entram numa fase própria, desligadas por padrão e com confirmação.
+ * Ferramentas que o Sentinel oferece por MCP. As de leitura vêm ligadas; as que gravam ({@link #writes()}) ficam
+ * desligadas até a pessoa liberá-las, e só escrevem na área Revisão do Claude (sugestões e regras propostas).
+ * Nenhuma inicia auditoria, suprime achado ou muda a nota.
  */
 public enum McpTool {
 
@@ -25,14 +26,26 @@ public enum McpTool {
             "O que mudou desde a auditoria anterior: variação da nota, achados novos e achados resolvidos."),
     O_QUE_CORRIGIR_PRIMEIRO("o_que_corrigir_primeiro",
             "Problemas agrupados por regra, ordenados pelo quanto a nota sobe se forem corrigidos. "
-                    + "O ganho vem do cálculo de nota do próprio Sentinel.");
+                    + "O ganho vem do cálculo de nota do próprio Sentinel."),
+    REGISTRAR_SUGESTAO("registrar_sugestao",
+            "Registra uma sugestão sua sobre o sistema na área Revisão do Claude. Não cria achado e não muda a nota; "
+                    + "uma pessoa decide o que fazer com ela.", true),
+    PROPOR_REGRA("propor_regra",
+            "Propõe uma regra Semgrep para este sistema. Ela entra no funil (revisão por uma pessoa, teste de amostra, "
+                    + "observação fora da nota) e só pesa na nota se for promovida por uma pessoa.", true);
 
     private final String wire;
     private final String description;
+    private final boolean writes;
 
     McpTool(String wire, String description) {
+        this(wire, description, false);
+    }
+
+    McpTool(String wire, String description, boolean writes) {
         this.wire = wire;
         this.description = description;
+        this.writes = writes;
     }
 
     /** Nome da ferramenta como o cliente MCP a enxerga. */
@@ -44,9 +57,9 @@ public enum McpTool {
         return description;
     }
 
-    /** Falso em todas as ferramentas desta fase. */
+    /** Verdadeiro nas que gravam, e só na área Revisão do Claude: nenhuma toca em achado, regra do motor ou nota. */
     public boolean writes() {
-        return false;
+        return writes;
     }
 
     public static Optional<McpTool> byWire(String name) {
@@ -69,6 +82,26 @@ public enum McpTool {
                     .put("description", "Só os achados que não existiam na auditoria anterior");
             props.putObject("limite").put("type", "integer").put("minimum", 1).put("maximum", 50)
                     .put("description", "Quantos achados devolver (padrão 20)");
+        }
+        if (this == REGISTRAR_SUGESTAO) {
+            props.putObject("titulo").put("type", "string").put("maxLength", 200).put("description", "Resumo da sugestão");
+            props.putObject("detalhe").put("type", "string").put("maxLength", 2000).put("description", "Explicação e como corrigir");
+            props.putObject("regra").put("type", "string").put("description", "Id da regra relacionada, se houver");
+            props.putObject("arquivo").put("type", "string").put("description", "Arquivo relacionado, se houver");
+            props.putObject("linha").put("type", "integer").put("minimum", 1).put("description", "Linha, se houver");
+            schema.putArray("required").add("titulo");
+            return schema;
+        }
+        if (this == PROPOR_REGRA) {
+            props.putObject("id").put("type", "string").put("pattern", "[a-z0-9][a-z0-9-]{2,59}")
+                    .put("description", "Id curto da regra (minúsculas, números e hífen)");
+            props.putObject("titulo").put("type", "string").put("maxLength", 200);
+            props.putObject("motivo").put("type", "string").put("maxLength", 2000)
+                    .put("description", "Por que a regra vale: o que ela pega e por que se repete");
+            props.putObject("regraSemgrep").put("type", "string").put("maxLength", 8000)
+                    .put("description", "YAML Semgrep com uma única regra, de id 'local-<id>'");
+            schema.putArray("required").add("id").add("titulo").add("regraSemgrep");
+            return schema;
         }
         schema.putArray("required");
         return schema;

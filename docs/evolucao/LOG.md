@@ -189,6 +189,15 @@ Dashboard: abas **Motor de regras** e **Analisadores** no cadastro, com "N ajust
 Decisões: a nota continua sendo calculada só pelo motor; o Claude não ajusta nada aqui. Criar regra local do sistema ficou para a fase 4 (junto do funil de promoção). Entre ajuste do sistema e do perfil, a mesma chave do sistema vence; chave exata continua valendo mais que curinga.
 Verificado: `vitest` (119), `tsc`, compilação e execução isolada de `SystemTuning`/`TuningJson`. Não verificado aqui: Quarkus/Maven (testes de política com pacotes reais e a tabela nova rodam só no CI).
 
+## Dashboard 12.8.0 — Fase 4 do plano Sentinel + MCP: Revisão do Claude e funil de regras
+
+O Claude passou a poder deixar **sugestões** e **propor regras** para um sistema, sempre fora da nota.
+MCP: `registrar_sugestao` e `propor_regra` (as primeiras ferramentas que gravam), **desligadas por padrão** e só liberadas por escolha explícita na aba Claude (MCP). Gravam apenas em tabelas próprias (`review_suggestion`, `rule_proposal`); não criam achado nem mexem na nota.
+Funil (`RuleFunnel`, testado sem banco): proposta → revisão por uma pessoa → teste de amostra → observação → promovida/descartada. Promover exige uma auditoria depois do início, 5+ achados e 90%+ de precisão (ajustável por configuração). A precisão sai dos achados da regra e das supressões como falso positivo. Uma regra só vai ao pacote compartilhado depois de promovida numa cópia em outro sistema.
+Motor: regras em observação ou promovidas do sistema são gravadas numa pasta temporária e entram no Semgrep; as em observação ficam em modo sombra por ajuste da política (vale mesmo que a regra declare `status: stable`). `RuleDraft` recusa YAML fora do formato, `fix`, mais de uma regra e regex com repetição aninhada.
+Dashboard: aba **Revisão do Claude** em Informações de Auditoria (sugestões e regras, com os botões de cada etapa e a evidência da observação).
+Limites assumidos: o teste de amostra é registrado por uma pessoa (o Sentinel não roda o Semgrep sobre a amostra); a promoção ao pacote compartilhado é manual no repositório dos pacotes.
+Verificado: `vitest` (126), `tsc`, funil e validação de regra executados isoladamente (11 casos). Não verificado aqui: Quarkus/Maven (entidades, serviço, API, integração com o Semgrep rodam só no CI).
 ## Dashboard 12.7.1 — mensagem de erro da API chega na tela
 
 Os erros 4xx da API (como "Para guardar o token, defina SECRETS_KEY") saíam com corpo vazio, e o cadastro só mostrava "HTTP 400: Bad Request". `ApiErrorMapper` devolve a mensagem em JSON (só 4xx, nunca 5xx) e o cliente do dashboard também aceita corpo em texto curto. Verificado: `vitest` e `tsc`; o mapeador roda só no CI.

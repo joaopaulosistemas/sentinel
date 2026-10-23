@@ -81,6 +81,9 @@ public class SystemResource {
     @Inject
     com.sentinel.audit.tuning.SystemTuningService tuningService;
 
+    @Inject
+    com.sentinel.audit.review.ReviewService reviewService;
+
     /**
      * Lista todos os sistemas cadastrados com um resumo da última auditoria.
      */
@@ -180,6 +183,7 @@ public class SystemResource {
         suppressionRepository.findBySystemId(id).forEach(suppressionRepository::delete);
         mcpGate.purge(id);
         tuningService.purge(id);
+        reviewService.purge(id);
         systemRepository.delete(system);
         return Response.noContent().build();
     }
