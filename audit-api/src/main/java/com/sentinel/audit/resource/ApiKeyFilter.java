@@ -28,6 +28,8 @@ public class ApiKeyFilter implements ContainerRequestFilter {
     private static final String HEALTH_PATH = "api/v1/health";
     /** Webhooks se autenticam por assinatura HMAC / token próprio (segredo cadastrado no sistema), não pela API key. */
     private static final String WEBHOOK_PATH = "api/v1/webhooks/";
+    /** O MCP se autentica pela chave de cada sistema (guardada como hash), não pela API key global. */
+    private static final String MCP_PATH = "mcp/";
 
     @ConfigProperty(name = "sentinel.audit.api-key")
     Optional<String> apiKey;
@@ -43,7 +45,7 @@ public class ApiKeyFilter implements ContainerRequestFilter {
         String path = ctx.getUriInfo().getPath();
         if (path != null) {
             String normalized = path.replaceAll("^/+", "");
-            if (normalized.startsWith(HEALTH_PATH) || normalized.startsWith(WEBHOOK_PATH)) {
+            if (normalized.startsWith(HEALTH_PATH) || normalized.startsWith(WEBHOOK_PATH) || normalized.startsWith(MCP_PATH)) {
                 return;
             }
         }

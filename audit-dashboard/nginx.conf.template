@@ -19,6 +19,17 @@ server {
         proxy_read_timeout 120s;
     }
 
+    # MCP (Claude e outros clientes): cada sistema tem a sua chave, enviada pelo cliente em Authorization.
+    # Não recebe a API key global; a API recusa qualquer chamada sem a chave do sistema.
+    location /mcp/ {
+        proxy_pass ${API_UPSTREAM}/mcp/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Authorization $http_authorization;
+        proxy_read_timeout 120s;
+        client_max_body_size 128k;
+    }
+
     # Cache de assets estáticos (arquivos com hash no nome)
     location /assets/ {
         expires 1y;

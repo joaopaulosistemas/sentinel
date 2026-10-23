@@ -11,6 +11,10 @@ import type {
   Severity,
   RepoCheck,
   RuleQuality,
+  McpCall,
+  McpConfig,
+  McpConfigRequest,
+  McpNewKey,
   ScheduleRequest,
   Suppression,
   SuppressRequest,
@@ -185,4 +189,17 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
+
+  // Acesso do Claude (MCP) a um sistema. A chave só aparece na resposta que a cria.
+  getMcp: (systemId: number) => apiFetch<McpConfig>(`/api/v1/mcp-access/${systemId}`),
+
+  updateMcp: (systemId: number, body: McpConfigRequest) =>
+    apiFetch<McpConfig>(`/api/v1/mcp-access/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  newMcpKey: (systemId: number) => apiFetch<McpNewKey>(`/api/v1/mcp-access/${systemId}/key`, { method: 'POST' }),
+
+  revokeMcpKey: (systemId: number) => apiFetch<void>(`/api/v1/mcp-access/${systemId}/key`, { method: 'DELETE' }),
+
+  getMcpCalls: (systemId: number, limit = 20) =>
+    apiFetch<McpCall[]>(`/api/v1/mcp-access/${systemId}/calls?limit=${limit}`),
 };

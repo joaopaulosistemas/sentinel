@@ -169,3 +169,13 @@ Menu na nova ordem e com os nomes combinados: Visão geral, Sistemas, **Informa�
 **Ranking de Sistemas** e Relatórios. A tela de achados ganhou o título novo e a barra de abas: "Achados e nota" funciona; "Sugestões do Claude" e "Reauditoria"
 aparecem desativadas e entram nas fases 4 e 5. Cada achado mostra de qual analisador veio (Semgrep, SonarQube, Checkstyle, jscpd…), a partir do `toolSource` que a API já devolvia.
 Sem mudança na API, no motor de regras nem na nota. Os filtros continuam como eram; filtrar por origem exigiria um parâmetro novo na API e fica para depois.
+
+## Dashboard 12.6.0 — Fase 2 do plano Sentinel + MCP: servidor MCP só de leitura
+
+O Sentinel passou a ser um servidor MCP (`POST /mcp/<sistema>`, JSON-RPC 2.0 sobre HTTP) para o Claude Code consultar o resultado de **um sistema** com a chave **desse** sistema.
+Quatro ferramentas, todas de leitura: `status_auditoria`, `buscar_achados`, `diff_auditoria` e `o_que_corrigir_primeiro`, em cima dos mesmos serviços do dashboard (a nota e o ganho de cada correção continuam vindo do `ScoringService`/`FixPlanner`).
+Portão por sistema: chave aleatória guardada só como hash (SHA-256), acesso desligado por padrão, ferramentas escolhidas uma a uma, registro de cada chamada (sem o resultado) e três níveis de dados — só números e títulos (padrão), arquivo e linha, sensível (só contagens por regra).
+O trecho de código, a descrição e a recomendação de IA não saem em nenhum nível.
+Dashboard: aba **Claude (MCP)** no Editar do sistema (ligar, gerar/revogar chave, nível de dados, ferramentas, últimas chamadas). nginx encaminha `/mcp/` sem a API key global. Guia em `docs/integracao/mcp.md`.
+Sem MCP no ar a nota não muda: nada nesta fase escreve em auditoria, achado ou regra. O protocolo foi escrito direto (sem extensão do Quarkus) para não depender de uma biblioteca de terceiros ainda não validada na 3.15.
+Fora desta fase: ferramentas que escrevem, limite de chamadas e relatório pelo MCP.

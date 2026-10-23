@@ -12,6 +12,8 @@ function renderPage(check: unknown, systems: unknown[] = []) {
       const u = String(url);
       calls.push({ url: u, method: init?.method ?? 'GET', body: init?.body as string | undefined });
       if (u.endsWith('/check-repo')) return new Response(JSON.stringify(check), { status: 200 });
+      if (u.includes('/mcp-access/') && u.includes('/calls')) return new Response('[]', { status: 200 });
+      if (u.includes('/mcp-access/')) return new Response(JSON.stringify({ enabled: false, hasKey: false, keyPrefix: null, keyCreatedAt: null, dataLevel: 'TITLES', tools: [] }), { status: 200 });
       if (u.includes('/packs')) return new Response(JSON.stringify({ packs: [], profiles: [] }), { status: 200 });
       if (u.endsWith('/schedule')) return new Response(JSON.stringify({ id: 7, name: 'api', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 }), { status: 200 });
       if ((init?.method ?? 'GET') === 'POST') return new Response(JSON.stringify({ id: 7, name: 'api', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 }), { status: 201 });
@@ -127,5 +129,22 @@ describe('SystemsPage', () => {
     expect(body.gitToken).toBeUndefined();
     expect(body.webhookSecret).toBeUndefined();
     expect(body.notifyUrl).toBeUndefined();
+  });
+
+  it('a aba Claude (MCP) fica bloqueada num sistema novo e abre no sistema já salvo', async () => {
+    renderPage({}, [
+      { id: 4, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 },
+    ]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Novo sistema' }));
+    expect(await screen.findByRole('tab', { name: 'Claude (MCP)' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar painel' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: /Editar/ }));
+    const tab = await screen.findByRole('tab', { name: 'Claude (MCP)' });
+    expect(tab).toBeEnabled();
+    expect(screen.getByRole('tab', { name: 'Cadastro e Git' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(tab);
+    expect(await screen.findByText(/O Claude consulta o resultado deste sistema por MCP/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Token Git/)).not.toBeInTheDocument();
   });
 });

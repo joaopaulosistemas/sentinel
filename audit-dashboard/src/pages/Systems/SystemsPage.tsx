@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { CheckIcon, CrossIcon, SpinnerIcon } from '../../components/StatusIcons';
+import { McpPanel } from '../../components/McpPanel';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { usePacks } from '../../hooks/useLifecycle';
 import { useSystems } from '../../hooks/useSystems';
@@ -50,12 +51,14 @@ export function SystemsPage() {
   const [values, setValues] = useState<SystemFormValues>(emptyForm);
   const [touched, setTouched] = useState(false);
   const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
+  const [tab, setTab] = useState<'cadastro' | 'mcp'>('cadastro');
 
   const errors = validate(values);
   const invalid = Object.keys(errors).length > 0;
 
   const open = (target: SystemSummaryResponse | 'new') => {
     setEditing(target);
+    setTab('cadastro');
     setValues(target === 'new' ? emptyForm : formFrom(target));
     setTouched(false);
     save.reset();
@@ -234,6 +237,39 @@ export function SystemsPage() {
               </button>
             </div>
 
+            <div role="tablist" aria-label="Seções do sistema" style={{ display: 'flex', borderBottom: '1px solid #e0e0e0', padding: '0 12px' }}>
+              {([['cadastro', 'Cadastro e Git'], ['mcp', 'Claude (MCP)']] as const).map(([id, nome]) => {
+                const bloqueada = id === 'mcp' && isNew;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === id}
+                    disabled={bloqueada}
+                    title={bloqueada ? 'Salve o sistema primeiro' : undefined}
+                    onClick={() => setTab(id)}
+                    style={{
+                      background: 'none',
+                      border: 0,
+                      borderBottom: tab === id ? '3px solid #0f62fe' : '3px solid transparent',
+                      padding: '10px 14px',
+                      fontSize: 14,
+                      fontWeight: tab === id ? 600 : 400,
+                      color: bloqueada ? '#a8a8a8' : '#161616',
+                      cursor: bloqueada ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {nome}
+                  </button>
+                );
+              })}
+            </div>
+
+            {tab === 'mcp' && !isNew && <McpPanel system={editing} />}
+
+            {tab === 'cadastro' && (
+              <>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
               <TextInput
                 id="sys-name"
@@ -537,6 +573,8 @@ export function SystemsPage() {
                 {save.isPending ? 'Salvando…' : 'Salvar e auditar agora'}
               </button>
             </div>
+              </>
+            )}
           </aside>
         )}
       </div>

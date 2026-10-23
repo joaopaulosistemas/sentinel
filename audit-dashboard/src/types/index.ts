@@ -397,3 +397,44 @@ export interface BatchSuppressResponse {
   suppressed: number;
   failures: { findingId: number; message: string }[];
 }
+
+// ---- Acesso do Claude (MCP) a um sistema ----
+
+export type McpDataLevel = 'TITLES' | 'FILE_LINE' | 'SENSITIVE';
+
+export interface McpToolState {
+  name: string;
+  description: string;
+  /** true = a ferramenta muda algo; nenhuma ferramenta da fase atual escreve */
+  writes: boolean;
+  enabled: boolean;
+}
+
+export interface McpConfig {
+  enabled: boolean;
+  hasKey: boolean;
+  keyPrefix: string | null;
+  keyCreatedAt: string | null;
+  dataLevel: McpDataLevel;
+  tools: McpToolState[];
+}
+
+export interface McpConfigRequest {
+  enabled?: boolean;
+  dataLevel?: McpDataLevel;
+  tools?: string[];
+}
+
+/** A chave completa só vem na resposta que a cria. */
+export interface McpNewKey {
+  key: string;
+  keyPrefix: string;
+}
+
+export interface McpCall {
+  tool: string;
+  ok: boolean;
+  durationMs: number;
+  detail: string | null;
+  at: string;
+}
