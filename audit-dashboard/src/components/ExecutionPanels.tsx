@@ -49,6 +49,8 @@ const state = (a: AnalyzerProgress) => {
       return { icon: <DashIcon label="Ferramenta ausente" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'ferramenta ausente' };
     case 'NAO_SUPORTADO':
       return { icon: <DashIcon label="Não se aplica" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'não se aplica' };
+    case 'DESLIGADO':
+      return { icon: <DashIcon label="Desligado neste sistema" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'desligado neste sistema' };
     case 'SUBSTITUIDO':
       return { icon: <DashIcon label="Coberto por outro" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'coberto por outro' };
     default:

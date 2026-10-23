@@ -179,3 +179,12 @@ O trecho de código, a descrição e a recomendação de IA não saem em nenhum 
 Dashboard: aba **Claude (MCP)** no Editar do sistema (ligar, gerar/revogar chave, nível de dados, ferramentas, últimas chamadas). nginx encaminha `/mcp/` sem a API key global. Guia em `docs/integracao/mcp.md`.
 Sem MCP no ar a nota não muda: nada nesta fase escreve em auditoria, achado ou regra. O protocolo foi escrito direto (sem extensão do Quarkus) para não depender de uma biblioteca de terceiros ainda não validada na 3.15.
 Fora desta fase: ferramentas que escrevem, limite de chamadas e relatório pelo MCP.
+
+## Dashboard 12.7.0 — Fase 3 do plano Sentinel + MCP: motor ajustável por sistema
+
+Cada sistema passou a ter ajustes próprios **por cima do perfil**: pacotes de regras ligados/desligados, limites de clean code, regra a regra (severidade, desligar, "só observar" que não pesa na nota) e quais analisadores rodam. Só o que difere do perfil é guardado (`system_engine_config`, JSON); sem ajustes o sistema audita exatamente como antes.
+Motor: `SystemTuning` + `AuditPolicy.withTuning` montam a política do sistema na hora da auditoria (`AuditOrchestrationService.resolvePolicy`). Com ajuste vazio a política devolvida é a mesma instância do perfil, e `SystemTuningTest` compara pacotes, sobrescritas, limites e severidades de todo perfil carregado. Analisador desligado sai antes da escolha por substituição e aparece como `DESLIGADO` ("não verificado" no resumo).
+API: `GET/PUT /api/v1/engine-config/{id}` (caminho próprio, como o do MCP) devolve o efetivo, o que vem do perfil, as regras vistas na última auditoria e o número de ajustes; o PUT valida regra, severidade, limite, pacote e analisador. Apagar o sistema apaga os ajustes.
+Dashboard: abas **Motor de regras** e **Analisadores** no cadastro, com "N ajustes em relação ao perfil" e "Voltar ao perfil". O cadastro/edição de sistema agora abre em **pop-up** (Esc e clique fora fecham) em vez do painel lateral.
+Decisões: a nota continua sendo calculada só pelo motor; o Claude não ajusta nada aqui. Criar regra local do sistema ficou para a fase 4 (junto do funil de promoção). Entre ajuste do sistema e do perfil, a mesma chave do sistema vence; chave exata continua valendo mais que curinga.
+Verificado: `vitest` (119), `tsc`, compilação e execução isolada de `SystemTuning`/`TuningJson`. Não verificado aqui: Quarkus/Maven (testes de política com pacotes reais e a tabela nova rodam só no CI).

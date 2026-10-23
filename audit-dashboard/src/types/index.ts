@@ -143,6 +143,7 @@ export type AnalyzerProgressStatus =
   | 'INDISPONIVEL'
   | 'NAO_SUPORTADO'
   | 'SUBSTITUIDO'
+  | 'DESLIGADO'
   | 'SEM_EVIDENCIA';
 
 export interface AnalyzerProgress {
@@ -437,4 +438,53 @@ export interface McpCall {
   durationMs: number;
   detail: string | null;
   at: string;
+}
+
+/** Ajuste de uma regra de um sistema (por cima do perfil). */
+export interface RuleAdjustment {
+  id: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' | null;
+  disabled: boolean;
+  shadow: boolean | null;
+}
+
+export interface EngineTuning {
+  rules: RuleAdjustment[];
+  thresholds: Record<string, number>;
+  enablePacks: string[];
+  disablePacks: string[];
+  disableAnalyzers: string[];
+}
+
+export interface EnginePackState {
+  id: string;
+  name: string;
+  description: string | null;
+  inProfile: boolean;
+  active: boolean;
+}
+
+export interface EngineAnalyzerState {
+  name: string;
+  description: string;
+  disabled: boolean;
+}
+
+export interface EngineThresholdState {
+  key: string;
+  profileValue: number | null;
+  override: number | null;
+}
+
+export interface EngineConfig {
+  profile: string;
+  profileDescription: string | null;
+  /** Quantos ajustes o sistema tem em relação ao perfil. */
+  adjustments: number;
+  tuning: EngineTuning;
+  profileRules: RuleAdjustment[];
+  packs: EnginePackState[];
+  analyzers: EngineAnalyzerState[];
+  thresholds: EngineThresholdState[];
+  knownRules: Array<{ id: string; count: number }>;
 }

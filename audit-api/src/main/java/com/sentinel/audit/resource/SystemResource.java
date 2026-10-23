@@ -78,6 +78,9 @@ public class SystemResource {
     @Inject
     com.sentinel.audit.mcp.McpGateService mcpGate;
 
+    @Inject
+    com.sentinel.audit.tuning.SystemTuningService tuningService;
+
     /**
      * Lista todos os sistemas cadastrados com um resumo da última auditoria.
      */
@@ -176,6 +179,7 @@ public class SystemResource {
         // As supressões referenciam o sistema (FK): precisam sair antes.
         suppressionRepository.findBySystemId(id).forEach(suppressionRepository::delete);
         mcpGate.purge(id);
+        tuningService.purge(id);
         systemRepository.delete(system);
         return Response.noContent().build();
     }

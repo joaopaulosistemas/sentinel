@@ -59,4 +59,14 @@ public class FindingRepository implements PanacheRepository<Finding> {
     public List<Finding> findByAuditRunId(Long auditRunId) {
         return list("auditRun.id = ?1", auditRunId);
     }
+
+    /** Regras que apareceram numa execução, com quantas vezes: base para a tela de ajustes saber o que listar. */
+    public List<Object[]> ruleCountsForRun(Long auditRunId) {
+        return getEntityManager()
+                .createQuery("select f.ruleId, count(f) from Finding f where f.auditRun.id = :id and f.ruleId is not null group by f.ruleId order by count(f) desc",
+                        Object[].class)
+                .setParameter("id", auditRunId)
+                .setMaxResults(300)
+                .getResultList();
+    }
 }

@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { CheckIcon, CrossIcon, SpinnerIcon } from '../../components/StatusIcons';
+import { EngineAnalyzersPanel, EngineRulesPanel } from '../../components/EnginePanel';
 import { McpPanel } from '../../components/McpPanel';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { usePacks } from '../../hooks/useLifecycle';
@@ -51,7 +52,7 @@ export function SystemsPage() {
   const [values, setValues] = useState<SystemFormValues>(emptyForm);
   const [touched, setTouched] = useState(false);
   const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
-  const [tab, setTab] = useState<'cadastro' | 'mcp'>('cadastro');
+  const [tab, setTab] = useState<'cadastro' | 'motor' | 'analisadores' | 'mcp'>('cadastro');
 
   const errors = validate(values);
   const invalid = Object.keys(errors).length > 0;
@@ -260,8 +261,8 @@ export function SystemsPage() {
             </div>
 
             <div role="tablist" aria-label="Seções do sistema" style={{ display: 'flex', borderBottom: '1px solid #e0e0e0', padding: '0 12px' }}>
-              {([['cadastro', 'Cadastro e Git'], ['mcp', 'Claude (MCP)']] as const).map(([id, nome]) => {
-                const bloqueada = id === 'mcp' && isNew;
+              {([['cadastro', 'Cadastro e Git'], ['motor', 'Motor de regras'], ['analisadores', 'Analisadores'], ['mcp', 'Claude (MCP)']] as const).map(([id, nome]) => {
+                const bloqueada = id !== 'cadastro' && isNew;
                 return (
                   <button
                     key={id}
@@ -288,6 +289,8 @@ export function SystemsPage() {
               })}
             </div>
 
+            {tab === 'motor' && !isNew && <EngineRulesPanel system={editing} />}
+            {tab === 'analisadores' && !isNew && <EngineAnalyzersPanel system={editing} />}
             {tab === 'mcp' && !isNew && <McpPanel system={editing} />}
 
             {tab === 'cadastro' && (

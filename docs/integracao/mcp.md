@@ -52,3 +52,7 @@ Cada chamada fica registrada na aba (quando, ferramenta, resultado, tempo). O re
 - Configuração do acesso: `/api/v1/mcp-access/{sistemaId}` (sob a `API_KEY` global, como o resto de `/api/v1`).
 - Tabelas novas `mcp_access` e `mcp_call_log`, criadas pelo Hibernate (`update`) na primeira subida. Apagar o sistema apaga as duas.
 - Fora desta fase: ferramentas que escrevem (iniciar auditoria, suprimir achado, propor regra), limite de chamadas por minuto e relatório pelo MCP.
+
+## Ajustes do motor por sistema (fase 3)
+
+Cada sistema pode ajustar o motor por cima do perfil dele (abas **Motor de regras** e **Analisadores** em Sistemas → Editar). O que o Claude vê pelo MCP já reflete esses ajustes, porque a nota e os achados vêm do mesmo motor. O Claude não altera esses ajustes.

@@ -1,0 +1,156 @@
+package com.sentinel.audit.tuning;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.sentinel.audit.model.AuditRun;
+import com.sentinel.audit.model.AuditedSystem;
+import com.sentinel.audit.pack.AuditPolicy;
+import com.sentinel.audit.pack.PackRegistry;
+import com.sentinel.audit.pack.RuleOverride;
+import com.sentinel.audit.pack.SystemTuning;
+import com.sentinel.audit.repository.AuditRunRepository;
+import com.sentinel.audit.repository.AuditedSystemRepository;
+import com.sentinel.audit.repository.FindingRepository;
+import com.sentinel.audit.service.AnalyzerCatalog;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Ajustes do motor de regras de cada sistema, usados pelas abas "Motor de regras" e "Analisadores".
+ * Tudo vale por cima do perfil do sistema e a partir da próxima auditoria; sem ajustes o sistema audita como o perfil.
+ */
+@Path("/api/v1/engine-config/{id}")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "Motor", description = "Ajustes do motor de regras por sistema")
+public class EngineConfigResource {
+
+    public record RuleAdjustment(String id, String severity, boolean disabled, Boolean shadow) {}
+
+    public record PackState(String id, String name, String description, boolean inProfile, boolean active) {}
+
+    public record AnalyzerState(String name, String description, boolean disabled) {}
+
+    public record ThresholdState(String key, Integer profileValue, Integer override) {}
+
+    public record KnownRule(String id, long count) {}
+
+    public record Tuning(List<RuleAdjustment> rules, Map<String, Integer> thresholds, List<String> enablePacks,
+                         List<String> disablePacks, List<String> disableAnalyzers) {}
+
+    public record EngineConfigResponse(String profile, String profileDescription, int adjustments, Tuning tuning,
+                                       List<RuleAdjustment> profileRules, List<PackState> packs,
+                                       List<AnalyzerState> analyzers, List<ThresholdState> thresholds,
+                                       List<KnownRule> knownRules) {}
+
+    @Inject
+    AuditedSystemRepository systemRepository;
+    @Inject
+    SystemTuningService tuningService;
+    @Inject
+    PackRegistry packRegistry;
+    @Inject
+    AuditRunRepository runRepository;
+    @Inject
+    FindingRepository findingRepository;
+
+    @GET
+    @Operation(summary = "Ajustes do sistema e o que vem do perfil")
+    public EngineConfigResponse get(@PathParam("id") Long id) {
+        return view(requireSystem(id), tuningService.load(id));
+    }
+
+    @PUT
+    @Operation(summary = "Substituir os ajustes do sistema", description = "Vazio = voltar a ser igual ao perfil")
+    public EngineConfigResponse put(@PathParam("id") Long id, JsonNode body) {
+        AuditedSystem system = requireSystem(id);
+        SystemTuning parsed;
+        try {
+            parsed = TuningJson.parse(body);
+            validateAgainstRegistry(parsed);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        }
+        return view(system, tuningService.save(id, parsed));
+    }
+
+    private void validateAgainstRegistry(SystemTuning t) {
+        List<String> known = packRegistry.snapshot().packs().stream().map(p -> p.id()).toList();
+        for (String p : t.enablePacks()) {
+            if (!known.contains(p)) {
+                throw new IllegalArgumentException("Pacote desconhecido: " + p);
+            }
+        }
+        for (String p : t.disablePacks()) {
+            if (!known.contains(p)) {
+                throw new IllegalArgumentException("Pacote desconhecido: " + p);
+            }
+        }
+        for (String a : t.disableAnalyzers()) {
+            if (!AnalyzerCatalog.names().contains(a)) {
+                throw new IllegalArgumentException("Analisador desconhecido: " + a);
+            }
+        }
+    }
+
+    private EngineConfigResponse view(AuditedSystem system, SystemTuning tuning) {
+        String profileId = system.effectiveProfile();
+        AuditPolicy base;
+        try {
+            base = packRegistry.policyFor(profileId);
+        } catch (IllegalArgumentException e) {
+            base = packRegistry.policyFor(null);
+        }
+        AuditPolicy effective = base.withTuning(tuning, packRegistry.snapshot().packs());
+        List<String> inProfile = base.packs().stream().map(p -> p.id()).toList();
+        List<String> active = effective.packs().stream().map(p -> p.id()).toList();
+        List<PackState> packs = packRegistry.snapshot().packs().stream()
+                .map(p -> new PackState(p.id(), p.manifest().name(), p.manifest().description(),
+                        inProfile.contains(p.id()), active.contains(p.id())))
+                .toList();
+        List<AnalyzerState> analyzers = AnalyzerCatalog.names().stream()
+                .map(n -> new AnalyzerState(n, AnalyzerCatalog.describe(n), tuning.analyzerDisabled(n)))
+                .toList();
+        List<ThresholdState> thresholds = com.sentinel.audit.pack.ProfileLoader.KNOWN_THRESHOLDS.stream().sorted()
+                .map(k -> new ThresholdState(k, base.thresholds().get(k), tuning.thresholds().get(k)))
+                .toList();
+        List<KnownRule> known = new ArrayList<>();
+        List<AuditRun> last = runRepository.findLatestCompleted(system.getId(), 1);
+        if (!last.isEmpty()) {
+            for (Object[] row : findingRepository.ruleCountsForRun(last.get(0).getId())) {
+                known.add(new KnownRule(String.valueOf(row[0]), (Long) row[1]));
+            }
+        }
+        Tuning dto = new Tuning(rules(tuning.rules()), tuning.thresholds(), tuning.enablePacks().stream().sorted().toList(),
+                tuning.disablePacks().stream().sorted().toList(), tuning.disableAnalyzers().stream().sorted().toList());
+        String description = packRegistry.snapshot().profiles().containsKey(profileId == null ? "" : profileId.toLowerCase())
+                ? packRegistry.snapshot().profiles().get(profileId.toLowerCase()).description() : null;
+        return new EngineConfigResponse(profileId, description, tuning.adjustments(), dto, rules(base.baseOverrides()),
+                packs, analyzers, thresholds, known);
+    }
+
+    private static List<RuleAdjustment> rules(Map<String, RuleOverride> in) {
+        return in.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(e -> new RuleAdjustment(e.getKey(), e.getValue().severity() == null ? null : e.getValue().severity().name(),
+                        e.getValue().disabled(), e.getValue().shadow()))
+                .toList();
+    }
+
+    private AuditedSystem requireSystem(Long id) {
+        return systemRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+    }
+}

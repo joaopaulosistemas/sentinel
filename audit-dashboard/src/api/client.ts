@@ -11,6 +11,8 @@ import type {
   Severity,
   RepoCheck,
   RuleQuality,
+  EngineConfig,
+  EngineTuning,
   McpCall,
   McpConfig,
   McpConfigRequest,
@@ -199,6 +201,11 @@ export const api = {
   newMcpKey: (systemId: number) => apiFetch<McpNewKey>(`/api/v1/mcp-access/${systemId}/key`, { method: 'POST' }),
 
   revokeMcpKey: (systemId: number) => apiFetch<void>(`/api/v1/mcp-access/${systemId}/key`, { method: 'DELETE' }),
+
+  getEngineConfig: (systemId: number) => apiFetch<EngineConfig>(`/api/v1/engine-config/${systemId}`),
+
+  updateEngineConfig: (systemId: number, body: EngineTuning) =>
+    apiFetch<EngineConfig>(`/api/v1/engine-config/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
 
   getMcpCalls: (systemId: number, limit = 20) =>
     apiFetch<McpCall[]>(`/api/v1/mcp-access/${systemId}/calls?limit=${limit}`),

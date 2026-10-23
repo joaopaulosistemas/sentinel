@@ -282,6 +282,11 @@ public class PackRegistry {
         return policyFor(profileId, s).withTrustedToolPacks(trustedBuiltinPackIds(s));
     }
 
+    /** Política de um sistema: a do perfil com os ajustes do próprio sistema por cima. */
+    public AuditPolicy policyFor(String profileId, SystemTuning tuning) {
+        return policyFor(profileId).withTuning(tuning, snapshot().packs());
+    }
+
     /** Confiança só vale para pacote embutido (pasta do produto): um pacote externo com o mesmo id não herda. */
     Set<String> trustedBuiltinPackIds(Snapshot s) {
         Set<String> wanted = new LinkedHashSet<>();

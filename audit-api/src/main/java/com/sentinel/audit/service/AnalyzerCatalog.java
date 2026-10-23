@@ -24,6 +24,12 @@ public final class AnalyzerCatalog {
     private AnalyzerCatalog() {
     }
 
+    /** Nomes dos analisadores conhecidos, na ordem de exibição. */
+    public static java.util.List<String> names() {
+        return java.util.List.of("Semgrep", "Secrets", "Secrets-History", "Gitleaks", "Trivy", "OWASP-Dependency",
+                "Architecture", "Arquitetura (pacotes)", "CleanCode", "PMD", "ESLint", "Higiene do projeto", "SARIF", "Evidências");
+    }
+
     /** Descrição do analisador, ou vazio quando não há. */
     public static String describe(String name) {
         return name == null ? "" : DESCRIPTIONS.getOrDefault(name, "");
