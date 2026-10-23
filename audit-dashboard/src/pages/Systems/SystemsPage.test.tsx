@@ -86,4 +86,46 @@ describe('SystemsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fechar painel' }));
     expect(screen.queryByLabelText('Editar sistema')).not.toBeInTheDocument();
   });
+
+  it('guarda token, hosts, histórico, webhook e notificação no cadastro do sistema', async () => {
+    const calls = renderPage({});
+    await openNew();
+    fireEvent.change(screen.getByLabelText(/Token Git/), { target: { value: 'ghp_abc' } });
+    fireEvent.change(screen.getByLabelText(/Hosts que recebem o token/), { target: { value: 'github.com, git.empresa.com' } });
+    fireEvent.change(screen.getByLabelText('Commits do histórico'), { target: { value: '30' } });
+    fireEvent.click(screen.getByLabelText(/Auditar a cada push/));
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar segredo' }));
+    fireEvent.change(screen.getByLabelText('URL do webhook'), { target: { value: 'https://hooks.slack.com/services/T/B/X' } });
+    fireEvent.change(screen.getByLabelText('Formato'), { target: { value: 'teams' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.endsWith('/systems'))).toBe(true));
+    const body = JSON.parse(calls.find((c) => c.method === 'POST' && c.url.endsWith('/systems'))?.body ?? '{}');
+    expect(body).toMatchObject({
+      gitToken: 'ghp_abc',
+      gitTokenHosts: 'github.com, git.empresa.com',
+      gitHistoryDepth: 30,
+      notifyUrl: 'https://hooks.slack.com/services/T/B/X',
+      notifyFormat: 'teams',
+      notifyMinSeverity: 'HIGH',
+    });
+    expect(body.webhookSecret).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('ao editar, token e segredos salvos não aparecem e podem ser mantidos ou removidos', async () => {
+    const calls = renderPage({}, [
+      { id: 4, name: 'conta', stack: 'JAVA', team: 'T', lastAuditScore: 80, lastAuditDate: null, openCritical: 0, openHigh: 0,
+        repoUrl: 'https://github.com/org/conta', gitTokenSet: true, gitTokenHosts: 'github.com', webhookSecretSet: true, auditOnPush: true, notifyUrlSet: true },
+    ]);
+    fireEvent.click(await screen.findByRole('button', { name: /Editar/ }));
+    expect(await screen.findByLabelText(/Token Git/)).toHaveValue('');
+    expect(screen.getByPlaceholderText('Token salvo. Deixe vazio para manter')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Remover o token salvo'));
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'PUT' && c.url.endsWith('/systems/4'))).toBe(true));
+    const body = JSON.parse(calls.find((c) => c.method === 'PUT' && c.url.endsWith('/systems/4'))?.body ?? '{}');
+    expect(body.clearGitToken).toBe(true);
+    expect(body.gitToken).toBeUndefined();
+    expect(body.webhookSecret).toBeUndefined();
+    expect(body.notifyUrl).toBeUndefined();
+  });
 });

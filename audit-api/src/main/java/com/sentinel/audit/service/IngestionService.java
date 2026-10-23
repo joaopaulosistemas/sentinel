@@ -31,9 +31,8 @@ import java.util.regex.Pattern;
  * Medidas de segurança aplicadas ao clone:
  * <ul>
  *   <li>apenas URLs {@code https://} (sem {@code file://}, {@code ext::}, {@code ssh}, etc.);</li>
- *   <li>lista opcional de hosts permitidos ({@code sentinel.audit.git.allowed-hosts});</li>
  *   <li>o token <b>nunca</b> vai na URL: é enviado em um header HTTP via variável de ambiente
- *       do processo, e só para hosts listados em {@code sentinel.audit.git.token-hosts};</li>
+ *       do processo, e só para os hosts listados no cadastro do sistema (padrão github.com);</li>
  *   <li>symlinks do repositório não são materializados ({@code core.symlinks=false});</li>
  *   <li>timeout no clone e saída capturada em arquivo (sem risco de travar por buffer cheio).</li>
  * </ul>
@@ -46,45 +45,49 @@ public class IngestionService {
     private static final Pattern BRANCH_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._/-]*$");
     private static final int MAX_ERROR_OUTPUT_CHARS = 1500;
 
-    @ConfigProperty(name = "sentinel.audit.git.token")
-    Optional<String> gitToken;
-
     @ConfigProperty(name = "sentinel.audit.git.clone-dir", defaultValue = "/tmp/sentinel-audit")
     String cloneBaseDir;
 
-    /** Hosts em que o clone é permitido. Vazio = qualquer host https. */
-    @ConfigProperty(name = "sentinel.audit.git.allowed-hosts")
-    Optional<List<String>> allowedHosts;
-
-    /** Hosts que podem receber o token de autenticação. */
-    @ConfigProperty(name = "sentinel.audit.git.token-hosts", defaultValue = "github.com")
-    List<String> tokenHosts;
+    /** Hosts que recebem o token quando o sistema não lista os seus. */
+    static final List<String> DEFAULT_TOKEN_HOSTS = List.of("github.com");
 
     @ConfigProperty(name = "sentinel.audit.git.clone-timeout-seconds", defaultValue = "300")
     long cloneTimeoutSeconds;
 
-    /** Quantos commits baixar (para a varredura de segredos no histórico). 0 ou 1 = clone raso. */
-    @ConfigProperty(name = "sentinel.audit.git.history-depth", defaultValue = "100")
-    int historyDepth;
+    /** Commits baixados quando o sistema não define: o bastante para achar segredos já removidos do código. */
+    public static final int DEFAULT_HISTORY_DEPTH = 100;
 
     /**
      * Clona o repositório Git na branch especificada em um diretório temporário único.
      *
      * @param repoUrl URL https do repositório Git
      * @param branch  branch a ser clonada (opcional)
-     * @param token   token de autenticação (opcional; se vazio, usa o token global)
+     * @param token   token de autenticação do sistema (opcional)
      * @return {@link Path} do diretório onde o repositório foi clonado
      * @throws IllegalArgumentException se a URL ou a branch forem inválidas
      * @throws IllegalStateException    se o clone falhar
      */
     public Path cloneRepository(String repoUrl, String branch, String token) {
+        return cloneRepository(repoUrl, branch, token, null);
+    }
+
+    /**
+     * @param hosts hosts que podem receber o token (lista separada por vírgula); vazio = {@code github.com}
+     *              (ou o que estiver em {@code sentinel.audit.git.token-hosts}, para o token global)
+     */
+    public Path cloneRepository(String repoUrl, String branch, String token, String hosts) {
+        return cloneRepository(repoUrl, branch, token, hosts, null);
+    }
+
+    /** @param historyDepth commits a baixar; {@code null} = {@link #DEFAULT_HISTORY_DEPTH}; 0 ou 1 = clone raso */
+    public Path cloneRepository(String repoUrl, String branch, String token, String hosts, Integer historyDepth) {
         URI uri = validateRepoUrl(repoUrl);
         validateBranch(branch);
 
         String effectiveToken = resolveToken(token);
-        boolean sendToken = !effectiveToken.isBlank() && isTokenHost(uri.getHost());
+        boolean sendToken = !effectiveToken.isBlank() && isTokenHost(uri.getHost(), hosts);
         if (!effectiveToken.isBlank() && !sendToken) {
-            LOG.warnf("Token Git NÃO enviado: o host %s não está em sentinel.audit.git.token-hosts", uri.getHost());
+            LOG.warnf("Token Git NÃO enviado: o host %s não está na lista de hosts do token do sistema", uri.getHost());
         }
 
         Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
@@ -95,7 +98,7 @@ public class IngestionService {
             Files.createDirectories(basePath);
             logFile = Files.createTempFile(basePath, "git-clone-", ".log");
 
-            List<String> command = buildCloneCommand(uri.toString(), branch, targetPath);
+            List<String> command = buildCloneCommand(uri.toString(), branch, targetPath, historyDepth);
             ProcessBuilder pb = new ProcessBuilder(command);
             pb.redirectErrorStream(true);
             pb.redirectOutput(logFile.toFile());
@@ -208,6 +211,10 @@ public class IngestionService {
      * @param branch branch que o usuário pretende auditar (opcional); se informada, diz se ela existe
      */
     public RepoCheck checkRepository(String repoUrl, String branch) {
+        return checkRepository(repoUrl, branch, null, null);
+    }
+
+    public RepoCheck checkRepository(String repoUrl, String branch, String tokenOverride, String hosts) {
         URI uri;
         try {
             uri = validateRepoUrl(repoUrl);
@@ -215,8 +222,8 @@ public class IngestionService {
         } catch (IllegalArgumentException e) {
             return new RepoCheck(false, null, null, e.getMessage());
         }
-        String token = resolveToken(null);
-        boolean sendToken = !token.isBlank() && isTokenHost(uri.getHost());
+        String token = resolveToken(tokenOverride);
+        boolean sendToken = !token.isBlank() && isTokenHost(uri.getHost(), hosts);
         Path logFile = null;
         try {
             Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
@@ -349,11 +356,6 @@ public class IngestionService {
         if (uri.getUserInfo() != null) {
             throw new IllegalArgumentException("A URL do repositório não pode conter credenciais; use o token configurado");
         }
-        String host = uri.getHost().toLowerCase(Locale.ROOT);
-        if (allowedHosts.isPresent() && !allowedHosts.get().isEmpty()
-                && allowedHosts.get().stream().map(h -> h.trim().toLowerCase(Locale.ROOT)).noneMatch(host::equals)) {
-            throw new IllegalArgumentException("Host não permitido para auditoria: " + host);
-        }
         return uri;
     }
 
@@ -372,18 +374,23 @@ public class IngestionService {
         if (token != null && !token.isBlank()) {
             return token;
         }
-        return gitToken.orElse("");
+        return "";
     }
 
-    private boolean isTokenHost(String host) {
+    private boolean isTokenHost(String host, String hosts) {
         if (host == null) {
             return false;
         }
         String h = host.toLowerCase(Locale.ROOT);
-        return tokenHosts.stream().map(t -> t.trim().toLowerCase(Locale.ROOT)).anyMatch(h::equals);
+        List<String> allowed = hosts == null || hosts.isBlank() ? DEFAULT_TOKEN_HOSTS : List.of(hosts.split(","));
+        return allowed.stream().map(t -> t.trim().toLowerCase(Locale.ROOT)).anyMatch(h::equals);
     }
 
     List<String> buildCloneCommand(String url, String branch, Path targetPath) {
+        return buildCloneCommand(url, branch, targetPath, null);
+    }
+
+    List<String> buildCloneCommand(String url, String branch, Path targetPath, Integer historyDepth) {
         List<String> cmd = new ArrayList<>();
         cmd.add("git");
         // Só HTTPS; nunca materializar symlinks do repositório auditado.
@@ -395,7 +402,7 @@ public class IngestionService {
         cmd.add("core.symlinks=false");
         cmd.add("clone");
         cmd.add("--depth");
-        cmd.add(String.valueOf(Math.max(1, historyDepth)));
+        cmd.add(String.valueOf(Math.max(1, historyDepth == null ? DEFAULT_HISTORY_DEPTH : historyDepth)));
         cmd.add("--single-branch");
         cmd.add("--no-tags");
         if (branch != null && !branch.isBlank()) {

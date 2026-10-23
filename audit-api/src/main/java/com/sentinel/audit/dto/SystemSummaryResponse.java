@@ -24,6 +24,90 @@ public class SystemSummaryResponse {
     private Double scoreDelta;
     private String repoUrl;
     private String description;
+    /** Há token Git salvo? O token em si nunca é devolvido. */
+    private Boolean gitTokenSet;
+    private String gitTokenHosts;
+    /** Há segredo de webhook salvo? O segredo nunca é devolvido. */
+    private Boolean webhookSecretSet;
+    private Integer gitHistoryDepth;
+    private Boolean notifyUrlSet;
+
+    public Integer getGitHistoryDepth() {
+        return gitHistoryDepth;
+    }
+
+    public void setGitHistoryDepth(Integer gitHistoryDepth) {
+        this.gitHistoryDepth = gitHistoryDepth;
+    }
+
+    private String notifyFormat;
+    private Double notifyMinScoreDrop;
+    private String notifyMinSeverity;
+    private String notifyPublicUrl;
+
+    public Boolean getNotifyUrlSet() {
+        return notifyUrlSet;
+    }
+
+    public void setNotifyUrlSet(Boolean notifyUrlSet) {
+        this.notifyUrlSet = notifyUrlSet;
+    }
+
+    public String getNotifyFormat() {
+        return notifyFormat;
+    }
+
+    public void setNotifyFormat(String notifyFormat) {
+        this.notifyFormat = notifyFormat;
+    }
+
+    public Double getNotifyMinScoreDrop() {
+        return notifyMinScoreDrop;
+    }
+
+    public void setNotifyMinScoreDrop(Double notifyMinScoreDrop) {
+        this.notifyMinScoreDrop = notifyMinScoreDrop;
+    }
+
+    public String getNotifyMinSeverity() {
+        return notifyMinSeverity;
+    }
+
+    public void setNotifyMinSeverity(String notifyMinSeverity) {
+        this.notifyMinSeverity = notifyMinSeverity;
+    }
+
+    public String getNotifyPublicUrl() {
+        return notifyPublicUrl;
+    }
+
+    public void setNotifyPublicUrl(String notifyPublicUrl) {
+        this.notifyPublicUrl = notifyPublicUrl;
+    }
+
+    public Boolean getWebhookSecretSet() {
+        return webhookSecretSet;
+    }
+
+    public void setWebhookSecretSet(Boolean webhookSecretSet) {
+        this.webhookSecretSet = webhookSecretSet;
+    }
+
+    public Boolean getGitTokenSet() {
+        return gitTokenSet;
+    }
+
+    public void setGitTokenSet(Boolean gitTokenSet) {
+        this.gitTokenSet = gitTokenSet;
+    }
+
+    public String getGitTokenHosts() {
+        return gitTokenHosts;
+    }
+
+    public void setGitTokenHosts(String gitTokenHosts) {
+        this.gitTokenHosts = gitTokenHosts;
+    }
 
     public Double getScoreDelta() {
         return scoreDelta;

@@ -5,7 +5,7 @@
 set -u
 REPOS=("$@")
 [ ${#REPOS[@]} -eq 0 ] && REPOS=(spring-projects/spring-petclinic gothinkster/angular-realworld-example-app gothinkster/react-redux-realworld-example-app WebGoat/WebGoat)
-# o Sentinel audita a si mesmo (repositório privado: precisa de GIT_TOKEN com leitura)
+# o Sentinel audita a si mesmo (repositório privado: o GIT_TOKEN do CI vai no cadastro desse sistema)
 [ -n "${GIT_TOKEN:-}" ] && [ -n "${GITHUB_REPOSITORY:-}" ] && REPOS+=("$GITHUB_REPOSITORY")
 KEY="cal-$(date +%s)"; NET="sentinel-cal"; API="http://127.0.0.1:18081"
 H=(-H "X-API-Key: $KEY" -H "Content-Type: application/json")
@@ -24,15 +24,16 @@ docker run -d --name sentinel-cal-db --network "$NET" -e POSTGRES_DB=sentinel_au
 for _ in $(seq 1 30); do docker exec sentinel-cal-db pg_isready -U sentinel_audit >/dev/null 2>&1 && break; sleep 2; done
 docker run -d --name sentinel-cal-api --network "$NET" -p 127.0.0.1:18081:8080 \
   -e DB_URL=jdbc:postgresql://sentinel-cal-db:5432/sentinel_audit -e DB_USER=sentinel_audit -e DB_PASSWORD=cal \
-  -e API_KEY="$KEY" -e GIT_ALLOWED_HOSTS=github.com -e SCHEDULER_ENABLED=false -e OSV_ENABLED=false -e TRIVY_ENABLED=false \
-  -e GIT_HISTORY_DEPTH=1 -e GIT_TOKEN="${GIT_TOKEN:-}" -e GIT_TOKEN_HOSTS=github.com sentinel-audit-api:ci >/dev/null || falhar "API não subiu"
+  -e API_KEY="$KEY" -e SCHEDULER_ENABLED=false -e OSV_ENABLED=false -e TRIVY_ENABLED=false \
+  sentinel-audit-api:ci >/dev/null || falhar "API não subiu"
 ok=0; for _ in $(seq 1 60); do curl -fsS "${H[@]}" "$API/api/v1/health" >/dev/null 2>&1 && { ok=1; break; }; sleep 3; done
 [ "$ok" = 1 ] || falhar "API não respondeu ao health"
 
 for repo in "${REPOS[@]}"; do
   branch="$(gh api "repos/$repo" --jq .default_branch 2>/dev/null || echo main)"
   inicio=$(date +%s)
-  sid="$(curl -sS "${H[@]}" -X POST "$API/api/v1/systems" -d "{\"name\":\"${repo//\//-}\",\"repoUrl\":\"https://github.com/$repo\",\"stack\":\"MIXED\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')" || falhar "cadastro de $repo"
+  token=""; [ "$repo" = "${GITHUB_REPOSITORY:-}" ] && [ -n "${GIT_TOKEN:-}" ] && token=",\"gitToken\":\"$GIT_TOKEN\",\"gitTokenHosts\":\"github.com\""
+  sid="$(curl -sS "${H[@]}" -X POST "$API/api/v1/systems" -d "{\"name\":\"${repo//\//-}\",\"repoUrl\":\"https://github.com/$repo\",\"stack\":\"MIXED\",\"gitHistoryDepth\":1$token}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')" || falhar "cadastro de $repo"
   aid="$(curl -sS "${H[@]}" -X POST "$API/api/v1/audits" -d "{\"systemId\":$sid,\"branch\":\"$branch\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')" || falhar "pedido de auditoria de $repo"
   status=""
   for _ in $(seq 1 240); do

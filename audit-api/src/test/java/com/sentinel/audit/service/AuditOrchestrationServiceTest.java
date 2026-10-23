@@ -63,6 +63,7 @@ class AuditOrchestrationServiceTest {
         run.setStatus(AuditStatus.PENDING);
 
         service = new AuditOrchestrationService();
+        service.secretBox = new SecretBox("chave-de-teste");
         service.scoringService = new ScoringService();
         service.evidenceStager = new EvidenceStager();
         service.evidenceAnalyzer = new com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer();

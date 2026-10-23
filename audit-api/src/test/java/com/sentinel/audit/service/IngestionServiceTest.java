@@ -26,10 +26,7 @@ class IngestionServiceTest {
     @BeforeEach
     void setUp() {
         service = new IngestionService();
-        service.gitToken = Optional.empty();
         service.cloneBaseDir = tempDir.toString();
-        service.allowedHosts = Optional.empty();
-        service.tokenHosts = List.of("github.com");
         service.cloneTimeoutSeconds = 60;
     }
 
@@ -62,13 +59,6 @@ class IngestionServiceTest {
     }
 
     @Test
-    void deveRespeitarListaDeHostsPermitidos() {
-        service.allowedHosts = Optional.of(List.of("git.sicoob.com.br", "github.com"));
-        assertNotNull(service.validateRepoUrl("https://GitHub.com/org/repo.git"));
-        assertThrows(IllegalArgumentException.class, () -> service.validateRepoUrl("https://evil.example.org/x.git"));
-    }
-
-    @Test
     void deveValidarNomeDaBranch() {
         service.validateBranch("main");
         service.validateBranch("feature/nova-tela_1.2");
@@ -94,21 +84,28 @@ class IngestionServiceTest {
 
     @Test
     void tokenNuncaApareceNaLinhaDeComando() {
-        service.gitToken = Optional.of("ghp_SEGREDO_MUITO_SECRETO");
         List<String> cmd = service.buildCloneCommand("https://github.com/org/repo.git", null, tempDir.resolve("x"));
         assertTrue(cmd.stream().noneMatch(a -> a.contains("SEGREDO")));
+        assertEquals("100", cmd.get(cmd.indexOf("--depth") + 1), "histórico padrão");
+        assertEquals("1", service.buildCloneCommand("https://github.com/o/r.git", null, tempDir.resolve("x"), 0).get(
+                service.buildCloneCommand("https://github.com/o/r.git", null, tempDir.resolve("x"), 0).indexOf("--depth") + 1));
     }
 
     @Test
     void cloneInvalidoFalhaSemDeixarLixoNemVazarToken() throws IOException {
-        service.gitToken = Optional.of("ghp_SEGREDO_MUITO_SECRETO");
-        service.tokenHosts = List.of("127.0.0.1");
         IllegalStateException error = assertThrows(IllegalStateException.class,
-                () -> service.cloneRepository("https://127.0.0.1:9/org/repo.git", "main", null));
+                () -> service.cloneRepository("https://127.0.0.1:9/org/repo.git", "main", "ghp_SEGREDO_MUITO_SECRETO", "127.0.0.1"));
         assertFalse(error.getMessage().contains("SEGREDO"), "mensagem de erro não pode conter o token");
         try (Stream<Path> left = Files.list(tempDir)) {
             assertEquals(0L, left.count(), "clone e log temporários devem ser removidos");
         }
+    }
+
+    @Test
+    void tokenDoSistemaComSeusHostsTambemNaoVazaNoErro() {
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.cloneRepository("https://127.0.0.1:9/org/repo.git", "main", "ghp_DO_SISTEMA", "git.interno, 127.0.0.1"));
+        assertFalse(error.getMessage().contains("DO_SISTEMA"));
     }
 
     @Test

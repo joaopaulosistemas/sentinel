@@ -21,6 +21,25 @@ export interface SystemFormValues {
   /** Vazio = main */
   scheduledBranch: string;
   auditOnPush: boolean;
+  /** Token digitado agora; vazio mantém o salvo */
+  gitToken: string;
+  /** Hosts que recebem o token; vazio = github.com */
+  gitTokenHosts: string;
+  clearGitToken: boolean;
+  /** Commits baixados para varrer segredos no histórico; 0 ou 1 = clone raso */
+  gitHistoryDepth: number;
+  /** Segredo do webhook digitado/gerado agora; vazio mantém o salvo */
+  webhookSecret: string;
+  clearWebhookSecret: boolean;
+  /** URL do webhook de notificação digitada agora; vazio mantém a salva */
+  notifyUrl: string;
+  clearNotifyUrl: boolean;
+  /** slack | teams | generic */
+  notifyFormat: string;
+  notifyMinScoreDrop: number;
+  /** CRITICAL | HIGH | MEDIUM | LOW | INFO */
+  notifyMinSeverity: string;
+  notifyPublicUrl: string;
 }
 
 export const emptyForm: SystemFormValues = {
@@ -33,6 +52,18 @@ export const emptyForm: SystemFormValues = {
   auditIntervalHours: 0,
   scheduledBranch: '',
   auditOnPush: false,
+  gitToken: '',
+  gitTokenHosts: '',
+  clearGitToken: false,
+  gitHistoryDepth: 100,
+  webhookSecret: '',
+  clearWebhookSecret: false,
+  notifyUrl: '',
+  clearNotifyUrl: false,
+  notifyFormat: 'slack',
+  notifyMinScoreDrop: 5,
+  notifyMinSeverity: 'HIGH',
+  notifyPublicUrl: '',
 };
 
 export function formFrom(system: SystemSummaryResponse): SystemFormValues {
@@ -46,6 +77,18 @@ export function formFrom(system: SystemSummaryResponse): SystemFormValues {
     auditIntervalHours: system.auditIntervalHours ?? 0,
     scheduledBranch: system.scheduledBranch ?? '',
     auditOnPush: !!system.auditOnPush,
+    gitToken: '',
+    gitTokenHosts: system.gitTokenHosts ?? '',
+    clearGitToken: false,
+    gitHistoryDepth: system.gitHistoryDepth ?? 100,
+    webhookSecret: '',
+    clearWebhookSecret: false,
+    notifyUrl: '',
+    clearNotifyUrl: false,
+    notifyFormat: system.notifyFormat || 'slack',
+    notifyMinScoreDrop: system.notifyMinScoreDrop ?? 5,
+    notifyMinSeverity: system.notifyMinSeverity || 'HIGH',
+    notifyPublicUrl: system.notifyPublicUrl ?? '',
   };
 }
 
@@ -57,7 +100,14 @@ export interface FormErrors {
   repoUrl?: string;
   scheduledBranch?: string;
   auditIntervalHours?: string;
+  gitTokenHosts?: string;
+  gitHistoryDepth?: string;
+  notifyUrl?: string;
+  notifyMinScoreDrop?: string;
+  notifyPublicUrl?: string;
 }
+
+const HOSTS = /^[A-Za-z0-9.-]+(\s*,\s*[A-Za-z0-9.-]+)*$/;
 
 export const BRANCH_NAME = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 export const MAX_INTERVAL_HOURS = 720;
@@ -72,8 +122,36 @@ export function validate(values: SystemFormValues): FormErrors {
   if (!Number.isInteger(values.auditIntervalHours) || values.auditIntervalHours < 0 || values.auditIntervalHours > MAX_INTERVAL_HOURS) {
     errors.auditIntervalHours = `Use um número de 0 a ${MAX_INTERVAL_HOURS} horas`;
   }
+  if (values.gitTokenHosts.trim() !== '' && !HOSTS.test(values.gitTokenHosts.trim())) {
+    errors.gitTokenHosts = 'Use nomes de host separados por vírgula, por exemplo github.com, git.empresa.com';
+  }
+  if (!Number.isInteger(values.gitHistoryDepth) || values.gitHistoryDepth < 0 || values.gitHistoryDepth > 5000) {
+    errors.gitHistoryDepth = 'Use um número inteiro de 0 a 5000';
+  }
+  if (values.notifyUrl.trim() !== '' && !/^https:\/\/[^\s/]+\/?\S*$/.test(values.notifyUrl.trim())) {
+    errors.notifyUrl = 'Use o endereço https:// do webhook do Teams ou do Slack';
+  }
+  if (!Number.isFinite(values.notifyMinScoreDrop) || values.notifyMinScoreDrop < 0 || values.notifyMinScoreDrop > 100) {
+    errors.notifyMinScoreDrop = 'Use um número de 0 a 100';
+  }
+  if (values.notifyPublicUrl.trim() !== '' && !/^https?:\/\/\S+$/.test(values.notifyPublicUrl.trim())) {
+    errors.notifyPublicUrl = 'Use um endereço http:// ou https://';
+  }
   return errors;
 }
+
+export const notifyFormats = [
+  { value: 'slack', label: 'Slack' },
+  { value: 'teams', label: 'Microsoft Teams' },
+  { value: 'generic', label: 'Genérico (JSON)' },
+];
+
+export const notifySeverities = [
+  { value: 'CRITICAL', label: 'Crítica' },
+  { value: 'HIGH', label: 'Alta' },
+  { value: 'MEDIUM', label: 'Média' },
+  { value: 'LOW', label: 'Baixa' },
+];
 
 export function toRequest(values: SystemFormValues): SystemRequest {
   return {
@@ -83,6 +161,18 @@ export function toRequest(values: SystemFormValues): SystemRequest {
     team: values.team.trim(),
     description: values.description.trim(),
     profile: values.profile === 'default' ? '' : values.profile,
+    ...(values.gitToken.trim() ? { gitToken: values.gitToken.trim() } : {}),
+    gitTokenHosts: values.gitTokenHosts.trim(),
+    gitHistoryDepth: values.gitHistoryDepth,
+    ...(values.clearGitToken && !values.gitToken.trim() ? { clearGitToken: true } : {}),
+    ...(values.webhookSecret.trim() ? { webhookSecret: values.webhookSecret.trim() } : {}),
+    ...(values.notifyUrl.trim() ? { notifyUrl: values.notifyUrl.trim() } : {}),
+    ...(values.clearNotifyUrl && !values.notifyUrl.trim() ? { clearNotifyUrl: true } : {}),
+    notifyFormat: values.notifyFormat,
+    notifyMinScoreDrop: values.notifyMinScoreDrop,
+    notifyMinSeverity: values.notifyMinSeverity,
+    notifyPublicUrl: values.notifyPublicUrl.trim(),
+    ...(values.clearWebhookSecret && !values.webhookSecret.trim() ? { clearWebhookSecret: true } : {}),
   };
 }
 
@@ -92,6 +182,13 @@ export function toSchedule(values: SystemFormValues): ScheduleRequest {
     branch: values.scheduledBranch.trim(),
     auditOnPush: values.auditOnPush,
   };
+}
+
+/** Segredo aleatório de 64 caracteres hexadecimais para o webhook. */
+export function newWebhookSecret(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** O agendamento só precisa ser enviado se mudou (ou se o sistema é novo e foi configurado). */

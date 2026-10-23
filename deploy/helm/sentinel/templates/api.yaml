@@ -20,8 +20,7 @@ spec:
             - { name: DB_USER, value: {{ .Values.database.user | quote }} }
             - { name: DB_PASSWORD, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: DB_PASSWORD } } }
             - { name: API_KEY, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: API_KEY, optional: true } } }
-            - { name: GIT_TOKEN, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: GIT_TOKEN, optional: true } } }
-            - { name: WEBHOOK_SECRET, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: WEBHOOK_SECRET, optional: true } } }
+            - { name: SECRETS_KEY, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: SECRETS_KEY, optional: true } } }
             - { name: CLONE_DIR, value: /tmp/sentinel-audit-clones }
             - { name: PACKS_GIT_URL, value: {{ .Values.packs.gitUrl | quote }} }
             - { name: PACKS_GIT_REF, value: {{ .Values.packs.gitRef | quote }} }

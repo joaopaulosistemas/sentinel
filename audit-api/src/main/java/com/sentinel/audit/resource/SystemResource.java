@@ -58,6 +58,9 @@ public class SystemResource {
     IngestionService ingestionService;
 
     @Inject
+    com.sentinel.audit.service.SecretBox secretBox;
+
+    @Inject
     AuditedSystemRepository systemRepository;
 
     @Inject
@@ -97,6 +100,7 @@ public class SystemResource {
         system.setStack(request.getStack());
         system.setTeam(request.getTeam());
         system.setProfile(validProfile(request.getProfile()));
+        applyGitAccess(system, request);
         systemRepository.persist(system);
         return Response.status(Response.Status.CREATED).entity(toSummary(system)).build();
     }
@@ -108,7 +112,18 @@ public class SystemResource {
     @Path("/check-repo")
     @Operation(summary = "Verificar repositório", description = "Testa o acesso ao repositório e descobre a branch padrão (git ls-remote), sem clonar")
     public IngestionService.RepoCheck checkRepo(@Valid RepoCheckRequest request) {
-        return ingestionService.checkRepository(request.repoUrl(), request.branch());
+        String token = request.gitToken();
+        String hosts = request.gitTokenHosts();
+        if ((token == null || token.isBlank()) && request.systemId() != null) {
+            AuditedSystem system = systemRepository.findById(request.systemId());
+            if (system != null && system.hasGitToken()) {
+                token = secretBox.decrypt(system.getGitTokenEnc());
+                if (hosts == null || hosts.isBlank()) {
+                    hosts = system.getGitTokenHosts();
+                }
+            }
+        }
+        return ingestionService.checkRepository(request.repoUrl(), request.branch(), token, hosts);
     }
 
     /**
@@ -129,6 +144,7 @@ public class SystemResource {
         if (request.getProfile() != null) {
             system.setProfile(validProfile(request.getProfile()));
         }
+        applyGitAccess(system, request);
         return toSummary(system);
     }
 
@@ -258,6 +274,67 @@ public class SystemResource {
         return profile.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
+    /** Token (cifrado) e hosts do acesso ao repositório: token vazio mantém o salvo; "clearGitToken" apaga. */
+    private void applyGitAccess(AuditedSystem system, CreateSystemRequest request) {
+        if (request.getGitTokenHosts() != null) {
+            String hosts = request.getGitTokenHosts().trim();
+            system.setGitTokenHosts(hosts.isEmpty() ? null : hosts);
+        }
+        if (Boolean.TRUE.equals(request.getClearGitToken())) {
+            system.setGitTokenEnc(null);
+        }
+        if (request.getGitHistoryDepth() != null) {
+            system.setGitHistoryDepth(request.getGitHistoryDepth());
+        }
+        if (request.getNotifyFormat() != null) {
+            String f = request.getNotifyFormat().trim().toLowerCase(java.util.Locale.ROOT);
+            system.setNotifyFormat(f.isEmpty() ? null : f);
+        }
+        if (request.getNotifyMinSeverity() != null) {
+            String sev = request.getNotifyMinSeverity().trim().toUpperCase(java.util.Locale.ROOT);
+            system.setNotifyMinSeverity(sev.isEmpty() ? null : sev);
+        }
+        if (request.getNotifyMinScoreDrop() != null) {
+            system.setNotifyMinScoreDrop(request.getNotifyMinScoreDrop());
+        }
+        if (request.getNotifyPublicUrl() != null) {
+            String u = request.getNotifyPublicUrl().trim();
+            system.setNotifyPublicUrl(u.isEmpty() ? null : u);
+        }
+        if (Boolean.TRUE.equals(request.getClearNotifyUrl())) {
+            system.setNotifyUrlEnc(null);
+        }
+        String notifyUrl = request.getNotifyUrl();
+        if (notifyUrl != null && !notifyUrl.isBlank()) {
+            try {
+                com.sentinel.audit.service.NotificationService.validateTarget(notifyUrl.trim());
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException(e.getMessage());
+            }
+            if (!secretBox.available()) {
+                throw new BadRequestException("Para guardar a URL, defina SECRETS_KEY (ou API_KEY) no ambiente da API.");
+            }
+            system.setNotifyUrlEnc(secretBox.encrypt(notifyUrl.trim()));
+        }
+        if (Boolean.TRUE.equals(request.getClearWebhookSecret())) {
+            system.setWebhookSecretEnc(null);
+        }
+        String webhook = request.getWebhookSecret();
+        if (webhook != null && !webhook.isBlank()) {
+            if (!secretBox.available()) {
+                throw new BadRequestException("Para guardar o segredo, defina SECRETS_KEY (ou API_KEY) no ambiente da API.");
+            }
+            system.setWebhookSecretEnc(secretBox.encrypt(webhook.trim()));
+        }
+        String token = request.getGitToken();
+        if (token != null && !token.isBlank()) {
+            if (!secretBox.available()) {
+                throw new BadRequestException("Para guardar o token, defina SECRETS_KEY (ou API_KEY) no ambiente da API.");
+            }
+            system.setGitTokenEnc(secretBox.encrypt(token.trim()));
+        }
+    }
+
     private SystemSummaryResponse toSummary(AuditedSystem system) {
         SystemSummaryResponse dto = new SystemSummaryResponse();
         dto.setId(system.getId());
@@ -270,6 +347,15 @@ public class SystemResource {
         dto.setProfile(system.effectiveProfile());
         dto.setRepoUrl(system.getRepoUrl());
         dto.setDescription(system.getDescription());
+        dto.setGitTokenSet(system.hasGitToken());
+        dto.setWebhookSecretSet(system.hasWebhookSecret());
+        dto.setGitHistoryDepth(system.getGitHistoryDepth());
+        dto.setNotifyUrlSet(system.hasNotifyUrl());
+        dto.setNotifyFormat(system.getNotifyFormat());
+        dto.setNotifyMinScoreDrop(system.getNotifyMinScoreDrop());
+        dto.setNotifyMinSeverity(system.getNotifyMinSeverity());
+        dto.setNotifyPublicUrl(system.getNotifyPublicUrl());
+        dto.setGitTokenHosts(system.getGitTokenHosts());
 
         List<AuditRun> runs = auditRunRepository.findBySystemId(system.getId());
         dto.setScoreDelta(com.sentinel.audit.service.ScoreTrend.delta(runs));
