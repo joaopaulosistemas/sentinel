@@ -106,7 +106,7 @@ class AuditOrchestrationServiceTest {
         };
         service.ingestionService = new IngestionService() {
             @Override
-            public Path cloneRepository(String repoUrl, String branch, String token) {
+            public Path cloneRepository(String repoUrl, String branch, String token, String hosts, Integer historyDepth) {
                 if (cloneError != null) {
                     throw cloneError;
                 }
@@ -312,7 +312,7 @@ class AuditOrchestrationServiceTest {
     void cancelarDuranteOCloneParaAntesDaAnaliseESemGravarNada() {
         service.ingestionService = new IngestionService() {
             @Override
-            public Path cloneRepository(String repoUrl, String branch, String token) {
+            public Path cloneRepository(String repoUrl, String branch, String token, String hosts, Integer historyDepth) {
                 assertTrue(service.cancel(7L));   // o usuário clica em cancelar enquanto clona
                 return tempDir;
             }
