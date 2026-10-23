@@ -162,3 +162,10 @@ profundidade do histórico de commits, segredo do webhook de push (por sistema; 
 e as notificações (URL do Teams/Slack cifrada, formato, queda mínima de nota, severidade mínima, endereço do dashboard; só https público).
 `GIT_ALLOWED_HOSTS` deixou de existir: o host de cada repositório é o do endereço cadastrado.
 O token que estava em `.env.example` foi removido; **ele continua no histórico do Git e precisa ser revogado**.
+
+## Dashboard 12.5.0 — Fase 1 do plano Sentinel + MCP: menu e Informações de Auditoria
+
+Menu na nova ordem e com os nomes combinados: Visão geral, Sistemas, **Informações de Auditoria** (antes Findings; a rota `/findings` não mudou, então links e favoritos continuam valendo),
+**Ranking de Sistemas** e Relatórios. A tela de achados ganhou o título novo e a barra de abas: "Achados e nota" funciona; "Sugestões do Claude" e "Reauditoria"
+aparecem desativadas e entram nas fases 4 e 5. Cada achado mostra de qual analisador veio (Semgrep, SonarQube, Checkstyle, jscpd…), a partir do `toolSource` que a API já devolvia.
+Sem mudança na API, no motor de regras nem na nota. Os filtros continuam como eram; filtrar por origem exigiria um parâmetro novo na API e fica para depois.

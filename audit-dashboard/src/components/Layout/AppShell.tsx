@@ -17,8 +17,8 @@ interface AppShellProps {
 const ITENS = [
   { nome: 'Visão geral', rota: '/', exata: true },
   { nome: 'Sistemas', rota: '/systems' },
-  { nome: 'Findings', rota: '/findings' },
-  { nome: 'Ranking', rota: '/ranking' },
+  { nome: 'Informações de Auditoria', rota: '/findings' },
+  { nome: 'Ranking de Sistemas', rota: '/ranking' },
   { nome: 'Relatórios', rota: '/reports' },
 ];
 

@@ -32,6 +32,13 @@ const categoryOptions: Array<{ value: Category | ''; label: string }> = [
   { value: 'PERFORMANCE', label: 'Desempenho' },
 ];
 
+/** Só "Achados e nota" funciona por enquanto; as outras duas abas entram nas fases seguintes do plano. */
+const ABAS = [
+  { id: 'achados', nome: 'Achados e nota', ativa: true },
+  { id: 'sugestoes', nome: 'Sugestões do Claude', ativa: false },
+  { id: 'reauditoria', nome: 'Reauditoria', ativa: false },
+];
+
 const label = { fontSize: 12, color: '#525252' } as const;
 const select = { height: 40, padding: '0 8px', border: 0, borderBottom: '1px solid #8d8d8d', background: '#f4f4f4', fontSize: 14 } as const;
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -152,7 +159,7 @@ export function FindingsPage() {
     <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>
-          Findings
+          Informações de Auditoria
           {auditMode && (
             <span style={{ fontSize: 16, color: '#6f6f6f', marginLeft: 12 }}>
               — {audit?.systemName ? `${audit.systemName} · ` : ''}Auditoria #{auditId}
@@ -164,6 +171,33 @@ export function FindingsPage() {
             ? 'Achados desta auditoria.'
             : 'Da última auditoria concluída de cada sistema. Escolha um sistema para focar, ou veja todos juntos e saiba de onde cada achado vem.'}
         </span>
+      </div>
+
+      <div role="tablist" aria-label="Seções de Informações de Auditoria" style={{ display: 'flex', borderBottom: '1px solid #c6c6c6' }}>
+        {ABAS.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            role="tab"
+            id={`aba-${a.id}`}
+            aria-selected={a.ativa}
+            aria-disabled={!a.ativa}
+            disabled={!a.ativa}
+            title={a.ativa ? undefined : 'Chega em uma próxima fase'}
+            style={{
+              background: 'none',
+              border: 0,
+              borderBottom: a.ativa ? '3px solid #0f62fe' : '3px solid transparent',
+              padding: '10px 16px',
+              fontSize: 14,
+              fontWeight: a.ativa ? 600 : 400,
+              color: a.ativa ? '#161616' : '#a8a8a8',
+              cursor: a.ativa ? 'default' : 'not-allowed',
+            }}
+          >
+            {a.nome}
+          </button>
+        ))}
       </div>
 
       <section aria-label="Filtros" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>

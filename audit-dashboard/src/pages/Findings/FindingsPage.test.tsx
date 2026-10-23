@@ -74,6 +74,20 @@ describe('FindingsPage', () => {
     expect(screen.getByText('Página 1 de 1')).toBeInTheDocument();
   });
 
+  it('chama a tela de Informações de Auditoria, com a aba de achados ativa e as próximas desativadas', async () => {
+    renderFindings();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Informações de Auditoria' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Achados e nota' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Sugestões do Claude' })).toBeDisabled();
+    expect(screen.getByRole('tab', { name: 'Reauditoria' })).toBeDisabled();
+  });
+
+  it('mostra de qual analisador veio cada achado', async () => {
+    renderFindings();
+    await screen.findByText('SQL por concatenação');
+    expect(screen.getAllByText('Semgrep').length).toBe(2);
+  });
+
   it('agrupa os achados por sistema quando o usuário pede', async () => {
     renderFindings();
     await screen.findByText('SQL por concatenação');

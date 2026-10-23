@@ -73,7 +73,7 @@ export function RankingPage() {
     <div style={{ padding: '2rem', display: 'grid', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ marginBottom: '0.25rem', fontSize: '1.75rem', fontWeight: 400 }}>Ranking dos sistemas</h1>
+          <h1 style={{ marginBottom: '0.25rem', fontSize: '1.75rem', fontWeight: 400 }}>Ranking de Sistemas</h1>
           <p style={{ color: '#525252' }}>
             Compare os sistemas pela nota da última auditoria. Meta da organização: {TARGET}.
           </p>
