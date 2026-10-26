@@ -69,7 +69,8 @@ hr{display:none}
 <a href="#7-implantacao-e-seguranca">7. Implantação e segurança</a>
 <a href="#8-automacao-ci-release-e-agentes">8. Automação: CI, release e agentes</a>
 <a href="#9-terceiros">9. Terceiros</a>
-<a href="#10-limites-deste-documento">10. Limites deste documento</a>
+<a href="#10-decisoes-que-moldam-o-desenho">10. Decisões que moldam o desenho</a>
+<a href="#11-limites-deste-documento">11. Limites deste documento</a>
   </nav>
   <main>
 <h1 id="arquitetura-do-sentinel-audit-tool">Arquitetura do Sentinel Audit Tool</h1>
@@ -77,7 +78,7 @@ hr{display:none}
 Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <blockquote>
 <p><strong>Escopo.</strong> "Todos os projetos" aqui são os módulos do repositório <code>sentinel</code>: <code>audit-api</code> (backend), <code>audit-cli</code>, <code>audit-dashboard</code> (frontend), <code>audit-rules</code> (regras e configuração das ferramentas), <code>deploy</code> (Docker/Helm) e a automação (<code>.github</code>, <code>scripts</code>). O app <code>frequency</code> é outro repositório e não está neste documento.
-<strong>Origem.</strong> Escrito a partir do código da <code>main</code> (119 classes Java em <code>audit-api</code>, 4 em <code>audit-cli</code>, 33 arquivos TypeScript/TSX em <code>audit-dashboard/src</code>). Nomes de classe foram conferidos contra o código. Onde uma descrição vem só do comentário da classe e não da leitura do corpo, o texto diz "segundo o comentário".</p>
+<strong>Origem.</strong> Escrito a partir do código da <code>main</code> (classes Java em <code>audit-api</code>, <code>audit-cli</code> e arquivos TypeScript/TSX em <code>audit-dashboard/src</code>; contagens mudam a cada versão). Nomes de classe foram conferidos contra o código. Onde uma descrição vem só do comentário da classe e não da leitura do corpo, o texto diz "segundo o comentário".</p>
 </blockquote>
 <h2 id="1-desenho-macro">1. Desenho macro</h2>
 <h3 id="11-contexto-quem-usa-e-com-quem-o-sentinel-conversa">1.1 Contexto: quem usa e com quem o Sentinel conversa</h3>
@@ -259,6 +260,26 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>Keycloak</td>
 </tr>
 <tr>
+<td>Ajuste do motor por sistema (regras, limites, pacotes, analisadores)</td>
+<td>pacote <code>tuning</code> (<code>EngineConfigResource</code>, <code>SystemTuningService</code>), <code>SystemTuning</code> e <code>AuditPolicy.withTuning</code> em <code>pack</code></td>
+<td>Dashboard: <code>EnginePanel</code> (Sistemas → Motor)</td>
+</tr>
+<tr>
+<td>MCP: o Claude consulta a auditoria (leitura)</td>
+<td>pacote <code>mcp</code> (<code>McpResource</code>, <code>McpProtocol</code>, <code>McpGateService</code>, <code>McpToolService</code>, <code>McpShaper</code>, <code>McpRateLimiter</code>)</td>
+<td>Dashboard: <code>McpPanel</code>; doc <code>docs/integracao/mcp.md</code></td>
+</tr>
+<tr>
+<td>Revisão do Claude: sugestões, regras propostas e funil</td>
+<td>pacote <code>review</code> (<code>ReviewService</code>, <code>RuleFunnel</code>, <code>LocalRuleMaterializer</code>, <code>ReviewMetrics</code>)</td>
+<td>Dashboard: <code>ClaudeReviewPanel</code> (Informações de Auditoria → Revisão do Claude)</td>
+</tr>
+<tr>
+<td>Reauditoria e pedidos do Claude com aprovação</td>
+<td>pacote <code>actions</code> (<code>PendingActionService</code>, <code>PendingActionRules</code>, <code>PendingActionResource</code>)</td>
+<td>Dashboard: <code>ReauditPanel</code>, <code>StartAuditModal</code></td>
+</tr>
+<tr>
 <td>Evolução automática do próprio Sentinel</td>
 <td>—</td>
 <td><code>.github/workflows</code>, <code>.github/agente</code>, <code>scripts</code>, <code>docs/evolucao</code></td>
@@ -327,6 +348,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     OR-&gt;&gt;IN: apaga a pasta temporária
     U-&gt;&gt;AR: GET /audits/{id} (consulta até COMPLETED)</pre></figure>
 <p>Pontos do código que valem saber (do comentário de <code>AuditOrchestrationService</code>): nenhuma entidade JPA é usada fora de transação; a execução espera o registro da auditoria ficar visível no banco; falha de um analisador não derruba a auditoria (vira <code>FALHOU</code> em <code>AnalyzerRunInfo</code>); campos de texto são truncados ao tamanho das colunas; só rodam analisadores que suportam a stack do sistema.</p>
+<p><strong>Andamento e cancelamento.</strong> <code>AuditProgressTracker</code> guarda a etapa, os analisadores e os eventos das auditorias em execução: a réplica que executa mantém o estado em memória e o espelha na tabela <code>audit_progress</code> (<code>ProgressStore</code>, uma gravação por mudança e um batimento a cada 15 s); as demais réplicas leem o espelho, então a tela mostra o andamento qualquer que seja a réplica que atende. Cancelar (<code>POST /audits/{id}/cancel</code>) muda o status para <code>CANCELLED</code> no banco na hora; a réplica que executa percebe o status (consulta no máximo 1×/s) e a orquestração para na próxima verificação (entre as etapas e a cada 0,5 s enquanto espera os analisadores), descarta o que foi analisado e limpa o clone. Auditorias órfãs (a réplica caiu) são detectadas por falta de batimento por 90 s e marcadas <code>FAILED</code> por <code>AuditScheduler.recoverInterruptedRuns()</code>, no start e a cada 5 min. O agendamento automático continua assumindo uma única instância (<code>SCHEDULER_ENABLED=false</code> nas demais, variável avançada). O espelho é auxiliar: se o banco falhar, a auditoria segue só com a memória.</p>
 <h3 id="33-pacote-resource-borda-rest">3.3 Pacote <code>resource</code> (borda REST)</h3>
 <div class="tabela"><table>
 <thead>
@@ -339,18 +361,18 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tbody>
 <tr>
 <td><code>SystemResource</code></td>
-<td>Cadastro e consulta de sistemas, agenda, perfil, tendência, supressões</td>
-<td><code>/api/v1/systems</code>, <code>/{id}</code>, <code>/{id}/audits</code>, <code>/{id}/trend</code>, <code>/{id}/suppressions</code>, <code>/{id}/schedule</code>, <code>/{id}/profile</code></td>
+<td>Cadastro, edição e consulta de sistemas, verificação do repositório, agenda, perfil, tendência, supressões</td>
+<td><code>/api/v1/systems</code>, <code>/check-repo</code>, <code>/{id}</code>, <code>/{id}/audits</code>, <code>/{id}/trend</code>, <code>/{id}/suppressions</code>, <code>/{id}/schedule</code>, <code>/{id}/profile</code></td>
 </tr>
 <tr>
 <td><code>AuditResource</code></td>
-<td>Cria auditoria e entrega resultado, achados, diferença, relatório, SBOM e visão completa</td>
-<td><code>/api/v1/audits</code>, <code>/{id}</code>, <code>/{id}/findings</code>, <code>/{id}/diff</code>, <code>/{id}/report</code>, <code>/{id}/sbom</code>, <code>/{id}/insights</code></td>
+<td>Cria, lista e cancela auditorias; entrega resultado com andamento, achados, diferença, plano de correção, relatórios (técnico, executivo, comparativo, CSV), SBOM e visão completa</td>
+<td><code>/api/v1/audits</code>, <code>/{id}</code>, <code>/{id}/cancel</code>, <code>/{id}/fix-plan</code>, <code>/{id}/findings</code>, <code>/{id}/findings.csv</code>, <code>/{id}/diff</code>, <code>/{id}/report</code>, <code>/{id}/sbom</code>, <code>/{id}/insights</code></td>
 </tr>
 <tr>
 <td><code>FindingResource</code></td>
-<td>Suprime um achado com justificativa</td>
-<td><code>POST /api/v1/findings/{id}/suppress</code></td>
+<td>Suprime um achado com justificativa; lista os achados de todos os sistemas</td>
+<td><code>POST /api/v1/findings/{id}/suppress</code>, <code>GET /api/v1/findings</code></td>
 </tr>
 <tr>
 <td><code>WebhookResource</code></td>
@@ -366,6 +388,31 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td><code>RuleResource</code></td>
 <td>Qualidade das regras e laboratório</td>
 <td><code>/api/v1/rules/quality</code>, <code>/playground</code></td>
+</tr>
+<tr>
+<td><code>EngineConfigResource</code></td>
+<td>Lê e grava o ajuste do motor de um sistema e mostra o resultado já resolvido</td>
+<td><code>/api/v1/engine-config/{id}</code></td>
+</tr>
+<tr>
+<td><code>McpResource</code></td>
+<td>Servidor MCP (JSON-RPC por POST) com a chave do sistema, fora da API key global</td>
+<td><code>POST /mcp/{sistema}</code></td>
+</tr>
+<tr>
+<td><code>McpAdminResource</code></td>
+<td>Liga o MCP, escolhe nível de dado e ferramentas, gera ou revoga a chave, lista as chamadas</td>
+<td><code>/api/v1/mcp-access/{id}</code>, <code>/key</code>, <code>/calls</code></td>
+</tr>
+<tr>
+<td><code>ClaudeReviewResource</code></td>
+<td>Sugestões, regras propostas, funil e métricas do Claude</td>
+<td><code>/api/v1/claude-review/{id}</code>, <code>/metrics</code>, <code>/suggestions/{sid}/status</code>, <code>/rules/{rid}/review\|sample\|observe\|promote\|discard\|copy</code></td>
+</tr>
+<tr>
+<td><code>PendingActionResource</code></td>
+<td>Pedidos do Claude esperando aprovação</td>
+<td><code>/api/v1/pending-actions/{id}</code>, <code>/{actionId}/approve</code>, <code>/reject</code></td>
 </tr>
 <tr>
 <td><code>HealthResource</code></td>
@@ -798,9 +845,55 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     }</pre></figure>
 <ul>
 <li><code>model</code>: <code>AuditedSystem</code>, <code>AuditRun</code>, <code>Finding</code>, <code>FindingSuppression</code> (entidades), <code>RiskScore</code> (objeto embutido em <code>AuditRun</code>), <code>Severity</code>, <code>Category</code>, <code>Stack</code>, <code>FindingStatus</code>, <code>AuditStatus</code>, <code>SuppressionReason</code> (enums).</li>
+<li>Entidades do plano Sentinel + MCP: <code>SystemEngineConfig</code> (ajuste do motor), <code>McpAccess</code> e <code>McpCallLog</code> (acesso e registro do MCP), <code>ReviewSuggestion</code> e <code>RuleProposal</code> (revisão do Claude), <code>PendingAction</code> (pedidos com aprovação); cada uma tem o seu repositório Panache.</li>
 <li><code>repository</code> (Panache): <code>AuditedSystemRepository</code>, <code>AuditRunRepository</code>, <code>FindingRepository</code>, <code>FindingSuppressionRepository</code>.</li>
 <li><code>dto</code>: <code>CreateSystemRequest</code>, <code>CreateAuditRequest</code>, <code>ProfileRequest</code>, <code>ScheduleRequest</code>, <code>SuppressRequest</code> (entradas); <code>SystemSummaryResponse</code>, <code>AuditRunResponse</code>, <code>FindingResponse</code>, <code>RiskScoreDto</code>, <code>RemediationDto</code>, <code>AuditDiffResponse</code>, <code>TrendPoint</code>, <code>SuppressionResponse</code> (saídas); <code>FindingMapper</code> converte entidade em resposta (inclui a orientação de correção).</li>
 </ul>
+<h3 id="311-sentinel-mcp-tuning-mcp-review-actions">3.11 Sentinel + MCP (<code>tuning</code>, <code>mcp</code>, <code>review</code>, <code>actions</code>)</h3>
+<p>O Claude entra como consultor, nunca como juiz: o motor de regras segue sendo a única fonte da nota.</p>
+<figure class="diagrama"><pre class="mermaid">flowchart LR
+    CL["Claude (cliente MCP)"] -- "POST /mcp/{sistema}\nBearer da chave do sistema" --&gt; MR["McpResource\nlimite de chamadas"]
+    MR --&gt; GATE["McpGateService\nchave (SHA-256), ferramentas ligadas, nível de dado"]
+    GATE --&gt; TOOLS["McpToolService + McpShaper\nleitura moldada pelo nível de dado"]
+    TOOLS --&gt; AUD[("auditorias e achados")]
+    TOOLS -- "registrar_sugestao\npropor_regra" --&gt; REV["review\nsugestões + funil de regras"]
+    TOOLS -- "iniciar_auditoria\nsuprimir_achado" --&gt; PA["actions\nPendingAction (1 h)"]
+    PA -- "uma pessoa aprova no dashboard" --&gt; EXEC["AuditRequestService\nFindingLifecycleService"]
+    REV -- "observação em modo sombra" --&gt; POL["AuditPolicy\n(perfil + SystemTuning + regras locais)"]
+    TUN["tuning\najuste do motor por sistema"] --&gt; POL
+    POL --&gt; ENG["motor: analisadores + score"]</pre></figure>
+<div class="tabela"><table>
+<thead>
+<tr>
+<th>Pacote</th>
+<th>Classes principais</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tuning</code></td>
+<td><code>SystemTuningService</code>, <code>SystemEngineConfig</code>, <code>TuningJson</code>, <code>EngineConfigResource</code></td>
+<td>Guarda o ajuste de cada sistema (regra ligada, desligada ou em sombra, limites, pacotes, analisadores) e o aplica sobre o perfil. Ajuste vazio devolve o mesmo <code>AuditPolicy</code>.</td>
+</tr>
+<tr>
+<td><code>mcp</code></td>
+<td><code>McpResource</code>, <code>McpProtocol</code>, <code>McpGateService</code>, <code>McpToolService</code>, <code>McpTool</code>, <code>McpShaper</code>, <code>DataLevel</code>, <code>McpRateLimiter</code>, <code>McpAdminResource</code></td>
+<td>Protocolo, chave por sistema (hash SHA-256), ferramentas (leitura ligada por padrão; escrita desligada), nível de dado (<code>só números e títulos</code> por padrão; <code>antifraude-engine</code> fixo em sensível), limite de 60 chamadas por minuto e de 10 tentativas com chave errada, registro das chamadas.</td>
+</tr>
+<tr>
+<td><code>review</code></td>
+<td><code>ReviewService</code>, <code>RuleFunnel</code>, <code>RuleStage</code>, <code>LocalRuleMaterializer</code>, <code>ReviewMetrics</code>, <code>ClaudeReviewResource</code></td>
+<td>Sugestões (aberta, tratada, dispensada), regras propostas e o funil <code>PROPOSED → REVIEWED → SAMPLE_PASSED → OBSERVING → PROMOTED/DISCARDED</code>; regra em observação roda em modo sombra, fora da nota. Métricas de quanto o Claude acerta.</td>
+</tr>
+<tr>
+<td><code>actions</code></td>
+<td><code>PendingActionService</code>, <code>PendingActionRules</code>, <code>PendingAction</code>, <code>PendingActionResource</code></td>
+<td>Pedidos do Claude (iniciar auditoria, suprimir achado como falso positivo) que só acontecem com aprovação. Valem 1 hora, no máximo 5 pendentes por sistema; branch validada; supressão expira em 90 dias; o texto do pedido é montado pelo Sentinel.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Ferramentas MCP de leitura: <code>status_auditoria</code>, <code>buscar_achados</code>, <code>diff_auditoria</code>, <code>o_que_corrigir_primeiro</code> e <code>status_pedidos</code>. De escrita (desligadas por padrão): <code>registrar_sugestao</code>, <code>propor_regra</code>, <code>iniciar_auditoria</code> e <code>suprimir_achado</code>. Detalhes em <code>docs/integracao/mcp.md</code>.</p>
 <hr />
 <h2 id="4-cli-audit-cli">4. CLI <code>audit-cli</code></h2>
 <p>Um único pacote, <code>com.sentinel.audit.cli</code>, usado por pipelines de CI.</p>
@@ -842,10 +935,12 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <p>React 18, TypeScript, IBM Carbon Design System, Vite, TanStack Query (dados do servidor), Zustand (filtros e seleção), React Router.</p>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     subgraph rotas["App.tsx (rotas)"]
-        O["/ e /systems\nOverviewPage"]
+        O["/\nOverviewPage"]
+        SY["/systems\nSystemsPage (cadastro em janela)"]
         SD["/systems/:id\nSystemDetailPage"]
+        AR["/audits/:id\nAuditRunPage"]
         RK["/ranking\nRankingPage"]
-        F["/findings\nFindingsPage"]
+        F["/findings\nFindingsPage (Achados, Revisão do Claude, Reauditoria)"]
         RP["/reports\nReportsPage"]
     end
     SHELL["AppShell (cabeçalho, menu, versão)"] --&gt; rotas
@@ -866,13 +961,13 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tbody>
 <tr>
 <td>Páginas</td>
-<td><code>OverviewPage</code>, <code>SystemDetailPage</code>, <code>RankingPage</code>, <code>FindingsPage</code>, <code>ReportsPage</code></td>
-<td>Lista de sistemas e cadastro; detalhe com nota, tendência e visão completa; ranking de sistemas e qualidade das regras; achados com filtros; relatórios</td>
+<td><code>OverviewPage</code>, <code>SystemsPage</code>, <code>SystemDetailPage</code>, <code>AuditRunPage</code>, <code>RankingPage</code>, <code>FindingsPage</code>, <code>ReportsPage</code></td>
+<td>Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios</td>
 </tr>
 <tr>
 <td>Componentes</td>
-<td><code>FindingsTable</code>, <code>ScoreGauge</code>, <code>RiskBadge</code>, <code>TrendChart</code>, <code>DiffSummary</code>, <code>InsightsPanel</code>, <code>RemediationBlock</code>, <code>SuppressModal</code>, <code>SuppressionsList</code>, <code>ProfileForm</code>, <code>ScheduleForm</code>, <code>Layout/AppShell</code></td>
-<td>Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda</td>
+<td><code>FindingsTable</code>, <code>ScoreGauge</code>, <code>RiskBadge</code>, <code>TrendChart</code>, <code>DiffSummary</code>, <code>InsightsPanel</code>, <code>RemediationBlock</code>, <code>SuppressModal</code>, <code>SuppressionsList</code>, <code>ProfileForm</code>, <code>ScheduleForm</code>, <code>Layout/AppShell</code>, <code>EnginePanel</code>, <code>McpPanel</code>, <code>ClaudeReviewPanel</code>, <code>ReauditPanel</code>, <code>StartAuditModal</code></td>
+<td>Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria</td>
 </tr>
 <tr>
 <td>Hooks</td>
@@ -896,8 +991,8 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 <tr>
 <td>Testes</td>
-<td><code>RiskBadge.test</code>, <code>ScoreGauge.test</code>, <code>AppShell.test</code>, <code>test/a11y.test</code> (axe)</td>
-<td>16 testes (Vitest + Testing Library)</td>
+<td>um <code>.test.tsx</code> ao lado de páginas e painéis, mais <code>test/a11y.test</code> (axe)</td>
+<td>Vitest + Testing Library; <code>npx vitest run</code></td>
 </tr>
 </tbody>
 </table></div>
@@ -978,7 +1073,11 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 <tr>
 <td>Segredos</td>
-<td>O valor de um segredo achado nunca é gravado, só um hash curto</td>
+<td>O valor de um segredo achado nunca é gravado, só um hash curto. O token Git digitado na tela é cifrado (<code>SecretBox</code>) com <code>SECRETS_KEY</code>, senão <code>API_KEY</code>, senão uma chave aleatória guardada no volume <code>audit_secrets</code></td>
+</tr>
+<tr>
+<td>MCP</td>
+<td>Rota própria <code>/mcp/{sistema}</code> com chave por sistema (só o hash fica guardado); resposta 401 idêntica exista o sistema ou não; limite de chamadas e de tentativas erradas (429); ferramentas de escrita desligadas por padrão e sempre com aprovação humana</td>
 </tr>
 <tr>
 <td>Avisos</td>
@@ -1124,8 +1223,21 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tbody>
 </table></div>
 <hr />
-<h2 id="10-limites-deste-documento">10. Limites deste documento</h2>
+<h2 id="10-decisoes-que-moldam-o-desenho">10. Decisões que moldam o desenho</h2>
 <ul>
+<li><strong>O motor de regras é a única fonte da nota.</strong> O Claude (via MCP) consulta, sugere e propõe, sempre fora da nota; qualquer coisa que ele crie só pesa depois de passar pelo funil e de uma pessoa promovê-la.</li>
+<li><strong>O Claude pede, uma pessoa decide.</strong> As ferramentas de escrita só criam um pedido pendente; executar exige aprovação no dashboard.</li>
+<li><strong>Tolerância a falha.</strong> Analisador, SBOM, contexto e notificação são isolados. O que falha vira aviso e a auditoria continua <code>COMPLETED</code>.</li>
+<li><strong>Dados declarativos.</strong> Regras, remediação, arquitetura e ferramentas vivem em YAML nos pacotes. Código só muda para criar um novo tipo de verificação.</li>
+<li><strong>Só o comprovado.</strong> Higiene e insights usam evidência de arquivos. O que análise estática não alcança vai para a lista "não foi possível verificar".</li>
+<li><strong>Execução segura.</strong> Comandos externos só rodam se o perfil os permitir (<code>allow-tools</code>). O laboratório limita tamanho, tempo e concorrência.</li>
+<li><strong>Tudo por sistema.</strong> Motor, ferramentas MCP e nível de dado são configurados em cada sistema; sem ajuste, vale o perfil.</li>
+<li><strong>Dado mínimo.</strong> Nível padrão do MCP é "só números e títulos"; o <code>antifraude-engine</code> é fixo em "sensível"; achado de segredo nunca leva o valor.</li>
+</ul>
+<hr />
+<h2 id="11-limites-deste-documento">11. Limites deste documento</h2>
+<ul>
+<li>Este documento descreve o código até a versão 12.10.0 do dashboard (fases 1 a 6 do plano Sentinel + MCP). O HTML é gerado deste arquivo por <code>scripts/gerar-arquitetura-html.py</code>; edite só o <code>.md</code>.</li>
 <li>Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (<code>AuditOrchestrationService</code>, <code>ScoringService</code>, camadas, dashboard). Classes grandes como <code>PackLoader</code> (641 linhas), <code>ArchitecturePolicyAnalyzer</code> (534) e <code>InsightsBuilder</code> (344) estão descritas pelo comentário de classe, não por leitura linha a linha.</li>
 <li>A lista de analisadores executados por padrão é a de <code>AuditOrchestrationService.runAnalyzers</code> (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.</li>
 <li>Os pesos e o teto do score vêm de <code>ScoringService</code> hoje; mudam com o código. Em caso de dúvida vale o código.</li>

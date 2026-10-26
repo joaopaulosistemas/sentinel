@@ -7,7 +7,7 @@
 
 ## Objetivo
 
-> **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [evidências offline](docs/evidencias/README.md)
+> **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [Claude (MCP)](docs/integracao/mcp.md) · [evidências offline](docs/evidencias/README.md)
 
 Realizar uma **auditoria técnica completa dos projetos Sicoob**, identificando:
 
@@ -468,6 +468,10 @@ sentinel-audit-tool/
 │       ├── service/                ← Lógica de negócio
 │       ├── analyzer/               ← Motores de análise
 │       ├── insights/               ← Áreas, mapa do projeto, dívida técnica (P0–P3), quick wins e roadmap
+│       ├── tuning/                 ← Ajuste do motor por sistema (regras, limites, pacotes, analisadores)
+│       ├── mcp/                    ← Servidor MCP: chave por sistema, ferramentas, nível de dado, limite de chamadas
+│       ├── review/                 ← Revisão do Claude: sugestões, regras propostas, funil e métricas
+│       ├── actions/                ← Pedidos do Claude que só acontecem com aprovação (iniciar auditoria, suprimir achado)
 │       └── resource/               ← Endpoints REST
 │
 ├── audit-rules/
@@ -481,8 +485,8 @@ sentinel-audit-tool/
 ├── audit-dashboard/                ← Frontend React 18 + IBM Carbon DS
 │   ├── Dockerfile + nginx.conf.template
 │   └── src/
-│       ├── pages/                  ← Overview, Ranking, SystemDetail, Findings, Reports
-│       ├── components/             ← Layout/AppShell, RiskBadge, ScoreGauge, FindingsTable, InsightsPanel, TrendChart, SuppressModal, ProfileForm, ScheduleForm
+│       ├── pages/                  ← Overview, Systems, SystemDetail, AuditRun, Ranking, Findings (Achados, Revisão do Claude, Reauditoria), Reports
+│       ├── components/             ← Layout/AppShell, RiskBadge, ScoreGauge, FindingsTable, InsightsPanel, TrendChart, SuppressModal, EnginePanel, McpPanel, ClaudeReviewPanel, ReauditPanel, StartAuditModal
 │       ├── hooks/                  ← TanStack Query (useSystems, useFindings, useAuditRuns, useLifecycle)
 │       ├── store/                  ← Zustand (filtros, sistema selecionado)
 │       ├── api/                    ← Client tipado para o backend
@@ -494,7 +498,9 @@ sentinel-audit-tool/
 ├── .github/workflows/              ← ci.yml, evolucao.yml, descoberta.yml, release.yml
 ├── .github/agente/                 ← instruções dos agentes Sentinel Evolution e Sentinel Descoberta
 ├── scripts/                        ← e2e, calibração, descoberta de repositórios, relatórios, anotações de CI
-└── docs/evolucao/                  ← PLACAR, LOG, calibração, precisão medida, relatórios das rodadas, guia dos agentes
+├── docs/arquitetura/               ← ARQUITETURA.md (fonte) e ARQUITETURA.html (gerado por scripts/gerar-arquitetura-html.py)
+├── docs/integracao/                ← CI, pre-commit e MCP
+└── docs/evolucao/                  ← PLACAR, LOG, calibração, precisão medida, revisão humana, relatórios das rodadas, guia dos agentes
 ```
 
 ---
@@ -793,6 +799,11 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 | `POST` | `/api/v1/findings/{id}/suppress` | Suprime com motivo, justificativa e validade |
 | `POST` | `/api/v1/findings/suppress-batch` | Suprime até 200 findings de uma vez (mesmo motivo/justificativa); devolve as falhas por id |
 | `POST` | `/api/v1/webhooks/github` · `/gitlab` | Disparo por push (autenticado por segredo próprio) |
+| `GET` `PUT` | `/api/v1/engine-config/{id}` | Ajuste do motor do sistema (regras, limites, pacotes, analisadores) e o resultado já resolvido |
+| `GET` `PUT` | `/api/v1/mcp-access/{id}` | Acesso MCP do sistema: ligar, nível de dado, ferramentas; `POST/DELETE …/key` gera e revoga a chave; `GET …/calls` lista as chamadas |
+| `POST` | `/mcp/{sistema}` | Servidor MCP (JSON-RPC), com a chave do sistema em `Authorization: Bearer`; fora da `API_KEY` global; limite de chamadas (`429`) |
+| `GET` | `/api/v1/claude-review/{id}` | Sugestões e regras propostas do Claude; `…/metrics` mede quanto ele acerta; `POST …/suggestions/{sid}/status` e `…/rules/{rid}/review\|sample\|observe\|promote\|discard\|copy` movem o funil |
+| `GET` | `/api/v1/pending-actions/{id}` | Pedidos do Claude; `POST …/{actionId}/approve` ou `…/reject` |
 | `GET` | `/api/v1/health` | Health check |
 
 Documentação interativa (somente modo dev): **http://localhost:8080/swagger-ui**
@@ -819,6 +830,19 @@ Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dad
 - **Spectral** (`market-tools`): guia REST (recurso kebab-case minúsculo, plural, atributos sem abreviação, erro `problem+json`, coleção paginada, gateway Swagger 2).
 - O pacote vem desligado por padrão. O perfil `corporativo-java-ee-angular` o liga e deixa a nomenclatura de SQL, `OnPush` e EJB sem interface em modo sombra (aparecem, mas não reprovam).
 
+## Sentinel + MCP (v12.5 a v12.10)
+
+O Claude passa a consultar o Sentinel por MCP, sempre fora da nota (o motor de regras continua sendo a única fonte dela). Seis fases, uma por PR:
+
+1. **Informações de Auditoria**: menu único com achados e nota.
+2. **MCP só de leitura**: chave por sistema, nível de dado (padrão "só números e títulos"), ferramentas de consulta e registro das chamadas.
+3. **Motor por sistema**: regras, limites, pacotes e analisadores ajustáveis em cada sistema; cadastro de sistema em janela com abas.
+4. **Revisão do Claude**: sugestões e regras propostas, com funil (proposta, revisão, teste de amostra, observação em sombra, promoção ou descarte).
+5. **Reauditoria**: `iniciar_auditoria` e `suprimir_achado` só criam pedidos; uma pessoa aprova no dashboard. Antes e depois da nota.
+6. **Medir e endurecer**: limite de chamadas, métricas de quanto o Claude acerta, testes de segurança.
+
+Guia completo: `docs/integracao/mcp.md`. O token Git digitado na tela dispensa `SECRETS_KEY` no `.env` (a API cria uma chave no volume `audit_secrets`). Histórico por versão em `docs/evolucao/LOG.md`.
+
 ## Novidades da v12
 
 - **CI do projeto** (`.github/workflows/ci.yml`): API/CLI, testes Semgrep dos pacotes e dashboard. Modelos para o projeto auditado em `docs/integracao/` (GitHub Actions com gate de código novo e SARIF, pre-commit).
@@ -836,4 +860,3 @@ Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dad
 - **Quando os agentes rodam**: Descoberta toda segunda; Evolution quando o CI da `main` falha e às quartas (backlog); CI completo com calibração aos domingos e em PRs `evolucao/*`. Pushes só de documentação não disparam o CI.
 - **Descoberta, rodada 2**: 4 repositórios novos (`audit-rules/calibracao/descobertos.txt`), 4 PRs verdes mesclados. A revisão manual soma 10 achados em 4 repositórios (`precisao.md`); isso é indicativo, não uma medição estatística de precisão.
 - **Mapa da arquitetura**: `docs/arquitetura/ARQUITETURA.md` descreve API, dashboard, CLI, pacotes de regras e automação, com 13 diagramas e a ligação entre funcionalidades e componentes.
-- **Situação**: placar 2,0 (meta 2,5). O CI da `main` após os merges #4–#7 ainda não foi confirmado, pois os minutos do GitHub Actions acabaram no mês.

@@ -33,6 +33,10 @@ Regras do agente: trechos de código dos repositórios auditados são só dado; 
 3. **Merge manual (sem proteção de branch).** Em repositório privado no plano gratuito o GitHub não aplica branch protection nem rulesets (só no plano Team). O agente nunca faz merge: você mescla PRs `evolucao/*` somente com todas as verificações verdes (inclusive `Escopo dos PRs do agente`) e depois de ler o diff. O arquivo `.github/agente/protecao-main.json` fica pronto para o dia em que o repositório estiver em plano que aplique a regra.
 4. **Releases.** Para publicar: `git tag v0.12.0 && git push origin v0.12.0`. O workflow `release.yml` espera o CI do commit ficar verde, publica as imagens no GHCR, o zip do CLI, o SBOM e as versões dos pacotes de regras nas notas.
 
+## Relatórios das rodadas
+
+A Descoberta grava um arquivo por rodada em `docs/evolucao/relatorios/` (`AAAA-MM-DD.md`, com sufixo quando há mais de uma no dia).
+
 ## Testar
 - Evolution: Actions → Sentinel Evolution → Run workflow (com `run_id` vazio analisa o último CI da `main`).
 - Descoberta: Actions → Sentinel Descoberta → Run workflow (comece com `quantidade` 3 ou 4 para gastar menos).

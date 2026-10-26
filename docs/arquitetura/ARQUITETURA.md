@@ -4,19 +4,20 @@ Mapa de todos os módulos, pacotes e classes, do desenho macro (quem fala com qu
 Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.
 
 > **Escopo.** "Todos os projetos" aqui são os módulos do repositório `sentinel`: `audit-api` (backend), `audit-cli`, `audit-dashboard` (frontend), `audit-rules` (regras e configuração das ferramentas), `deploy` (Docker/Helm) e a automação (`.github`, `scripts`). O app `frequency` é outro repositório e não está neste documento.
-> **Origem.** Escrito a partir do código da `main` (119 classes Java em `audit-api`, 4 em `audit-cli`, 33 arquivos TypeScript/TSX em `audit-dashboard/src`). Nomes de classe foram conferidos contra o código. Onde uma descrição vem só do comentário da classe e não da leitura do corpo, o texto diz "segundo o comentário".
+> **Origem.** Escrito a partir do código da `main` (classes Java em `audit-api`, `audit-cli` e arquivos TypeScript/TSX em `audit-dashboard/src`; contagens mudam a cada versão). Nomes de classe foram conferidos contra o código. Onde uma descrição vem só do comentário da classe e não da leitura do corpo, o texto diz "segundo o comentário".
 
 ## Sumário
 1. [Desenho macro](#1-desenho-macro)
 2. [Features e onde vivem](#2-features-e-onde-vivem)
-3. [Backend `audit-api`](#3-backend-audit-api) (micro: fluxo, camadas, analisadores, pacotes, score, ciclo de vida, dados)
+3. [Backend `audit-api`](#3-backend-audit-api) (micro: fluxo, camadas, analisadores, pacotes, score, ciclo de vida, dados, Sentinel + MCP)
 4. [CLI `audit-cli`](#4-cli-audit-cli)
 5. [Frontend `audit-dashboard`](#5-frontend-audit-dashboard)
 6. [Regras e ferramentas `audit-rules`](#6-regras-e-ferramentas-audit-rules)
 7. [Implantação e segurança](#7-implantação-e-segurança)
 8. [Automação: CI, release e agentes](#8-automação-ci-release-e-agentes)
 9. [Terceiros](#9-terceiros)
-10. [Limites deste documento](#10-limites-deste-documento)
+10. [Decisões que moldam o desenho](#10-decisões-que-moldam-o-desenho)
+11. [Limites deste documento](#11-limites-deste-documento)
 
 ---
 
@@ -123,6 +124,10 @@ flowchart LR
 | Portão de qualidade em CI | endpoints de `AuditResource` | `AuditCli`, `SarifWriter`, `JUnitWriter`, `MarkdownWriter` |
 | Notificações | `NotificationService` | Teams, Slack, webhook |
 | Autenticação | `ApiKeyFilter`; OIDC opcional (`-Poidc`) | Keycloak |
+| Ajuste do motor por sistema (regras, limites, pacotes, analisadores) | pacote `tuning` (`EngineConfigResource`, `SystemTuningService`), `SystemTuning` e `AuditPolicy.withTuning` em `pack` | Dashboard: `EnginePanel` (Sistemas → Motor) |
+| MCP: o Claude consulta a auditoria (leitura) | pacote `mcp` (`McpResource`, `McpProtocol`, `McpGateService`, `McpToolService`, `McpShaper`, `McpRateLimiter`) | Dashboard: `McpPanel`; doc `docs/integracao/mcp.md` |
+| Revisão do Claude: sugestões, regras propostas e funil | pacote `review` (`ReviewService`, `RuleFunnel`, `LocalRuleMaterializer`, `ReviewMetrics`) | Dashboard: `ClaudeReviewPanel` (Informações de Auditoria → Revisão do Claude) |
+| Reauditoria e pedidos do Claude com aprovação | pacote `actions` (`PendingActionService`, `PendingActionRules`, `PendingActionResource`) | Dashboard: `ReauditPanel`, `StartAuditModal` |
 | Evolução automática do próprio Sentinel | — | `.github/workflows`, `.github/agente`, `scripts`, `docs/evolucao` |
 
 ---
@@ -212,6 +217,11 @@ Pontos do código que valem saber (do comentário de `AuditOrchestrationService`
 | `WebhookResource` | Recebe push do GitHub e do GitLab | `/api/v1/webhooks/github`, `/gitlab` |
 | `PackResource` | Lista pacotes e perfis; recarrega do disco | `/api/v1/packs`, `/reload` |
 | `RuleResource` | Qualidade das regras e laboratório | `/api/v1/rules/quality`, `/playground` |
+| `EngineConfigResource` | Lê e grava o ajuste do motor de um sistema e mostra o resultado já resolvido | `/api/v1/engine-config/{id}` |
+| `McpResource` | Servidor MCP (JSON-RPC por POST) com a chave do sistema, fora da API key global | `POST /mcp/{sistema}` |
+| `McpAdminResource` | Liga o MCP, escolhe nível de dado e ferramentas, gera ou revoga a chave, lista as chamadas | `/api/v1/mcp-access/{id}`, `/key`, `/calls` |
+| `ClaudeReviewResource` | Sugestões, regras propostas, funil e métricas do Claude | `/api/v1/claude-review/{id}`, `/metrics`, `/suggestions/{sid}/status`, `/rules/{rid}/review\|sample\|observe\|promote\|discard\|copy` |
+| `PendingActionResource` | Pedidos do Claude esperando aprovação | `/api/v1/pending-actions/{id}`, `/{actionId}/approve`, `/reject` |
 | `HealthResource` | Verificação de saúde | `/api/v1/health` |
 | `ApiKeyFilter` | Exige a chave `X-API-Key` quando `API_KEY` está definida | filtro global |
 | `StartupChecks` | Avisa na partida sobre configuração insegura ou destrutiva | — |
@@ -417,8 +427,36 @@ erDiagram
 ```
 
 - `model`: `AuditedSystem`, `AuditRun`, `Finding`, `FindingSuppression` (entidades), `RiskScore` (objeto embutido em `AuditRun`), `Severity`, `Category`, `Stack`, `FindingStatus`, `AuditStatus`, `SuppressionReason` (enums).
+- Entidades do plano Sentinel + MCP: `SystemEngineConfig` (ajuste do motor), `McpAccess` e `McpCallLog` (acesso e registro do MCP), `ReviewSuggestion` e `RuleProposal` (revisão do Claude), `PendingAction` (pedidos com aprovação); cada uma tem o seu repositório Panache.
 - `repository` (Panache): `AuditedSystemRepository`, `AuditRunRepository`, `FindingRepository`, `FindingSuppressionRepository`.
 - `dto`: `CreateSystemRequest`, `CreateAuditRequest`, `ProfileRequest`, `ScheduleRequest`, `SuppressRequest` (entradas); `SystemSummaryResponse`, `AuditRunResponse`, `FindingResponse`, `RiskScoreDto`, `RemediationDto`, `AuditDiffResponse`, `TrendPoint`, `SuppressionResponse` (saídas); `FindingMapper` converte entidade em resposta (inclui a orientação de correção).
+
+### 3.11 Sentinel + MCP (`tuning`, `mcp`, `review`, `actions`)
+
+O Claude entra como consultor, nunca como juiz: o motor de regras segue sendo a única fonte da nota.
+
+```mermaid
+flowchart LR
+    CL["Claude (cliente MCP)"] -- "POST /mcp/{sistema}\nBearer da chave do sistema" --> MR["McpResource\nlimite de chamadas"]
+    MR --> GATE["McpGateService\nchave (SHA-256), ferramentas ligadas, nível de dado"]
+    GATE --> TOOLS["McpToolService + McpShaper\nleitura moldada pelo nível de dado"]
+    TOOLS --> AUD[("auditorias e achados")]
+    TOOLS -- "registrar_sugestao\npropor_regra" --> REV["review\nsugestões + funil de regras"]
+    TOOLS -- "iniciar_auditoria\nsuprimir_achado" --> PA["actions\nPendingAction (1 h)"]
+    PA -- "uma pessoa aprova no dashboard" --> EXEC["AuditRequestService\nFindingLifecycleService"]
+    REV -- "observação em modo sombra" --> POL["AuditPolicy\n(perfil + SystemTuning + regras locais)"]
+    TUN["tuning\najuste do motor por sistema"] --> POL
+    POL --> ENG["motor: analisadores + score"]
+```
+
+| Pacote | Classes principais | Papel |
+|---|---|---|
+| `tuning` | `SystemTuningService`, `SystemEngineConfig`, `TuningJson`, `EngineConfigResource` | Guarda o ajuste de cada sistema (regra ligada, desligada ou em sombra, limites, pacotes, analisadores) e o aplica sobre o perfil. Ajuste vazio devolve o mesmo `AuditPolicy`. |
+| `mcp` | `McpResource`, `McpProtocol`, `McpGateService`, `McpToolService`, `McpTool`, `McpShaper`, `DataLevel`, `McpRateLimiter`, `McpAdminResource` | Protocolo, chave por sistema (hash SHA-256), ferramentas (leitura ligada por padrão; escrita desligada), nível de dado (`só números e títulos` por padrão; `antifraude-engine` fixo em sensível), limite de 60 chamadas por minuto e de 10 tentativas com chave errada, registro das chamadas. |
+| `review` | `ReviewService`, `RuleFunnel`, `RuleStage`, `LocalRuleMaterializer`, `ReviewMetrics`, `ClaudeReviewResource` | Sugestões (aberta, tratada, dispensada), regras propostas e o funil `PROPOSED → REVIEWED → SAMPLE_PASSED → OBSERVING → PROMOTED/DISCARDED`; regra em observação roda em modo sombra, fora da nota. Métricas de quanto o Claude acerta. |
+| `actions` | `PendingActionService`, `PendingActionRules`, `PendingAction`, `PendingActionResource` | Pedidos do Claude (iniciar auditoria, suprimir achado como falso positivo) que só acontecem com aprovação. Valem 1 hora, no máximo 5 pendentes por sistema; branch validada; supressão expira em 90 dias; o texto do pedido é montado pelo Sentinel. |
+
+Ferramentas MCP de leitura: `status_auditoria`, `buscar_achados`, `diff_auditoria`, `o_que_corrigir_primeiro` e `status_pedidos`. De escrita (desligadas por padrão): `registrar_sugestao`, `propor_regra`, `iniciar_auditoria` e `suprimir_achado`. Detalhes em `docs/integracao/mcp.md`.
 
 ---
 
@@ -452,10 +490,12 @@ React 18, TypeScript, IBM Carbon Design System, Vite, TanStack Query (dados do s
 ```mermaid
 flowchart TB
     subgraph rotas["App.tsx (rotas)"]
-        O["/ e /systems\nOverviewPage"]
+        O["/\nOverviewPage"]
+        SY["/systems\nSystemsPage (cadastro em janela)"]
         SD["/systems/:id\nSystemDetailPage"]
+        AR["/audits/:id\nAuditRunPage"]
         RK["/ranking\nRankingPage"]
-        F["/findings\nFindingsPage"]
+        F["/findings\nFindingsPage (Achados, Revisão do Claude, Reauditoria)"]
         RP["/reports\nReportsPage"]
     end
     SHELL["AppShell (cabeçalho, menu, versão)"] --> rotas
@@ -469,13 +509,13 @@ flowchart TB
 
 | Camada | Arquivos | Papel |
 |---|---|---|
-| Páginas | `OverviewPage`, `SystemDetailPage`, `RankingPage`, `FindingsPage`, `ReportsPage` | Lista de sistemas e cadastro; detalhe com nota, tendência e visão completa; ranking de sistemas e qualidade das regras; achados com filtros; relatórios |
-| Componentes | `FindingsTable`, `ScoreGauge`, `RiskBadge`, `TrendChart`, `DiffSummary`, `InsightsPanel`, `RemediationBlock`, `SuppressModal`, `SuppressionsList`, `ProfileForm`, `ScheduleForm`, `Layout/AppShell` | Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda |
+| Páginas | `OverviewPage`, `SystemsPage`, `SystemDetailPage`, `AuditRunPage`, `RankingPage`, `FindingsPage`, `ReportsPage` | Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios |
+| Componentes | `FindingsTable`, `ScoreGauge`, `RiskBadge`, `TrendChart`, `DiffSummary`, `InsightsPanel`, `RemediationBlock`, `SuppressModal`, `SuppressionsList`, `ProfileForm`, `ScheduleForm`, `Layout/AppShell`, `EnginePanel`, `McpPanel`, `ClaudeReviewPanel`, `ReauditPanel`, `StartAuditModal` | Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria |
 | Hooks | `useSystems` (`useSystem`, `useRuleQuality`), `useAuditRuns` (`useAudit`), `useFindings`, `useLifecycle` (tendência, diferença, supressões, visão completa, pacotes, perfil, agenda) | Cada um encapsula uma consulta ou mutação ao servidor |
 | Estado | `store/useAuditStore` | Sistema e auditoria selecionados e filtros de achados |
 | Acesso à API | `api/client.ts` | `apiFetch` e o objeto `api` com cada endpoint |
 | Apoio | `types/index.ts`, `utils/ranking.ts`, `vite-env.d.ts` | Tipos do contrato, cálculo do ranking |
-| Testes | `RiskBadge.test`, `ScoreGauge.test`, `AppShell.test`, `test/a11y.test` (axe) | 16 testes (Vitest + Testing Library) |
+| Testes | um `.test.tsx` ao lado de páginas e painéis, mais `test/a11y.test` (axe) | Vitest + Testing Library; `npx vitest run` |
 
 Em produção a SPA é servida pelo Nginx (`nginx.conf.template`), que repassa `/api` para a API.
 
@@ -535,7 +575,8 @@ flowchart TB
 | Autenticação | Chave estática `X-API-Key` (`ApiKeyFilter`) ou OIDC/Keycloak em build com `-Poidc` (`QUARKUS_PROFILE=oidc`, com `API_KEY` vazia) |
 | Clone | token Git, hosts do token e profundidade do histórico são do cadastro de cada sistema (token cifrado com `SECRETS_KEY`, só vai para os hosts listados); clone raso quando o histórico é 0/1 |
 | Pacotes | YAML lido sem instanciar classes (`Yamls`), integridade por SHA-256 e assinatura Ed25519 (`PackIntegrity`); `eslint.config.js` do projeto auditado nunca é carregado (seria código executado no servidor) |
-| Segredos | O valor de um segredo achado nunca é gravado, só um hash curto |
+| Segredos | O valor de um segredo achado nunca é gravado, só um hash curto. O token Git digitado na tela é cifrado (`SecretBox`) com `SECRETS_KEY`, senão `API_KEY`, senão uma chave aleatória guardada no volume `audit_secrets` |
+| MCP | Rota própria `/mcp/{sistema}` com chave por sistema (só o hash fica guardado); resposta 401 idêntica exista o sistema ou não; limite de chamadas e de tentativas erradas (429); ferramentas de escrita desligadas por padrão e sempre com aprovação humana |
 | Avisos | `StartupChecks` emite alerta de configuração insegura |
 
 ---
@@ -596,8 +637,22 @@ Os agentes só abrem PR em `evolucao/*`; o merge é manual. O job `Escopo dos PR
 
 ---
 
-## 10. Limites deste documento
+## 10. Decisões que moldam o desenho
 
+- **O motor de regras é a única fonte da nota.** O Claude (via MCP) consulta, sugere e propõe, sempre fora da nota; qualquer coisa que ele crie só pesa depois de passar pelo funil e de uma pessoa promovê-la.
+- **O Claude pede, uma pessoa decide.** As ferramentas de escrita só criam um pedido pendente; executar exige aprovação no dashboard.
+- **Tolerância a falha.** Analisador, SBOM, contexto e notificação são isolados. O que falha vira aviso e a auditoria continua `COMPLETED`.
+- **Dados declarativos.** Regras, remediação, arquitetura e ferramentas vivem em YAML nos pacotes. Código só muda para criar um novo tipo de verificação.
+- **Só o comprovado.** Higiene e insights usam evidência de arquivos. O que análise estática não alcança vai para a lista "não foi possível verificar".
+- **Execução segura.** Comandos externos só rodam se o perfil os permitir (`allow-tools`). O laboratório limita tamanho, tempo e concorrência.
+- **Tudo por sistema.** Motor, ferramentas MCP e nível de dado são configurados em cada sistema; sem ajuste, vale o perfil.
+- **Dado mínimo.** Nível padrão do MCP é "só números e títulos"; o `antifraude-engine` é fixo em "sensível"; achado de segredo nunca leva o valor.
+
+---
+
+## 11. Limites deste documento
+
+- Este documento descreve o código até a versão 12.10.0 do dashboard (fases 1 a 6 do plano Sentinel + MCP). O HTML é gerado deste arquivo por `scripts/gerar-arquitetura-html.py`; edite só o `.md`.
 - Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (`AuditOrchestrationService`, `ScoringService`, camadas, dashboard). Classes grandes como `PackLoader` (641 linhas), `ArchitecturePolicyAnalyzer` (534) e `InsightsBuilder` (344) estão descritas pelo comentário de classe, não por leitura linha a linha.
 - A lista de analisadores executados por padrão é a de `AuditOrchestrationService.runAnalyzers` (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.
 - Os pesos e o teto do score vêm de `ScoringService` hoje; mudam com o código. Em caso de dúvida vale o código.
