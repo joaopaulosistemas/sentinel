@@ -51,11 +51,21 @@ public class McpResource {
     @ConfigProperty(name = "quarkus.application.version", defaultValue = "1.0.0")
     String version;
 
+    @ConfigProperty(name = "sentinel.mcp.rate-per-minute", defaultValue = "60")
+    int ratePerMinute;
+
+    @ConfigProperty(name = "sentinel.mcp.failed-per-minute", defaultValue = "10")
+    int failedPerMinute;
+
     private McpProtocol protocol;
+    private McpRateLimiter callLimiter;
+    private McpRateLimiter failureLimiter;
 
     @PostConstruct
     void init() {
         protocol = new McpProtocol(mapper, version);
+        callLimiter = new McpRateLimiter(ratePerMinute);
+        failureLimiter = new McpRateLimiter(failedPerMinute);
     }
 
     @POST
@@ -64,14 +74,22 @@ public class McpResource {
     public Response post(@PathParam("system") String systemRef,
                          @HeaderParam("Authorization") String authorization,
                          String body) {
+        String ref = systemRef == null ? "" : systemRef.trim().toLowerCase();
+        if (failureLimiter.blocked("fail:" + ref)) {
+            return tooMany(failureLimiter.retryAfterSeconds("fail:" + ref));
+        }
         Optional<AuditedSystem> system = findSystem(systemRef);
         McpAccess access = system.map(s -> gate.find(s.getId())).orElse(null);
         if (access == null || !gate.accepts(access, bearer(authorization))) {
+            failureLimiter.tryAcquire("fail:" + ref);
             return Response.status(Response.Status.UNAUTHORIZED)
                     .header("WWW-Authenticate", "Bearer")
                     .type(MediaType.APPLICATION_JSON)
                     .entity(UNAUTHORIZED_BODY)
                     .build();
+        }
+        if (!callLimiter.tryAcquire("ok:" + system.get().getId())) {
+            return tooMany(callLimiter.retryAfterSeconds("ok:" + system.get().getId()));
         }
         if (body != null && body.length() > MAX_BODY_CHARS) {
             return Response.status(Response.Status.REQUEST_ENTITY_TOO_LARGE).build();
@@ -120,6 +138,14 @@ public class McpResource {
         Optional<String> reply = protocol.handle(body, backend);
         return reply.map(r -> Response.ok(r, MediaType.APPLICATION_JSON).build())
                 .orElseGet(() -> Response.accepted().build());
+    }
+
+    private static Response tooMany(int seconds) {
+        return Response.status(429)
+                .header("Retry-After", seconds)
+                .type(MediaType.APPLICATION_JSON)
+                .entity("{\"error\":\"Muitas chamadas em pouco tempo. Tente de novo em " + seconds + " s.\"}")
+                .build();
     }
 
     /** Este servidor não abre fluxo SSE nem sessão: só responde a POST. */

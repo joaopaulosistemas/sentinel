@@ -207,3 +207,7 @@ Também na 12.7.1: o token Git digitado na tela não exige mais `SECRETS_KEY` no
 ## Dashboard 12.9.0 — Fase 5 do plano Sentinel + MCP: Reauditoria e pedidos com aprovação
 
 Nova aba Reauditoria em Informações de Auditoria: pedidos do Claude esperando aprovação (Aprovar/Recusar), botão Reauditar agora e comparação antes e depois da última auditoria. No MCP entram `iniciar_auditoria` e `suprimir_achado` (escrita, desligadas por padrão) e `status_pedidos` (leitura). O Claude só cria o pedido; a execução acontece quando uma pessoa aprova. Limites: pedido vale 1 hora, 5 pendentes por sistema, supressão só como falso positivo e por 90 dias. Pedidos são apagados junto com o sistema. Testes: `PendingActionRulesTest`, `McpGateServiceTest` (reescrito para 4 ferramentas de escrita) e `ReauditPanel.test.tsx`; o código Quarkus só compila no CI.
+
+## Dashboard 12.10.0 — Fase 6 do plano Sentinel + MCP: limites e medição
+
+Limite de 60 chamadas por minuto por sistema no MCP e de 10 tentativas com chave errada por minuto (429 com `Retry-After`). Novo endpoint e quadro "Quanto o Claude acerta" (sugestões aproveitadas e regras promovidas, segundo as pessoas). Testes novos: `McpRateLimiterTest`, `ReviewMetricsTest` e o quadro no `ClaudeReviewPanel.test.tsx`. Com isso o plano Sentinel + MCP fecha as seis fases; o código Quarkus novo só compila no CI.
