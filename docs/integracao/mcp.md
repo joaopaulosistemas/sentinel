@@ -76,3 +76,15 @@ Duas ferramentas gravam, **desligadas por padrão** (libere na aba Claude (MCP))
 5. **Promovida** (pesa na nota) ou **descartada**. Para promover: pelo menos uma auditoria depois do início, 5 achados ou mais e precisão de 90% ou mais (`sentinel.review.min-hits`, `sentinel.review.min-precision`).
 
 A regra nasce valendo só no sistema onde foi proposta. **Copiar para outro sistema** a coloca em observação lá; depois de promovida lá, a original fica "pronta para o pacote compartilhado". Entrar no pacote é uma mudança no repositório dos pacotes, feita por uma pessoa. Achado de julgamento (sem regra que uma máquina verifique) continua como sugestão, fora da nota para sempre.
+
+## Reauditoria e pedidos (fase 5)
+
+Três ferramentas novas. As duas que escrevem ficam **desligadas por padrão** e só funcionam depois de liberadas na aba Claude (MCP) do sistema.
+
+| Ferramenta | Tipo | O que faz |
+|---|---|---|
+| `iniciar_auditoria` | escrita | Cria um **pedido** para auditar o sistema numa branch. Nada roda até uma pessoa aprovar. |
+| `suprimir_achado` | escrita | Cria um pedido para suprimir um achado como **falso positivo**. Só vale para achado da última auditoria concluída do sistema. |
+| `status_pedidos` | leitura | Lista os pedidos e o resultado de cada um. |
+
+Regras: o Claude nunca executa; só cria o `PendingAction`. Cada pedido vale 1 hora, há no máximo 5 pendentes por sistema e pedido repetido é recusado. A branch é validada (sem `-` no início, sem `..`). O texto do pedido é montado pelo Sentinel, não copiado do Claude. A supressão pedida pelo Claude só pode ser falso positivo e expira em 90 dias. Quem aprova ou recusa é uma pessoa, em Informações de Auditoria → Reauditoria, onde também ficam "Reauditar agora" e o antes e depois (nota, resolvidos, novos, persistentes). A nota continua sendo calculada só pelo motor de regras.

@@ -2,6 +2,7 @@ import { DataTableSkeleton, InlineNotification } from '@carbon/react';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ClaudeReviewPanel } from '../../components/ClaudeReviewPanel';
+import { ReauditPanel } from '../../components/ReauditPanel';
 import { FindingsTable, type FindingOrigin } from '../../components/FindingsTable';
 import { useAudit } from '../../hooks/useAuditRuns';
 import { useFindings, useFindingsOverview } from '../../hooks/useFindings';
@@ -33,12 +34,13 @@ const categoryOptions: Array<{ value: Category | ''; label: string }> = [
   { value: 'PERFORMANCE', label: 'Desempenho' },
 ];
 
-/** "Reauditoria" entra na próxima fase do plano. */
 const ABAS = [
   { id: 'achados', nome: 'Achados e nota', ativa: true },
   { id: 'revisao', nome: 'Revisão do Claude', ativa: true },
-  { id: 'reauditoria', nome: 'Reauditoria', ativa: false },
+  { id: 'reauditoria', nome: 'Reauditoria', ativa: true },
 ];
+
+type AbaId = 'achados' | 'revisao' | 'reauditoria';
 
 const label = { fontSize: 12, color: '#525252' } as const;
 const select = { height: 40, padding: '0 8px', border: 0, borderBottom: '1px solid #8d8d8d', background: '#f4f4f4', fontSize: 14 } as const;
@@ -66,7 +68,7 @@ export function FindingsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [grouped, setGrouped] = useState(false);
   const [showResolved, setShowResolved] = useState(false);
-  const [aba, setAba] = useState<'achados' | 'revisao'>('achados');
+  const [aba, setAba] = useState<AbaId>('achados');
 
   const { data: systems } = useSystems();
   const { data: audit } = useAudit(auditId);
@@ -184,7 +186,7 @@ export function FindingsPage() {
             id={`aba-${a.id}`}
             aria-selected={a.id === aba}
             aria-disabled={!a.ativa}
-            onClick={() => a.ativa && setAba(a.id as 'achados' | 'revisao')}
+            onClick={() => a.ativa && setAba(a.id as AbaId)}
             disabled={!a.ativa}
             title={a.ativa ? undefined : 'Chega em uma próxima fase'}
             style={{
@@ -205,6 +207,8 @@ export function FindingsPage() {
 
       {aba === 'revisao' ? (
         <ClaudeReviewPanel systems={systems ?? []} initialSystemId={systemId} />
+      ) : aba === 'reauditoria' ? (
+        <ReauditPanel systems={systems ?? []} initialSystemId={systemId} />
       ) : (
         <>
       <section aria-label="Filtros" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>

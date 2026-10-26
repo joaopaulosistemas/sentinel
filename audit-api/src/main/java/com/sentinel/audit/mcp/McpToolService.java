@@ -47,6 +47,9 @@ public class McpToolService {
     @Inject
     com.sentinel.audit.review.ReviewService review;
 
+    @Inject
+    com.sentinel.audit.actions.PendingActionService pending;
+
     /**
      * @return o resultado em JSON
      * @throws IllegalArgumentException argumento inválido (a mensagem é segura para mostrar ao cliente)
@@ -54,6 +57,9 @@ public class McpToolService {
     public String run(McpTool tool, Long systemId, DataLevel level, JsonNode args) {
         if (tool.writes()) {
             return writeTool(tool, systemId, args);
+        }
+        if (tool == McpTool.STATUS_PEDIDOS) {
+            return json(pendingStatus(systemId));
         }
         AuditRun run = latest(systemId);
         Map<String, Object> result;
@@ -67,7 +73,8 @@ public class McpToolService {
                 case DIFF_AUDITORIA -> McpShaper.diff(lifecycleService.diff(run.getId()), level);
                 case O_QUE_CORRIGIR_PRIMEIRO -> McpShaper.fixPlan(
                         FixPlanner.plan(active(run), run.getLinesOfCode(), scoringService), level);
-                case REGISTRAR_SUGESTAO, PROPOR_REGRA -> throw new IllegalStateException("ferramenta de escrita fora do caminho de escrita");
+                case STATUS_PEDIDOS -> pendingStatus(systemId);
+                case REGISTRAR_SUGESTAO, PROPOR_REGRA, INICIAR_AUDITORIA, SUPRIMIR_ACHADO -> throw new IllegalStateException("ferramenta de escrita fora do caminho de escrita");
             };
         }
         try {
@@ -80,6 +87,18 @@ public class McpToolService {
     /** Ferramentas que gravam, só na área Revisão do Claude. Nunca tocam em achado, regra do motor ou nota. */
     private String writeTool(McpTool tool, Long systemId, JsonNode args) {
         Map<String, Object> result = new LinkedHashMap<>();
+        if (tool == McpTool.INICIAR_AUDITORIA || tool == McpTool.SUPRIMIR_ACHADO) {
+            var a = tool == McpTool.INICIAR_AUDITORIA
+                    ? pending.requestStartAudit(systemId, text(args, "branch"))
+                    : pending.requestSuppress(systemId, args.path("achadoId").canConvertToLong() ? args.path("achadoId").asLong() : null,
+                            text(args, "motivo"), text(args, "justificativa"));
+            result.put("pedidoCriado", true);
+            result.put("id", a.getId());
+            result.put("situacao", a.getStatus().name());
+            result.put("mensagem", "Pedido criado, mas NADA foi feito ainda: uma pessoa precisa aprovar no dashboard "
+                    + "(Informações de Auditoria → Reauditoria) em até 1 hora. Consulte status_pedidos depois.");
+            return json(result);
+        }
         if (tool == McpTool.REGISTRAR_SUGESTAO) {
             var s = review.addSuggestion(systemId, text(args, "titulo"), text(args, "detalhe"), text(args, "regra"),
                     text(args, "arquivo"), args.path("linha").isInt() ? args.path("linha").asInt() : null);
@@ -94,6 +113,29 @@ public class McpToolService {
             result.put("mensagem", "Regra proposta. Ela só passa a rodar depois de revisada por uma pessoa e aprovada no teste de amostra, "
                     + "e fica fora da nota durante a observação.");
         }
+        try {
+            return mapper.writeValueAsString(result);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Não foi possível montar a resposta", e);
+        }
+    }
+
+    private Map<String, Object> pendingStatus(Long systemId) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("pedidos", pending.recent(systemId, 10).stream().map(a -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", a.getId());
+            m.put("tipo", a.getKind().name());
+            m.put("situacao", a.getStatus().name());
+            m.put("resumo", a.getSummary());
+            m.put("resultado", a.getResultNote());
+            m.put("auditoriaId", a.getResultAuditRunId());
+            return m;
+        }).toList());
+        return out;
+    }
+
+    private String json(Map<String, Object> result) {
         try {
             return mapper.writeValueAsString(result);
         } catch (JsonProcessingException e) {
