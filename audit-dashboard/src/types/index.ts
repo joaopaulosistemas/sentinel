@@ -550,3 +550,17 @@ export interface PendingAction {
   resultNote: string | null;
   auditRunId: number | null;
 }
+
+/** Quanto o Claude acerta, segundo o que as pessoas decidiram. Taxas são null enquanto não há decisão. */
+export interface ReviewMetrics {
+  suggestionsTotal: number;
+  suggestionsOpen: number;
+  suggestionsAddressed: number;
+  suggestionsDismissed: number;
+  suggestionAdoption: number | null;
+  rulesTotal: number;
+  rulesInProgress: number;
+  rulesPromoted: number;
+  rulesDiscarded: number;
+  rulePromotion: number | null;
+}

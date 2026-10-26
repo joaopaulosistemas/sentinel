@@ -88,3 +88,9 @@ Três ferramentas novas. As duas que escrevem ficam **desligadas por padrão** e
 | `status_pedidos` | leitura | Lista os pedidos e o resultado de cada um. |
 
 Regras: o Claude nunca executa; só cria o `PendingAction`. Cada pedido vale 1 hora, há no máximo 5 pendentes por sistema e pedido repetido é recusado. A branch é validada (sem `-` no início, sem `..`). O texto do pedido é montado pelo Sentinel, não copiado do Claude. A supressão pedida pelo Claude só pode ser falso positivo e expira em 90 dias. Quem aprova ou recusa é uma pessoa, em Informações de Auditoria → Reauditoria, onde também ficam "Reauditar agora" e o antes e depois (nota, resolvidos, novos, persistentes). A nota continua sendo calculada só pelo motor de regras.
+
+## Limites e medição (fase 6)
+
+- **Limite de chamadas:** 60 por minuto por sistema com chave válida (`sentinel.mcp.rate-per-minute`). Passou disso, a resposta é 429 com `Retry-After`.
+- **Chave errada:** 10 tentativas por minuto por nome de sistema (`sentinel.mcp.failed-per-minute`); depois disso, 429 mesmo para a chave certa até a janela passar. O custo é que quem erra a chave de propósito pode travar o sistema por um minuto; a resposta de chave errada continua idêntica exista o sistema ou não. O limite fica em memória e zera ao reiniciar a API.
+- **Quanto o Claude acerta:** `GET /api/v1/claude-review/{id}/metrics` e o quadro no topo da aba Revisão do Claude. Mostra sugestões aproveitadas (tratadas ÷ tratadas + dispensadas) e regras promovidas (promovidas ÷ promovidas + descartadas). Sem decisão ainda, a taxa aparece como "sem decisão ainda". Mede o julgamento das pessoas sobre o Claude e não entra na nota.

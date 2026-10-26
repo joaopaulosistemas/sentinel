@@ -20,6 +20,28 @@ const STAGE_COLOR: Record<string, string> = {
   DISCARDED: '#6f6f6f',
 };
 
+function rate(v: number | null | undefined): string {
+  return typeof v === 'number' ? pct(v) : 'sem decisão ainda';
+}
+
+function MetricsBox({ systemId }: { systemId: number }) {
+  const m = useQuery({ queryKey: ['review-metrics', systemId], queryFn: () => api.getReviewMetrics(systemId) });
+  const d = m.data;
+  if (!d || typeof d.suggestionsTotal !== 'number') return null;
+  return (
+    <section aria-label="Quanto o Claude acerta" style={{ border: '1px solid #e0e0e0', background: '#fff', padding: 14, display: 'grid', gap: 4 }}>
+      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Quanto o Claude acerta</h2>
+      <div style={{ fontSize: 13 }}>
+        Sugestões aproveitadas: <strong>{rate(d.suggestionAdoption)}</strong> ({d.suggestionsAddressed} tratadas, {d.suggestionsDismissed} dispensadas, {d.suggestionsOpen} abertas)
+      </div>
+      <div style={{ fontSize: 13 }}>
+        Regras promovidas: <strong>{rate(d.rulePromotion)}</strong> ({d.rulesPromoted} promovidas, {d.rulesDiscarded} descartadas, {d.rulesInProgress} no funil)
+      </div>
+      <div style={{ fontSize: 12, color: '#525252' }}>Medido pelo que as pessoas decidiram. Não entra na nota.</div>
+    </section>
+  );
+}
+
 function Proposal({ p, systems, systemId, act, busy }: {
   p: RuleProposalView;
   systems: SystemSummaryResponse[];
@@ -131,6 +153,7 @@ export function ClaudeReviewPanel({ systems, initialSystemId }: { systems: Syste
       {review.isError && <InlineNotification kind="error" title="Não foi possível carregar" subtitle={(review.error as Error).message} hideCloseButton />}
       {data && (
         <>
+          {systemId !== undefined && <MetricsBox systemId={systemId} />}
           <div style={{ display: 'grid', gap: 10 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Sugestões ({data.openSuggestions} {data.openSuggestions === 1 ? 'aberta' : 'abertas'})</h2>
             {data.suggestions.length === 0 ? (

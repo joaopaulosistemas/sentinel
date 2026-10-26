@@ -24,6 +24,9 @@ function setup(initial: ClaudeReview) {
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url: String(url), method: init?.method ?? 'GET', body: init?.body as string | undefined });
+      if (String(url).endsWith('/metrics')) {
+        return new Response(JSON.stringify({ suggestionsTotal: 4, suggestionsOpen: 1, suggestionsAddressed: 2, suggestionsDismissed: 1, suggestionAdoption: 2 / 3, rulesTotal: 0, rulesInProgress: 0, rulesPromoted: 0, rulesDiscarded: 0, rulePromotion: null }), { status: 200 });
+      }
       return new Response(JSON.stringify(initial), { status: 200 });
     }),
   );
@@ -38,6 +41,13 @@ function setup(initial: ClaudeReview) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ClaudeReviewPanel', () => {
+  it('mostra quanto o Claude acerta, e "sem decisão" quando não há taxa', async () => {
+    setup({ openSuggestions: 0, suggestions: [], proposals: [] });
+    expect(await screen.findByText('67%')).toBeInTheDocument();
+    expect(screen.getAllByText('sem decisão ainda').length).toBe(1);
+    expect(screen.getByText(/2 tratadas, 1 dispensadas, 1 abertas/)).toBeInTheDocument();
+  });
+
   it('deixa claro que nada entra na nota e explica como liberar as ferramentas quando está vazio', async () => {
     setup({ openSuggestions: 0, suggestions: [], proposals: [] });
     expect(await screen.findByText(/Nenhuma sugestão/)).toBeInTheDocument();

@@ -58,6 +58,16 @@ public class ClaudeReviewResource {
         return response(id);
     }
 
+    @GET
+    @Path("/metrics")
+    @Operation(summary = "Quanto o Claude acerta: sugestões tratadas e regras promovidas, segundo as pessoas")
+    public ReviewMetrics.Result metrics(@PathParam("id") Long id) {
+        requireSystem(id);
+        return ReviewMetrics.compute(
+                service.suggestions(id).stream().map(ReviewSuggestion::getStatus).toList(),
+                service.proposals(id).stream().map(v -> v.proposal().getStage()).toList());
+    }
+
     @POST
     @Path("/suggestions/{sid}/status")
     @Operation(summary = "Marcar uma sugestão como tratada, dispensada ou aberta")

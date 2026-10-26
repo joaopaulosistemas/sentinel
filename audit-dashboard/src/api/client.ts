@@ -14,6 +14,7 @@ import type {
   ClaudeReview,
   EngineConfig,
   PendingAction,
+  ReviewMetrics,
   EngineTuning,
   McpCall,
   McpConfig,
@@ -211,6 +212,8 @@ export const api = {
 
   updateEngineConfig: (systemId: number, body: EngineTuning) =>
     apiFetch<EngineConfig>(`/api/v1/engine-config/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  getReviewMetrics: (systemId: number) => apiFetch<ReviewMetrics>(`/api/v1/claude-review/${systemId}/metrics`),
 
   getClaudeReview: (systemId: number) => apiFetch<ClaudeReview>(`/api/v1/claude-review/${systemId}`),
 
