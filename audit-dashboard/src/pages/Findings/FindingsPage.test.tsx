@@ -82,6 +82,12 @@ describe('FindingsPage', () => {
     expect(screen.getByRole('tab', { name: 'Reauditoria' })).toBeEnabled();
   });
 
+  it('?aba=reauditoria&systemId=ID abre direto na aba Reauditoria', async () => {
+    renderFindings('/findings?aba=reauditoria&systemId=2');
+    expect(await screen.findByRole('tab', { name: 'Reauditoria' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Achados e nota' })).toHaveAttribute('aria-selected', 'false');
+  });
+
   it('mostra de qual analisador veio cada achado', async () => {
     renderFindings();
     await screen.findByText('SQL por concatenação');

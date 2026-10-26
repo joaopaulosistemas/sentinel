@@ -7,6 +7,9 @@ import { StartAuditModal } from '../../components/StartAuditModal';
 import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
 import { AnalyzerCard, EventLog, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
 import { JourneySteps } from '../../components/JourneySteps';
+import { McpStatusStrip } from '../../components/McpStatusStrip';
+import { useMcpActivity } from '../../hooks/useMcpActivity';
+import { callsSince, mcpCallEvents, mergeEvents, pendingCount } from '../../utils/mcpActivity';
 import { CheckIcon, CrossIcon, DashIcon, SpinnerIcon } from '../../components/StatusIcons';
 import { ResultSteps } from '../../components/ResultSteps';
 import { useAuditStore } from '../../store/useAuditStore';
@@ -43,6 +46,8 @@ export function AuditRunPage() {
   const lastProgress = useRef<AuditProgress | null>(null);
   // Histórico do mesmo sistema: base da estimativa de tempo.
   const { data: history } = useAuditRuns(run?.systemId ?? 0);
+  // O que o Claude (MCP) fez com este sistema desde que a auditoria começou. Só informação: não entra na nota.
+  const mcp = useMcpActivity(run?.systemId, run !== undefined && !finished);
 
   const cancel = useMutation({
     mutationFn: () => api.cancelAudit(id),
@@ -87,6 +92,9 @@ export function AuditRunPage() {
   // O servidor só devolve o andamento enquanto a auditoria roda; ao concluir, guarda-se o último visto.
   const progress = run.progress ?? lastProgress.current;
   const analyzers = progress?.analyzers ?? [];
+  const mcpEnabled = typeof mcp.config.data?.enabled === 'boolean' ? mcp.config.data.enabled : null;
+  const mcpCalls = mcpEnabled ? callsSince(mcp.calls, run.startedAt) : [];
+  const events = mergeEvents(progress?.events ?? [], mcpEnabled ? mcpCallEvents(mcp.calls, run.startedAt) : []);
   const counts = analyzerCounts(analyzers);
   const seconds = elapsedSeconds(run);
   const failed = run.status === 'FAILED';
@@ -219,6 +227,10 @@ export function AuditRunPage() {
         </div>
       </section>
 
+      {active && run.systemId !== undefined && (
+        <McpStatusStrip systemId={run.systemId} enabled={mcpEnabled} calls={mcpCalls} pending={pendingCount(mcp.pending)} />
+      )}
+
       {failed && (
         <InlineNotification
           kind="error"
@@ -259,7 +271,7 @@ export function AuditRunPage() {
 
           <aside aria-label="Resultado e eventos" style={{ flex: '1 1 340px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
             <PartialResult run={run} progress={progress} />
-            <EventLog startedAt={run.startedAt} events={progress?.events ?? []} />
+            <EventLog startedAt={run.startedAt} events={events} />
           </aside>
         </div>
       )}

@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SystemsPage } from './SystemsPage';
 
-function renderPage(check: unknown, systems: unknown[] = []) {
+function renderPage(check: unknown, systems: unknown[] = [], url = '/') {
   const calls: Array<{ url: string; method: string; body?: string }> = [];
   vi.stubGlobal(
     'fetch',
@@ -22,7 +22,7 @@ function renderPage(check: unknown, systems: unknown[] = []) {
   );
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[url]}>
         <SystemsPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -69,6 +69,26 @@ describe('SystemsPage', () => {
     await waitFor(() => expect(calls.some((c) => c.url.endsWith('/systems/7/schedule') && c.method === 'PUT')).toBe(true));
     const schedule = calls.find((c) => c.url.endsWith('/schedule'));
     expect(JSON.parse(schedule?.body ?? '{}')).toEqual({ auditIntervalHours: 0, branch: 'develop', auditOnPush: false });
+  });
+
+  it('?edit=ID&tab=mcp abre o cadastro direto na aba Claude (MCP)', async () => {
+    renderPage(
+      {},
+      [{ id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true }],
+      '/systems?edit=3&tab=mcp',
+    );
+    expect(await screen.findByRole('dialog', { name: 'Editar sistema' })).toBeInTheDocument();
+    expect(await screen.findByLabelText('Permitir consulta pelo Claude (MCP)')).toBeInTheDocument();
+  });
+
+  it('?edit=ID sem tab abre na aba de cadastro', async () => {
+    renderPage(
+      {},
+      [{ id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true }],
+      '/systems?edit=3',
+    );
+    expect(await screen.findByLabelText(/Nome do sistema/)).toHaveValue('conta-corrente-api');
+    expect(screen.queryByLabelText('Permitir consulta pelo Claude (MCP)')).not.toBeInTheDocument();
   });
 
   it('Editar abre o cadastro em pop-up, com a linha destacada, e fechar some com ele', async () => {
