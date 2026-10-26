@@ -535,3 +535,18 @@ export interface ClaudeReview {
   suggestions: ReviewSuggestion[];
   proposals: RuleProposalView[];
 }
+
+export type PendingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+
+/** Pedido do Claude que só acontece se uma pessoa aprovar. */
+export interface PendingAction {
+  id: number;
+  kind: 'START_AUDIT' | 'SUPPRESS_FINDING';
+  summary: string;
+  status: PendingStatus;
+  createdAt: string;
+  expiresAt: string;
+  decidedAt: string | null;
+  resultNote: string | null;
+  auditRunId: number | null;
+}

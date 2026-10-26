@@ -77,8 +77,10 @@ class McpGateServiceTest {
     }
 
     @Test
-    void soDuasFerramentasGravamEAmbasNaAreaDeRevisao() {
+    void ferramentasQueGravamSaoSoDeRevisaoEPedidosComAprovacao() {
         List<McpTool> writers = java.util.Arrays.stream(McpTool.values()).filter(McpTool::writes).toList();
-        assertEquals(List.of(McpTool.REGISTRAR_SUGESTAO, McpTool.PROPOR_REGRA), writers);
+        assertEquals(List.of(McpTool.REGISTRAR_SUGESTAO, McpTool.PROPOR_REGRA, McpTool.INICIAR_AUDITORIA, McpTool.SUPRIMIR_ACHADO), writers);
+        assertFalse(McpTool.STATUS_PEDIDOS.writes(), "consultar pedidos é leitura");
+        assertTrue(gate.enabledTools(access(true, "k")).contains(McpTool.STATUS_PEDIDOS));
     }
 }

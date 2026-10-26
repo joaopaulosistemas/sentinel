@@ -13,6 +13,7 @@ import type {
   RuleQuality,
   ClaudeReview,
   EngineConfig,
+  PendingAction,
   EngineTuning,
   McpCall,
   McpConfig,
@@ -218,6 +219,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body ?? {}),
     }),
+
+  getPendingActions: (systemId: number) => apiFetch<PendingAction[]>(`/api/v1/pending-actions/${systemId}`),
+
+  decidePendingAction: (systemId: number, actionId: number, decision: 'approve' | 'reject') =>
+    apiFetch<PendingAction[]>(`/api/v1/pending-actions/${systemId}/${actionId}/${decision}`, { method: 'POST', body: '{}' }),
 
   getMcpCalls: (systemId: number, limit = 20) =>
     apiFetch<McpCall[]>(`/api/v1/mcp-access/${systemId}/calls?limit=${limit}`),

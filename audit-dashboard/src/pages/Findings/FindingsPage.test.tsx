@@ -74,12 +74,12 @@ describe('FindingsPage', () => {
     expect(screen.getByText('Página 1 de 1')).toBeInTheDocument();
   });
 
-  it('chama a tela de Informações de Auditoria, com a aba de achados ativa, a Revisão do Claude disponível e a Reauditoria desativada', async () => {
+  it('chama a tela de Informações de Auditoria, com a aba de achados ativa, com a Revisão do Claude e a Reauditoria disponíveis', async () => {
     renderFindings();
     expect(await screen.findByRole('heading', { level: 1, name: 'Informações de Auditoria' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Achados e nota' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: 'Revisão do Claude' })).toBeEnabled();
-    expect(screen.getByRole('tab', { name: 'Reauditoria' })).toBeDisabled();
+    expect(screen.getByRole('tab', { name: 'Reauditoria' })).toBeEnabled();
   });
 
   it('mostra de qual analisador veio cada achado', async () => {

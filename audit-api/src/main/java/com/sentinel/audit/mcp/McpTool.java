@@ -32,7 +32,15 @@ public enum McpTool {
                     + "uma pessoa decide o que fazer com ela.", true),
     PROPOR_REGRA("propor_regra",
             "Propõe uma regra Semgrep para este sistema. Ela entra no funil (revisão por uma pessoa, teste de amostra, "
-                    + "observação fora da nota) e só pesa na nota se for promovida por uma pessoa.", true);
+                    + "observação fora da nota) e só pesa na nota se for promovida por uma pessoa.", true),
+    INICIAR_AUDITORIA("iniciar_auditoria",
+            "Pede uma nova auditoria do sistema. Nada roda na hora: o pedido fica esperando uma pessoa aprovar no dashboard "
+                    + "(vale 1 hora). Use status_pedidos para saber a decisão.", true),
+    SUPRIMIR_ACHADO("suprimir_achado",
+            "Pede para suprimir um achado da última auditoria como falso positivo (só esse motivo). Nada muda na hora: "
+                    + "uma pessoa aprova no dashboard e a supressão vale por 90 dias. Use status_pedidos para saber a decisão.", true),
+    STATUS_PEDIDOS("status_pedidos",
+            "Situação dos pedidos recentes feitos por você (esperando, aprovado, recusado, vencido).");
 
     private final String wire;
     private final String description;
@@ -82,6 +90,19 @@ public enum McpTool {
                     .put("description", "Só os achados que não existiam na auditoria anterior");
             props.putObject("limite").put("type", "integer").put("minimum", 1).put("maximum", 50)
                     .put("description", "Quantos achados devolver (padrão 20)");
+        }
+        if (this == INICIAR_AUDITORIA) {
+            props.putObject("branch").put("type", "string").put("description", "Branch a auditar (padrão: a do agendamento do sistema)");
+            schema.putArray("required");
+            return schema;
+        }
+        if (this == SUPRIMIR_ACHADO) {
+            props.putObject("achadoId").put("type", "integer").put("description", "Id do achado (vem de buscar_achados)");
+            props.putObject("motivo").put("type", "string").putArray("enum").add("FALSE_POSITIVE");
+            props.putObject("justificativa").put("type", "string").put("minLength", 10).put("maxLength", 1000)
+                    .put("description", "Por que é falso positivo");
+            schema.putArray("required").add("achadoId").add("motivo").add("justificativa");
+            return schema;
         }
         if (this == REGISTRAR_SUGESTAO) {
             props.putObject("titulo").put("type", "string").put("maxLength", 200).put("description", "Resumo da sugestão");
