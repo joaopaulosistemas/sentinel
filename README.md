@@ -1,6 +1,6 @@
 # Sentinel Audit Tool
 
-> Plataforma de auditoria técnica contínua e automatizada para os sistemas do Sicoob —
+> Plataforma de auditoria técnica contínua e automatizada para os sistemas da organização —
 > construída em **menos de 1 dia** com IBM Bob como engenheiro de software.
 
 ---
@@ -9,7 +9,7 @@
 
 > **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [Claude (MCP)](docs/integracao/mcp.md) · [evidências offline](docs/evidencias/README.md)
 
-Realizar uma **auditoria técnica completa dos projetos Sicoob**, identificando:
+Realizar uma **auditoria técnica completa dos projetos da organização**, identificando:
 
 - **Problemas reais** — vulnerabilidades, falhas de segurança, código defeituoso
 - **Riscos técnicos** — débito acumulado, dependências obsoletas, arquitetura frágil
@@ -29,7 +29,7 @@ A ferramenta faz isso de forma contínua, automatizada e rastreável, cobrindo o
 
 ## O Problema
 
-O Sicoob opera dezenas de sistemas distribuídos entre squads diferentes — APIs de back-office, portais de front-office, integrações financeiras. Com times independentes, stacks variadas (Java, JavaScript, .NET, COBOL) e pressão constante de entrega, a qualidade técnica é monitorada de forma fragmentada ou reativa.
+A organização opera dezenas de sistemas distribuídos entre squads diferentes — APIs de back-office, portais de front-office, integrações financeiras. Com times independentes, stacks variadas (Java, JavaScript, .NET, COBOL) e pressão constante de entrega, a qualidade técnica é monitorada de forma fragmentada ou reativa.
 
 **O que acontece sem auditoria contínua:**
 
@@ -95,7 +95,7 @@ Repositório Git
 
 ### O que a ferramenta audita
 
-A ferramenta cobre os dois alvos principais dos sistemas Sicoob:
+A ferramenta cobre os dois alvos principais dos sistemas da organização:
 
 #### 🖥️ Front-office — Componentes Visuais
 
@@ -149,12 +149,12 @@ Aprova a especificação      →   Implementa backend completo (43 arquivos Jav
 
 | Capacidade | Como foi usada |
 |-----------|---------------|
-| **Leitura de codebase** | Bob analisou o projeto legado Weather Demo para entender o contexto Sicoob |
+| **Leitura de codebase** | Bob analisou o projeto legado Weather Demo para entender o contexto do negócio |
 | **Geração de especificação** | Bob entrevistou o usuário e criou o documento técnico completo |
 | **Implementação multi-arquivo** | Bob criou 50+ arquivos simultaneamente via subtasks paralelas |
 | **Execução de comandos** | Bob rodou `mvn compile`, `mvn test`, corrigiu erros em tempo real |
 | **Diagnóstico de ambiente** | Bob identificou conflito Java 8 vs Java 21, Maven 3.0.5 vs 3.9.x e resolveu |
-| **Raciocínio técnico** | Bob escolheu Quarkus, Carbon DS, Panache baseado no contexto Sicoob |
+| **Raciocínio técnico** | Bob escolheu Quarkus, Carbon DS, Panache baseado no contexto do negócio |
 
 ### O que o humano fez
 
@@ -169,13 +169,13 @@ Aprova a especificação      →   Implementa backend completo (43 arquivos Jav
 
 ## A Equipe
 
-Este projeto foi construído durante o **Bobathon de Modernização Java** — um workshop da área de tecnologia do Sicoob.
+Este projeto foi construído durante o **Bobathon de Modernização Java** — um workshop da área de tecnologia.
 
 | Papel | Nome | Contribuição |
 |-------|------|-------------|
 | **Product Owner / Idealizador** | Participante Bobathon | Definição do problema, requisitos, validação |
 | **Engenheiro de Software** | IBM Bob | Especificação, implementação, testes, documentação |
-| **Revisão Técnica** | Time Sicoob | Validação dos padrões e contexto do negócio |
+| **Revisão Técnica** | Time da organização | Validação dos padrões e contexto do negócio |
 
 > 💡 **Este é exatamente o propósito do Bobathon:** demonstrar que com IBM Bob, um profissional de negócio com conhecimento técnico básico pode construir uma solução de software completa e funcional em horas, não semanas.
 
@@ -283,7 +283,7 @@ psql -h 127.0.0.1 -U sentinel_audit -d sentinel_audit -c "SELECT 1"
 #### 4. Inicie o backend
 
 ```bash
-cd /mnt/c/bob/bobathon2026-modernization-sicoob/sicoob-audit-tool
+cd /caminho/para/sentinel
 
 mvn quarkus:dev \
   -s settings-local.xml \
@@ -314,7 +314,7 @@ Variáveis úteis (todas opcionais em dev):
 #### 4. Inicie o dashboard (novo terminal)
 
 ```bash
-cd /mnt/c/bob/bobathon2026-modernization-sicoob/sicoob-audit-tool/audit-dashboard
+cd /caminho/para/sentinel/audit-dashboard
 npm install
 npm run dev
 ```
@@ -341,7 +341,7 @@ curl -X POST http://localhost:8080/api/v1/systems \
 # Disparar auditoria
 curl -X POST http://localhost:8080/api/v1/audits \
   -H "Content-Type: application/json" \
-  -d '{"systemId": 1, "branch": "main", "triggeredBy": "voce@sicoob.com.br"}'
+  -d '{"systemId": 1, "branch": "main", "triggeredBy": "voce@empresa.com.br"}'
 
 # Acompanhar resultado
 curl http://localhost:8080/api/v1/audits/1
@@ -406,7 +406,7 @@ O Compose expõe tudo apenas em `127.0.0.1`. O dashboard injeta a `API_KEY` no p
 
 ```bash
 # WSL2 / Linux
-cd /mnt/c/bob/bobathon2026-modernization-sicoob/sicoob-audit-tool
+cd /caminho/para/sentinel
 
 mvn test \
   -s settings-local.xml \
@@ -454,7 +454,7 @@ Opções extras do CLI:
 ```
 sentinel-audit-tool/
 ├── pom.xml                         ← Parent Maven multi-módulo
-├── settings-local.xml              ← Maven settings (fora da rede Sicoob)
+├── settings-local.xml              ← Maven settings (fora da rede corporativa)
 ├── docker-compose.yml              ← Ambiente completo local
 ├── .env.example                    ← Template de variáveis de ambiente
 ├── docs/schema-referencia.sql      ← Só referência (o schema é gerado pelo Hibernate)
@@ -505,20 +505,20 @@ sentinel-audit-tool/
 
 ---
 
-## Migrando de uma instalação antiga (quando o nome era "Sicoob Audit Tool")
+## Migrando de uma instalação antiga (antes do nome Sentinel)
 
 O projeto foi renomeado por completo para **Sentinel**: pacotes Java (`com.sentinel.audit`), ids de regra
 (`sentinel-*`), propriedades (`sentinel.audit.*`), banco (`sentinel_audit`) e jars (`sentinel-audit-*`).
-Quem já tinha a versão antiga rodando precisa:
+Quem já tinha a versão anterior rodando, com o nome antigo, precisa:
 
 1. **Banco:** renomear (ou recriar) o banco e o usuário, ou manter os antigos apontando `DB_URL`, `DB_USER` e `DB_PASSWORD` para eles:
    ```sql
-   ALTER DATABASE sicoob_audit RENAME TO sentinel_audit;
-   ALTER ROLE sicoob_audit RENAME TO sentinel_audit;   -- renomear o usuário limpa a senha: defina-a de novo com ALTER ROLE ... PASSWORD
+   ALTER DATABASE <nome_antigo> RENAME TO sentinel_audit;
+   ALTER ROLE <nome_antigo> RENAME TO sentinel_audit;   -- renomear o usuário limpa a senha: defina-a de novo com ALTER ROLE ... PASSWORD
    ```
 2. **Histórico de findings:** os ids de regra mudaram, então o *fingerprint* de cada finding também. Na primeira auditoria depois da migração,
    tudo aparece como "novo" e os findings antigos como "resolvidos"; supressões (falsos positivos) cadastradas antes **não valem mais** e precisam ser refeitas.
-3. **Variáveis e arquivos próprios:** troque qualquer `sicoob.audit.*` por `sentinel.audit.*` em configurações, e `sicoob-*` por `sentinel-*`
+3. **Variáveis e arquivos próprios:** troque as propriedades `<nome_antigo>.audit.*` por `sentinel.audit.*` em configurações, e os prefixos `<nome_antigo>-*` por `sentinel-*`
    nas suas regras Semgrep, supressões e scripts de CI (o jar do CLI agora é `sentinel-audit-cli.jar`).
 
 ## Qualidade de código, padrões e lint (Java e TypeScript)
@@ -811,7 +811,7 @@ Documentação interativa (somente modo dev): **http://localhost:8080/swagger-ui
 ---
 
 **Desenvolvido com ❤️ usando IBM Bob**  
-**Bobathon de Modernização Java — Sicoob 2026**
+**Bobathon de Modernização Java 2026**
 
 ## Novidades da v10
 
