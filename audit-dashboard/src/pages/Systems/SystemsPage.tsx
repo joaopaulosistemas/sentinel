@@ -94,11 +94,16 @@ export function SystemsPage() {
   });
 
   // "Editar sistema" na tela do sistema chega aqui com ?edit=ID: abre o painel desse sistema.
+  // Com &tab=mcp (faixa do Claude na execução da auditoria), já abre na aba Claude (MCP).
   const editId = params.get('edit');
+  const editTab = params.get('tab');
   useEffect(() => {
     if (!editId || !systems) return;
     const target = systems.find((s) => String(s.id) === editId);
-    if (target) open(target);
+    if (target) {
+      open(target);
+      if (editTab === 'mcp') setTab('mcp');
+    }
     setParams({}, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, systems]);

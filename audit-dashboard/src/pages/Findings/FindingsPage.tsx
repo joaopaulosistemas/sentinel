@@ -60,7 +60,9 @@ export function FindingsPage() {
   const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
   const auditMode = auditId > 0;
 
-  const [systemId, setSystemId] = useState<number | undefined>(undefined);
+  // Com ?aba=reauditoria&systemId=ID (faixa do Claude na execução da auditoria), abre direto nos pedidos desse sistema.
+  const linkedSystem = Number(searchParams.get('systemId') ?? '0');
+  const [systemId, setSystemId] = useState<number | undefined>(linkedSystem > 0 ? linkedSystem : undefined);
   const [severity, setSeverity] = useState<SeverityChoice>(DEFAULT_SEVERITY);
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const [situation, setSituation] = useState<SituationChoice>(searchParams.get('onlyNew') === '1' ? 'new' : DEFAULT_SITUATION);
@@ -68,7 +70,7 @@ export function FindingsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [grouped, setGrouped] = useState(false);
   const [showResolved, setShowResolved] = useState(false);
-  const [aba, setAba] = useState<AbaId>('achados');
+  const [aba, setAba] = useState<AbaId>(searchParams.get('aba') === 'reauditoria' ? 'reauditoria' : 'achados');
 
   const { data: systems } = useSystems();
   const { data: audit } = useAudit(auditId);

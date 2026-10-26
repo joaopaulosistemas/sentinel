@@ -509,8 +509,8 @@ flowchart TB
 
 | Camada | Arquivos | Papel |
 |---|---|---|
-| Páginas | `OverviewPage`, `SystemsPage`, `SystemDetailPage`, `AuditRunPage`, `RankingPage`, `FindingsPage`, `ReportsPage` | Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios |
-| Componentes | `FindingsTable`, `ScoreGauge`, `RiskBadge`, `TrendChart`, `DiffSummary`, `InsightsPanel`, `RemediationBlock`, `SuppressModal`, `SuppressionsList`, `ProfileForm`, `ScheduleForm`, `Layout/AppShell`, `EnginePanel`, `McpPanel`, `ClaudeReviewPanel`, `ReauditPanel`, `StartAuditModal` | Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria |
+| Páginas | `OverviewPage`, `SystemsPage`, `SystemDetailPage`, `AuditRunPage` (com a faixa Claude (MCP) e as chamadas do Claude no quadro de eventos enquanto a auditoria roda), `RankingPage`, `FindingsPage`, `ReportsPage` | Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios |
+| Componentes | `FindingsTable`, `ScoreGauge`, `RiskBadge`, `TrendChart`, `DiffSummary`, `InsightsPanel`, `RemediationBlock`, `SuppressModal`, `SuppressionsList`, `ProfileForm`, `ScheduleForm`, `Layout/AppShell`, `EnginePanel`, `McpPanel`, `McpStatusStrip`, `ClaudeReviewPanel`, `ReauditPanel`, `StartAuditModal` | Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria |
 | Hooks | `useSystems` (`useSystem`, `useRuleQuality`), `useAuditRuns` (`useAudit`), `useFindings`, `useLifecycle` (tendência, diferença, supressões, visão completa, pacotes, perfil, agenda) | Cada um encapsula uma consulta ou mutação ao servidor |
 | Estado | `store/useAuditStore` | Sistema e auditoria selecionados e filtros de achados |
 | Acesso à API | `api/client.ts` | `apiFetch` e o objeto `api` com cada endpoint |
@@ -652,7 +652,7 @@ Os agentes só abrem PR em `evolucao/*`; o merge é manual. O job `Escopo dos PR
 
 ## 11. Limites deste documento
 
-- Este documento descreve o código até a versão 12.10.0 do dashboard (fases 1 a 6 do plano Sentinel + MCP). O HTML é gerado deste arquivo por `scripts/gerar-arquitetura-html.py`; edite só o `.md`.
+- Este documento descreve o código até a versão 12.11.0 do dashboard (fases 1 a 6 do plano Sentinel + MCP, mais a faixa do Claude na execução da auditoria). O HTML é gerado deste arquivo por `scripts/gerar-arquitetura-html.py`; edite só o `.md`.
 - Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (`AuditOrchestrationService`, `ScoringService`, camadas, dashboard). Classes grandes como `PackLoader` (641 linhas), `ArchitecturePolicyAnalyzer` (534) e `InsightsBuilder` (344) estão descritas pelo comentário de classe, não por leitura linha a linha.
 - A lista de analisadores executados por padrão é a de `AuditOrchestrationService.runAnalyzers` (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.
 - Os pesos e o teto do score vêm de `ScoringService` hoje; mudam com o código. Em caso de dúvida vale o código.

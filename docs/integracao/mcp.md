@@ -53,6 +53,18 @@ Sem escolha na aba, só as de leitura ficam ligadas. As de escrita precisam ser 
 
 Cada chamada fica registrada na aba (quando, ferramenta, resultado, tempo). O resultado em si não é guardado.
 
+## Acompanhar o Claude durante a auditoria
+
+Na tela de execução da auditoria (`/audits/<id>`), enquanto ela roda, aparece a faixa **Claude (MCP)** com o estado deste sistema:
+
+- **desligado** (com link **Configurar**, que abre a aba Claude (MCP) do sistema);
+- **ligado, sem consultas nesta auditoria**;
+- **ligado**, com o número de consultas desde o início da auditoria (e quantas foram recusadas), a última e a ferramenta usada.
+
+Cada chamada do Claude também entra no quadro **Eventos** ("Claude (MCP) chamou `buscar_achados`"), na ordem em que aconteceu. Pedidos do Claude esperando aprovação aparecem como link para **Reauditoria**.
+
+É só informação: lê a configuração, as últimas chamadas e os pedidos pendentes, e não escreve nada. A nota continua vindo apenas do motor de regras. A faixa some quando a auditoria termina; o histórico completo fica na aba Claude (MCP) do sistema.
+
 ## Revisão do Claude: sugestões e regras
 
 As duas primeiras ferramentas de escrita só gravam em **Informações de Auditoria → Revisão do Claude**. Não criam achado, não mudam regra do motor e não entram na nota. O quadro no topo da aba mostra **quanto o Claude acerta**: sugestões aproveitadas (tratadas ÷ tratadas + dispensadas) e regras promovidas (promovidas ÷ promovidas + descartadas), medidas pelo que as pessoas decidiram (`GET /api/v1/claude-review/{id}/metrics`). Sem decisão, a taxa aparece como "sem decisão ainda".

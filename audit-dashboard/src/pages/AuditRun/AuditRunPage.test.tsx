@@ -2,10 +2,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AuditRunResponse, FixPlan } from '../../types';
+import type { AuditRunResponse, FixPlan, McpCall, PendingAction } from '../../types';
 import { AuditRunPage } from './AuditRunPage';
 
-function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan, history: Array<Partial<AuditRunResponse>> = []) {
+interface McpMock {
+  enabled: boolean;
+  calls?: McpCall[];
+  pending?: Array<Partial<PendingAction>>;
+}
+
+function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan, history: Array<Partial<AuditRunResponse>> = [], mcp?: McpMock) {
   const full: AuditRunResponse = {
     id: 215,
     systemName: 'conta-corrente-api',
@@ -26,6 +32,11 @@ function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan, history: Arr
       if (u.endsWith('/fix-plan')) return new Response(JSON.stringify(plan), { status: 200 });
       if (u.includes('/systems/') && u.endsWith('/audits')) return new Response(JSON.stringify(history), { status: 200 });
       if (u.endsWith('/cancel')) return new Response(JSON.stringify({ ...full, status: 'CANCELLED' }), { status: 202 });
+      if (mcp && u.includes('/mcp-access/') && u.includes('/calls')) return new Response(JSON.stringify(mcp.calls ?? []), { status: 200 });
+      if (mcp && u.includes('/mcp-access/')) {
+        return new Response(JSON.stringify({ enabled: mcp.enabled, hasKey: true, keyPrefix: 'snt_', keyCreatedAt: null, dataLevel: 'TITLES', tools: [] }), { status: 200 });
+      }
+      if (mcp && u.includes('/pending-actions/')) return new Response(JSON.stringify(mcp.pending ?? []), { status: 200 });
       return new Response(JSON.stringify(full), { status: 200 });
     }),
   );
@@ -141,5 +152,57 @@ describe('AuditRunPage', () => {
     const link = await screen.findByRole('link', { name: 'Baixar relatório' });
     expect(link).toHaveAttribute('href', '/api/v1/audits/215/report');
     expect(screen.getByRole('button', { name: 'Auditar de novo' })).toBeInTheDocument();
+  });
+
+  describe('Claude (MCP) durante a execução', () => {
+    const running = { systemId: 3, progress: { phase: 'ANALISE' as const, analyzers: [], events: [{ at: '2026-10-22T10:00:05', message: 'Clone concluído' }] } };
+
+    it('mostra a faixa e as chamadas do Claude no quadro de eventos', async () => {
+      renderPage(
+        running,
+        undefined,
+        [],
+        {
+          enabled: true,
+          calls: [
+            { tool: 'buscar_achados', ok: true, durationMs: 20, detail: null, at: '2026-10-22T10:00:30' },
+            { tool: 'status_auditoria', ok: true, durationMs: 11, detail: null, at: '2026-10-22T09:00:00' }, // antes do início: não conta
+          ],
+        },
+      );
+      expect(await screen.findByText(/1 consulta nesta auditoria/)).toBeInTheDocument();
+      expect(screen.getByText('Claude (MCP) chamou buscar_achados')).toBeInTheDocument();
+      expect(screen.getByText('Clone concluído')).toBeInTheDocument();
+      expect(screen.queryByText('Claude (MCP) chamou status_auditoria')).not.toBeInTheDocument();
+    });
+
+    it('com a consulta desligada avisa e oferece configurar', async () => {
+      renderPage(running, undefined, [], { enabled: false });
+      expect(await screen.findByText(/desligado para este sistema/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Configurar' })).toHaveAttribute('href', '/systems?edit=3&tab=mcp');
+    });
+
+    it('pedido do Claude aguardando aprovação aparece na faixa', async () => {
+      renderPage(running, undefined, [], { enabled: true, pending: [{ id: 1, status: 'PENDING' }] });
+      expect(await screen.findByRole('link', { name: '1 pedido do Claude aguarda aprovação' })).toBeInTheDocument();
+    });
+
+    it('sem sistema conhecido não mostra a faixa nem consulta o MCP', async () => {
+      const { calls } = renderPage({ progress: { phase: 'CLONE', analyzers: [], events: [] } });
+      expect(await screen.findByText('Eventos')).toBeInTheDocument();
+      expect(screen.queryByRole('region', { name: 'Claude (MCP)' })).not.toBeInTheDocument();
+      expect(calls.some((c) => c.url.includes('/mcp-access/'))).toBe(false);
+    });
+
+    it('auditoria concluída não mostra a faixa', async () => {
+      renderPage(
+        { status: 'COMPLETED', systemId: 3, completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } },
+        { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] },
+        [],
+        { enabled: true },
+      );
+      expect(await screen.findByRole('link', { name: 'Baixar relatório' })).toBeInTheDocument();
+      expect(screen.queryByRole('region', { name: 'Claude (MCP)' })).not.toBeInTheDocument();
+    });
   });
 });

@@ -961,12 +961,12 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tbody>
 <tr>
 <td>Páginas</td>
-<td><code>OverviewPage</code>, <code>SystemsPage</code>, <code>SystemDetailPage</code>, <code>AuditRunPage</code>, <code>RankingPage</code>, <code>FindingsPage</code>, <code>ReportsPage</code></td>
+<td><code>OverviewPage</code>, <code>SystemsPage</code>, <code>SystemDetailPage</code>, <code>AuditRunPage</code> (com a faixa Claude (MCP) e as chamadas do Claude no quadro de eventos enquanto a auditoria roda), <code>RankingPage</code>, <code>FindingsPage</code>, <code>ReportsPage</code></td>
 <td>Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios</td>
 </tr>
 <tr>
 <td>Componentes</td>
-<td><code>FindingsTable</code>, <code>ScoreGauge</code>, <code>RiskBadge</code>, <code>TrendChart</code>, <code>DiffSummary</code>, <code>InsightsPanel</code>, <code>RemediationBlock</code>, <code>SuppressModal</code>, <code>SuppressionsList</code>, <code>ProfileForm</code>, <code>ScheduleForm</code>, <code>Layout/AppShell</code>, <code>EnginePanel</code>, <code>McpPanel</code>, <code>ClaudeReviewPanel</code>, <code>ReauditPanel</code>, <code>StartAuditModal</code></td>
+<td><code>FindingsTable</code>, <code>ScoreGauge</code>, <code>RiskBadge</code>, <code>TrendChart</code>, <code>DiffSummary</code>, <code>InsightsPanel</code>, <code>RemediationBlock</code>, <code>SuppressModal</code>, <code>SuppressionsList</code>, <code>ProfileForm</code>, <code>ScheduleForm</code>, <code>Layout/AppShell</code>, <code>EnginePanel</code>, <code>McpPanel</code>, <code>McpStatusStrip</code>, <code>ClaudeReviewPanel</code>, <code>ReauditPanel</code>, <code>StartAuditModal</code></td>
 <td>Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria</td>
 </tr>
 <tr>
@@ -1237,7 +1237,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <hr />
 <h2 id="11-limites-deste-documento">11. Limites deste documento</h2>
 <ul>
-<li>Este documento descreve o código até a versão 12.10.0 do dashboard (fases 1 a 6 do plano Sentinel + MCP). O HTML é gerado deste arquivo por <code>scripts/gerar-arquitetura-html.py</code>; edite só o <code>.md</code>.</li>
+<li>Este documento descreve o código até a versão 12.11.0 do dashboard (fases 1 a 6 do plano Sentinel + MCP, mais a faixa do Claude na execução da auditoria). O HTML é gerado deste arquivo por <code>scripts/gerar-arquitetura-html.py</code>; edite só o <code>.md</code>.</li>
 <li>Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (<code>AuditOrchestrationService</code>, <code>ScoringService</code>, camadas, dashboard). Classes grandes como <code>PackLoader</code> (641 linhas), <code>ArchitecturePolicyAnalyzer</code> (534) e <code>InsightsBuilder</code> (344) estão descritas pelo comentário de classe, não por leitura linha a linha.</li>
 <li>A lista de analisadores executados por padrão é a de <code>AuditOrchestrationService.runAnalyzers</code> (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.</li>
 <li>Os pesos e o teto do score vêm de <code>ScoringService</code> hoje; mudam com o código. Em caso de dúvida vale o código.</li>
