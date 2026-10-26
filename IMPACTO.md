@@ -4,21 +4,21 @@
 
 
 > Este documento analisa o impacto real e mensurável que a Sentinel Audit Tool  
-> geraria se fosse implantada em ambiente de produção no Sicoob.
+> geraria se fosse implantada em ambiente de produção numa instituição financeira.
 
 ---
 
 ## O Cenário Real
 
-O Sicoob é o maior sistema de cooperativas de crédito do Brasil, com:
+Uma instituição financeira de grande porte, com:
 
-- **+600 cooperativas** filiadas em todo o território nacional
-- **+6 milhões de associados** utilizando os sistemas digitais
+- **Muitas unidades** espalhadas pelo território nacional
+- **Milhões de clientes** utilizando os sistemas digitais
 - **Dezenas de sistemas** internos entre back-office, front-office e integrações
 - **Múltiplos times** de desenvolvimento com autonomia técnica
 - **Regulação BACEN/CMN** que exige controles de segurança e rastreabilidade
 
-Nesse contexto, uma vulnerabilidade não detectada não é apenas um problema técnico — é um risco para o sistema financeiro de cooperativistas reais.
+Nesse contexto, uma vulnerabilidade não detectada não é apenas um problema técnico — é um risco para o dinheiro de clientes reais.
 
 ---
 
@@ -114,7 +114,7 @@ Times que adotam auditoria contínua reportam **30–40% menos tempo gasto em de
 
 ### O que o BACEN e a LGPD exigem
 
-O Sicoob opera sob regulação do Banco Central (Resolução CMN 4.658 e Resolução BCB 85) e está sujeito à LGPD. Ambas exigem:
+A instituição opera sob regulação do Banco Central (Resolução CMN 4.658 e Resolução BCB 85) e está sujeito à LGPD. Ambas exigem:
 
 - Controles de segurança da informação documentados e auditáveis
 - Gestão de vulnerabilidades com rastreabilidade
@@ -149,7 +149,7 @@ Quando um desenvolvedor recebe um finding `CRITICAL` com título *"Possível SQL
 
 **Após 6 meses de uso:**
 - Desenvolvedores param de cometer os erros mais comuns
-- As regras Semgrep viram o "livro de estilo de segurança" vivo do Sicoob
+- As regras Semgrep viram o "livro de estilo de segurança" vivo da organização
 - Novos membros do time onboardam mais rápido com o contexto técnico centralizado
 
 **Resultado mensurável:** times que usam SAST contínuo reduzem a taxa de introdução de vulnerabilidades em **~45% ao longo do primeiro ano**.
@@ -193,12 +193,12 @@ Com a ferramenta, o time de segurança:
 
 ### Fase 1 — Validação (1–2 meses)
 - Piloto com 3–5 repositórios internos reais
-- Calibração do Risk Score para o contexto Sicoob
+- Calibração do Risk Score para o contexto da organização
 - Refinamento das regras Semgrep com o time de segurança
 - Validação da taxa de falsos positivos (meta: < 5%)
 
 ### Fase 2 — Infraestrutura (1 mês)
-- Provisionamento no ambiente de TI do Sicoob (Kubernetes ou VMs internas)
+- Provisionamento no ambiente de TI da organização (Kubernetes ou VMs internas)
 - Integração com GitLab/Azure DevOps interno
 - Configuração de autenticação (SSO corporativo): login OIDC já disponível; falta separar a visão por squad
 - Conectar ao Jira interno para abertura automática de issues
@@ -218,7 +218,7 @@ Com a ferramenta, o time de segurança:
 
 ## Conclusão
 
-A Sentinel Audit Tool não é um projeto de showcase — é uma resposta técnica a um problema real que todo time de desenvolvimento do Sicoob enfrenta diariamente.
+A Sentinel Audit Tool não é um projeto de showcase — é uma resposta técnica a um problema real que todo time de desenvolvimento enfrenta diariamente.
 
 O que foi construído em **um workshop de 45 minutos com IBM Bob** representa:
 
@@ -228,10 +228,10 @@ O que foi construído em **um workshop de 45 minutos com IBM Bob** representa:
 
 A ferramenta demonstra dois impactos simultâneos:
 
-1. **O impacto direto** — nos sistemas do Sicoob, na segurança dos cooperativistas, na conformidade regulatória
+1. **O impacto direto** — nos sistemas da organização, na segurança dos clientes, na conformidade regulatória
 2. **O impacto do método** — que com IBM Bob, a distância entre um problema real e uma solução funcional se reduziu de semanas para horas
 
 ---
 
-*Documento gerado durante o Bobathon de Modernização Java — Sicoob 2026*  
+*Documento gerado durante o Bobathon de Modernização Java 2026*  
 *Construído com IBM Bob*

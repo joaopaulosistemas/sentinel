@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  settings.xml local para desenvolvimento fora da rede Sicoob.
+  settings.xml local para desenvolvimento fora da rede corporativa.
   Necessário pois o settings.xml do ambiente aponta para o Nexus interno.
 
   WSL2 / Linux (validado ✅ — forma recomendada):

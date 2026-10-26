@@ -57,7 +57,7 @@ describe('textos da lista de sistemas', () => {
   });
 
   it('repoSlug tira o host e o .git', () => {
-    expect(repoSlug('https://github.com/sicoob/conta-corrente.git')).toBe('sicoob/conta-corrente');
+    expect(repoSlug('https://github.com/acme/conta-corrente.git')).toBe('acme/conta-corrente');
     expect(repoSlug(null)).toBe('');
   });
 });

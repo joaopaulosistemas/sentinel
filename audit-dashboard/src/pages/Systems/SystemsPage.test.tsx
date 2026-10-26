@@ -73,9 +73,9 @@ describe('SystemsPage', () => {
 
   it('Editar abre o cadastro em pop-up, com a linha destacada, e fechar some com ele', async () => {
     renderPage({}, [
-      { id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/sicoob/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true },
+      { id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true },
     ]);
-    expect(await screen.findByText('sicoob/conta-corrente')).toBeInTheDocument();
+    expect(await screen.findByText('acme/conta-corrente')).toBeInTheDocument();
     expect(screen.getByText('a cada 24 h · main · push')).toBeInTheDocument();
     expect(screen.queryByLabelText('Editar sistema')).not.toBeInTheDocument();
 

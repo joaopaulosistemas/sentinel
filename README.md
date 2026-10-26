@@ -1,15 +1,15 @@
 # Sentinel Audit Tool
 
-> Plataforma de auditoria técnica contínua e automatizada para os sistemas do Sicoob —
+> Plataforma de auditoria técnica contínua e automatizada para os sistemas da organização —
 > construída em **menos de 1 dia** com IBM Bob como engenheiro de software.
 
 ---
 
 ## Objetivo
 
-> **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [evidências offline](docs/evidencias/README.md)
+> **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [Claude (MCP)](docs/integracao/mcp.md) · [evidências offline](docs/evidencias/README.md)
 
-Realizar uma **auditoria técnica completa dos projetos Sicoob**, identificando:
+Realizar uma **auditoria técnica completa dos projetos da organização**, identificando:
 
 - **Problemas reais** — vulnerabilidades, falhas de segurança, código defeituoso
 - **Riscos técnicos** — débito acumulado, dependências obsoletas, arquitetura frágil
@@ -29,7 +29,7 @@ A ferramenta faz isso de forma contínua, automatizada e rastreável, cobrindo o
 
 ## O Problema
 
-O Sicoob opera dezenas de sistemas distribuídos entre squads diferentes — APIs de back-office, portais de front-office, integrações financeiras. Com times independentes, stacks variadas (Java, JavaScript, .NET, COBOL) e pressão constante de entrega, a qualidade técnica é monitorada de forma fragmentada ou reativa.
+A organização opera dezenas de sistemas distribuídos entre squads diferentes — APIs de back-office, portais de front-office, integrações financeiras. Com times independentes, stacks variadas (Java, JavaScript, .NET, COBOL) e pressão constante de entrega, a qualidade técnica é monitorada de forma fragmentada ou reativa.
 
 **O que acontece sem auditoria contínua:**
 
@@ -95,7 +95,7 @@ Repositório Git
 
 ### O que a ferramenta audita
 
-A ferramenta cobre os dois alvos principais dos sistemas Sicoob:
+A ferramenta cobre os dois alvos principais dos sistemas da organização:
 
 #### 🖥️ Front-office — Componentes Visuais
 
@@ -149,12 +149,12 @@ Aprova a especificação      →   Implementa backend completo (43 arquivos Jav
 
 | Capacidade | Como foi usada |
 |-----------|---------------|
-| **Leitura de codebase** | Bob analisou o projeto legado Weather Demo para entender o contexto Sicoob |
+| **Leitura de codebase** | Bob analisou o projeto legado Weather Demo para entender o contexto do negócio |
 | **Geração de especificação** | Bob entrevistou o usuário e criou o documento técnico completo |
 | **Implementação multi-arquivo** | Bob criou 50+ arquivos simultaneamente via subtasks paralelas |
 | **Execução de comandos** | Bob rodou `mvn compile`, `mvn test`, corrigiu erros em tempo real |
 | **Diagnóstico de ambiente** | Bob identificou conflito Java 8 vs Java 21, Maven 3.0.5 vs 3.9.x e resolveu |
-| **Raciocínio técnico** | Bob escolheu Quarkus, Carbon DS, Panache baseado no contexto Sicoob |
+| **Raciocínio técnico** | Bob escolheu Quarkus, Carbon DS, Panache baseado no contexto do negócio |
 
 ### O que o humano fez
 
@@ -169,13 +169,13 @@ Aprova a especificação      →   Implementa backend completo (43 arquivos Jav
 
 ## A Equipe
 
-Este projeto foi construído durante o **Bobathon de Modernização Java** — um workshop da área de tecnologia do Sicoob.
+Este projeto foi construído durante o **Bobathon de Modernização Java** — um workshop da área de tecnologia.
 
 | Papel | Nome | Contribuição |
 |-------|------|-------------|
 | **Product Owner / Idealizador** | Participante Bobathon | Definição do problema, requisitos, validação |
 | **Engenheiro de Software** | IBM Bob | Especificação, implementação, testes, documentação |
-| **Revisão Técnica** | Time Sicoob | Validação dos padrões e contexto do negócio |
+| **Revisão Técnica** | Time da organização | Validação dos padrões e contexto do negócio |
 
 > 💡 **Este é exatamente o propósito do Bobathon:** demonstrar que com IBM Bob, um profissional de negócio com conhecimento técnico básico pode construir uma solução de software completa e funcional em horas, não semanas.
 
@@ -283,7 +283,7 @@ psql -h 127.0.0.1 -U sentinel_audit -d sentinel_audit -c "SELECT 1"
 #### 4. Inicie o backend
 
 ```bash
-cd /mnt/c/bob/bobathon2026-modernization-sicoob/sicoob-audit-tool
+cd /caminho/para/sentinel
 
 mvn quarkus:dev \
   -s settings-local.xml \
@@ -314,7 +314,7 @@ Variáveis úteis (todas opcionais em dev):
 #### 4. Inicie o dashboard (novo terminal)
 
 ```bash
-cd /mnt/c/bob/bobathon2026-modernization-sicoob/sicoob-audit-tool/audit-dashboard
+cd /caminho/para/sentinel/audit-dashboard
 npm install
 npm run dev
 ```
@@ -341,7 +341,7 @@ curl -X POST http://localhost:8080/api/v1/systems \
 # Disparar auditoria
 curl -X POST http://localhost:8080/api/v1/audits \
   -H "Content-Type: application/json" \
-  -d '{"systemId": 1, "branch": "main", "triggeredBy": "voce@sicoob.com.br"}'
+  -d '{"systemId": 1, "branch": "main", "triggeredBy": "voce@empresa.com.br"}'
 
 # Acompanhar resultado
 curl http://localhost:8080/api/v1/audits/1
@@ -406,7 +406,7 @@ O Compose expõe tudo apenas em `127.0.0.1`. O dashboard injeta a `API_KEY` no p
 
 ```bash
 # WSL2 / Linux
-cd /mnt/c/bob/bobathon2026-modernization-sicoob/sicoob-audit-tool
+cd /caminho/para/sentinel
 
 mvn test \
   -s settings-local.xml \
@@ -454,7 +454,7 @@ Opções extras do CLI:
 ```
 sentinel-audit-tool/
 ├── pom.xml                         ← Parent Maven multi-módulo
-├── settings-local.xml              ← Maven settings (fora da rede Sicoob)
+├── settings-local.xml              ← Maven settings (fora da rede corporativa)
 ├── docker-compose.yml              ← Ambiente completo local
 ├── .env.example                    ← Template de variáveis de ambiente
 ├── docs/schema-referencia.sql      ← Só referência (o schema é gerado pelo Hibernate)
@@ -468,6 +468,10 @@ sentinel-audit-tool/
 │       ├── service/                ← Lógica de negócio
 │       ├── analyzer/               ← Motores de análise
 │       ├── insights/               ← Áreas, mapa do projeto, dívida técnica (P0–P3), quick wins e roadmap
+│       ├── tuning/                 ← Ajuste do motor por sistema (regras, limites, pacotes, analisadores)
+│       ├── mcp/                    ← Servidor MCP: chave por sistema, ferramentas, nível de dado, limite de chamadas
+│       ├── review/                 ← Revisão do Claude: sugestões, regras propostas, funil e métricas
+│       ├── actions/                ← Pedidos do Claude que só acontecem com aprovação (iniciar auditoria, suprimir achado)
 │       └── resource/               ← Endpoints REST
 │
 ├── audit-rules/
@@ -481,8 +485,8 @@ sentinel-audit-tool/
 ├── audit-dashboard/                ← Frontend React 18 + IBM Carbon DS
 │   ├── Dockerfile + nginx.conf.template
 │   └── src/
-│       ├── pages/                  ← Overview, Ranking, SystemDetail, Findings, Reports
-│       ├── components/             ← Layout/AppShell, RiskBadge, ScoreGauge, FindingsTable, InsightsPanel, TrendChart, SuppressModal, ProfileForm, ScheduleForm
+│       ├── pages/                  ← Overview, Systems, SystemDetail, AuditRun, Ranking, Findings (Achados, Revisão do Claude, Reauditoria), Reports
+│       ├── components/             ← Layout/AppShell, RiskBadge, ScoreGauge, FindingsTable, InsightsPanel, TrendChart, SuppressModal, EnginePanel, McpPanel, ClaudeReviewPanel, ReauditPanel, StartAuditModal
 │       ├── hooks/                  ← TanStack Query (useSystems, useFindings, useAuditRuns, useLifecycle)
 │       ├── store/                  ← Zustand (filtros, sistema selecionado)
 │       ├── api/                    ← Client tipado para o backend
@@ -494,25 +498,27 @@ sentinel-audit-tool/
 ├── .github/workflows/              ← ci.yml, evolucao.yml, descoberta.yml, release.yml
 ├── .github/agente/                 ← instruções dos agentes Sentinel Evolution e Sentinel Descoberta
 ├── scripts/                        ← e2e, calibração, descoberta de repositórios, relatórios, anotações de CI
-└── docs/evolucao/                  ← PLACAR, LOG, calibração, precisão medida, relatórios das rodadas, guia dos agentes
+├── docs/arquitetura/               ← ARQUITETURA.md (fonte) e ARQUITETURA.html (gerado por scripts/gerar-arquitetura-html.py)
+├── docs/integracao/                ← CI, pre-commit e MCP
+└── docs/evolucao/                  ← PLACAR, LOG, calibração, precisão medida, revisão humana, relatórios das rodadas, guia dos agentes
 ```
 
 ---
 
-## Migrando de uma instalação antiga (quando o nome era "Sicoob Audit Tool")
+## Migrando de uma instalação antiga (antes do nome Sentinel)
 
 O projeto foi renomeado por completo para **Sentinel**: pacotes Java (`com.sentinel.audit`), ids de regra
 (`sentinel-*`), propriedades (`sentinel.audit.*`), banco (`sentinel_audit`) e jars (`sentinel-audit-*`).
-Quem já tinha a versão antiga rodando precisa:
+Quem já tinha a versão anterior rodando, com o nome antigo, precisa:
 
 1. **Banco:** renomear (ou recriar) o banco e o usuário, ou manter os antigos apontando `DB_URL`, `DB_USER` e `DB_PASSWORD` para eles:
    ```sql
-   ALTER DATABASE sicoob_audit RENAME TO sentinel_audit;
-   ALTER ROLE sicoob_audit RENAME TO sentinel_audit;   -- renomear o usuário limpa a senha: defina-a de novo com ALTER ROLE ... PASSWORD
+   ALTER DATABASE <nome_antigo> RENAME TO sentinel_audit;
+   ALTER ROLE <nome_antigo> RENAME TO sentinel_audit;   -- renomear o usuário limpa a senha: defina-a de novo com ALTER ROLE ... PASSWORD
    ```
 2. **Histórico de findings:** os ids de regra mudaram, então o *fingerprint* de cada finding também. Na primeira auditoria depois da migração,
    tudo aparece como "novo" e os findings antigos como "resolvidos"; supressões (falsos positivos) cadastradas antes **não valem mais** e precisam ser refeitas.
-3. **Variáveis e arquivos próprios:** troque qualquer `sicoob.audit.*` por `sentinel.audit.*` em configurações, e `sicoob-*` por `sentinel-*`
+3. **Variáveis e arquivos próprios:** troque as propriedades `<nome_antigo>.audit.*` por `sentinel.audit.*` em configurações, e os prefixos `<nome_antigo>-*` por `sentinel-*`
    nas suas regras Semgrep, supressões e scripts de CI (o jar do CLI agora é `sentinel-audit-cli.jar`).
 
 ## Qualidade de código, padrões e lint (Java e TypeScript)
@@ -793,6 +799,11 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 | `POST` | `/api/v1/findings/{id}/suppress` | Suprime com motivo, justificativa e validade |
 | `POST` | `/api/v1/findings/suppress-batch` | Suprime até 200 findings de uma vez (mesmo motivo/justificativa); devolve as falhas por id |
 | `POST` | `/api/v1/webhooks/github` · `/gitlab` | Disparo por push (autenticado por segredo próprio) |
+| `GET` `PUT` | `/api/v1/engine-config/{id}` | Ajuste do motor do sistema (regras, limites, pacotes, analisadores) e o resultado já resolvido |
+| `GET` `PUT` | `/api/v1/mcp-access/{id}` | Acesso MCP do sistema: ligar, nível de dado, ferramentas; `POST/DELETE …/key` gera e revoga a chave; `GET …/calls` lista as chamadas |
+| `POST` | `/mcp/{sistema}` | Servidor MCP (JSON-RPC), com a chave do sistema em `Authorization: Bearer`; fora da `API_KEY` global; limite de chamadas (`429`) |
+| `GET` | `/api/v1/claude-review/{id}` | Sugestões e regras propostas do Claude; `…/metrics` mede quanto ele acerta; `POST …/suggestions/{sid}/status` e `…/rules/{rid}/review\|sample\|observe\|promote\|discard\|copy` movem o funil |
+| `GET` | `/api/v1/pending-actions/{id}` | Pedidos do Claude; `POST …/{actionId}/approve` ou `…/reject` |
 | `GET` | `/api/v1/health` | Health check |
 
 Documentação interativa (somente modo dev): **http://localhost:8080/swagger-ui**
@@ -800,7 +811,7 @@ Documentação interativa (somente modo dev): **http://localhost:8080/swagger-ui
 ---
 
 **Desenvolvido com ❤️ usando IBM Bob**  
-**Bobathon de Modernização Java — Sicoob 2026**
+**Bobathon de Modernização Java 2026**
 
 ## Novidades da v10
 
@@ -819,6 +830,19 @@ Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dad
 - **Spectral** (`market-tools`): guia REST (recurso kebab-case minúsculo, plural, atributos sem abreviação, erro `problem+json`, coleção paginada, gateway Swagger 2).
 - O pacote vem desligado por padrão. O perfil `corporativo-java-ee-angular` o liga e deixa a nomenclatura de SQL, `OnPush` e EJB sem interface em modo sombra (aparecem, mas não reprovam).
 
+## Sentinel + MCP (v12.5 a v12.10)
+
+O Claude passa a consultar o Sentinel por MCP, sempre fora da nota (o motor de regras continua sendo a única fonte dela). Seis fases, uma por PR:
+
+1. **Informações de Auditoria**: menu único com achados e nota.
+2. **MCP só de leitura**: chave por sistema, nível de dado (padrão "só números e títulos"), ferramentas de consulta e registro das chamadas.
+3. **Motor por sistema**: regras, limites, pacotes e analisadores ajustáveis em cada sistema; cadastro de sistema em janela com abas.
+4. **Revisão do Claude**: sugestões e regras propostas, com funil (proposta, revisão, teste de amostra, observação em sombra, promoção ou descarte).
+5. **Reauditoria**: `iniciar_auditoria` e `suprimir_achado` só criam pedidos; uma pessoa aprova no dashboard. Antes e depois da nota.
+6. **Medir e endurecer**: limite de chamadas, métricas de quanto o Claude acerta, testes de segurança.
+
+Guia completo: `docs/integracao/mcp.md`. O token Git digitado na tela dispensa `SECRETS_KEY` no `.env` (a API cria uma chave no volume `audit_secrets`). Histórico por versão em `docs/evolucao/LOG.md`.
+
 ## Novidades da v12
 
 - **CI do projeto** (`.github/workflows/ci.yml`): API/CLI, testes Semgrep dos pacotes e dashboard. Modelos para o projeto auditado em `docs/integracao/` (GitHub Actions com gate de código novo e SARIF, pre-commit).
@@ -836,4 +860,3 @@ Regras extraídas da documentação de arquitetura (sem URLs, credenciais ou dad
 - **Quando os agentes rodam**: Descoberta toda segunda; Evolution quando o CI da `main` falha e às quartas (backlog); CI completo com calibração aos domingos e em PRs `evolucao/*`. Pushes só de documentação não disparam o CI.
 - **Descoberta, rodada 2**: 4 repositórios novos (`audit-rules/calibracao/descobertos.txt`), 4 PRs verdes mesclados. A revisão manual soma 10 achados em 4 repositórios (`precisao.md`); isso é indicativo, não uma medição estatística de precisão.
 - **Mapa da arquitetura**: `docs/arquitetura/ARQUITETURA.md` descreve API, dashboard, CLI, pacotes de regras e automação, com 13 diagramas e a ligação entre funcionalidades e componentes.
-- **Situação**: placar 2,0 (meta 2,5). O CI da `main` após os merges #4–#7 ainda não foi confirmado, pois os minutos do GitHub Actions acabaram no mês.
