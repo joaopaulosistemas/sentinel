@@ -120,11 +120,11 @@ export function PartialResult({ run, progress }: { run: AuditRunResponse; progre
           </span>
           <span style={{ color: 'var(--s-text-3)' }}>
             nota de risco
-            {delta !== null && run.previousAuditId != null && (
+            {delta !== null && run.previousAuditId !== null && run.previousAuditId !== undefined && (
               <> (era {Math.round(run.riskScore.overall - delta)},{' '}
                 <strong style={{ color: delta >= 0 ? 'var(--s-success-text)' : 'var(--s-danger-text)', fontWeight: 600 }}>{delta >= 0 ? '+' : ''}{Math.round(delta)}</strong>)</>
             )}
-            {run.newFindings != null && run.resolvedFindings != null && ` · ${run.newFindings} novos, ${run.resolvedFindings} resolvidos`}
+            {run.newFindings !== null && run.newFindings !== undefined && run.resolvedFindings !== null && run.resolvedFindings !== undefined && ` · ${run.newFindings} novos, ${run.resolvedFindings} resolvidos`}
           </span>
         </div>
       ) : !finished ? (

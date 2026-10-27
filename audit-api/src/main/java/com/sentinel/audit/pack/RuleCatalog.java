@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.jboss.logging.Logger;
+
 /**
  * Catálogo das regras Semgrep declaradas nos pacotes: id, texto, severidade e categoria. Serve à tela de ajuste do motor,
  * para mostrar o que cada regra faz mesmo quando ela ainda não disparou em nenhuma auditoria.
@@ -17,6 +19,8 @@ public final class RuleCatalog {
 
     /** Uma regra do catálogo. {@code message} vem numa linha só. */
     public record Entry(String id, String pack, String message, String severity, String category) {}
+
+    private static final Logger LOG = Logger.getLogger(RuleCatalog.class);
 
     private RuleCatalog() {}
 
@@ -36,7 +40,7 @@ public final class RuleCatalog {
                     read(pack.id(), file, out);
                 }
             } catch (IOException e) {
-                // pasta ilegível: o pacote segue sem catálogo
+                LOG.debugf("Pasta de regras ilegível, o pacote %s segue sem catálogo (%s)", pack.id(), e.getMessage());
             }
         }
         return out;
@@ -66,7 +70,7 @@ public final class RuleCatalog {
                         metadata == null ? null : Yamls.str(metadata, "category")));
             }
         } catch (IOException | RuntimeException e) {
-            // arquivo inválido: fica de fora do catálogo
+            LOG.debugf("Arquivo de regras fora do catálogo: %s (%s)", file.getFileName(), e.getMessage());
         }
     }
 }
