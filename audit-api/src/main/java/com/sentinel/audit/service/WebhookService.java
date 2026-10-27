@@ -95,7 +95,7 @@ public class WebhookService {
     public List<AuditedSystem> withSecret(List<String> repoUrls) {
         List<String> wanted = repoUrls.stream().map(WebhookService::normalizeRepo).toList();
         return systemRepository.listAll().stream()
-                .filter(s -> s.hasWebhookSecret() && wanted.contains(normalizeRepo(s.getRepoUrl())))
+                .filter(s -> !s.isLocalSource() && s.hasWebhookSecret() && wanted.contains(normalizeRepo(s.getRepoUrl())))
                 .toList();
     }
 
@@ -136,7 +136,8 @@ public class WebhookService {
             if (allowedIds != null && !allowedIds.contains(system.getId())) {
                 continue;
             }
-            if (!Boolean.TRUE.equals(system.getAuditOnPush())
+            if (system.isLocalSource()
+                    || !Boolean.TRUE.equals(system.getAuditOnPush())
                     || !wanted.contains(normalizeRepo(system.getRepoUrl()))
                     || !system.effectiveScheduledBranch().equals(push.branch())) {
                 continue;

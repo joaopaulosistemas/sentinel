@@ -21,7 +21,11 @@ import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.service.AuditProgressTracker;
 import com.sentinel.audit.service.IngestionService;
+import com.sentinel.audit.dto.PathCheckRequest;
 import com.sentinel.audit.dto.RepoCheckRequest;
+import com.sentinel.audit.model.LocalSnapshot;
+import com.sentinel.audit.model.SourceType;
+import com.sentinel.audit.service.LocalSource;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -108,7 +112,7 @@ public class SystemResource {
         AuditedSystem system = new AuditedSystem();
         system.setName(request.getName());
         system.setDescription(request.getDescription());
-        system.setRepoUrl(request.getRepoUrl());
+        applySource(system, request);
         system.setStack(request.getStack());
         system.setTeam(request.getTeam());
         system.setProfile(validProfile(request.getProfile()));
@@ -139,6 +143,25 @@ public class SystemResource {
     }
 
     /**
+     * Confere uma pasta local (dentro da raiz do servidor) sem copiá-la: é um repositório Git, qual a branch,
+     * quantos arquivos e quantos ainda não foram commitados.
+     */
+    @POST
+    @Path("/check-path")
+    @Operation(summary = "Verificar pasta local", description = "Testa se a pasta (relativa à raiz de projetos do servidor) é um repositório Git acessível")
+    public LocalSource.PathCheck checkPath(@Valid PathCheckRequest request) {
+        return ingestionService.checkLocalPath(request.path(), request.branch());
+    }
+
+    /** Se a origem "pasta local" está ligada neste servidor (há uma raiz configurada). */
+    @GET
+    @Path("/local-source")
+    @Operation(summary = "Origem pasta local ligada?")
+    public Map<String, Boolean> localSource() {
+        return Map.of("enabled", ingestionService.localSourceEnabled());
+    }
+
+    /**
      * Atualiza os dados cadastrais do sistema. O agendamento e o perfil têm endpoints próprios.
      */
     @PUT
@@ -150,7 +173,7 @@ public class SystemResource {
                 .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
         system.setName(request.getName());
         system.setDescription(request.getDescription());
-        system.setRepoUrl(request.getRepoUrl());
+        applySource(system, request);
         system.setStack(request.getStack());
         system.setTeam(request.getTeam());
         if (request.getProfile() != null) {
@@ -291,6 +314,33 @@ public class SystemResource {
     }
 
     /** Token (cifrado) e hosts do acesso ao repositório: token vazio mantém o salvo; "clearGitToken" apaga. */
+    /**
+     * Grava de onde vem o código: a URL https (padrão) ou uma pasta local validada contra a raiz do servidor.
+     * Uma origem não carrega dados da outra, para o cadastro não ficar com lixo da escolha anterior.
+     */
+    private void applySource(AuditedSystem system, CreateSystemRequest request) {
+        SourceType type = request.getSourceType() == null ? SourceType.GIT_URL : request.getSourceType();
+        boolean sameFolder = system.isLocalSource() && LocalSource.normalizeInput(request.getLocalPath()).equals(system.getLocalPath());
+        system.setSourceType(type);
+        if (type == SourceType.LOCAL_PATH) {
+            if (!sameFolder) {
+                // Pasta nova: precisa existir, estar dentro da raiz e ser um repositório Git. Editar outros campos de
+                // um sistema que já usa a pasta não depende de ela estar acessível agora.
+                try {
+                    system.setLocalPath(ingestionService.validateLocalPath(request.getLocalPath(), null));
+                } catch (IllegalArgumentException e) {
+                    throw new BadRequestException(e.getMessage());
+                }
+            }
+            system.setLocalSnapshot(request.getLocalSnapshot() == null ? LocalSnapshot.COMMIT : request.getLocalSnapshot());
+            system.setRepoUrl(null);
+            return;
+        }
+        system.setRepoUrl(request.getRepoUrl());
+        system.setLocalPath(null);
+        system.setLocalSnapshot(null);
+    }
+
     private void applyGitAccess(AuditedSystem system, CreateSystemRequest request) {
         if (request.getGitTokenHosts() != null) {
             String hosts = request.getGitTokenHosts().trim();
@@ -362,6 +412,9 @@ public class SystemResource {
         dto.setAuditOnPush(Boolean.TRUE.equals(system.getAuditOnPush()));
         dto.setProfile(system.effectiveProfile());
         dto.setRepoUrl(system.getRepoUrl());
+        dto.setSourceType(system.effectiveSourceType());
+        dto.setLocalPath(system.getLocalPath());
+        dto.setLocalSnapshot(system.isLocalSource() ? system.effectiveLocalSnapshot() : null);
         dto.setDescription(system.getDescription());
         dto.setGitTokenSet(system.hasGitToken());
         dto.setWebhookSecretSet(system.hasWebhookSecret());

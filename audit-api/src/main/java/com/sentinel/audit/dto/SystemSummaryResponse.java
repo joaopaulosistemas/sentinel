@@ -1,5 +1,8 @@
 package com.sentinel.audit.dto;
 
+import com.sentinel.audit.model.LocalSnapshot;
+import com.sentinel.audit.model.SourceType;
+
 import com.sentinel.audit.model.Stack;
 import java.time.LocalDateTime;
 
@@ -26,6 +29,11 @@ public class SystemSummaryResponse {
     private Integer auditCount;
     private String repoUrl;
     private String description;
+    /** GIT_URL ou LOCAL_PATH. */
+    private SourceType sourceType;
+    /** Pasta do projeto (relativa à raiz do servidor) quando a origem é LOCAL_PATH. */
+    private String localPath;
+    private LocalSnapshot localSnapshot;
     /** Há token Git salvo? O token em si nunca é devolvido. */
     private Boolean gitTokenSet;
     private String gitTokenHosts;
@@ -117,6 +125,30 @@ public class SystemSummaryResponse {
 
     public void setScoreDelta(Double scoreDelta) {
         this.scoreDelta = scoreDelta;
+    }
+
+    public SourceType getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(SourceType sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public String getLocalPath() {
+        return localPath;
+    }
+
+    public void setLocalPath(String localPath) {
+        this.localPath = localPath;
+    }
+
+    public LocalSnapshot getLocalSnapshot() {
+        return localSnapshot;
+    }
+
+    public void setLocalSnapshot(LocalSnapshot localSnapshot) {
+        this.localSnapshot = localSnapshot;
     }
 
     public String getRepoUrl() {

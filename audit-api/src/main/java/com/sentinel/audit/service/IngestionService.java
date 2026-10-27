@@ -1,6 +1,7 @@
 package com.sentinel.audit.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import com.sentinel.audit.model.LocalSnapshot;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -47,6 +48,13 @@ public class IngestionService {
 
     @ConfigProperty(name = "sentinel.audit.git.clone-dir", defaultValue = "/tmp/sentinel-audit")
     String cloneBaseDir;
+
+    /**
+     * Raiz das pastas locais auditáveis ({@code SENTINEL_LOCAL_ROOT}). Vazia = origem "pasta local" desligada.
+     * No Docker é o ponto onde a pasta de projetos do computador é montada, somente leitura.
+     */
+    @ConfigProperty(name = "sentinel.audit.local.root")
+    Optional<String> localRoot = Optional.empty();
 
     /** Hosts que recebem o token quando o sistema não lista os seus. */
     static final List<String> DEFAULT_TOKEN_HOSTS = List.of("github.com");
@@ -189,6 +197,86 @@ public class IngestionService {
             Thread.currentThread().interrupt();
             return null;
         }
+    }
+
+    // ------------------------------------------------------------------ pasta local
+
+    /** A origem "pasta local" só existe quando o servidor tem uma raiz configurada e ela existe. */
+    public boolean localSourceEnabled() {
+        return localSource().isPresent();
+    }
+
+    private Optional<LocalSource> localSource() {
+        return LocalSource.ofRoot(localRoot == null ? null : localRoot.orElse(null), cloneTimeoutSeconds);
+    }
+
+    private LocalSource requireLocalSource() {
+        return localSource().orElseThrow(() -> new IllegalStateException(
+                "A origem \"pasta local\" está desligada neste servidor: defina SENTINEL_LOCAL_ROOT e monte a pasta de projetos"));
+    }
+
+    /** Confere a pasta (é um repositório Git? qual branch? o que não foi commitado?) sem copiar nada. */
+    public LocalSource.PathCheck checkLocalPath(String relative, String branch) {
+        Optional<LocalSource> source = localSource();
+        if (source.isEmpty()) {
+            return new LocalSource.PathCheck(false, "A origem \"pasta local\" está desligada neste servidor (defina SENTINEL_LOCAL_ROOT)",
+                    null, null, null, null);
+        }
+        return source.get().inspect(relative, branch);
+    }
+
+    /**
+     * Valida e normaliza o caminho para guardar no cadastro: recusa o que sai da raiz, não existe ou não é um
+     * repositório Git. Devolve o caminho no formato guardado (com {@code /}, sem barra no fim).
+     *
+     * @throws IllegalArgumentException com a mensagem para o usuário
+     */
+    public String validateLocalPath(String relative, String branch) {
+        LocalSource.PathCheck check = checkLocalPath(relative, branch);
+        if (!check.ok()) {
+            throw new IllegalArgumentException(check.message());
+        }
+        return LocalSource.normalizeInput(relative);
+    }
+
+    /**
+     * Copia a pasta local para um diretório temporário único, no mesmo lugar onde os clones ficam. A pasta de origem
+     * só é lida. O chamador apaga a cópia com {@link #cleanupDirectory(Path)}.
+     */
+    public Path snapshotLocal(String relative, String branch, LocalSnapshot mode, Integer historyDepth) {
+        LocalSource source = requireLocalSource();
+        Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
+        try {
+            LOG.infof("Copiando a pasta local %s (branch: %s, %s)", relative,
+                    branch == null || branch.isBlank() ? "atual" : branch, mode == null ? LocalSnapshot.COMMIT : mode);
+            return source.snapshot(relative, branch, mode == null ? LocalSnapshot.COMMIT : mode, historyDepth, basePath);
+        } catch (IOException e) {
+            throw new IllegalStateException("Erro ao copiar a pasta local: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("A cópia da pasta local foi interrompida", e);
+        }
+    }
+
+    /** SHA da ponta da branch na pasta local; nulo se não der para saber (serve ao aviso de auditoria desatualizada). */
+    public String localHeadSha(String relative, String branch) {
+        return localSource().map(s -> s.headSha(relative, branch)).orElse(null);
+    }
+
+    /** Arquivos alterados em relação à branch base, numa cópia {@link LocalSnapshot#COMMIT} (auditoria de PR). */
+    public ChangedFiles.Result changedFilesLocal(String relative, Path clonedPath, String baseRef) {
+        Path src;
+        try {
+            src = requireLocalSource().resolve(relative);
+        } catch (RuntimeException e) {
+            return ChangedFiles.Result.unavailable("pasta local indisponível");
+        }
+        Map<String, String> env = new java.util.HashMap<>();
+        env.put("GIT_TERMINAL_PROMPT", "0");
+        return ChangedFiles.compute(clonedPath, baseRef,
+                List.of("-c", "protocol.file.allow=always", "-c", "safe.directory=" + src, "-c", "core.symlinks=false",
+                        "-c", "core.hooksPath=/dev/null"),
+                env, cloneTimeoutSeconds);
     }
 
     // ------------------------------------------------------------------ verificação rápida
