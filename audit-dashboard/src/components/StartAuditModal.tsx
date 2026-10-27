@@ -6,7 +6,7 @@ import { api } from '../api/client';
 import type { AuditRunResponse } from '../types';
 
 interface Props {
-  system: { id: number; name: string; scheduledBranch?: string | null } | null;
+  system: { id: number; name: string; scheduledBranch?: string | null; sourceType?: 'GIT_URL' | 'LOCAL_PATH' | null; localPath?: string | null } | null;
   onClose: () => void;
   /** Se informado, a tela continua onde está (a auditoria aparece na lista); sem isto, vai para o acompanhamento. */
   onStarted?: (run: AuditRunResponse) => void;
@@ -19,7 +19,20 @@ export function StartAuditModal({ system, onClose, onStarted }: Props) {
   const [branch, setBranch] = useState('main');
 
   useEffect(() => {
-    if (system) setBranch(system.scheduledBranch || 'main');
+    if (!system) return;
+    setBranch(system.scheduledBranch || 'main');
+    if (system.sourceType !== 'LOCAL_PATH' || !system.localPath) return;
+    // Pasta local: a branch padrão ("main") pode nem existir lá. Se não existir, usa a branch atual da pasta.
+    let ativo = true;
+    api
+      .checkPath(system.localPath, system.scheduledBranch || 'main')
+      .then((c) => {
+        if (ativo && c.ok && c.branchFound === false && c.defaultBranch) setBranch(c.defaultBranch);
+      })
+      .catch(() => undefined);
+    return () => {
+      ativo = false;
+    };
   }, [system]);
 
   const mutation = useMutation({

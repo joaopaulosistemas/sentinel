@@ -199,6 +199,20 @@ public final class LocalSource {
         return null;
     }
 
+    /** " Branches da pasta: a, b, c" (até 10), para a pessoa saber qual informar; vazio se não der para listar. */
+    private String availableBranches(Path dir) {
+        try {
+            Out out = git(dir, CHECK_TIMEOUT_SECONDS, "for-each-ref", "--format=%(refname:short)", "--count=10", "refs/heads");
+            String names = out.exit() == 0 ? String.join(", ", out.text().strip().split("\\R")) : "";
+            return names.isBlank() ? "" : " Branches da pasta: " + names + ".";
+        } catch (IOException | IllegalStateException e) {
+            return "";
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return "";
+        }
+    }
+
     private boolean branchExists(Path dir, String branch) throws IOException, InterruptedException {
         return git(dir, CHECK_TIMEOUT_SECONDS, "show-ref", "--verify", "--quiet", "refs/heads/" + branch).exit() == 0;
     }
@@ -238,7 +252,7 @@ public final class LocalSource {
             throw new IllegalArgumentException(notRepo);
         }
         if (branch != null && !branch.isBlank() && !branchExists(src, branch)) {
-            throw new IllegalArgumentException("A branch '" + branch + "' não existe na pasta");
+            throw new IllegalArgumentException("A branch '" + branch + "' não existe na pasta." + availableBranches(src));
         }
         Files.createDirectories(baseDir);
         Path target = baseDir.toAbsolutePath().normalize().resolve(UUID.randomUUID().toString()).normalize();

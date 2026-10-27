@@ -217,6 +217,8 @@ class LocalSourceTest {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> source.snapshot("api", "nao-existe", LocalSnapshot.COMMIT, null, work));
         assertTrue(e.getMessage().contains("não existe"));
+        // A mensagem diz quais branches a pasta tem, para a pessoa saber qual informar.
+        assertTrue(e.getMessage().contains("Branches da pasta:"), e.getMessage());
         assertEquals(0, Files.list(work).count());   // nada ficou para trás
     }
 
