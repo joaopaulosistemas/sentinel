@@ -271,12 +271,28 @@ public class IngestionService {
         } catch (RuntimeException e) {
             return ChangedFiles.Result.unavailable("pasta local indisponível");
         }
-        Map<String, String> env = new java.util.HashMap<>();
-        env.put("GIT_TERMINAL_PROMPT", "0");
-        return ChangedFiles.compute(clonedPath, baseRef,
-                List.of("-c", "protocol.file.allow=always", "-c", "safe.directory=" + src, "-c", "core.symlinks=false",
-                        "-c", "core.hooksPath=/dev/null"),
-                env, cloneTimeoutSeconds);
+        Path trust = null;
+        try {
+            Map<String, String> env = new java.util.HashMap<>();
+            env.put("GIT_TERMINAL_PROMPT", "0");
+            // O "git fetch" local chama o upload-pack na pasta de origem, que só confia na configuração global.
+            trust = requireLocalSource().trustConfig(src);
+            env.put("GIT_CONFIG_GLOBAL", trust.toString());
+            return ChangedFiles.compute(clonedPath, baseRef,
+                    List.of("-c", "protocol.file.allow=always", "-c", "safe.directory=" + src, "-c", "core.symlinks=false",
+                            "-c", "core.hooksPath=/dev/null"),
+                    env, cloneTimeoutSeconds);
+        } catch (java.io.IOException e) {
+            return ChangedFiles.Result.unavailable("pasta local indisponível");
+        } finally {
+            if (trust != null) {
+                try {
+                    java.nio.file.Files.deleteIfExists(trust);
+                } catch (java.io.IOException ignored) {
+                    // arquivo temporário; o sistema operacional limpa depois
+                }
+            }
+        }
     }
 
     // ------------------------------------------------------------------ verificação rápida
