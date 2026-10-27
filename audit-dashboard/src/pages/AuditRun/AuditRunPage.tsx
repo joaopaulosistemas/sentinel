@@ -1,12 +1,12 @@
 import { Button, InlineNotification, Modal, SkeletonText } from '@carbon/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
 import { AnalyzerCard, EventLog, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
-import { Crumbs, PageShell } from '../../components/PageShell';
+import { PageShell, type Crumb } from '../../components/PageShell';
 import { McpStatusStrip } from '../../components/McpStatusStrip';
 import { useMcpActivity } from '../../hooks/useMcpActivity';
 import { callsSince, mcpCallEvents, mergeEvents, pendingCount } from '../../utils/mcpActivity';
@@ -100,6 +100,12 @@ export function AuditRunPage() {
   const failed = run.status === 'FAILED';
   const cancelled = run.status === 'CANCELLED';
   const done = run.status === 'COMPLETED';
+  const runCrumbs: Crumb[] = [
+    { label: 'Início', to: '/' },
+    { label: 'Sistemas', to: '/systems' },
+    { label: run.systemName, to: run.systemId !== undefined ? `/systems/${run.systemId}` : undefined },
+    { label: `Auditoria #${run.id}` },
+  ];
   const active = !done && !failed && !cancelled;
   const average = averageDurationSeconds((history ?? []).filter((r) => r.id !== run.id));
   const left = active ? remainingSeconds(seconds, average) : null;
@@ -144,18 +150,10 @@ export function AuditRunPage() {
   if (done) {
     const sha = run.commitSha ? run.commitSha.slice(0, 7) : null;
     return (
-      <PageShell
-        trail={
-          <>
-            <Crumbs>
-              <Link to="/systems">Sistemas</Link> / {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName} / Auditoria #{run.id}
-            </Crumbs>
-          </>
-        }
-      >
+      <PageShell crumbs={runCrumbs}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName} · resultado da auditoria #{run.id}</h1>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>{run.systemName} · resultado da auditoria #{run.id}</h1>
             <span style={{ color: 'var(--s-text-3)' }}>
               Branch <span style={{ fontFamily: mono }}>{run.branch}</span>
               {sha && <> · commit {sha}</>}
@@ -177,20 +175,11 @@ export function AuditRunPage() {
   }
 
   return (
-    <PageShell
-      trail={
-        <>
-          <Crumbs>
-            {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName}
-            {'  /  '}Auditoria #{run.id}
-          </Crumbs>
-        </>
-      }
-    >
+    <PageShell crumbs={runCrumbs}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName}</h1>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>{run.systemName}</h1>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: pill.bg, color: pill.fg, padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500 }}>
               {pill.icon}
               {pill.label}

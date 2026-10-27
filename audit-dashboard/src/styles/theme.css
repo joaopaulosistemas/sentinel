@@ -66,3 +66,49 @@ body {
   background: var(--s-bg);
   color: var(--s-text);
 }
+
+/*
+ * Cantos arredondados (8 px) em cards, painéis, campos, botões e janelas.
+ * As telas montam os cards com estilo inline, então o raio é aplicado por seletor de atributo:
+ * qualquer elemento com borda sólida de 1 px nos tons do tema. Um borderRadius inline continua valendo (círculos, chips).
+ */
+:root {
+  --s-radius: 8px;
+}
+
+[style*='border: 1px solid var(--s-border'],
+[style*='border: 1px solid var(--s-link'],
+[style*='border: 1px solid #da1e28'],
+button[style],
+input[style],
+select[style],
+textarea[style],
+.cds--text-input,
+.cds--text-area,
+.cds--select-input,
+.cds--search-input,
+.cds--dropdown,
+.cds--list-box,
+.cds--number input,
+.cds--btn,
+.cds--modal-container,
+.cds--tag,
+.cds--inline-notification,
+.cds--tile {
+  border-radius: var(--s-radius);
+}
+
+/* Listas com cabeçalho de tabela: cortam os cantos do conteúdo para a linha de cabeçalho acompanhar o raio. */
+section[aria-label='Lista de sistemas'],
+section[aria-label='Lista de findings'],
+section[aria-label='Sistemas por risco'],
+section[aria-label='Últimas auditorias'],
+section[aria-label='Relatórios gerados'],
+section[aria-label='Precisam de atenção'],
+section[aria-label='Indicadores'] {
+  overflow: hidden;
+}
+
+/* Botões de Carbon que formam grupo (abas, alternadores) ficam retos entre si. */
+.cds--btn-set .cds--btn:not(:first-child) { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.cds--btn-set .cds--btn:not(:last-child) { border-top-right-radius: 0; border-bottom-right-radius: 0; }

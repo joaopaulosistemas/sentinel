@@ -182,9 +182,15 @@ export function FindingsPage() {
   const sysCount = auditMode ? 1 : summary.length;
 
   return (
-    <PageShell>
+    <PageShell
+      crumbs={
+        auditMode
+          ? [{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, ...(audit ? [{ label: audit.systemName, to: audit.systemId !== undefined ? `/systems/${audit.systemId}` : undefined }] : []), { label: `Auditoria #${auditId}`, to: `/audits/${auditId}` }, { label: 'Achados' }]
+          : [{ label: 'Início', to: '/' }, { label: 'Informações de Auditoria' }]
+      }
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>
           Informações de Auditoria
           {auditMode && (
             <span style={{ fontSize: 16, color: 'var(--s-text-4)', marginLeft: 12 }}>

@@ -271,3 +271,10 @@ Não verificado: o Java novo só compila no CI; Docker e Helm só são exercitad
 
 O menu principal saiu do cabeçalho e virou barra fixa à esquerda (`SideNav` do Carbon, sempre aberta); o cabeçalho ficou só com o nome, a versão e o tema. A trilha "Escolher sistema › Iniciar auditoria › Acompanhar › Entender o resultado › Corrigir" foi removida de todas as telas (componente `JourneySteps` apagado). A faixa fixa acima do título continua, só com o caminho (breadcrumb), para manter os títulos na mesma altura.
 Verificado: `tsc`, `vitest` (189), e2e (3) e captura de tela a 1440 px. Não verificado: telas estreitas (a barra lateral fica fixa em 16 rem).
+
+## Dashboard 12.17.0 — Título compacto, caminho em toda tela e cantos arredondados
+
+- **Caminho (breadcrumb) em todas as telas**, sempre começando em "Início" (`PageShell` agora exige `crumbs`; `Crumbs` e a faixa vazia saíram). Informações de Auditoria aberta a partir de uma auditoria mostra Início / Sistemas / sistema / Auditoria #n / Achados.
+- **Espaçamento**: 24 px do cabeçalho ao caminho, 8 px até o título, 24 px do título ao conteúdo. Título em 26 px. O teste `titulos-alinhados` agora também exige o caminho visível, o link Início e o caminho a 72 px do topo em todas as 9 telas.
+- **Cantos de 8 px** em cards, painéis, campos, botões e janelas, por CSS global (`--s-radius` em `theme.css`), já que os cards usam estilo inline: o raio vale para qualquer elemento com `border: 1px solid` nos tons do tema, mais campos e botões do Carbon. Um `borderRadius` inline continua valendo (círculos, chips).
+Verificado: `tsc`, `vitest` (189), e2e (3) e captura das 9 telas a 1440 px. Não verificado: telas estreitas e o tema escuro com os novos cantos.
