@@ -28,23 +28,23 @@ export function RecentAudits() {
   const live = (data ?? []).some(isActiveRun);
 
   return (
-    <section aria-label="Últimas auditorias" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+    <section aria-label="Últimas auditorias" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Últimas auditorias</h2>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#525252' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--s-text-3)' }}>
           <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: live ? '#0f62fe' : '#198038' }} />
           {live ? 'Atualizando sozinha a cada 3 s' : 'Atualizada agora'}
         </span>
       </div>
       {isLoading ? (
-        <p style={{ padding: '1rem', color: '#525252' }}>Carregando…</p>
+        <p style={{ padding: '1rem', color: 'var(--s-text-3)' }}>Carregando…</p>
       ) : rows.length === 0 ? (
-        <p style={{ padding: '1rem', color: '#525252' }}>Nenhuma auditoria ainda. Inicie a primeira em um sistema.</p>
+        <p style={{ padding: '1rem', color: 'var(--s-text-3)' }}>Nenhuma auditoria ainda. Inicie a primeira em um sistema.</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
             <thead>
-              <tr style={{ background: '#e8e8e8', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
+              <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
                 <th style={{ padding: '10px 16px' }}>Auditoria</th>
                 <th style={{ padding: '10px 8px' }}>Sistema</th>
                 <th style={{ padding: '10px 8px' }}>Situação</th>
@@ -56,24 +56,24 @@ export function RecentAudits() {
                 const active = isActiveRun(run);
                 const score = run.riskScore ? Math.round(run.riskScore.overall) : null;
                 return (
-                  <tr key={run.id} style={{ borderBottom: '1px solid #e0e0e0', background: active ? '#edf5ff' : '#fff' }}>
+                  <tr key={run.id} style={{ borderBottom: '1px solid var(--s-border)', background: active ? 'var(--s-selected)' : 'var(--s-surface)' }}>
                     <td style={{ padding: '12px 16px' }}>
                       <Link to={`/audits/${run.id}`} style={{ fontWeight: 500, textDecoration: 'none' }}>#{run.id}</Link>
-                      <div style={{ fontSize: 12, color: '#525252' }}>{timeAgo(run.startedAt)}</div>
+                      <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{timeAgo(run.startedAt)}</div>
                     </td>
                     <td style={{ ...cell, fontWeight: 500 }}>{run.systemName}</td>
                     <td style={cell}>
                       {active ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0043ce', fontWeight: 500 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-link)', fontWeight: 500 }}>
                           <SpinnerIcon size={14} color="#0043ce" />
                           {stepText(run)}
                         </span>
                       ) : run.status === 'COMPLETED' ? (
-                        <span style={{ color: '#044317', fontWeight: 500 }}>Concluída</span>
+                        <span style={{ color: 'var(--s-success-strong)', fontWeight: 500 }}>Concluída</span>
                       ) : run.status === 'FAILED' ? (
-                        <span style={{ color: '#a2191f', fontWeight: 500 }}>Falhou</span>
+                        <span style={{ color: 'var(--s-danger-text)', fontWeight: 500 }}>Falhou</span>
                       ) : (
-                        <span style={{ color: '#525252', fontWeight: 500 }}>Cancelada</span>
+                        <span style={{ color: 'var(--s-text-3)', fontWeight: 500 }}>Cancelada</span>
                       )}
                     </td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>

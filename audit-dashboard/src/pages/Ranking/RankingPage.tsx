@@ -26,9 +26,9 @@ const sortOptions: Array<{ key: SortKey; label: string }> = [
   { key: 'tendencia', label: 'Tendência' },
 ];
 
-const trendColor = { up: '#198038', down: '#a2191f', flat: '#525252', none: '#6f6f6f' } as const;
+const trendColor = { up: 'var(--s-success-text)', down: 'var(--s-danger-text)', flat: 'var(--s-text-3)', none: 'var(--s-text-4)' } as const;
 
-const barColor = (n: number) => (n >= TARGET ? '#198038' : n >= 50 ? '#8a6a00' : '#a2191f');
+const barColor = (n: number) => (n >= TARGET ? 'var(--s-success-text)' : n >= 50 ? 'var(--s-warn-text)' : 'var(--s-danger-text)');
 
 /** Ordem da lista: melhor nota primeiro, mais críticos primeiro, ou maior ganho de nota primeiro. Sem dado vai para o fim. */
 export function sortSystems(systems: SystemSummaryResponse[], by: SortKey): SystemSummaryResponse[] {
@@ -74,7 +74,7 @@ export function RankingPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ marginBottom: '0.25rem', fontSize: '1.75rem', fontWeight: 400 }}>Ranking de Sistemas</h1>
-          <p style={{ color: '#525252' }}>
+          <p style={{ color: 'var(--s-text-3)' }}>
             Compare os sistemas pela nota da última auditoria. Meta da organização: {TARGET}.
           </p>
         </div>
@@ -89,9 +89,9 @@ export function RankingPage() {
                 height: 36,
                 padding: '0 1rem',
                 marginLeft: -1,
-                border: '1px solid #8d8d8d',
-                background: sortBy === o.key ? '#161616' : '#fff',
-                color: sortBy === o.key ? '#fff' : '#161616',
+                border: '1px solid var(--s-border-strong)',
+                background: sortBy === o.key ? 'var(--s-text)' : 'var(--s-surface)',
+                color: sortBy === o.key ? 'var(--s-surface)' : 'var(--s-text)',
                 cursor: 'pointer',
                 font: 'inherit',
                 fontSize: '0.8125rem',
@@ -103,14 +103,14 @@ export function RankingPage() {
         </div>
       </div>
 
-      <section aria-label="Sistemas por risco" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
+      <section aria-label="Sistemas por risco" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: '56px minmax(180px, 2fr) minmax(220px, 3fr) 90px 110px 130px',
             gap: '0.75rem',
             padding: '0.75rem 1rem',
-            background: '#e8e8e8',
+            background: 'var(--s-header-row)',
             fontSize: '0.75rem',
             fontWeight: 600,
           }}
@@ -139,21 +139,21 @@ export function RankingPage() {
                 gap: '0.75rem',
                 alignItems: 'center',
                 padding: '0.875rem 1rem',
-                borderTop: '1px solid #e0e0e0',
+                borderTop: '1px solid var(--s-border)',
               }}
             >
               <span style={{ fontSize: '1.25rem', fontWeight: 300 }}>{i + 1}</span>
               <span style={{ display: 'grid' }}>
                 <strong style={{ fontWeight: 600 }}>{s.name}</strong>
-                <span style={{ fontSize: '0.75rem', color: '#525252' }}>{s.team || 'Sem time'}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--s-text-3)' }}>{s.team || 'Sem time'}</span>
               </span>
               {score == null ? (
                 <span><Tag type="gray">Nunca auditado</Tag></span>
               ) : (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ position: 'relative', flex: 1, height: 10, background: '#e0e0e0' }}>
+                  <span style={{ position: 'relative', flex: 1, height: 10, background: 'var(--s-border)' }}>
                     <span style={{ position: 'absolute', left: 0, top: 0, height: 10, width: `${Math.max(0, Math.min(100, score))}%`, background: barColor(score) }} />
-                    <span style={{ position: 'absolute', left: `${TARGET}%`, top: -4, width: 2, height: 18, background: '#161616' }} />
+                    <span style={{ position: 'absolute', left: `${TARGET}%`, top: -4, width: 2, height: 18, background: 'var(--s-text)' }} />
                   </span>
                   <span style={{ width: 32, fontWeight: 600, color: barColor(score) }}>{Math.round(score)}</span>
                 </span>
@@ -161,8 +161,8 @@ export function RankingPage() {
               <span style={{ fontWeight: 500, color: trendColor[formatTrend(s.scoreDelta).tone], fontSize: '0.8125rem' }}>
                 {formatTrend(s.scoreDelta).text}
               </span>
-              <span style={{ fontWeight: 600, color: (s.openCritical ?? 0) > 0 ? '#a2191f' : '#198038' }}>{s.openCritical ?? 0}</span>
-              <span style={{ fontSize: '0.8125rem', color: '#525252' }}>{timeAgo(s.lastAuditDate)}</span>
+              <span style={{ fontWeight: 600, color: (s.openCritical ?? 0) > 0 ? 'var(--s-danger-text)' : 'var(--s-success-text)' }}>{s.openCritical ?? 0}</span>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--s-text-3)' }}>{timeAgo(s.lastAuditDate)}</span>
             </button>
           );
         })}
@@ -200,11 +200,11 @@ export function RankingPage() {
 
       <Tile style={{ padding: '1.25rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>Qualidade das regras</h3>
-        <p style={{ fontSize: '0.875rem', color: '#525252', marginBottom: '0.75rem' }}>
+        <p style={{ fontSize: '0.875rem', color: 'var(--s-text-3)', marginBottom: '0.75rem' }}>
           Taxa de falso positivo, a partir do que o time suprimiu. Só pede revisão com 5+ ocorrências e 40%+ de falsos positivos.
         </p>
         {!rules || rules.length === 0 ? (
-          <p style={{ color: '#525252' }}>Ainda não há findings para avaliar.</p>
+          <p style={{ color: 'var(--s-text-3)' }}>Ainda não há findings para avaliar.</p>
         ) : (
           <Table size="md">
             <TableHead>

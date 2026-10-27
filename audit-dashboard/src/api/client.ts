@@ -198,6 +198,8 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  deleteSystem: (id: number) => apiFetch<void>(`/api/v1/systems/${id}`, { method: 'DELETE' }),
+
   // Acesso do Claude (MCP) a um sistema. A chave só aparece na resposta que a cria.
   getMcp: (systemId: number) => apiFetch<McpConfig>(`/api/v1/mcp-access/${systemId}`),
 

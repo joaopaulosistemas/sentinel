@@ -80,7 +80,7 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
 
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <p style={{ margin: 0, color: '#525252', fontSize: 14 }}>
+      <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 14 }}>
         O Claude consulta o resultado deste sistema por MCP. As ferramentas de leitura vêm ligadas; as que escrevem
         (registrar_sugestao e propor_regra) ficam desligadas até você liberar, e só gravam na aba Revisão do Claude.
         A nota continua sendo calculada apenas pelo motor de regras: o que o Claude sugerir não entra nela.
@@ -99,22 +99,22 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
 
       <section aria-label="Endereço e chave" style={{ display: 'grid', gap: 10 }}>
         <div>
-          <div style={{ fontSize: 12, color: '#525252' }}>Endereço deste sistema</div>
+          <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Endereço deste sistema</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <code style={{ fontFamily: mono, fontSize: 13, background: '#f4f4f4', padding: '4px 8px', wordBreak: 'break-all' }}>{url}</code>
+            <code style={{ fontFamily: mono, fontSize: 13, background: 'var(--s-layer)', padding: '4px 8px', wordBreak: 'break-all' }}>{url}</code>
             <Button kind="ghost" size="sm" onClick={() => copy(url)}>Copiar</Button>
           </div>
         </div>
 
         <div>
-          <div style={{ fontSize: 12, color: '#525252' }}>Chave</div>
+          <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Chave</div>
           {cfg.hasKey ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <code style={{ fontFamily: mono, fontSize: 13 }}>{cfg.keyPrefix}…</code>
-              <span style={{ fontSize: 12, color: '#525252' }}>criada em {startLabel(cfg.keyCreatedAt)}</span>
+              <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>criada em {startLabel(cfg.keyCreatedAt)}</span>
             </div>
           ) : (
-            <span style={{ fontSize: 13, color: '#525252' }}>Nenhuma chave gerada.</span>
+            <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma chave gerada.</span>
           )}
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
             {!cfg.hasKey || confirmNew ? (
@@ -134,10 +134,10 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
         </div>
 
         {fresh && (
-          <div role="status" aria-label="Chave nova" style={{ background: '#fcf4d6', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
+          <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
             <strong>Copie a chave agora: ela não aparece de novo.</strong>
             <code style={{ fontFamily: mono, fontSize: 13, wordBreak: 'break-all' }}>{fresh.key}</code>
-            <div style={{ fontSize: 12, color: '#525252' }}>Para registrar no Claude Code:</div>
+            <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Para registrar no Claude Code:</div>
             <code style={{ fontFamily: mono, fontSize: 12, wordBreak: 'break-all' }}>{connectCommand(url, system.name, fresh.key)}</code>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Button kind="tertiary" size="sm" onClick={() => copy(fresh.key)}>Copiar chave</Button>
@@ -163,11 +163,11 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
             <span>
               <span style={{ fontWeight: 500 }}>{l.titulo}</span>
               <br />
-              <span style={{ fontSize: 12, color: '#525252' }}>{l.texto}</span>
+              <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{l.texto}</span>
             </span>
           </label>
         ))}
-        <p style={{ margin: '4px 0 0', fontSize: 12, color: '#525252' }}>
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--s-text-3)' }}>
           O trecho de código nunca sai, em nenhum nível. Quem usa o Claude Code já lê a pasta do projeto no próprio computador:
           este controle vale para o que o Sentinel entrega.
         </p>
@@ -194,7 +194,7 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ textAlign: 'left', background: '#e8e8e8' }}>
+                <tr style={{ textAlign: 'left', background: 'var(--s-header-row)' }}>
                   <th style={{ padding: '6px 8px' }}>Quando</th>
                   <th style={{ padding: '6px 8px' }}>Ferramenta</th>
                   <th style={{ padding: '6px 8px' }}>Resultado</th>
@@ -203,10 +203,10 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
               </thead>
               <tbody>
                 {calls.data.map((c, i) => (
-                  <tr key={`${c.at}-${i}`} style={{ borderTop: '1px solid #e0e0e0' }}>
+                  <tr key={`${c.at}-${i}`} style={{ borderTop: '1px solid var(--s-border)' }}>
                     <td style={{ padding: '6px 8px' }}>{startLabel(c.at)}</td>
                     <td style={{ padding: '6px 8px', fontFamily: mono }}>{c.tool}</td>
-                    <td style={{ padding: '6px 8px', color: c.ok ? '#198038' : '#a2191f' }}>{c.ok ? 'ok' : (c.detail ?? 'recusada')}</td>
+                    <td style={{ padding: '6px 8px', color: c.ok ? 'var(--s-success-text)' : 'var(--s-danger-text)' }}>{c.ok ? 'ok' : (c.detail ?? 'recusada')}</td>
                     <td style={{ padding: '6px 8px' }}>{c.durationMs} ms</td>
                   </tr>
                 ))}
@@ -214,7 +214,7 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
             </table>
           </div>
         ) : (
-          <span style={{ fontSize: 13, color: '#525252' }}>Nenhuma chamada ainda.</span>
+          <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma chamada ainda.</span>
         )}
       </section>
     </div>

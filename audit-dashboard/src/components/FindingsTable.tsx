@@ -32,10 +32,10 @@ const statusLabels: Record<FindingStatus, string> = {
 };
 
 const statusColors: Record<FindingStatus, string> = {
-  OPEN: '#393939',
-  ACKNOWLEDGED: '#393939',
-  FIXED: '#198038',
-  SUPPRESSED: '#6929c4',
+  OPEN: 'var(--s-text-2)',
+  ACKNOWLEDGED: 'var(--s-text-2)',
+  FIXED: 'var(--s-success-text)',
+  SUPPRESSED: 'var(--s-purple-text)',
 };
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -69,7 +69,7 @@ export function FindingsTable({ findings, systemName, auditId, systemOf }: Findi
   return (
     <>
       {selectedFindings.length > 0 && (
-        <div role="region" aria-label="Ações em lote" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 1rem', background: '#edf5ff', borderBottom: '1px solid #e0e0e0' }}>
+        <div role="region" aria-label="Ações em lote" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 1rem', background: 'var(--s-selected)', borderBottom: '1px solid var(--s-border)' }}>
           <strong>{selectedFindings.length} selecionado(s)</strong>
           <Button kind="primary" size="sm" onClick={() => setToSuppress(selectedFindings)}>
             Suprimir selecionados…
@@ -82,7 +82,7 @@ export function FindingsTable({ findings, systemName, auditId, systemOf }: Findi
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
           <thead>
-            <tr style={{ background: '#e8e8e8', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
+            <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
               <th style={{ ...th, width: 40, paddingLeft: 16 }}>
                 <input
                   type="checkbox"
@@ -114,7 +114,7 @@ export function FindingsTable({ findings, systemName, auditId, systemOf }: Findi
               const situation = f.isNew === true && f.status === 'OPEN' ? 'Novo' : statusLabels[f.status];
               return (
                 <React.Fragment key={f.id}>
-                  <tr style={{ borderBottom: expanded ? 'none' : '1px solid #e0e0e0' }}>
+                  <tr style={{ borderBottom: expanded ? 'none' : '1px solid var(--s-border)' }}>
                     <td style={{ ...td, paddingLeft: 16 }}>
                       {f.status !== 'SUPPRESSED' && (
                         <input
@@ -133,13 +133,13 @@ export function FindingsTable({ findings, systemName, auditId, systemOf }: Findi
                     </td>
                     <td style={{ ...td, minWidth: 0 }}>
                       {origin?.onClick ? (
-                        <button type="button" onClick={origin.onClick} style={{ background: 'none', border: 0, padding: 0, color: '#0f62fe', cursor: 'pointer', fontSize: 'inherit', fontWeight: 500, textAlign: 'left' }}>
+                        <button type="button" onClick={origin.onClick} style={{ background: 'none', border: 0, padding: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 'inherit', fontWeight: 500, textAlign: 'left' }}>
                           {name}
                         </button>
                       ) : (
                         <span style={{ fontWeight: 500 }}>{name}</span>
                       )}
-                      {origin?.stack && <div style={{ fontSize: 12, color: '#525252' }}>{origin.stack}</div>}
+                      {origin?.stack && <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{origin.stack}</div>}
                     </td>
                     <td style={td}>
                       <button
@@ -147,31 +147,31 @@ export function FindingsTable({ findings, systemName, auditId, systemOf }: Findi
                         aria-expanded={expanded}
                         aria-label={`Expandir ${f.title}`}
                         onClick={() => toggleOpen(f.id)}
-                        style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left', fontSize: 'inherit', fontWeight: 500, color: '#161616' }}
+                        style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left', fontSize: 'inherit', fontWeight: 500, color: 'var(--s-text)' }}
                       >
                         {f.title}
                       </button>{' '}
                       {f.shadow === true && (
-                        <span title="Regra em modo sombra: aparece, mas não conta no score nem derruba o pipeline" style={{ fontSize: 11, border: '1px solid #8d8d8d', borderRadius: 8, padding: '0 6px', color: '#525252' }}>
+                        <span title="Regra em modo sombra: aparece, mas não conta no score nem derruba o pipeline" style={{ fontSize: 11, border: '1px solid var(--s-border-strong)', borderRadius: 8, padding: '0 6px', color: 'var(--s-text-3)' }}>
                           Sombra
                         </span>
                       )}
-                      <div style={{ fontSize: 12, color: '#525252', fontFamily: mono }}>
+                      <div style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono }}>
                         <span style={{ fontFamily: 'inherit', fontWeight: 600 }}>{originLabel(f.toolSource)}</span>
                         {f.ruleId ? ` · ${f.ruleId}` : ''}
                       </div>
                     </td>
-                    <td style={{ ...td, fontFamily: mono, fontSize: 12, color: '#393939', wordBreak: 'break-all' }}>
+                    <td style={{ ...td, fontFamily: mono, fontSize: 12, color: 'var(--s-text-2)', wordBreak: 'break-all' }}>
                       {f.filePath}
                       {f.lineNumber ? `:${f.lineNumber}` : ''}
                     </td>
-                    <td style={{ ...td, fontSize: 13, color: '#393939' }}>{origem ? `Auditoria #${origem}` : '—'}</td>
+                    <td style={{ ...td, fontSize: 13, color: 'var(--s-text-2)' }}>{origem ? `Auditoria #${origem}` : '—'}</td>
                     <td style={{ ...td, paddingRight: 16, textAlign: 'right' }}>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: situation === 'Novo' ? '#0043ce' : statusColors[f.status] }}>{situation}</span>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: situation === 'Novo' ? 'var(--s-link)' : statusColors[f.status] }}>{situation}</span>
                     </td>
                   </tr>
                   {expanded && (
-                    <tr style={{ borderBottom: '1px solid #e0e0e0', background: '#f4f4f4' }}>
+                    <tr style={{ borderBottom: '1px solid var(--s-border)', background: 'var(--s-layer)' }}>
                       <td colSpan={7} style={{ padding: '1rem 1rem 1rem 3.5rem' }}>
                         <p>
                           <strong>Descrição:</strong> {f.description}

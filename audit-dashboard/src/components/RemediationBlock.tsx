@@ -17,7 +17,7 @@ export function RemediationBlock({ remediation }: { remediation: Remediation }) 
       style={{
         marginTop: '0.75rem',
         padding: '0.75rem 1rem',
-        background: '#edf5ff',
+        background: 'var(--s-selected)',
         borderLeft: '4px solid #0f62fe',
         borderRadius: '2px',
       }}
@@ -28,16 +28,16 @@ export function RemediationBlock({ remediation }: { remediation: Remediation }) 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           {remediation.before && (
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#a2191f', marginBottom: '0.25rem' }}>Antes</div>
-              <pre style={{ ...codeStyle, background: '#fff1f1', color: '#161616' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--s-danger-text)', marginBottom: '0.25rem' }}>Antes</div>
+              <pre style={{ ...codeStyle, background: 'var(--s-bad-bg)', color: 'var(--s-text)' }}>
                 <code>{remediation.before}</code>
               </pre>
             </div>
           )}
           {remediation.after && (
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#0e6027', marginBottom: '0.25rem' }}>Depois</div>
-              <pre style={{ ...codeStyle, background: '#defbe6', color: '#161616' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--s-success-strong)', marginBottom: '0.25rem' }}>Depois</div>
+              <pre style={{ ...codeStyle, background: 'var(--s-good-bg)', color: 'var(--s-text)' }}>
                 <code>{remediation.after}</code>
               </pre>
             </div>

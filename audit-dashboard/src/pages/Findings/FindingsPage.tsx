@@ -42,8 +42,8 @@ const ABAS = [
 
 type AbaId = 'achados' | 'revisao' | 'reauditoria';
 
-const label = { fontSize: 12, color: '#525252' } as const;
-const select = { height: 40, padding: '0 8px', border: 0, borderBottom: '1px solid #8d8d8d', background: '#f4f4f4', fontSize: 14 } as const;
+const label = { fontSize: 12, color: 'var(--s-text-3)' } as const;
+const select = { height: 40, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', fontSize: 14 } as const;
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
 /** Cor da borda do cartão do sistema: vermelho com críticos (ou muitos altos), laranja só com altos, verde sem nenhum. */
@@ -154,11 +154,13 @@ export function FindingsPage() {
     reset();
   };
 
-  const currentSystemValue = auditMode
-    ? String((systems ?? []).find((s) => s.name === audit?.systemName)?.id ?? '')
-    : systemId !== undefined
-      ? String(systemId)
-      : '';
+  // Sistema em foco: o da auditoria aberta (vindo de "Ver todos os achados") ou o escolhido no filtro.
+  // As três abas partem dele, então quem escolheu o sistema não precisa escolher de novo.
+  const auditSystemId = auditMode
+    ? (audit?.systemId ?? (systems ?? []).find((s) => s.name === audit?.systemName)?.id)
+    : undefined;
+  const activeSystemId = auditMode ? auditSystemId : systemId;
+  const currentSystemValue = activeSystemId !== undefined ? String(activeSystemId) : '';
   const sysCount = auditMode ? 1 : summary.length;
 
   return (
@@ -167,19 +169,19 @@ export function FindingsPage() {
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>
           Informações de Auditoria
           {auditMode && (
-            <span style={{ fontSize: 16, color: '#6f6f6f', marginLeft: 12 }}>
+            <span style={{ fontSize: 16, color: 'var(--s-text-4)', marginLeft: 12 }}>
               — {audit?.systemName ? `${audit.systemName} · ` : ''}Auditoria #{auditId}
             </span>
           )}
         </h1>
-        <span style={{ color: '#525252' }}>
+        <span style={{ color: 'var(--s-text-3)' }}>
           {auditMode
             ? 'Achados desta auditoria.'
             : 'Da última auditoria concluída de cada sistema. Escolha um sistema para focar, ou veja todos juntos e saiba de onde cada achado vem.'}
         </span>
       </div>
 
-      <div role="tablist" aria-label="Seções de Informações de Auditoria" style={{ display: 'flex', borderBottom: '1px solid #c6c6c6' }}>
+      <div role="tablist" aria-label="Seções de Informações de Auditoria" style={{ display: 'flex', borderBottom: '1px solid var(--s-border-subtle)' }}>
         {ABAS.map((a) => (
           <button
             key={a.id}
@@ -198,7 +200,7 @@ export function FindingsPage() {
               padding: '10px 16px',
               fontSize: 14,
               fontWeight: a.id === aba ? 600 : 400,
-              color: a.ativa ? '#161616' : '#a8a8a8',
+              color: a.ativa ? 'var(--s-text)' : 'var(--s-disabled)',
               cursor: a.ativa ? 'pointer' : 'not-allowed',
             }}
           >
@@ -208,12 +210,12 @@ export function FindingsPage() {
       </div>
 
       {aba === 'revisao' ? (
-        <ClaudeReviewPanel systems={systems ?? []} initialSystemId={systemId} />
+        <ClaudeReviewPanel key={activeSystemId ?? 'sem-sistema'} systems={systems ?? []} initialSystemId={activeSystemId} />
       ) : aba === 'reauditoria' ? (
-        <ReauditPanel systems={systems ?? []} initialSystemId={systemId} />
+        <ReauditPanel key={activeSystemId ?? 'sem-sistema'} systems={systems ?? []} initialSystemId={activeSystemId} />
       ) : (
         <>
-      <section aria-label="Filtros" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <section aria-label="Filtros" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, alignItems: 'end' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label htmlFor="f-sis" style={{ ...label, fontWeight: 600 }}>Sistema</label>
@@ -260,15 +262,15 @@ export function FindingsPage() {
             </label>
           )}
         </div>
-        <div aria-label="Filtros ativos" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 13, color: '#525252' }}>
+        <div aria-label="Filtros ativos" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 13, color: 'var(--s-text-3)' }}>
           Filtros ativos:
           {chips.map((c) => (
-            <span key={c.key} style={{ background: c.tone === 'blue' ? '#d0e2ff' : '#e0e0e0', color: c.tone === 'blue' ? '#0043ce' : '#161616', padding: '3px 10px', borderRadius: 12 }}>
+            <span key={c.key} style={{ background: c.tone === 'blue' ? '#d0e2ff' : 'var(--s-border)', color: c.tone === 'blue' ? '#0043ce' : 'var(--s-text)', padding: '3px 10px', borderRadius: 12 }}>
               {c.label}
             </span>
           ))}
           {!isDefault && (
-            <button type="button" onClick={restoreDefaults} style={{ background: 'none', border: 0, color: '#0f62fe', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>
+            <button type="button" onClick={restoreDefaults} style={{ background: 'none', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>
               Restaurar padrão
             </button>
           )}
@@ -281,22 +283,22 @@ export function FindingsPage() {
             <Link
               key={s.systemId}
               to={`/systems/${s.systemId}`}
-              style={{ textDecoration: 'none', color: 'inherit', background: '#fff', border: '1px solid #e0e0e0', borderLeft: `4px solid ${edgeColor(s.critical ?? 0, s.high ?? 0)}`, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}
+              style={{ textDecoration: 'none', color: 'inherit', background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: `4px solid ${edgeColor(s.critical ?? 0, s.high ?? 0)}`, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}
             >
-              <span style={{ fontWeight: 600, color: '#161616' }}>{s.systemName}</span>
-              <span style={{ fontSize: 12, color: '#525252' }}>
+              <span style={{ fontWeight: 600, color: 'var(--s-text)' }}>{s.systemName}</span>
+              <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
                 Auditoria #{s.auditId}{s.auditedAt ? ` · ${startLabel(s.auditedAt)}` : ''}
               </span>
-              <span style={{ display: 'flex', gap: 14, fontSize: 13, color: '#161616' }}>
-                <span><strong style={{ fontFamily: mono, color: '#750e13' }}>{s.critical ?? 0}</strong> críticos</span>
-                <span><strong style={{ fontFamily: mono, color: '#6b2d00' }}>{s.high ?? 0}</strong> altos</span>
+              <span style={{ display: 'flex', gap: 14, fontSize: 13, color: 'var(--s-text)' }}>
+                <span><strong style={{ fontFamily: mono, color: 'var(--s-crit-text)' }}>{s.critical ?? 0}</strong> críticos</span>
+                <span><strong style={{ fontFamily: mono, color: 'var(--s-high-text)' }}>{s.high ?? 0}</strong> altos</span>
               </span>
             </Link>
           ))}
         </section>
       )}
 
-      <section aria-label="Lista de findings" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
+      <section aria-label="Lista de findings" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
         {loading ? (
           <div style={{ padding: 16 }}><DataTableSkeleton columnCount={6} rowCount={8} /></div>
         ) : error ? (
@@ -318,7 +320,7 @@ export function FindingsPage() {
               <section key={g.systemId} aria-label={`Achados de ${g.systemName}`}>
                 <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 16px 8px' }}>
                   {g.systemName}
-                  <span style={{ fontWeight: 400, color: '#525252', marginLeft: 8 }}>
+                  <span style={{ fontWeight: 400, color: 'var(--s-text-3)', marginLeft: 8 }}>
                     {g.findings.length} {g.findings.length === 1 ? 'achado nesta página' : 'achados nesta página'}
                   </span>
                 </h2>
@@ -330,7 +332,7 @@ export function FindingsPage() {
           <FindingsTable findings={rows} systemName={auditMode ? audit?.systemName : undefined} auditId={auditMode ? auditId : undefined} systemOf={systemOf} />
         )}
         {!loading && !error && total > 0 && (
-          <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#525252', borderTop: '1px solid #e0e0e0', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--s-text-3)', borderTop: '1px solid var(--s-border)', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
             <span>{footerText(rows.length, total, situation, severity, sysCount)}</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -342,8 +344,8 @@ export function FindingsPage() {
                 </select>
               </label>
               <span>Página {page} de {pages}</span>
-              <button type="button" aria-label="Página anterior" disabled={page <= 1} onClick={() => setPage(page - 1)} style={{ border: '1px solid #8d8d8d', background: '#fff', width: 32, height: 32, cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>‹</button>
-              <button type="button" aria-label="Próxima página" disabled={page >= pages} onClick={() => setPage(page + 1)} style={{ border: '1px solid #8d8d8d', background: '#fff', width: 32, height: 32, cursor: page >= pages ? 'not-allowed' : 'pointer' }}>›</button>
+              <button type="button" aria-label="Página anterior" disabled={page <= 1} onClick={() => setPage(page - 1)} style={{ border: '1px solid var(--s-border-strong)', background: 'var(--s-surface)', width: 32, height: 32, cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>‹</button>
+              <button type="button" aria-label="Próxima página" disabled={page >= pages} onClick={() => setPage(page + 1)} style={{ border: '1px solid var(--s-border-strong)', background: 'var(--s-surface)', width: 32, height: 32, cursor: page >= pages ? 'not-allowed' : 'pointer' }}>›</button>
             </span>
           </div>
         )}
@@ -355,12 +357,12 @@ export function FindingsPage() {
             type="button"
             aria-expanded={showResolved}
             onClick={() => setShowResolved(!showResolved)}
-            style={{ height: 36, padding: '0 14px', background: '#fff', border: '1px solid #0f62fe', color: '#0f62fe', cursor: 'pointer', fontSize: 13 }}
+            style={{ height: 36, padding: '0 14px', background: 'var(--s-surface)', border: '1px solid #0f62fe', color: 'var(--s-link)', cursor: 'pointer', fontSize: 13 }}
           >
             {showResolved ? 'Ocultar' : 'Mostrar'} {resolved.length} {resolved.length === 1 ? 'achado resolvido' : 'achados resolvidos'} desde a auditoria anterior
           </button>
           {showResolved && (
-            <div style={{ marginTop: 16, background: '#fff', border: '1px solid #e0e0e0' }}>
+            <div style={{ marginTop: 16, background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
               <FindingsTable findings={resolved} systemName={audit?.systemName} auditId={auditId} />
             </div>
           )}

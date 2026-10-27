@@ -22,6 +22,8 @@ public class SystemSummaryResponse {
     private String profile;
     /** Nota da última auditoria completa menos a anterior; nulo se houver menos de duas. */
     private Double scoreDelta;
+    /** Quantas auditorias o sistema já tem, em qualquer situação (concluída, em execução ou com falha). */
+    private Integer auditCount;
     private String repoUrl;
     private String description;
     /** Há token Git salvo? O token em si nunca é devolvido. */
@@ -230,5 +232,13 @@ public class SystemSummaryResponse {
 
     public void setAuditOnPush(Boolean auditOnPush) {
         this.auditOnPush = auditOnPush;
+    }
+
+    public Integer getAuditCount() {
+        return auditCount;
+    }
+
+    public void setAuditCount(Integer auditCount) {
+        this.auditCount = auditCount;
     }
 }

@@ -16,7 +16,7 @@ export function DiffSummary({ auditId }: { auditId: number }) {
       {isLoading || !data ? (
         <SkeletonText lineCount={3} />
       ) : !data.hasBaseline ? (
-        <p style={{ color: '#6f6f6f' }}>Esta é a primeira auditoria concluída desta branch: ainda não há com o que comparar.</p>
+        <p style={{ color: 'var(--s-text-4)' }}>Esta é a primeira auditoria concluída desta branch: ainda não há com o que comparar.</p>
       ) : (
         <>
           <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -24,15 +24,15 @@ export function DiffSummary({ auditId }: { auditId: number }) {
               <div style={{ fontSize: '1.5rem', fontWeight: 700, color: data.newFindings.length ? '#da1e28' : '#24a148' }}>
                 {data.newFindings.length}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>novos</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>novos</div>
             </div>
             <div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#24a148' }}>{data.resolvedFindings.length}</div>
-              <div style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>corrigidos</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>corrigidos</div>
             </div>
             <div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{data.persistingCount}</div>
-              <div style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>continuam</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>continuam</div>
             </div>
             {data.scoreDelta !== null && (
               <Tag type={data.scoreDelta > 0 ? 'green' : data.scoreDelta < 0 ? 'red' : 'warm-gray'}>
@@ -55,7 +55,7 @@ export function DiffSummary({ auditId }: { auditId: number }) {
                 </li>
               ))}
               {data.newFindings.length > 5 && (
-                <li style={{ fontSize: '0.8125rem', color: '#6f6f6f' }}>…e mais {data.newFindings.length - 5}</li>
+                <li style={{ fontSize: '0.8125rem', color: 'var(--s-text-4)' }}>…e mais {data.newFindings.length - 5}</li>
               )}
             </ul>
           )}

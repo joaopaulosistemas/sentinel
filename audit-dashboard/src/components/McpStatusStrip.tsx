@@ -47,7 +47,7 @@ export function McpStatusStrip({ systemId, enabled, calls, pending }: McpStatusS
   return (
     <section
       aria-label="Claude (MCP)"
-      style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '10px 16px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 16px', fontSize: 13 }}
+      style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '10px 16px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 16px', fontSize: 13 }}
     >
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>{summary}</span>
       {pending > 0 && (
@@ -58,7 +58,7 @@ export function McpStatusStrip({ systemId, enabled, calls, pending }: McpStatusS
       <Link to={`/systems?edit=${systemId}&tab=mcp`} style={{ marginLeft: 'auto' }}>
         {enabled ? 'Ver chamadas' : 'Configurar'}
       </Link>
-      <span style={{ flexBasis: '100%', fontSize: 12, color: '#525252' }}>
+      <span style={{ flexBasis: '100%', fontSize: 12, color: 'var(--s-text-3)' }}>
         O que o Claude fizer não muda a nota desta auditoria: ela vem apenas do motor de regras.
       </span>
     </section>
