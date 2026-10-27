@@ -252,6 +252,7 @@ class AutomationTest {
         scheduler.systemRepository = webhook.systemRepository;
         scheduler.auditRunRepository = new AuditRunRepository() {
             @Override public List<AuditRun> findBySystemId(Long id) { return List.of(); }
+            @Override public AuditRun findLastStarted(Long id) { return null; }
         };
         scheduler.requestService = requestService;
 
