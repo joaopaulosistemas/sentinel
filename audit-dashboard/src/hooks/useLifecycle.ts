@@ -18,6 +18,17 @@ export function useDiff(auditId: number | undefined) {
   });
 }
 
+/** Consulta o remoto (lento): uma vez por auditoria, sem repetir em caso de erro. */
+export function useFreshness(auditId: number | undefined) {
+  return useQuery({
+    queryKey: ['freshness', auditId],
+    queryFn: () => api.getFreshness(auditId as number),
+    enabled: !!auditId && auditId > 0,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useSuppressions(systemId: number) {
   return useQuery({
     queryKey: ['suppressions', systemId],

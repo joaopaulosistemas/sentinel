@@ -302,6 +302,62 @@ public class IngestionService {
         }
     }
 
+    /**
+     * SHA da ponta de uma branch no remoto, sem clonar ({@code git ls-remote}). Melhor esforço: nulo se o
+     * repositório não responde, a branch não existe ou a URL é inválida.
+     */
+    public String remoteHeadSha(String repoUrl, String branch, String tokenOverride, String hosts) {
+        if (branch == null || branch.isBlank()) {
+            return null;
+        }
+        Path logFile = null;
+        try {
+            URI uri = validateRepoUrl(repoUrl);
+            validateBranch(branch);
+            String token = resolveToken(tokenOverride);
+            boolean sendToken = !token.isBlank() && isTokenHost(uri.getHost(), hosts);
+            Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
+            Files.createDirectories(basePath);
+            logFile = Files.createTempFile(basePath, "git-head-", ".log");
+            ProcessBuilder pb = new ProcessBuilder("git", "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
+                    "ls-remote", "--", uri.toString(), "refs/heads/" + branch);
+            pb.redirectErrorStream(true);
+            pb.redirectOutput(logFile.toFile());
+            configureEnvironment(pb.environment(), sendToken ? token : null);
+            Process process = pb.start();
+            if (!process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return null;
+            }
+            if (process.exitValue() != 0) {
+                return null;
+            }
+            return parseRefSha(Files.readString(logFile, StandardCharsets.UTF_8), branch);
+        } catch (IllegalArgumentException | IOException e) {
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } finally {
+            deleteQuietly(logFile);
+        }
+    }
+
+    /** SHA da linha "&lt;sha&gt;\trefs/heads/&lt;branch&gt;" da saída do ls-remote. */
+    static String parseRefSha(String lsRemoteOutput, String branch) {
+        if (lsRemoteOutput == null) {
+            return null;
+        }
+        String suffix = "\trefs/heads/" + branch;
+        for (String line : lsRemoteOutput.split("\\R")) {
+            if (line.endsWith(suffix)) {
+                String sha = line.substring(0, line.length() - suffix.length()).trim();
+                return sha.isEmpty() ? null : sha;
+            }
+        }
+        return null;
+    }
+
     static boolean branchListed(String lsRemoteOutput, String branch) {
         String suffix = "\trefs/heads/" + branch;
         return lsRemoteOutput.lines().anyMatch(l -> l.endsWith(suffix));

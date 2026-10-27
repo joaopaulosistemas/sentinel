@@ -1,5 +1,6 @@
 import type {
   AuditDiff,
+  AuditFreshness,
   AuditRunResponse,
   AuditInsights,
   PacksResponse,
@@ -154,6 +155,8 @@ export const api = {
   },
 
   getDiff: (auditId: number) => apiFetch<AuditDiff>(`/api/v1/audits/${auditId}/diff`),
+
+  getFreshness: (auditId: number) => apiFetch<AuditFreshness>(`/api/v1/audits/${auditId}/freshness`),
 
   getTrend: (systemId: number, limit = 30) =>
     apiFetch<TrendPoint[]>(`/api/v1/systems/${systemId}/trend?limit=${limit}`),

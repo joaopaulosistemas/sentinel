@@ -141,6 +141,14 @@ class IngestionServiceTest {
     }
 
     @Test
+    void extraiOShaDaPontaDaBranch() {
+        String out = "aaa111\trefs/heads/main2\nbbb222\trefs/heads/main\n";
+        assertEquals("bbb222", IngestionService.parseRefSha(out, "main"));
+        assertNull(IngestionService.parseRefSha(out, "dev"));
+        assertNull(IngestionService.parseRefSha(null, "main"));
+    }
+
+    @Test
     void brancheListadaPrecisaSerExata() {
         String out = "abc\trefs/heads/main2\n";
         assertFalse(IngestionService.branchListed(out, "main"));

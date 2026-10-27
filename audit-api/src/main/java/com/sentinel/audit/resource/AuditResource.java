@@ -88,8 +88,34 @@ public class AuditResource {
     @Inject
     AuditOrchestrationService orchestration;
 
+    @Inject
+    com.sentinel.audit.service.IngestionService ingestionService;
+
+    @Inject
+    com.sentinel.audit.service.SecretBox secretBox;
+
     @Context
     SecurityContext securityContext;
+
+    /** Se o código mudou desde a auditoria: {@code stale} é nulo quando não dá para saber. */
+    public record Freshness(String auditedCommit, String currentCommit, Boolean stale) {
+    }
+
+    @GET
+    @Path("/{id}/freshness")
+    @Operation(summary = "Auditoria desatualizada?", description = "Compara o commit auditado com a ponta atual da branch no remoto (git ls-remote)")
+    public Freshness freshness(@PathParam("id") Long id) {
+        AuditRun run = auditRunRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        String audited = run.getCommitSha();
+        com.sentinel.audit.model.AuditedSystem system = run.getSystem();
+        if (audited == null || audited.isBlank() || system == null || run.getBranch() == null) {
+            return new Freshness(audited, null, null);
+        }
+        String token = system.hasGitToken() ? secretBox.decrypt(system.getGitTokenEnc()) : null;
+        String current = ingestionService.remoteHeadSha(system.getRepoUrl(), run.getBranch(), token, system.getGitTokenHosts());
+        return new Freshness(audited, current, current == null ? null : !current.equals(audited));
+    }
 
     /**
      * Dispara uma nova auditoria de forma assíncrona.
