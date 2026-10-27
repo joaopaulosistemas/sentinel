@@ -294,3 +294,9 @@ Caixa **Paleta de cores** no cabeçalho (lembra a escolha por navegador) com tr�
 - **Alternativo**: claro em tom de papel (quente) e escuro em cinza neutro.
 As variáveis `--s-*` e os tokens do Carbon (campos, abas, tabelas, modais) seguem a paleta (`styles/paletas.css`). Contraste calculado: texto/card ≥ 11,6:1, texto secundário/card ≥ 6,4:1, link/card ≥ 5,6:1 (todas acima do mínimo AA de 4,5:1).
 Verificado: `tsc`, `vitest`, e2e e capturas de Visão geral, Sistemas e Informações nas 6 combinações. Não verificado: as demais telas em cada paleta (algumas cores fixas, como as caixas de "Resultado parcial" e o aviso do Carbon, não acompanham a paleta) e telas estreitas.
+
+## Dashboard 12.19.1 — Conteúdo colado ao menu em qualquer tela
+
+Em telas maiores que 1696 px o conteúdo ficava centralizado (largura máxima de 1440 px com margem automática) e se afastava do menu. `PageShell` passa a alinhar à esquerda: o conteúdo começa sempre 32 px depois do menu (288 px da borda da tela), em qualquer largura. A largura máxima continua em 1440 px; em telas muito largas sobra espaço vazio à direita, não entre o menu e o conteúdo.
+Teste novo `e2e/conteudo-perto-do-menu.spec.ts`: o título começa em 288 px com a tela em 1100, 1440, 1920 e 2560 px.
+Verificado: `tsc`, `vitest`, e2e e captura a 2560 px.

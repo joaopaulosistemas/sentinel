@@ -17,7 +17,7 @@ export const TRAIL_HEIGHT = 16;
  */
 export function PageShell({ crumbs, children }: { crumbs: Crumb[]; children: ReactNode }) {
   return (
-    <div style={{ padding: '72px 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ padding: '72px 2rem 3rem', maxWidth: 1440, margin: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div data-testid="page-trail" style={{ minHeight: TRAIL_HEIGHT, marginBottom: -16 }}>
         <Breadcrumb items={crumbs} />
       </div>
