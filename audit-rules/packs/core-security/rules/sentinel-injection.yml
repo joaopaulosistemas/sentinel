@@ -72,9 +72,12 @@ rules:
               - pattern: '$X + "..."'
           - pattern-not: '"..." + "..."'
     pattern-sinks:
-      - pattern-either:
-          - pattern: Runtime.getRuntime().exec($CMD, ...)
-          - pattern: new ProcessBuilder($CMD, ...)
+      - patterns:
+          - pattern-either:
+              - pattern: Runtime.getRuntime().exec($CMD, ...)
+              - pattern: new ProcessBuilder($CMD, ...)
+          # só o executável (1º argumento) importa: concatenar um argumento de lista ("refs/heads/" + branch) não é shell
+          - focus-metavariable: $CMD
     message: >
       Possível Command Injection (OWASP A03): comando do sistema operacional montado com valor variável.
       Valide contra uma lista de permitidos e passe argumentos como lista, nunca como texto concatenado.
@@ -135,6 +138,11 @@ rules:
       - pattern-not: Runtime.getRuntime().exec("...")
       - pattern-not: Runtime.getRuntime().exec(new String[]{...})
       - pattern-not: new ProcessBuilder("...")
+      # lista ou vetor de argumentos: sem shell nem divisão de texto; o risco de um texto único não se aplica
+      - pattern-not: new ProcessBuilder((List<String> $L))
+      - pattern-not: new ProcessBuilder((java.util.List<String> $L))
+      - pattern-not: new ProcessBuilder((String[] $A))
+      - pattern-not: Runtime.getRuntime().exec((String[] $A))
       - metavariable-regex:
           metavariable: $CMD
           regex: ^[A-Za-z_][A-Za-z0-9_.()]*$
