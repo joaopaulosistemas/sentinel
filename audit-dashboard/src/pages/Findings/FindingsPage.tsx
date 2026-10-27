@@ -27,16 +27,7 @@ import {
 import { suggestionFor } from '../../utils/claudeHint';
 import { startLabel } from '../../utils/timeAgo';
 import { stackShort } from '../Systems/systemForm';
-
-const categoryOptions: Array<{ value: Category | ''; label: string }> = [
-  { value: '', label: 'Todas' },
-  { value: 'SECURITY', label: 'Segurança' },
-  { value: 'QUALITY', label: 'Qualidade' },
-  { value: 'ARCHITECTURE', label: 'Arquitetura' },
-  { value: 'DEPENDENCY', label: 'Dependências' },
-  { value: 'OBSERVABILITY', label: 'Observabilidade' },
-  { value: 'PERFORMANCE', label: 'Desempenho' },
-];
+import { FindingsFilters, PaginationFooter } from './FindingsFilters';
 
 const ABAS = [
   { id: 'achados', nome: 'Achados e nota' },
@@ -46,8 +37,6 @@ const ABAS = [
 
 type AbaId = 'achados' | 'revisao' | 'reauditoria';
 
-const label = { fontSize: 12, color: 'var(--s-text-3)' } as const;
-const select = { height: 40, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', fontSize: 14 } as const;
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
 /** Cor da borda do cartão do sistema: vermelho com críticos (ou muitos altos), laranja só com altos, verde sem nenhum. */
@@ -250,74 +239,27 @@ export function FindingsPage() {
           hideCloseButton
         />
       )}
-      <section aria-label="Filtros" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, alignItems: 'end' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label htmlFor="f-sis" style={{ ...label, fontWeight: 600 }}>Sistema</label>
-            <select
-              id="f-sis"
-              value={currentSystemValue}
-              onChange={(e) => pickSystem(e.target.value === '' ? undefined : Number(e.target.value))}
-              style={{ ...select, borderBottom: '2px solid var(--s-link)' }}
-            >
-              <option value="">Todos os sistemas{systems ? ` (${systems.length})` : ''}</option>
-              {(systems ?? []).map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label htmlFor="f-sev" style={label}>Severidade</label>
-            <select id="f-sev" value={severity} onChange={(e) => { setSeverity(e.target.value as SeverityChoice); reset(); }} style={select}>
-              {severityChoices.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label htmlFor="f-cat" style={label}>Categoria</label>
-            <select id="f-cat" value={category ?? ''} onChange={(e) => { setCategory((e.target.value || undefined) as Category | undefined); reset(); }} style={select}>
-              {categoryOptions.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label htmlFor="f-st" style={label}>Situação</label>
-            <select id="f-st" value={situation} onChange={(e) => { setSituation(e.target.value as SituationChoice); reset(); }} style={select}>
-              {situationChoices.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-          {!auditMode && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40 }}>
-              <input type="checkbox" checked={grouped} onChange={(e) => setGrouped(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#0f62fe' }} />
-              Agrupar por sistema
-            </label>
-          )}
-        </div>
-        {auditMode && lowTotal > 0 && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-            <input type="checkbox" checked={showLow} onChange={(e) => { setShowLow(e.target.checked); reset(); }} style={{ width: 16, height: 16, accentColor: '#0f62fe' }} />
-            Mostrar achados de baixa confiança
-            {!showLow && <span style={{ color: 'var(--s-text-3)' }}>({lowHidden} ocultos: em testes, exemplos ou de regras com muitos falsos positivos)</span>}
-          </label>
-        )}
-        <div aria-label="Filtros ativos" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 13, color: 'var(--s-text-3)' }}>
-          Filtros ativos:
-          {chips.map((c) => (
-            <span key={c.key} style={{ background: c.tone === 'blue' ? '#d0e2ff' : 'var(--s-border)', color: c.tone === 'blue' ? '#0043ce' : 'var(--s-text)', padding: '3px 10px', borderRadius: 12 }}>
-              {c.label}
-            </span>
-          ))}
-          {!isDefault && (
-            <button type="button" onClick={restoreDefaults} style={{ background: 'none', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>
-              Restaurar padrão
-            </button>
-          )}
-        </div>
-      </section>
+      <FindingsFilters
+        auditMode={auditMode}
+        systems={systems}
+        currentSystemValue={currentSystemValue}
+        onPickSystem={pickSystem}
+        severity={severity}
+        onSeverity={(v) => { setSeverity(v); reset(); }}
+        category={category}
+        onCategory={(v) => { setCategory(v); reset(); }}
+        situation={situation}
+        onSituation={(v) => { setSituation(v); reset(); }}
+        grouped={grouped}
+        onGrouped={setGrouped}
+        lowTotal={lowTotal}
+        lowHidden={lowHidden}
+        showLow={showLow}
+        onShowLow={(v) => { setShowLow(v); reset(); }}
+        chips={chips}
+        isDefault={isDefault}
+        onRestore={restoreDefaults}
+      />
 
       {!auditMode && summary.length > 0 && (
         <section aria-label="Resumo por sistema" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
@@ -374,22 +316,7 @@ export function FindingsPage() {
           <FindingsTable findings={rows} systemName={auditMode ? audit?.systemName : undefined} auditId={auditMode ? auditId : undefined} systemOf={systemOf} claudeNoteOf={claudeNoteOf} />
         )}
         {!loading && !error && total > 0 && (
-          <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--s-text-3)', borderTop: '1px solid var(--s-border)', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <span>{footerText(rows.length, total, situation, severity, sysCount)}</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                Por página
-                <select aria-label="Itens por página" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} style={{ ...select, height: 32 }}>
-                  {[10, 20, 50].map((n) => (
-                    <option key={n} value={n}>{n}</option>
-                  ))}
-                </select>
-              </label>
-              <span>Página {page} de {pages}</span>
-              <button type="button" aria-label="Página anterior" disabled={page <= 1} onClick={() => setPage(page - 1)} style={{ border: '1px solid var(--s-border-strong)', background: 'var(--s-surface)', width: 32, height: 32, cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>‹</button>
-              <button type="button" aria-label="Próxima página" disabled={page >= pages} onClick={() => setPage(page + 1)} style={{ border: '1px solid var(--s-border-strong)', background: 'var(--s-surface)', width: 32, height: 32, cursor: page >= pages ? 'not-allowed' : 'pointer' }}>›</button>
-            </span>
-          </div>
+          <PaginationFooter text={footerText(rows.length, total, situation, severity, sysCount)} page={page} pages={pages} pageSize={pageSize} onPage={setPage} onPageSize={(n) => { setPageSize(n); setPage(1); }} />
         )}
       </section>
 

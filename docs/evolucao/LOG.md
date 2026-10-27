@@ -326,3 +326,9 @@ Verificado: `tsc` não se aplica a esta mudança (só Java e docs). Java só no 
 Os insights (áreas, dívida priorizada, parecer) e o resumo do relatório passam a ignorar achados de baixa confiança: prioridade não é mais puxada por chave de exemplo em teste. A nota e o plano de correção continuam com todos os achados (a nota só muda se `sentinel.audit.score.confidence-weighting.enabled` for ligado).
 Novo tópico de deduplicação no pacote `core-quality`: `pmd-ReturnEmptyCollectionRatherThanNull` + `sentinel-java-retorna-null-colecao` (até 10 linhas, porque o Semgrep marca o método e o PMD marca o `return null`) viram um achado só, com a maior severidade. Outras regras repetidas entre ferramentas (God Object, complexidade) não foram mapeadas por falta de ids equivalentes confirmados.
 Verificado: nada além de revisão (Java e regras só no CI).
+
+## Dashboard 12.23.1 — Tela de achados dividida em componentes
+
+A auditoria #34 apontava `FindingsPage` com complexidade 103 e 323 linhas. Os filtros e o rodapé de paginação saíram para `FindingsFilters.tsx` (`FindingsFilters`, `PaginationFooter`); a página perde cerca de 50 linhas e a função principal deixa de conter o JSX dos filtros. Comportamento igual.
+Verificado: `tsc`, `vitest` da tela, e2e da tela. Não verificado: o novo valor de complexidade (só medido numa próxima auditoria).
+Nota sobre `Versions.parse`, `Yamls.map` e `Yamls.list`: o PMD e o Semgrep pedem coleção vazia no lugar de `null`, mas nesses métodos `null` significa "valor inválido / não é um mapa", distinto de vazio. Não foram alterados; o correto é suprimir como falso positivo.
