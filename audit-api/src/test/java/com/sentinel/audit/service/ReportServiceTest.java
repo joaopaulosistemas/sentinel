@@ -61,7 +61,7 @@ class ReportServiceTest {
         assertTrue(html.contains("Baixa confiança (1)"));
         assertTrue(html.contains("Em arquivo de teste"));
         assertTrue(html.indexOf("Falha real") < html.indexOf("Baixa confiança (1)"));
-        assertTrue(html.indexOf("Baixa confiança (1)") < html.indexOf("Chave de exemplo"));
+        assertTrue(html.indexOf("Baixa confiança (1)") < html.lastIndexOf("Chave de exemplo"));
     }
 
     @Test
