@@ -300,3 +300,7 @@ Verificado: `tsc`, `vitest`, e2e e capturas de Visão geral, Sistemas e Informa�
 Em telas maiores que 1696 px o conteúdo ficava centralizado (largura máxima de 1440 px com margem automática) e se afastava do menu. `PageShell` passa a alinhar à esquerda: o conteúdo começa sempre 32 px depois do menu (288 px da borda da tela), em qualquer largura. A largura máxima continua em 1440 px; em telas muito largas sobra espaço vazio à direita, não entre o menu e o conteúdo.
 Teste novo `e2e/conteudo-perto-do-menu.spec.ts`: o título começa em 288 px com a tela em 1100, 1440, 1920 e 2560 px.
 Verificado: `tsc`, `vitest`, e2e e captura a 2560 px.
+
+## Dashboard 12.19.2 — CSS do conteúdo definido pelo João
+
+`PageShell` passa a usar exatamente `padding: 70px 40px; margin: 0; gap: 24px`, sem largura máxima (o conteúdo ocupa toda a largura disponível). O caminho fica a 70 px do topo da página (22 px abaixo do cabeçalho) e o conteúdo começa a 296 px da borda (40 px depois do menu). Testes e2e ajustados para 70 e 296 px.
