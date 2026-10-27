@@ -15,6 +15,22 @@ export const PALETTES: Array<{ id: Palette; label: string }> = [
   { id: 'alternativo', label: 'Alternativo' },
 ];
 
+/** Tamanho do texto: "grande" amplia a área de conteúdo em ~12%, para quem lê melhor com letra maior. */
+export type TextSize = 'normal' | 'grande';
+export const TEXT_SIZES: Array<{ id: TextSize; label: string }> = [
+  { id: 'normal', label: 'Texto normal' },
+  { id: 'grande', label: 'Texto grande' },
+];
+const TEXT_KEY = 'sentinel.textsize';
+
+function readSavedTextSize(): TextSize {
+  try {
+    return window.localStorage.getItem(TEXT_KEY) === 'grande' ? 'grande' : 'normal';
+  } catch {
+    return 'normal';
+  }
+}
+
 const STORAGE_KEY = 'sentinel.theme';
 const PALETTE_KEY = 'sentinel.palette';
 
@@ -41,11 +57,14 @@ export function applyTheme(mode: ThemeMode, palette: Palette = readSavedPalette(
   document.documentElement.setAttribute('data-theme', mode);
   document.documentElement.setAttribute('data-palette', palette);
   document.documentElement.style.colorScheme = mode;
+  document.documentElement.setAttribute('data-texto', readSavedTextSize());
 }
 
 interface ThemeStore {
   mode: ThemeMode;
   palette: Palette;
+  textSize: TextSize;
+  setTextSize: (size: TextSize) => void;
   setPalette: (palette: Palette) => void;
   setMode: (mode: ThemeMode) => void;
   toggle: () => void;
@@ -54,6 +73,16 @@ interface ThemeStore {
 export const useThemeStore = create<ThemeStore>((set, get) => ({
   mode: readSaved(),
   palette: readSavedPalette(),
+  textSize: readSavedTextSize(),
+  setTextSize: (textSize) => {
+    try {
+      window.localStorage.setItem(TEXT_KEY, textSize);
+    } catch {
+      // Sem armazenamento, a escolha vale só até recarregar a página.
+    }
+    document.documentElement.setAttribute('data-texto', textSize);
+    set({ textSize });
+  },
   setPalette: (palette) => {
     try {
       window.localStorage.setItem(PALETTE_KEY, palette);
