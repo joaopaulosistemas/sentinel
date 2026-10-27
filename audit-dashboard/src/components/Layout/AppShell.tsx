@@ -14,7 +14,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
-import { PALETTES, useThemeStore, type Palette } from '../../store/useThemeStore';
+import { PALETTES, TEXT_SIZES, useThemeStore, type Palette, type TextSize } from '../../store/useThemeStore';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -82,6 +82,8 @@ export function AppShell({ children }: AppShellProps) {
   const [aberto, setAberto] = useState(false);
   // Ao trocar de tela ou ao voltar para a tela larga, o menu sobreposto fecha.
   useEffect(() => setAberto(false), [location.pathname, fixo]);
+  const textSize = useThemeStore((st) => st.textSize);
+  const setTextSize = useThemeStore((st) => st.setTextSize);
 
   return (
     <>
@@ -100,6 +102,18 @@ export function AppShell({ children }: AppShellProps) {
         <span className="sentinel-hide-narrow" style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
           v{__APP_VERSION__}
         </span>
+        <select
+          aria-label="Tamanho do texto"
+          className="sentinel-hide-narrow"
+          title="Tamanho do texto da área de conteúdo"
+          value={textSize}
+          onChange={(e) => setTextSize(e.target.value as TextSize)}
+          style={{ marginRight: '0.5rem', height: 32, background: 'transparent', color: '#c6c6c6', border: '1px solid #525252', fontSize: 12, padding: '0 8px' }}
+        >
+          {TEXT_SIZES.map((t) => (
+            <option key={t.id} value={t.id} style={{ color: '#161616' }}>{t.label}</option>
+          ))}
+        </select>
         <select
           aria-label="Paleta de cores"
           className="sentinel-hide-narrow"

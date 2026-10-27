@@ -1,0 +1,45 @@
+/*
+ * Leitura sem cansaço. Ajusta só as cores que ficavam abaixo de 4,5:1 (WCAG AA) em alguma superfície
+ * (cabeçalho de tabela e linha selecionada são as mais escuras). O tom e a matiz são mantidos.
+ * Gerado a partir da medição de contraste de cada paleta; carregado depois de theme.css e paletas.css.
+ */
+:root,
+:root[data-theme='light'] {
+  --s-text-4: #656565;
+  --s-link: #0155f4;
+  --s-success-text: #177433;
+  --s-warn-text: #7e6100;
+  --s-disabled: #949494;
+}
+:root[data-theme='light'][data-palette='suave'] {
+  --s-text-4: #5b6472;
+  --s-link: #1f5ecf;
+  --s-success-text: #1a7337;
+  --s-warn-text: #7b6000;
+  --s-disabled: #8a93a1;
+}
+:root[data-theme='dark'][data-palette='suave'] {
+  --s-text-4: #8e97a6;
+  --s-disabled: #626c7b;
+}
+:root[data-theme='light'][data-palette='alternativo'] {
+  --s-text-4: #666258;
+  --s-success-text: #276f38;
+  --s-warn-text: #795f00;
+  --s-disabled: #999181;
+}
+:root[data-theme='dark'][data-palette='alternativo'] {
+  --s-disabled: #677180;
+}
+
+/*
+ * Tipografia para leitura longa.
+ *  - Piso de 12 px: o texto de 11 px sobe para 12 px e o de 12 px (o mais usado nas telas) sobe para 13 px.
+ *  - Entrelinha de 1,5 no corpo; números da tabela alinhados (algarismos tabulares), para comparar notas sem esforço.
+ *  - "Texto grande": amplia a área de conteúdo em 12% (o menu e o cabeçalho ficam como estão).
+ */
+.sentinel-content-theme [style*='font-size: 12px'] { font-size: 13px !important; }
+.sentinel-content-theme [style*='font-size: 11px'] { font-size: 12px !important; }
+.sentinel-content-theme { line-height: 1.5; font-variant-numeric: tabular-nums; }
+:root[data-texto='grande'] .sentinel-content-theme { zoom: 1.12; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
