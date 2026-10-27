@@ -103,14 +103,14 @@ export function SystemDetailPage() {
   return (
     <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
       {started && (
-        <div role="status" style={{ background: '#fff', border: '1px solid #e0e0e0', borderLeft: '4px solid #0f62fe', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid #0f62fe', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span>
             <strong style={{ fontWeight: 600 }}>Auditoria #{started.id} iniciada</strong> na branch <span style={{ fontFamily: mono }}>{started.branch}</span>. Ela já aparece na lista abaixo e se atualiza sozinha.
           </span>
           <span style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <Link to={`/audits/${started.id}`} style={{ fontWeight: 500 }}>Acompanhar execução</Link>
             <button type="button" aria-label="Fechar aviso" onClick={() => setStarted(null)} style={{ background: 'transparent', border: 0, cursor: 'pointer', padding: 4 }}>
-              <DashIcon size={14} color="#525252" />
+              <DashIcon size={14} color="var(--s-text-3)" />
             </button>
           </span>
         </div>
@@ -118,16 +118,16 @@ export function SystemDetailPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <nav aria-label="Caminho" style={{ fontSize: 12, color: '#525252' }}>
+          <nav aria-label="Caminho" style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
             <Link to="/systems">Sistemas</Link> &nbsp;/&nbsp; {system.name}
           </nav>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{system.name}</h1>
-          <span style={{ color: '#525252' }}>
+          <span style={{ color: 'var(--s-text-3)' }}>
             {[stackLabels[system.stack], system.team, `perfil ${system.profile || 'default'}`].filter(Boolean).join(' · ')}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button" onClick={() => navigate(`/systems?edit=${system.id}`)} style={{ height: 40, padding: '0 16px', background: '#fff', color: '#161616', border: '1px solid #8d8d8d', fontSize: 14, cursor: 'pointer' }}>
+          <button type="button" onClick={() => navigate(`/systems?edit=${system.id}`)} style={{ height: 40, padding: '0 16px', background: 'var(--s-surface)', color: 'var(--s-text)', border: '1px solid var(--s-border-strong)', fontSize: 14, cursor: 'pointer' }}>
             Editar sistema
           </button>
           <button type="button" onClick={() => setStarting(true)} style={{ height: 40, padding: '0 20px', background: '#0f62fe', color: '#fff', border: 0, fontSize: 14, cursor: 'pointer' }}>
@@ -137,10 +137,10 @@ export function SystemDetailPage() {
       </div>
       <StartAuditModal system={starting ? system : null} onClose={() => setStarting(false)} onStarted={setStarted} />
 
-      <section aria-label="Últimas auditorias" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+      <section aria-label="Últimas auditorias" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Últimas auditorias</h2>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#525252' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--s-text-3)' }}>
             <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: live ? '#0f62fe' : '#198038' }} />
             {live ? 'Atualizando a cada 3 s enquanto houver auditoria em execução' : 'Atualizado agora'}
           </span>
@@ -148,12 +148,12 @@ export function SystemDetailPage() {
         {loadingRuns ? (
           <div style={{ padding: 16 }}><SkeletonText lineCount={5} /></div>
         ) : recentRuns.length === 0 ? (
-          <p style={{ padding: 16, color: '#525252', margin: 0 }}>Nenhuma auditoria encontrada.</p>
+          <p style={{ padding: 16, color: 'var(--s-text-3)', margin: 0 }}>Nenhuma auditoria encontrada.</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
               <thead>
-                <tr style={{ background: '#e8e8e8', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
+                <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
                   <th style={{ padding: '12px 16px' }}>Auditoria</th>
                   <th style={{ padding: '12px 8px' }}>Branch</th>
                   <th style={{ padding: '12px 8px' }}>Situação</th>
@@ -168,7 +168,7 @@ export function SystemDetailPage() {
                   const score = run.riskScore ? Math.round(run.riskScore.overall) : null;
                   const pct = progressPercent(run);
                   return (
-                    <tr key={run.id} style={{ borderBottom: '1px solid #e0e0e0', background: active ? '#edf5ff' : '#fff' }}>
+                    <tr key={run.id} style={{ borderBottom: '1px solid var(--s-border)', background: active ? 'var(--s-selected)' : 'var(--s-surface)' }}>
                       <td style={{ padding: '12px 16px' }}>
                         <Link to={`/audits/${run.id}`} style={{ fontWeight: 500, textDecoration: 'none' }}>#{run.id}</Link>
                       </td>
@@ -181,10 +181,10 @@ export function SystemDetailPage() {
                               Em execução · {stepLabel(run)}
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ flex: 1, height: 6, background: '#e0e0e0' }}>
+                              <span style={{ flex: 1, height: 6, background: 'var(--s-border)' }}>
                                 <span style={{ display: 'block', height: 6, background: '#0f62fe', width: `${pct}%` }} />
                               </span>
-                              <span style={{ fontSize: 12, color: '#525252', fontFamily: mono, width: 36 }}>{pct}%</span>
+                              <span style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono, width: 36 }}>{pct}%</span>
                             </span>
                           </div>
                         ) : run.status === 'COMPLETED' ? (
@@ -193,20 +193,20 @@ export function SystemDetailPage() {
                             Concluída
                           </span>
                         ) : run.status === 'FAILED' ? (
-                          <span title={run.errorMessage ?? undefined} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#a2191f', fontWeight: 500 }}>
+                          <span title={run.errorMessage ?? undefined} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-danger-text)', fontWeight: 500 }}>
                             <CrossIcon size={14} />
                             Falhou{run.errorMessage ? ` · ${run.errorMessage.length > 60 ? `${run.errorMessage.slice(0, 60)}…` : run.errorMessage}` : ''}
                           </span>
                         ) : (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#525252', fontWeight: 500 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-text-3)', fontWeight: 500 }}>
                             <DashIcon size={14} />
                             Cancelada
                           </span>
                         )}
                       </td>
                       <td style={{ ...cell, fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
-                      <td style={{ ...cell, color: '#393939' }}>{findingsText(run)}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#525252', fontSize: 13 }}>{startLabel(run.startedAt)}</td>
+                      <td style={{ ...cell, color: 'var(--s-text-2)' }}>{findingsText(run)}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--s-text-3)', fontSize: 13 }}>{startLabel(run.startedAt)}</td>
                     </tr>
                   );
                 })}
@@ -219,13 +219,13 @@ export function SystemDetailPage() {
       {/* Detalhe da última auditoria concluída */}
       <div aria-label="Última auditoria concluída" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '1.5rem' }}>
         <Tile style={{ textAlign: 'center', padding: '1.5rem' }}>
-          <p style={{ fontSize: '0.875rem', color: '#6f6f6f', marginBottom: '0.75rem' }}>Score Geral</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--s-text-4)', marginBottom: '0.75rem' }}>Score Geral</p>
           <ScoreGauge score={latestCompleted?.riskScore?.overall ?? system.lastAuditScore} size="lg" />
         </Tile>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.75rem' }}>
           {dimensionLabels.map(({ key, label }) => (
             <Tile key={key} style={{ textAlign: 'center', padding: '1rem' }}>
-              <p style={{ fontSize: '0.75rem', color: '#6f6f6f', marginBottom: '0.5rem' }}>{label}</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--s-text-4)', marginBottom: '0.5rem' }}>{label}</p>
               <ScoreGauge score={latestCompleted?.riskScore?.[key] ?? null} size="sm" />
             </Tile>
           ))}
@@ -240,8 +240,8 @@ export function SystemDetailPage() {
               const count = latestCompleted.findingsSummary[sev] ?? 0;
               return (
                 <div key={sev} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: count > 0 ? severityColors[sev] : '#6f6f6f' }}>{count}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>{sev}</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: count > 0 ? severityColors[sev] : 'var(--s-text-4)' }}>{count}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>{sev}</div>
                 </div>
               );
             })}

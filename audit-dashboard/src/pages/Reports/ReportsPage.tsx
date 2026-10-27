@@ -48,20 +48,20 @@ function saveHistory(entries: ReportHistoryEntry[]): void {
   }
 }
 
-const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#525252' } as const;
+const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--s-text-3)' } as const;
 const choice = (active: boolean) =>
   ({
     all: 'unset',
     boxSizing: 'border-box',
     cursor: 'pointer',
     padding: '10px 12px',
-    border: `1px solid ${active ? '#0f62fe' : '#e0e0e0'}`,
-    background: active ? '#edf5ff' : '#fff',
+    border: `1px solid ${active ? '#0f62fe' : 'var(--s-border)'}`,
+    background: active ? 'var(--s-selected)' : 'var(--s-surface)',
     display: 'flex',
     flexDirection: 'column',
     gap: 2,
   }) as const;
-const select = { height: 40, padding: '0 12px', border: '1px solid #8d8d8d', background: '#fff', font: 'inherit', fontSize: 14 } as const;
+const select = { height: 40, padding: '0 12px', border: '1px solid var(--s-border-strong)', background: 'var(--s-surface)', font: 'inherit', fontSize: 14 } as const;
 
 function formatName(f?: ReportFormat): string {
   return f === 'sbom' ? 'SBOM' : f === 'csv' ? 'CSV' : (f ?? 'html').toUpperCase();
@@ -126,24 +126,24 @@ export function ReportsPage() {
     <div style={{ padding: '24px 32px 48px', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Relatórios</h1>
-        <span style={{ color: '#525252' }}>Gere em 3 passos: escolha o tipo, o sistema e o formato. O relatório fica guardado na lista abaixo.</span>
+        <span style={{ color: 'var(--s-text-3)' }}>Gere em 3 passos: escolha o tipo, o sistema e o formato. O relatório fica guardado na lista abaixo.</span>
       </div>
 
-      <section aria-label="Novo relatório" style={{ background: '#fff', border: '1px solid #e0e0e0', padding: '20px 24px' }}>
+      <section aria-label="Novo relatório" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '20px 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignContent: 'start' }}>
             <span style={eyebrow}>1 · Tipo</span>
             {reportTypes.map((t) => (
               <button key={t.id} type="button" aria-pressed={type === t.id} onClick={() => setType(t.id)} style={choice(type === t.id)}>
                 <span style={{ fontWeight: 600 }}>{t.label}</span>
-                <span style={{ fontSize: 12, color: '#525252' }}>{t.hint}</span>
+                <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{t.hint}</span>
               </button>
             ))}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignContent: 'start' }}>
             <span style={eyebrow}>2 · Sistema</span>
-            <label htmlFor="report-system" style={{ fontSize: 13, color: '#525252' }}>
+            <label htmlFor="report-system" style={{ fontSize: 13, color: 'var(--s-text-3)' }}>
               Escolha o sistema ou todos
             </label>
             <select id="report-system" value={scope} onChange={(e) => setScope(e.target.value)} style={select}>
@@ -154,7 +154,7 @@ export function ReportsPage() {
                 </option>
               ))}
             </select>
-            <label htmlFor="report-period" style={{ fontSize: 13, color: '#525252', marginTop: 8 }}>
+            <label htmlFor="report-period" style={{ fontSize: 13, color: 'var(--s-text-3)', marginTop: 8 }}>
               Período
             </label>
             <select id="report-period" value={days} onChange={(e) => setDays(Number(e.target.value) as ReportPeriod)} style={select}>
@@ -165,12 +165,12 @@ export function ReportsPage() {
               ))}
             </select>
             {noAudit && (
-              <span role="status" style={{ fontSize: 13, color: '#a2191f' }}>
+              <span role="status" style={{ fontSize: 13, color: 'var(--s-danger-text)' }}>
                 Este sistema ainda não tem auditoria concluída. Execute uma auditoria primeiro.
               </span>
             )}
             {latest && (
-              <span style={{ fontSize: 12, color: '#525252' }}>
+              <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
                 Usa a auditoria mais recente: #{latest.id}
                 {latest.riskScore?.overall != null ? ` · nota ${Math.round(latest.riskScore.overall)}` : ''}.
               </span>
@@ -209,17 +209,17 @@ export function ReportsPage() {
         </div>
       </section>
 
-      <section aria-label="Relatórios gerados" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <section aria-label="Relatórios gerados" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Relatórios gerados</h2>
           {history.length > 0 && (
-            <button type="button" onClick={clearHistory} style={{ background: 'none', border: 0, color: '#0f62fe', cursor: 'pointer', font: 'inherit', fontSize: 13 }}>
+            <button type="button" onClick={clearHistory} style={{ background: 'none', border: 0, color: 'var(--s-link)', cursor: 'pointer', font: 'inherit', fontSize: 13 }}>
               Limpar lista
             </button>
           )}
         </div>
         {history.length === 0 ? (
-          <p style={{ color: '#525252', padding: '12px 16px', margin: 0 }}>Nenhum relatório gerado ainda neste navegador.</p>
+          <p style={{ color: 'var(--s-text-3)', padding: '12px 16px', margin: 0 }}>Nenhum relatório gerado ainda neste navegador.</p>
         ) : (
           history.map((e) => (
             <div
@@ -229,15 +229,15 @@ export function ReportsPage() {
                 gridTemplateColumns: 'minmax(220px, 3fr) minmax(140px, 2fr) 90px 150px 110px',
                 gap: 12,
                 padding: '12px 16px',
-                borderBottom: '1px solid #e0e0e0',
+                borderBottom: '1px solid var(--s-border)',
                 alignItems: 'center',
-                background: e.id === justAdded ? '#edf5ff' : '#fff',
+                background: e.id === justAdded ? 'var(--s-selected)' : 'var(--s-surface)',
               }}
             >
               <span style={{ fontWeight: 500 }}>{entryTitle(e)}</span>
-              <span style={{ color: '#393939' }}>{e.systemName}</span>
+              <span style={{ color: 'var(--s-text-2)' }}>{e.systemName}</span>
               <span style={{ fontFamily: mono, fontSize: 12 }}>{formatName(e.format)}</span>
-              <span style={{ fontSize: 13, color: '#525252' }}>{e.id === justAdded ? 'agora' : whenLabel(e.generatedAt)}</span>
+              <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>{e.id === justAdded ? 'agora' : whenLabel(e.generatedAt)}</span>
               <a href={e.url} target="_blank" rel="noreferrer" style={{ textAlign: 'right' }}>
                 Abrir
               </a>

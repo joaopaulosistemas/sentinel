@@ -18,7 +18,7 @@ export function JourneySteps({ current }: { current: 0 | 1 | 2 | 3 | 4 }) {
                 alignItems: 'center',
                 gap: '0.5rem',
                 padding: '0.375rem 0.875rem 0.375rem 0.375rem',
-                color: active ? '#161616' : '#525252',
+                color: active ? 'var(--s-text)' : 'var(--s-text-3)',
                 fontWeight: active ? 600 : 400,
               }}
             >
@@ -33,8 +33,8 @@ export function JourneySteps({ current }: { current: 0 | 1 | 2 | 3 | 4 }) {
                   justifyContent: 'center',
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  background: active ? '#0f62fe' : done ? '#198038' : '#e0e0e0',
-                  color: active || done ? '#fff' : '#525252',
+                  background: active ? '#0f62fe' : done ? '#198038' : 'var(--s-border)',
+                  color: active || done ? '#fff' : 'var(--s-text-3)',
                 }}
               >
                 {done ? '✓' : i + 1}

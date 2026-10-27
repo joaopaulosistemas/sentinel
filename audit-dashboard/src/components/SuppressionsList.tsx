@@ -33,7 +33,7 @@ export function SuppressionsList({ systemId }: { systemId: number }) {
         {data.map((s) => (
           <div
             key={s.id}
-            style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.75rem', background: '#f4f4f4', borderRadius: '4px' }}
+            style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.75rem', background: 'var(--s-layer)', borderRadius: '4px' }}
           >
             <Tag type={s.active ? 'purple' : 'warm-gray'} size="sm">
               {s.active ? reasonLabels[s.reason] : 'Vencida'}
@@ -42,8 +42,8 @@ export function SuppressionsList({ systemId }: { systemId: number }) {
               <div style={{ fontSize: '0.875rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {s.title ?? s.ruleId}
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#525252' }}>{s.justification}</div>
-              <div style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--s-text-3)' }}>{s.justification}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>
                 {s.createdBy ? `${s.createdBy} · ` : ''}
                 {new Date(s.createdAt).toLocaleDateString('pt-BR')}
                 {s.expiresAt ? ` · válido até ${new Date(s.expiresAt).toLocaleDateString('pt-BR')}` : ' · sem prazo'}

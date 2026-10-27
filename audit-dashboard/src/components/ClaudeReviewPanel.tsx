@@ -6,7 +6,7 @@ import type { RuleProposalView, SuggestionStatus, SystemSummaryResponse } from '
 import { startLabel } from '../utils/timeAgo';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
-const btn = { height: 32, padding: '0 12px', border: '1px solid #0f62fe', background: '#fff', color: '#0f62fe', cursor: 'pointer', fontSize: 13 } as const;
+const btn = { height: 32, padding: '0 12px', border: '1px solid #0f62fe', background: 'var(--s-surface)', color: 'var(--s-link)', cursor: 'pointer', fontSize: 13 } as const;
 const btnDanger = { ...btn, border: '1px solid #da1e28', color: '#da1e28' } as const;
 
 export const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -29,7 +29,7 @@ function MetricsBox({ systemId }: { systemId: number }) {
   const d = m.data;
   if (!d || typeof d.suggestionsTotal !== 'number') return null;
   return (
-    <section aria-label="Quanto o Claude acerta" style={{ border: '1px solid #e0e0e0', background: '#fff', padding: 14, display: 'grid', gap: 4 }}>
+    <section aria-label="Quanto o Claude acerta" style={{ border: '1px solid var(--s-border)', background: 'var(--s-surface)', padding: 14, display: 'grid', gap: 4 }}>
       <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Quanto o Claude acerta</h2>
       <div style={{ fontSize: 13 }}>
         Sugestões aproveitadas: <strong>{rate(d.suggestionAdoption)}</strong> ({d.suggestionsAddressed} tratadas, {d.suggestionsDismissed} dispensadas, {d.suggestionsOpen} abertas)
@@ -37,7 +37,7 @@ function MetricsBox({ systemId }: { systemId: number }) {
       <div style={{ fontSize: 13 }}>
         Regras promovidas: <strong>{rate(d.rulePromotion)}</strong> ({d.rulesPromoted} promovidas, {d.rulesDiscarded} descartadas, {d.rulesInProgress} no funil)
       </div>
-      <div style={{ fontSize: 12, color: '#525252' }}>Medido pelo que as pessoas decidiram. Não entra na nota.</div>
+      <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Medido pelo que as pessoas decidiram. Não entra na nota.</div>
     </section>
   );
 }
@@ -53,30 +53,30 @@ function Proposal({ p, systems, systemId, act, busy }: {
   const [target, setTarget] = useState('');
   const e = p.evidence;
   return (
-    <article aria-label={`Regra ${p.slug}`} style={{ border: '1px solid #e0e0e0', background: '#fff', padding: 16, display: 'grid', gap: 10 }}>
+    <article aria-label={`Regra ${p.slug}`} style={{ border: '1px solid var(--s-border)', background: 'var(--s-surface)', padding: 16, display: 'grid', gap: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <strong>{p.title}</strong>
-          <div style={{ fontFamily: mono, fontSize: 12, color: '#525252' }}>local-{p.slug}</div>
+          <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--s-text-3)' }}>local-{p.slug}</div>
         </div>
         <span style={{ fontSize: 12, fontWeight: 600, color: STAGE_COLOR[p.stage] }}>{p.stageLabel}</span>
       </div>
-      {p.rationale && <p style={{ margin: 0, fontSize: 13, color: '#393939' }}>{p.rationale}</p>}
+      {p.rationale && <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-2)' }}>{p.rationale}</p>}
       <details>
         <summary style={{ cursor: 'pointer', fontSize: 13 }}>Ver a regra Semgrep</summary>
-        <pre style={{ margin: '8px 0 0', padding: 12, background: '#f4f4f4', fontFamily: mono, fontSize: 12, overflowX: 'auto' }}>{p.semgrepYaml}</pre>
+        <pre style={{ margin: '8px 0 0', padding: 12, background: 'var(--s-layer)', fontFamily: mono, fontSize: 12, overflowX: 'auto' }}>{p.semgrepYaml}</pre>
       </details>
-      {p.sampleNote && <div style={{ fontSize: 12, color: '#525252' }}>Teste de amostra: {p.sampleNote}</div>}
+      {p.sampleNote && <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Teste de amostra: {p.sampleNote}</div>}
       {p.observationStartedAt && (
-        <div role="status" style={{ fontSize: 13, background: '#f4f4f4', padding: '8px 12px' }}>
+        <div role="status" style={{ fontSize: 13, background: 'var(--s-layer)', padding: '8px 12px' }}>
           Observação desde {startLabel(p.observationStartedAt)}: {e.hits} {e.hits === 1 ? 'achado' : 'achados'}, {e.falsePositives} falso(s) positivo(s)
           {e.hits > 0 && <>, precisão {pct(e.precision)}</>}, {e.auditsSinceStart} {e.auditsSinceStart === 1 ? 'auditoria' : 'auditorias'}.
           {p.stage === 'OBSERVING' && <> Para promover: precisão de {pct(p.minPrecision)} ou mais e {p.minHits}+ achados. Marque falso positivo suprimindo o achado.</>}
         </div>
       )}
-      {p.decisionNote && <div style={{ fontSize: 12, color: '#525252' }}>Decisão: {p.decisionNote}</div>}
+      {p.decisionNote && <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Decisão: {p.decisionNote}</div>}
       {p.sharedEligible && (
-        <div style={{ fontSize: 13, color: '#198038' }}>Funcionou em outro sistema: pronta para ir ao pacote compartilhado (a inclusão no pacote é feita no repositório dos pacotes).</div>
+        <div style={{ fontSize: 13, color: 'var(--s-success-text)' }}>Funcionou em outro sistema: pronta para ir ao pacote compartilhado (a inclusão no pacote é feita no repositório dos pacotes).</div>
       )}
 
       {!['PROMOTED', 'DISCARDED'].includes(p.stage) && (
@@ -85,7 +85,7 @@ function Proposal({ p, systems, systemId, act, busy }: {
           placeholder="Anotação (opcional)"
           value={note}
           onChange={(ev) => setNote(ev.target.value)}
-          style={{ height: 32, padding: '0 8px', border: 0, borderBottom: '1px solid #8d8d8d', background: '#f4f4f4' }}
+          style={{ height: 32, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)' }}
         />
       )}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -136,13 +136,13 @@ export function ClaudeReviewPanel({ systems, initialSystemId }: { systems: Syste
 
   return (
     <section aria-label="Revisão do Claude" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <p style={{ margin: 0, color: '#525252', fontSize: 14 }}>
+      <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 14 }}>
         O que o Claude sugeriu e as regras que propôs. Nada daqui entra na nota: uma regra só passa a pesar depois de revisada, testada,
         observada fora da nota e promovida por uma pessoa.
       </p>
-      <label style={{ display: 'grid', gap: 4, fontSize: 12, color: '#525252', maxWidth: 320 }}>
+      <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--s-text-3)', maxWidth: 320 }}>
         Sistema
-        <select value={systemId ?? ''} onChange={(e) => setSystemId(e.target.value === '' ? undefined : Number(e.target.value))} style={{ height: 40, padding: '0 8px', border: 0, borderBottom: '2px solid #0f62fe', background: '#f4f4f4', fontSize: 14 }}>
+        <select value={systemId ?? ''} onChange={(e) => setSystemId(e.target.value === '' ? undefined : Number(e.target.value))} style={{ height: 40, padding: '0 8px', border: 0, borderBottom: '2px solid #0f62fe', background: 'var(--s-layer)', fontSize: 14 }}>
           {systems.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
@@ -157,17 +157,17 @@ export function ClaudeReviewPanel({ systems, initialSystemId }: { systems: Syste
           <div style={{ display: 'grid', gap: 10 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Sugestões ({data.openSuggestions} {data.openSuggestions === 1 ? 'aberta' : 'abertas'})</h2>
             {data.suggestions.length === 0 ? (
-              <span style={{ fontSize: 13, color: '#525252' }}>Nenhuma sugestão. Libere a ferramenta registrar_sugestao na aba Claude (MCP) do sistema para o Claude registrar as dele.</span>
+              <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma sugestão. Libere a ferramenta registrar_sugestao na aba Claude (MCP) do sistema para o Claude registrar as dele.</span>
             ) : (
               data.suggestions.map((s) => (
-                <article key={s.id} aria-label={`Sugestão ${s.id}`} style={{ border: '1px solid #e0e0e0', background: s.status === 'OPEN' ? '#fff' : '#f4f4f4', padding: 14, display: 'grid', gap: 6 }}>
+                <article key={s.id} aria-label={`Sugestão ${s.id}`} style={{ border: '1px solid var(--s-border)', background: s.status === 'OPEN' ? 'var(--s-surface)' : 'var(--s-layer)', padding: 14, display: 'grid', gap: 6 }}>
                   <strong>{s.title}</strong>
-                  {s.detail && <p style={{ margin: 0, fontSize: 13, color: '#393939' }}>{s.detail}</p>}
-                  <div style={{ fontSize: 12, color: '#525252', fontFamily: mono }}>
+                  {s.detail && <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-2)' }}>{s.detail}</p>}
+                  <div style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono }}>
                     {[s.ruleRef, s.file ? `${s.file}${s.line ? `:${s.line}` : ''}` : null].filter(Boolean).join(' · ')}
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 12, color: '#525252' }}>{s.status === 'OPEN' ? 'Aberta' : s.status === 'ADDRESSED' ? 'Tratada' : 'Dispensada'}</span>
+                    <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{s.status === 'OPEN' ? 'Aberta' : s.status === 'ADDRESSED' ? 'Tratada' : 'Dispensada'}</span>
                     {s.status !== 'ADDRESSED' && <button type="button" style={btn} disabled={mutation.isPending} onClick={() => setStatus(s.id, 'ADDRESSED')}>Tratada</button>}
                     {s.status !== 'DISMISSED' && <button type="button" style={btnDanger} disabled={mutation.isPending} onClick={() => setStatus(s.id, 'DISMISSED')}>Dispensar</button>}
                     {s.status !== 'OPEN' && <button type="button" style={btn} disabled={mutation.isPending} onClick={() => setStatus(s.id, 'OPEN')}>Reabrir</button>}
@@ -180,7 +180,7 @@ export function ClaudeReviewPanel({ systems, initialSystemId }: { systems: Syste
           <div style={{ display: 'grid', gap: 10 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Regras propostas</h2>
             {data.proposals.length === 0 ? (
-              <span style={{ fontSize: 13, color: '#525252' }}>Nenhuma regra proposta. O Claude propõe pela ferramenta propor_regra, quando liberada.</span>
+              <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma regra proposta. O Claude propõe pela ferramenta propor_regra, quando liberada.</span>
             ) : (
               data.proposals.map((p) => (
                 <Proposal key={p.id} p={p} systems={systems} systemId={systemId as number} act={act} busy={mutation.isPending} />

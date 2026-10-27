@@ -375,6 +375,7 @@ public class SystemResource {
 
         List<AuditRun> runs = auditRunRepository.findBySystemId(system.getId());
         dto.setScoreDelta(com.sentinel.audit.service.ScoreTrend.delta(runs));
+        dto.setAuditCount(runs.size());
         runs.stream()
             .filter(r -> r.getStatus() == AuditStatus.COMPLETED)
             .findFirst()

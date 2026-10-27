@@ -18,7 +18,7 @@ const sevBadge: Record<Severity, { label: string; bg: string; fg: string }> = {
 function Emphasis({ text }: { text: string }) {
   return (
     <>
-      {text.split('**').map((part, i) => (i % 2 === 1 ? <strong key={i} style={{ fontWeight: 600, color: '#161616' }}>{part}</strong> : <Fragment key={i}>{part}</Fragment>))}
+      {text.split('**').map((part, i) => (i % 2 === 1 ? <strong key={i} style={{ fontWeight: 600, color: 'var(--s-text)' }}>{part}</strong> : <Fragment key={i}>{part}</Fragment>))}
     </>
   );
 }
@@ -45,20 +45,20 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
   const v = verdict(plan);
   const cats = categoriesByScore(run.riskScore);
   const items = plan.items.filter((i) => category === null || i.category === category).slice(0, 4);
-  const box = { background: '#fff', border: '1px solid #e0e0e0', padding: '1.25rem 1.5rem' } as const;
-  const eyebrow = { fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#525252' } as const;
+  const box = { background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '1.25rem 1.5rem' } as const;
+  const eyebrow = { fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--s-text-3)' } as const;
 
   return (
     <div style={{ display: 'grid', gap: '1.5rem' }}>
       <section aria-labelledby="etapa-1" style={{ ...box, borderLeft: `4px solid ${toneColor[v.tone]}`, display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
           <span style={{ fontSize: 56, lineHeight: 1, fontWeight: 300, color: toneColor[v.tone] }}>{Math.round(plan.scoreNow)}</span>
-          <span style={{ fontSize: 12, color: '#525252' }}>
+          <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
             de 100
             {run.scoreDelta != null && run.previousAuditId != null && (
               <>
                 {' · '}
-                <span style={{ color: run.scoreDelta >= 0 ? '#198038' : '#a2191f', fontWeight: 600 }}>
+                <span style={{ color: run.scoreDelta >= 0 ? 'var(--s-success-text)' : 'var(--s-danger-text)', fontWeight: 600 }}>
                   {run.scoreDelta >= 0 ? '+' : ''}{Math.round(run.scoreDelta)}
                 </span>{' '}
                 vs #{run.previousAuditId}
@@ -69,7 +69,7 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
         <div style={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span id="etapa-1" style={eyebrow}>Etapa 1 · Veredito</span>
           <span style={{ fontSize: 20 }}><Emphasis text={v.headline} /></span>
-          <span style={{ color: '#525252' }}><Emphasis text={v.detail} /></span>
+          <span style={{ color: 'var(--s-text-3)' }}><Emphasis text={v.detail} /></span>
         </div>
         {plan.items.length > 0 && (
           <a href="#criticos" style={{ height: 40, display: 'inline-flex', alignItems: 'center', padding: '0 20px', background: '#161616', color: '#fff', textDecoration: 'none' }}>
@@ -98,7 +98,7 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
                   gap: '0.75rem',
                   alignItems: 'center',
                   padding: '0.5rem 0.625rem',
-                  background: active ? '#edf5ff' : '#fff',
+                  background: active ? 'var(--s-selected)' : 'var(--s-surface)',
                   border: `1px solid ${active ? '#0f62fe' : 'transparent'}`,
                   cursor: 'pointer',
                   font: 'inherit',
@@ -106,14 +106,14 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
                 }}
               >
                 <span style={{ fontWeight: 500 }}>{c.label}</span>
-                <span style={{ height: 8, background: '#e0e0e0' }}>
+                <span style={{ height: 8, background: 'var(--s-border)' }}>
                   <span style={{ display: 'block', height: 8, width: `${Math.max(0, Math.min(100, c.score))}%`, background: scoreColor(c.score) }} />
                 </span>
                 <span style={{ textAlign: 'right', fontWeight: 600, color: scoreColor(c.score) }}>{Math.round(c.score)}</span>
               </button>
             );
           })}
-          <span style={{ fontSize: '0.75rem', color: '#525252' }}>Clique numa categoria para filtrar a lista ao lado.</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--s-text-3)' }}>Clique numa categoria para filtrar a lista ao lado.</span>
         </section>
 
         <section id="criticos" aria-labelledby="etapa-3" style={box}>
@@ -133,13 +133,13 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
             </Link>
           </div>
           {items.length === 0 ? (
-            <p style={{ color: '#525252' }}>Nada a corrigir nesta categoria.</p>
+            <p style={{ color: 'var(--s-text-3)' }}>Nada a corrigir nesta categoria.</p>
           ) : (
             <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {items.map((item, i) => (
                 <li
                   key={item.ruleId ?? item.title}
-                  style={{ display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr) auto', gap: '0.75rem', padding: '0.75rem 0', borderTop: '1px solid #e0e0e0' }}
+                  style={{ display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr) auto', gap: '0.75rem', padding: '0.75rem 0', borderTop: '1px solid var(--s-border)' }}
                 >
                   <span style={{ width: 22, height: 22, borderRadius: 11, background: '#161616', color: '#fff', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                     {i + 1}
@@ -147,19 +147,19 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
                   <div style={{ display: 'grid', gap: 2, minWidth: 0 }}>
                     <strong style={{ fontWeight: 600 }}>{item.title}</strong>
                     {item.exampleFile && (
-                      <code style={{ fontSize: '0.75rem', color: '#525252', wordBreak: 'break-all' }}>
+                      <code style={{ fontSize: '0.75rem', color: 'var(--s-text-3)', wordBreak: 'break-all' }}>
                         {item.exampleFile}
                         {item.exampleLine ? `:${item.exampleLine}` : ''}
                         {item.occurrences > 1 ? `  (+${item.occurrences - 1} ocorrências)` : ''}
                       </code>
                     )}
-                    {item.howToFix && <span style={{ color: '#393939' }}>Como corrigir: {item.howToFix}</span>}
+                    {item.howToFix && <span style={{ color: 'var(--s-text-2)' }}>Como corrigir: {item.howToFix}</span>}
                   </div>
                   <div style={{ display: 'grid', gap: 4, justifyItems: 'end' }}>
                     <span style={{ background: sevBadge[item.severity].bg, color: sevBadge[item.severity].fg, padding: '2px 8px', fontSize: 12, fontWeight: 600 }}>
                       {sevBadge[item.severity].label}
                     </span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#198038' }}>nota +{item.scoreGain.toFixed(1)}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--s-success-text)' }}>nota +{item.scoreGain.toFixed(1)}</span>
                   </div>
                 </li>
               ))}

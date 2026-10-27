@@ -33,6 +33,8 @@ export interface SystemSummaryResponse {
   description?: string | null;
   /** Nota da última auditoria completa menos a anterior; nulo com menos de duas */
   scoreDelta?: number | null;
+  /** Quantas auditorias o sistema já tem, em qualquer situação */
+  auditCount?: number | null;
   /** Há token Git salvo (o token em si nunca vem da API) */
   gitTokenSet?: boolean | null;
   /** Hosts que recebem o token, separados por vírgula */

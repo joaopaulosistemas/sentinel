@@ -1,0 +1,50 @@
+/*
+ * Cores do Sentinel nos dois temas. As telas usam estas variáveis em vez de cores fixas;
+ * o tema escuro segue a paleta g100 do Carbon.
+ */
+:root,
+:root[data-theme='light'] {
+  --s-bg: #f4f4f4;
+  --s-surface: #ffffff;
+  --s-layer: #f4f4f4;
+  --s-header-row: #e8e8e8;
+  --s-selected: #edf5ff;
+  --s-border: #e0e0e0;
+  --s-border-subtle: #c6c6c6;
+  --s-border-strong: #8d8d8d;
+  --s-text: #161616;
+  --s-text-2: #393939;
+  --s-text-3: #525252;
+  --s-text-4: #6f6f6f;
+  --s-disabled: #a8a8a8;
+  --s-link: #0f62fe;
+  --s-danger-text: #a2191f;
+  --s-success-text: #198038;
+  --s-shadow: rgba(22, 22, 22, 0.6);
+}
+
+:root[data-theme='dark'] {
+  --s-bg: #161616;
+  --s-surface: #262626;
+  --s-layer: #393939;
+  --s-header-row: #333333;
+  --s-selected: #1c2b45;
+  --s-border: #393939;
+  --s-border-subtle: #525252;
+  --s-border-strong: #8d8d8d;
+  --s-text: #f4f4f4;
+  --s-text-2: #e0e0e0;
+  --s-text-3: #c6c6c6;
+  --s-text-4: #a8a8a8;
+  --s-disabled: #6f6f6f;
+  --s-link: #78a9ff;
+  --s-danger-text: #ff8389;
+  --s-success-text: #42be65;
+  --s-shadow: rgba(0, 0, 0, 0.7);
+}
+
+html,
+body {
+  background: var(--s-bg);
+  color: var(--s-text);
+}

@@ -43,11 +43,11 @@ function Header({ cfg, onReset, busy }: { cfg: EngineConfig; onReset: () => void
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
       <div style={{ fontSize: 14 }}>
-        <span style={{ color: '#525252' }}>Perfil:</span> <strong>{cfg.profile}</strong>
-        {cfg.profileDescription && <div style={{ fontSize: 12, color: '#525252' }}>{cfg.profileDescription}</div>}
+        <span style={{ color: 'var(--s-text-3)' }}>Perfil:</span> <strong>{cfg.profile}</strong>
+        {cfg.profileDescription && <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{cfg.profileDescription}</div>}
       </div>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span role="status" style={{ fontSize: 13, color: cfg.adjustments > 0 ? '#0043ce' : '#525252' }}>
+        <span role="status" style={{ fontSize: 13, color: cfg.adjustments > 0 ? '#0043ce' : 'var(--s-text-3)' }}>
           {cfg.adjustments === 0 ? 'Igual ao perfil' : `${cfg.adjustments} ${cfg.adjustments === 1 ? 'ajuste' : 'ajustes'} em relação ao perfil`}
         </span>
         {cfg.adjustments > 0 && (
@@ -118,7 +118,7 @@ export function EngineRulesPanel({ system }: { system: SystemSummaryResponse }) 
 
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <p style={{ margin: 0, color: '#525252', fontSize: 14 }}>
+      <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 14 }}>
         Ajustes só deste sistema, por cima do perfil. Valem a partir da próxima auditoria e quem calcula a nota continua sendo o motor de regras.
       </p>
       {save.isError && <InlineNotification kind="error" title="Não foi possível salvar" subtitle={(save.error as Error).message} hideCloseButton />}
@@ -143,7 +143,7 @@ export function EngineRulesPanel({ system }: { system: SystemSummaryResponse }) 
         <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Limites de clean code</legend>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
           {cfg.thresholds.map((t) => (
-            <label key={t.key} style={{ display: 'grid', gap: 4, fontSize: 12, color: '#525252' }}>
+            <label key={t.key} style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--s-text-3)' }}>
               {THRESHOLD_LABEL[t.key] ?? t.key}
               <input
                 aria-label={THRESHOLD_LABEL[t.key] ?? t.key}
@@ -151,7 +151,7 @@ export function EngineRulesPanel({ system }: { system: SystemSummaryResponse }) 
                 value={limits[t.key] ?? ''}
                 placeholder={t.profileValue === null ? 'padrão do motor' : `perfil: ${t.profileValue}`}
                 onChange={(e) => setLimits({ ...limits, [t.key]: e.target.value })}
-                style={{ height: 36, padding: '0 8px', border: 0, borderBottom: `1px solid ${limitError(t.key) ? '#da1e28' : '#8d8d8d'}`, background: '#f4f4f4', fontFamily: mono }}
+                style={{ height: 36, padding: '0 8px', border: 0, borderBottom: `1px solid ${limitError(t.key) ? '#da1e28' : 'var(--s-border-strong)'}`, background: 'var(--s-layer)', fontFamily: mono }}
               />
               {limitError(t.key) && <span style={{ color: '#da1e28' }}>Use um inteiro maior que zero.</span>}
             </label>
@@ -161,16 +161,16 @@ export function EngineRulesPanel({ system }: { system: SystemSummaryResponse }) 
 
       <section aria-label="Regras" style={{ display: 'grid', gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Regras</h3>
-        <p style={{ margin: 0, fontSize: 12, color: '#525252' }}>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--s-text-3)' }}>
           Lista o que apareceu na última auditoria deste sistema. "Só observar" mostra o achado sem pesar na nota. Aceita curinga: <code style={{ fontFamily: mono }}>sentinel-*</code>.
         </p>
         {shownIds.length === 0 ? (
-          <span style={{ fontSize: 13, color: '#525252' }}>Ainda não há auditoria concluída: adicione uma regra pelo id.</span>
+          <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Ainda não há auditoria concluída: adicione uma regra pelo id.</span>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ textAlign: 'left', background: '#e8e8e8' }}>
+                <tr style={{ textAlign: 'left', background: 'var(--s-header-row)' }}>
                   <th style={{ padding: '6px 8px' }}>Regra</th>
                   <th style={{ padding: '6px 8px' }}>Severidade</th>
                   <th style={{ padding: '6px 8px' }}>Desligada</th>
@@ -182,11 +182,11 @@ export function EngineRulesPanel({ system }: { system: SystemSummaryResponse }) 
                   const r = current(id);
                   const base = profileRule(id);
                   return (
-                    <tr key={id} style={{ borderTop: '1px solid #e0e0e0', background: isNoop(r) ? undefined : '#edf5ff' }}>
+                    <tr key={id} style={{ borderTop: '1px solid var(--s-border)', background: isNoop(r) ? undefined : '#edf5ff' }}>
                       <td style={{ padding: '6px 8px', fontFamily: mono, wordBreak: 'break-all' }}>
                         {id}
-                        {countOf(id) !== undefined && <span style={{ color: '#525252' }}> · {countOf(id)}</span>}
-                        {base && <div style={{ color: '#525252', fontFamily: 'inherit' }}>perfil já ajusta esta regra</div>}
+                        {countOf(id) !== undefined && <span style={{ color: 'var(--s-text-3)' }}> · {countOf(id)}</span>}
+                        {base && <div style={{ color: 'var(--s-text-3)', fontFamily: 'inherit' }}>perfil já ajusta esta regra</div>}
                       </td>
                       <td style={{ padding: '6px 8px' }}>
                         <select
@@ -220,7 +220,7 @@ export function EngineRulesPanel({ system }: { system: SystemSummaryResponse }) 
             value={newRule}
             onChange={(e) => setNewRule(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addRule()}
-            style={{ height: 36, padding: '0 8px', border: 0, borderBottom: '1px solid #8d8d8d', background: '#f4f4f4', fontFamily: mono, minWidth: 240 }}
+            style={{ height: 36, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', fontFamily: mono, minWidth: 240 }}
           />
           <Button kind="tertiary" size="sm" onClick={addRule}>Adicionar regra</Button>
         </div>
@@ -256,7 +256,7 @@ export function EngineAnalyzersPanel({ system }: { system: SystemSummaryResponse
 
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <p style={{ margin: 0, color: '#525252', fontSize: 14 }}>
+      <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 14 }}>
         Escolha o que roda neste sistema. Um analisador desligado aparece como "não verificado" no resultado: o que ele cobriria fica sem checagem.
       </p>
       {save.isError && <InlineNotification kind="error" title="Não foi possível salvar" subtitle={(save.error as Error).message} hideCloseButton />}

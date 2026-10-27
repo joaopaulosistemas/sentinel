@@ -3,6 +3,7 @@ import {
   DataTableSkeleton,
   Checkbox,
   InlineNotification,
+  Modal,
   NumberInput,
   PasswordInput,
   Select,
@@ -52,6 +53,7 @@ export function SystemsPage() {
   const [values, setValues] = useState<SystemFormValues>(emptyForm);
   const [touched, setTouched] = useState(false);
   const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SystemSummaryResponse | null>(null);
   const [tab, setTab] = useState<'cadastro' | 'motor' | 'analisadores' | 'mcp'>('cadastro');
 
   const errors = validate(values);
@@ -90,6 +92,17 @@ export function SystemsPage() {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
       setEditing(null);
       if (auditNow) setAuditTarget(system);
+    },
+  });
+
+  // Exclui o sistema e todas as suas auditorias (a API remove tudo junto); só depois da confirmação.
+  const remove = useMutation({
+    mutationFn: (target: SystemSummaryResponse) => api.deleteSystem(target.id),
+    onSuccess: (_data, target) => {
+      void queryClient.invalidateQueries({ queryKey: ['systems'] });
+      void queryClient.invalidateQueries({ queryKey: ['audits'] });
+      queryClient.removeQueries({ queryKey: ['systems', target.id] });
+      setDeleteTarget(null);
     },
   });
 
@@ -144,6 +157,7 @@ export function SystemsPage() {
   const mono = "'IBM Plex Mono', ui-monospace, monospace";
   const count = systems?.length ?? 0;
   const num = new Intl.NumberFormat('pt-BR');
+  const actionButton = { padding: '8px 10px', background: 'transparent', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 14 } as const;
   const footerButton = { flex: '1 1 120px', height: 56, border: 0, fontSize: 14, cursor: 'pointer', textAlign: 'left', padding: '0 16px' } as const;
 
   return (
@@ -151,7 +165,7 @@ export function SystemsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Sistemas</h1>
-          <span style={{ color: '#525252' }}>
+          <span style={{ color: 'var(--s-text-3)' }}>
             {count} {count === 1 ? 'sistema cadastrado' : 'sistemas cadastrados'}. Cadastre, edite o perfil de regras e o agendamento, ou dispare uma auditoria.
           </span>
         </div>
@@ -166,10 +180,10 @@ export function SystemsPage() {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
-        <section aria-label="Lista de sistemas" style={{ flex: '999 1 640px', minWidth: 0, background: '#fff', border: '1px solid #e0e0e0' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f4f4f4', borderBottom: '1px solid #8d8d8d', padding: '0 12px', height: 40, minWidth: 260 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#525252" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+        <section aria-label="Lista de sistemas" style={{ flex: '999 1 640px', minWidth: 0, background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--s-layer)', borderBottom: '1px solid var(--s-border-strong)', padding: '0 12px', height: 40, minWidth: 260 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--s-text-3)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
               <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>Buscar sistema</span>
               <input
                 type="search"
@@ -179,7 +193,7 @@ export function SystemsPage() {
                 style={{ border: 0, background: 'transparent', outline: 'none', flex: 1, fontSize: 14, minWidth: 0 }}
               />
             </label>
-            <span style={{ fontSize: 12, color: '#525252' }}>Ordenado por nota, menor primeiro</span>
+            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Ordenado por nota, menor primeiro</span>
           </div>
           {list.length === 0 ? (
             <div style={{ padding: 16 }}>
@@ -192,9 +206,9 @@ export function SystemsPage() {
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table aria-label="Sistemas cadastrados" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+              <table aria-label="Sistemas cadastrados" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 920 }}>
                 <thead>
-                  <tr style={{ background: '#e8e8e8', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
+                  <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
                     <th style={{ padding: '12px 16px' }}>Sistema</th>
                     <th style={{ padding: '12px 8px' }}>Stack</th>
                     <th style={{ padding: '12px 8px' }}>Equipe</th>
@@ -207,30 +221,53 @@ export function SystemsPage() {
                   {list.map((s) => {
                     const score = s.lastAuditScore === null ? null : Math.round(s.lastAuditScore);
                     const selected = editing !== null && editing !== 'new' && editing.id === s.id;
+                    // Sem o contador (API antiga), a data da última auditoria concluída é o melhor sinal.
+                    const hasAudits = (s.auditCount ?? (s.lastAuditDate ? 1 : 0)) > 0;
                     return (
-                      <tr key={s.id} style={{ borderBottom: '1px solid #e0e0e0', background: selected ? '#edf5ff' : '#fff' }}>
+                      <tr key={s.id} style={{ borderBottom: '1px solid var(--s-border)', background: selected ? 'var(--s-selected)' : 'var(--s-surface)' }}>
                         <td style={{ padding: '12px 16px', minWidth: 0 }}>
                           <button
                             type="button"
                             onClick={() => navigate(`/systems/${s.id}`)}
-                            style={{ background: 'none', border: 0, padding: 0, color: '#161616', cursor: 'pointer', fontWeight: 500, fontSize: 'inherit', textAlign: 'left' }}
+                            style={{ background: 'none', border: 0, padding: 0, color: 'var(--s-text)', cursor: 'pointer', fontWeight: 500, fontSize: 'inherit', textAlign: 'left' }}
                           >
                             {s.name}
                           </button>
-                          <div style={{ fontSize: 12, color: '#525252', fontFamily: mono }}>{repoSlug(s.repoUrl)}</div>
+                          <div style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono }}>{repoSlug(s.repoUrl)}</div>
                         </td>
                         <td style={{ padding: '12px 8px' }}>
-                          <span style={{ background: '#e0e0e0', padding: '2px 8px', borderRadius: 10, fontSize: 12 }}>{stackShort[s.stack] ?? s.stack}</span>
+                          <span style={{ background: 'var(--s-border)', padding: '2px 8px', borderRadius: 10, fontSize: 12 }}>{stackShort[s.stack] ?? s.stack}</span>
                         </td>
-                        <td style={{ padding: '12px 8px', color: '#393939' }}>{s.team || '—'}</td>
-                        <td style={{ padding: '12px 8px', color: '#393939', fontSize: 13 }}>{scheduleText(s)}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--s-text-2)' }}>{s.team || '—'}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--s-text-2)', fontSize: 13 }}>{scheduleText(s)}</td>
                         <td style={{ padding: '12px 8px', fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
                         <td style={{ padding: '8px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          <button type="button" onClick={() => setAuditTarget(s)} style={{ padding: '8px 10px', background: 'transparent', border: 0, color: '#0f62fe', cursor: 'pointer', fontSize: 14 }}>
+                          <button
+                            type="button"
+                            disabled={!hasAudits}
+                            title={hasAudits ? 'Ver as auditorias deste sistema' : 'Este sistema ainda não tem auditorias'}
+                            aria-label={`Auditorias de ${s.name}`}
+                            onClick={() => navigate(`/systems/${s.id}`)}
+                            style={{ ...actionButton, color: hasAudits ? 'var(--s-link)' : 'var(--s-disabled)', cursor: hasAudits ? 'pointer' : 'not-allowed' }}
+                          >
+                            Auditorias
+                          </button>
+                          <button type="button" onClick={() => setAuditTarget(s)} style={actionButton}>
                             Auditar
                           </button>
-                          <button type="button" onClick={() => open(s)} style={{ padding: '8px 10px', background: 'transparent', border: 0, color: '#0f62fe', cursor: 'pointer', fontSize: 14 }}>
+                          <button type="button" onClick={() => open(s)} style={actionButton}>
                             Editar
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Excluir ${s.name}`}
+                            onClick={() => {
+                              remove.reset();
+                              setDeleteTarget(s);
+                            }}
+                            style={{ ...actionButton, color: '#da1e28' }}
+                          >
+                            Excluir
                           </button>
                         </td>
                       </tr>
@@ -253,19 +290,19 @@ export function SystemsPage() {
             role="dialog"
             aria-modal="true"
             aria-label="Editar sistema"
-            style={{ width: 'min(720px, 100%)', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: '#fff', borderTop: '3px solid #0f62fe', display: 'flex', flexDirection: 'column' }}
+            style={{ width: '70vw', minWidth: 'min(560px, 100%)', maxWidth: '100%', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: 'var(--s-surface)', borderTop: '3px solid #0f62fe', display: 'flex', flexDirection: 'column' }}
           >
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
-                <div style={{ fontSize: 12, color: '#525252' }}>{isNew ? 'Cadastrando' : 'Editando'}</div>
+                <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{isNew ? 'Cadastrando' : 'Editando'}</div>
                 <h2 style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 400 }}>{isNew ? 'Novo sistema' : editing.name}</h2>
               </div>
               <button type="button" aria-label="Fechar" onClick={() => setEditing(null)} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#161616" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--s-text)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             </div>
 
-            <div role="tablist" aria-label="Seções do sistema" style={{ display: 'flex', borderBottom: '1px solid #e0e0e0', padding: '0 12px' }}>
+            <div role="tablist" aria-label="Seções do sistema" style={{ display: 'flex', borderBottom: '1px solid var(--s-border)', padding: '0 12px' }}>
               {([['cadastro', 'Cadastro e Git'], ['motor', 'Motor de regras'], ['analisadores', 'Analisadores'], ['mcp', 'Claude (MCP)']] as const).map(([id, nome]) => {
                 const bloqueada = id !== 'cadastro' && isNew;
                 return (
@@ -284,7 +321,7 @@ export function SystemsPage() {
                       padding: '10px 14px',
                       fontSize: 14,
                       fontWeight: tab === id ? 600 : 400,
-                      color: bloqueada ? '#a8a8a8' : '#161616',
+                      color: bloqueada ? 'var(--s-disabled)' : 'var(--s-text)',
                       cursor: bloqueada ? 'not-allowed' : 'pointer',
                     }}
                   >
@@ -331,18 +368,18 @@ export function SystemsPage() {
                     {check.isPending ? 'Verificando…' : 'Verificar repositório'}
                   </Button>
                   {check.isPending && (
-                    <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#525252' }}>
+                    <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--s-text-3)' }}>
                       <SpinnerIcon size={14} />
                       Conferindo o repositório…
                     </span>
                   )}
                   {check.isError && (
-                    <span role="status" style={{ color: '#a2191f', fontSize: 12 }}>
+                    <span role="status" style={{ color: 'var(--s-danger-text)', fontSize: 12 }}>
                       Não foi possível verificar agora: {check.error instanceof Error ? check.error.message : 'erro desconhecido'}
                     </span>
                   )}
                   {check.data?.reachable && (
-                    <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#198038', flexWrap: 'wrap' }}>
+                    <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--s-success-text)', flexWrap: 'wrap' }}>
                       <CheckIcon size={14} />
                       Alcançável
                       {check.data.defaultBranch && (
@@ -356,7 +393,7 @@ export function SystemsPage() {
                     </span>
                   )}
                   {check.data && !check.data.reachable && (
-                    <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#a2191f', fontSize: 12 }}>
+                    <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-danger-text)', fontSize: 12 }}>
                       <CrossIcon size={14} />
                       {check.data.message ?? 'Repositório inacessível'}
                     </span>
@@ -370,7 +407,7 @@ export function SystemsPage() {
                     )}
                 </div>
               </div>
-              <fieldset style={{ border: '1px solid #e0e0e0', margin: 0, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <fieldset style={{ border: '1px solid var(--s-border)', margin: 0, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <legend style={{ padding: '0 6px', fontSize: 13, fontWeight: 600 }}>Git: acesso ao repositório</legend>
                 <PasswordInput
                   id="sys-git-token"
@@ -446,7 +483,7 @@ export function SystemsPage() {
               </Select>
               <TextArea id="sys-desc" labelText="Descrição" rows={2} value={values.description} onChange={(e) => setValues({ ...values, description: e.target.value })} />
 
-              <fieldset style={{ border: '1px solid #e0e0e0', margin: 0, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <fieldset style={{ border: '1px solid var(--s-border)', margin: 0, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <legend style={{ padding: '0 6px', fontSize: 13, fontWeight: 600 }}>Auditoria automática</legend>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
                   <NumberInput
@@ -495,7 +532,7 @@ export function SystemsPage() {
                       <Button kind="tertiary" size="sm" disabled={values.clearWebhookSecret} onClick={() => setValues({ ...values, webhookSecret: newWebhookSecret() })}>
                         Gerar segredo
                       </Button>
-                      <span style={{ fontSize: 12, color: '#525252' }}>Copie antes de salvar: depois de salvo, ele não é mostrado de novo.</span>
+                      <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Copie antes de salvar: depois de salvo, ele não é mostrado de novo.</span>
                     </div>
                     {webhookSaved && (
                       <Checkbox
@@ -509,7 +546,7 @@ export function SystemsPage() {
                 )}
               </fieldset>
 
-              <fieldset style={{ border: '1px solid #e0e0e0', margin: 0, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <fieldset style={{ border: '1px solid var(--s-border)', margin: 0, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <legend style={{ padding: '0 6px', fontSize: 13, fontWeight: 600 }}>Notificações (Teams, Slack ou genérico)</legend>
                 <TextInput
                   id="sys-notify-url"
@@ -576,8 +613,8 @@ export function SystemsPage() {
               )}
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid #e0e0e0', position: 'sticky', bottom: 0, background: '#fff', marginTop: 'auto' }}>
-              <button type="button" onClick={() => setEditing(null)} style={{ ...footerButton, background: '#fff', color: '#161616', borderRight: '1px solid #e0e0e0' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid var(--s-border)', position: 'sticky', bottom: 0, background: 'var(--s-surface)', marginTop: 'auto' }}>
+              <button type="button" onClick={() => setEditing(null)} style={{ ...footerButton, background: 'var(--s-surface)', color: 'var(--s-text)', borderRight: '1px solid var(--s-border)' }}>
                 Cancelar
               </button>
               <button
@@ -611,6 +648,39 @@ export function SystemsPage() {
       </div>
 
       <StartAuditModal system={auditTarget} onClose={() => setAuditTarget(null)} />
+
+      <Modal
+        open={deleteTarget !== null}
+        danger
+        size="sm"
+        modalHeading="Excluir sistema"
+        modalLabel={deleteTarget?.name}
+        primaryButtonText={remove.isPending ? 'Excluindo…' : 'Excluir sistema'}
+        secondaryButtonText="Cancelar"
+        primaryButtonDisabled={remove.isPending}
+        onRequestClose={() => {
+          if (!remove.isPending) setDeleteTarget(null);
+        }}
+        onRequestSubmit={() => {
+          if (deleteTarget) remove.mutate(deleteTarget);
+        }}
+      >
+        <p>
+          Tem certeza de que deseja excluir <strong>{deleteTarget?.name}</strong>?
+        </p>
+        <p style={{ marginTop: 12 }}>
+          Isso remove também todas as auditorias, achados, supressões e configurações deste sistema. Não dá para desfazer.
+        </p>
+        {remove.isError && (
+          <InlineNotification
+            style={{ marginTop: 12 }}
+            kind="error"
+            title="Não foi possível excluir"
+            subtitle={remove.error instanceof Error ? remove.error.message : 'Erro desconhecido'}
+            hideCloseButton
+          />
+        )}
+      </Modal>
     </div>
   );
 }

@@ -76,19 +76,19 @@ export function OverviewPage() {
     {
       label: 'Achados críticos abertos',
       value: totalCritical,
-      color: totalCritical > 0 ? '#a2191f' : '#198038',
+      color: totalCritical > 0 ? 'var(--s-danger-text)' : 'var(--s-success-text)',
       note: totalCritical > 0 ? `em ${criticalSystems.length} ${criticalSystems.length === 1 ? 'sistema' : 'sistemas'}` : 'nenhum em aberto',
     },
     {
       label: 'Em execução agora',
       value: runningRuns.length,
-      color: '#0f62fe',
+      color: 'var(--s-link)',
       note: runningRuns.length > 0 ? names([...new Set(runningRuns.map((r) => r.systemName))]) : 'nenhuma auditoria',
     },
     {
       label: `Sem auditar há mais de ${STALE_DAYS} dias`,
       value: staleSystems.length,
-      color: '#161616',
+      color: 'var(--s-text)',
       note: staleSystems.length > 0 ? names(staleSystems.map((s) => s.name)) : 'todos em dia',
     },
   ];
@@ -100,18 +100,18 @@ export function OverviewPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Visão geral</h1>
-          <span style={{ color: '#525252' }}>
+          <span style={{ color: 'var(--s-text-3)' }}>
             Situação {total === 1 ? 'do 1 sistema cadastrado' : `dos ${total} sistemas cadastrados`} · atualizada agora
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label htmlFor="overview-system" style={{ fontSize: 13, color: '#525252' }}>Sistema</label>
+          <label htmlFor="overview-system" style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Sistema</label>
           <select
             id="overview-system"
             value={picked ? String(picked.id) : ''}
             onChange={(e) => setPickedId(e.target.value)}
             disabled={list.length === 0}
-            style={{ height: 40, padding: '0 12px', background: '#fff', border: '1px solid #8d8d8d', fontSize: 14, minWidth: 220 }}
+            style={{ height: 40, padding: '0 12px', background: 'var(--s-surface)', border: '1px solid var(--s-border-strong)', fontSize: 14, minWidth: 220 }}
           >
             {list.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -138,7 +138,7 @@ export function OverviewPage() {
       )}
 
       {started && (
-        <div role="status" style={{ background: '#fff', border: '1px solid #e0e0e0', borderLeft: '4px solid #0f62fe', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid #0f62fe', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span>
             <strong style={{ fontWeight: 600 }}>Auditoria #{started.id} iniciada</strong> em {started.systemName}. Ela já aparece em "Últimas auditorias" abaixo.
           </span>
@@ -146,35 +146,35 @@ export function OverviewPage() {
         </div>
       )}
 
-      <section aria-label="Indicadores" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 1, background: '#e0e0e0', border: '1px solid #e0e0e0' }}>
+      <section aria-label="Indicadores" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 1, background: 'var(--s-border)', border: '1px solid var(--s-border)' }}>
         {kpis.map((k) => (
-          <div key={k.label} style={{ background: '#fff', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 12, color: '#525252' }}>{k.label}</span>
+          <div key={k.label} style={{ background: 'var(--s-surface)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{k.label}</span>
             <span style={{ fontSize: 32, fontWeight: 300, color: k.color }}>{k.value}</span>
-            <span style={{ fontSize: 12, color: '#525252' }}>{k.note}</span>
+            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{k.note}</span>
           </div>
         ))}
       </section>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 24, alignItems: 'start' }}>
-        <section aria-label="Precisam de atenção" style={{ background: '#fff', border: '1px solid #e0e0e0' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e0e0e0' }}>
+        <section aria-label="Precisam de atenção" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)' }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Precisam de atenção</h2>
-            <span style={{ fontSize: 12, color: '#525252' }}>Do menor para o maior nota</span>
+            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Do menor para o maior nota</span>
           </div>
           {attention.length === 0 ? (
-            <p style={{ padding: '1rem', color: '#525252' }}>Nenhum sistema cadastrado ainda.</p>
+            <p style={{ padding: '1rem', color: 'var(--s-text-3)' }}>Nenhum sistema cadastrado ainda.</p>
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {attention.map(({ system, score, reason }) => (
-                <li key={system.id} style={{ borderBottom: '1px solid #e0e0e0' }}>
-                  <Link to={`/systems/${system.id}`} style={{ display: 'grid', gridTemplateColumns: '44px 1fr auto', gap: 12, alignItems: 'center', padding: '12px 16px', textDecoration: 'none', color: '#161616' }}>
+                <li key={system.id} style={{ borderBottom: '1px solid var(--s-border)' }}>
+                  <Link to={`/systems/${system.id}`} style={{ display: 'grid', gridTemplateColumns: '44px 1fr auto', gap: 12, alignItems: 'center', padding: '12px 16px', textDecoration: 'none', color: 'var(--s-text)' }}>
                     <span style={{ fontSize: 22, fontWeight: 300, color: scoreColor(score) }}>{score ?? '-'}</span>
                     <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                       <span style={{ fontWeight: 600 }}>{system.name}</span>
-                      <span style={{ fontSize: 12, color: '#525252' }}>{reason}</span>
+                      <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{reason}</span>
                     </span>
-                    <span style={{ color: '#0f62fe', fontSize: 13 }}>Ver sistema</span>
+                    <span style={{ color: 'var(--s-link)', fontSize: 13 }}>Ver sistema</span>
                   </Link>
                 </li>
               ))}

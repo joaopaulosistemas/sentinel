@@ -27,14 +27,14 @@ const severityLabel: Record<Severity, string> = {
   INFO: 'Info',
 };
 
-const th: React.CSSProperties = { textAlign: 'left', padding: '0.5rem', fontSize: '0.75rem', color: '#525252' };
-const td: React.CSSProperties = { padding: '0.5rem', fontSize: '0.875rem', verticalAlign: 'top', borderTop: '1px solid #e0e0e0' };
+const th: React.CSSProperties = { textAlign: 'left', padding: '0.5rem', fontSize: '0.75rem', color: 'var(--s-text-3)' };
+const td: React.CSSProperties = { padding: '0.5rem', fontSize: '0.875rem', verticalAlign: 'top', borderTop: '1px solid var(--s-border)' };
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div style={{ marginTop: '1.5rem' }}>
       <h4 style={{ fontSize: '0.9375rem', fontWeight: 600, marginBottom: '0.25rem' }}>{title}</h4>
-      {hint && <p style={{ fontSize: '0.8125rem', color: '#6f6f6f', marginBottom: '0.5rem' }}>{hint}</p>}
+      {hint && <p style={{ fontSize: '0.8125rem', color: 'var(--s-text-4)', marginBottom: '0.5rem' }}>{hint}</p>}
       {children}
     </div>
   );
@@ -65,7 +65,7 @@ function DebtTable({ items, limit }: { items: DebtItem[]; limit?: number }) {
               </td>
               <td style={td}>
                 <strong>{d.problem}</strong>
-                <div style={{ fontSize: '0.75rem', color: '#6f6f6f' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>
                   {d.areaLabel} · {severityLabel[d.severity]}
                   {d.example ? ` · ${d.example}` : ''}
                 </div>
@@ -83,7 +83,7 @@ function DebtTable({ items, limit }: { items: DebtItem[]; limit?: number }) {
         </tbody>
       </table>
       {limit && items.length > limit && (
-        <p style={{ fontSize: '0.75rem', color: '#6f6f6f', marginTop: '0.5rem' }}>
+        <p style={{ fontSize: '0.75rem', color: 'var(--s-text-4)', marginTop: '0.5rem' }}>
           Mostrando {limit} de {items.length} problemas.
         </p>
       )}
@@ -113,19 +113,19 @@ export function InsightsPanel({ auditId }: { auditId: number | undefined }) {
       {data && (
         <>
           <p style={{ fontWeight: 600, marginTop: '0.5rem' }}>{data.verdict}</p>
-          <p style={{ fontSize: '0.875rem', color: '#525252' }}>{data.executiveSummary}</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--s-text-3)' }}>{data.executiveSummary}</p>
 
           <Section title="Por área">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.75rem' }}>
               {data.areas.map((a) => (
-                <div key={a.area} style={{ background: '#f4f4f4', padding: '0.75rem', borderRadius: 4 }}>
+                <div key={a.area} style={{ background: 'var(--s-layer)', padding: '0.75rem', borderRadius: 4 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
                     <strong style={{ fontSize: '0.875rem' }}>{a.label}</strong>
                     <Tag type={stateConfig[a.state].type} size="sm">
                       {stateConfig[a.state].label}
                     </Tag>
                   </div>
-                  <p style={{ fontSize: '0.8125rem', color: '#525252', marginTop: '0.25rem' }}>{a.currentState}</p>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--s-text-3)', marginTop: '0.25rem' }}>{a.currentState}</p>
                   {a.risks.length > 0 && (
                     <ul style={{ fontSize: '0.75rem', marginTop: '0.25rem', paddingLeft: '1rem' }}>
                       {a.risks.map((r) => (
@@ -150,7 +150,7 @@ export function InsightsPanel({ auditId }: { auditId: number | undefined }) {
               <button
                 type="button"
                 onClick={() => setShowAll((v) => !v)}
-                style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: '#0f62fe', cursor: 'pointer', padding: 0 }}
+                style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: 'var(--s-link)', cursor: 'pointer', padding: 0 }}
               >
                 {showAll ? 'Mostrar menos' : 'Mostrar todos'}
               </button>

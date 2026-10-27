@@ -20,7 +20,7 @@ export function TrendChart({ systemId }: { systemId: number }) {
       {isLoading ? (
         <SkeletonText lineCount={4} />
       ) : points.length < 2 ? (
-        <p style={{ color: '#6f6f6f' }}>
+        <p style={{ color: 'var(--s-text-4)' }}>
           {points.length === 0
             ? 'Nenhuma auditoria concluída ainda.'
             : 'Rode mais uma auditoria para ver a evolução ao longo do tempo.'}
@@ -29,7 +29,7 @@ export function TrendChart({ systemId }: { systemId: number }) {
         <div style={{ width: '100%', height: 240 }}>
           <ResponsiveContainer>
             <LineChart data={points} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--s-border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} width={32} />
               <Tooltip labelFormatter={(_l, payload) => `Auditoria #${payload?.[0]?.payload?.audit ?? ''}`} />

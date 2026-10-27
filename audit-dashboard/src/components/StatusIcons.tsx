@@ -10,7 +10,7 @@ function attrs(label?: string) {
 }
 
 /** Arco que gira: algo está em andamento. */
-export function SpinnerIcon({ size = 16, color = '#0f62fe', label }: IconProps) {
+export function SpinnerIcon({ size = 16, color = 'var(--s-link)', label }: IconProps) {
   return (
     <svg className="sentinel-spin" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
       strokeWidth="3" strokeLinecap="round" {...attrs(label)}>
@@ -19,7 +19,7 @@ export function SpinnerIcon({ size = 16, color = '#0f62fe', label }: IconProps) 
   );
 }
 
-export function CheckIcon({ size = 16, color = '#198038', label, strokeWidth = 3 }: IconProps & { strokeWidth?: number }) {
+export function CheckIcon({ size = 16, color = 'var(--s-success-text)', label, strokeWidth = 3 }: IconProps & { strokeWidth?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth}
       strokeLinecap="round" strokeLinejoin="round" {...attrs(label)}>
@@ -29,7 +29,7 @@ export function CheckIcon({ size = 16, color = '#198038', label, strokeWidth = 3
 }
 
 /** Relógio: na fila, esperando a vez. */
-export function ClockIcon({ size = 16, color = '#6f6f6f', label }: IconProps) {
+export function ClockIcon({ size = 16, color = 'var(--s-text-4)', label }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5"
       strokeLinecap="round" {...attrs(label)}>
@@ -50,7 +50,7 @@ export function CrossIcon({ size = 16, color = '#da1e28', label }: IconProps) {
 }
 
 /** Traço: não se aplica / ferramenta ausente. */
-export function DashIcon({ size = 16, color = '#6f6f6f', label }: IconProps) {
+export function DashIcon({ size = 16, color = 'var(--s-text-4)', label }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3"
       strokeLinecap="round" {...attrs(label)}>

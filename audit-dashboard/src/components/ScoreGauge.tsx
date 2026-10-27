@@ -18,7 +18,7 @@ function getScoreLabel(score: number): string {
 export function ScoreGauge({ score, size = 'lg' }: ScoreGaugeProps) {
   if (score === null) {
     return (
-      <div style={{ textAlign: 'center', color: '#6f6f6f' }}>
+      <div style={{ textAlign: 'center', color: 'var(--s-text-4)' }}>
         <span style={{ fontSize: size === 'lg' ? '2rem' : '1.25rem' }}>—</span>
         <div style={{ fontSize: '0.75rem' }}>Sem dados</div>
       </div>

@@ -124,10 +124,10 @@ export function AuditRunPage() {
       ? { bg: '#a7f0ba', fg: '#044317', label: 'Concluída', icon: <CheckIcon size={12} color="#044317" /> }
       : failed
         ? { bg: '#ffd7d9', fg: '#750e13', label: 'Falhou', icon: <CrossIcon size={12} color="#750e13" /> }
-        : { bg: '#e0e0e0', fg: '#161616', label: 'Cancelada', icon: <DashIcon size={12} color="#161616" /> };
+        : { bg: 'var(--s-border)', fg: 'var(--s-text)', label: 'Cancelada', icon: <DashIcon size={12} color="var(--s-text)" /> };
 
   const mono = "'IBM Plex Mono', ui-monospace, monospace";
-  const box = { background: '#fff', border: '1px solid #e0e0e0' } as const;
+  const box = { background: 'var(--s-surface)', border: '1px solid var(--s-border)' } as const;
   const rerunModal = (
     <StartAuditModal
       system={rerun ? { id: run.systemId ?? 0, name: run.systemName, scheduledBranch: run.branch } : null}
@@ -148,11 +148,11 @@ export function AuditRunPage() {
         <JourneySteps current={3} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <nav aria-label="Caminho" style={{ fontSize: 12, color: '#525252' }}>
+            <nav aria-label="Caminho" style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
               <Link to="/systems">Sistemas</Link> / {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName} / Auditoria #{run.id}
             </nav>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName} · resultado da auditoria #{run.id}</h1>
-            <span style={{ color: '#525252' }}>
+            <span style={{ color: 'var(--s-text-3)' }}>
               Branch <span style={{ fontFamily: mono }}>{run.branch}</span>
               {sha && <> · commit {sha}</>}
               {' · '}concluída {timeAgo(run.completedAt)}
@@ -176,7 +176,7 @@ export function AuditRunPage() {
     <div style={{ padding: '1.5rem 2rem 3rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 1440, margin: '0 auto' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <nav aria-label="Caminho" style={{ fontSize: 12, color: '#525252' }}>
+          <nav aria-label="Caminho" style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
             {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName}
             {'  /  '}Auditoria #{run.id}
           </nav>
@@ -187,10 +187,10 @@ export function AuditRunPage() {
               {pill.label}
             </span>
           </div>
-          <div style={{ color: '#525252', display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 13 }}>
+          <div style={{ color: 'var(--s-text-3)', display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 13 }}>
             <span>Branch <span style={{ fontFamily: mono }}>{run.branch}</span></span>
             {run.triggeredBy && (
-              <span>Iniciada por <strong style={{ fontWeight: 500, color: '#161616' }}>{run.triggeredBy}</strong>{startedAt ? ` às ${startedAt}` : ''}</span>
+              <span>Iniciada por <strong style={{ fontWeight: 500, color: 'var(--s-text)' }}>{run.triggeredBy}</strong>{startedAt ? ` às ${startedAt}` : ''}</span>
             )}
             {run.profile && <span>Perfil <span style={{ fontFamily: mono }}>{run.profile}</span></span>}
             {run.commitSha && <span>Commit <span style={{ fontFamily: mono }}>{run.commitSha.slice(0, 7)}</span></span>}
@@ -215,13 +215,13 @@ export function AuditRunPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, fontSize: 13 }}>
             <span><strong style={{ fontWeight: 600 }}>{percent}%</strong> &nbsp;·&nbsp; {stepText}</span>
-            <span style={{ color: '#525252' }}>
-              {seconds !== null && <>Decorrido <span style={{ fontFamily: mono, color: '#161616' }}>{clock(seconds)}</span></>}
+            <span style={{ color: 'var(--s-text-3)' }}>
+              {seconds !== null && <>Decorrido <span style={{ fontFamily: mono, color: 'var(--s-text)' }}>{clock(seconds)}</span></>}
               {active && <> &nbsp;·&nbsp; <span title="Estimativa pela média das últimas auditorias deste sistema">{etaText(left)}</span></>}
               {done && <> &nbsp;·&nbsp; finalizada</>}
             </span>
           </div>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Progresso da auditoria" style={{ height: 8, background: '#e0e0e0' }}>
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Progresso da auditoria" style={{ height: 8, background: 'var(--s-border)' }}>
             <div style={{ height: 8, background: barColor, width: `${percent}%`, transition: 'width 300ms ease' }} />
           </div>
         </div>
@@ -255,11 +255,11 @@ export function AuditRunPage() {
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
               Analisadores
               {counts.total > 0 && (
-                <span style={{ fontWeight: 400, color: '#525252' }}> · {counts.done} de {counts.total} concluídos{active ? ', rodando em paralelo' : ''}</span>
+                <span style={{ fontWeight: 400, color: 'var(--s-text-3)' }}> · {counts.done} de {counts.total} concluídos{active ? ', rodando em paralelo' : ''}</span>
               )}
             </h2>
             {analyzers.length === 0 ? (
-              <p style={{ color: '#525252', margin: 0 }}>
+              <p style={{ color: 'var(--s-text-3)', margin: 0 }}>
                 {active ? 'Os analisadores aparecem aqui assim que o código for baixado.' : 'O detalhe por analisador só fica disponível enquanto a auditoria roda.'}
               </p>
             ) : (
