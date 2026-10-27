@@ -220,7 +220,7 @@ export function SystemDetailPage() {
           <p style={{ fontSize: '0.875rem', color: 'var(--s-text-4)', marginBottom: '0.75rem' }}>Score Geral</p>
           <ScoreGauge score={latestCompleted?.riskScore?.overall ?? system.lastAuditScore} size="lg" />
         </Tile>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(110px, 100%), 1fr))', gap: '0.75rem' }}>
           {dimensionLabels.map(({ key, label }) => (
             <Tile key={key} style={{ textAlign: 'center', padding: '1rem' }}>
               <p style={{ fontSize: '0.75rem', color: 'var(--s-text-4)', marginBottom: '0.5rem' }}>{label}</p>

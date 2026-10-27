@@ -262,7 +262,7 @@ export function FindingsPage() {
       />
 
       {!auditMode && summary.length > 0 && (
-        <section aria-label="Resumo por sistema" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+        <section aria-label="Resumo por sistema" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 12 }}>
           {summary.map((s) => (
             <Link
               key={s.systemId}

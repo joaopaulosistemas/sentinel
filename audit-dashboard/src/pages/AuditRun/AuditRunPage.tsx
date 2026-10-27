@@ -261,7 +261,7 @@ export function AuditRunPage() {
                 {active ? 'Os analisadores aparecem aqui assim que o código for baixado.' : 'O detalhe por analisador só fica disponível enquanto a auditoria roda.'}
               </p>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 12 }}>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(230px, 100%), 1fr))', gap: 12 }}>
                 {analyzers.map((a) => <AnalyzerCard key={a.name} a={a} />)}
               </ul>
             )}

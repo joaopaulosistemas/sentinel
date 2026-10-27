@@ -50,7 +50,7 @@ export function FindingsFilters({
 }: FiltersProps) {
   return (
     <section aria-label="Filtros" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(190px, 100%), 1fr))', gap: 14, alignItems: 'end' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label htmlFor="f-sis" style={{ ...label, fontWeight: 600 }}>Sistema</label>
           <select

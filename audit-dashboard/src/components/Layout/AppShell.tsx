@@ -3,6 +3,7 @@ import {
   Header,
   HeaderGlobalAction,
   HeaderGlobalBar,
+  HeaderMenuButton,
   HeaderName,
   SideNav,
   SideNavItems,
@@ -10,7 +11,7 @@ import {
   SkipToContent,
   Theme,
 } from '@carbon/react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { PALETTES, useThemeStore, type Palette } from '../../store/useThemeStore';
@@ -52,6 +53,21 @@ const ITENS = [
   { nome: 'Relatórios', rota: '/reports' },
 ];
 
+/** Largura a partir da qual o menu lateral fica fixo (66rem = 1056 px, o "lg" do Carbon). */
+const MENU_FIXO = '(min-width: 66rem)';
+
+function useMenuFixo(): boolean {
+  const [fixo, setFixo] = useState(() => (typeof window.matchMedia === 'function' ? window.matchMedia(MENU_FIXO).matches : true));
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia(MENU_FIXO);
+    const onChange = () => setFixo(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return fixo;
+}
+
 /** Cabeçalho escuro no topo e a navegação principal fixa na lateral esquerda. */
 export function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate();
@@ -62,23 +78,31 @@ export function AppShell({ children }: AppShellProps) {
   const pending = usePendingClaude().total;
   const palette = useThemeStore((st) => st.palette);
   const setPalette = useThemeStore((st) => st.setPalette);
+  const fixo = useMenuFixo();
+  const [aberto, setAberto] = useState(false);
+  // Ao trocar de tela ou ao voltar para a tela larga, o menu sobreposto fecha.
+  useEffect(() => setAberto(false), [location.pathname, fixo]);
 
   return (
     <>
       <Theme theme="g100">
       <Header aria-label="Sentinel Audit Tool">
         <SkipToContent />
+        {!fixo && (
+          <HeaderMenuButton aria-label={aberto ? 'Fechar o menu' : 'Abrir o menu'} isActive={aberto} onClick={() => setAberto((a) => !a)} isCollapsible />
+        )}
         <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem' }}>
           <SentinelLogo />
         </span>
         <HeaderName href="#" prefix="Sentinel" style={{ paddingLeft: '0.5rem' }} onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
           Audit Tool
         </HeaderName>
-        <span style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
+        <span className="sentinel-hide-narrow" style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
           v{__APP_VERSION__}
         </span>
         <select
           aria-label="Paleta de cores"
+          className="sentinel-hide-narrow"
           title="Paleta de cores: Suave e Alternativo reduzem o contraste para cansar menos a vista"
           value={palette}
           onChange={(e) => setPalette(e.target.value as Palette)}
@@ -98,7 +122,7 @@ export function AppShell({ children }: AppShellProps) {
           </HeaderGlobalAction>
         </HeaderGlobalBar>
       </Header>
-      <SideNav isFixedNav expanded isChildOfHeader={false} aria-label="Navegação principal">
+      <SideNav isFixedNav expanded={fixo || aberto} isChildOfHeader={!fixo} onOverlayClick={() => setAberto(false)} aria-label="Navegação principal">
         <SideNavItems>
           {ITENS.map((i) => (
             <SideNavLink
@@ -127,7 +151,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Os componentes do Carbon (campos, abas, modais) seguem o mesmo tema do restante da página. */}
       <Theme theme={dark ? 'g100' : 'white'} className="sentinel-content-theme">
-        <Content style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh', marginLeft: '16rem', padding: 0 }}>{children}</Content>
+        <Content className="sentinel-content" style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh', marginLeft: fixo ? '16rem' : 0, padding: 0 }}>{children}</Content>
       </Theme>
     </>
   );
