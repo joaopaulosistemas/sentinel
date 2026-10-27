@@ -7,6 +7,7 @@ import com.sentinel.audit.dto.FindingMapper;
 import com.sentinel.audit.dto.FindingResponse;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Category;
+import com.sentinel.audit.model.Confidence;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.RiskScore;
 import com.sentinel.audit.model.Severity;
@@ -191,12 +192,14 @@ public class McpToolService {
     private Map<String, Object> achados(AuditRun run, DataLevel level, JsonNode args) {
         Severity severity = parseEnum(Severity.class, args.path("severidade").asText(""), "severidade");
         Category category = parseEnum(Category.class, args.path("categoria").asText(""), "categoria");
+        Confidence confidence = parseEnum(Confidence.class, args.path("confianca").asText(""), "confianca");
         boolean onlyNew = args.path("somenteNovos").asBoolean(false);
         int limit = args.path("limite").asInt(DEFAULT_LIMIT);
         List<FindingResponse> list = active(run).stream()
                 .map(FindingMapper::toResponse)
                 .filter(f -> severity == null || f.getSeverity() == severity)
                 .filter(f -> category == null || f.getCategory() == category)
+                .filter(f -> confidence == null || f.getConfidence() == confidence)
                 .filter(f -> !onlyNew || Boolean.TRUE.equals(f.getIsNew()))
                 .toList();
         return McpShaper.findingsResult(list, level, limit);

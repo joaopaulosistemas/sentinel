@@ -304,3 +304,9 @@ Verificado: `tsc`, `vitest`, e2e e captura a 2560 px.
 ## Dashboard 12.19.2 — CSS do conteúdo definido pelo João
 
 `PageShell` passa a usar exatamente `padding: 70px 40px; margin: 0; gap: 24px`, sem largura máxima (o conteúdo ocupa toda a largura disponível). O caminho fica a 70 px do topo da página (22 px abaixo do cabeçalho) e o conteúdo começa a 296 px da borda (40 px depois do menu). Testes e2e ajustados para 70 e 296 px.
+
+## Dashboard 12.20.0 / API — Achados mais assertivos (confiança)
+
+Cada achado passa a ter **confiança** (alta, média, baixa) e o motivo: baixa em testes, documentação, exemplos e código gerado, em segredo com valor de exemplo (`changeme`, `your_`, `xxxx`…) e em regra que o time marcou como falso positivo em 40% ou mais dos casos (mínimo de 5); alta quando há CVE ou quando outra ferramenta confirma o mesmo ponto (mesma categoria, até 2 linhas). A tela de achados esconde os de baixa confiança por padrão, com a contagem e uma caixa para mostrá-los; ao suprimir, dá para suprimir junto os parecidos (mesma regra) da lista. O MCP devolve `confianca` e filtra por ela. Relatórios HTML e PDF mostram o commit auditado. "Só novos" já existia como situação "Novos desde a última auditoria".
+O peso da confiança na nota é opcional e vem **desligado**: `sentinel.audit.score.confidence-weighting.enabled=true` faz achados de baixa confiança pesarem 40% (crítico nunca é reduzido).
+Verificado: `tsc`, `vitest`. Java (confiança, `PathRole`, nota) só no CI. Não implementado: aviso de auditoria desatualizada (commit auditado vs. ponta da branch) e regras que reconhecem filtro global de autorização.

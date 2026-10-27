@@ -188,8 +188,13 @@ export interface FindingResponse {
   isNew?: boolean | null;
   /** true = regra em modo sombra: aparece, mas não pesa no score nem derruba o pipeline */
   shadow?: boolean | null;
+  /** Quão provável é o achado ser real: ALTA confirmado/CVE, BAIXA em teste/exemplo/regra com muitos falsos positivos */
+  confidence?: Confidence;
+  confidenceReason?: string | null;
   remediation?: Remediation | null;
 }
+
+export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export interface Remediation {
   summary: string | null;

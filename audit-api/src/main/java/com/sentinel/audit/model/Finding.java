@@ -71,6 +71,15 @@ public class Finding {
     @Column(name = "shadow")
     private Boolean shadow;
 
+    /** Confiança de que é um problema real; {@code null} em achados gravados antes deste campo existir (valem como média). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "confidence", length = 10)
+    private Confidence confidence;
+
+    /** Por que a confiança não é a média (por exemplo, "arquivo de teste"); {@code null} quando não há o que explicar. */
+    @Column(name = "confidence_reason", length = 300)
+    private String confidenceReason;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private FindingStatus status;
@@ -211,6 +220,22 @@ public class Finding {
 
     public void setShadow(Boolean shadow) {
         this.shadow = shadow;
+    }
+
+    public Confidence getConfidence() {
+        return confidence;
+    }
+
+    public void setConfidence(Confidence confidence) {
+        this.confidence = confidence;
+    }
+
+    public String getConfidenceReason() {
+        return confidenceReason;
+    }
+
+    public void setConfidenceReason(String confidenceReason) {
+        this.confidenceReason = confidenceReason;
     }
 
     public FindingStatus getStatus() {

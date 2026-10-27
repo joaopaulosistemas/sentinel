@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sentinel.audit.model.Category;
+import com.sentinel.audit.model.Confidence;
 import com.sentinel.audit.model.Severity;
 
 import java.util.Arrays;
@@ -20,8 +21,8 @@ public enum McpTool {
             "Nota e situação da última auditoria concluída do sistema: nota geral e por dimensão, "
                     + "achados abertos por severidade, branch, commit e data."),
     BUSCAR_ACHADOS("buscar_achados",
-            "Achados abertos da última auditoria, dos mais graves para os menos graves. "
-                    + "O que aparece de cada achado depende do nível de dados definido para este sistema."),
+            "Achados abertos da última auditoria, dos mais graves para os menos graves, cada um com a confiança do Sentinel "
+                    + "(HIGH, MEDIUM ou LOW) e o motivo. O que aparece de cada achado depende do nível de dados definido para este sistema."),
     DIFF_AUDITORIA("diff_auditoria",
             "O que mudou desde a auditoria anterior: variação da nota, achados novos e achados resolvidos."),
     O_QUE_CORRIGIR_PRIMEIRO("o_que_corrigir_primeiro",
@@ -86,6 +87,10 @@ public enum McpTool {
             ArrayNode cat = props.putObject("categoria").put("type", "string")
                     .put("description", "Só esta categoria").putArray("enum");
             Arrays.stream(Category.values()).forEach(c -> cat.add(c.name()));
+            ArrayNode conf = props.putObject("confianca").put("type", "string")
+                    .put("description", "Só esta confiança do Sentinel: LOW costuma ser barulho (teste, exemplo, regra recusada); "
+                            + "HIGH é confirmado por duas ferramentas ou é vulnerabilidade conhecida").putArray("enum");
+            Arrays.stream(Confidence.values()).forEach(c -> conf.add(c.name()));
             props.putObject("somenteNovos").put("type", "boolean")
                     .put("description", "Só os achados que não existiam na auditoria anterior");
             props.putObject("limite").put("type", "integer").put("minimum", 1).put("maximum", 50)

@@ -34,6 +34,10 @@ public final class McpShaper {
         m.put("origem", f.getToolSource());
         m.put("situacao", f.getStatus());
         m.put("novo", f.getIsNew());
+        m.put("confianca", f.getConfidence());
+        if (f.getConfidenceReason() != null) {
+            m.put("motivoConfianca", f.getConfidenceReason());
+        }
         if (level == DataLevel.FILE_LINE) {
             m.put("arquivo", f.getFilePath());
             m.put("linha", f.getLineNumber());

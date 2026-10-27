@@ -74,6 +74,7 @@ export function FindingsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [grouped, setGrouped] = useState(false);
   const [showResolved, setShowResolved] = useState(false);
+  const [showLow, setShowLow] = useState(false);
   const [aba, setAba] = useState<AbaId>(searchParams.get('aba') === 'reauditoria' ? 'reauditoria' : 'achados');
 
   const { data: systems } = useSystems();
@@ -109,7 +110,11 @@ export function FindingsPage() {
   const error = auditMode ? single.error : overview.error;
 
   // Uma auditoria só: várias severidades (ex.: crítica e alta) são filtradas aqui, a API recebe uma por vez.
-  const singleRows = (single.data ?? []).filter((f) => sev.length === 0 || sev.includes(f.severity as Severity));
+  const bySeverity = (single.data ?? []).filter((f) => sev.length === 0 || sev.includes(f.severity as Severity));
+  // Baixa confiança (teste, exemplo, regra com muitos falsos positivos) fica oculta por padrão; vale para uma auditoria.
+  const lowHidden = auditMode && !showLow ? bySeverity.filter((f) => f.confidence === 'LOW').length : 0;
+  const lowTotal = auditMode ? bySeverity.filter((f) => f.confidence === 'LOW').length : 0;
+  const singleRows = auditMode && !showLow ? bySeverity.filter((f) => f.confidence !== 'LOW') : bySeverity;
   const rows: FindingResponse[] = auditMode
     ? singleRows.slice((page - 1) * pageSize, page * pageSize)
     : (overview.data?.items.map((i) => i.finding) ?? []);
@@ -283,6 +288,13 @@ export function FindingsPage() {
             </label>
           )}
         </div>
+        {auditMode && lowTotal > 0 && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+            <input type="checkbox" checked={showLow} onChange={(e) => { setShowLow(e.target.checked); reset(); }} style={{ width: 16, height: 16, accentColor: '#0f62fe' }} />
+            Mostrar achados de baixa confiança
+            {!showLow && <span style={{ color: 'var(--s-text-3)' }}>({lowHidden} ocultos: em testes, exemplos ou de regras com muitos falsos positivos)</span>}
+          </label>
+        )}
         <div aria-label="Filtros ativos" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 13, color: 'var(--s-text-3)' }}>
           Filtros ativos:
           {chips.map((c) => (
