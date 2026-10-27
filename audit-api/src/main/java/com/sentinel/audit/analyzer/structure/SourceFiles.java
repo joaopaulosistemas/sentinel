@@ -80,6 +80,7 @@ public final class SourceFiles {
                 return FileVisitResult.CONTINUE;
             }
         });
+        out.sort(java.util.Comparator.comparing(Src::rel));        // a ordem do disco varia; o relatório não pode variar
         return out;
     }
 
