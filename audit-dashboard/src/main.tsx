@@ -1,6 +1,7 @@
 import '@carbon/react/index.scss';
 import './styles/motion.css';
 import './styles/theme.css';
+import './styles/paletas.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import ReactDOM from 'react-dom/client';

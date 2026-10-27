@@ -285,3 +285,12 @@ Verificado: `tsc`, `vitest` (189), e2e (3) e captura das 9 telas a 1440 px. Não
 - **Recuo entre o menu e o conteúdo**: de 64 px para 32 px. Eram dois recuos somados (o do `Content` do Carbon e o da tela); o do `Content` foi zerado e o `PageShell` passou a dar o espaço de cima (72 px do topo da página = 24 px abaixo do cabeçalho de 48 px).
 - **Tema escuro**: linha de 1 px (#525252) entre o menu e o conteúdo; antes os dois tinham a mesma cor.
 Verificado: `tsc`, `vitest` (189), e2e (3) e capturas das 9 telas nos temas claro e escuro a 1440 px. Não verificado: telas estreitas. No tema escuro, a notificação do Carbon e as caixas de "Resultado parcial" seguem claras (já era assim).
+
+## Dashboard 12.19.0 — Paletas para cansar menos a vista
+
+Caixa **Paleta de cores** no cabeçalho (lembra a escolha por navegador) com três opções, valendo para o tema claro e o escuro:
+- **Clássico**: as cores de antes (contraste máximo).
+- **Suave** (novo padrão): sem branco nem preto puros, texto de corpo a 12–14:1 em vez de 16–18:1, cores de status dessaturadas no escuro, menu e cabeçalho em tons do mesmo matiz (claro azul-acinzentado; escuro azulado).
+- **Alternativo**: claro em tom de papel (quente) e escuro em cinza neutro.
+As variáveis `--s-*` e os tokens do Carbon (campos, abas, tabelas, modais) seguem a paleta (`styles/paletas.css`). Contraste calculado: texto/card ≥ 11,6:1, texto secundário/card ≥ 6,4:1, link/card ≥ 5,6:1 (todas acima do mínimo AA de 4,5:1).
+Verificado: `tsc`, `vitest`, e2e e capturas de Visão geral, Sistemas e Informações nas 6 combinações. Não verificado: as demais telas em cada paleta (algumas cores fixas, como as caixas de "Resultado parcial" e o aviso do Carbon, não acompanham a paleta) e telas estreitas.

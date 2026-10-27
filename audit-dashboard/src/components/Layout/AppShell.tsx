@@ -13,7 +13,7 @@ import {
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
-import { useThemeStore } from '../../store/useThemeStore';
+import { PALETTES, useThemeStore, type Palette } from '../../store/useThemeStore';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -60,6 +60,8 @@ export function AppShell({ children }: AppShellProps) {
   const toggleTheme = useThemeStore((st) => st.toggle);
   const dark = mode === 'dark';
   const pending = usePendingClaude().total;
+  const palette = useThemeStore((st) => st.palette);
+  const setPalette = useThemeStore((st) => st.setPalette);
 
   return (
     <>
@@ -75,6 +77,17 @@ export function AppShell({ children }: AppShellProps) {
         <span style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
           v{__APP_VERSION__}
         </span>
+        <select
+          aria-label="Paleta de cores"
+          title="Paleta de cores: Suave e Alternativo reduzem o contraste para cansar menos a vista"
+          value={palette}
+          onChange={(e) => setPalette(e.target.value as Palette)}
+          style={{ marginRight: '0.5rem', height: 32, background: 'transparent', color: '#c6c6c6', border: '1px solid #525252', fontSize: 12, padding: '0 8px' }}
+        >
+          {PALETTES.map((p) => (
+            <option key={p.id} value={p.id} style={{ color: '#161616' }}>{p.label}</option>
+          ))}
+        </select>
         <HeaderGlobalBar style={{ flex: '0 0 auto' }}>
           <HeaderGlobalAction
             aria-label={dark ? 'Trocar para o tema normal' : 'Trocar para o tema escuro'}
@@ -113,7 +126,7 @@ export function AppShell({ children }: AppShellProps) {
       </Theme>
 
       {/* Os componentes do Carbon (campos, abas, modais) seguem o mesmo tema do restante da página. */}
-      <Theme theme={dark ? 'g100' : 'white'}>
+      <Theme theme={dark ? 'g100' : 'white'} className="sentinel-content-theme">
         <Content style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh', marginLeft: '16rem', padding: 0 }}>{children}</Content>
       </Theme>
     </>
