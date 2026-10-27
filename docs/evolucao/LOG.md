@@ -343,3 +343,11 @@ Quatro analisadores próprios, sem executar nada do projeto auditado (só leem a
 Autorização global: o Sentinel detecta filtro JAX-RS que rejeita (401/403), Spring Security com `anyRequest().authenticated()` e a política HTTP do Quarkus. Com isso, a regra "endpoint sem anotação de autorização" (`sentinel-owasp-a01-endpoint-sem-autorizacao`) passa a ter confiança baixa, com o motivo; ela continua na lista de baixa confiança para conferir se há rota pública.
 Rodando a lógica contra o próprio repositório do Sentinel: 1 ciclo de 6 pacotes Java, nenhum ciclo no dashboard, nenhuma duplicação (após ignorar getters e setters), 31 exports sem uso fora do arquivo (2 totalmente mortos: `useUpdateProfile`, `useUpdateSchedule`) e `ApiKeyFilter` reconhecido como barreira global.
 Verificado: a lógica (classes em `analyzer/structure`) compilada e testada com `javac` no repositório; `tsc` não se aplica. Os analisadores, a ligação com a orquestração e os testes JUnit só no CI. Não verificado: desempenho em repositórios grandes (limites: 20 mil arquivos, 1 MB por arquivo, 1,5 milhão de janelas de duplicação); o ArchUnit ficou de fora por decisão.
+
+## Dashboard 12.24.1 — Command Injection sem falso positivo de lista de argumentos
+
+Na auditoria #34 havia 1 alto e 9 médios de "Possível Command Injection" que eram `ProcessBuilder` com lista de argumentos (sem shell). Duas correções em `sentinel-injection.yml`:
+- `sentinel-command-injection` (alto): o sorvedouro passa a ser só o executável (1º argumento, `focus-metavariable`). Concatenar um argumento da lista (`"refs/heads/" + branch`) deixa de contar; `new ProcessBuilder("sh -c cat " + arquivo)` continua apontado.
+- `sentinel-command-injection-variable` (médio): `new ProcessBuilder(List<String>)`, `new ProcessBuilder(String[])` e `exec(String[])` ficam de fora; texto único em variável continua apontado.
+Testes novos no pacote (`comandoComListaDeArgumentos`). Rodando só as regras de injeção contra `audit-api/src/main/java` do próprio Sentinel: 10 achados de command injection antes, 0 depois; `semgrep --test` passa (6/6).
+Verificado: `semgrep --test` e a comparação acima. Não verificado: o recall no OWASP Benchmark (só o CI, que compara com a linha de base).

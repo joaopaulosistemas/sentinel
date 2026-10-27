@@ -66,6 +66,17 @@ class InjectionCases {
         Runtime.getRuntime().exec(new String[]{"ls", "-l"});
     }
 
+    void comandoComListaDeArgumentos(List<String> args, String[] vetor, String ref) throws Exception {
+        // ok: sentinel-command-injection-variable
+        new ProcessBuilder(args);
+        // ok: sentinel-command-injection-variable
+        new ProcessBuilder(vetor);
+        // ok: sentinel-command-injection-variable
+        Runtime.getRuntime().exec(vetor);
+        // ok: sentinel-command-injection
+        new ProcessBuilder("git", "ls-remote", "refs/heads/" + ref);
+    }
+
     void comandoViaShell(String cmd) throws Exception {
         // ruleid: sentinel-command-injection-shell
         new ProcessBuilder("sh", "-c", cmd);
