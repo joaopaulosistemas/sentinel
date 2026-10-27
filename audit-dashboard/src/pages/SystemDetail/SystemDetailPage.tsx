@@ -127,7 +127,7 @@ export function SystemDetailPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{system.name}</h1>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>{system.name}</h1>
           <span style={{ color: 'var(--s-text-3)' }}>
             {[stackLabels[system.stack], system.team, `perfil ${system.profile || 'default'}`].filter(Boolean).join(' · ')}
           </span>

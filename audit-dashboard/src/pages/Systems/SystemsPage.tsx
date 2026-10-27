@@ -173,7 +173,7 @@ export function SystemsPage() {
     <PageShell>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Sistemas</h1>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>Sistemas</h1>
           <span style={{ color: 'var(--s-text-3)' }}>
             {count} {count === 1 ? 'sistema cadastrado' : 'sistemas cadastrados'}. Cadastre, edite o perfil de regras e o agendamento, ou dispare uma auditoria.
           </span>

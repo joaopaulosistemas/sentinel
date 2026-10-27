@@ -155,7 +155,7 @@ export function AuditRunPage() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName} · resultado da auditoria #{run.id}</h1>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>{run.systemName} · resultado da auditoria #{run.id}</h1>
             <span style={{ color: 'var(--s-text-3)' }}>
               Branch <span style={{ fontFamily: mono }}>{run.branch}</span>
               {sha && <> · commit {sha}</>}
@@ -190,7 +190,7 @@ export function AuditRunPage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName}</h1>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>{run.systemName}</h1>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: pill.bg, color: pill.fg, padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500 }}>
               {pill.icon}
               {pill.label}

@@ -72,7 +72,7 @@ export function RankingPage() {
     <PageShell>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: '0 0 0.25rem', fontSize: 28, fontWeight: 400 }}>Ranking de Sistemas</h1>
+          <h1 style={{ margin: '0 0 0.25rem', fontSize: 26, fontWeight: 400 }}>Ranking de Sistemas</h1>
           <p style={{ color: 'var(--s-text-3)' }}>
             Compare os sistemas pela nota da última auditoria. Meta da organização: {TARGET}.
           </p>

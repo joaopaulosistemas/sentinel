@@ -126,7 +126,7 @@ export function ReportsPage() {
   return (
     <PageShell>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Relatórios</h1>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>Relatórios</h1>
         <span style={{ color: 'var(--s-text-3)' }}>Gere em 3 passos: escolha o tipo, o sistema e o formato. O relatório fica guardado na lista abaixo.</span>
       </div>
 

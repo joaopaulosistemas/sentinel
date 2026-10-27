@@ -89,7 +89,7 @@ export function OverviewPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Visão geral</h1>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>Visão geral</h1>
           <span style={{ color: 'var(--s-text-3)' }}>
             Situação {total === 1 ? 'do 1 sistema cadastrado' : `dos ${total} sistemas cadastrados`} · atualizada agora
           </span>

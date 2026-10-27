@@ -184,7 +184,7 @@ export function FindingsPage() {
   return (
     <PageShell>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>
           Informações de Auditoria
           {auditMode && (
             <span style={{ fontSize: 16, color: 'var(--s-text-4)', marginLeft: 12 }}>
