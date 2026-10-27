@@ -12,14 +12,26 @@ const reasonLabels: Record<SuppressionReason, string> = {
 interface Props {
   /** Um ou mais findings; vazio = modal fechado. */
   findings: FindingResponse[];
+  /** Achados visíveis na lista: dali saem os "parecidos" (mesma regra) que podem ser suprimidos junto. */
+  candidates?: FindingResponse[];
   onClose: () => void;
 }
 
 /** Retira um finding do score, exigindo justificativa; opcionalmente com data de validade. */
-export function SuppressModal({ findings, onClose }: Props) {
+/** Mesma regra e ferramenta, ainda abertos e fora da seleção. */
+export function similarTo(selected: FindingResponse[], candidates: FindingResponse[]): FindingResponse[] {
+  const ids = new Set(selected.map((f) => f.id));
+  const keys = new Set(selected.filter((f) => f.ruleId).map((f) => `${f.toolSource}|${f.ruleId}`));
+  return candidates.filter((c) => !ids.has(c.id) && c.status !== 'SUPPRESSED' && c.ruleId && keys.has(`${c.toolSource}|${c.ruleId}`));
+}
+
+export function SuppressModal({ findings, candidates = [], onClose }: Props) {
   const single = useSuppressFinding();
   const batch = useSuppressFindings();
-  const bulk = findings.length > 1;
+  const [withSimilar, setWithSimilar] = useState(false);
+  const similar = similarTo(findings, candidates);
+  const targets = withSimilar ? [...findings, ...similar] : findings;
+  const bulk = targets.length > 1;
   const mutation = bulk ? batch : single;
   const failures = batch.data?.failures ?? [];
   const [reason, setReason] = useState<SuppressionReason>('FALSE_POSITIVE');
@@ -37,6 +49,7 @@ export function SuppressModal({ findings, onClose }: Props) {
     batch.reset();
     setJustification('');
     setExpires('');
+    setWithSimilar(false);
     onClose();
   };
 
@@ -50,7 +63,7 @@ export function SuppressModal({ findings, onClose }: Props) {
     };
     if (bulk) {
       batch.mutate(
-        { ...common, findingIds: findings.map((f) => f.id) },
+        { ...common, findingIds: targets.map((f) => f.id) },
         { onSuccess: (r) => (r.failures.length === 0 ? close() : undefined) },
       );
       return;
@@ -65,8 +78,8 @@ export function SuppressModal({ findings, onClose }: Props) {
     <Modal
       open
       modalHeading="Retirar do score"
-      modalLabel={bulk ? `${findings.length} findings selecionados` : finding.title}
-      primaryButtonText={mutation.isPending ? 'Salvando…' : bulk ? `Suprimir ${findings.length}` : 'Suprimir'}
+      modalLabel={bulk ? `${targets.length} findings selecionados` : finding.title}
+      primaryButtonText={mutation.isPending ? 'Salvando…' : bulk ? `Suprimir ${targets.length}` : 'Suprimir'}
       secondaryButtonText="Cancelar"
       primaryButtonDisabled={tooShort || mutation.isPending}
       onRequestClose={close}
@@ -76,6 +89,12 @@ export function SuppressModal({ findings, onClose }: Props) {
         A decisão vale para este sistema: auditorias futuras com o mesmo problema já nascem suprimidas
         até a data de validade (se houver). Fica registrado quem decidiu e por quê.
       </p>
+      {similar.length > 0 && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem', fontSize: '0.875rem' }}>
+          <input type="checkbox" checked={withSimilar} onChange={(e) => setWithSimilar(e.target.checked)} />
+          Suprimir também os {similar.length} parecidos (mesma regra) desta lista
+        </label>
+      )}
       <Select
         id="suppress-reason"
         labelText="Motivo"

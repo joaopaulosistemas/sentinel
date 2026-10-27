@@ -91,6 +91,9 @@ public class AuditOrchestrationService {
     private static final int MAX_ERROR_MESSAGE = 1000;
 
     @Inject
+    RuleQualityService ruleQualityService;
+
+    @Inject
     com.sentinel.audit.review.LocalRuleMaterializer localRules;
 
     @Inject
@@ -252,6 +255,7 @@ public class AuditOrchestrationService {
             // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
             progress.phase(auditRunId, AuditProgressTracker.PONTUACAO, "Análise concluída: " + allFindings.size() + " achados; calculando a nota");
             FindingLifecycleService.apply(allFindings, loadBaselineSafely(auditRunId));
+            FindingConfidence.assessAll(allFindings, loadRuleQualitySafely());
             long linesOfCode = sizing.lines();
             RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
             progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
@@ -548,6 +552,16 @@ public class AuditOrchestrationService {
                 context.baseRef(), changed.files().size(), kept.size(), findings.size(),
                 changed.approximate() ? " (comparação aproximada: sem ancestral comum no histórico baixado)" : "");
         return kept;
+    }
+
+    /** Sem a qualidade das regras a confiança ainda sai (pelos demais sinais): nada aqui pode derrubar a auditoria. */
+    private java.util.Map<String, RuleQualityService.RuleQuality> loadRuleQualitySafely() {
+        try {
+            return ruleQualityService.byRule();
+        } catch (RuntimeException e) {
+            LOG.warnf("Não foi possível carregar a qualidade das regras: %s", e.getMessage());
+            return java.util.Map.of();
+        }
     }
 
     /** Falha ao buscar a base de comparação não pode derrubar a auditoria: segue sem "novos" e sem supressões. */

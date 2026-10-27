@@ -54,6 +54,14 @@ public class ScoringService {
     @ConfigProperty(name = "sentinel.audit.score.density.reference-lines", defaultValue = "20000")
     long referenceLines = 20_000;
 
+    /**
+     * Quando ligada, achados de baixa confiança (arquivo de teste, valor de exemplo, regra que o time recusa) pesam menos
+     * na nota ({@link com.sentinel.audit.model.Confidence#scoreWeight()}). Desligada por padrão para não mudar as notas
+     * existentes nem a comparação com auditorias antigas.
+     */
+    @ConfigProperty(name = "sentinel.audit.score.confidence-weighting.enabled", defaultValue = "false")
+    boolean confidenceWeighting = false;
+
     /** Mesmo em um sistema enorme, achados HIGH/MEDIUM ainda pesam pelo menos este tanto. */
     static final double MIN_SIZE_FACTOR = 0.2;
 
@@ -132,6 +140,9 @@ public class ScoringService {
                 continue;
             }
             double p = SEVERITY_PENALTY.getOrDefault(f.getSeverity(), 0.0);
+            if (confidenceWeighting && f.getConfidence() != null && f.getSeverity() != Severity.CRITICAL) {
+                p *= f.getConfidence().scoreWeight();
+            }
             if (f.getSeverity() == Severity.CRITICAL) {
                 criticalPenalty += p;
             } else if (f.getRuleId() != null && isLowSeverity(f.getSeverity())) {

@@ -1,5 +1,6 @@
 package com.sentinel.audit.dto;
 
+import com.sentinel.audit.model.Confidence;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.service.RemediationCatalog;
 
@@ -27,6 +28,8 @@ public final class FindingMapper {
         dto.setFingerprint(f.getFingerprint());
         dto.setIsNew(f.getIsNew());
         dto.setShadow(Boolean.TRUE.equals(f.getShadow()));
+        dto.setConfidence(f.getConfidence() == null ? Confidence.MEDIUM : f.getConfidence());
+        dto.setConfidenceReason(f.getConfidenceReason());
         dto.setRemediation(RemediationCatalog.forFinding(f));
         return dto;
     }

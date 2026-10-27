@@ -30,9 +30,9 @@ import java.util.Map;
 public class RuleQualityService {
 
     /** Amostra mínima para opinar: com poucos casos, 2 de 3 falsos positivos não diz nada. */
-    static final int MIN_SAMPLE = 5;
+    public static final int MIN_SAMPLE = 5;
     /** A partir desta taxa de falso positivo a regra é marcada para revisão. */
-    static final double REVIEW_RATE = 0.4;
+    public static final double REVIEW_RATE = 0.4;
 
     /** Resultado por regra. {@code falsePositiveRate} vai de 0 a 1. */
     public record RuleQuality(String ruleId, String tool, long total, long falsePositive, long acceptedRisk,
@@ -49,6 +49,16 @@ public class RuleQualityService {
     FindingRepository findingRepository;
     @Inject
     FindingSuppressionRepository suppressionRepository;
+
+    /** Qualidade por regra, indexada pelo nome normalizado da regra (para consulta rápida durante a auditoria). */
+    @jakarta.transaction.Transactional
+    public Map<String, RuleQuality> byRule() {
+        Map<String, RuleQuality> out = new HashMap<>();
+        for (RuleQuality q : compute()) {
+            out.put(q.ruleId(), q);
+        }
+        return out;
+    }
 
     /** Precisa de transação ativa (quem chama) para os repositórios. */
     public List<RuleQuality> compute() {
@@ -104,7 +114,7 @@ public class RuleQualityService {
     }
 
     /** O Semgrep prefixa o id com o caminho do arquivo de regras, que muda entre ambientes: fica só o nome da regra. */
-    static String normalize(Finding f) {
+    public static String normalize(Finding f) {
         String id = f.getRuleId();
         if ("Semgrep".equalsIgnoreCase(f.getToolSource())) {
             int dot = id.lastIndexOf('.');

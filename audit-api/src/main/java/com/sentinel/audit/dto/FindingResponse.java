@@ -1,6 +1,7 @@
 package com.sentinel.audit.dto;
 
 import com.sentinel.audit.model.Category;
+import com.sentinel.audit.model.Confidence;
 import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.Severity;
 import java.time.LocalDateTime;
@@ -28,6 +29,8 @@ public class FindingResponse {
     private Boolean isNew;
     private Boolean shadow;
     private RemediationDto remediation;
+    private Confidence confidence;
+    private String confidenceReason;
 
     public FindingResponse() {
     }
@@ -175,5 +178,22 @@ public class FindingResponse {
 
     public void setRemediation(RemediationDto remediation) {
         this.remediation = remediation;
+    }
+
+    /** Confiança de que é um problema real (nunca {@code null} na resposta: achado antigo vale como média). */
+    public Confidence getConfidence() {
+        return confidence;
+    }
+
+    public void setConfidence(Confidence confidence) {
+        this.confidence = confidence;
+    }
+
+    public String getConfidenceReason() {
+        return confidenceReason;
+    }
+
+    public void setConfidenceReason(String confidenceReason) {
+        this.confidenceReason = confidenceReason;
     }
 }

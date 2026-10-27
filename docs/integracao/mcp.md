@@ -42,7 +42,7 @@ Sem escolha na aba, só as de leitura ficam ligadas. As de escrita precisam ser 
 | Ferramenta | Tipo | O que faz |
 | --- | --- | --- |
 | `status_auditoria` | leitura | Nota geral e por dimensão, achados por severidade, branch, commit e data da última auditoria concluída |
-| `buscar_achados` | leitura | Achados abertos, do mais grave ao menos grave (filtros: `severidade`, `categoria`, `somenteNovos`, `limite` até 50) |
+| `buscar_achados` | leitura | Achados abertos, do mais grave ao menos grave (filtros: `severidade`, `categoria`, `confianca`, `somenteNovos`, `limite` até 50). Cada achado traz `confianca` (ALTA/MÉDIA/BAIXA em inglês: HIGH/MEDIUM/LOW) e `motivoConfianca` |
 | `diff_auditoria` | leitura | Variação da nota, achados novos e resolvidos desde a auditoria anterior |
 | `o_que_corrigir_primeiro` | leitura | Problemas por regra, ordenados pelo ganho de nota calculado pelo próprio Sentinel |
 | `status_pedidos` | leitura | Pedidos do Claude e o resultado de cada um |
@@ -78,6 +78,10 @@ As duas primeiras ferramentas de escrita só gravam em **Informações de Audito
 5. **Promovida** (pesa na nota) ou **descartada**. Para promover: pelo menos uma auditoria depois do início, 5 achados ou mais e precisão de 90% ou mais (`sentinel.review.min-hits`, `sentinel.review.min-precision`).
 
 A regra nasce valendo só no sistema onde foi proposta. **Copiar para outro sistema** a coloca em observação lá; depois de promovida lá, a original fica "pronta para o pacote compartilhado". Entrar no pacote é uma mudança no repositório dos pacotes, feita por uma pessoa. Achado de julgamento (sem regra que uma máquina verifique) continua como sugestão, fora da nota para sempre.
+
+## Triagem em lote com o Claude
+
+Peça ao Claude, na sua assinatura (sem API paga): "busque os achados de baixa confiança (`buscar_achados` com `confianca=LOW`), diga quais parecem falso positivo e peça a supressão". O Claude só enxerga título, regra, arquivo e o motivo da confiança, nunca o trecho de código; por isso a decisão dele é uma sugestão. Cada `suprimir_achado` vira um pedido pendente e uma pessoa aprova em **Reauditoria**.
 
 ## Reauditoria e pedidos com aprovação
 

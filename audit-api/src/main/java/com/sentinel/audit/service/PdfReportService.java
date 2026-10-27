@@ -220,6 +220,7 @@ public class PdfReportService {
     private void meta(Document doc, AuditRun run) throws DocumentException {
         doc.add(new Paragraph("Sistema: " + clean(nz(run.getSystem().getName())), BODY));
         doc.add(new Paragraph("Auditoria #" + run.getId() + " | Branch: " + clean(nz(run.getBranch()))
+                + " | Commit: " + clean(ReportService.shortSha(run.getCommitSha()))
                 + " | Executado por: " + clean(nz(run.getTriggeredBy())), BODY));
         doc.add(new Paragraph("Início: " + (run.getStartedAt() == null ? "-" : run.getStartedAt().format(DATE_FMT))
                 + " | Conclusão: " + (run.getCompletedAt() == null ? "-" : run.getCompletedAt().format(DATE_FMT)), BODY));

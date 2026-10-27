@@ -48,6 +48,7 @@ public class ReportService {
                 .append(meta("Sistema", esc(run.getSystem().getName())))
                 .append(meta("Auditoria", "#" + run.getId()))
                 .append(meta("Branch", esc(run.getBranch())))
+                .append(meta("Commit", esc(shortSha(run.getCommitSha()))))
                 .append(meta("Executado por", esc(run.getTriggeredBy())))
                 .append(meta("Início", run.getStartedAt() != null ? run.getStartedAt().format(DATE_FMT) : "—"))
                 .append(meta("Conclusão", run.getCompletedAt() != null ? run.getCompletedAt().format(DATE_FMT) : "—"))
@@ -347,6 +348,11 @@ public class ReportService {
             case "SEM_ACHADOS" -> "Sem achados";
             default -> "Não verificado";
         };
+    }
+
+    /** Os 7 primeiros caracteres do commit auditado; "—" quando a auditoria não registrou. */
+    static String shortSha(String sha) {
+        return sha == null || sha.isBlank() ? "—" : sha.substring(0, Math.min(7, sha.length()));
     }
 
     private static String meta(String k, String v) {

@@ -158,6 +158,16 @@ export function FindingsTable({ findings, systemName, auditId, systemOf, claudeN
                           Claude sugeriu
                         </span>
                       )}
+                      {f.confidence === 'LOW' && (
+                        <span title={f.confidenceReason ?? 'Baixa confiança'} style={{ fontSize: 11, border: '1px solid var(--s-border-strong)', borderRadius: 8, padding: '0 6px', color: 'var(--s-text-3)', marginRight: 4 }}>
+                          Baixa confiança
+                        </span>
+                      )}
+                      {f.confidence === 'HIGH' && f.confidenceReason && (
+                        <span title={f.confidenceReason} style={{ fontSize: 11, border: '1px solid #198038', borderRadius: 8, padding: '0 6px', color: '#198038', marginRight: 4 }}>
+                          Confirmado
+                        </span>
+                      )}
                       {f.shadow === true && (
                         <span title="Regra em modo sombra: aparece, mas não conta no score nem derruba o pipeline" style={{ fontSize: 11, border: '1px solid var(--s-border-strong)', borderRadius: 8, padding: '0 6px', color: 'var(--s-text-3)' }}>
                           Sombra
@@ -218,6 +228,7 @@ export function FindingsTable({ findings, systemName, auditId, systemOf, claudeN
       </div>
       <SuppressModal
         findings={toSuppress}
+        candidates={findings}
         onClose={() => {
           setToSuppress([]);
           setSelected(new Set());
