@@ -312,4 +312,16 @@ class LocalSourceTest {
         Optional<LocalSource> s = LocalSource.ofRoot(root.toString(), 10);
         assertTrue(s.isPresent());
     }
+
+    @Test
+    void copiaPastaDeOutroDonoSemReclamarDeDubiousOwnership() throws Exception {
+        Path repo = repo("alheio");
+        // Só reproduz quando o teste roda como root (comum em contêiner); como usuário comum o dono já é o mesmo.
+        if (!"root".equals(System.getProperty("user.name"))) {
+            return;
+        }
+        new ProcessBuilder("chown", "-R", "12345:12345", repo.toString()).inheritIO().start().waitFor();
+        Path copy = source.snapshot("alheio", null, LocalSnapshot.COMMIT, null, work);
+        assertTrue(Files.exists(copy.resolve("App.java")));
+    }
 }

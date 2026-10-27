@@ -279,7 +279,15 @@ public final class LocalSource {
             cmd.addAll(List.of("--branch", branch));
         }
         cmd.addAll(List.of("--", "file://" + src, target.toString()));
-        Out out = run(cmd, timeoutSeconds);
+        // O clone local chama outro processo git (upload-pack) que não herda o "-c safe.directory"; ele lê o
+        // arquivo apontado por GIT_CONFIG_GLOBAL.
+        Path trust = trustConfig(src);
+        Out out;
+        try {
+            out = run(cmd, timeoutSeconds, Map.of("GIT_CONFIG_GLOBAL", trust.toString()));
+        } finally {
+            Files.deleteIfExists(trust);
+        }
         if (out.exit() != 0) {
             throw new IllegalStateException("Não foi possível copiar a pasta: " + tail(out.text()));
         }
@@ -350,6 +358,18 @@ public final class LocalSource {
     private record Out(int exit, String text) {
     }
 
+    /**
+     * Arquivo de configuração temporário que confia na pasta (e no .git dela) mesmo com outro dono, como acontece em
+     * volume montado. Serve para os processos filhos do git (clone e fetch locais), que ignoram o "-c" da linha de
+     * comando. Quem pede deve apagar o arquivo depois.
+     */
+    public Path trustConfig(Path src) throws IOException {
+        Path file = Files.createTempFile("sentinel-gitconfig-", ".conf");
+        String text = "[safe]\n\tdirectory = " + src + "\n\tdirectory = " + src.resolve(".git") + "\n";
+        Files.writeString(file, text, StandardCharsets.UTF_8);
+        return file;
+    }
+
     /** Opções que deixam o git ler uma pasta de outro dono (comum em volume montado) só para esta pasta. */
     private static List<String> safeGit(Path dir) {
         return List.of("git", "-c", "safe.directory=" + dir, "-c", "core.quotepath=false");
@@ -368,6 +388,10 @@ public final class LocalSource {
     }
 
     private Out run(List<String> cmd, long limitSeconds) throws IOException, InterruptedException {
+        return run(cmd, limitSeconds, Map.of());
+    }
+
+    private Out run(List<String> cmd, long limitSeconds, Map<String, String> extraEnv) throws IOException, InterruptedException {
         Path out = Files.createTempFile("sentinel-local-", ".out");
         try {
             ProcessBuilder pb = new ProcessBuilder(cmd).redirectErrorStream(true).redirectOutput(out.toFile());
@@ -376,6 +400,7 @@ public final class LocalSource {
             // Em volume somente leitura o git não pode gravar o índice: sem isso o "status" falharia.
             env.put("GIT_OPTIONAL_LOCKS", "0");
             env.remove("GIT_SSH_COMMAND");
+            env.putAll(extraEnv);
             Process p = pb.start();
             if (!p.waitFor(limitSeconds, TimeUnit.SECONDS)) {
                 p.destroyForcibly();
