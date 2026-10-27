@@ -30,6 +30,16 @@ async function copy(text: string) {
  * Aba "Claude (MCP)" do cadastro de um sistema. Tudo aqui vale só para este sistema e salva na hora:
  * liga a consulta, gera a chave, escolhe quanto do resultado pode sair e quais ferramentas ficam liberadas.
  */
+/** O registro guarda "erro | campo=valor"; chamadas que deram certo guardam só os parâmetros. */
+function callParams(c: { ok: boolean; detail?: string | null }): string {
+  if (!c.detail) return '';
+  if (!c.ok) {
+    const i = c.detail.indexOf(' | ');
+    return i >= 0 ? c.detail.slice(i + 3) : '';
+  }
+  return c.detail;
+}
+
 export function McpPanel({ system }: { system: SystemSummaryResponse }) {
   const queryClient = useQueryClient();
   const key = ['mcp', system.id];
@@ -198,6 +208,7 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
                   <th style={{ padding: '6px 8px' }}>Quando</th>
                   <th style={{ padding: '6px 8px' }}>Ferramenta</th>
                   <th style={{ padding: '6px 8px' }}>Resultado</th>
+                  <th style={{ padding: '6px 8px' }}>Parâmetros</th>
                   <th style={{ padding: '6px 8px' }}>Tempo</th>
                 </tr>
               </thead>
@@ -206,7 +217,8 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
                   <tr key={`${c.at}-${i}`} style={{ borderTop: '1px solid var(--s-border)' }}>
                     <td style={{ padding: '6px 8px' }}>{startLabel(c.at)}</td>
                     <td style={{ padding: '6px 8px', fontFamily: mono }}>{c.tool}</td>
-                    <td style={{ padding: '6px 8px', color: c.ok ? 'var(--s-success-text)' : 'var(--s-danger-text)' }}>{c.ok ? 'ok' : (c.detail ?? 'recusada')}</td>
+                    <td style={{ padding: '6px 8px', color: c.ok ? 'var(--s-success-text)' : 'var(--s-danger-text)' }}>{c.ok ? 'ok' : (c.detail?.split(' | ')[0] || 'recusada')}</td>
+                    <td style={{ padding: '6px 8px', fontFamily: mono, wordBreak: 'break-word' }}>{callParams(c)}</td>
                     <td style={{ padding: '6px 8px' }}>{c.durationMs} ms</td>
                   </tr>
                 ))}

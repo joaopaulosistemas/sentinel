@@ -22,6 +22,8 @@ interface FindingsTableProps {
   auditId?: number;
   /** Sistema de cada achado, quando a lista mistura vários sistemas. Tem prioridade sobre systemName. */
   systemOf?: (finding: FindingResponse) => FindingOrigin | undefined;
+  /** Sugestão aberta do Claude sobre o achado, se houver; vira um selo na linha. */
+  claudeNoteOf?: (finding: FindingResponse) => { title: string } | undefined;
 }
 
 const statusLabels: Record<FindingStatus, string> = {
@@ -43,7 +45,7 @@ const th = { padding: '12px 8px' } as const;
 const td = { padding: '10px 8px', verticalAlign: 'top' } as const;
 
 /** Lista de achados: severidade, sistema, achado, local, origem e situação; cada linha abre o detalhe. */
-export function FindingsTable({ findings, systemName, auditId, systemOf }: FindingsTableProps) {
+export function FindingsTable({ findings, systemName, auditId, systemOf, claudeNoteOf }: FindingsTableProps) {
   const [toSuppress, setToSuppress] = useState<FindingResponse[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [open, setOpen] = useState<Set<number>>(new Set());
@@ -151,6 +153,11 @@ export function FindingsTable({ findings, systemName, auditId, systemOf }: Findi
                       >
                         {f.title}
                       </button>{' '}
+                      {claudeNoteOf?.(f) && (
+                        <span title={`Sugestão do Claude: ${claudeNoteOf(f)?.title}. Veja na aba Revisão do Claude.`} style={{ fontSize: 11, border: '1px solid var(--s-link)', borderRadius: 8, padding: '0 6px', color: 'var(--s-link)', marginRight: 4 }}>
+                          Claude sugeriu
+                        </span>
+                      )}
                       {f.shadow === true && (
                         <span title="Regra em modo sombra: aparece, mas não conta no score nem derruba o pipeline" style={{ fontSize: 11, border: '1px solid var(--s-border-strong)', borderRadius: 8, padding: '0 6px', color: 'var(--s-text-3)' }}>
                           Sombra

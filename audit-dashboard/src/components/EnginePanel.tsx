@@ -239,7 +239,7 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
                 onChange={(e) => setLimits({ ...limits, [t.key]: e.target.value })}
                 style={{ ...fieldStyle, borderBottom: `1px solid ${limitError(t.key) ? '#da1e28' : 'var(--s-border-strong)'}`, fontFamily: mono }}
               />
-              {limitError(t.key) && <span style={{ color: '#da1e28' }}>Use um inteiro maior que zero.</span>}
+              {limitError(t.key) && <span style={{ color: 'var(--s-danger-text)' }}>Use um inteiro maior que zero.</span>}
             </label>
           ))}
         </div>

@@ -18,7 +18,7 @@ export function RemediationBlock({ remediation }: { remediation: Remediation }) 
         marginTop: '0.75rem',
         padding: '0.75rem 1rem',
         background: 'var(--s-selected)',
-        borderLeft: '4px solid #0f62fe',
+        borderLeft: '4px solid var(--s-link)',
         borderRadius: '2px',
       }}
     >

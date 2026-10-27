@@ -15,6 +15,8 @@ function config(over: Partial<McpConfig> = {}): McpConfig {
   return { enabled: false, hasKey: false, keyPrefix: null, keyCreatedAt: null, dataLevel: 'TITLES', tools, ...over };
 }
 
+let callList: unknown[] = [];
+
 function setup(initial: McpConfig) {
   let current = initial;
   const calls: Array<{ url: string; method: string; body?: string }> = [];
@@ -24,7 +26,7 @@ function setup(initial: McpConfig) {
       const u = String(url);
       const method = init?.method ?? 'GET';
       calls.push({ url: u, method, body: init?.body as string | undefined });
-      if (u.endsWith('/calls?limit=20')) return new Response('[]', { status: 200 });
+      if (u.endsWith('/calls?limit=20')) return new Response(JSON.stringify(callList), { status: 200 });
       if (u.endsWith('/key') && method === 'POST') {
         current = { ...current, hasKey: true, keyPrefix: 'snt_AbCdEf' };
         return new Response(JSON.stringify({ key: 'snt_AbCdEfGHIJ-chave-completa', keyPrefix: 'snt_AbCdEf' }), { status: 200 });
@@ -75,6 +77,18 @@ describe('McpPanel', () => {
     expect(screen.queryByRole('status', { name: 'Chave nova' })).not.toBeInTheDocument();
     expect(await screen.findByText('snt_AbCdEf…')).toBeInTheDocument();
     expect(screen.queryByText(/chave-completa/)).not.toBeInTheDocument();
+  });
+
+  it('mostra os parâmetros de cada chamada, com o motivo separado quando foi recusada', async () => {
+    callList = [
+      { tool: 'achados', ok: true, durationMs: 12, detail: 'severity=CRITICAL, limit=5', at: new Date().toISOString() },
+      { tool: 'iniciar_auditoria', ok: false, durationMs: 3, detail: 'ferramenta desligada | branch=main', at: new Date().toISOString() },
+    ];
+    setup(config({ hasKey: true, keyPrefix: 'snt_AbCdEf' }));
+    expect(await screen.findByText('severity=CRITICAL, limit=5')).toBeInTheDocument();
+    expect(screen.getByText('ferramenta desligada')).toBeInTheDocument();
+    expect(screen.getByText('branch=main')).toBeInTheDocument();
+    callList = [];
   });
 
   it('só liga a consulta depois de haver chave', async () => {
