@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { axe } from 'vitest-axe';
 import * as matchers from 'vitest-axe/matchers';
@@ -18,11 +19,11 @@ declare module 'vitest' {
 describe('acessibilidade (axe)', () => {
   it('casca da aplicação sem violações', async () => {
     const { container } = render(
-      <MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}><MemoryRouter>
         <AppShell>
           <h1>Visão geral</h1>
         </AppShell>
-      </MemoryRouter>,
+      </MemoryRouter></QueryClientProvider>,
     );
     expect(await axe(container)).toHaveNoViolations();
   });

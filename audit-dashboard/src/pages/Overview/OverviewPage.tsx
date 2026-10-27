@@ -1,10 +1,10 @@
 import { DataTableSkeleton, InlineNotification } from '@carbon/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../../api/client';
+import { StartAuditModal } from '../../components/StartAuditModal';
 import { JourneySteps } from '../../components/JourneySteps';
 import { RecentAudits } from '../../components/RecentAudits';
+import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { useRecentAudits } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
 import type { AuditRunResponse, SystemSummaryResponse } from '../../types';
@@ -15,7 +15,6 @@ const names = (list: string[]) => (list.length <= 2 ? list.join(', ') : `${list.
 
 /** Visão geral: quatro números, quem precisa de atenção e as últimas auditorias; daqui se inicia uma auditoria. */
 export function OverviewPage() {
-  const queryClient = useQueryClient();
   const { data: systems, isLoading, error } = useSystems();
   const { data: recent } = useRecentAudits(20);
   const [pickedId, setPickedId] = useState('');
@@ -24,16 +23,8 @@ export function OverviewPage() {
   const list: SystemSummaryResponse[] = systems ?? [];
   const picked = list.find((s) => String(s.id) === pickedId) ?? list[0] ?? null;
 
-  const start = useMutation({
-    mutationFn: (system: SystemSummaryResponse) =>
-      api.triggerAudit({ systemId: system.id, branch: system.scheduledBranch || 'main', triggeredBy: 'dashboard-user' }),
-    onSuccess: (run) => {
-      setStarted(run);
-      void queryClient.invalidateQueries({ queryKey: ['systems'] });
-      void queryClient.invalidateQueries({ queryKey: ['auditRuns'] });
-      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
-    },
-  });
+  const pendingClaude = usePendingClaude();
+  const [startTarget, setStartTarget] = useState<SystemSummaryResponse | null>(null);
 
   // O aviso some sozinho; a auditoria continua na lista de baixo.
   useEffect(() => {
@@ -119,23 +110,14 @@ export function OverviewPage() {
           </select>
           <button
             type="button"
-            disabled={!picked || start.isPending}
-            onClick={() => picked && start.mutate(picked)}
-            style={{ height: 40, padding: '0 20px', background: !picked || start.isPending ? '#c6c6c6' : '#0f62fe', color: '#fff', border: 0, fontSize: 14, cursor: !picked || start.isPending ? 'not-allowed' : 'pointer' }}
+            disabled={!picked}
+            onClick={() => picked && setStartTarget(picked)}
+            style={{ height: 40, padding: '0 20px', background: !picked ? 'var(--s-border)' : 'var(--s-link)', color: '#fff', border: 0, fontSize: 14, cursor: !picked ? 'not-allowed' : 'pointer' }}
           >
-            {start.isPending ? 'Iniciando…' : 'Iniciar auditoria'}
+            Nova auditoria
           </button>
         </div>
       </div>
-
-      {start.isError && (
-        <InlineNotification
-          kind="error"
-          title="Não foi possível iniciar a auditoria"
-          subtitle={start.error instanceof Error ? start.error.message : 'Erro desconhecido'}
-          onCloseButtonClick={() => start.reset()}
-        />
-      )}
 
       {started && (
         <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid #0f62fe', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
@@ -143,6 +125,21 @@ export function OverviewPage() {
             <strong style={{ fontWeight: 600 }}>Auditoria #{started.id} iniciada</strong> em {started.systemName}. Ela já aparece em "Últimas auditorias" abaixo.
           </span>
           <Link to={`/audits/${started.id}`} style={{ fontWeight: 500 }}>Acompanhar execução</Link>
+        </div>
+      )}
+
+      {pendingClaude.total > 0 && (
+        <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid var(--s-link)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <strong style={{ fontWeight: 600 }}>
+            {pendingClaude.total === 1 ? '1 pedido do Claude espera' : `${pendingClaude.total} pedidos do Claude esperam`} sua decisão
+          </strong>
+          <span style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {pendingClaude.bySystem.map((r) => (
+              <Link key={r.system.id} to={`/findings?aba=reauditoria&systemId=${r.system.id}`}>
+                {r.system.name} ({r.count})
+              </Link>
+            ))}
+          </span>
         </div>
       )}
 
@@ -184,6 +181,8 @@ export function OverviewPage() {
 
         <RecentAudits />
       </div>
+
+      <StartAuditModal system={startTarget} onClose={() => setStartTarget(null)} onStarted={(run) => setStarted(run)} />
     </div>
   );
 }

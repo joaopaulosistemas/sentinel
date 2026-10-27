@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Fragment, useState } from 'react';
 import { useFixPlan } from '../hooks/useAuditRuns';
 import type { AuditRunResponse, Category, Severity } from '../types';
-import { TARGET_SCORE, categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
+import { categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
+import { scoreColor } from '../utils/scoreBand';
 
 const toneColor = { good: 'var(--s-success-text)', warn: 'var(--s-warn-text)', bad: 'var(--s-danger-text)' } as const;
 const sevBadge: Record<Severity, { label: string; bg: string; fg: string }> = {
@@ -23,7 +24,6 @@ function Emphasis({ text }: { text: string }) {
   );
 }
 
-const scoreColor = (n: number) => (n >= TARGET_SCORE ? 'var(--s-success-text)' : n >= 50 ? 'var(--s-warn-text)' : 'var(--s-danger-text)');
 
 /** Resultado em três etapas, do geral para o detalhe: veredito, onde está o risco, o que corrigir primeiro. */
 export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; onOpenFindings: () => void }) {

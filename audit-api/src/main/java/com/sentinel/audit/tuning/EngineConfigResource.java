@@ -48,13 +48,16 @@ public class EngineConfigResource {
 
     public record KnownRule(String id, long count) {}
 
+    /** Regra declarada num pacote: o que ela faz, de que pacote vem e a severidade que o Semgrep declara. */
+    public record CatalogRule(String id, String pack, String message, String severity, String category) {}
+
     public record Tuning(List<RuleAdjustment> rules, Map<String, Integer> thresholds, List<String> enablePacks,
                          List<String> disablePacks, List<String> disableAnalyzers) {}
 
     public record EngineConfigResponse(String profile, String profileDescription, int adjustments, Tuning tuning,
                                        List<RuleAdjustment> profileRules, List<PackState> packs,
                                        List<AnalyzerState> analyzers, List<ThresholdState> thresholds,
-                                       List<KnownRule> knownRules) {}
+                                       List<KnownRule> knownRules, List<CatalogRule> catalog) {}
 
     @Inject
     AuditedSystemRepository systemRepository;
@@ -139,8 +142,11 @@ public class EngineConfigResource {
                 tuning.disablePacks().stream().sorted().toList(), tuning.disableAnalyzers().stream().sorted().toList());
         String description = packRegistry.snapshot().profiles().containsKey(profileId == null ? "" : profileId.toLowerCase())
                 ? packRegistry.snapshot().profiles().get(profileId.toLowerCase()).description() : null;
+        List<CatalogRule> catalog = com.sentinel.audit.pack.RuleCatalog.of(packRegistry.snapshot().packs()).stream()
+                .map(e -> new CatalogRule(e.id(), e.pack(), e.message(), e.severity(), e.category()))
+                .toList();
         return new EngineConfigResponse(profileId, description, tuning.adjustments(), dto, rules(base.baseOverrides()),
-                packs, analyzers, thresholds, known);
+                packs, analyzers, thresholds, known, catalog);
     }
 
     private static List<RuleAdjustment> rules(Map<String, RuleOverride> in) {

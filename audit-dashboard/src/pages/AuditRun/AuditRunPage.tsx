@@ -174,6 +174,7 @@ export function AuditRunPage() {
 
   return (
     <div style={{ padding: '1.5rem 2rem 3rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 1440, margin: '0 auto' }}>
+      <JourneySteps current={2} />
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <nav aria-label="Caminho" style={{ fontSize: 12, color: 'var(--s-text-3)' }}>

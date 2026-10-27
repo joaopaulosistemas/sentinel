@@ -14,6 +14,7 @@ import type { AuditRunResponse, Severity, Stack } from '../../types';
 import { analyzerCounts, PHASES, phaseIndex, progressPercent } from '../../utils/auditProgress';
 import { scoreColor } from '../../utils/systemAttention';
 import { startLabel } from '../../utils/timeAgo';
+import { JourneySteps } from '../../components/JourneySteps';
 
 const stackLabels: Record<Stack, string> = {
   JAVA: 'Java',
@@ -102,6 +103,7 @@ export function SystemDetailPage() {
 
   return (
     <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <JourneySteps current={1} />
       {started && (
         <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid #0f62fe', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span>

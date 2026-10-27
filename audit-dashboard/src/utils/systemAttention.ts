@@ -1,5 +1,5 @@
 import type { SystemSummaryResponse } from '../types';
-import { TARGET_SCORE } from './resultVerdict';
+import { TARGET_SCORE, scoreColor as bandColor } from './scoreBand';
 
 /** Depois de quantos dias sem auditar um sistema passa a pedir atenção. */
 export const STALE_DAYS = 5;
@@ -61,9 +61,8 @@ export interface AttentionRow {
 
 const points = (n: number) => `${n} ${n === 1 ? 'ponto' : 'pontos'}`;
 
-/** Cor da nota: verde na meta, âmbar no meio, vermelho abaixo. */
-export const scoreColor = (n: number | null) =>
-  n === null ? 'var(--s-text-4)' : n >= TARGET_SCORE ? 'var(--s-success-text)' : n >= 50 ? 'var(--s-warn-text)' : 'var(--s-danger-text)';
+/** Cor da nota: ver `scoreBand` (régua única). */
+export const scoreColor = (n: number | null) => bandColor(n);
 
 /**
  * Todos os sistemas do menor para o maior nota (nunca auditados primeiro), cada um com o motivo em uma linha:

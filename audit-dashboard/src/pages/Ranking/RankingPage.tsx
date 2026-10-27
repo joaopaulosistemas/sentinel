@@ -15,11 +15,11 @@ import { useNavigate } from 'react-router-dom';
 import { useRuleQuality, useSystems } from '../../hooks/useSystems';
 import type { SystemSummaryResponse } from '../../types';
 import { formatTrend, summarizeTeams } from '../../utils/ranking';
+import { TARGET_SCORE as TARGET, scoreColor as barColor, scoreTagType } from '../../utils/scoreBand';
 import { timeAgo } from '../../utils/timeAgo';
 
 export type SortKey = 'nota' | 'criticos' | 'tendencia';
 
-const TARGET = 75;
 const sortOptions: Array<{ key: SortKey; label: string }> = [
   { key: 'nota', label: 'Nota' },
   { key: 'criticos', label: 'Críticos' },
@@ -28,7 +28,6 @@ const sortOptions: Array<{ key: SortKey; label: string }> = [
 
 const trendColor = { up: 'var(--s-success-text)', down: 'var(--s-danger-text)', flat: 'var(--s-text-3)', none: 'var(--s-text-4)' } as const;
 
-const barColor = (n: number) => (n >= TARGET ? 'var(--s-success-text)' : n >= 50 ? 'var(--s-warn-text)' : 'var(--s-danger-text)');
 
 /** Ordem da lista: melhor nota primeiro, mais críticos primeiro, ou maior ganho de nota primeiro. Sem dado vai para o fim. */
 export function sortSystems(systems: SystemSummaryResponse[], by: SortKey): SystemSummaryResponse[] {
@@ -43,8 +42,7 @@ export function sortSystems(systems: SystemSummaryResponse[], by: SortKey): Syst
 
 function scoreTag(score: number | null | undefined) {
   if (score == null) return <Tag type="gray">Nunca auditado</Tag>;
-  const type = score >= 80 ? 'green' : score >= 60 ? 'warm-gray' : score >= 40 ? 'magenta' : 'red';
-  return <Tag type={type}>{Math.round(score)}</Tag>;
+  return <Tag type={scoreTagType(score)}>{Math.round(score)}</Tag>;
 }
 
 /** Visão consolidada: onde olhar primeiro (sistemas) e como cada time está (times). */

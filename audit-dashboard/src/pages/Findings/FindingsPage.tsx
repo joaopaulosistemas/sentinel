@@ -2,6 +2,7 @@ import { DataTableSkeleton, InlineNotification } from '@carbon/react';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ClaudeReviewPanel } from '../../components/ClaudeReviewPanel';
+import { JourneySteps } from '../../components/JourneySteps';
 import { ReauditPanel } from '../../components/ReauditPanel';
 import { FindingsTable, type FindingOrigin } from '../../components/FindingsTable';
 import { useAudit } from '../../hooks/useAuditRuns';
@@ -35,9 +36,9 @@ const categoryOptions: Array<{ value: Category | ''; label: string }> = [
 ];
 
 const ABAS = [
-  { id: 'achados', nome: 'Achados e nota', ativa: true },
-  { id: 'revisao', nome: 'Revisão do Claude', ativa: true },
-  { id: 'reauditoria', nome: 'Reauditoria', ativa: true },
+  { id: 'achados', nome: 'Achados e nota' },
+  { id: 'revisao', nome: 'Revisão do Claude' },
+  { id: 'reauditoria', nome: 'Reauditoria' },
 ];
 
 type AbaId = 'achados' | 'revisao' | 'reauditoria';
@@ -165,6 +166,7 @@ export function FindingsPage() {
 
   return (
     <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {auditMode && <JourneySteps current={aba === 'achados' ? 3 : 4} />}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>
           Informações de Auditoria
@@ -189,10 +191,7 @@ export function FindingsPage() {
             role="tab"
             id={`aba-${a.id}`}
             aria-selected={a.id === aba}
-            aria-disabled={!a.ativa}
-            onClick={() => a.ativa && setAba(a.id as AbaId)}
-            disabled={!a.ativa}
-            title={a.ativa ? undefined : 'Chega em uma próxima fase'}
+            onClick={() => setAba(a.id as AbaId)}
             style={{
               background: 'none',
               border: 0,
@@ -200,8 +199,8 @@ export function FindingsPage() {
               padding: '10px 16px',
               fontSize: 14,
               fontWeight: a.id === aba ? 600 : 400,
-              color: a.ativa ? 'var(--s-text)' : 'var(--s-disabled)',
-              cursor: a.ativa ? 'pointer' : 'not-allowed',
+              color: 'var(--s-text)',
+              cursor: 'pointer',
             }}
           >
             {a.nome}
