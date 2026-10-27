@@ -68,6 +68,8 @@ services:
       TRIVY_ENABLED: ${TRIVY_ENABLED:-true}
       TRIVY_SCANNERS: ${TRIVY_SCANNERS:-vuln,misconfig}
       SENTINEL_EVIDENCE_DIR: /evidence
+      # Pasta local como origem do sistema: desligada se vazio. Para ligar, use SENTINEL_LOCAL_ROOT=/projects
+      SENTINEL_LOCAL_ROOT: ${SENTINEL_LOCAL_ROOT:-}
       EVIDENCE_MIN_LINE_COVERAGE: ${EVIDENCE_MIN_LINE_COVERAGE:-60}
       GITLEAKS_ENABLED: ${GITLEAKS_ENABLED:-true}
       PMD_ENABLED: ${PMD_ENABLED:-true}
@@ -100,6 +102,8 @@ services:
       - audit_secrets:/var/lib/sentinel
       # Evidências offline: ./evidencias/<nome-do-sistema>/ (somente leitura). Veja docs/evidencias/README.md
       - ${EVIDENCE_HOST_DIR:-./evidencias}:/evidence:ro
+      # Projetos locais (somente leitura). Só são usados com SENTINEL_LOCAL_ROOT=/projects. Veja docs/pasta-local/README.md
+      - ${PROJECTS_HOST_DIR:-./projetos}:/projects:ro
 
   audit-dashboard:
     build:
