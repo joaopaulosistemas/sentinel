@@ -22,6 +22,9 @@ class PathRoleTest {
         assertEquals(DOCS, PathRole.of("README.md"));
         assertEquals(FIXTURE, PathRole.of("src/main/resources/fixtures/data.json"));
         assertEquals(FIXTURE, PathRole.of("examples/app.yaml"));
+        assertEquals(FIXTURE, PathRole.of(".env.example"));
+        assertEquals(FIXTURE, PathRole.of("config/app.properties.sample"));
+        assertEquals(PRODUCTION, PathRole.of(".env"));
         assertEquals(GENERATED, PathRole.of("target/classes/Foo.class"));
         assertEquals(GENERATED, PathRole.of("web/node_modules/x/index.js"));
         assertEquals(GENERATED, PathRole.of("static/app.min.js"));

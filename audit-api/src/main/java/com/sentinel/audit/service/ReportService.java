@@ -84,13 +84,24 @@ public class ReportService {
 
         appendInsights(h, run, FindingLifecycleService.active(findings));
 
-        h.append("<h2>Findings (").append(active.size()).append(")</h2>");
+        List<Finding> reliable = active.stream().filter(f -> !isLowConfidence(f)).toList();
+        List<Finding> lowConfidence = active.stream().filter(ReportService::isLowConfidence).toList();
+        h.append("<h2>Findings (").append(reliable.size()).append(")</h2>");
         if (active.isEmpty()) {
             h.append("<p>Nenhum finding ativo.</p>");
         }
         int i = 1;
-        for (Finding f : active.stream().sorted(Comparator.comparing(Finding::getSeverity)).toList()) {
+        for (Finding f : reliable.stream().sorted(Comparator.comparing(Finding::getSeverity)).toList()) {
             appendFinding(h, i++, f, true);
+        }
+        if (!lowConfidence.isEmpty()) {
+            h.append("<h2>Baixa confiança (").append(lowConfidence.size()).append(")</h2>")
+                    .append("<p>Provavelmente não são problemas: estão em testes, exemplos ou documentação, ")
+                    .append("têm valor de exemplo ou vêm de regras com muitos falsos positivos. Revise por amostragem.</p>");
+            int k = 1;
+            for (Finding f : lowConfidence.stream().sorted(Comparator.comparing(Finding::getSeverity)).toList()) {
+                appendFinding(h, k++, f, false);
+            }
         }
 
         if (!suppressed.isEmpty()) {
@@ -256,6 +267,11 @@ public class ReportService {
         return v == Math.rint(v) ? String.valueOf((long) v) : String.format(java.util.Locale.ROOT, "%.1f", v);
     }
 
+    /** Achado marcado com baixa confiança pela análise de caminho, valor de exemplo ou histórico de falsos positivos. */
+    static boolean isLowConfidence(Finding f) {
+        return f.getConfidence() == com.sentinel.audit.model.Confidence.LOW;
+    }
+
     private void appendFinding(StringBuilder h, int n, Finding f, boolean withRemediation) {
         h.append("<section class=\"finding\"><h3><span class=\"badge ").append(f.getSeverity()).append("\">")
                 .append(f.getSeverity()).append("</span> ").append(n).append(". ").append(esc(f.getTitle()));
@@ -269,6 +285,10 @@ public class ReportService {
             h.append(" · ").append(esc(f.getCveId()));
         }
         h.append("</p>");
+        if (f.getConfidenceReason() != null && !f.getConfidenceReason().isBlank()) {
+            h.append("<p class=\"where\">Confiança ").append(f.getConfidence()).append(": ")
+                    .append(esc(f.getConfidenceReason())).append("</p>");
+        }
         if (f.getDescription() != null && !f.getDescription().isBlank()) {
             h.append("<p>").append(esc(f.getDescription())).append("</p>");
         }
