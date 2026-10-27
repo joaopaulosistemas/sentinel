@@ -7,6 +7,7 @@ import { StartAuditModal } from '../../components/StartAuditModal';
 import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
 import { AnalyzerCard, EventLog, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
 import { JourneySteps } from '../../components/JourneySteps';
+import { Crumbs, PageShell } from '../../components/PageShell';
 import { McpStatusStrip } from '../../components/McpStatusStrip';
 import { useMcpActivity } from '../../hooks/useMcpActivity';
 import { callsSince, mcpCallEvents, mergeEvents, pendingCount } from '../../utils/mcpActivity';
@@ -144,13 +145,18 @@ export function AuditRunPage() {
   if (done) {
     const sha = run.commitSha ? run.commitSha.slice(0, 7) : null;
     return (
-      <div style={{ padding: '1.5rem 2rem 3rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 1440, margin: '0 auto' }}>
-        <JourneySteps current={3} />
+      <PageShell
+        trail={
+          <>
+            <JourneySteps current={3} />
+            <Crumbs>
+              <Link to="/systems">Sistemas</Link> / {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName} / Auditoria #{run.id}
+            </Crumbs>
+          </>
+        }
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <nav aria-label="Caminho" style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
-              <Link to="/systems">Sistemas</Link> / {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName} / Auditoria #{run.id}
-            </nav>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName} · resultado da auditoria #{run.id}</h1>
             <span style={{ color: 'var(--s-text-3)' }}>
               Branch <span style={{ fontFamily: mono }}>{run.branch}</span>
@@ -168,19 +174,24 @@ export function AuditRunPage() {
         </div>
         <ResultSteps run={run} onOpenFindings={openFindings} />
         {rerunModal}
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div style={{ padding: '1.5rem 2rem 3rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 1440, margin: '0 auto' }}>
-      <JourneySteps current={2} />
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <nav aria-label="Caminho" style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
+    <PageShell
+      trail={
+        <>
+          <JourneySteps current={2} />
+          <Crumbs>
             {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName}
             {'  /  '}Auditoria #{run.id}
-          </nav>
+          </Crumbs>
+        </>
+      }
+    >
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{run.systemName}</h1>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: pill.bg, color: pill.fg, padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500 }}>
@@ -299,6 +310,6 @@ export function AuditRunPage() {
         )}
       </Modal>
       {rerunModal}
-    </div>
+    </PageShell>
   );
 }

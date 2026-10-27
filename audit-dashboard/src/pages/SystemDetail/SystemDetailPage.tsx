@@ -1,4 +1,5 @@
 import { InlineNotification, SkeletonText, Tile } from '@carbon/react';
+import { Crumbs, PageShell } from '../../components/PageShell';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
@@ -102,8 +103,16 @@ export function SystemDetailPage() {
   const live = (auditRuns ?? []).some((r) => r.status === 'PENDING' || r.status === 'RUNNING');
 
   return (
-    <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <JourneySteps current={1} />
+    <PageShell
+      trail={
+        <>
+          <JourneySteps current={1} />
+          <Crumbs>
+            <Link to="/systems">Sistemas</Link> &nbsp;/&nbsp; {system.name}
+          </Crumbs>
+        </>
+      }
+    >
       {started && (
         <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid var(--s-link)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span>
@@ -120,9 +129,6 @@ export function SystemDetailPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <nav aria-label="Caminho" style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
-            <Link to="/systems">Sistemas</Link> &nbsp;/&nbsp; {system.name}
-          </nav>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>{system.name}</h1>
           <span style={{ color: 'var(--s-text-3)' }}>
             {[stackLabels[system.stack], system.team, `perfil ${system.profile || 'default'}`].filter(Boolean).join(' · ')}
@@ -258,6 +264,6 @@ export function SystemDetailPage() {
       <TrendChart systemId={id} />
 
       <SuppressionsList systemId={id} />
-    </div>
+    </PageShell>
   );
 }
