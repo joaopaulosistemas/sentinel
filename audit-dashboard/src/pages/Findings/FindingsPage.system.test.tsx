@@ -18,6 +18,7 @@ function stub() {
       if (u === '/api/v1/audits/26') {
         return new Response(JSON.stringify({ id: 26, systemId: 2, systemName: 'portal-cooperado', branch: 'main', status: 'COMPLETED', riskScore: null, findingsSummary: {}, startedAt: '2026-10-20T10:00:00', completedAt: null }), { status: 200 });
       }
+      if (u.includes('/claude-review/')) return new Response(JSON.stringify({ openSuggestions: 0, suggestions: [], proposals: [] }), { status: 200 });
       return new Response('[]', { status: 200 });
     }),
   );

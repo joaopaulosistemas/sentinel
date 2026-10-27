@@ -234,3 +234,13 @@ Segue a avaliação do fluxo de uso (relatório "Avaliação do fluxo do Sentine
 
 Não feito de propósito: ferramenta MCP que cruza sistemas (pede decisão sobre a chave por sistema), limite de MCP compartilhado entre instâncias e registro dos parâmetros das chamadas MCP (código Quarkus que não dá para compilar aqui). Selo do Claude por achado e a divisão do `SystemsPage` ficaram para a próxima volta.
 Verificado: `tsc`, `vitest` (182) e os 2 testes e2e em Chromium. Não verificado: o código Java novo (`RuleCatalog`, `EngineConfigResource`, `AuditResource`) só compila no CI.
+
+## Dashboard 12.13.0 — Segunda parte da avaliação do fluxo
+
+- **MCP registra os parâmetros** de cada chamada (`McpCallSummary`: campo e valor curtos, segredos mascarados) na coluna `detail` que já existia, sem migração. A aba Claude (MCP) ganhou a coluna Parâmetros. Decisão do João: o MCP continua enxergando **um sistema só**, então não há ferramenta que cruze sistemas.
+- **Selo "Claude sugeriu"** na lista de achados quando há sugestão aberta do Claude para a mesma regra (e, se a sugestão informa, o mesmo arquivo e linha). Usa a mesma consulta da aba Revisão do Claude.
+- **`SystemsPage` dividida**: de 686 para cerca de 380 linhas, com `SystemFormFields` (aba de cadastro) e `SystemsTable` (lista). Sem mudança de comportamento; os testes e o e2e passam.
+- **Cores**: novo token `--s-primary`; botões primários, destaques e textos de erro mais usados passaram a usar tokens (cores de status em gráficos e barras seguem em hexadecimal).
+
+Não feito: limite de chamadas MCP compartilhado entre instâncias (hoje é em memória por instância; compartilhar exigiria tabela ou cache externo, e só vale com mais de uma instância da API). Botões e selects crus restantes seguem como estão.
+Verificado: `tsc`, `vitest` (187), e2e (2) em Chromium. Não verificado: o Java novo (`McpCallSummary` e seu teste) só compila no CI.

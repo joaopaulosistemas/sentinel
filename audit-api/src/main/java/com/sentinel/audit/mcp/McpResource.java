@@ -127,7 +127,7 @@ public class McpResource {
                 }
                 long ms = (System.nanoTime() - start) / 1_000_000;
                 try {
-                    gate.log(systemId, tool.wire(), result.ok(), ms, detail);
+                    gate.log(systemId, tool.wire(), result.ok(), ms, McpCallSummary.of(detail, arguments));
                 } catch (RuntimeException e) {
                     LOG.warnf("Não foi possível registrar a chamada MCP (%s)", e.getMessage());
                 }

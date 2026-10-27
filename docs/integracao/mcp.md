@@ -63,7 +63,7 @@ Na tela de execução da auditoria (`/audits/<id>`), enquanto ela roda, aparece 
 
 Cada chamada do Claude também entra no quadro **Eventos** ("Claude (MCP) chamou `buscar_achados`"), na ordem em que aconteceu. Pedidos do Claude esperando aprovação aparecem como link para **Reauditoria**.
 
-É só informação: lê a configuração, as últimas chamadas e os pedidos pendentes, e não escreve nada. A nota continua vindo apenas do motor de regras. A faixa some quando a auditoria termina; o histórico completo fica na aba Claude (MCP) do sistema.
+É só informação: lê a configuração, as últimas chamadas e os pedidos pendentes, e não escreve nada. A nota continua vindo apenas do motor de regras. A faixa some quando a auditoria termina; o histórico completo fica na aba Claude (MCP) do sistema. Cada chamada guarda também os parâmetros recebidos (campo e valor curtos, até 60 caracteres; campos com `key`, `token`, `secret`, `senha`, `password` ou `authorization` no nome saem como `***`), mostrados na coluna Parâmetros. O MCP continua enxergando um sistema só, o da chave usada.
 
 ## Revisão do Claude: sugestões e regras
 

@@ -105,7 +105,7 @@ export function SystemDetailPage() {
     <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
       <JourneySteps current={1} />
       {started && (
-        <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid #0f62fe', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid var(--s-link)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span>
             <strong style={{ fontWeight: 600 }}>Auditoria #{started.id} iniciada</strong> na branch <span style={{ fontFamily: mono }}>{started.branch}</span>. Ela já aparece na lista abaixo e se atualiza sozinha.
           </span>
@@ -132,7 +132,7 @@ export function SystemDetailPage() {
           <button type="button" onClick={() => navigate(`/systems?edit=${system.id}`)} style={{ height: 40, padding: '0 16px', background: 'var(--s-surface)', color: 'var(--s-text)', border: '1px solid var(--s-border-strong)', fontSize: 14, cursor: 'pointer' }}>
             Editar sistema
           </button>
-          <button type="button" onClick={() => setStarting(true)} style={{ height: 40, padding: '0 20px', background: '#0f62fe', color: '#fff', border: 0, fontSize: 14, cursor: 'pointer' }}>
+          <button type="button" onClick={() => setStarting(true)} style={{ height: 40, padding: '0 20px', background: 'var(--s-primary)', color: '#fff', border: 0, fontSize: 14, cursor: 'pointer' }}>
             Nova auditoria
           </button>
         </div>
@@ -184,7 +184,7 @@ export function SystemDetailPage() {
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ flex: 1, height: 6, background: 'var(--s-border)' }}>
-                                <span style={{ display: 'block', height: 6, background: '#0f62fe', width: `${pct}%` }} />
+                                <span style={{ display: 'block', height: 6, background: 'var(--s-primary)', width: `${pct}%` }} />
                               </span>
                               <span style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono, width: 36 }}>{pct}%</span>
                             </span>

@@ -18,6 +18,7 @@
   --s-text-4: #6f6f6f;
   --s-disabled: #a8a8a8;
   --s-link: #0f62fe;
+  --s-primary: #0f62fe;
   --s-danger-text: #a2191f;
   --s-success-text: #198038;
   --s-shadow: rgba(22, 22, 22, 0.6);
@@ -46,6 +47,7 @@
   --s-text-4: #a8a8a8;
   --s-disabled: #6f6f6f;
   --s-link: #78a9ff;
+  --s-primary: #0f62fe;
   --s-danger-text: #ff8389;
   --s-success-text: #42be65;
   --s-shadow: rgba(0, 0, 0, 0.7);
