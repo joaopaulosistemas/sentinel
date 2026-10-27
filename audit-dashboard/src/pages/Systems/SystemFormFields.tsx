@@ -1,17 +1,21 @@
 import {
   Button,
   Checkbox,
+  ContentSwitcher,
   InlineNotification,
   NumberInput,
   PasswordInput,
+  RadioButton,
+  RadioButtonGroup,
   Select,
   SelectItem,
+  Switch,
   TextArea,
   TextInput,
 } from '@carbon/react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import { CheckIcon, CrossIcon, SpinnerIcon } from '../../components/StatusIcons';
-import type { ProfileInfo, RepoCheck } from '../../types';
+import type { PathCheck, ProfileInfo, RepoCheck } from '../../types';
 import {
   newWebhookSecret,
   notifyFormats,
@@ -27,6 +31,9 @@ interface Props {
   errors: Partial<Record<keyof SystemFormValues, string>>;
   touched: boolean;
   check: UseMutationResult<RepoCheck, Error, void>;
+  checkPath: UseMutationResult<PathCheck, Error, void>;
+  /** O servidor liberou a origem "pasta local" (SENTINEL_LOCAL_ROOT) */
+  localEnabled: boolean;
   save: { isError: boolean; error: unknown };
   profiles: ProfileInfo[];
   profileInfo: ProfileInfo | undefined;
@@ -39,7 +46,10 @@ interface Props {
 const num = new Intl.NumberFormat('pt-BR');
 
 /** Aba "Cadastro e Git" do pop-up de sistema: identificação, repositório, agendamento, perfil, notificação e webhook. */
-export function SystemFormFields({ values, setValues, errors, touched, check, save, profiles, profileInfo, tokenSaved, notifySaved, webhookSaved, mono }: Props) {
+export function SystemFormFields({ values, setValues, errors, touched, check, checkPath, localEnabled, save, profiles, profileInfo, tokenSaved, notifySaved, webhookSaved, mono }: Props) {
+  const local = values.sourceType === 'LOCAL_PATH';
+  // Quem já tem sistema em pasta local continua vendo a opção mesmo se o servidor a desligou (com aviso).
+  const showSwitcher = localEnabled || local;
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <TextInput
@@ -50,6 +60,31 @@ export function SystemFormFields({ values, setValues, errors, touched, check, sa
         invalidText={errors.name}
         onChange={(e) => setValues({ ...values, name: e.target.value })}
       />
+      {showSwitcher && (
+        <ContentSwitcher
+          size="md"
+          selectedIndex={local ? 1 : 0}
+          onChange={(e) => {
+            setValues({ ...values, sourceType: (e as { name?: string | number }).name === 'LOCAL_PATH' ? 'LOCAL_PATH' : 'GIT_URL', auditOnPush: false });
+            check.reset();
+            checkPath.reset();
+          }}
+        >
+          <Switch name="GIT_URL" text="Repositório Git (URL)" />
+          <Switch name="LOCAL_PATH" text="Pasta local" />
+        </ContentSwitcher>
+      )}
+      {local && !localEnabled && (
+        <InlineNotification
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          title="Pasta local desligada no servidor"
+          subtitle="Defina SENTINEL_LOCAL_ROOT para a API poder auditar este sistema."
+        />
+      )}
+      {!local && (
+        <>
       <div style={{ display: 'grid', gap: 8 }}>
         <TextInput
           id="sys-repo"
@@ -158,6 +193,85 @@ export function SystemFormFields({ values, setValues, errors, touched, check, sa
           />
         )}
       </fieldset>
+        </>
+      )}
+      {local && (
+        <fieldset style={{ border: '1px solid var(--s-border)', margin: 0, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <legend style={{ padding: '0 6px', fontSize: 13, fontWeight: 600 }}>Pasta local do projeto</legend>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+              <TextInput
+                id="sys-local-path"
+                labelText="Pasta (dentro da raiz de projetos) *"
+                placeholder="meu-sistema"
+                helperText="Caminho relativo à raiz de projetos do servidor; deve ser a raiz de um repositório Git. O Sentinel só lê: nunca altera nem apaga esta pasta."
+                value={values.localPath}
+                invalid={touched && !!errors.localPath}
+                invalidText={errors.localPath}
+                onChange={(e) => {
+                  setValues({ ...values, localPath: e.target.value });
+                  checkPath.reset();
+                }}
+                onBlur={() => {
+                  if (!validate(values).localPath && !checkPath.data && !checkPath.isPending) checkPath.mutate();
+                }}
+              />
+            </div>
+            <Button kind="tertiary" size="md" disabled={!!validate(values).localPath || checkPath.isPending} onClick={() => checkPath.mutate()}>
+              {checkPath.isPending ? 'Verificando…' : 'Verificar pasta'}
+            </Button>
+          </div>
+          {checkPath.isPending && (
+            <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--s-text-3)' }}>
+              <SpinnerIcon size={14} />
+              Conferindo a pasta…
+            </span>
+          )}
+          {checkPath.isError && (
+            <span role="status" style={{ color: 'var(--s-danger-text)', fontSize: 12 }}>
+              Não foi possível verificar agora: {checkPath.error instanceof Error ? checkPath.error.message : 'erro desconhecido'}
+            </span>
+          )}
+          {checkPath.data?.ok && (
+            <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--s-success-text)', flexWrap: 'wrap' }}>
+              <CheckIcon size={14} />
+              Pasta encontrada · repositório Git
+              {checkPath.data.defaultBranch && (
+                <>
+                  {' · branch atual: '}
+                  <span style={{ fontFamily: mono }}>{checkPath.data.defaultBranch}</span>
+                </>
+              )}
+              {checkPath.data.fileCount != null && ` · ${num.format(checkPath.data.fileCount)} arquivos`}
+              {!!checkPath.data.uncommittedFiles && ` · ${num.format(checkPath.data.uncommittedFiles)} com alterações não commitadas`}
+              {checkPath.data.branchFound === false ? ` · a branch "${values.scheduledBranch.trim()}" não existe` : ''}
+            </span>
+          )}
+          {checkPath.data && !checkPath.data.ok && (
+            <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-danger-text)', fontSize: 12 }}>
+              <CrossIcon size={14} />
+              {checkPath.data.message ?? 'Pasta inacessível'}
+            </span>
+          )}
+          <RadioButtonGroup
+            legendText="O que auditar"
+            name="sys-local-snapshot"
+            orientation="vertical"
+            valueSelected={values.localSnapshot}
+            onChange={(v) => setValues({ ...values, localSnapshot: v === 'TREE' ? 'TREE' : 'COMMIT' })}
+          >
+            <RadioButton id="snap-commit" value="COMMIT" labelText="Último commit da branch (recomendado): repetível, com SHA e comparação entre auditorias" />
+            <RadioButton id="snap-tree" value="TREE" labelText="Pasta como está agora: inclui o que ainda não foi commitado (sem SHA; a auditoria fica sem o aviso de código desatualizado)" />
+          </RadioButtonGroup>
+          <InlineNotification
+            kind="info"
+            lowContrast
+            hideCloseButton
+            title="Como funciona"
+            subtitle="A auditoria analisa uma cópia temporária da pasta, descartada no fim. Webhook de push não se aplica a pasta local; o agendamento por horas continua valendo."
+          />
+        </fieldset>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
         <Select
           id="sys-stack"
@@ -213,6 +327,8 @@ export function SystemFormFields({ values, setValues, errors, touched, check, sa
             }}
           />
         </div>
+        {!local && (
+          <>
         <Checkbox
           id="sys-push"
           labelText="Auditar a cada push (webhook)"
@@ -247,6 +363,8 @@ export function SystemFormFields({ values, setValues, errors, touched, check, sa
               />
             )}
           </div>
+        )}
+          </>
         )}
       </fieldset>
 

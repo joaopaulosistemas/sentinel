@@ -30,6 +30,11 @@ export interface SystemSummaryResponse {
   /** Perfil de regras do sistema; vazio/nulo = "default" */
   profile?: string | null;
   repoUrl?: string | null;
+  /** GIT_URL (padrão) ou LOCAL_PATH */
+  sourceType?: SourceType | null;
+  /** Pasta local, relativa à raiz do servidor (só em LOCAL_PATH) */
+  localPath?: string | null;
+  localSnapshot?: LocalSnapshot | null;
   description?: string | null;
   /** Nota da última auditoria completa menos a anterior; nulo com menos de duas */
   scoreDelta?: number | null;
@@ -54,7 +59,11 @@ export interface SystemSummaryResponse {
 export interface SystemRequest {
   name: string;
   description: string;
-  repoUrl: string;
+  /** Vazio/ausente quando a origem é pasta local */
+  repoUrl?: string;
+  sourceType?: SourceType;
+  localPath?: string;
+  localSnapshot?: LocalSnapshot;
   stack: Stack;
   team: string;
   profile?: string;
@@ -393,6 +402,19 @@ export interface FindingsOverview {
 }
 
 /** Resultado da verificação rápida de um repositório (sem clonar). */
+export type SourceType = 'GIT_URL' | 'LOCAL_PATH';
+export type LocalSnapshot = 'COMMIT' | 'TREE';
+
+/** Resultado da verificação de uma pasta local */
+export interface PathCheck {
+  ok: boolean;
+  message: string | null;
+  defaultBranch: string | null;
+  branchFound: boolean | null;
+  fileCount: number | null;
+  uncommittedFiles: number | null;
+}
+
 export interface RepoCheck {
   /** Arquivos versionados no repositório, quando deu para contar */
   fileCount?: number | null;
