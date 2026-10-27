@@ -1,4 +1,5 @@
 import { DataTableSkeleton, InlineNotification, Modal } from '@carbon/react';
+import { PageShell } from '../../components/PageShell';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -169,7 +170,7 @@ export function SystemsPage() {
   const footerButton = { flex: '1 1 120px', height: 56, border: 0, fontSize: 14, cursor: 'pointer', textAlign: 'left', padding: '0 16px' } as const;
 
   return (
-    <div style={{ padding: '1.5rem 2rem 3rem', display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 1440, margin: '0 auto' }}>
+    <PageShell>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Sistemas</h1>
@@ -372,6 +373,6 @@ export function SystemsPage() {
           />
         )}
       </Modal>
-    </div>
+    </PageShell>
   );
 }

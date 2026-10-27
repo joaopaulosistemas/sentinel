@@ -1,4 +1,5 @@
 import { DataTableSkeleton, InlineNotification } from '@carbon/react';
+import { PageShell } from '../../components/PageShell';
 import { useQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -182,8 +183,7 @@ export function FindingsPage() {
   const sysCount = auditMode ? 1 : summary.length;
 
   return (
-    <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {auditMode && <JourneySteps current={aba === 'achados' ? 3 : 4} />}
+    <PageShell trail={auditMode ? <JourneySteps current={aba === 'achados' ? 3 : 4} /> : undefined}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>
           Informações de Auditoria
@@ -386,6 +386,6 @@ export function FindingsPage() {
       )}
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

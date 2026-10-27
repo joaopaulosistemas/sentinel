@@ -10,6 +10,7 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
+import { PageShell } from '../../components/PageShell';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRuleQuality, useSystems } from '../../hooks/useSystems';
@@ -68,10 +69,10 @@ export function RankingPage() {
   const teams = summarizeTeams(systems);
 
   return (
-    <div style={{ padding: '2rem', display: 'grid', gap: '1.5rem' }}>
+    <PageShell>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ marginBottom: '0.25rem', fontSize: '1.75rem', fontWeight: 400 }}>Ranking de Sistemas</h1>
+          <h1 style={{ margin: '0 0 0.25rem', fontSize: 28, fontWeight: 400 }}>Ranking de Sistemas</h1>
           <p style={{ color: 'var(--s-text-3)' }}>
             Compare os sistemas pela nota da última auditoria. Meta da organização: {TARGET}.
           </p>
@@ -234,6 +235,6 @@ export function RankingPage() {
           </Table>
         )}
       </Tile>
-    </div>
+    </PageShell>
   );
 }

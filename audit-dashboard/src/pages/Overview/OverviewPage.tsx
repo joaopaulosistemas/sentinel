@@ -1,4 +1,5 @@
 import { DataTableSkeleton, InlineNotification } from '@carbon/react';
+import { PageShell } from '../../components/PageShell';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
@@ -85,8 +86,7 @@ export function OverviewPage() {
   ];
 
   return (
-    <div style={{ padding: '1.5rem 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <JourneySteps current={0} />
+    <PageShell trail={<JourneySteps current={0} />}>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -183,6 +183,6 @@ export function OverviewPage() {
       </div>
 
       <StartAuditModal system={startTarget} onClose={() => setStartTarget(null)} onStarted={(run) => setStarted(run)} />
-    </div>
+    </PageShell>
   );
 }

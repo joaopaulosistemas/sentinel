@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PageShell } from '../../components/PageShell';
 import { SpinnerIcon } from '../../components/StatusIcons';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
@@ -123,7 +124,7 @@ export function ReportsPage() {
   }
 
   return (
-    <div style={{ padding: '24px 32px 48px', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <PageShell>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>Relatórios</h1>
         <span style={{ color: 'var(--s-text-3)' }}>Gere em 3 passos: escolha o tipo, o sistema e o formato. O relatório fica guardado na lista abaixo.</span>
@@ -245,6 +246,6 @@ export function ReportsPage() {
           ))
         )}
       </section>
-    </div>
+    </PageShell>
   );
 }

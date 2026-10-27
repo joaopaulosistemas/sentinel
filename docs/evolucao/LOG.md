@@ -249,3 +249,9 @@ Verificado: `tsc`, `vitest` (187), e2e (2) em Chromium. Não verificado: o Java 
 
 Auditoria falhava ao gravar achados da categoria PERFORMANCE com `finding_category_check` violada: bancos criados antes dessa categoria têm uma restrição CHECK que o modo `update` do Hibernate não atualiza. `SchemaFixups` passa a remover `finding_category_check` na subida (idempotente, como já fazia com `audit_run_status_check`; falha vira aviso e não impede a API de subir). Quem não quiser esperar a nova versão pode rodar `ALTER TABLE finding DROP CONSTRAINT finding_category_check;`.
 Não verificado: o ajuste roda contra Postgres e só compila no CI; não foi executado num banco antigo aqui.
+
+## Dashboard 12.14.0 — Títulos das telas na mesma altura
+
+Todas as telas passam a usar `PageShell`: mesma margem, mesma largura e uma faixa fixa (34 px) acima do título. A faixa leva a trilha da jornada e/ou o caminho (breadcrumb) e fica vazia onde não há nenhum dos dois, só para manter a altura. Na Visão geral, o título já ficava abaixo da trilha da jornada; as outras telas o colocavam mais alto (56 a 130 px) e agora ficam todas a 114 px, medido no navegador a 1440 px de largura. Nas telas de detalhe (sistema e auditoria) o caminho foi para a direita da trilha, para o título não descer.
+Teste: `e2e/titulos-alinhados.spec.ts` abre as 9 telas e exige a mesma altura; sem a mudança ele falha (56, 64, 110, 128 e 130 px).
+Verificado: `tsc`, `vitest` (187) e e2e em Chromium. Medido só a 1440 px; em telas estreitas a faixa pode quebrar em duas linhas (o caminho vai para baixo da trilha).
