@@ -1,20 +1,25 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
-/** Altura reservada acima do título: é a da trilha da jornada, para o título ficar na mesma altura em todas as telas. */
-export const TRAIL_HEIGHT = 18;
+/** Um nível do caminho. Sem `to`, é a tela atual (último nível). */
+export interface Crumb {
+  label: string;
+  to?: string;
+}
+
+/** Altura da linha do caminho; é a mesma em todas as telas, para o título ficar sempre na mesma altura. */
+export const TRAIL_HEIGHT = 16;
 
 /**
- * Moldura padrão das telas: mesma margem, mesma largura e uma faixa fixa acima do título.
- * A faixa leva a trilha da jornada e/ou o caminho (breadcrumb); sem nenhum dos dois, fica vazia só para manter a altura.
+ * Moldura padrão das telas: mesma margem, mesma largura e o caminho (breadcrumb) acima do título.
+ * Espaçamento: 24 px do cabeçalho até o caminho, 8 px até o título, 24 px do título até o conteúdo.
+ * Toda tela informa o seu caminho, começando em "Início".
  */
-export function PageShell({ trail, children }: { trail?: ReactNode; children: ReactNode }) {
+export function PageShell({ crumbs, children }: { crumbs: Crumb[]; children: ReactNode }) {
   return (
-    <div style={{ padding: '28px 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div
-        data-testid="page-trail"
-        style={{ minHeight: TRAIL_HEIGHT, marginBottom: -12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: 24 }}
-      >
-        {trail}
+    <div style={{ padding: '40px 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div data-testid="page-trail" style={{ minHeight: TRAIL_HEIGHT, marginBottom: -16 }}>
+        <Breadcrumb items={crumbs} />
       </div>
       {children}
     </div>
@@ -22,10 +27,15 @@ export function PageShell({ trail, children }: { trail?: ReactNode; children: Re
 }
 
 /** Caminho (breadcrumb) no estilo das telas de detalhe. */
-export function Crumbs({ children }: { children: ReactNode }) {
+export function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
-    <nav aria-label="Caminho" style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
-      {children}
+    <nav aria-label="Caminho" style={{ fontSize: 12, lineHeight: '16px', color: 'var(--s-text-3)' }}>
+      {items.map((c, i) => (
+        <span key={`${i}-${c.label}`}>
+          {i > 0 && <span aria-hidden="true"> / </span>}
+          {c.to ? <Link to={c.to}>{c.label}</Link> : <span aria-current="page">{c.label}</span>}
+        </span>
+      ))}
     </nav>
   );
 }

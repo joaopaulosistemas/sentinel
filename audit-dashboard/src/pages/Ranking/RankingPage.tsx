@@ -69,7 +69,7 @@ export function RankingPage() {
   const teams = summarizeTeams(systems);
 
   return (
-    <PageShell>
+    <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Ranking de Sistemas' }]}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ margin: '0 0 0.25rem', fontSize: 26, fontWeight: 400 }}>Ranking de Sistemas</h1>

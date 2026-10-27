@@ -170,7 +170,7 @@ export function SystemsPage() {
   const footerButton = { flex: '1 1 120px', height: 56, border: 0, fontSize: 14, cursor: 'pointer', textAlign: 'left', padding: '0 16px' } as const;
 
   return (
-    <PageShell>
+    <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas' }]}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>Sistemas</h1>

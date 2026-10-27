@@ -1,5 +1,5 @@
 import { InlineNotification, SkeletonText, Tile } from '@carbon/react';
-import { Crumbs, PageShell } from '../../components/PageShell';
+import { PageShell } from '../../components/PageShell';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
@@ -102,15 +102,7 @@ export function SystemDetailPage() {
   const live = (auditRuns ?? []).some((r) => r.status === 'PENDING' || r.status === 'RUNNING');
 
   return (
-    <PageShell
-      trail={
-        <>
-          <Crumbs>
-            <Link to="/systems">Sistemas</Link> &nbsp;/&nbsp; {system.name}
-          </Crumbs>
-        </>
-      }
-    >
+    <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, { label: system.name }]}>
       {started && (
         <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid var(--s-link)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span>

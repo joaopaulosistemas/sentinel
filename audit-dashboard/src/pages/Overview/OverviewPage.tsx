@@ -85,7 +85,7 @@ export function OverviewPage() {
   ];
 
   return (
-    <PageShell>
+    <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Visão geral' }]}>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

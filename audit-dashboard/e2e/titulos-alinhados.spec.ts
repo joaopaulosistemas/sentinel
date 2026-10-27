@@ -37,6 +37,11 @@ test('o título de todas as telas fica na mesma altura da Visão geral', async (
     await page.goto(rota);
     await page.waitForLoadState('networkidle');
     await expect(page.locator('h1').first(), nome).toBeVisible();
+    // toda tela tem o caminho (breadcrumb), começando em Início, 24 px abaixo do cabeçalho
+    const caminho = page.getByRole('navigation', { name: 'Caminho' });
+    await expect(caminho, nome).toBeVisible();
+    await expect(caminho.getByRole('link', { name: 'Início' }), nome).toBeVisible();
+    expect(Math.round((await caminho.boundingBox())!.y), `${nome}: caminho`).toBe(72);
     // repete a medida até estabilizar (a tela pode redesenhar ao carregar os dados)
     await expect.poll(async () => {
       tops[nome] = Math.round(await page.locator('h1').first().evaluate((el) => el.getBoundingClientRect().top + window.scrollY));
