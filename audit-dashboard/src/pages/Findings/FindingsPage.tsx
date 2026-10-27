@@ -9,7 +9,7 @@ import { FindingsTable, type FindingOrigin } from '../../components/FindingsTabl
 import { api } from '../../api/client';
 import { useAudit } from '../../hooks/useAuditRuns';
 import { useFindings, useFindingsOverview } from '../../hooks/useFindings';
-import { useDiff } from '../../hooks/useLifecycle';
+import { useDiff, useFreshness } from '../../hooks/useLifecycle';
 import { useSystems } from '../../hooks/useSystems';
 import { useAuditStore } from '../../store/useAuditStore';
 import type { Category, FindingResponse, Severity } from '../../types';
@@ -81,6 +81,7 @@ export function FindingsPage() {
   const { data: audit } = useAudit(auditId);
   // Os resolvidos não estão na lista da auditoria (já não existem nela): vêm da comparação com a anterior.
   const { data: diff } = useDiff(auditMode ? auditId : undefined);
+  const { data: freshness } = useFreshness(auditMode ? auditId : undefined);
   const resolved = (diff?.resolvedFindings ?? []).map((f) => ({ ...f, status: 'FIXED' as const }));
 
   const sev = severityChoices.find((c) => c.id === severity)?.severities ?? [];
@@ -241,6 +242,14 @@ export function FindingsPage() {
         <ReauditPanel key={activeSystemId ?? 'sem-sistema'} systems={systems ?? []} initialSystemId={activeSystemId} />
       ) : (
         <>
+      {auditMode && freshness?.stale === true && (
+        <InlineNotification
+          kind="warning"
+          title="Auditoria desatualizada"
+          subtitle={`A branch mudou desde esta auditoria (auditado ${freshness.auditedCommit?.slice(0, 7)}, atual ${freshness.currentCommit?.slice(0, 7)}). Achados já corrigidos podem aparecer aqui; reaudite para conferir.`}
+          hideCloseButton
+        />
+      )}
       <section aria-label="Filtros" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, alignItems: 'end' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

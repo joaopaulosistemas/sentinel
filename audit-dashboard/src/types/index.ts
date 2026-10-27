@@ -203,6 +203,13 @@ export interface Remediation {
   references: string[];
 }
 
+export interface AuditFreshness {
+  auditedCommit: string | null;
+  currentCommit: string | null;
+  /** true = a branch andou desde a auditoria; null = não deu para saber */
+  stale: boolean | null;
+}
+
 export interface AuditDiff {
   auditId: number;
   baseAuditId: number | null;

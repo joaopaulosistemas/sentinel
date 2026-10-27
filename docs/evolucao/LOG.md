@@ -310,3 +310,8 @@ Verificado: `tsc`, `vitest`, e2e e captura a 2560 px.
 Cada achado passa a ter **confiança** (alta, média, baixa) e o motivo: baixa em testes, documentação, exemplos e código gerado, em segredo com valor de exemplo (`changeme`, `your_`, `xxxx`…) e em regra que o time marcou como falso positivo em 40% ou mais dos casos (mínimo de 5); alta quando há CVE ou quando outra ferramenta confirma o mesmo ponto (mesma categoria, até 2 linhas). A tela de achados esconde os de baixa confiança por padrão, com a contagem e uma caixa para mostrá-los; ao suprimir, dá para suprimir junto os parecidos (mesma regra) da lista. O MCP devolve `confianca` e filtra por ela. Relatórios HTML e PDF mostram o commit auditado. "Só novos" já existia como situação "Novos desde a última auditoria".
 O peso da confiança na nota é opcional e vem **desligado**: `sentinel.audit.score.confidence-weighting.enabled=true` faz achados de baixa confiança pesarem 40% (crítico nunca é reduzido).
 Verificado: `tsc`, `vitest`. Java (confiança, `PathRole`, nota) só no CI. Não implementado: aviso de auditoria desatualizada (commit auditado vs. ponta da branch) e regras que reconhecem filtro global de autorização.
+
+## Dashboard 12.21.0 / API — Aviso de auditoria desatualizada
+
+Na tela de achados de uma auditoria, o Sentinel compara o commit auditado com a ponta atual da branch no remoto (`git ls-remote`, sem clonar, com o token do sistema) pelo novo `GET /api/v1/audits/{id}/freshness`. Se a branch andou, aparece o aviso "Auditoria desatualizada" com os dois commits. Se o remoto não responde ou a auditoria é antiga (sem commit), nada aparece.
+Verificado: `tsc`. Java (endpoint e `parseRefSha`) só no CI. Não verificado contra um remoto real; sem teste de tela para o aviso.
