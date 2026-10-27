@@ -244,3 +244,8 @@ Verificado: `tsc`, `vitest` (182) e os 2 testes e2e em Chromium. Não verificado
 
 Não feito: limite de chamadas MCP compartilhado entre instâncias (hoje é em memória por instância; compartilhar exigiria tabela ou cache externo, e só vale com mais de uma instância da API). Botões e selects crus restantes seguem como estão.
 Verificado: `tsc`, `vitest` (187), e2e (2) em Chromium. Não verificado: o Java novo (`McpCallSummary` e seu teste) só compila no CI.
+
+## Correção — banco antigo rejeitava achados de PERFORMANCE
+
+Auditoria falhava ao gravar achados da categoria PERFORMANCE com `finding_category_check` violada: bancos criados antes dessa categoria têm uma restrição CHECK que o modo `update` do Hibernate não atualiza. `SchemaFixups` passa a remover `finding_category_check` na subida (idempotente, como já fazia com `audit_run_status_check`; falha vira aviso e não impede a API de subir). Quem não quiser esperar a nova versão pode rodar `ALTER TABLE finding DROP CONSTRAINT finding_category_check;`.
+Não verificado: o ajuste roda contra Postgres e só compila no CI; não foi executado num banco antigo aqui.
