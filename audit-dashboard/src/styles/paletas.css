@@ -1,0 +1,83 @@
+/*
+ * Paletas de cor. Cada uma redefine as variáveis --s-* (usadas pelas telas) por tema (claro/escuro);
+ * o "clássico" é o que está em theme.css. Escolha na caixa "Paleta de cores" do cabeçalho.
+ *
+ * Técnicas para cansar menos a vista:
+ *  - texto sem preto/branco puro e fundo sem branco puro (menos ofuscamento);
+ *  - contraste do texto de corpo ainda alto (acima de 7:1), só abaixo do máximo;
+ *  - vermelho, azul e verde dessaturados no escuro (cores vivas "vibram" sobre fundo escuro);
+ *  - três degraus de superfície (menu, fundo, card) separados por bordas discretas.
+ */
+
+/* ---- Suave: claro ---- */
+:root[data-theme='light'][data-palette='suave'] {
+  --s-bg: #eef0f3; --s-surface: #fbfbfc; --s-layer: #eef0f3; --s-header-row: #e3e6ea; --s-selected: #e6eefb;
+  --s-border: #d9dde3; --s-border-subtle: #c5cbd3; --s-border-strong: #8a929e;
+  --s-text: #262b33; --s-text-2: #3b424c; --s-text-3: #4d5560; --s-text-4: #667080; --s-disabled: #a3aab5;
+  --s-link: #1f5fd1; --s-primary: #1f5fd1; --s-danger-text: #a3262c; --s-success-text: #1b7a3a;
+  --s-warn-text: #7d6200; --s-crit-text: #7a1a1f; --s-high-text: #6b3410;
+  --s-good-bg: #e1f4e7; --s-bad-bg: #fbecec; --s-warn-bg: #f8f1d6;
+  --s-chrome: #1f242c; --s-chrome-border: transparent;
+}
+/* ---- Suave: escuro (azulado) ---- */
+:root[data-theme='dark'][data-palette='suave'] {
+  --s-bg: #14181f; --s-surface: #1c212a; --s-layer: #232a35; --s-header-row: #232a35; --s-selected: #1d2c47;
+  --s-border: #2b323d; --s-border-subtle: #3a4352; --s-border-strong: #6b7686;
+  --s-text: #d6dbe4; --s-text-2: #c1c8d3; --s-text-3: #9aa4b3; --s-text-4: #8791a1; --s-disabled: #5d6775;
+  --s-link: #7fa8f5; --s-primary: #2d68d6; --s-danger-text: #e9969a; --s-success-text: #5fc27a;
+  --s-warn-text: #e3bd3f; --s-crit-text: #e9969a; --s-high-text: #f0b48a;
+  --s-good-bg: #12301f; --s-bad-bg: #35201f; --s-warn-bg: #35300f;
+  --s-chrome: #0f1217; --s-chrome-border: #2b323d;
+}
+/* ---- Alternativo: claro (tom de papel) ---- */
+:root[data-theme='light'][data-palette='alternativo'] {
+  --s-bg: #f3f0ea; --s-surface: #fcfbf8; --s-layer: #f3f0ea; --s-header-row: #e8e3d8; --s-selected: #e8eef9;
+  --s-border: #ddd8cd; --s-border-subtle: #c9c3b6; --s-border-strong: #8b857a;
+  --s-text: #2a2824; --s-text-2: #3f3c37; --s-text-3: #57534b; --s-text-4: #6f6a60; --s-disabled: #aaa496;
+  --s-link: #2a5db0; --s-primary: #2a5db0; --s-danger-text: #a33a2a; --s-success-text: #2b7a3d;
+  --s-warn-text: #7d6200; --s-crit-text: #7a2a1d; --s-high-text: #6b3410;
+  --s-good-bg: #e4f1e2; --s-bad-bg: #f9ebe6; --s-warn-bg: #f6efd2;
+  --s-chrome: #2a2824; --s-chrome-border: transparent;
+}
+/* ---- Alternativo: escuro (cinza neutro) ---- */
+:root[data-theme='dark'][data-palette='alternativo'] {
+  --s-bg: #1b1e24; --s-surface: #23272e; --s-layer: #2b3039; --s-header-row: #2b3039; --s-selected: #1f2f4a;
+  --s-border: #323843; --s-border-subtle: #424a57; --s-border-strong: #6f7a8a;
+  --s-text: #dfe3ea; --s-text-2: #c9cfd9; --s-text-3: #aab2bf; --s-text-4: #949eac; --s-disabled: #636d7b;
+  --s-link: #8db4ff; --s-primary: #2f6fe0; --s-danger-text: #f0a3a6; --s-success-text: #6fcb88;
+  --s-warn-text: #e8c556; --s-crit-text: #f0a3a6; --s-high-text: #f3bf96;
+  --s-good-bg: #163523; --s-bad-bg: #3a2325; --s-warn-bg: #39340f;
+  --s-chrome: #15181d; --s-chrome-border: #323843;
+}
+
+/* Cabeçalho e menu lateral usam a cor "chrome" da paleta (no clássico continua o #161616 do Carbon). */
+:root[data-palette='suave'] .cds--header,
+:root[data-palette='suave'] .cds--side-nav,
+:root[data-palette='alternativo'] .cds--header,
+:root[data-palette='alternativo'] .cds--side-nav {
+  background: var(--s-chrome);
+}
+
+/* Componentes do Carbon (campos, abas, tabelas, modais) seguem as mesmas cores das telas. */
+:root[data-palette='suave'] .sentinel-content-theme,
+:root[data-palette='alternativo'] .sentinel-content-theme {
+  --cds-background: var(--s-bg);
+  --cds-layer: var(--s-surface);
+  --cds-layer-01: var(--s-surface);
+  --cds-layer-02: var(--s-layer);
+  --cds-layer-accent-01: var(--s-header-row);
+  --cds-field: var(--s-surface);
+  --cds-field-01: var(--s-surface);
+  --cds-field-02: var(--s-layer);
+  --cds-border-subtle: var(--s-border);
+  --cds-border-subtle-01: var(--s-border);
+  --cds-border-strong: var(--s-border-strong);
+  --cds-border-strong-01: var(--s-border-strong);
+  --cds-text-primary: var(--s-text);
+  --cds-text-secondary: var(--s-text-3);
+  --cds-text-helper: var(--s-text-4);
+  --cds-link-primary: var(--s-link);
+  --cds-layer-selected: var(--s-selected);
+  --cds-layer-hover: var(--s-header-row);
+  --cds-background-hover: var(--s-header-row);
+}
