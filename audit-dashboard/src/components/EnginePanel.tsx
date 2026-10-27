@@ -251,7 +251,7 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
           {catalogMissing
             ? 'Lista o que apareceu na última auditoria deste sistema. '
             : 'Todas as regras dos pacotes, com o que cada uma faz. '}
-          "Só observar" mostra o achado sem pesar na nota. Aceita curinga: <code style={{ fontFamily: mono }}>sentinel-*</code>.
+          “Só observar” mostra o achado sem pesar na nota. Aceita curinga: <code style={{ fontFamily: mono }}>sentinel-*</code>.
           O ganho na nota é uma estimativa da última auditoria: quanto a nota sobe se a regra deixar de pesar.
         </p>
 
@@ -452,7 +452,7 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
       <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 14 }}>
-        Escolha o que roda neste sistema. Um analisador desligado aparece como "não verificado" no resultado: o que ele cobriria fica sem checagem.
+        Escolha o que roda neste sistema. Um analisador desligado aparece como “não verificado” no resultado: o que ele cobriria fica sem checagem.
       </p>
       {save.isError && <InlineNotification kind="error" title="Não foi possível salvar" subtitle={(save.error as Error).message} hideCloseButton />}
       {save.isSuccess && !save.isPending && !dirty && <InlineNotification kind="success" title="Ajustes salvos" subtitle="Valem na próxima auditoria." hideCloseButton lowContrast />}

@@ -60,8 +60,8 @@ const cell = { padding: '12px 8px' } as const;
 /** "252 (4 novos, 9 resolvidos)"; sem comparação mostra só o total. */
 function findingsText(run: AuditRunResponse): string {
   if (run.status === 'PENDING' || run.status === 'RUNNING') return 'calculando';
-  if (run.status !== 'COMPLETED' || run.totalFindings == null) return '-';
-  if (run.newFindings != null && run.resolvedFindings != null) {
+  if (run.status !== 'COMPLETED' || run.totalFindings === null || run.totalFindings === undefined) return '-';
+  if (run.newFindings !== null && run.newFindings !== undefined && run.resolvedFindings !== null && run.resolvedFindings !== undefined) {
     return `${run.totalFindings} (${run.newFindings} ${run.newFindings === 1 ? 'novo' : 'novos'}, ${run.resolvedFindings} ${run.resolvedFindings === 1 ? 'resolvido' : 'resolvidos'})`;
   }
   return String(run.totalFindings);

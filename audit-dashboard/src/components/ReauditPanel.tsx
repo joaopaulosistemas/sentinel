@@ -45,7 +45,7 @@ function Requests({ systemId }: { systemId: number }) {
 
   return (
     <section aria-label="Pedidos do Claude" style={{ display: 'grid', gap: 10 }}>
-      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Pedidos do Claude ({waiting} {waiting === 1 ? 'esperando' : 'esperando'})</h2>
+      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Pedidos do Claude ({waiting} esperando)</h2>
       <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-3)' }}>
         O Claude só pede; nada acontece até você aprovar aqui. Cada pedido vale por 1 hora.
       </p>
