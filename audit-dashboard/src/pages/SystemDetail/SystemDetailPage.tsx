@@ -15,7 +15,6 @@ import type { AuditRunResponse, Severity, Stack } from '../../types';
 import { analyzerCounts, PHASES, phaseIndex, progressPercent } from '../../utils/auditProgress';
 import { scoreColor } from '../../utils/systemAttention';
 import { startLabel } from '../../utils/timeAgo';
-import { JourneySteps } from '../../components/JourneySteps';
 
 const stackLabels: Record<Stack, string> = {
   JAVA: 'Java',
@@ -106,7 +105,6 @@ export function SystemDetailPage() {
     <PageShell
       trail={
         <>
-          <JourneySteps current={1} />
           <Crumbs>
             <Link to="/systems">Sistemas</Link> &nbsp;/&nbsp; {system.name}
           </Crumbs>

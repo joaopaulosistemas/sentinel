@@ -3,7 +3,6 @@ import { PageShell } from '../../components/PageShell';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
-import { JourneySteps } from '../../components/JourneySteps';
 import { RecentAudits } from '../../components/RecentAudits';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { useRecentAudits } from '../../hooks/useAuditRuns';
@@ -86,7 +85,7 @@ export function OverviewPage() {
   ];
 
   return (
-    <PageShell trail={<JourneySteps current={0} />}>
+    <PageShell>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
