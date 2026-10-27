@@ -6,7 +6,6 @@ import { api } from '../../api/client';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
 import { AnalyzerCard, EventLog, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
-import { JourneySteps } from '../../components/JourneySteps';
 import { Crumbs, PageShell } from '../../components/PageShell';
 import { McpStatusStrip } from '../../components/McpStatusStrip';
 import { useMcpActivity } from '../../hooks/useMcpActivity';
@@ -148,7 +147,6 @@ export function AuditRunPage() {
       <PageShell
         trail={
           <>
-            <JourneySteps current={3} />
             <Crumbs>
               <Link to="/systems">Sistemas</Link> / {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName} / Auditoria #{run.id}
             </Crumbs>
@@ -182,7 +180,6 @@ export function AuditRunPage() {
     <PageShell
       trail={
         <>
-          <JourneySteps current={2} />
           <Crumbs>
             {run.systemId !== undefined ? <Link to={`/systems/${run.systemId}`}>{run.systemName}</Link> : run.systemName}
             {'  /  '}Auditoria #{run.id}

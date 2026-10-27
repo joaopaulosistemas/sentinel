@@ -4,7 +4,6 @@ import { useQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ClaudeReviewPanel } from '../../components/ClaudeReviewPanel';
-import { JourneySteps } from '../../components/JourneySteps';
 import { ReauditPanel } from '../../components/ReauditPanel';
 import { FindingsTable, type FindingOrigin } from '../../components/FindingsTable';
 import { api } from '../../api/client';
@@ -183,7 +182,7 @@ export function FindingsPage() {
   const sysCount = auditMode ? 1 : summary.length;
 
   return (
-    <PageShell trail={auditMode ? <JourneySteps current={aba === 'achados' ? 3 : 4} /> : undefined}>
+    <PageShell>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400 }}>
           Informações de Auditoria

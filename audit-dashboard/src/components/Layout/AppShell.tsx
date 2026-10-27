@@ -4,8 +4,9 @@ import {
   HeaderGlobalAction,
   HeaderGlobalBar,
   HeaderName,
-  HeaderNavigation,
-  HeaderMenuItem,
+  SideNav,
+  SideNavItems,
+  SideNavLink,
   SkipToContent,
   Theme,
 } from '@carbon/react';
@@ -40,7 +41,7 @@ const ITENS = [
   { nome: 'Relatórios', rota: '/reports' },
 ];
 
-/** Cabeçalho escuro com a navegação principal em linha, como no protótipo. */
+/** Cabeçalho escuro no topo e a navegação principal fixa na lateral esquerda. */
 export function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,9 +58,23 @@ export function AppShell({ children }: AppShellProps) {
         <HeaderName href="#" prefix="Sentinel" onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
           Audit Tool
         </HeaderName>
-        <HeaderNavigation aria-label="Navegação principal">
+        <span style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
+          v{__APP_VERSION__}
+        </span>
+        <HeaderGlobalBar style={{ flex: '0 0 auto' }}>
+          <HeaderGlobalAction
+            aria-label={dark ? 'Trocar para o tema normal' : 'Trocar para o tema escuro'}
+            tooltipAlignment="end"
+            onClick={toggleTheme}
+          >
+            <ThemeIcon dark={dark} />
+          </HeaderGlobalAction>
+        </HeaderGlobalBar>
+      </Header>
+      <SideNav isFixedNav expanded isChildOfHeader={false} aria-label="Navegação principal">
+        <SideNavItems>
           {ITENS.map((i) => (
-            <HeaderMenuItem
+            <SideNavLink
               key={i.rota}
               href={i.rota}
               isActive={i.exata ? location.pathname === i.rota : location.pathname.startsWith(i.rota)}
@@ -77,27 +92,15 @@ export function AppShell({ children }: AppShellProps) {
                   {pending}
                 </span>
               )}
-            </HeaderMenuItem>
+            </SideNavLink>
           ))}
-        </HeaderNavigation>
-        <span style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
-          v{__APP_VERSION__}
-        </span>
-        <HeaderGlobalBar style={{ flex: '0 0 auto' }}>
-          <HeaderGlobalAction
-            aria-label={dark ? 'Trocar para o tema normal' : 'Trocar para o tema escuro'}
-            tooltipAlignment="end"
-            onClick={toggleTheme}
-          >
-            <ThemeIcon dark={dark} />
-          </HeaderGlobalAction>
-        </HeaderGlobalBar>
-      </Header>
+        </SideNavItems>
+      </SideNav>
       </Theme>
 
       {/* Os componentes do Carbon (campos, abas, modais) seguem o mesmo tema do restante da página. */}
       <Theme theme={dark ? 'g100' : 'white'}>
-        <Content style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh' }}>{children}</Content>
+        <Content style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh', marginLeft: '16rem' }}>{children}</Content>
       </Theme>
     </>
   );

@@ -266,3 +266,8 @@ Conferi no código os achados mais graves da auditoria do próprio Sentinel e re
 - **N+1**: `countBySeverityForRuns`, `findByAuditRunIds`, `findLatestCompletedBySystem` e `findLastStarted` substituem laços de consultas em `FindingLifecycleService.trend`, `FindingResource.overview`, portfólio, `RuleQualityService` e `AuditScheduler`. `statement-batch-size=50`. Não mudei o `allocationSize` da sequência de `Finding` (divergiria da sequência já criada no banco). `SystemResource.toDto` fica como está.
 - **Helm**: imagens com tag `12.15.0`, sem `:latest`. **Dashboard**: imagem `nginxinc/nginx-unprivileged`, porta 8080 no container; Service do Helm continua na 80. Quem usa compose precisa reconstruir: `docker compose up -d --build audit-api audit-dashboard`.
 Não verificado: o Java novo só compila no CI; Docker e Helm só são exercitados pelo CI.
+
+## Dashboard 12.16.0 — Menu na lateral esquerda, sem trilha de passos
+
+O menu principal saiu do cabeçalho e virou barra fixa à esquerda (`SideNav` do Carbon, sempre aberta); o cabeçalho ficou só com o nome, a versão e o tema. A trilha "Escolher sistema › Iniciar auditoria › Acompanhar › Entender o resultado › Corrigir" foi removida de todas as telas (componente `JourneySteps` apagado). A faixa fixa acima do título continua, só com o caminho (breadcrumb), para manter os títulos na mesma altura.
+Verificado: `tsc`, `vitest` (189), e2e (3) e captura de tela a 1440 px. Não verificado: telas estreitas (a barra lateral fica fixa em 16 rem).
