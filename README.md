@@ -7,7 +7,7 @@
 
 ## Objetivo
 
-> **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [Claude (MCP)](docs/integracao/mcp.md) · [evidências offline](docs/evidencias/README.md)
+> **Documentação:** [arquitetura (módulos, pacotes, classes, desenhos macro e micro)](docs/arquitetura/ARQUITETURA.md) · [agentes de evolução](docs/evolucao/AGENTE.md) · [placar](docs/evolucao/PLACAR.md) · [precisão medida](docs/evolucao/precisao.md) · [calibração](docs/evolucao/calibracao.md) · [histórico](docs/evolucao/LOG.md) · [integração em CI](docs/integracao/) · [Claude (MCP)](docs/integracao/mcp.md) · [evidências offline](docs/evidencias/README.md) · [pasta local](docs/pasta-local/README.md)
 
 Realizar uma **auditoria técnica completa dos projetos da organização**, identificando:
 
