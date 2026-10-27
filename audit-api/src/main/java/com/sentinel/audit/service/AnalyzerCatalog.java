@@ -19,7 +19,11 @@ public final class AnalyzerCatalog {
             Map.entry("ESLint", "TypeScript e Angular"),
             Map.entry("Higiene do projeto", "README, testes, CI, lockfile"),
             Map.entry("SARIF", "Ferramentas externas (SARIF)"),
-            Map.entry("Evidências", "Dump do banco, cobertura, memória"));
+            Map.entry("Evidências", "Dump do banco, cobertura, memória"),
+            Map.entry("Ciclos de dependência", "Pacotes Java e arquivos TypeScript que se importam em círculo"),
+            Map.entry("Duplicação", "Blocos de código repetidos"),
+            Map.entry("Pontos quentes", "Arquivos que mudam muito e são complexos (histórico do Git)"),
+            Map.entry("Código morto", "Exportações TypeScript que ninguém usa"));
 
     private AnalyzerCatalog() {
     }
@@ -27,7 +31,8 @@ public final class AnalyzerCatalog {
     /** Nomes dos analisadores conhecidos, na ordem de exibição. */
     public static java.util.List<String> names() {
         return java.util.List.of("Semgrep", "Secrets", "Secrets-History", "Gitleaks", "Trivy", "OWASP-Dependency",
-                "Architecture", "Arquitetura (pacotes)", "CleanCode", "PMD", "ESLint", "Higiene do projeto", "SARIF", "Evidências");
+                "Architecture", "Arquitetura (pacotes)", "CleanCode", "PMD", "ESLint", "Higiene do projeto", "SARIF", "Evidências",
+                "Ciclos de dependência", "Duplicação", "Pontos quentes", "Código morto");
     }
 
     /** Descrição do analisador, ou vazio quando não há. */

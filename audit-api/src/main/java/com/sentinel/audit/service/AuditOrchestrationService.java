@@ -147,6 +147,9 @@ public class AuditOrchestrationService {
     EvidenceAnalyzer evidenceAnalyzer;
 
     @Inject
+    com.sentinel.audit.analyzer.StructuralAnalyzers structuralAnalyzers;
+
+    @Inject
     EvidenceStager evidenceStager;
 
     @Inject
@@ -271,7 +274,7 @@ public class AuditOrchestrationService {
             // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
             progress.phase(auditRunId, AuditProgressTracker.PONTUACAO, "Análise concluída: " + allFindings.size() + " achados; calculando a nota");
             FindingLifecycleService.apply(allFindings, loadBaselineSafely(auditRunId));
-            FindingConfidence.assessAll(allFindings, loadRuleQualitySafely());
+            FindingConfidence.assessAll(allFindings, loadRuleQualitySafely(), globalAuthOf(clonedPath));
             long linesOfCode = sizing.lines();
             RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
             progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
@@ -306,11 +309,12 @@ public class AuditOrchestrationService {
      * Executa em paralelo os analisadores que suportam a stack, isolando falhas individuais.
      */
     private Analysis runAnalyzers(Path projectPath, AuditRun runRef, Stack stack, AuditPolicy policy) {
-        List<CodeAnalyzer> candidates = Stream.of(
+        List<CodeAnalyzer> candidates = Stream.concat(Stream.of(
                 semgrepAnalyzer, dependencyAnalyzer, architectureAnalyzer, secretsAnalyzer, historyAnalyzer,
                 trivyAnalyzer, gitleaksAnalyzer, cleanCodeAnalyzer,
                 pmdAnalyzer, eslintAnalyzer, sarifAnalyzer, architecturePolicyAnalyzer, hygieneAnalyzer,
-                evidenceAnalyzer)
+                evidenceAnalyzer),
+                structuralAnalyzers == null ? Stream.<CodeAnalyzer>empty() : structuralAnalyzers.all().stream())
                 .filter(Objects::nonNull).toList();
         // Analisador desligado para este sistema sai antes da escolha, para não "substituir" outro por engano.
         List<CodeAnalyzer> analyzers = selectAnalyzers(candidates.stream().filter(c -> !policy.analyzerDisabled(c.getName())).toList());
@@ -578,6 +582,11 @@ public class AuditOrchestrationService {
     }
 
     /** Sem a qualidade das regras a confiança ainda sai (pelos demais sinais): nada aqui pode derrubar a auditoria. */
+    /** Barreira de autenticação global do projeto (filtro, Spring Security, política do Quarkus), ou nulo. */
+    private static String globalAuthOf(Path clonedPath) {
+        return clonedPath == null ? null : com.sentinel.audit.analyzer.structure.GlobalAuth.detect(clonedPath);
+    }
+
     private java.util.Map<String, RuleQualityService.RuleQuality> loadRuleQualitySafely() {
         try {
             return ruleQualityService.byRule();

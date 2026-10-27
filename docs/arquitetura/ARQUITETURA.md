@@ -275,6 +275,10 @@ classDiagram
     CodeAnalyzer <|.. ArchitecturePolicyAnalyzer
     CodeAnalyzer <|.. CleanCodeAnalyzer
     CodeAnalyzer <|.. HygieneAnalyzer
+    CodeAnalyzer <|.. DependencyCyclesAnalyzer
+    CodeAnalyzer <|.. DuplicationAnalyzer
+    CodeAnalyzer <|.. HotspotAnalyzer
+    CodeAnalyzer <|.. DeadCodeAnalyzer
     CodeAnalyzer <|.. EvidenceAnalyzer
     SemgrepAnalyzer ..> ExternalTools
     PmdAnalyzer ..> ExternalTools
@@ -310,6 +314,10 @@ classDiagram
 | `ArchitecturePolicyAnalyzer` | Aplica o `architecture.yml` do pacote: dependências proibidas entre camadas, convenções por arquivo, arquivos obrigatórios, política de versões de componentes |
 | `CleanCodeAnalyzer` | Função longa, parâmetros demais, complexidade ciclomática, aninhamento (Java e TS/JS) |
 | `HygieneAnalyzer` | README, testes, CI, lockfile, segredos versionados, artefatos de build commitados, `.dockerignore` |
+| `DependencyCyclesAnalyzer` | Ciclos entre pacotes Java e entre arquivos TypeScript/JavaScript (só lê os imports; `import type` não conta) |
+| `DuplicationAnalyzer` | Blocos de código repetidos em produção (ignora comentários, imports, getters e setters); limites `dup-window`, `dup-min-lines` |
+| `HotspotAnalyzer` | Arquivos que mudam muito e têm função complexa (`git log` × complexidade); precisa de histórico no clone |
+| `DeadCodeAnalyzer` | Exportações TypeScript/JavaScript que nenhum arquivo usa; ignora bibliotecas publicadas |
 | `EvidenceAnalyzer` | Lê evidências geradas fora: dump do esquema, estatísticas e planos do Postgres, cobertura, histograma de memória |
 | `ExternalTools` | Utilidades de execução de processos externos e de detecção de ferramenta no PATH |
 | `AnalyzerResult` | Resultado imutável de um analisador (achados, nome, duração) |

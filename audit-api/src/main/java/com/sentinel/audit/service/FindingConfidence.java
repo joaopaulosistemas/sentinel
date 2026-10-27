@@ -40,6 +40,14 @@ public final class FindingConfidence {
 
     /** Calcula e grava {@code confidence}/{@code confidenceReason} em cada achado. */
     public static void assessAll(List<Finding> findings, Map<String, RuleQuality> ruleQuality) {
+        assessAll(findings, ruleQuality, null);
+    }
+
+    /**
+     * @param globalAuth descrição da barreira de autenticação global do projeto (ex.: "filtro ApiKeyFilter"), ou nulo;
+     *                   com ela, "endpoint sem anotação de autorização" perde confiança
+     */
+    public static void assessAll(List<Finding> findings, Map<String, RuleQuality> ruleQuality, String globalAuth) {
         Map<String, List<Finding>> byFile = new HashMap<>();
         for (Finding f : findings) {
             if (f.getFilePath() != null) {
@@ -47,14 +55,28 @@ public final class FindingConfidence {
             }
         }
         for (Finding f : findings) {
-            assess(f, ruleQuality, byFile.getOrDefault(f.getFilePath(), List.of()));
+            assess(f, ruleQuality, byFile.getOrDefault(f.getFilePath(), List.of()), globalAuth);
         }
     }
 
     static void assess(Finding f, Map<String, RuleQuality> ruleQuality, List<Finding> sameFile) {
+        assess(f, ruleQuality, sameFile, null);
+    }
+
+    /** Regra "endpoint sem anotação de autorização": só olha o recurso, não o filtro global. */
+    static boolean isEndpointAuthorizationRule(Finding f) {
+        return f.getRuleId() != null && f.getRuleId().toLowerCase(Locale.ROOT).contains("endpoint-sem-autorizacao");
+    }
+
+    static void assess(Finding f, Map<String, RuleQuality> ruleQuality, List<Finding> sameFile, String globalAuth) {
         PathRole role = PathRole.of(f.getFilePath());
         if (role.isNonProduction() && f.getCategory() != Category.DEPENDENCY) {
             set(f, Confidence.LOW, "Em " + role.describe() + ": provavelmente não afeta o sistema em produção.");
+            return;
+        }
+        if (globalAuth != null && isEndpointAuthorizationRule(f)) {
+            set(f, Confidence.LOW, "O projeto autentica as rotas num ponto só (" + globalAuth + "), que esta regra não enxerga. "
+                    + "Confirme se há rota pública fora dessa barreira.");
             return;
         }
         if (f.getCategory() == Category.SECURITY && looksLikeExample(f.getCodeSnippet())) {
