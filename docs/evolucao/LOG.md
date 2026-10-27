@@ -320,3 +320,9 @@ Verificado: `tsc`. Java (endpoint e `parseRefSha`) só no CI. Não verificado co
 
 Os relatórios HTML e PDF passam a separar os achados de **baixa confiança** em uma seção própria ao fim ("Baixa confiança (N)"), com o motivo, em vez de misturá-los aos demais; o título "Findings (N)" conta só os de confiança normal e o resumo continua com o total. O `PathRole` trata arquivos `*.example`, `*.sample` e `*.template` (ex.: `.env.example`) como exemplo. O teste de confiança deixa de ter uma chave literal que o Gitleaks apontava como segredo (auditoria #34).
 Verificado: `tsc` não se aplica a esta mudança (só Java e docs). Java só no CI. Não feito: reconhecer `remediation.yml` como exemplo (específico do pacote de regras), deduplicar achados entre ferramentas, regra de controle de acesso ciente do filtro global, nota que não sature em 0.
+
+## Dashboard 12.23.0 / API — Insights sem ruído e duplicata PMD/Semgrep
+
+Os insights (áreas, dívida priorizada, parecer) e o resumo do relatório passam a ignorar achados de baixa confiança: prioridade não é mais puxada por chave de exemplo em teste. A nota e o plano de correção continuam com todos os achados (a nota só muda se `sentinel.audit.score.confidence-weighting.enabled` for ligado).
+Novo tópico de deduplicação no pacote `core-quality`: `pmd-ReturnEmptyCollectionRatherThanNull` + `sentinel-java-retorna-null-colecao` (até 10 linhas, porque o Semgrep marca o método e o PMD marca o `return null`) viram um achado só, com a maior severidade. Outras regras repetidas entre ferramentas (God Object, complexidade) não foram mapeadas por falta de ids equivalentes confirmados.
+Verificado: nada além de revisão (Java e regras só no CI).

@@ -23,7 +23,9 @@ public class InsightsService {
     FindingRepository findingRepository;
 
     public AuditInsights forRun(AuditRun run) {
-        List<Finding> active = FindingLifecycleService.active(findingRepository.findByAuditRunId(run.getId()));
+        // Achados de baixa confiança (teste, exemplo, falso positivo provável) não entram na leitura de prioridades.
+        List<Finding> active = FindingLifecycleService.active(findingRepository.findByAuditRunId(run.getId())).stream()
+                .filter(f -> f.getConfidence() != com.sentinel.audit.model.Confidence.LOW).toList();
         return InsightsBuilder.build(run.getSystem() == null ? null : run.getSystem().getName(), active,
                 parseContext(run.getContextJson()));
     }

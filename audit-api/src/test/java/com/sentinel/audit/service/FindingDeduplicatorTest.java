@@ -126,6 +126,18 @@ class FindingDeduplicatorTest {
     }
 
     @Test
+    void retornoNuloDeColecaoApontadoPeloPmdEPeloSemgrepViraUm() {
+        List<Finding> in = List.of(
+                f("Semgrep", "rules.quality.sentinel-java-retorna-null-colecao", "Versions.java", 21, Severity.MEDIUM),
+                f("PMD", "pmd-ReturnEmptyCollectionRatherThanNull", "Versions.java", 23, Severity.HIGH));
+
+        List<Finding> r = FindingDeduplicator.apply(in);
+
+        assertEquals(1, r.size());
+        assertEquals(Severity.HIGH, r.get(0).getSeverity());
+    }
+
+    @Test
     void lintEmOutroLugarOuOutraRegraNaoEJuntado() {
         List<Finding> in = List.of(
                 f("Semgrep", "rules.quality.sentinel-ts-var", "web/a.ts", 2, Severity.LOW),
