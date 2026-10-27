@@ -247,6 +247,15 @@ export function SystemFormFields({ values, setValues, errors, touched, check, ch
               {checkPath.data.branchFound === false ? ` · a branch "${values.scheduledBranch.trim()}" não existe` : ''}
             </span>
           )}
+          {checkPath.data?.ok &&
+            checkPath.data.defaultBranch &&
+            values.scheduledBranch.trim() !== checkPath.data.defaultBranch && (
+              <div>
+                <Button kind="ghost" size="sm" onClick={() => setValues({ ...values, scheduledBranch: checkPath.data?.defaultBranch ?? '' })}>
+                  Auditar a branch {checkPath.data.defaultBranch}
+                </Button>
+              </div>
+            )}
           {checkPath.data && !checkPath.data.ok && (
             <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-danger-text)', fontSize: 12 }}>
               <CrossIcon size={14} />
