@@ -33,3 +33,9 @@
     - "eslint-no-console"
     - "sentinel-ts-console-log"
   max-lines: 1
+
+- name: java-retorna-null-colecao
+  rules:
+    - "pmd-returnemptycollectionratherthannull"
+    - "sentinel-java-retorna-null-colecao"
+  max-lines: 10

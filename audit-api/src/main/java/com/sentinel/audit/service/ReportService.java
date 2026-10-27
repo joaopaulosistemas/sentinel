@@ -82,7 +82,7 @@ public class ReportService {
         }
         h.append(".</p></div>");
 
-        appendInsights(h, run, FindingLifecycleService.active(findings));
+        appendInsights(h, run, FindingLifecycleService.active(findings).stream().filter(f -> !isLowConfidence(f)).toList());
 
         List<Finding> reliable = active.stream().filter(f -> !isLowConfidence(f)).toList();
         List<Finding> lowConfidence = active.stream().filter(ReportService::isLowConfidence).toList();
