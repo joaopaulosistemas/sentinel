@@ -278,3 +278,10 @@ Verificado: `tsc`, `vitest` (189), e2e (3) e captura de tela a 1440 px. Não ver
 - **Espaçamento**: 24 px do cabeçalho ao caminho, 8 px até o título, 24 px do título ao conteúdo. Título em 26 px. O teste `titulos-alinhados` agora também exige o caminho visível, o link Início e o caminho a 72 px do topo em todas as 9 telas.
 - **Cantos de 8 px** em cards, painéis, campos, botões e janelas, por CSS global (`--s-radius` em `theme.css`), já que os cards usam estilo inline: o raio vale para qualquer elemento com `border: 1px solid` nos tons do tema, mais campos e botões do Carbon. Um `borderRadius` inline continua valendo (círculos, chips).
 Verificado: `tsc`, `vitest` (189), e2e (3) e captura das 9 telas a 1440 px. Não verificado: telas estreitas e o tema escuro com os novos cantos.
+
+## Dashboard 12.18.0 — Logo, recuo menor e divisória do menu no tema escuro
+
+- **Logo** (escudo azul com um olho, `SentinelLogo` em `AppShell.tsx`) antes de "Sentinel Audit Tool" no cabeçalho.
+- **Recuo entre o menu e o conteúdo**: de 64 px para 32 px. Eram dois recuos somados (o do `Content` do Carbon e o da tela); o do `Content` foi zerado e o `PageShell` passou a dar o espaço de cima (72 px do topo da página = 24 px abaixo do cabeçalho de 48 px).
+- **Tema escuro**: linha de 1 px (#525252) entre o menu e o conteúdo; antes os dois tinham a mesma cor.
+Verificado: `tsc`, `vitest` (189), e2e (3) e capturas das 9 telas nos temas claro e escuro a 1440 px. Não verificado: telas estreitas. No tema escuro, a notificação do Carbon e as caixas de "Resultado parcial" seguem claras (já era assim).

@@ -112,3 +112,8 @@ section[aria-label='Indicadores'] {
 /* Botões de Carbon que formam grupo (abas, alternadores) ficam retos entre si. */
 .cds--btn-set .cds--btn:not(:first-child) { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .cds--btn-set .cds--btn:not(:last-child) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+/* Tema escuro: o menu e o fundo têm a mesma cor; uma linha de 1 px marca onde o menu termina. */
+:root[data-theme='dark'] .cds--side-nav {
+  border-right: 1px solid #525252;
+}

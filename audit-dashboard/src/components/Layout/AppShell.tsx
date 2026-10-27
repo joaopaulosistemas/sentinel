@@ -33,6 +33,17 @@ function ThemeIcon({ dark }: { dark: boolean }) {
   );
 }
 
+/** Logo: escudo com um olho (o "vigia" do Sentinel). */
+export function SentinelLogo({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <path d="M16 2.5 4.5 6.8v8.2c0 7.2 4.9 12.4 11.5 14.5 6.6-2.1 11.5-7.3 11.5-14.5V6.8z" fill="#4589ff" />
+      <ellipse cx="16" cy="15" rx="6.2" ry="4" fill="none" stroke="#fff" strokeWidth="2" />
+      <circle cx="16" cy="15" r="1.9" fill="#fff" />
+    </svg>
+  );
+}
+
 const ITENS = [
   { nome: 'Visão geral', rota: '/', exata: true },
   { nome: 'Sistemas', rota: '/systems' },
@@ -55,7 +66,10 @@ export function AppShell({ children }: AppShellProps) {
       <Theme theme="g100">
       <Header aria-label="Sentinel Audit Tool">
         <SkipToContent />
-        <HeaderName href="#" prefix="Sentinel" onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
+        <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem' }}>
+          <SentinelLogo />
+        </span>
+        <HeaderName href="#" prefix="Sentinel" style={{ paddingLeft: '0.5rem' }} onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
           Audit Tool
         </HeaderName>
         <span style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
@@ -100,7 +114,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Os componentes do Carbon (campos, abas, modais) seguem o mesmo tema do restante da página. */}
       <Theme theme={dark ? 'g100' : 'white'}>
-        <Content style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh', marginLeft: '16rem' }}>{children}</Content>
+        <Content style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh', marginLeft: '16rem', padding: 0 }}>{children}</Content>
       </Theme>
     </>
   );

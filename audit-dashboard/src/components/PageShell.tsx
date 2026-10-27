@@ -12,12 +12,12 @@ export const TRAIL_HEIGHT = 16;
 
 /**
  * Moldura padrão das telas: mesma margem, mesma largura e o caminho (breadcrumb) acima do título.
- * Espaçamento: 24 px do cabeçalho até o caminho, 8 px até o título, 24 px do título até o conteúdo.
+ * Espaçamento: 24 px do cabeçalho (48 px) até o caminho, 8 px até o título, 24 px do título até o conteúdo.
  * Toda tela informa o seu caminho, começando em "Início".
  */
 export function PageShell({ crumbs, children }: { crumbs: Crumb[]; children: ReactNode }) {
   return (
-    <div style={{ padding: '40px 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ padding: '72px 2rem 3rem', maxWidth: 1440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div data-testid="page-trail" style={{ minHeight: TRAIL_HEIGHT, marginBottom: -16 }}>
         <Breadcrumb items={crumbs} />
       </div>
