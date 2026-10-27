@@ -57,6 +57,11 @@ class FindingLifecycleServiceTest {
                         .forEach(f -> m.merge(f.getSeverity(), 1L, Long::sum));
                 return m;
             }
+            @Override public Map<Long, Map<Severity, Long>> countBySeverityForRuns(java.util.Collection<Long> ids) {
+                Map<Long, Map<Severity, Long>> out = new java.util.LinkedHashMap<>();
+                for (Long id : ids) out.put(id, countBySeverityForRun(id));
+                return out;
+            }
         };
         service.suppressionRepository = new FindingSuppressionRepository() {
             @Override public Optional<FindingSuppression> findBySystemAndFingerprint(Long sid, String fp) {
