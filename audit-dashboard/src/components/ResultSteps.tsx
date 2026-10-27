@@ -5,7 +5,7 @@ import { useFixPlan } from '../hooks/useAuditRuns';
 import type { AuditRunResponse, Category, Severity } from '../types';
 import { TARGET_SCORE, categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
 
-const toneColor = { good: '#198038', warn: '#8a6a00', bad: '#a2191f' } as const;
+const toneColor = { good: 'var(--s-success-text)', warn: 'var(--s-warn-text)', bad: 'var(--s-danger-text)' } as const;
 const sevBadge: Record<Severity, { label: string; bg: string; fg: string }> = {
   CRITICAL: { label: 'CRÍTICA', bg: '#a2191f', fg: '#ffffff' },
   HIGH: { label: 'ALTA', bg: '#ff832b', fg: '#161616' },
@@ -23,7 +23,7 @@ function Emphasis({ text }: { text: string }) {
   );
 }
 
-const scoreColor = (n: number) => (n >= TARGET_SCORE ? '#198038' : n >= 50 ? '#8a6a00' : '#a2191f');
+const scoreColor = (n: number) => (n >= TARGET_SCORE ? 'var(--s-success-text)' : n >= 50 ? 'var(--s-warn-text)' : 'var(--s-danger-text)');
 
 /** Resultado em três etapas, do geral para o detalhe: veredito, onde está o risco, o que corrigir primeiro. */
 export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; onOpenFindings: () => void }) {

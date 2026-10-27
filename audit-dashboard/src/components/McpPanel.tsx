@@ -134,7 +134,7 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
         </div>
 
         {fresh && (
-          <div role="status" aria-label="Chave nova" style={{ background: '#fcf4d6', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
+          <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
             <strong>Copie a chave agora: ela não aparece de novo.</strong>
             <code style={{ fontFamily: mono, fontSize: 13, wordBreak: 'break-all' }}>{fresh.key}</code>
             <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Para registrar no Claude Code:</div>

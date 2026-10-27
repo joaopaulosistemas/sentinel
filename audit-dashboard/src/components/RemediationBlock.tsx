@@ -29,15 +29,15 @@ export function RemediationBlock({ remediation }: { remediation: Remediation }) 
           {remediation.before && (
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--s-danger-text)', marginBottom: '0.25rem' }}>Antes</div>
-              <pre style={{ ...codeStyle, background: '#fff1f1', color: 'var(--s-text)' }}>
+              <pre style={{ ...codeStyle, background: 'var(--s-bad-bg)', color: 'var(--s-text)' }}>
                 <code>{remediation.before}</code>
               </pre>
             </div>
           )}
           {remediation.after && (
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#0e6027', marginBottom: '0.25rem' }}>Depois</div>
-              <pre style={{ ...codeStyle, background: '#defbe6', color: 'var(--s-text)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--s-success-strong)', marginBottom: '0.25rem' }}>Depois</div>
+              <pre style={{ ...codeStyle, background: 'var(--s-good-bg)', color: 'var(--s-text)' }}>
                 <code>{remediation.after}</code>
               </pre>
             </div>

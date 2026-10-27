@@ -32,10 +32,10 @@ const statusLabels: Record<FindingStatus, string> = {
 };
 
 const statusColors: Record<FindingStatus, string> = {
-  OPEN: '#393939',
-  ACKNOWLEDGED: '#393939',
-  FIXED: '#198038',
-  SUPPRESSED: '#6929c4',
+  OPEN: 'var(--s-text-2)',
+  ACKNOWLEDGED: 'var(--s-text-2)',
+  FIXED: 'var(--s-success-text)',
+  SUPPRESSED: 'var(--s-purple-text)',
 };
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -167,7 +167,7 @@ export function FindingsTable({ findings, systemName, auditId, systemOf }: Findi
                     </td>
                     <td style={{ ...td, fontSize: 13, color: 'var(--s-text-2)' }}>{origem ? `Auditoria #${origem}` : '—'}</td>
                     <td style={{ ...td, paddingRight: 16, textAlign: 'right' }}>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: situation === 'Novo' ? '#0043ce' : statusColors[f.status] }}>{situation}</span>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: situation === 'Novo' ? 'var(--s-link)' : statusColors[f.status] }}>{situation}</span>
                     </td>
                   </tr>
                   {expanded && (

@@ -63,7 +63,7 @@ const points = (n: number) => `${n} ${n === 1 ? 'ponto' : 'pontos'}`;
 
 /** Cor da nota: verde na meta, âmbar no meio, vermelho abaixo. */
 export const scoreColor = (n: number | null) =>
-  n === null ? '#6f6f6f' : n >= TARGET_SCORE ? '#198038' : n >= 50 ? '#8a6a00' : '#a2191f';
+  n === null ? 'var(--s-text-4)' : n >= TARGET_SCORE ? 'var(--s-success-text)' : n >= 50 ? 'var(--s-warn-text)' : 'var(--s-danger-text)';
 
 /**
  * Todos os sistemas do menor para o maior nota (nunca auditados primeiro), cada um com o motivo em uma linha:

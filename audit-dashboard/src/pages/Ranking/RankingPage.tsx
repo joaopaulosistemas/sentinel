@@ -28,7 +28,7 @@ const sortOptions: Array<{ key: SortKey; label: string }> = [
 
 const trendColor = { up: 'var(--s-success-text)', down: 'var(--s-danger-text)', flat: 'var(--s-text-3)', none: 'var(--s-text-4)' } as const;
 
-const barColor = (n: number) => (n >= TARGET ? '#198038' : n >= 50 ? '#8a6a00' : '#a2191f');
+const barColor = (n: number) => (n >= TARGET ? 'var(--s-success-text)' : n >= 50 ? 'var(--s-warn-text)' : 'var(--s-danger-text)');
 
 /** Ordem da lista: melhor nota primeiro, mais críticos primeiro, ou maior ganho de nota primeiro. Sem dado vai para o fim. */
 export function sortSystems(systems: SystemSummaryResponse[], by: SortKey): SystemSummaryResponse[] {

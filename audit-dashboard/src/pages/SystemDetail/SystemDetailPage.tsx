@@ -176,7 +176,7 @@ export function SystemDetailPage() {
                       <td style={{ ...cell, minWidth: 240 }}>
                         {active ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0043ce', fontWeight: 500 }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-link)', fontWeight: 500 }}>
                               <SpinnerIcon size={14} color="#0043ce" />
                               Em execução · {stepLabel(run)}
                             </span>
@@ -188,7 +188,7 @@ export function SystemDetailPage() {
                             </span>
                           </div>
                         ) : run.status === 'COMPLETED' ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#044317', fontWeight: 500 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-success-strong)', fontWeight: 500 }}>
                             <CheckIcon size={14} />
                             Concluída
                           </span>

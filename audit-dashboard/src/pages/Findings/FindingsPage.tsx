@@ -290,8 +290,8 @@ export function FindingsPage() {
                 Auditoria #{s.auditId}{s.auditedAt ? ` · ${startLabel(s.auditedAt)}` : ''}
               </span>
               <span style={{ display: 'flex', gap: 14, fontSize: 13, color: 'var(--s-text)' }}>
-                <span><strong style={{ fontFamily: mono, color: '#750e13' }}>{s.critical ?? 0}</strong> críticos</span>
-                <span><strong style={{ fontFamily: mono, color: '#6b2d00' }}>{s.high ?? 0}</strong> altos</span>
+                <span><strong style={{ fontFamily: mono, color: 'var(--s-crit-text)' }}>{s.critical ?? 0}</strong> críticos</span>
+                <span><strong style={{ fontFamily: mono, color: 'var(--s-high-text)' }}>{s.high ?? 0}</strong> altos</span>
               </span>
             </Link>
           ))}

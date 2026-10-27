@@ -64,12 +64,12 @@ export function RecentAudits() {
                     <td style={{ ...cell, fontWeight: 500 }}>{run.systemName}</td>
                     <td style={cell}>
                       {active ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0043ce', fontWeight: 500 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-link)', fontWeight: 500 }}>
                           <SpinnerIcon size={14} color="#0043ce" />
                           {stepText(run)}
                         </span>
                       ) : run.status === 'COMPLETED' ? (
-                        <span style={{ color: '#044317', fontWeight: 500 }}>Concluída</span>
+                        <span style={{ color: 'var(--s-success-strong)', fontWeight: 500 }}>Concluída</span>
                       ) : run.status === 'FAILED' ? (
                         <span style={{ color: 'var(--s-danger-text)', fontWeight: 500 }}>Falhou</span>
                       ) : (
