@@ -27,6 +27,20 @@ public class AuditedSystem {
     @Column(name = "repo_url", length = 500)
     private String repoUrl;
 
+    /** De onde vem o código. Nulo (sistemas antigos) vale {@link SourceType#GIT_URL}. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", length = 20)
+    private SourceType sourceType;
+
+    /** Pasta do projeto, relativa à raiz {@code SENTINEL_LOCAL_ROOT}; só quando a origem é {@link SourceType#LOCAL_PATH}. */
+    @Column(name = "local_path", length = 500)
+    private String localPath;
+
+    /** O que auditar na pasta local. Nulo vale {@link LocalSnapshot#COMMIT}. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "local_snapshot", length = 20)
+    private LocalSnapshot localSnapshot;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private Stack stack;
@@ -265,6 +279,42 @@ public class AuditedSystem {
 
     public void setRepoUrl(String repoUrl) {
         this.repoUrl = repoUrl;
+    }
+
+    public SourceType getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(SourceType sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public SourceType effectiveSourceType() {
+        return sourceType == null ? SourceType.GIT_URL : sourceType;
+    }
+
+    public boolean isLocalSource() {
+        return effectiveSourceType() == SourceType.LOCAL_PATH;
+    }
+
+    public String getLocalPath() {
+        return localPath;
+    }
+
+    public void setLocalPath(String localPath) {
+        this.localPath = localPath;
+    }
+
+    public LocalSnapshot getLocalSnapshot() {
+        return localSnapshot;
+    }
+
+    public void setLocalSnapshot(LocalSnapshot localSnapshot) {
+        this.localSnapshot = localSnapshot;
+    }
+
+    public LocalSnapshot effectiveLocalSnapshot() {
+        return localSnapshot == null ? LocalSnapshot.COMMIT : localSnapshot;
     }
 
     public Stack getStack() {

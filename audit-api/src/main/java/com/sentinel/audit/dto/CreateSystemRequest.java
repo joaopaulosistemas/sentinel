@@ -1,6 +1,10 @@
 package com.sentinel.audit.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sentinel.audit.model.LocalSnapshot;
+import com.sentinel.audit.model.SourceType;
 import com.sentinel.audit.model.Stack;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -17,11 +21,33 @@ public class CreateSystemRequest {
 
     private String description;
 
-    @NotBlank
+    /** Obrigatória (e https://) quando a origem é GIT_URL; vazia quando é LOCAL_PATH. */
     @Size(max = 500)
-    @Pattern(regexp = "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s]+$",
+    @Pattern(regexp = "^$|^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s]+$",
              message = "repoUrl deve ser uma URL https:// de repositório Git")
     private String repoUrl;
+
+    /** Ausente = GIT_URL (compatível com quem já usa a API). */
+    private SourceType sourceType;
+
+    /** Pasta do projeto relativa à raiz do servidor. Obrigatória quando a origem é LOCAL_PATH. */
+    @Size(max = 500)
+    private String localPath;
+
+    /** O que auditar na pasta local. Ausente = COMMIT. */
+    private LocalSnapshot localSnapshot;
+
+    @JsonIgnore
+    @AssertTrue(message = "Informe o endereço do repositório (https://)")
+    public boolean isRepoUrlPresentForGit() {
+        return sourceType == SourceType.LOCAL_PATH || (repoUrl != null && !repoUrl.isBlank());
+    }
+
+    @JsonIgnore
+    @AssertTrue(message = "Informe a pasta do projeto")
+    public boolean isLocalPathPresentForLocal() {
+        return sourceType != SourceType.LOCAL_PATH || (localPath != null && !localPath.isBlank());
+    }
 
     @NotNull
     private Stack stack;
@@ -197,6 +223,30 @@ public class CreateSystemRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public SourceType getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(SourceType sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public String getLocalPath() {
+        return localPath;
+    }
+
+    public void setLocalPath(String localPath) {
+        this.localPath = localPath;
+    }
+
+    public LocalSnapshot getLocalSnapshot() {
+        return localSnapshot;
+    }
+
+    public void setLocalSnapshot(LocalSnapshot localSnapshot) {
+        this.localSnapshot = localSnapshot;
     }
 
     public String getRepoUrl() {

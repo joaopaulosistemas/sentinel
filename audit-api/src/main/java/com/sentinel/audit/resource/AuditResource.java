@@ -113,7 +113,9 @@ public class AuditResource {
             return new Freshness(audited, null, null);
         }
         String token = system.hasGitToken() ? secretBox.decrypt(system.getGitTokenEnc()) : null;
-        String current = ingestionService.remoteHeadSha(system.getRepoUrl(), run.getBranch(), token, system.getGitTokenHosts());
+        String current = system.isLocalSource()
+                ? ingestionService.localHeadSha(system.getLocalPath(), run.getBranch())
+                : ingestionService.remoteHeadSha(system.getRepoUrl(), run.getBranch(), token, system.getGitTokenHosts());
         return new Freshness(audited, current, current == null ? null : !current.equals(audited));
     }
 

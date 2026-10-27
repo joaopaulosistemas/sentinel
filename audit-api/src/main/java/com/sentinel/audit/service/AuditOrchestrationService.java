@@ -29,7 +29,9 @@ import com.sentinel.audit.analyzer.deps.SbomWriter;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditStatus;
 import com.sentinel.audit.model.Finding;
+import com.sentinel.audit.model.LocalSnapshot;
 import com.sentinel.audit.model.RiskScore;
+import com.sentinel.audit.model.SourceType;
 import com.sentinel.audit.model.Stack;
 import com.sentinel.audit.repository.AuditRunRepository;
 import com.sentinel.audit.repository.FindingRepository;
@@ -184,7 +186,18 @@ public class AuditOrchestrationService {
      * Dados mínimos da auditoria, lidos dentro de uma transação e seguros para uso fora dela.
      */
     record AuditContext(String repoUrl, String branch, Stack stack, String systemName, String profile, String baseRef,
-                        String gitToken, String gitTokenHosts, Integer gitHistoryDepth, Long systemId) {}
+                        String gitToken, String gitTokenHosts, Integer gitHistoryDepth, Long systemId,
+                        SourceType sourceType, String localPath, LocalSnapshot localSnapshot) {
+
+        boolean local() {
+            return sourceType == SourceType.LOCAL_PATH;
+        }
+
+        /** Como a origem aparece para o usuário (mensagens e andamento): a URL ou a pasta local. */
+        String sourceLabel() {
+            return local() ? "pasta local " + localPath : repoUrl;
+        }
+    }
 
     /**
      * Inicia a auditoria somente depois do commit da transação que a criou.
@@ -228,14 +241,17 @@ public class AuditOrchestrationService {
             AuditContext context = markRunning(auditRunId);
             progress.queued(auditRunId);
             checkNotCancelled(auditRunId);
-            progress.phase(auditRunId, AuditProgressTracker.CLONE, "Clonando " + context.repoUrl() + " (" + context.branch() + ")");
+            progress.phase(auditRunId, AuditProgressTracker.CLONE,
+                    (context.local() ? "Copiando a " : "Clonando ") + context.sourceLabel() + " (" + context.branch() + ")");
 
-            clonedPath = ingestionService.cloneRepository(context.repoUrl(), context.branch(), context.gitToken(), context.gitTokenHosts(), context.gitHistoryDepth());
+            clonedPath = context.local()
+                    ? ingestionService.snapshotLocal(context.localPath(), context.branch(), context.localSnapshot(), context.gitHistoryDepth())
+                    : ingestionService.cloneRepository(context.repoUrl(), context.branch(), context.gitToken(), context.gitTokenHosts(), context.gitHistoryDepth());
             checkNotCancelled(auditRunId);
             SourceSizer.Stats sizing = SourceSizer.stats(clonedPath);
             commitSha = ingestionService.headCommit(clonedPath);
-            progress.sourceStats(auditRunId, context.repoUrl(), sizing.files(), sizing.lines());
-            evidenceStager.stage(context.systemName(), context.repoUrl(), clonedPath);
+            progress.sourceStats(auditRunId, context.sourceLabel(), sizing.files(), sizing.lines());
+            evidenceStager.stage(context.systemName(), context.local() ? context.localPath() : context.repoUrl(), clonedPath);
 
             // Referência leve apenas para os analisadores vincularem os findings;
             // o vínculo definitivo com a entidade gerenciada é refeito ao persistir.
@@ -541,7 +557,14 @@ public class AuditOrchestrationService {
         if (context.baseRef() == null || context.baseRef().isBlank()) {
             return findings;
         }
-        ChangedFiles.Result changed = ingestionService.changedFiles(context.repoUrl(), clonedPath, context.baseRef(), context.gitToken(), context.gitTokenHosts());
+        if (context.local() && context.localSnapshot() == LocalSnapshot.TREE) {
+            LOG.warnf("Auditoria de PR contra '%s': a cópia 'pasta como está' não tem histórico para comparar; todos os achados foram mantidos",
+                    context.baseRef());
+            return findings;
+        }
+        ChangedFiles.Result changed = context.local()
+                ? ingestionService.changedFilesLocal(context.localPath(), clonedPath, context.baseRef())
+                : ingestionService.changedFiles(context.repoUrl(), clonedPath, context.baseRef(), context.gitToken(), context.gitTokenHosts());
         if (changed.files() == null) {
             LOG.warnf("Auditoria de PR: não foi possível comparar com '%s' (%s); todos os achados foram mantidos",
                     context.baseRef(), changed.note());
@@ -623,7 +646,10 @@ public class AuditOrchestrationService {
                 secretBox.decrypt(run.getSystem().getGitTokenEnc()),
                 run.getSystem().getGitTokenHosts(),
                 run.getSystem().getGitHistoryDepth(),
-                run.getSystem().getId());
+                run.getSystem().getId(),
+                run.getSystem().effectiveSourceType(),
+                run.getSystem().getLocalPath(),
+                run.getSystem().effectiveLocalSnapshot());
     }
 
     @Transactional
