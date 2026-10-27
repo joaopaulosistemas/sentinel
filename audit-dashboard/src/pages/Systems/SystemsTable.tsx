@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { SystemSummaryResponse } from '../../types';
 import { scoreColor } from '../../utils/systemAttention';
+import { EditIcon, ListIcon, PlayIcon, TrashIcon } from '../../components/ActionIcons';
 import { scheduleText, sourceText, stackShort } from './systemForm';
 
 interface Props {
@@ -13,7 +14,7 @@ interface Props {
 }
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
-const actionButton = { padding: '8px 10px', background: 'transparent', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 14 } as const;
+const actionButton = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: 'transparent', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 14 } as const;
 
 /** Tabela dos sistemas cadastrados, com as ações de cada linha. */
 export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }: Props) {
@@ -64,12 +65,15 @@ export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }:
                     onClick={() => navigate(`/systems/${s.id}`)}
                     style={{ ...actionButton, color: hasAudits ? 'var(--s-link)' : 'var(--s-disabled)', cursor: hasAudits ? 'pointer' : 'not-allowed' }}
                   >
+                    <ListIcon />
                     Auditorias
                   </button>
                   <button type="button" onClick={() => onAudit(s)} style={actionButton}>
+                    <PlayIcon />
                     Auditar
                   </button>
                   <button type="button" onClick={() => onEdit(s)} style={actionButton}>
+                    <EditIcon />
                     Editar
                   </button>
                   <button
@@ -78,6 +82,7 @@ export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }:
                     onClick={() => onDelete(s)}
                     style={{ ...actionButton, color: 'var(--s-danger-text)' }}
                   >
+                    <TrashIcon />
                     Excluir
                   </button>
                 </td>
