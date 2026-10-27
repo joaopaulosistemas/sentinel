@@ -12,12 +12,12 @@ const btnDanger = { ...btn, border: '1px solid #da1e28', color: '#da1e28' } as c
 export const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 const STAGE_COLOR: Record<string, string> = {
-  PROPOSED: '#6f6f6f',
-  REVIEWED: '#0043ce',
-  SAMPLE_PASSED: '#0043ce',
-  OBSERVING: '#8a3800',
-  PROMOTED: '#198038',
-  DISCARDED: '#6f6f6f',
+  PROPOSED: 'var(--s-text-4)',
+  REVIEWED: 'var(--s-link)',
+  SAMPLE_PASSED: 'var(--s-link)',
+  OBSERVING: 'var(--s-high-text)',
+  PROMOTED: 'var(--s-success-text)',
+  DISCARDED: 'var(--s-text-4)',
 };
 
 function rate(v: number | null | undefined): string {
