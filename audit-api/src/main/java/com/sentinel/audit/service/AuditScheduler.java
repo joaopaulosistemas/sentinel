@@ -105,8 +105,8 @@ public class AuditScheduler {
                 if (system.getAuditIntervalHours() == null || system.getAuditIntervalHours() <= 0) {
                     continue;
                 }
-                List<AuditRun> runs = auditRunRepository.findBySystemId(system.getId());   // mais recente primeiro
-                LocalDateTime lastStart = runs.isEmpty() ? null : runs.get(0).getStartedAt();
+                AuditRun last = auditRunRepository.findLastStarted(system.getId());
+                LocalDateTime lastStart = last == null ? null : last.getStartedAt();
                 if (isDue(system.getAuditIntervalHours(), lastStart, now)
                         && requestService.requestIfIdle(system.getId(), system.effectiveScheduledBranch(), "scheduler").isPresent()) {
                     started++;

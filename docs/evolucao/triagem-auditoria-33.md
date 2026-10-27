@@ -19,9 +19,7 @@ Cada linha abaixo foi conferida no código. Os textos da coluna "Justificativa" 
 
 ## Real e ainda aberto
 
-- N+1 e gravação em loop: `FindingResource`, `ReportResource` (3), `SystemResource:388`, `AuditScheduler:108`, `FindingLifecycleService:252`, `RuleQualityService` (2), `AuditOrchestrationService:629`. O volume é proporcional ao número de sistemas, então o ganho é pequeno hoje; corrigir pede consultas novas nos repositórios e teste com banco.
-- Chart Helm com `:latest` (`deploy/helm/sentinel/values.yaml`): fixar a versão depende de como as imagens são publicadas.
-- Dockerfile do dashboard roda o nginx oficial como root: trocar por imagem sem privilégios muda a porta e o `nginx.conf`.
+- N+1 restante: `SystemResource:388` (precisa de todas as execuções de cada sistema para a variação da nota; volume = número de sistemas) e `AuditOrchestrationService:629`.
 - Complexidade e funções longas (193 CleanCode): `FindingsPage`, `EnginePanel`, `AuditRunPage`, `SystemsPage`, `PackLoader`, `PackRegistry` e outros.
 
 ## Corrigido a partir desta triagem
@@ -29,6 +27,8 @@ Cada linha abaixo foi conferida no código. Os textos da coluna "Justificativa" 
 - `RuleCatalog`: os dois `catch` vazios agora registram em nível debug.
 - Dashboard: comparações `!= null` trocadas por comparação estrita (`ExecutionPanels`, `SystemDetailPage`), aspas sem escape no `EnginePanel` e ramo duplicado no `ReauditPanel`.
 
-## Ideia para o próprio Sentinel
+## Feito depois da triagem (12.15.0)
 
-Não existe exclusão de caminhos por sistema (o Semgrep tem uma lista fixa de pastas de terceiros e o detector de segredos ignora algumas pastas). Uma lista de caminhos ignorados por sistema, para fixtures de teste, `docs/` e arquivos de regras, tiraria da nota cerca de 10 achados HIGH desta auditoria. É mudança de contrato da API e fica para decisão sua.
+- **Caminhos ignorados por sistema**: Sistemas → Editar → Analisadores → "Caminhos ignorados" (um por linha, até 50, estilo `.gitignore`: `*`, `**`, `?`, `/` no fim = pasta, `/` no início = a partir da raiz). Os achados nesses caminhos somem da nota, tanto dos analisadores quanto do Claude.
+- **N+1**: tendência, visão geral, portfólio, qualidade de regras e agendador passaram a usar consultas em lote; gravação de achados em lote JDBC (50).
+- **Helm** com tag fixa (`12.15.0`) em vez de `:latest`; **dashboard** roda como usuário sem privilégios (`nginx-unprivileged`, porta 8080 no container; o compose continua em `127.0.0.1:3000`).

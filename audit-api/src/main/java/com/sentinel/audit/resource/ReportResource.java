@@ -23,6 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -66,16 +67,21 @@ public class ReportResource {
         Integer period = days == null || days <= 0 ? null : days;
         LocalDateTime since = period == null ? null : LocalDateTime.now().minusDays(period);
         List<SystemSnapshot> systems = new ArrayList<>();
+        // Última auditoria, contagens e (no relatório técnico) achados de todos os sistemas em poucas consultas.
+        Map<Long, AuditRun> latestBySystem = auditRunRepository.findLatestCompletedBySystem();
+        List<Long> runIds = latestBySystem.values().stream().map(AuditRun::getId).toList();
+        Map<Long, Map<com.sentinel.audit.model.Severity, Long>> countsByRun = findingRepository.countBySeverityForRuns(runIds);
+        Map<Long, List<com.sentinel.audit.model.Finding>> findingsByRun =
+                kind == ReportService.Type.TECNICO ? findingRepository.findByAuditRunIds(runIds) : Map.of();
         for (AuditedSystem system : systemRepository.listAll()) {
             if (systemId != null && !systemId.equals(system.getId())) {
                 continue;
             }
-            List<AuditRun> latest = auditRunRepository.findLatestCompleted(system.getId(), 1);
-            if (latest.isEmpty()) {
+            AuditRun run = latestBySystem.get(system.getId());
+            if (run == null) {
                 continue;
             }
-            AuditRun run = latest.get(0);
-            var counts = findingRepository.countBySeverityForRun(run.getId());
+            var counts = countsByRun.get(run.getId());
             List<TrendPoint> points = lifecycleService.trend(system.getId(), 100).stream()
                     .filter(p -> since == null || (p.completedAt() != null && p.completedAt().isAfter(since)))
                     .toList();
@@ -83,7 +89,7 @@ public class ReportResource {
                     run.getId(), run.getCompletedAt(), run.getRiskScore() == null ? null : run.getRiskScore().getOverall(),
                     counts.getOrDefault(com.sentinel.audit.model.Severity.CRITICAL, 0L),
                     counts.getOrDefault(com.sentinel.audit.model.Severity.HIGH, 0L),
-                    kind == ReportService.Type.TECNICO ? findingRepository.findByAuditRunId(run.getId()) : List.of(),
+                    kind == ReportService.Type.TECNICO ? findingsByRun.getOrDefault(run.getId(), List.of()) : List.of(),
                     points));
         }
         if (systems.isEmpty()) {

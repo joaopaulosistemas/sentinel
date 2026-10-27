@@ -53,16 +53,19 @@ public class RuleQualityService {
     /** Precisa de transação ativa (quem chama) para os repositórios. */
     public List<RuleQuality> compute() {
         List<Snapshot> snapshots = new ArrayList<>();
+        Map<Long, AuditRun> latestBySystem = auditRunRepository.findLatestCompletedBySystem();
+        Map<Long, List<Finding>> findingsByRun = findingRepository.findByAuditRunIds(
+                latestBySystem.values().stream().map(AuditRun::getId).toList());
         for (AuditedSystem system : systemRepository.listAll()) {
-            List<AuditRun> latest = auditRunRepository.findLatestCompleted(system.getId(), 1);
-            if (latest.isEmpty()) {
+            AuditRun latest = latestBySystem.get(system.getId());
+            if (latest == null) {
                 continue;
             }
             Map<String, SuppressionReason> reasons = new HashMap<>();
             for (FindingSuppression s : suppressionRepository.findBySystemId(system.getId())) {
                 reasons.put(s.getFingerprint(), s.getReason());
             }
-            snapshots.add(new Snapshot(findingRepository.findByAuditRunId(latest.get(0).getId()), reasons));
+            snapshots.add(new Snapshot(findingsByRun.getOrDefault(latest.getId(), List.of()), reasons));
         }
         return compute(snapshots);
     }

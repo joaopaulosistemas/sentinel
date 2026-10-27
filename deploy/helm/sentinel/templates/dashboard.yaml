@@ -14,7 +14,7 @@ spec:
         - name: dashboard
           image: {{ .Values.dashboard.image | quote }}
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           env:
             - { name: API_UPSTREAM, value: "http://{{ .Release.Name }}-api:8080" }
             - { name: API_KEY, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: API_KEY, optional: true } } }
@@ -26,4 +26,4 @@ metadata:
 spec:
   selector: { app: {{ .Release.Name }}-dashboard }
   ports:
-    - { port: 80, targetPort: 80 }
+    - { port: 80, targetPort: 8080 }

@@ -241,6 +241,8 @@ public class FindingLifecycleService {
         List<AuditRun> runs = new ArrayList<>(auditRunRepository.findLatestCompleted(systemId, Math.max(1, Math.min(limit, 100))));
         Collections.reverse(runs);
         List<TrendPoint> points = new ArrayList<>();
+        // Uma consulta para as contagens de todas as auditorias do gráfico (antes era uma por auditoria).
+        var counts = findingRepository.countBySeverityForRuns(runs.stream().filter(r -> r.getRiskScore() != null).map(AuditRun::getId).toList());
         for (AuditRun r : runs) {
             if (r.getRiskScore() == null) {
                 continue;
@@ -249,7 +251,7 @@ public class FindingLifecycleService {
                     r.getRiskScore().getOverall(), r.getRiskScore().getSecurity(), r.getRiskScore().getQuality(),
                     r.getRiskScore().getArchitecture(), r.getRiskScore().getDependencies(),
                     r.getRiskScore().getObservability(), r.getRiskScore().getPerformance(),
-                    findingRepository.countBySeverityForRun(r.getId())));
+                    counts.get(r.getId())));
         }
         return points;
     }

@@ -67,6 +67,9 @@ class AutomationTest {
                 return runs.stream().filter(r -> r.getSystem().getId().equals(id))
                         .sorted(Comparator.comparing(AuditRun::getStartedAt).reversed()).toList();
             }
+            @Override public AuditRun findLastStarted(Long id) {
+                return findBySystemId(id).stream().findFirst().orElse(null);
+            }
         };
         // request() de verdade exigiria banco/CDI: aqui só registra o pedido; requestIfIdle() é o real
         requestService = new AuditRequestService() {
@@ -249,6 +252,7 @@ class AutomationTest {
         scheduler.systemRepository = webhook.systemRepository;
         scheduler.auditRunRepository = new AuditRunRepository() {
             @Override public List<AuditRun> findBySystemId(Long id) { return List.of(); }
+            @Override public AuditRun findLastStarted(Long id) { return null; }
         };
         scheduler.requestService = requestService;
 

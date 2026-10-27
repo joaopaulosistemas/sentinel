@@ -117,7 +117,7 @@ services:
       API_UPSTREAM: http://audit-api:8080
       API_KEY: ${API_KEY:-}
     ports:
-      - "127.0.0.1:3000:80"
+      - "127.0.0.1:3000:8080"
 
 volumes:
   postgres_data:

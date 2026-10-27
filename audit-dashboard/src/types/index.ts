@@ -456,6 +456,8 @@ export interface EngineTuning {
   enablePacks: string[];
   disablePacks: string[];
   disableAnalyzers: string[];
+  /** Caminhos (curinga estilo .gitignore) cujos achados ficam fora da auditoria. Ausente em APIs antigas. */
+  ignorePaths?: string[];
 }
 
 export interface EnginePackState {
