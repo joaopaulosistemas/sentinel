@@ -460,3 +460,49 @@
   after: "try (Stream<String> linhas = Files.lines(caminho)) { linhas.forEach(this::processar); }"
   effort: M
   regression-risk: MEDIUM
+
+- key: "sentinel-arq-ciclo-pacotes"
+  summary: "Quebre o ciclo escolhendo o sentido da dependência: extraia uma interface para o pacote de quem é dependido, ou mova o que é compartilhado para um pacote que nenhum do ciclo importe de volta."
+  before: "pacote service importa model; model importa service (para chamar um serviço)"
+  after: "model não conhece service; o serviço recebe o que precisa por parâmetro ou por uma interface definida em model"
+  effort: L
+  regression-risk: MEDIUM
+  refs:
+    - "https://en.wikipedia.org/wiki/Acyclic_dependencies_principle"
+
+- key: "sentinel-arq-ciclo-arquivos"
+  summary: "Mova o que os dois arquivos compartilham (tipos, constantes, funções puras) para um terceiro arquivo que nenhum deles importe de volta."
+  before: "a.ts importa b.ts e b.ts importa a.ts"
+  after: "a.ts e b.ts importam shared.ts"
+  effort: M
+  regression-risk: LOW
+
+- key: "sentinel-dup-bloco"
+  summary: "Extraia o trecho repetido para um método, função ou classe usado pelos dois lugares. Um conserto passa a valer para todos."
+  before: "dois métodos com o mesmo bloco de 20 linhas"
+  after: "um método calcularTotal(itens) chamado pelos dois"
+  effort: M
+  regression-risk: LOW
+  refs:
+    - "https://refactoring.guru/smells/duplicate-code"
+
+- key: "sentinel-hotspot"
+  summary: "Comece por aqui: cubra a função com testes e quebre-a em partes menores. Complexidade num arquivo que muda toda semana custa a cada mudança."
+  before: "função de 80 linhas e 30 caminhos, alterada 15 vezes no último mês"
+  after: "funções pequenas com nome claro e testes que travam o comportamento antes de mexer"
+  effort: L
+  regression-risk: MEDIUM
+
+- key: "sentinel-morto-export"
+  summary: "Remova o código que ninguém usa. Se for chamado de fora por nome (framework, outro repositório), mantenha e documente."
+  before: "export function calcularLegado() { ... }   // nenhum arquivo importa"
+  after: "(removido)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-morto-export-interno"
+  summary: "Tire o `export`: o item só é usado dentro do próprio arquivo, então não faz parte da interface do módulo."
+  before: "export interface Opcoes { ... }   // usado só neste arquivo"
+  after: "interface Opcoes { ... }"
+  effort: S
+  regression-risk: LOW

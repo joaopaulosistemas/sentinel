@@ -129,4 +129,23 @@ class FindingConfidenceTest {
         // 10 (média) + 10 * 0,4 (baixa) = 14
         assertEquals(100.0 - 14.0, ligado.calculateDimensionScore(List.of(baixa, media), Category.QUALITY), 0.001);
     }
+
+    @Test
+    void endpointSemAnotacaoPerdeConfiancaQuandoHaFiltroGlobal() {
+        Finding endpoint = f(Category.SECURITY, "Semgrep", "src/main/java/FindingResource.java", 39);
+        endpoint.setRuleId("rules.security.sentinel-owasp-a01-endpoint-sem-autorizacao");
+        FindingConfidence.assessAll(List.of(endpoint), Map.of(), "filtro ApiKeyFilter (ContainerRequestFilter)");
+        assertEquals(Confidence.LOW, endpoint.getConfidence());
+        assertTrue(endpoint.getConfidenceReason().contains("ApiKeyFilter"));
+
+        Finding semFiltro = f(Category.SECURITY, "Semgrep", "src/main/java/FindingResource.java", 39);
+        semFiltro.setRuleId("rules.security.sentinel-owasp-a01-endpoint-sem-autorizacao");
+        FindingConfidence.assessAll(List.of(semFiltro), Map.of(), null);
+        assertEquals(Confidence.MEDIUM, semFiltro.getConfidence());
+
+        Finding outraRegra = f(Category.SECURITY, "Semgrep", "src/main/java/FindingResource.java", 50);
+        outraRegra.setRuleId("rules.security.sentinel-sql-injection");
+        FindingConfidence.assessAll(List.of(outraRegra), Map.of(), "filtro X");
+        assertNotEquals(Confidence.LOW, outraRegra.getConfidence());
+    }
 }
