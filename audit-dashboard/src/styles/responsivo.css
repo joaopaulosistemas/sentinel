@@ -1,0 +1,50 @@
+/*
+ * Layout responsivo. Duas regras guiam as telas:
+ *  1. O conteúdo tem largura máxima e fica centralizado: em tela muito larga ele não estica.
+ *  2. Cada bloco reage à largura do PRÓPRIO espaço (container queries), não à da janela;
+ *     assim o mesmo componente se ajusta bem com ou sem menu lateral.
+ */
+.sentinel-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: clamp(56px, 7vw, 70px) clamp(16px, 3vw, 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.sentinel-page > * { min-width: 0; }
+
+/* Cabeçalho enxuto: no celular só ficam o menu, a marca e o tema. */
+@media (max-width: 42rem) {
+  .sentinel-hide-narrow { display: none !important; }
+}
+
+/* Texto longo nunca empurra a tela para os lados. */
+.sentinel-content { overflow-wrap: anywhere; min-width: 0; }
+
+/* ------- Tabela de sistemas: vira lista de cartões quando o espaço fica curto ------- */
+.sys-table-wrap { container-type: inline-size; }
+@container (max-width: 820px) {
+  .sys-table { min-width: 0 !important; }
+  .sys-table thead { display: none; }
+  .sys-table, .sys-table tbody { display: block; }
+  .sys-table tr {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    gap: 2px 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--s-border);
+  }
+  .sys-table td { display: block; padding: 0 !important; border: 0; text-align: left !important; }
+  .sys-table td:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .sys-table td:nth-child(5) { grid-column: 2; grid-row: 1; font-size: 20px; text-align: right !important; }
+  .sys-table td:nth-child(2), .sys-table td:nth-child(3), .sys-table td:nth-child(4) { grid-column: 1 / -1; font-size: 13px; }
+  .sys-table td:nth-child(2) { grid-row: 2; }
+  .sys-table td:nth-child(3) { grid-row: 3; }
+  .sys-table td:nth-child(4) { grid-row: 4; }
+  .sys-table td:nth-child(6) { grid-column: 1 / -1; grid-row: 5; margin: 8px -10px 0; white-space: normal !important; display: flex; flex-wrap: wrap; }
+  .sys-table td:nth-child(3)::before { content: 'Equipe: '; color: var(--s-text-4); }
+  .sys-table td:nth-child(4)::before { content: 'Agendamento: '; color: var(--s-text-4); }
+}

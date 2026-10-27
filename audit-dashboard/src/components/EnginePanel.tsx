@@ -228,7 +228,7 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
 
       <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
         <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Limites de clean code</legend>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 12 }}>
           {cfg.thresholds.map((t) => (
             <label key={t.key} style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--s-text-3)' }}>
               {THRESHOLD_LABEL[t.key] ?? t.key}

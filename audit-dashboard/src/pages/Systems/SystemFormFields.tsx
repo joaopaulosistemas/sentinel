@@ -272,7 +272,7 @@ export function SystemFormFields({ values, setValues, errors, touched, check, ch
           />
         </fieldset>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 16 }}>
         <Select
           id="sys-stack"
           labelText="Stack"
@@ -303,7 +303,7 @@ export function SystemFormFields({ values, setValues, errors, touched, check, ch
 
       <fieldset style={{ border: '1px solid var(--s-border)', margin: 0, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <legend style={{ padding: '0 6px', fontSize: 13, fontWeight: 600 }}>Auditoria automática</legend>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 100%), 1fr))', gap: 16 }}>
           <NumberInput
             id="sys-hours"
             label="A cada (horas, 0 = manual)"
@@ -390,7 +390,7 @@ export function SystemFormFields({ values, setValues, errors, touched, check, ch
             onChange={(_, { checked }) => setValues({ ...values, clearNotifyUrl: checked, notifyUrl: checked ? '' : values.notifyUrl })}
           />
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 100%), 1fr))', gap: 16 }}>
           <Select id="sys-notify-format" labelText="Formato" value={values.notifyFormat} onChange={(e) => setValues({ ...values, notifyFormat: e.target.value })}>
             {notifyFormats.map((o) => (
               <SelectItem key={o.value} value={o.value} text={o.label} />

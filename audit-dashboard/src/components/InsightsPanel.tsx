@@ -116,7 +116,7 @@ export function InsightsPanel({ auditId }: { auditId: number | undefined }) {
           <p style={{ fontSize: '0.875rem', color: 'var(--s-text-3)' }}>{data.executiveSummary}</p>
 
           <Section title="Por área">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: '0.75rem' }}>
               {data.areas.map((a) => (
                 <div key={a.area} style={{ background: 'var(--s-layer)', padding: '0.75rem', borderRadius: 4 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>

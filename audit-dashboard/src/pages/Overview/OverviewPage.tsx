@@ -142,7 +142,7 @@ export function OverviewPage() {
         </div>
       )}
 
-      <section aria-label="Indicadores" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 1, background: 'var(--s-border)', border: '1px solid var(--s-border)' }}>
+      <section aria-label="Indicadores" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 1, background: 'var(--s-border)', border: '1px solid var(--s-border)' }}>
         {kpis.map((k) => (
           <div key={k.label} style={{ background: 'var(--s-surface)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{k.label}</span>
@@ -152,7 +152,7 @@ export function OverviewPage() {
         ))}
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 24, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))', gap: 24, alignItems: 'start' }}>
         <section aria-label="Precisam de atenção" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
           <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)' }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Precisam de atenção</h2>

@@ -20,8 +20,8 @@ const actionButton = { display: 'inline-flex', alignItems: 'center', gap: 6, pad
 export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }: Props) {
   const navigate = useNavigate();
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table aria-label="Sistemas cadastrados" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 920 }}>
+    <div className="sys-table-wrap" style={{ overflowX: 'auto' }}>
+      <table className="sys-table" aria-label="Sistemas cadastrados" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 920 }}>
         <thead>
           <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
             <th style={{ padding: '12px 16px' }}>Sistema</th>

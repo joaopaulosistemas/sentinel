@@ -131,7 +131,7 @@ export function ReportsPage() {
       </div>
 
       <section aria-label="Novo relatório" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '20px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignContent: 'start' }}>
             <span style={eyebrow}>1 · Tipo</span>
             {reportTypes.map((t) => (
