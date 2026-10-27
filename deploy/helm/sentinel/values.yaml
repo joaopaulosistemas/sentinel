@@ -1,6 +1,6 @@
 # Valores padrão do chart Sentinel. Sobrescreva com -f meus-valores.yaml ou --set.
 api:
-  image: sentinel-audit-api:latest        # publique a imagem no seu registry
+  image: sentinel-audit-api:12.15.0        # tag fixa (nunca :latest); publique a imagem no seu registry com esta tag
   replicas: 1                             # >1 exige o agendador desligado em todas menos uma réplica (ver README)
   resources:
     requests: { cpu: 500m, memory: 1Gi }
@@ -9,7 +9,7 @@ api:
   env: {}                                 # variáveis extras (OSV_ENABLED, TRIVY_ENABLED, CLEANCODE_*, ...)
 
 dashboard:
-  image: sentinel-audit-dashboard:latest
+  image: sentinel-audit-dashboard:12.15.0   # idem; a imagem roda como usuário sem privilégios na porta 8080
   replicas: 1
 
 # Segredos. Prefira existingSecret (criado por você/External Secrets) a colocar valores aqui.

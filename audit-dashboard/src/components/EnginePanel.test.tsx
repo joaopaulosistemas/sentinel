@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { EngineConfig, SystemSummaryResponse } from '../types';
-import { EngineAnalyzersPanel, EngineRulesPanel, isNoop, mergeTuning } from './EnginePanel';
+import { EngineAnalyzersPanel, EngineRulesPanel, isNoop, mergeTuning, pathLines } from './EnginePanel';
 
 const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as SystemSummaryResponse;
 
@@ -99,7 +99,7 @@ describe('EnginePanel', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Voltar ao perfil' }));
     await waitFor(() => expect(calls.some((c) => c.method === 'PUT')).toBe(true));
     expect(JSON.parse(calls.find((c) => c.method === 'PUT')?.body ?? '{}')).toEqual({
-      rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [],
+      rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: [],
     });
   });
 
@@ -112,6 +112,26 @@ describe('EnginePanel', () => {
     const body = JSON.parse(calls.find((c) => c.method === 'PUT')?.body ?? '{}');
     expect(body.disableAnalyzers).toEqual(['PMD']);
     expect(body.rules).toEqual(tuning.rules);
+  });
+
+  it('caminhos ignorados: mostra os salvos, marca alteração e salva uma linha por caminho', async () => {
+    const tuning = { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: ['docs/'] };
+    const onDirty = vi.fn();
+    const calls = setup(config({ adjustments: 1, tuning }), EngineAnalyzersPanel, [], onDirty);
+    const box = (await screen.findByLabelText('Caminhos ignorados')) as HTMLTextAreaElement;
+    await waitFor(() => expect(box.value).toBe('docs/'));
+    fireEvent.change(box, { target: { value: 'docs/\n\n**/test/**\ndocs/\n *.md ' } });
+    await waitFor(() => expect(onDirty).toHaveBeenLastCalledWith(true));
+    expect(screen.getByText('Alterações não salvas')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar ajustes' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'PUT')).toBe(true));
+    const body = JSON.parse(calls.find((c) => c.method === 'PUT')?.body ?? '{}');
+    expect(body.ignorePaths).toEqual(['docs/', '**/test/**', '*.md']);
+  });
+
+  it('pathLines tira linhas vazias e repetidas', () => {
+    expect(pathLines(' a/ \n\nb\na/\n')).toEqual(['a/', 'b']);
+    expect(pathLines('')).toEqual([]);
   });
 
   it('funções puras', () => {

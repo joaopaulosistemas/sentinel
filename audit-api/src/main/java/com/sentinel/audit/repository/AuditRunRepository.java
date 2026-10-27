@@ -39,6 +39,26 @@ public class AuditRunRepository implements PanacheRepository<AuditRun> {
                 .page(0, limit).list();
     }
 
+    /**
+     * A última auditoria concluída (e completa) de cada sistema, numa consulta só: o mesmo que
+     * {@link #findLatestCompleted} com limite 1 para todos os sistemas. Chave: id do sistema.
+     */
+    public java.util.Map<Long, AuditRun> findLatestCompletedBySystem() {
+        List<AuditRun> runs = find("FROM AuditRun r WHERE r.baseRef IS NULL AND r.status = ?1 AND r.completedAt = "
+                + "(SELECT MAX(r2.completedAt) FROM AuditRun r2 WHERE r2.system.id = r.system.id AND r2.baseRef IS NULL AND r2.status = ?1) "
+                + "ORDER BY r.id", AuditStatus.COMPLETED).list();
+        java.util.Map<Long, AuditRun> out = new java.util.HashMap<>();
+        for (AuditRun r : runs) {
+            out.put(r.getSystem().getId(), r);   // empate de data: fica a de maior id
+        }
+        return out;
+    }
+
+    /** A auditoria mais recente do sistema (qualquer situação), ou {@code null}; sem carregar o histórico inteiro. */
+    public AuditRun findLastStarted(Long systemId) {
+        return find("system.id = ?1 ORDER BY startedAt DESC", systemId).firstResult();
+    }
+
     /** Auditorias que ainda constam como PENDING ou RUNNING. */
     public List<AuditRun> findActive() {
         return list("status = ?1 OR status = ?2", AuditStatus.PENDING, AuditStatus.RUNNING);

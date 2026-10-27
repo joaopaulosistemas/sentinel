@@ -173,10 +173,14 @@ public final class AuditPolicy {
         return null;
     }
 
-    /** Aplica as sobrescritas: tira o que está desligado, troca severidade e marca/desmarca o modo sombra. */
+    /** Aplica as sobrescritas: tira o que está em caminho ignorado ou desligado, troca severidade e marca/desmarca o modo sombra. */
     public List<Finding> apply(List<Finding> findings) {
         List<Finding> out = new ArrayList<>(findings.size());
+        java.util.function.Predicate<String> ignored = PathGlobs.matcher(tuning.ignorePaths());
         for (Finding f : findings) {
+            if (f.getFilePath() != null && ignored.test(f.getFilePath())) {
+                continue;
+            }
             RuleOverride o = overrideFor(f.getRuleId());
             if (o == null) {
                 out.add(f);

@@ -51,6 +51,50 @@ public class FindingRepository implements PanacheRepository<Finding> {
     }
 
     /**
+     * {@link #countBySeverityForRun} para várias execuções de uma vez (uma consulta em vez de uma por execução).
+     * Toda execução pedida aparece no resultado, com zero nas severidades sem findings.
+     */
+    public Map<Long, Map<Severity, Long>> countBySeverityForRuns(java.util.Collection<Long> auditRunIds) {
+        Map<Long, Map<Severity, Long>> result = new java.util.LinkedHashMap<>();
+        for (Long id : auditRunIds) {
+            Map<Severity, Long> zero = new EnumMap<>(Severity.class);
+            for (Severity severity : Severity.values()) {
+                zero.put(severity, 0L);
+            }
+            result.put(id, zero);
+        }
+        if (auditRunIds.isEmpty()) {
+            return result;
+        }
+        List<Object[]> rows = getEntityManager()
+                .createQuery("select f.auditRun.id, f.severity, count(f) from Finding f where f.auditRun.id in :ids and f.status <> :suppressed group by f.auditRun.id, f.severity",
+                        Object[].class)
+                .setParameter("ids", auditRunIds)
+                .setParameter("suppressed", com.sentinel.audit.model.FindingStatus.SUPPRESSED)
+                .getResultList();
+        for (Object[] row : rows) {
+            result.get((Long) row[0]).put((Severity) row[1], (Long) row[2]);
+        }
+        return result;
+    }
+
+    /** Os findings de várias execuções de uma vez, agrupados pelo id da execução (uma consulta). */
+    public Map<Long, List<Finding>> findByAuditRunIds(java.util.Collection<Long> auditRunIds) {
+        Map<Long, List<Finding>> result = new java.util.HashMap<>();
+        if (auditRunIds.isEmpty()) {
+            return result;
+        }
+        List<Object[]> rows = getEntityManager()
+                .createQuery("select f.auditRun.id, f from Finding f where f.auditRun.id in :ids", Object[].class)
+                .setParameter("ids", auditRunIds)
+                .getResultList();
+        for (Object[] row : rows) {
+            result.computeIfAbsent((Long) row[0], k -> new java.util.ArrayList<>()).add((Finding) row[1]);
+        }
+        return result;
+    }
+
+    /**
      * Busca todos os findings de uma execução de auditoria.
      *
      * @param auditRunId identificador da execução

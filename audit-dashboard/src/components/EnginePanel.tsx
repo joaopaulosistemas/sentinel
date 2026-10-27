@@ -1,5 +1,6 @@
-import { Button, Checkbox, InlineNotification } from '@carbon/react';
+import { Button, Checkbox, InlineNotification, TextArea } from '@carbon/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { useAuditRuns, useFixPlan } from '../hooks/useAuditRuns';
@@ -68,7 +69,7 @@ function Header({ cfg, onReset, busy }: { cfg: EngineConfig; onReset: () => void
   );
 }
 
-const empty: EngineTuning = { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [] };
+const empty: EngineTuning = { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: [] };
 
 const PAGE = 25;
 const fieldStyle = { height: 36, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', color: 'var(--s-text)' } as const;
@@ -423,20 +424,40 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   );
 }
 
-/** Aba "Analisadores": quais ferramentas rodam neste sistema. */
+/** Uma linha por caminho; linhas vazias e repetidas saem. */
+export function pathLines(text: string): string[] {
+  return [...new Set(text.split('\n').map((l) => l.trim()).filter((l) => l !== ''))];
+}
+
+/** Aba "Analisadores": quais ferramentas rodam neste sistema e quais caminhos ficam fora da auditoria. */
 export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
   const { query, save } = useEngine(system.id);
   const cfg = query.data;
   const [off, setOff] = useState<string[]>([]);
-  const dirty = !!cfg && JSON.stringify([...off].sort()) !== JSON.stringify([...cfg.tuning.disableAnalyzers].sort());
+  const [pathsText, setPathsText] = useState('');
+  const paths = pathLines(pathsText);
+  const dirty =
+    !!cfg &&
+    (JSON.stringify([...off].sort()) !== JSON.stringify([...cfg.tuning.disableAnalyzers].sort()) ||
+      JSON.stringify(paths) !== JSON.stringify(cfg.tuning.ignorePaths ?? []));
+  const syncSaved = (data: EngineConfig) => {
+    setOff(data.tuning.disableAnalyzers);
+    setPathsText((data.tuning.ignorePaths ?? []).join('\n'));
+  };
   const dirtyRef = useRef(false);
+  const loadedRef = useRef(false);
   dirtyRef.current = dirty;
 
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
   useEffect(() => {
-    if (cfg && !dirtyRef.current) setOff(cfg.tuning.disableAnalyzers);
+    // Na primeira carga os campos ainda estão vazios (parecem "alterados"), então ela sempre preenche.
+    if (cfg && (!loadedRef.current || !dirtyRef.current)) {
+      loadedRef.current = true;
+      setOff(cfg.tuning.disableAnalyzers);
+      setPathsText((cfg.tuning.ignorePaths ?? []).join('\n'));
+    }
   }, [cfg]);
 
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
@@ -456,7 +477,7 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
       </p>
       {save.isError && <InlineNotification kind="error" title="Não foi possível salvar" subtitle={(save.error as Error).message} hideCloseButton />}
       {save.isSuccess && !save.isPending && !dirty && <InlineNotification kind="success" title="Ajustes salvos" subtitle="Valem na próxima auditoria." hideCloseButton lowContrast />}
-      <Header cfg={cfg} busy={save.isPending} onReset={() => save.mutate(empty, { onSuccess: (data) => setOff(data.tuning.disableAnalyzers) })} />
+      <Header cfg={cfg} busy={save.isPending} onReset={() => save.mutate(empty, { onSuccess: syncSaved })} />
       <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
         <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Analisadores</legend>
         {cfg.analyzers.map((a) => (
@@ -470,12 +491,23 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
           />
         ))}
       </fieldset>
+      <TextArea
+        id="eng-ignore-paths"
+        labelText="Caminhos ignorados"
+        helperText="Um por linha. Achados nesses caminhos não entram na nota deste sistema. Exemplos: docs/ (pasta), **/test/** (testes em qualquer lugar), *.md (por nome), /build (só na raiz)."
+        placeholder={'docs/\n**/test/**\n*.md'}
+        rows={4}
+        value={pathsText}
+        invalid={paths.length > 50}
+        invalidText="No máximo 50 caminhos."
+        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPathsText(e.target.value)}
+      />
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <Button
           kind="primary"
           size="md"
-          disabled={save.isPending}
-          onClick={() => save.mutate(mergeTuning(cfg.tuning, { disableAnalyzers: off }), { onSuccess: (data) => setOff(data.tuning.disableAnalyzers) })}
+          disabled={save.isPending || paths.length > 50}
+          onClick={() => save.mutate(mergeTuning(cfg.tuning, { disableAnalyzers: off, ignorePaths: paths }), { onSuccess: syncSaved })}
         >
           {save.isPending ? 'Salvando…' : 'Salvar ajustes'}
         </Button>

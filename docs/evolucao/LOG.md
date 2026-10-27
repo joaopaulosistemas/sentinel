@@ -259,3 +259,10 @@ Verificado: `tsc`, `vitest` (187) e e2e em Chromium. Medido só a 1440 px; em te
 ## Triagem da auditoria #33
 
 Conferi no código os achados mais graves da auditoria do próprio Sentinel e registrei o veredito de cada grupo em `docs/evolucao/triagem-auditoria-33.md` (falso positivo, decisão ou real). Corrigido: dois `catch` vazios no `RuleCatalog`, comparações `!= null`, aspas sem escape e ramo duplicado no dashboard. Não verificado: o Java alterado (`RuleCatalog`) só compila no CI.
+
+## Dashboard 12.15.0 — Caminhos ignorados, consultas em lote, Helm e nginx
+
+- **Caminhos ignorados por sistema** (`ignorePaths` no ajuste do motor; chave omitida quando vazia, então o JSON antigo não muda). `AuditPolicy.apply` descarta os achados cujo arquivo casa com algum padrão (`PathGlobs`). Validação: até 50 padrões, 200 caracteres, sem `..` nem caracteres de controle. Tela: Analisadores → "Caminhos ignorados".
+- **N+1**: `countBySeverityForRuns`, `findByAuditRunIds`, `findLatestCompletedBySystem` e `findLastStarted` substituem laços de consultas em `FindingLifecycleService.trend`, `FindingResource.overview`, portfólio, `RuleQualityService` e `AuditScheduler`. `statement-batch-size=50`. Não mudei o `allocationSize` da sequência de `Finding` (divergiria da sequência já criada no banco). `SystemResource.toDto` fica como está.
+- **Helm**: imagens com tag `12.15.0`, sem `:latest`. **Dashboard**: imagem `nginxinc/nginx-unprivileged`, porta 8080 no container; Service do Helm continua na 80. Quem usa compose precisa reconstruir: `docker compose up -d --build audit-api audit-dashboard`.
+Não verificado: o Java novo só compila no CI; Docker e Helm só são exercitados pelo CI.

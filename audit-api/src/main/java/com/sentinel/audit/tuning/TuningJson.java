@@ -42,6 +42,9 @@ public final class TuningJson {
         strings(n.putArray("enablePacks"), t.enablePacks());
         strings(n.putArray("disablePacks"), t.disablePacks());
         strings(n.putArray("disableAnalyzers"), t.disableAnalyzers());
+        if (!t.ignorePaths().isEmpty()) {
+            t.ignorePaths().forEach(n.putArray("ignorePaths")::add);
+        }
         return n.toString();
     }
 
@@ -101,7 +104,28 @@ public final class TuningJson {
         if (enable.stream().anyMatch(disable::contains)) {
             throw new IllegalArgumentException("Um pacote não pode ser ligado e desligado ao mesmo tempo");
         }
-        return new SystemTuning(rules, limits, enable, disable, strings(n.path("disableAnalyzers")));
+        return new SystemTuning(rules, limits, enable, disable, strings(n.path("disableAnalyzers")), paths(n.path("ignorePaths")));
+    }
+
+    public static final int MAX_IGNORE_PATHS = 50;
+
+    /** Padrões de caminho: texto livre curto, sem quebra de linha nem {@code ..}; mantém a ordem digitada. */
+    private static Set<String> paths(JsonNode n) {
+        Set<String> out = new LinkedHashSet<>();
+        for (JsonNode x : n) {
+            String s = x.asText("").trim();
+            if (s.isEmpty()) {
+                continue;
+            }
+            if (s.length() > 200 || s.chars().anyMatch(Character::isISOControl) || s.contains("..")) {
+                throw new IllegalArgumentException("Caminho ignorado inválido: " + (s.length() > 60 ? s.substring(0, 60) + "…" : s));
+            }
+            out.add(s);
+        }
+        if (out.size() > MAX_IGNORE_PATHS) {
+            throw new IllegalArgumentException("No máximo " + MAX_IGNORE_PATHS + " caminhos ignorados por sistema");
+        }
+        return out;
     }
 
     private static void strings(ArrayNode out, Set<String> in) {

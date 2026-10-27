@@ -7,6 +7,7 @@ import com.sentinel.audit.dto.SuppressRequest;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.model.Category;
+import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.repository.AuditRunRepository;
@@ -30,6 +31,7 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,14 +70,17 @@ public class FindingResource {
             @QueryParam("limit") @DefaultValue("20") int limit,
             @QueryParam("offset") @DefaultValue("0") int offset) {
         List<FindingsOverview.Source> sources = new ArrayList<>();
+        // Última auditoria de cada sistema e os achados delas em duas consultas (antes eram duas por sistema).
+        Map<Long, AuditRun> latestBySystem = auditRunRepository.findLatestCompletedBySystem();
+        Map<Long, List<Finding>> findingsByRun = findingRepository.findByAuditRunIds(
+                latestBySystem.values().stream().map(AuditRun::getId).toList());
         for (AuditedSystem system : systemRepository.listAll()) {
-            List<AuditRun> latest = auditRunRepository.findLatestCompleted(system.getId(), 1);
-            if (latest.isEmpty()) {
+            AuditRun run = latestBySystem.get(system.getId());
+            if (run == null) {
                 continue;
             }
-            AuditRun run = latest.get(0);
             sources.add(new FindingsOverview.Source(system.getId(), system.getName(), run.getId(),
-                    findingRepository.findByAuditRunId(run.getId()),
+                    findingsByRun.getOrDefault(run.getId(), List.of()),
                     system.getStack() == null ? null : system.getStack().name(), run.getCompletedAt()));
         }
         return FindingsOverview.build(sources,

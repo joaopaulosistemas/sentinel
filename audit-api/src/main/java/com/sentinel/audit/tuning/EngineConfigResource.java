@@ -52,7 +52,7 @@ public class EngineConfigResource {
     public record CatalogRule(String id, String pack, String message, String severity, String category) {}
 
     public record Tuning(List<RuleAdjustment> rules, Map<String, Integer> thresholds, List<String> enablePacks,
-                         List<String> disablePacks, List<String> disableAnalyzers) {}
+                         List<String> disablePacks, List<String> disableAnalyzers, List<String> ignorePaths) {}
 
     public record EngineConfigResponse(String profile, String profileDescription, int adjustments, Tuning tuning,
                                        List<RuleAdjustment> profileRules, List<PackState> packs,
@@ -139,7 +139,8 @@ public class EngineConfigResource {
             }
         }
         Tuning dto = new Tuning(rules(tuning.rules()), tuning.thresholds(), tuning.enablePacks().stream().sorted().toList(),
-                tuning.disablePacks().stream().sorted().toList(), tuning.disableAnalyzers().stream().sorted().toList());
+                tuning.disablePacks().stream().sorted().toList(), tuning.disableAnalyzers().stream().sorted().toList(),
+                List.copyOf(tuning.ignorePaths()));
         String description = packRegistry.snapshot().profiles().containsKey(profileId == null ? "" : profileId.toLowerCase())
                 ? packRegistry.snapshot().profiles().get(profileId.toLowerCase()).description() : null;
         List<CatalogRule> catalog = com.sentinel.audit.pack.RuleCatalog.of(packRegistry.snapshot().packs()).stream()

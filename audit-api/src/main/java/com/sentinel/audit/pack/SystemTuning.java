@@ -1,5 +1,6 @@
 package com.sentinel.audit.pack;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -15,11 +16,20 @@ import java.util.Set;
  * @param enablePacks       pacotes ligados além dos do perfil
  * @param disablePacks      pacotes retirados dos do perfil
  * @param disableAnalyzers  analisadores que não rodam neste sistema (nome como aparece na tela de acompanhamento)
+ * @param ignorePaths       caminhos cujos achados não entram na auditoria (curinga estilo .gitignore: {@code *}, {@code **}, {@code ?};
+ *                          pasta termina em {@code /}; sem {@code /} vale para qualquer pasta)
  */
 public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer> thresholds,
-                           Set<String> enablePacks, Set<String> disablePacks, Set<String> disableAnalyzers) {
+                           Set<String> enablePacks, Set<String> disablePacks, Set<String> disableAnalyzers,
+                           Set<String> ignorePaths) {
 
-    public static final SystemTuning EMPTY = new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of());
+    public static final SystemTuning EMPTY = new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), Set.of());
+
+    /** Sem caminhos ignorados (forma que existia antes do campo {@code ignorePaths}). */
+    public SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer> thresholds, Set<String> enablePacks,
+                        Set<String> disablePacks, Set<String> disableAnalyzers) {
+        this(rules, thresholds, enablePacks, disablePacks, disableAnalyzers, Set.of());
+    }
 
     public SystemTuning {
         rules = rules == null ? Map.of() : copyRules(rules);
@@ -27,16 +37,17 @@ public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer>
         enablePacks = lower(enablePacks);
         disablePacks = lower(disablePacks);
         disableAnalyzers = disableAnalyzers == null ? Set.of() : Set.copyOf(disableAnalyzers);
+        ignorePaths = ignorePaths == null ? Set.of() : Collections.unmodifiableSet(new LinkedHashSet<>(ignorePaths));
     }
 
     public boolean isEmpty() {
         return rules.isEmpty() && thresholds.isEmpty() && enablePacks.isEmpty() && disablePacks.isEmpty()
-                && disableAnalyzers.isEmpty();
+                && disableAnalyzers.isEmpty() && ignorePaths.isEmpty();
     }
 
     /** Quantos ajustes existem em relação ao perfil (o número que a tela mostra). */
     public int adjustments() {
-        return rules.size() + thresholds.size() + enablePacks.size() + disablePacks.size() + disableAnalyzers.size();
+        return rules.size() + thresholds.size() + enablePacks.size() + disablePacks.size() + disableAnalyzers.size() + ignorePaths.size();
     }
 
     public boolean analyzerDisabled(String name) {

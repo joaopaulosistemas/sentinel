@@ -129,6 +129,41 @@ class SystemTuningTest {
     }
 
     @Test
+    void caminhosIgnoradosTiramOsAchadosDoArquivo() {
+        SystemTuning t = new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), Set.of("docs/", "**/test/**"));
+        assertEquals(2, t.adjustments());
+        assertFalse(t.isEmpty());
+        AuditPolicy p = new AuditPolicy("p", List.of(), Map.of(), Map.of()).withTuning(t, List.of());
+        Finding noDocs = f("regra-a", Severity.HIGH);
+        noDocs.setFilePath("docs/guia.md");
+        Finding noTeste = f("regra-a", Severity.HIGH);
+        noTeste.setFilePath("api/src/test/java/ATest.java");
+        Finding noCodigo = f("regra-a", Severity.HIGH);
+        noCodigo.setFilePath("api/src/main/java/A.java");
+        List<Finding> out = p.apply(List.of(noDocs, noTeste, noCodigo));
+        assertEquals(1, out.size());
+        assertSame(noCodigo, out.get(0));
+    }
+
+    @Test
+    void jsonGuardaOsCaminhosIgnoradosNaOrdemDigitada() throws Exception {
+        var m = new com.fasterxml.jackson.databind.ObjectMapper();
+        SystemTuning t = TuningJson.parse(m.readTree("{\"ignorePaths\":[\"docs/\",\" *.md \",\"\",\"a/**/tests/\"]}"));
+        assertEquals(List.of("docs/", "*.md", "a/**/tests/"), List.copyOf(t.ignorePaths()));
+        assertEquals(t, TuningJson.read(TuningJson.write(t)));
+        assertFalse(TuningJson.write(SystemTuning.EMPTY).contains("ignorePaths"), "sistema sem ajuste continua gravando o mesmo JSON");
+    }
+
+    @Test
+    void jsonRecusaCaminhoIgnoradoInvalido() throws Exception {
+        var m = new com.fasterxml.jackson.databind.ObjectMapper();
+        assertThrows(IllegalArgumentException.class, () -> TuningJson.parse(m.readTree("{\"ignorePaths\":[\"../fora\"]}")));
+        assertThrows(IllegalArgumentException.class, () -> TuningJson.parse(m.readTree("{\"ignorePaths\":[\"a\\nb\"]}")));
+        String muitos = "{\"ignorePaths\":[" + java.util.stream.IntStream.range(0, 51).mapToObj(i -> "\"p" + i + "/\"").collect(java.util.stream.Collectors.joining(",")) + "]}";
+        assertThrows(IllegalArgumentException.class, () -> TuningJson.parse(m.readTree(muitos)));
+    }
+
+    @Test
     void jsonRecusaEntradaInvalida() throws Exception {
         var m = new com.fasterxml.jackson.databind.ObjectMapper();
         for (String bad : List.of(
