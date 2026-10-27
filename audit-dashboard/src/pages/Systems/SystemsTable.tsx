@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { SystemSummaryResponse } from '../../types';
 import { scoreColor } from '../../utils/systemAttention';
-import { repoSlug, scheduleText, stackShort } from './systemForm';
+import { scheduleText, sourceText, stackShort } from './systemForm';
 
 interface Props {
   systems: SystemSummaryResponse[];
@@ -47,7 +47,7 @@ export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }:
                   >
                     {s.name}
                   </button>
-                  <div style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono }}>{repoSlug(s.repoUrl)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono }}>{sourceText(s)}</div>
                 </td>
                 <td style={{ padding: '12px 8px' }}>
                   <span style={{ background: 'var(--s-border)', padding: '2px 8px', borderRadius: 10, fontSize: 12 }}>{stackShort[s.stack] ?? s.stack}</span>

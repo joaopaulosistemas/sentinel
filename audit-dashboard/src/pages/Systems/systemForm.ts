@@ -1,4 +1,4 @@
-import type { ScheduleRequest, Stack, SystemRequest, SystemSummaryResponse } from '../../types';
+import type { LocalSnapshot, ScheduleRequest, SourceType, Stack, SystemRequest, SystemSummaryResponse } from '../../types';
 
 export const stackOptions: Array<{ value: Stack; label: string }> = [
   { value: 'JAVA', label: 'Java' },
@@ -11,7 +11,11 @@ export const stackOptions: Array<{ value: Stack; label: string }> = [
 
 export interface SystemFormValues {
   name: string;
+  sourceType: SourceType;
   repoUrl: string;
+  /** Relativa à raiz de projetos do servidor */
+  localPath: string;
+  localSnapshot: LocalSnapshot;
   stack: Stack;
   team: string;
   description: string;
@@ -44,7 +48,10 @@ export interface SystemFormValues {
 
 export const emptyForm: SystemFormValues = {
   name: '',
+  sourceType: 'GIT_URL',
   repoUrl: '',
+  localPath: '',
+  localSnapshot: 'COMMIT',
   stack: 'JAVA',
   team: '',
   description: '',
@@ -69,7 +76,10 @@ export const emptyForm: SystemFormValues = {
 export function formFrom(system: SystemSummaryResponse): SystemFormValues {
   return {
     name: system.name,
+    sourceType: system.sourceType === 'LOCAL_PATH' ? 'LOCAL_PATH' : 'GIT_URL',
     repoUrl: system.repoUrl ?? '',
+    localPath: system.localPath ?? '',
+    localSnapshot: system.localSnapshot === 'TREE' ? 'TREE' : 'COMMIT',
     stack: system.stack,
     team: system.team ?? '',
     description: system.description ?? '',
@@ -98,6 +108,7 @@ const REPO_URL = /^https:\/\/[A-Za-z0-9.-]+(:[0-9]{1,5})?\/[^\s]+$/;
 export interface FormErrors {
   name?: string;
   repoUrl?: string;
+  localPath?: string;
   scheduledBranch?: string;
   auditIntervalHours?: string;
   gitTokenHosts?: string;
@@ -116,7 +127,12 @@ export function validate(values: SystemFormValues): FormErrors {
   const errors: FormErrors = {};
   if (values.name.trim() === '') errors.name = 'Informe o nome do sistema';
   else if (values.name.length > 255) errors.name = 'No máximo 255 caracteres';
-  if (values.repoUrl.trim() === '') errors.repoUrl = 'Informe o endereço do repositório';
+  if (values.sourceType === 'LOCAL_PATH') {
+    const path = values.localPath.trim();
+    if (path === '') errors.localPath = 'Informe a pasta do projeto';
+    else if (path.length > 500) errors.localPath = 'No máximo 500 caracteres';
+    else if (path.split(/[\\/]/).includes('..')) errors.localPath = 'Não use ".." no caminho';
+  } else if (values.repoUrl.trim() === '') errors.repoUrl = 'Informe o endereço do repositório';
   else if (!REPO_URL.test(values.repoUrl.trim())) errors.repoUrl = 'Use um endereço https://, por exemplo https://github.com/org/repositorio';
   if (values.scheduledBranch.trim() !== '' && !BRANCH_NAME.test(values.scheduledBranch.trim())) errors.scheduledBranch = 'Nome de branch inválido';
   if (!Number.isInteger(values.auditIntervalHours) || values.auditIntervalHours < 0 || values.auditIntervalHours > MAX_INTERVAL_HOURS) {
@@ -154,9 +170,13 @@ export const notifySeverities = [
 ];
 
 export function toRequest(values: SystemFormValues): SystemRequest {
+  const local = values.sourceType === 'LOCAL_PATH';
   return {
     name: values.name.trim(),
-    repoUrl: values.repoUrl.trim(),
+    sourceType: values.sourceType,
+    ...(local
+      ? { localPath: values.localPath.trim(), localSnapshot: values.localSnapshot }
+      : { repoUrl: values.repoUrl.trim() }),
     stack: values.stack,
     team: values.team.trim(),
     description: values.description.trim(),
@@ -180,7 +200,8 @@ export function toSchedule(values: SystemFormValues): ScheduleRequest {
   return {
     auditIntervalHours: values.auditIntervalHours,
     branch: values.scheduledBranch.trim(),
-    auditOnPush: values.auditOnPush,
+    // Webhook de push não se aplica a pasta local.
+    auditOnPush: values.sourceType === 'LOCAL_PATH' ? false : values.auditOnPush,
   };
 }
 
@@ -210,6 +231,11 @@ export function scheduleText(s: Pick<SystemSummaryResponse, 'auditIntervalHours'
   if (s.scheduledBranch) parts.push(s.scheduledBranch);
   if (s.auditIntervalHours && s.auditOnPush) parts.push('push');
   return parts.join(' · ');
+}
+
+/** Texto de origem na lista: "org/repo" ou "pasta: caminho". */
+export function sourceText(s: Pick<SystemSummaryResponse, 'sourceType' | 'repoUrl' | 'localPath'>): string {
+  return s.sourceType === 'LOCAL_PATH' ? `pasta: ${s.localPath ?? ''}` : repoSlug(s.repoUrl);
 }
 
 /** "org/repo" a partir da URL https do repositório. */

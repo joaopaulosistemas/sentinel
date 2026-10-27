@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SystemSummaryResponse } from '../../types';
-import { emptyForm, scheduleChanged, toRequest, toSchedule, validate } from './systemForm';
+import { emptyForm, formFrom, scheduleChanged, sourceText, toRequest, toSchedule, validate } from './systemForm';
 
 describe('formulário de sistema', () => {
   it('exige nome e repositório', () => {
@@ -59,5 +59,44 @@ describe('textos da lista de sistemas', () => {
   it('repoSlug tira o host e o .git', () => {
     expect(repoSlug('https://github.com/acme/conta-corrente.git')).toBe('acme/conta-corrente');
     expect(repoSlug(null)).toBe('');
+  });
+});
+
+describe('origem pasta local', () => {
+  const local = { ...emptyForm, name: 'Legado', sourceType: 'LOCAL_PATH' as const, localPath: 'legado/app', repoUrl: '' };
+
+  it('valida a pasta em vez da URL', () => {
+    expect(validate(local)).toEqual({});
+    expect(validate({ ...local, localPath: '  ' }).localPath).toBeTruthy();
+    expect(validate({ ...local, localPath: '../fora' }).localPath).toBeTruthy();
+    expect(validate({ ...local, localPath: 'a\\..\\b' }).localPath).toBeTruthy();
+    expect(validate({ ...local, localPath: 'legado/app' }).repoUrl).toBeUndefined();
+  });
+
+  it('envia a pasta e o modo, sem repoUrl', () => {
+    const req = toRequest({ ...local, localSnapshot: 'TREE' });
+    expect(req).toMatchObject({ sourceType: 'LOCAL_PATH', localPath: 'legado/app', localSnapshot: 'TREE' });
+    expect(req.repoUrl).toBeUndefined();
+  });
+
+  it('mantém o envio de URL para Git', () => {
+    const req = toRequest({ ...emptyForm, name: 'x', repoUrl: ' https://github.com/o/r ' });
+    expect(req).toMatchObject({ sourceType: 'GIT_URL', repoUrl: 'https://github.com/o/r' });
+    expect(req.localPath).toBeUndefined();
+  });
+
+  it('não agenda por push em pasta local', () => {
+    expect(toSchedule({ ...local, auditOnPush: true }).auditOnPush).toBe(false);
+  });
+
+  it('mostra a pasta na lista', () => {
+    expect(sourceText({ sourceType: 'LOCAL_PATH', localPath: 'legado/app', repoUrl: null })).toBe('pasta: legado/app');
+    expect(sourceText({ sourceType: 'GIT_URL', repoUrl: 'https://github.com/o/r.git', localPath: null })).toBe('o/r');
+    expect(sourceText({ repoUrl: null })).toBe('');
+  });
+
+  it('carrega o sistema local no formulário', () => {
+    const f = formFrom({ id: 1, name: 'L', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0, sourceType: 'LOCAL_PATH', localPath: 'a/b', localSnapshot: 'TREE' });
+    expect(f).toMatchObject({ sourceType: 'LOCAL_PATH', localPath: 'a/b', localSnapshot: 'TREE', repoUrl: '' });
   });
 });

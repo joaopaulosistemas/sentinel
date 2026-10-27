@@ -10,6 +10,7 @@ import type {
   FixPlan,
   FindingStatus,
   Severity,
+  PathCheck,
   RepoCheck,
   RuleQuality,
   ClaudeReview,
@@ -105,6 +106,15 @@ export const api = {
         gitToken: access?.gitToken || undefined,
         gitTokenHosts: access?.gitTokenHosts || undefined,
       }),
+    }),
+
+  /** A pasta local só está disponível quando o servidor define SENTINEL_LOCAL_ROOT. */
+  getLocalSourceEnabled: () => apiFetch<{ enabled: boolean }>('/api/v1/systems/local-source'),
+
+  checkPath: (path: string, branch?: string) =>
+    apiFetch<PathCheck>('/api/v1/systems/check-path', {
+      method: 'POST',
+      body: JSON.stringify({ path, branch: branch || undefined }),
     }),
 
   getAudit: (id: number) => apiFetch<AuditRunResponse>(`/api/v1/audits/${id}`),

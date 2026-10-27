@@ -1,6 +1,6 @@
 import { DataTableSkeleton, InlineNotification, Modal } from '@carbon/react';
 import { PageShell } from '../../components/PageShell';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -64,6 +64,7 @@ export function SystemsPage() {
     setTouched(false);
     save.reset();
     check.reset();
+    checkPath.reset();
   };
 
   // Confere se o endereço responde e qual é a branch padrão, sem clonar.
@@ -75,6 +76,18 @@ export function SystemsPage() {
         gitTokenHosts: values.gitTokenHosts.trim(),
       }),
   });
+
+  // Pasta local: confere existência, repositório Git e branch no servidor.
+  const checkPath = useMutation({
+    mutationFn: () => api.checkPath(values.localPath.trim(), values.scheduledBranch.trim() || undefined),
+  });
+
+  // A origem "pasta local" só aparece quando o servidor a habilitou (SENTINEL_LOCAL_ROOT).
+  const localEnabled = useQuery({
+    queryKey: ['local-source-enabled'],
+    queryFn: () => api.getLocalSourceEnabled().then((r) => r.enabled).catch(() => false),
+    staleTime: 5 * 60_000,
+  }).data === true;
 
   const save = useMutation({
     mutationFn: async (vars: { auditNow: boolean }) => {
@@ -156,7 +169,7 @@ export function SystemsPage() {
 
   const term = query.trim().toLowerCase();
   const list = [...(systems ?? [])]
-    .filter((s) => term === '' || `${s.name} ${s.team} ${s.repoUrl ?? ''}`.toLowerCase().includes(term))
+    .filter((s) => term === '' || `${s.name} ${s.team} ${s.repoUrl ?? ''} ${s.localPath ?? ''}`.toLowerCase().includes(term))
     .sort((a, b) => (a.lastAuditScore ?? -1) - (b.lastAuditScore ?? -1));
 
   const profiles = packs?.profiles ?? [];
@@ -303,7 +316,7 @@ export function SystemsPage() {
 
             {tab === 'cadastro' && (
               <>
-            <SystemFormFields values={values} setValues={setValues} errors={errors} touched={touched} check={check} save={save} profiles={profiles} profileInfo={profileInfo} tokenSaved={tokenSaved} notifySaved={notifySaved} webhookSaved={webhookSaved} mono={mono} />
+            <SystemFormFields values={values} setValues={setValues} errors={errors} touched={touched} check={check} checkPath={checkPath} localEnabled={localEnabled} save={save} profiles={profiles} profileInfo={profileInfo} tokenSaved={tokenSaved} notifySaved={notifySaved} webhookSaved={webhookSaved} mono={mono} />
 
             <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid var(--s-border)', position: 'sticky', bottom: 0, background: 'var(--s-surface)', marginTop: 'auto' }}>
               <button type="button" onClick={requestClose} style={{ ...footerButton, background: 'var(--s-surface)', color: 'var(--s-text)', borderRight: '1px solid var(--s-border)' }}>
