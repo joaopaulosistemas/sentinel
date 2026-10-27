@@ -15,9 +15,10 @@ export const PALETTES: Array<{ id: Palette; label: string }> = [
   { id: 'alternativo', label: 'Alternativo' },
 ];
 
-/** Tamanho do texto: "grande" amplia a área de conteúdo em ~12%, para quem lê melhor com letra maior. */
-export type TextSize = 'normal' | 'grande';
+/** Tamanho do texto: "pequeno" mantém as fontes originais das telas; "normal" sobe o piso (11→12, 12→13 px); "grande" amplia o conteúdo em ~12%. */
+export type TextSize = 'pequeno' | 'normal' | 'grande';
 export const TEXT_SIZES: Array<{ id: TextSize; label: string }> = [
+  { id: 'pequeno', label: 'Texto pequeno' },
   { id: 'normal', label: 'Texto normal' },
   { id: 'grande', label: 'Texto grande' },
 ];
@@ -25,7 +26,8 @@ const TEXT_KEY = 'sentinel.textsize';
 
 function readSavedTextSize(): TextSize {
   try {
-    return window.localStorage.getItem(TEXT_KEY) === 'grande' ? 'grande' : 'normal';
+    const v = window.localStorage.getItem(TEXT_KEY);
+    return v === 'grande' || v === 'pequeno' ? v : 'normal';
   } catch {
     return 'normal';
   }
