@@ -104,6 +104,7 @@ export function AppShell({ children }: AppShellProps) {
         </span>
         <select
           aria-label="Tamanho do texto"
+          className="sentinel-hide-narrow"
           title="Tamanho do texto da área de conteúdo"
           value={textSize}
           onChange={(e) => setTextSize(e.target.value as TextSize)}
