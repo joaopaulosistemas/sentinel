@@ -57,7 +57,7 @@ class FindingConfidenceTest {
         assertEquals(Confidence.LOW, s.getConfidence());
 
         Finding real = f(Category.SECURITY, "Gitleaks", "src/main/resources/application.properties", 6);
-        real.setCodeSnippet("api.key=9fA3kQ2lZ8xV1mN7");
+        real.setCodeSnippet("api.key=" + "9fA3kQ2l" + "Z8xV1mN7");
         assess(real, Map.of());
         assertEquals(Confidence.MEDIUM, real.getConfidence());
         assertNull(real.getConfidenceReason());

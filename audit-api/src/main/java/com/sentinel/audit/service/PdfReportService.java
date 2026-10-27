@@ -61,11 +61,19 @@ public class PdfReportService {
             doc.add(new Paragraph(severityLine(active) + " | " + active.size() + " findings ativos"
                     + (suppressed.isEmpty() ? "" : "; " + suppressed.size() + " suprimidos (fora do score)"), BODY));
 
-            doc.add(h2("Findings (" + active.size() + ")"));
+            List<Finding> reliable = active.stream().filter(f -> !ReportService.isLowConfidence(f)).toList();
+            List<Finding> lowConfidence = active.stream().filter(ReportService::isLowConfidence).toList();
+            doc.add(h2("Findings (" + reliable.size() + ")"));
             if (active.isEmpty()) {
                 doc.add(new Paragraph("Nenhum finding ativo.", BODY));
             }
-            findingsTable(doc, active);
+            findingsTable(doc, reliable);
+            if (!lowConfidence.isEmpty()) {
+                doc.add(h2("Baixa confiança (" + lowConfidence.size() + ")"));
+                doc.add(new Paragraph("Provavelmente não são problemas: testes, exemplos, documentação, valores de exemplo "
+                        + "ou regras com muitos falsos positivos. Revise por amostragem.", BODY));
+                findingsTable(doc, lowConfidence);
+            }
             if (!suppressed.isEmpty()) {
                 doc.add(h2("Findings suprimidos (" + suppressed.size() + ")"));
                 doc.add(new Paragraph("Decisões registradas de falso positivo / risco aceito. Não entram no score.", BODY));

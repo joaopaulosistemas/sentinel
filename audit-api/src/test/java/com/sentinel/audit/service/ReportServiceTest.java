@@ -49,6 +49,22 @@ class ReportServiceTest {
     }
 
     @Test
+    void baixaConfiancaVaiParaSecaoPropriaComMotivo() {
+        Finding real = f("Falha real", Severity.HIGH, FindingStatus.OPEN, null, "r1");
+        Finding ruido = f("Chave de exemplo", Severity.HIGH, FindingStatus.OPEN, null, "r2");
+        ruido.setConfidence(Confidence.LOW);
+        ruido.setConfidenceReason("Em arquivo de teste");
+
+        String html = new ReportService().generateHtmlReport(run(), List.of(real, ruido));
+
+        assertTrue(html.contains("Findings (1)"));
+        assertTrue(html.contains("Baixa confiança (1)"));
+        assertTrue(html.contains("Em arquivo de teste"));
+        assertTrue(html.indexOf("Falha real") < html.indexOf("Baixa confiança (1)"));
+        assertTrue(html.indexOf("Baixa confiança (1)") < html.indexOf("Chave de exemplo"));
+    }
+
+    @Test
     void escapaConteudoDeTerceiros() {
         String html = new ReportService().generateHtmlReport(run(), List.of(
                 f("<img src=x onerror=alert(1)>", Severity.HIGH, FindingStatus.OPEN, null, "r")));

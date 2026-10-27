@@ -315,3 +315,8 @@ Verificado: `tsc`, `vitest`. Java (confiança, `PathRole`, nota) só no CI. Não
 
 Na tela de achados de uma auditoria, o Sentinel compara o commit auditado com a ponta atual da branch no remoto (`git ls-remote`, sem clonar, com o token do sistema) pelo novo `GET /api/v1/audits/{id}/freshness`. Se a branch andou, aparece o aviso "Auditoria desatualizada" com os dois commits. Se o remoto não responde ou a auditoria é antiga (sem commit), nada aparece.
 Verificado: `tsc`. Java (endpoint e `parseRefSha`) só no CI. Não verificado contra um remoto real; sem teste de tela para o aviso.
+
+## Dashboard 12.22.0 / API — Relatório com confiança
+
+Os relatórios HTML e PDF passam a separar os achados de **baixa confiança** em uma seção própria ao fim ("Baixa confiança (N)"), com o motivo, em vez de misturá-los aos demais; o título "Findings (N)" conta só os de confiança normal e o resumo continua com o total. O `PathRole` trata arquivos `*.example`, `*.sample` e `*.template` (ex.: `.env.example`) como exemplo. O teste de confiança deixa de ter uma chave literal que o Gitleaks apontava como segredo (auditoria #34).
+Verificado: `tsc` não se aplica a esta mudança (só Java e docs). Java só no CI. Não feito: reconhecer `remediation.yml` como exemplo (específico do pacote de regras), deduplicar achados entre ferramentas, regra de controle de acesso ciente do filtro global, nota que não sature em 0.

@@ -52,6 +52,9 @@ public enum PathRole {
         if (file.endsWith(".min.js") || file.endsWith(".min.css") || file.endsWith(".map")) {
             return GENERATED;
         }
+        if (file.endsWith(".example") || file.endsWith(".sample") || file.endsWith(".template")) {
+            return FIXTURE;
+        }
         for (int i = 0; i < parts.length - 1; i++) {
             if (FIXTURE_DIRS.contains(parts[i])) {
                 return FIXTURE;
