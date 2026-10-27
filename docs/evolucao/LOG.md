@@ -220,3 +220,17 @@ Todos os `.md` e `.html` passaram a descrever o Sentinel com o MCP: `ARQUITETURA
 
 Na tela de execução da auditoria apareceu a faixa **Claude (MCP)** (desligado, ligado sem consultas ou ligado com as consultas feitas desde o início) e as chamadas do Claude entram no quadro Eventos. Pedidos pendentes do Claude viram link para a Reauditoria do sistema. Links diretos novos: `/systems?edit=ID&tab=mcp` (abre a aba Claude (MCP)) e `/findings?aba=reauditoria&systemId=ID`.
 Só leitura: usa `GET /api/v1/mcp-access/{id}`, `/calls` e `/api/v1/pending-actions/{id}`, que já existiam. Nada muda no motor, na nota nem na API. Testes novos: `McpStatusStrip.test.tsx`, `mcpActivity.test.ts` e casos em `AuditRunPage`, `SystemsPage` e `FindingsPage`.
+
+## Dashboard 12.12.0 — Aplicação da avaliação do fluxo
+
+Segue a avaliação do fluxo de uso (relatório "Avaliação do fluxo do Sentinel"). O que mudou:
+- **Ajuste de regras**: o painel do motor lista o catálogo das regras dos pacotes (id, texto, severidade, pacote) com busca, filtro por pacote e por "vistas/ajustadas", seleção em lote (só observar, desligar, severidade, limpar) e ganho estimado na nota a partir do plano de correção. Novo `catalog` em `GET /api/v1/engine-config/{id}` (campo novo, os antigos não mudam), lido de `audit-rules` por `RuleCatalog`.
+- **Alterações não salvas**: o pop-up do sistema marca as abas alteradas e pede confirmação ao fechar (X, Cancelar, Esc ou clique fora). As abas do motor ficam montadas para não perder o que foi editado.
+- **Uma régua de nota**: `scoreBand.ts` concentra as faixas (75 meta, 50 alerta) usadas por resultado, ranking, execução e atenção.
+- **Um caminho para iniciar auditoria**: a Visão geral usa o mesmo pop-up da tela do sistema (com a branch editável). O dashboard não manda mais `dashboard-user`; com login a API grava quem está autenticado (`AuditResource.actor`).
+- **Pedidos do Claude visíveis**: contagem na Visão geral (com link por sistema) e selo no menu "Informações de Auditoria".
+- **Trilha da jornada** também no sistema, na execução e nos achados da auditoria; abas mortas (`ativa`) removidas.
+- **Teste de ponta a ponta**: `npm run e2e` (Playwright, API simulada por rota) cobre "iniciar → acompanhar" e "ajustar regra → fechar sem salvar → salvar". Não está no CI: o workflow fica a cargo de quem mantém `.github/`.
+
+Não feito de propósito: ferramenta MCP que cruza sistemas (pede decisão sobre a chave por sistema), limite de MCP compartilhado entre instâncias e registro dos parâmetros das chamadas MCP (código Quarkus que não dá para compilar aqui). Selo do Claude por achado e a divisão do `SystemsPage` ficaram para a próxima volta.
+Verificado: `tsc`, `vitest` (182) e os 2 testes e2e em Chromium. Não verificado: o código Java novo (`RuleCatalog`, `EngineConfigResource`, `AuditResource`) só compila no CI.

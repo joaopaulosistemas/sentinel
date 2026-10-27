@@ -114,6 +114,27 @@ describe('SystemsPage', () => {
     expect(screen.queryByRole('dialog', { name: 'Editar sistema' })).not.toBeInTheDocument();
   });
 
+  it('pede confirmação ao fechar com alterações não salvas', async () => {
+    renderPage({}, [
+      { id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true },
+    ]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    await screen.findByRole('dialog', { name: 'Editar sistema' });
+    fireEvent.change(screen.getByLabelText(/Nome do sistema/), { target: { value: 'outro-nome' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
+    expect(await screen.findByText(/Há alterações não salvas em/)).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Editar sistema' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
+    expect(screen.queryByText(/Há alterações não salvas em/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Nome do sistema/)).toHaveValue('outro-nome');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Descartar e fechar' }));
+    expect(screen.queryByRole('dialog', { name: 'Editar sistema' })).not.toBeInTheDocument();
+  });
+
   it('guarda token, hosts, histórico, webhook e notificação no cadastro do sistema', async () => {
     const calls = renderPage({});
     await openNew();

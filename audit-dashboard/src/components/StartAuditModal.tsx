@@ -24,7 +24,7 @@ export function StartAuditModal({ system, onClose, onStarted }: Props) {
 
   const mutation = useMutation({
     mutationFn: (vars: { systemId: number; branch: string }) =>
-      api.triggerAudit({ ...vars, triggeredBy: 'dashboard-user' }),
+      api.triggerAudit(vars),
     onSuccess: (run, vars) => {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
       // Sem isto a lista de auditorias só mostrava a nova depois de um refresh.

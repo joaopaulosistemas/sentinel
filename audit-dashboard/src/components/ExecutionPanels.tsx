@@ -1,5 +1,6 @@
 import type { AnalyzerProgress, AuditProgress, AuditRunResponse, Severity } from '../types';
 import { PHASES, clock, secondsBetween, type PhaseView } from '../utils/auditProgress';
+import { scoreColor } from '../utils/scoreBand';
 import { CheckIcon, ClockIcon, CrossIcon, DashIcon, SpinnerIcon } from './StatusIcons';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -114,7 +115,7 @@ export function PartialResult({ run, progress }: { run: AuditRunResponse; progre
       </div>
       {finished && run.riskScore ? (
         <div style={{ borderTop: '1px solid var(--s-border)', paddingTop: 14, display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 40, fontWeight: 300, lineHeight: 1, color: run.riskScore.overall >= 75 ? 'var(--s-success-text)' : run.riskScore.overall >= 50 ? '#b28600' : 'var(--s-danger-text)' }}>
+          <span style={{ fontSize: 40, fontWeight: 300, lineHeight: 1, color: scoreColor(run.riskScore.overall) }}>
             {Math.round(run.riskScore.overall)}
           </span>
           <span style={{ color: 'var(--s-text-3)' }}>

@@ -489,6 +489,8 @@ export interface EngineConfig {
   analyzers: EngineAnalyzerState[];
   thresholds: EngineThresholdState[];
   knownRules: Array<{ id: string; count: number }>;
+  /** Regras declaradas nos pacotes (id, texto, pacote). Ausente em APIs antigas. */
+  catalog?: Array<{ id: string; pack: string; message: string | null; severity: string | null; category: string | null }>;
 }
 
 export type SuggestionStatus = 'OPEN' | 'ADDRESSED' | 'DISMISSED';

@@ -179,11 +179,12 @@ export const api = {
   triggerAudit: (body: {
     systemId: number;
     branch: string;
-    triggeredBy: string;
+    /** Só como reserva: com login, a API grava quem está autenticado. */
+    triggeredBy?: string;
   }) =>
     apiFetch<AuditRunResponse>('/api/v1/audits', {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify({ triggeredBy: 'dashboard', ...body }),
     }),
 
   createSystem: (body: SystemRequest) =>

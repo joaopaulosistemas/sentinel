@@ -11,6 +11,7 @@ import {
 } from '@carbon/react';
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { useThemeStore } from '../../store/useThemeStore';
 
 interface AppShellProps {
@@ -46,6 +47,7 @@ export function AppShell({ children }: AppShellProps) {
   const mode = useThemeStore((st) => st.mode);
   const toggleTheme = useThemeStore((st) => st.toggle);
   const dark = mode === 'dark';
+  const pending = usePendingClaude().total;
 
   return (
     <>
@@ -67,6 +69,14 @@ export function AppShell({ children }: AppShellProps) {
               }}
             >
               {i.nome}
+              {i.rota === '/findings' && pending > 0 && (
+                <span
+                  aria-label={`${pending} ${pending === 1 ? 'pedido do Claude espera' : 'pedidos do Claude esperam'} sua decisão`}
+                  style={{ marginLeft: 8, minWidth: 18, padding: '0 6px', borderRadius: 9, background: 'var(--s-link)', color: '#fff', fontSize: 11, lineHeight: '18px', display: 'inline-block', textAlign: 'center' }}
+                >
+                  {pending}
+                </span>
+              )}
             </HeaderMenuItem>
           ))}
         </HeaderNavigation>

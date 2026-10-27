@@ -1,6 +1,7 @@
 import type { Category, FixPlan, RiskScoreDto } from '../types';
+import { TARGET_SCORE, WARN_SCORE } from './scoreBand';
 
-export const TARGET_SCORE = 75;
+export { TARGET_SCORE };
 
 export interface Verdict {
   tone: 'good' | 'warn' | 'bad';
@@ -14,7 +15,7 @@ export interface Verdict {
  */
 export function verdict(plan: FixPlan): Verdict {
   const now = Math.round(plan.scoreNow);
-  const tone = now >= TARGET_SCORE ? 'good' : now >= 50 ? 'warn' : 'bad';
+  const tone = now >= TARGET_SCORE ? 'good' : now >= WARN_SCORE ? 'warn' : 'bad';
   if (plan.criticalCount > 0) {
     const after = Math.round(plan.scoreIfCriticalFixed);
     const plural = plan.criticalCount === 1 ? 'problema crítico' : 'problemas críticos';

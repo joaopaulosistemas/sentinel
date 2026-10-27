@@ -12,7 +12,7 @@ import {
   TextInput,
 } from '@carbon/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { CheckIcon, CrossIcon, SpinnerIcon } from '../../components/StatusIcons';
@@ -54,15 +54,32 @@ export function SystemsPage() {
   const [touched, setTouched] = useState(false);
   const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SystemSummaryResponse | null>(null);
-  const [tab, setTab] = useState<'cadastro' | 'motor' | 'analisadores' | 'mcp'>('cadastro');
+  type Tab = 'cadastro' | 'motor' | 'analisadores' | 'mcp';
+  const [tab, setTabState] = useState<Tab>('cadastro');
+  // As abas de ajuste do motor ficam montadas depois da primeira visita: trocar de aba não descarta o que foi digitado.
+  const [visited, setVisited] = useState<Tab[]>(['cadastro']);
+  const setTab = (next: Tab) => {
+    setTabState(next);
+    setVisited((v) => (v.includes(next) ? v : [...v, next]));
+  };
+  const [snapshot, setSnapshot] = useState('');
+  const [engineDirty, setEngineDirty] = useState<{ motor: boolean; analisadores: boolean }>({ motor: false, analisadores: false });
+  const [confirmClose, setConfirmClose] = useState(false);
+  const onMotorDirty = useCallback((d: boolean) => setEngineDirty((p) => (p.motor === d ? p : { ...p, motor: d })), []);
+  const onAnalyzersDirty = useCallback((d: boolean) => setEngineDirty((p) => (p.analisadores === d ? p : { ...p, analisadores: d })), []);
 
   const errors = validate(values);
   const invalid = Object.keys(errors).length > 0;
 
   const open = (target: SystemSummaryResponse | 'new') => {
+    const initial = target === 'new' ? emptyForm : formFrom(target);
     setEditing(target);
-    setTab('cadastro');
-    setValues(target === 'new' ? emptyForm : formFrom(target));
+    setTabState('cadastro');
+    setVisited(['cadastro']);
+    setValues(initial);
+    setSnapshot(JSON.stringify(initial));
+    setEngineDirty({ motor: false, analisadores: false });
+    setConfirmClose(false);
     setTouched(false);
     save.reset();
     check.reset();
@@ -121,16 +138,29 @@ export function SystemsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, systems]);
 
-  // Esc fecha o pop-up de cadastro.
+  // Esc fecha o pop-up de cadastro, mas pergunta antes se houver alteração sem salvar.
   const modalOpen = editing !== null;
+  const dirtyTabs = [
+    JSON.stringify(values) !== snapshot ? 'Cadastro e Git' : null,
+    engineDirty.motor ? 'Motor de regras' : null,
+    engineDirty.analisadores ? 'Analisadores' : null,
+  ].filter((t): t is string => t !== null);
+  const anyDirty = modalOpen && dirtyTabs.length > 0;
+  const requestClose = () => {
+    if (anyDirty) setConfirmClose(true);
+    else setEditing(null);
+  };
   useEffect(() => {
     if (!modalOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setEditing(null);
+      if (e.key !== 'Escape') return;
+      if (confirmClose) setConfirmClose(false);
+      else if (anyDirty) setConfirmClose(true);
+      else setEditing(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [modalOpen]);
+  }, [modalOpen, anyDirty, confirmClose]);
 
   if (isLoading) return <DataTableSkeleton columnCount={6} rowCount={5} />;
   if (error) {
@@ -283,7 +313,7 @@ export function SystemsPage() {
           <div
             style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(22,22,22,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
             onMouseDown={(e) => {
-              if (e.target === e.currentTarget) setEditing(null);
+              if (e.target === e.currentTarget) requestClose();
             }}
           >
           <div
@@ -297,7 +327,7 @@ export function SystemsPage() {
                 <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{isNew ? 'Cadastrando' : 'Editando'}</div>
                 <h2 style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 400 }}>{isNew ? 'Novo sistema' : editing.name}</h2>
               </div>
-              <button type="button" aria-label="Fechar" onClick={() => setEditing(null)} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
+              <button type="button" aria-label="Fechar" onClick={requestClose} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--s-text)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             </div>
@@ -326,13 +356,40 @@ export function SystemsPage() {
                     }}
                   >
                     {nome}
+                    {(id === 'cadastro' ? JSON.stringify(values) !== snapshot : id === 'motor' ? engineDirty.motor : id === 'analisadores' ? engineDirty.analisadores : false) && (
+                      <span role="img" aria-label="alterações não salvas" title="Alterações não salvas" style={{ color: 'var(--s-warn-text)', marginLeft: 6 }}>●</span>
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            {tab === 'motor' && !isNew && <EngineRulesPanel system={editing} />}
-            {tab === 'analisadores' && !isNew && <EngineAnalyzersPanel system={editing} />}
+            {confirmClose && (
+              <div role="alert" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 24px', display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 14 }}>
+                  Há alterações não salvas em <strong>{dirtyTabs.join(', ')}</strong>. Se fechar agora, elas serão perdidas.
+                </span>
+                <span style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setConfirmClose(false)} style={{ height: 32, padding: '0 12px', border: '1px solid #0f62fe', background: 'var(--s-surface)', color: 'var(--s-link)', cursor: 'pointer' }}>
+                    Continuar editando
+                  </button>
+                  <button type="button" onClick={() => { setConfirmClose(false); setEditing(null); }} style={{ height: 32, padding: '0 12px', border: '1px solid #da1e28', background: 'var(--s-surface)', color: '#da1e28', cursor: 'pointer' }}>
+                    Descartar e fechar
+                  </button>
+                </span>
+              </div>
+            )}
+
+            {!isNew && visited.includes('motor') && (
+              <div hidden={tab !== 'motor'}>
+                <EngineRulesPanel key={`motor-${editing.id}`} system={editing} onDirtyChange={onMotorDirty} />
+              </div>
+            )}
+            {!isNew && visited.includes('analisadores') && (
+              <div hidden={tab !== 'analisadores'}>
+                <EngineAnalyzersPanel key={`an-${editing.id}`} system={editing} onDirtyChange={onAnalyzersDirty} />
+              </div>
+            )}
             {tab === 'mcp' && !isNew && <McpPanel system={editing} />}
 
             {tab === 'cadastro' && (
@@ -614,7 +671,7 @@ export function SystemsPage() {
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid var(--s-border)', position: 'sticky', bottom: 0, background: 'var(--s-surface)', marginTop: 'auto' }}>
-              <button type="button" onClick={() => setEditing(null)} style={{ ...footerButton, background: 'var(--s-surface)', color: 'var(--s-text)', borderRight: '1px solid var(--s-border)' }}>
+              <button type="button" onClick={requestClose} style={{ ...footerButton, background: 'var(--s-surface)', color: 'var(--s-text)', borderRight: '1px solid var(--s-border)' }}>
                 Cancelar
               </button>
               <button

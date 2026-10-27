@@ -32,8 +32,10 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -86,6 +88,9 @@ public class AuditResource {
     @Inject
     AuditOrchestrationService orchestration;
 
+    @Context
+    SecurityContext securityContext;
+
     /**
      * Dispara uma nova auditoria de forma assíncrona.
      * Retorna 202 Accepted com o estado inicial da execução.
@@ -94,9 +99,18 @@ public class AuditResource {
     @Transactional
     @Operation(summary = "Criar auditoria", description = "Dispara uma nova execução de auditoria de forma assíncrona")
     public Response createAudit(@Valid CreateAuditRequest request) {
-        AuditRun run = requestService.request(request.getSystemId(), request.getBranch(), request.getBaseRef(), request.getTriggeredBy());
+        AuditRun run = requestService.request(request.getSystemId(), request.getBranch(), request.getBaseRef(), actor(request.getTriggeredBy()));
 
         return Response.accepted(runMapper.toResponse(run)).build();
+    }
+
+    /** Quem pediu: o usuário autenticado, se houver; senão o que o cliente informou; senão "dashboard". */
+    private String actor(String requested) {
+        java.security.Principal principal = securityContext == null ? null : securityContext.getUserPrincipal();
+        if (principal != null && principal.getName() != null && !principal.getName().isBlank()) {
+            return principal.getName();
+        }
+        return requested == null || requested.isBlank() ? "dashboard" : requested.strip();
     }
 
     /**

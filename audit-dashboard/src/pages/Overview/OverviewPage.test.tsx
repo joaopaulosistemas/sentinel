@@ -10,6 +10,8 @@ const system = (over: Partial<SystemSummaryResponse>): SystemSummaryResponse => 
   id: 1, name: 'x', stack: 'JAVA', team: 'T', lastAuditScore: 90, lastAuditDate: daysAgo(1), openCritical: 0, openHigh: 0, ...over,
 });
 
+let pendingFor: (u: string) => unknown[] = () => [];
+
 function renderPage(systems: SystemSummaryResponse[], onCall?: (url: string, init?: RequestInit) => void) {
   vi.stubGlobal(
     'fetch',
@@ -28,6 +30,9 @@ function renderPage(systems: SystemSummaryResponse[], onCall?: (url: string, ini
           { status: 200 },
         );
       }
+      if (u.includes('/pending-actions/')) {
+        return new Response(JSON.stringify(pendingFor(u)), { status: 200 });
+      }
       return new Response(JSON.stringify(systems), { status: 200 });
     }),
   );
@@ -40,7 +45,10 @@ function renderPage(systems: SystemSummaryResponse[], onCall?: (url: string, ini
   );
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  pendingFor = () => [];
+});
 
 describe('OverviewPage', () => {
   it('mostra os quatro indicadores e todos os sistemas, do menor para o maior nota', async () => {
@@ -79,12 +87,21 @@ describe('OverviewPage', () => {
     renderPage([system({ id: 5, name: 'conta', scheduledBranch: 'develop' })], (u, init) => {
       calls.push({ url: u, method: init?.method ?? 'GET', body: init?.body as string | undefined });
     });
-    fireEvent.click(await screen.findByRole('button', { name: 'Iniciar auditoria' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Nova auditoria' }));
+    expect(await screen.findByLabelText('Branch')).toHaveValue('develop');
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar auditoria' }));
     expect(await screen.findByText('Auditoria #77 iniciada')).toBeInTheDocument();
     const post = calls.find((c) => c.method === 'POST');
     expect(post?.url).toBe('/api/v1/audits');
     expect(JSON.parse(post?.body ?? '{}')).toMatchObject({ systemId: 5, branch: 'develop' });
     expect(screen.getByRole('link', { name: 'Acompanhar execução' })).toHaveAttribute('href', '/audits/77');
+  });
+
+  it('avisa na visão geral quantos pedidos do Claude esperam decisão, com link por sistema', async () => {
+    pendingFor = () => [{ id: 1, kind: 'START_AUDIT', summary: 's', status: 'PENDING', createdAt: '', expiresAt: '', decidedAt: null, resultNote: null, auditRunId: null }];
+    renderPage([system({ id: 5, name: 'conta' })]);
+    expect(await screen.findByText('1 pedido do Claude espera sua decisão')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'conta (1)' })).toHaveAttribute('href', '/findings?aba=reauditoria&systemId=5');
   });
 
   it('com a nota subindo mostra a variação no resumo', async () => {
