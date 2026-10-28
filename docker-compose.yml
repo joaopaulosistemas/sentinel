@@ -102,6 +102,10 @@ services:
       - ${EVIDENCE_HOST_DIR:-./evidencias}:/evidence:ro
       # Projetos locais (somente leitura). Só são usados com SENTINEL_LOCAL_ROOT=/projects. Veja docs/pasta-local/README.md
       - ${PROJECTS_HOST_DIR:-./projetos}:/projects:ro
+      # Cache Maven do host (somente leitura) para o Trivy resolver POMs pai/BOMs sem ir ao Maven Central, que bloqueia o IP
+      # (429, Retry-After) em varreduras grandes. Popule com `mvn dependency:resolve` no projeto auditado, ou aponte
+      # M2_HOST_DIR (no .env) para o seu ~/.m2/repository. Vazio, nada muda: o Trivy segue o fluxo normal.
+      - ${M2_HOST_DIR:-./.m2-cache}:/home/audit/.m2/repository:ro
 
   audit-dashboard:
     build:
