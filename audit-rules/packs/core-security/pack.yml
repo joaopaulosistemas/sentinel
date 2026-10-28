@@ -1,6 +1,6 @@
 id: core-security
 name: "Segurança (núcleo)"
-version: 1.1.2
+version: 1.1.3
 description: "Injeção, XSS, criptografia fraca, JWT, CORS/CSRF, desserialização e OWASP API/A01."
 author: Sentinel
 languages: [java, javascript, typescript]
