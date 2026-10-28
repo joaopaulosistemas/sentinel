@@ -58,7 +58,23 @@ rules:
 
   - id: sentinel-mem-subscribe-sem-desinscrever
     patterns:
-      - pattern: this.$OBS.subscribe(...)
+      - pattern-either:
+          - pattern: this.$OBS.subscribe(...)
+          - pattern: this.$OBS.pipe(...).subscribe(...)
+          - pattern: this.$X.$OBS.subscribe(...)
+          - pattern: this.$X.$OBS.pipe(...).subscribe(...)
+      - pattern-not-inside: |
+          this.$X.$OBS.pipe(..., takeUntilDestroyed(...), ...).subscribe(...)
+      - pattern-not-inside: |
+          this.$X.$OBS.pipe(..., takeUntil(...), ...).subscribe(...)
+      - pattern-not-inside: |
+          this.$X.$OBS.pipe(..., take(...), ...).subscribe(...)
+      - pattern-not-inside: |
+          this.$X.$OBS.pipe(..., first(...), ...).subscribe(...)
+      - pattern-not-inside: |
+          $Y = this.$X.$OBS.subscribe(...)
+      - pattern-not-inside: |
+          this.$S.add(this.$X.$OBS.subscribe(...))
       - pattern-not-inside: |
           this.$OBS.pipe(..., takeUntilDestroyed(...), ...).subscribe(...)
       - pattern-not-inside: |
@@ -83,7 +99,7 @@ rules:
     severity: INFO
     languages: [typescript]
     paths:
-      include: ["*.component.ts", "*.directive.ts", "*.service.ts"]
+      include: ["*.ts"]
       exclude: ["**/*.spec.ts", "**/node_modules/**"]
     metadata:
       category: performance

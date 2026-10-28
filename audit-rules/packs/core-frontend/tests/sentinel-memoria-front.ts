@@ -55,6 +55,24 @@ class Assina {
     this.dados$.pipe(take(1)).subscribe((d: any) => d);
   }
 }
+class AssinaEncadeado {
+  roteador: any;
+  destroy$: any;
+  e() {
+    // ruleid: sentinel-mem-subscribe-sem-desinscrever
+    this.roteador.events.pipe(filtrar()).subscribe(() => 1);
+  }
+  f() {
+    // ok: sentinel-mem-subscribe-sem-desinscrever
+    this.roteador.events.pipe(filtrar(), takeUntil(this.destroy$)).subscribe(() => 1);
+  }
+  g() {
+    // ok: sentinel-mem-subscribe-sem-desinscrever
+    this.roteador.events.pipe(takeUntilDestroyed()).subscribe(() => 1);
+  }
+}
+declare function filtrar(): any;
+declare function takeUntil(o: any): any;
 declare function takeUntilDestroyed(): any;
 declare function take(n: number): any;
 
