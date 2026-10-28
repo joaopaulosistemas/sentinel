@@ -3,6 +3,9 @@ rules:
   - id: sentinel-mem-setinterval-sem-clear
     patterns:
       - pattern: setInterval(...)
+      # só em classe (Angular): em hook ou função do React quem cobre é sentinel-mem-react-effect-sem-cleanup
+      - pattern-inside: |
+          class $C { ... }
       - pattern-not-inside: |
           class $C {
             ...
@@ -28,6 +31,9 @@ rules:
   - id: sentinel-mem-addeventlistener-sem-remove
     patterns:
       - pattern: $T.addEventListener(...)
+      # só em classe (Angular): em hook ou função do React quem cobre é sentinel-mem-react-effect-sem-cleanup
+      - pattern-inside: |
+          class $C { ... }
       - pattern-not-inside: |
           class $C {
             ...

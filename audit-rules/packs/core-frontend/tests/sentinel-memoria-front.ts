@@ -57,3 +57,23 @@ class Assina {
 }
 declare function takeUntilDestroyed(): any;
 declare function take(n: number): any;
+
+// Código fora de classe (hook de React, função utilitária) não é Angular: o ciclo de vida é outro e a regra
+// de efeito do React (sentinel-mem-react-effect-sem-cleanup) cobre o caso. Antes, estes geravam falso positivo.
+function usaHook(useEffect: (f: () => () => void) => void) {
+  useEffect(() => {
+    // ok: sentinel-mem-addeventlistener-sem-remove
+    document.addEventListener('click', clicou);
+    // ok: sentinel-mem-setinterval-sem-clear
+    const id = setInterval(() => clicou(), 1000);
+    return () => {
+      document.removeEventListener('click', clicou);
+      clearInterval(id);
+    };
+  });
+}
+function leArquivo(leitor: FileReader) {
+  // ok: sentinel-mem-addeventlistener-sem-remove
+  leitor.addEventListener('load', () => clicou());
+}
+function clicou() {}
