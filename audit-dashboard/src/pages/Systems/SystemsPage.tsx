@@ -1,7 +1,7 @@
 import { DataTableSkeleton, InlineNotification, Modal } from '@carbon/react';
 import { PageShell } from '../../components/PageShell';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { EngineAnalyzersPanel, EngineRulesPanel } from '../../components/EnginePanel';
@@ -173,6 +173,212 @@ function EmptyList({ hasSystems }: { hasSystems: boolean }) {
   );
 }
 
+/** Troca um dos avisos de "alteração sem salvar" sem recriar o objeto quando nada mudou. */
+function withFlag<T extends Record<string, boolean>>(flags: T, key: keyof T, value: boolean): T {
+  return flags[key] === value ? flags : { ...flags, [key]: value };
+}
+
+function LoadError({ error }: { error: unknown }) {
+  return <InlineNotification kind="error" title="Erro ao carregar sistemas" subtitle={error instanceof Error ? error.message : 'Erro desconhecido'} />;
+}
+
+function PageHeading({ count, onNew }: { count: number; onNew: () => void }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>Sistemas</h1>
+        <span style={{ color: 'var(--s-text-3)' }}>
+          {count} {count === 1 ? 'sistema cadastrado' : 'sistemas cadastrados'}. Cadastre, edite o perfil de regras e o agendamento, ou dispare uma auditoria.
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onNew}
+        style={{ height: 48, padding: '0 20px', background: 'var(--s-primary)', color: '#fff', border: 0, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 24 }}
+      >
+        Novo sistema
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      </button>
+    </div>
+  );
+}
+
+function SearchBar({ query, onQuery }: { query: string; onQuery: (q: string) => void }) {
+  return (
+    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--s-layer)', borderBottom: '1px solid var(--s-border-strong)', padding: '0 12px', height: 40, minWidth: 260 }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--s-text-3)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+        <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>Buscar sistema</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+          placeholder="Buscar por nome, equipe ou repositório"
+          style={{ border: 0, background: 'transparent', outline: 'none', flex: 1, fontSize: 14, minWidth: 0 }}
+        />
+      </label>
+      <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Ordenado por nota, menor primeiro</span>
+    </div>
+  );
+}
+
+interface EditDialogProps {
+  editing: SystemSummaryResponse | 'new';
+  tab: Tab;
+  visited: Tab[];
+  cadastroDirty: boolean;
+  engineDirty: { motor: boolean; analisadores: boolean };
+  dirtyTabs: string[];
+  confirmClose: boolean;
+  onTab: (t: Tab) => void;
+  onMotorDirty: (d: boolean) => void;
+  onAnalyzersDirty: (d: boolean) => void;
+  onKeepOpen: () => void;
+  onDiscard: () => void;
+  onRequestClose: () => void;
+  /** Conteúdo da aba "Cadastro e Git" (campos e rodapé). */
+  cadastro: ReactNode;
+}
+
+/** Pop-up de cadastro e edição: abas, aviso de alteração sem salvar e o painel da aba ativa. */
+function EditDialog(p: EditDialogProps) {
+  const { editing, tab, visited } = p;
+  const isNew = editing === 'new';
+  return (
+    <div
+      role="presentation"
+      style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(22,22,22,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) p.onRequestClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Editar sistema"
+        style={{ width: '70vw', minWidth: 'min(560px, 100%)', maxWidth: '100%', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: 'var(--s-surface)', borderTop: '3px solid var(--s-link)', display: 'flex', flexDirection: 'column' }}
+      >
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{isNew ? 'Cadastrando' : 'Editando'}</div>
+            <h2 style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 400 }}>{isNew ? 'Novo sistema' : editing.name}</h2>
+          </div>
+          <button type="button" aria-label="Fechar" onClick={p.onRequestClose} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--s-text)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+
+        <SystemTabs
+          tab={tab}
+          onSelect={p.onTab}
+          isNew={isNew}
+          dirty={{ cadastro: p.cadastroDirty, motor: p.engineDirty.motor, analisadores: p.engineDirty.analisadores }}
+        />
+
+        {p.confirmClose && <ConfirmCloseBar tabs={p.dirtyTabs} onKeep={p.onKeepOpen} onDiscard={p.onDiscard} />}
+
+        {!isNew && visited.includes('motor') && (
+          <div hidden={tab !== 'motor'}>
+            <EngineRulesPanel key={`motor-${editing.id}`} system={editing} onDirtyChange={p.onMotorDirty} />
+          </div>
+        )}
+        {!isNew && visited.includes('analisadores') && (
+          <div hidden={tab !== 'analisadores'}>
+            <EngineAnalyzersPanel key={`an-${editing.id}`} system={editing} onDirtyChange={p.onAnalyzersDirty} />
+          </div>
+        )}
+        {tab === 'mcp' && !isNew && <McpPanel system={editing} />}
+        {tab === 'cadastro' && p.cadastro}
+      </div>
+    </div>
+  );
+}
+
+interface DeleteMutation {
+  isPending: boolean;
+  isError: boolean;
+  error: unknown;
+  mutate: (target: SystemSummaryResponse) => void;
+}
+
+function DeleteSystemModal({ target, remove, onClose }: { target: SystemSummaryResponse | null; remove: DeleteMutation; onClose: () => void }) {
+  return (
+    <Modal
+      open={target !== null}
+      danger
+      size="sm"
+      modalHeading="Excluir sistema"
+      modalLabel={target?.name}
+      primaryButtonText={remove.isPending ? 'Excluindo…' : 'Excluir sistema'}
+      secondaryButtonText="Cancelar"
+      primaryButtonDisabled={remove.isPending}
+      onRequestClose={() => {
+        if (!remove.isPending) onClose();
+      }}
+      onRequestSubmit={() => {
+        if (target) remove.mutate(target);
+      }}
+    >
+      <p>
+        Tem certeza de que deseja excluir <strong>{target?.name}</strong>?
+      </p>
+      <p style={{ marginTop: 12 }}>
+        Isso remove também todas as auditorias, achados, supressões e configurações deste sistema. Não dá para desfazer.
+      </p>
+      {remove.isError && (
+        <InlineNotification
+          style={{ marginTop: 12 }}
+          kind="error"
+          title="Não foi possível excluir"
+          subtitle={remove.error instanceof Error ? remove.error.message : 'Erro desconhecido'}
+          hideCloseButton
+        />
+      )}
+    </Modal>
+  );
+}
+
+/** A origem "pasta local" só aparece quando o servidor a habilitou (SENTINEL_LOCAL_ROOT). */
+function useLocalSourceEnabled(): boolean {
+  return (
+    useQuery({
+      queryKey: ['local-source-enabled'],
+      queryFn: () => api.getLocalSourceEnabled().then((r) => r.enabled).catch(() => false),
+      staleTime: 5 * 60_000,
+    }).data === true
+  );
+}
+
+/** Exclui o sistema e todas as suas auditorias (a API remove tudo junto); só depois da confirmação. */
+function useRemoveSystem(onDone: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (target: SystemSummaryResponse) => api.deleteSystem(target.id),
+    onSuccess: (_data, target) => {
+      void queryClient.invalidateQueries({ queryKey: ['systems'] });
+      void queryClient.invalidateQueries({ queryKey: ['audits'] });
+      queryClient.removeQueries({ queryKey: ['systems', target.id] });
+      onDone();
+    },
+  });
+}
+
+/** Confere o endereço (responde? qual a branch padrão?) e a pasta local, sem clonar. */
+function useSourceChecks(values: SystemFormValues, editing: SystemSummaryResponse | 'new' | null) {
+  const check = useMutation({
+    mutationFn: () =>
+      api.checkRepo(values.repoUrl.trim(), values.scheduledBranch.trim() || undefined, {
+        systemId: savedSystem(editing)?.id,
+        gitToken: values.gitToken.trim(),
+        gitTokenHosts: values.gitTokenHosts.trim(),
+      }),
+  });
+  const checkPath = useMutation({
+    mutationFn: () => api.checkPath(values.localPath.trim(), values.scheduledBranch.trim() || undefined),
+  });
+  return { check, checkPath };
+}
+
 /** Cadastro e edição de sistemas: lista com busca e um formulário único para criar ou editar. */
 export function SystemsPage() {
   const queryClient = useQueryClient();
@@ -196,11 +402,27 @@ export function SystemsPage() {
   const [snapshot, setSnapshot] = useState('');
   const [engineDirty, setEngineDirty] = useState<{ motor: boolean; analisadores: boolean }>({ motor: false, analisadores: false });
   const [confirmClose, setConfirmClose] = useState(false);
-  const onMotorDirty = useCallback((d: boolean) => setEngineDirty((p) => (p.motor === d ? p : { ...p, motor: d })), []);
-  const onAnalyzersDirty = useCallback((d: boolean) => setEngineDirty((p) => (p.analisadores === d ? p : { ...p, analisadores: d })), []);
+  const onMotorDirty = useCallback((d: boolean) => setEngineDirty((p) => withFlag(p, 'motor', d)), []);
+  const onAnalyzersDirty = useCallback((d: boolean) => setEngineDirty((p) => withFlag(p, 'analisadores', d)), []);
 
   const errors = validate(values);
   const invalid = Object.keys(errors).length > 0;
+
+  const { check, checkPath } = useSourceChecks(values, editing);
+  const localEnabled = useLocalSourceEnabled();
+  const remove = useRemoveSystem(() => setDeleteTarget(null));
+
+  const save = useMutation({
+    mutationFn: async (vars: { auditNow: boolean }) => ({
+      system: await saveSystem(values, savedSystem(editing)),
+      auditNow: vars.auditNow,
+    }),
+    onSuccess: ({ system, auditNow }) => {
+      void queryClient.invalidateQueries({ queryKey: ['systems'] });
+      setEditing(null);
+      if (auditNow) setAuditTarget(system);
+    },
+  });
 
   const open = (target: SystemSummaryResponse | 'new') => {
     const initial = target === 'new' ? emptyForm : formFrom(target);
@@ -216,51 +438,6 @@ export function SystemsPage() {
     check.reset();
     checkPath.reset();
   };
-
-  // Confere se o endereço responde e qual é a branch padrão, sem clonar.
-  const check = useMutation({
-    mutationFn: () =>
-      api.checkRepo(values.repoUrl.trim(), values.scheduledBranch.trim() || undefined, {
-        systemId: savedSystem(editing)?.id,
-        gitToken: values.gitToken.trim(),
-        gitTokenHosts: values.gitTokenHosts.trim(),
-      }),
-  });
-
-  // Pasta local: confere existência, repositório Git e branch no servidor.
-  const checkPath = useMutation({
-    mutationFn: () => api.checkPath(values.localPath.trim(), values.scheduledBranch.trim() || undefined),
-  });
-
-  // A origem "pasta local" só aparece quando o servidor a habilitou (SENTINEL_LOCAL_ROOT).
-  const localEnabled = useQuery({
-    queryKey: ['local-source-enabled'],
-    queryFn: () => api.getLocalSourceEnabled().then((r) => r.enabled).catch(() => false),
-    staleTime: 5 * 60_000,
-  }).data === true;
-
-  const save = useMutation({
-    mutationFn: async (vars: { auditNow: boolean }) => ({
-      system: await saveSystem(values, savedSystem(editing)),
-      auditNow: vars.auditNow,
-    }),
-    onSuccess: ({ system, auditNow }) => {
-      void queryClient.invalidateQueries({ queryKey: ['systems'] });
-      setEditing(null);
-      if (auditNow) setAuditTarget(system);
-    },
-  });
-
-  // Exclui o sistema e todas as suas auditorias (a API remove tudo junto); só depois da confirmação.
-  const remove = useMutation({
-    mutationFn: (target: SystemSummaryResponse) => api.deleteSystem(target.id),
-    onSuccess: (_data, target) => {
-      void queryClient.invalidateQueries({ queryKey: ['systems'] });
-      void queryClient.invalidateQueries({ queryKey: ['audits'] });
-      queryClient.removeQueries({ queryKey: ['systems', target.id] });
-      setDeleteTarget(null);
-    },
-  });
 
   // "Editar sistema" na tela do sistema chega aqui com ?edit=ID: abre o painel desse sistema.
   // Com &tab=mcp (faixa do Claude na execução da auditoria), já abre na aba Claude (MCP).
@@ -279,7 +456,8 @@ export function SystemsPage() {
 
   // Esc fecha o pop-up de cadastro, mas pergunta antes se houver alteração sem salvar.
   const modalOpen = editing !== null;
-  const dirtyTabs = dirtyLabels(JSON.stringify(values) !== snapshot, engineDirty);
+  const cadastroDirty = JSON.stringify(values) !== snapshot;
+  const dirtyTabs = dirtyLabels(cadastroDirty, engineDirty);
   const anyDirty = modalOpen && dirtyTabs.length > 0;
   const requestClose = () => {
     if (anyDirty) setConfirmClose(true);
@@ -288,168 +466,77 @@ export function SystemsPage() {
   useEscapeToClose(modalOpen, anyDirty, confirmClose, setConfirmClose, () => setEditing(null));
 
   if (isLoading) return <DataTableSkeleton columnCount={6} rowCount={5} />;
-  if (error) {
-    return (
-      <InlineNotification
-        kind="error"
-        title="Erro ao carregar sistemas"
-        subtitle={error instanceof Error ? error.message : 'Erro desconhecido'}
-      />
-    );
-  }
+  if (error) return <LoadError error={error} />;
 
   const list = filterSystems(systems ?? [], query);
-
   const profiles = packs?.profiles ?? [];
-  const isNew = editing === 'new';
   const current = savedSystem(editing);
-  const notifySaved = !!current?.notifyUrlSet;
-  const webhookSaved = !!current?.webhookSecretSet;
-  const tokenSaved = !!current?.gitTokenSet;
-  const profileInfo = profiles.find((p) => p.id === values.profile);
-  const mono = "'IBM Plex Mono', ui-monospace, monospace";
-  const count = systems?.length ?? 0;
+
+  const cadastro = (
+    <>
+      <SystemFormFields
+        values={values}
+        setValues={setValues}
+        errors={errors}
+        touched={touched}
+        check={check}
+        checkPath={checkPath}
+        localEnabled={localEnabled}
+        save={save}
+        profiles={profiles}
+        profileInfo={profiles.find((p) => p.id === values.profile)}
+        tokenSaved={!!current?.gitTokenSet}
+        notifySaved={!!current?.notifyUrlSet}
+        webhookSaved={!!current?.webhookSecretSet}
+        mono="'IBM Plex Mono', ui-monospace, monospace"
+      />
+      <FormFooter
+        pending={save.isPending}
+        onCancel={requestClose}
+        onSave={(auditNow) => {
+          setTouched(true);
+          if (!invalid) save.mutate({ auditNow });
+        }}
+      />
+    </>
+  );
 
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas' }]}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>Sistemas</h1>
-          <span style={{ color: 'var(--s-text-3)' }}>
-            {count} {count === 1 ? 'sistema cadastrado' : 'sistemas cadastrados'}. Cadastre, edite o perfil de regras e o agendamento, ou dispare uma auditoria.
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => open('new')}
-          style={{ height: 48, padding: '0 20px', background: 'var(--s-primary)', color: '#fff', border: 0, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 24 }}
-        >
-          Novo sistema
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-        </button>
-      </div>
+      <PageHeading count={systems?.length ?? 0} onNew={() => open('new')} />
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
         <section aria-label="Lista de sistemas" style={{ flex: '999 1 640px', minWidth: 0, background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--s-layer)', borderBottom: '1px solid var(--s-border-strong)', padding: '0 12px', height: 40, minWidth: 260 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--s-text-3)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
-              <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>Buscar sistema</span>
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar por nome, equipe ou repositório"
-                style={{ border: 0, background: 'transparent', outline: 'none', flex: 1, fontSize: 14, minWidth: 0 }}
-              />
-            </label>
-            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Ordenado por nota, menor primeiro</span>
-          </div>
+          <SearchBar query={query} onQuery={setQuery} />
           {list.length === 0 ? (
             <EmptyList hasSystems={!!systems?.length} />
           ) : (
-            <SystemsTable systems={list} selectedId={savedSystem(editing)?.id ?? null} onAudit={setAuditTarget} onEdit={open} onDelete={(s) => { remove.reset(); setDeleteTarget(s); }} />
+            <SystemsTable systems={list} selectedId={current?.id ?? null} onAudit={setAuditTarget} onEdit={open} onDelete={(s) => { remove.reset(); setDeleteTarget(s); }} />
           )}
         </section>
 
         {editing !== null && (
-          <div
-            role="presentation"
-            style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(22,22,22,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget) requestClose();
-            }}
-          >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Editar sistema"
-            style={{ width: '70vw', minWidth: 'min(560px, 100%)', maxWidth: '100%', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: 'var(--s-surface)', borderTop: '3px solid var(--s-link)', display: 'flex', flexDirection: 'column' }}
-          >
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{isNew ? 'Cadastrando' : 'Editando'}</div>
-                <h2 style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 400 }}>{isNew ? 'Novo sistema' : editing.name}</h2>
-              </div>
-              <button type="button" aria-label="Fechar" onClick={requestClose} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--s-text)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-              </button>
-            </div>
-
-            <SystemTabs
-              tab={tab}
-              onSelect={setTab}
-              isNew={isNew}
-              dirty={{ cadastro: JSON.stringify(values) !== snapshot, motor: engineDirty.motor, analisadores: engineDirty.analisadores }}
-            />
-
-            {confirmClose && <ConfirmCloseBar tabs={dirtyTabs} onKeep={() => setConfirmClose(false)} onDiscard={() => { setConfirmClose(false); setEditing(null); }} />}
-
-            {!isNew && visited.includes('motor') && (
-              <div hidden={tab !== 'motor'}>
-                <EngineRulesPanel key={`motor-${editing.id}`} system={editing} onDirtyChange={onMotorDirty} />
-              </div>
-            )}
-            {!isNew && visited.includes('analisadores') && (
-              <div hidden={tab !== 'analisadores'}>
-                <EngineAnalyzersPanel key={`an-${editing.id}`} system={editing} onDirtyChange={onAnalyzersDirty} />
-              </div>
-            )}
-            {tab === 'mcp' && !isNew && <McpPanel system={editing} />}
-
-            {tab === 'cadastro' && (
-              <>
-            <SystemFormFields values={values} setValues={setValues} errors={errors} touched={touched} check={check} checkPath={checkPath} localEnabled={localEnabled} save={save} profiles={profiles} profileInfo={profileInfo} tokenSaved={tokenSaved} notifySaved={notifySaved} webhookSaved={webhookSaved} mono={mono} />
-
-            <FormFooter
-              pending={save.isPending}
-              onCancel={requestClose}
-              onSave={(auditNow) => {
-                setTouched(true);
-                if (!invalid) save.mutate({ auditNow });
-              }}
-            />
-              </>
-            )}
-          </div>
-          </div>
+          <EditDialog
+            editing={editing}
+            tab={tab}
+            visited={visited}
+            cadastroDirty={cadastroDirty}
+            engineDirty={engineDirty}
+            dirtyTabs={dirtyTabs}
+            confirmClose={confirmClose}
+            onTab={setTab}
+            onMotorDirty={onMotorDirty}
+            onAnalyzersDirty={onAnalyzersDirty}
+            onKeepOpen={() => setConfirmClose(false)}
+            onDiscard={() => { setConfirmClose(false); setEditing(null); }}
+            onRequestClose={requestClose}
+            cadastro={cadastro}
+          />
         )}
       </div>
 
       <StartAuditModal system={auditTarget} onClose={() => setAuditTarget(null)} />
-
-      <Modal
-        open={deleteTarget !== null}
-        danger
-        size="sm"
-        modalHeading="Excluir sistema"
-        modalLabel={deleteTarget?.name}
-        primaryButtonText={remove.isPending ? 'Excluindo…' : 'Excluir sistema'}
-        secondaryButtonText="Cancelar"
-        primaryButtonDisabled={remove.isPending}
-        onRequestClose={() => {
-          if (!remove.isPending) setDeleteTarget(null);
-        }}
-        onRequestSubmit={() => {
-          if (deleteTarget) remove.mutate(deleteTarget);
-        }}
-      >
-        <p>
-          Tem certeza de que deseja excluir <strong>{deleteTarget?.name}</strong>?
-        </p>
-        <p style={{ marginTop: 12 }}>
-          Isso remove também todas as auditorias, achados, supressões e configurações deste sistema. Não dá para desfazer.
-        </p>
-        {remove.isError && (
-          <InlineNotification
-            style={{ marginTop: 12 }}
-            kind="error"
-            title="Não foi possível excluir"
-            subtitle={remove.error instanceof Error ? remove.error.message : 'Erro desconhecido'}
-            hideCloseButton
-          />
-        )}
-      </Modal>
+      <DeleteSystemModal target={deleteTarget} remove={remove} onClose={() => setDeleteTarget(null)} />
     </PageShell>
   );
 }

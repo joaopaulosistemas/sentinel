@@ -90,17 +90,54 @@ const SEVS: Array<{ id: Severity; label: string; bg: string; fg: string }> = [
 
 const num = new Intl.NumberFormat('pt-BR');
 
+const has = (v: number | null | undefined): v is number => v !== null && v !== undefined;
+
+/** Arquivos lidos e linhas: só aparecem quando já há número. */
+function Totals({ files, lines }: { files: number; lines: number }) {
+  return (
+    <div style={{ display: 'flex', gap: 24, fontSize: 13, color: 'var(--s-text-3)', flexWrap: 'wrap' }}>
+      {files > 0 && <span><strong style={{ color: 'var(--s-text)', fontWeight: 600 }}>{num.format(files)}</strong> arquivos lidos</span>}
+      {lines > 0 && <span><strong style={{ color: 'var(--s-text)', fontWeight: 600 }}>{num.format(lines)}</strong> linhas</span>}
+    </div>
+  );
+}
+
+/** Nota final, a variação contra a auditoria anterior e a contagem de novos e resolvidos. */
+function FinalScore({ run, overall }: { run: AuditRunResponse; overall: number }) {
+  const delta = run.scoreDelta ?? null;
+  return (
+    <div style={{ borderTop: '1px solid var(--s-border)', paddingTop: 14, display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 40, fontWeight: 300, lineHeight: 1, color: scoreColor(overall) }}>{Math.round(overall)}</span>
+      <span style={{ color: 'var(--s-text-3)' }}>
+        nota de risco
+        {delta !== null && has(run.previousAuditId) && (
+          <> (era {Math.round(overall - delta)},{' '}
+            <strong style={{ color: delta >= 0 ? 'var(--s-success-text)' : 'var(--s-danger-text)', fontWeight: 600 }}>{delta >= 0 ? '+' : ''}{Math.round(delta)}</strong>)</>
+        )}
+        {has(run.newFindings) && has(run.resolvedFindings) && ` · ${run.newFindings} novos, ${run.resolvedFindings} resolvidos`}
+      </span>
+    </div>
+  );
+}
+
+function PendingScore() {
+  return (
+    <div style={{ borderTop: '1px solid var(--s-border)', paddingTop: 12, fontSize: 12, color: 'var(--s-text-3)' }}>
+      A nota final só aparece depois da pontuação. Os números acima crescem enquanto os analisadores terminam.
+    </div>
+  );
+}
+
 /** Contagem por severidade, arquivos e linhas; durante a execução os números crescem. */
 export function PartialResult({ run, progress }: { run: AuditRunResponse; progress: AuditProgress | null }) {
   const finished = run.status === 'COMPLETED';
   const counts = (id: Severity) => (finished ? run.findingsSummary?.[id] : progress?.severities?.[id]) ?? 0;
-  const lines = finished ? run.linesOfCode ?? progress?.linesOfCode ?? 0 : progress?.linesOfCode ?? 0;
-  const files = progress?.filesRead ?? 0;
-  const delta = run.scoreDelta ?? null;
+  const lines = (finished ? run.linesOfCode ?? progress?.linesOfCode : progress?.linesOfCode) ?? 0;
+  const title = finished ? 'Resultado final' : 'Resultado parcial';
   return (
-    <section aria-label={finished ? 'Resultado final' : 'Resultado parcial'}
+    <section aria-label={title}
       style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{finished ? 'Resultado final' : 'Resultado parcial'}</h2>
+      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{title}</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
         {SEVS.map((s) => (
           <div key={s.id} style={{ background: s.bg, color: s.fg, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -109,29 +146,9 @@ export function PartialResult({ run, progress }: { run: AuditRunResponse; progre
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 24, fontSize: 13, color: 'var(--s-text-3)', flexWrap: 'wrap' }}>
-        {files > 0 && <span><strong style={{ color: 'var(--s-text)', fontWeight: 600 }}>{num.format(files)}</strong> arquivos lidos</span>}
-        {lines > 0 && <span><strong style={{ color: 'var(--s-text)', fontWeight: 600 }}>{num.format(lines)}</strong> linhas</span>}
-      </div>
-      {finished && run.riskScore ? (
-        <div style={{ borderTop: '1px solid var(--s-border)', paddingTop: 14, display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 40, fontWeight: 300, lineHeight: 1, color: scoreColor(run.riskScore.overall) }}>
-            {Math.round(run.riskScore.overall)}
-          </span>
-          <span style={{ color: 'var(--s-text-3)' }}>
-            nota de risco
-            {delta !== null && run.previousAuditId !== null && run.previousAuditId !== undefined && (
-              <> (era {Math.round(run.riskScore.overall - delta)},{' '}
-                <strong style={{ color: delta >= 0 ? 'var(--s-success-text)' : 'var(--s-danger-text)', fontWeight: 600 }}>{delta >= 0 ? '+' : ''}{Math.round(delta)}</strong>)</>
-            )}
-            {run.newFindings !== null && run.newFindings !== undefined && run.resolvedFindings !== null && run.resolvedFindings !== undefined && ` · ${run.newFindings} novos, ${run.resolvedFindings} resolvidos`}
-          </span>
-        </div>
-      ) : !finished ? (
-        <div style={{ borderTop: '1px solid var(--s-border)', paddingTop: 12, fontSize: 12, color: 'var(--s-text-3)' }}>
-          A nota final só aparece depois da pontuação. Os números acima crescem enquanto os analisadores terminam.
-        </div>
-      ) : null}
+      <Totals files={progress?.filesRead ?? 0} lines={lines} />
+      {!finished && <PendingScore />}
+      {finished && run.riskScore && <FinalScore run={run} overall={run.riskScore.overall} />}
     </section>
   );
 }

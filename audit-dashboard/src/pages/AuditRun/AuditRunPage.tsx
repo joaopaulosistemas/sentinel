@@ -218,6 +218,99 @@ function AnalyzersSection({ analyzers, counts }: { analyzers: AnalyzerProgress[]
   );
 }
 
+function runCrumbsFor(run: AuditRunResponse): Crumb[] {
+  return [
+    { label: 'Início', to: '/' },
+    { label: 'Sistemas', to: '/systems' },
+    { label: run.systemName, to: run.systemId !== undefined ? `/systems/${run.systemId}` : undefined },
+    { label: `Auditoria #${run.id}` },
+  ];
+}
+
+/** Aviso de auditoria que falhou ou foi cancelada. */
+function RunNotices({ run }: { run: AuditRunResponse }) {
+  if (run.status === 'FAILED') {
+    return <InlineNotification kind="error" title="A auditoria falhou" subtitle={run.errorMessage ?? 'Sem detalhes. Veja os registros da API.'} hideCloseButton />;
+  }
+  if (run.status === 'CANCELLED') {
+    return (
+      <InlineNotification
+        kind="warning"
+        title="Auditoria cancelada"
+        subtitle="Nada foi gravado: a nota do sistema continua a da última auditoria concluída."
+        hideCloseButton
+      />
+    );
+  }
+  return null;
+}
+
+interface CancelModalProps {
+  open: boolean;
+  pending: boolean;
+  error: unknown;
+  isError: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+function CancelModal({ open, pending, error, isError, onClose, onConfirm }: CancelModalProps) {
+  return (
+    <Modal
+      danger
+      open={open}
+      modalHeading="Cancelar esta auditoria?"
+      primaryButtonText="Sim, cancelar"
+      secondaryButtonText="Continuar auditando"
+      primaryButtonDisabled={pending}
+      onRequestClose={onClose}
+      onRequestSubmit={onConfirm}
+    >
+      <p>O que já foi analisado será descartado e a nota do sistema não muda. Você pode iniciar outra auditoria depois.</p>
+      {isError && (
+        <InlineNotification
+          kind="error"
+          title="Não foi possível cancelar"
+          subtitle={error instanceof Error ? error.message : 'Erro desconhecido'}
+          hideCloseButton
+          style={{ marginTop: '1rem' }}
+        />
+      )}
+    </Modal>
+  );
+}
+
+/** Cancela a auditoria e atualiza as listas que a mostram. */
+function useCancelAudit(id: number, onDone: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.cancelAudit(id),
+    onSuccess: () => {
+      onDone();
+      void queryClient.invalidateQueries({ queryKey: ['audit', id] });
+      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
+    },
+  });
+}
+
+/** Tempo restante estimado pela média das auditorias anteriores do mesmo sistema. */
+function etaLabelFor(run: AuditRunResponse, history: AuditRunResponse[], seconds: number | null): string | null {
+  const average = averageDurationSeconds(history.filter((r) => r.id !== run.id));
+  return etaText(remainingSeconds(seconds, average));
+}
+
+type McpActivity = ReturnType<typeof useMcpActivity>;
+
+/** O que o Claude (MCP) fez durante a auditoria: ligado ou não, chamadas e eventos para o registro. */
+function mcpViewOf(mcp: McpActivity, run: AuditRunResponse, progressEvents: AuditProgress['events']) {
+  const enabled = mcp.config.data?.enabled ?? null;
+  return {
+    enabled,
+    calls: enabled ? callsSince(mcp.calls, run.startedAt) : [],
+    events: mergeEvents(progressEvents, enabled ? mcpCallEvents(mcp.calls, run.startedAt) : []),
+  };
+}
+
 /** Painel de acompanhamento: o que a auditoria está fazendo agora e, ao terminar, o resumo do resultado. */
 export function AuditRunPage() {
   const { auditId } = useParams<{ auditId: string }>();
@@ -225,7 +318,6 @@ export function AuditRunPage() {
   const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
   const id = Number(auditId);
   const { data: run, isLoading, error } = useAudit(id);
-  const queryClient = useQueryClient();
   const finished = run !== undefined && FINISHED.includes(run.status);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [rerun, setRerun] = useState(false);
@@ -234,15 +326,7 @@ export function AuditRunPage() {
   const { data: history } = useAuditRuns(run?.systemId ?? 0);
   // O que o Claude (MCP) fez com este sistema desde que a auditoria começou. Só informação: não entra na nota.
   const mcp = useMcpActivity(run?.systemId, run !== undefined && !finished);
-
-  const cancel = useMutation({
-    mutationFn: () => api.cancelAudit(id),
-    onSuccess: () => {
-      setConfirmCancel(false);
-      void queryClient.invalidateQueries({ queryKey: ['audit', id] });
-      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
-    },
-  });
+  const cancel = useCancelAudit(id, () => setConfirmCancel(false));
 
   if (run?.progress) lastProgress.current = run.progress;
 
@@ -251,33 +335,15 @@ export function AuditRunPage() {
   if (isLoading) return <RunSkeleton />;
   if (error || !run) return <RunNotFound error={error} />;
 
-  const index = phaseIndex(run);
-  const percent = progressPercent(run);
   // O servidor só devolve o andamento enquanto a auditoria roda; ao concluir, guarda-se o último visto.
   const progress = run.progress ?? lastProgress.current;
   const analyzers = progress?.analyzers ?? [];
-  const mcpEnabled = mcp.config.data?.enabled ?? null;
-  const mcpCalls = mcpEnabled ? callsSince(mcp.calls, run.startedAt) : [];
-  const events = mergeEvents(progress?.events ?? [], mcpEnabled ? mcpCallEvents(mcp.calls, run.startedAt) : []);
+  const mcpView = mcpViewOf(mcp, run, progress?.events ?? []);
   const counts = analyzerCounts(analyzers);
   const seconds = elapsedSeconds(run);
-  const failed = run.status === 'FAILED';
-  const cancelled = run.status === 'CANCELLED';
   const done = run.status === 'COMPLETED';
-  const runCrumbs: Crumb[] = [
-    { label: 'Início', to: '/' },
-    { label: 'Sistemas', to: '/systems' },
-    { label: run.systemName, to: run.systemId !== undefined ? `/systems/${run.systemId}` : undefined },
-    { label: `Auditoria #${run.id}` },
-  ];
-  const active = !done && !failed && !cancelled;
-  const average = averageDurationSeconds((history ?? []).filter((r) => r.id !== run.id));
-  const left = active ? remainingSeconds(seconds, average) : null;
-  const phases = phaseViews({ status: run.status, progress }, counts);
-  const stepText = stepTextFor(run.status, index, counts);
-  const barColor = barColorFor(run.status);
-  const startedAt = startTimeText(run.startedAt);
-  const pill = statusPill(run.status);
+  const active = !FINISHED.includes(run.status);
+  const etaLabel = active ? etaLabelFor(run, history ?? [], seconds) : null;
 
   const rerunModal = (
     <StartAuditModal
@@ -291,10 +357,9 @@ export function AuditRunPage() {
     navigate(`/findings?auditId=${run.id}`);
   };
 
-
   if (done) {
     return (
-      <PageShell crumbs={runCrumbs}>
+      <PageShell crumbs={runCrumbsFor(run)}>
         <CompletedHeader run={run} seconds={seconds} onRerun={() => setRerun(true)} />
         <ResultSteps run={run} onOpenFindings={openFindings} />
         {rerunModal}
@@ -303,46 +368,30 @@ export function AuditRunPage() {
   }
 
   return (
-    <PageShell crumbs={runCrumbs}>
+    <PageShell crumbs={runCrumbsFor(run)}>
       <RunHeader
         run={run}
-        pill={pill}
-        startedAt={startedAt}
+        pill={statusPill(run.status)}
+        startedAt={startTimeText(run.startedAt)}
         active={active}
         onCancel={() => setConfirmCancel(true)}
         onRerun={() => setRerun(true)}
       />
 
       <ProgressSection
-        phases={phases}
-        percent={percent}
-        stepText={stepText}
+        phases={phaseViews({ status: run.status, progress }, counts)}
+        percent={progressPercent(run)}
+        stepText={stepTextFor(run.status, phaseIndex(run), counts)}
         seconds={seconds}
-        etaLabel={active ? etaText(left) : null}
-        barColor={barColor}
+        etaLabel={etaLabel}
+        barColor={barColorFor(run.status)}
       />
 
       {active && run.systemId !== undefined && (
-        <McpStatusStrip systemId={run.systemId} enabled={mcpEnabled} calls={mcpCalls} pending={pendingCount(mcp.pending)} />
+        <McpStatusStrip systemId={run.systemId} enabled={mcpView.enabled} calls={mcpView.calls} pending={pendingCount(mcp.pending)} />
       )}
 
-      {failed && (
-        <InlineNotification
-          kind="error"
-          title="A auditoria falhou"
-          subtitle={run.errorMessage ?? 'Sem detalhes. Veja os registros da API.'}
-          hideCloseButton
-        />
-      )}
-
-      {cancelled && (
-        <InlineNotification
-          kind="warning"
-          title="Auditoria cancelada"
-          subtitle="Nada foi gravado: a nota do sistema continua a da última auditoria concluída."
-          hideCloseButton
-        />
-      )}
+      <RunNotices run={run} />
 
       {active && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
@@ -350,32 +399,19 @@ export function AuditRunPage() {
 
           <aside aria-label="Resultado e eventos" style={{ flex: '1 1 340px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
             <PartialResult run={run} progress={progress} />
-            <EventLog startedAt={run.startedAt} events={events} />
+            <EventLog startedAt={run.startedAt} events={mcpView.events} />
           </aside>
         </div>
       )}
 
-      <Modal
-        danger
+      <CancelModal
         open={confirmCancel}
-        modalHeading="Cancelar esta auditoria?"
-        primaryButtonText="Sim, cancelar"
-        secondaryButtonText="Continuar auditando"
-        primaryButtonDisabled={cancel.isPending}
-        onRequestClose={() => setConfirmCancel(false)}
-        onRequestSubmit={() => cancel.mutate()}
-      >
-        <p>O que já foi analisado será descartado e a nota do sistema não muda. Você pode iniciar outra auditoria depois.</p>
-        {cancel.isError && (
-          <InlineNotification
-            kind="error"
-            title="Não foi possível cancelar"
-            subtitle={cancel.error instanceof Error ? cancel.error.message : 'Erro desconhecido'}
-            hideCloseButton
-            style={{ marginTop: '1rem' }}
-          />
-        )}
-      </Modal>
+        pending={cancel.isPending}
+        isError={cancel.isError}
+        error={cancel.error}
+        onClose={() => setConfirmCancel(false)}
+        onConfirm={() => cancel.mutate()}
+      />
       {rerunModal}
     </PageShell>
   );

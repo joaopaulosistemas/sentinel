@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { PageShell } from '../../components/PageShell';
 import { SpinnerIcon } from '../../components/StatusIcons';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
+import type { AuditRunResponse, SystemSummaryResponse } from '../../types';
 import { useSystems } from '../../hooks/useSystems';
 import { whenLabel } from '../../utils/timeAgo';
 import {
@@ -72,6 +73,160 @@ function entryTitle(e: ReportHistoryEntry): string {
   return e.title ?? reportTitle(e.type ?? 'tecnico', e.days ?? 0, e.auditId ?? null);
 }
 
+
+const stepColumn = { display: 'flex', flexDirection: 'column', gap: 8, alignContent: 'start' } as const;
+
+function TypeStep({ type, onPick }: { type: ReportType; onPick: (t: ReportType) => void }) {
+  return (
+    <div style={stepColumn}>
+      <span style={eyebrow}>1 · Tipo</span>
+      {reportTypes.map((t) => (
+        <button key={t.id} type="button" aria-pressed={type === t.id} onClick={() => onPick(t.id)} style={choice(type === t.id)}>
+          <span style={{ fontWeight: 600 }}>{t.label}</span>
+          <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{t.hint}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+interface SystemStepProps {
+  systems: SystemSummaryResponse[];
+  scope: string;
+  days: ReportPeriod;
+  latest: AuditRunResponse | undefined;
+  noAudit: boolean;
+  onScope: (v: string) => void;
+  onDays: (v: ReportPeriod) => void;
+}
+
+function SystemStep({ systems, scope, days, latest, noAudit, onScope, onDays }: SystemStepProps) {
+  return (
+    <div style={stepColumn}>
+      <span style={eyebrow}>2 · Sistema</span>
+      <label htmlFor="report-system" style={{ fontSize: 13, color: 'var(--s-text-3)' }}>
+        Escolha o sistema ou todos
+      </label>
+      <select id="report-system" value={scope} onChange={(e) => onScope(e.target.value)} style={select}>
+        <option value={ALL}>Todos os sistemas</option>
+        {systems.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+      <label htmlFor="report-period" style={{ fontSize: 13, color: 'var(--s-text-3)', marginTop: 8 }}>
+        Período
+      </label>
+      <select id="report-period" value={days} onChange={(e) => onDays(Number(e.target.value) as ReportPeriod)} style={select}>
+        {reportPeriods.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.label}
+          </option>
+        ))}
+      </select>
+      {noAudit && (
+        <span role="status" style={{ fontSize: 13, color: 'var(--s-danger-text)' }}>
+          Este sistema ainda não tem auditoria concluída. Execute uma auditoria primeiro.
+        </span>
+      )}
+      {latest && (
+        <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
+          Usa a auditoria mais recente: #{latest.id}
+          {latest.riskScore?.overall != null ? ` · nota ${Math.round(latest.riskScore.overall)}` : ''}.
+        </span>
+      )}
+    </div>
+  );
+}
+
+interface FormatStepProps {
+  formats: ReturnType<typeof formatsFor>;
+  format: ReportFormat;
+  url: string | null;
+  waiting: boolean;
+  onFormat: (f: ReportFormat) => void;
+  onGenerate: () => void;
+}
+
+function FormatStep({ formats, format, url, waiting, onFormat, onGenerate }: FormatStepProps) {
+  return (
+    <div style={stepColumn}>
+      <span style={eyebrow}>3 · Formato</span>
+      {formats.map((f) => (
+        <button key={f.id} type="button" aria-pressed={format === f.id} onClick={() => onFormat(f.id)} style={{ ...choice(format === f.id), fontWeight: 500 }}>
+          {f.label}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={onGenerate}
+        disabled={!url}
+        style={{
+          height: 44,
+          marginTop: 8,
+          background: url ? '#0f62fe' : '#c6c6c6',
+          color: '#fff',
+          border: 0,
+          fontSize: 14,
+          cursor: url ? 'pointer' : 'not-allowed',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+        }}
+      >
+        {waiting && <SpinnerIcon size={14} color="#fff" />}
+        Gerar relatório
+      </button>
+    </div>
+  );
+}
+
+function HistoryRow({ entry: e, fresh }: { entry: ReportHistoryEntry; fresh: boolean }) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(220px, 3fr) minmax(140px, 2fr) 90px 150px 110px',
+        gap: 12,
+        padding: '12px 16px',
+        borderBottom: '1px solid var(--s-border)',
+        alignItems: 'center',
+        background: fresh ? 'var(--s-selected)' : 'var(--s-surface)',
+      }}
+    >
+      <span style={{ fontWeight: 500 }}>{entryTitle(e)}</span>
+      <span style={{ color: 'var(--s-text-2)' }}>{e.systemName}</span>
+      <span style={{ fontFamily: mono, fontSize: 12 }}>{formatName(e.format)}</span>
+      <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>{fresh ? 'agora' : whenLabel(e.generatedAt)}</span>
+      <a href={e.url} target="_blank" rel="noreferrer" style={{ textAlign: 'right' }}>
+        Abrir
+      </a>
+    </div>
+  );
+}
+
+function HistorySection({ history, justAdded, onClear }: { history: ReportHistoryEntry[]; justAdded: string | null; onClear: () => void }) {
+  return (
+    <section aria-label="Relatórios gerados" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Relatórios gerados</h2>
+        {history.length > 0 && (
+          <button type="button" onClick={onClear} style={{ background: 'none', border: 0, color: 'var(--s-link)', cursor: 'pointer', font: 'inherit', fontSize: 13 }}>
+            Limpar lista
+          </button>
+        )}
+      </div>
+      {history.length === 0 ? (
+        <p style={{ color: 'var(--s-text-3)', padding: '12px 16px', margin: 0 }}>Nenhum relatório gerado ainda neste navegador.</p>
+      ) : (
+        history.map((e) => <HistoryRow key={e.id} entry={e} fresh={e.id === justAdded} />)
+      )}
+    </section>
+  );
+}
+
 /** Relatórios em três passos: tipo, sistema (ou todos) e formato. A lista de gerados fica neste navegador. */
 export function ReportsPage() {
   const { data: systems } = useSystems();
@@ -132,120 +287,13 @@ export function ReportsPage() {
 
       <section aria-label="Novo relatório" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '20px 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 24 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignContent: 'start' }}>
-            <span style={eyebrow}>1 · Tipo</span>
-            {reportTypes.map((t) => (
-              <button key={t.id} type="button" aria-pressed={type === t.id} onClick={() => setType(t.id)} style={choice(type === t.id)}>
-                <span style={{ fontWeight: 600 }}>{t.label}</span>
-                <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{t.hint}</span>
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignContent: 'start' }}>
-            <span style={eyebrow}>2 · Sistema</span>
-            <label htmlFor="report-system" style={{ fontSize: 13, color: 'var(--s-text-3)' }}>
-              Escolha o sistema ou todos
-            </label>
-            <select id="report-system" value={scope} onChange={(e) => setScope(e.target.value)} style={select}>
-              <option value={ALL}>Todos os sistemas</option>
-              {(systems ?? []).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <label htmlFor="report-period" style={{ fontSize: 13, color: 'var(--s-text-3)', marginTop: 8 }}>
-              Período
-            </label>
-            <select id="report-period" value={days} onChange={(e) => setDays(Number(e.target.value) as ReportPeriod)} style={select}>
-              {reportPeriods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-            {noAudit && (
-              <span role="status" style={{ fontSize: 13, color: 'var(--s-danger-text)' }}>
-                Este sistema ainda não tem auditoria concluída. Execute uma auditoria primeiro.
-              </span>
-            )}
-            {latest && (
-              <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
-                Usa a auditoria mais recente: #{latest.id}
-                {latest.riskScore?.overall != null ? ` · nota ${Math.round(latest.riskScore.overall)}` : ''}.
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignContent: 'start' }}>
-            <span style={eyebrow}>3 · Formato</span>
-            {formats.map((f) => (
-              <button key={f.id} type="button" aria-pressed={format === f.id} onClick={() => setFormat(f.id)} style={{ ...choice(format === f.id), fontWeight: 500 }}>
-                {f.label}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={generate}
-              disabled={!url}
-              style={{
-                height: 44,
-                marginTop: 8,
-                background: url ? '#0f62fe' : '#c6c6c6',
-                color: '#fff',
-                border: 0,
-                fontSize: 14,
-                cursor: url ? 'pointer' : 'not-allowed',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              {waiting && <SpinnerIcon size={14} color="#fff" />}
-              Gerar relatório
-            </button>
-          </div>
+          <TypeStep type={type} onPick={setType} />
+          <SystemStep systems={systems ?? []} scope={scope} days={days} latest={latest} noAudit={noAudit} onScope={setScope} onDays={setDays} />
+          <FormatStep formats={formats} format={format} url={url} waiting={waiting} onFormat={setFormat} onGenerate={generate} />
         </div>
       </section>
 
-      <section aria-label="Relatórios gerados" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Relatórios gerados</h2>
-          {history.length > 0 && (
-            <button type="button" onClick={clearHistory} style={{ background: 'none', border: 0, color: 'var(--s-link)', cursor: 'pointer', font: 'inherit', fontSize: 13 }}>
-              Limpar lista
-            </button>
-          )}
-        </div>
-        {history.length === 0 ? (
-          <p style={{ color: 'var(--s-text-3)', padding: '12px 16px', margin: 0 }}>Nenhum relatório gerado ainda neste navegador.</p>
-        ) : (
-          history.map((e) => (
-            <div
-              key={e.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(220px, 3fr) minmax(140px, 2fr) 90px 150px 110px',
-                gap: 12,
-                padding: '12px 16px',
-                borderBottom: '1px solid var(--s-border)',
-                alignItems: 'center',
-                background: e.id === justAdded ? 'var(--s-selected)' : 'var(--s-surface)',
-              }}
-            >
-              <span style={{ fontWeight: 500 }}>{entryTitle(e)}</span>
-              <span style={{ color: 'var(--s-text-2)' }}>{e.systemName}</span>
-              <span style={{ fontFamily: mono, fontSize: 12 }}>{formatName(e.format)}</span>
-              <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>{e.id === justAdded ? 'agora' : whenLabel(e.generatedAt)}</span>
-              <a href={e.url} target="_blank" rel="noreferrer" style={{ textAlign: 'right' }}>
-                Abrir
-              </a>
-            </div>
-          ))
-        )}
-      </section>
+      <HistorySection history={history} justAdded={justAdded} onClear={clearHistory} />
     </PageShell>
   );
 }
