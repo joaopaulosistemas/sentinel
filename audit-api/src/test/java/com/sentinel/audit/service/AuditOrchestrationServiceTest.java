@@ -63,13 +63,13 @@ class AuditOrchestrationServiceTest {
         run.setStatus(AuditStatus.PENDING);
 
         service = new AuditOrchestrationService();
-        service.secretBox = new SecretBox("chave-de-teste");
+        service.store.secretBox = new SecretBox("chave-de-teste");
         service.scoringService = new ScoringService();
         service.evidenceStager = new EvidenceStager();
         service.analyzerSet.evidenceAnalyzer = new com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer();
         service.policies.packRegistry = com.sentinel.audit.pack.TestPacks.registry();
 
-        service.auditRunRepository = new AuditRunRepository() {
+        service.store.auditRunRepository = new AuditRunRepository() {
             @Override
             public AuditRun findById(Long id) {
                 findByIdCalls.incrementAndGet();
@@ -80,13 +80,13 @@ class AuditOrchestrationServiceTest {
                 return run;
             }
         };
-        service.findingRepository = new FindingRepository() {
+        service.store.findingRepository = new FindingRepository() {
             @Override
             public void persist(Finding f) {
                 persisted.add(f);
             }
         };
-        service.lifecycle = new FindingLifecycleService() {
+        service.store.lifecycle = new FindingLifecycleService() {
             @Override
             public Baseline loadBaseline(Long auditRunId) {
                 if (baselineError != null) {
@@ -95,7 +95,7 @@ class AuditOrchestrationServiceTest {
                 return baseline;
             }
         };
-        service.notifications = new NotificationService() {
+        service.store.notifications = new NotificationService() {
             @Override
             public void notifyFinished(Long auditRunId) {
                 notified.add(auditRunId);
@@ -233,7 +233,7 @@ class AuditOrchestrationServiceTest {
     void naoUsaEntidadeLazyForaDaTransacao() {
         // O contexto devolvido por tryMarkRunning contém só valores simples (String/Stack),
         // lidos enquanto a transação ainda está aberta — por isso o fluxo não depende de sessão do Hibernate.
-        AuditOrchestrationService.AuditContext ctx = service.tryMarkRunning(7L);
+        AuditOrchestrationService.AuditContext ctx = service.store.tryMarkRunning(7L);
         assertEquals("https://github.com/org/repo.git", ctx.repoUrl());
         assertEquals("main", ctx.branch());
         assertEquals(Stack.JAVA, ctx.stack());

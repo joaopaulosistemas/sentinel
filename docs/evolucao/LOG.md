@@ -421,3 +421,13 @@ Não feito / não verificado:
 - **Números mágicos:** ~330 ocorrências do Checkstyle em 78 arquivos continuam; só `PgStatChecks` foi limpo. A nota não muda com isso (o teto por regra já está no máximo: 10 ocorrências bastam para chegar a 20 pontos), então não troquei números por nomes artificiais como `LIMITE_200`.
 - **`AuditOrchestrationService` com 12 `@Inject`:** baixar de 8 pediria separar também a persistência (`persistResultsAndComplete`, `markFailed`, `storeContext`) em outra classe; os testes atuais montam o serviço atribuindo esses campos, então ficou para um PR próprio.
 - Maven e os testes Java (só o CI compila e roda); a consulta HQL nova do agendador; as rotas de `AuditResource`/`SystemResource` em execução.
+
+## Dashboard 12.32.0 / API — Persistência da auditoria separada do orquestrador
+
+Fecha o que o PR anterior deixou como "não feito": `AuditOrchestrationService` tinha 12 `@Inject` (a regra aponta 8 ou mais). Refatoração sem mudança de comportamento.
+
+- Novo `AuditRunStore` (6 `@Inject`) com tudo que lê ou grava a auditoria no banco: marcar como rodando (com a espera pelo commit do registro), cancelada e falha, gravar achados e resultado, guardar SBOM e contexto, carregar a base de comparação e a qualidade das regras, e avisar o fim. Os métodos transacionais foram movidos como estavam.
+- `AuditOrchestrationService`: 12 → 7 `@Inject` e 470 → 286 linhas; fica só a ordem das etapas.
+- Testes: `AuditOrchestrationServiceTest` passa a atribuir `service.store.<campo>` (e `service.store.tryMarkRunning`) no lugar dos campos antigos.
+
+Verificado: `javac` sobre a API (só erros de pacote ausente; nenhum erro novo comparado à `main`; o orquestrador tem menos erros porque perdeu as dependências). Não verificado: Maven e testes (só o CI); os testes Java alterados não foram compilados aqui.

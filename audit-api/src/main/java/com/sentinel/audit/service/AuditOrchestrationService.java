@@ -9,27 +9,21 @@ import com.sentinel.audit.pack.AuditPolicy;
 import com.sentinel.audit.analyzer.deps.DependencyExtractor;
 import com.sentinel.audit.analyzer.deps.SbomWriter;
 import com.sentinel.audit.model.AuditRun;
-import com.sentinel.audit.model.AuditStatus;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.LocalSnapshot;
 import com.sentinel.audit.model.RiskScore;
 import com.sentinel.audit.model.SourceType;
 import com.sentinel.audit.model.Stack;
-import com.sentinel.audit.repository.AuditRunRepository;
-import com.sentinel.audit.repository.FindingRepository;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.event.TransactionPhase;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -57,21 +51,14 @@ public class AuditOrchestrationService {
 
     private static final Logger LOG = Logger.getLogger(AuditOrchestrationService.class);
 
-    /** Tempo máximo de espera pelo commit do registro da auditoria. */
-    private static final Duration RUN_VISIBILITY_TIMEOUT = Duration.ofSeconds(15);
-    private static final long RUN_VISIBILITY_POLL_MILLIS = 200L;
-
-    @Inject
-    RuleQualityService ruleQualityService;
-
     @Inject
     IngestionService ingestionService;
 
     @Inject
-    SecretBox secretBox;
+    EvidenceStager evidenceStager;
 
     @Inject
-    EvidenceStager evidenceStager;
+    AuditRunStore store = new AuditRunStore();
 
     @Inject
     AnalyzerSet analyzerSet = new AnalyzerSet();
@@ -81,18 +68,6 @@ public class AuditOrchestrationService {
 
     @Inject
     ScoringService scoringService;
-
-    @Inject
-    FindingLifecycleService lifecycle;
-
-    @Inject
-    NotificationService notifications;
-
-    @Inject
-    FindingRepository findingRepository;
-
-    @Inject
-    AuditRunRepository auditRunRepository;
 
     /** Andamento mostrado na tela; o valor inicial serve a testes que montam o serviço sem CDI. */
     @Inject
@@ -161,7 +136,7 @@ public class AuditOrchestrationService {
         Path clonedPath = null;
         AuditPolicy policy = null;
         try {
-            AuditContext context = markRunning(auditRunId);
+            AuditContext context = store.markRunning(auditRunId);
             progress.queued(auditRunId);
             checkNotCancelled(auditRunId);
             progress.phase(auditRunId, AuditProgressTracker.CLONE,
@@ -196,27 +171,27 @@ public class AuditOrchestrationService {
             // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
             progress.phase(auditRunId, AuditProgressTracker.PONTUACAO,
                     "Análise concluída: " + allFindings.size() + " achados" + projectConfig.summary() + "; calculando a nota");
-            FindingLifecycleService.apply(allFindings, loadBaselineSafely(auditRunId));
-            FindingConfidence.assessAll(allFindings, loadRuleQualitySafely(), globalAuthOf(clonedPath),
+            FindingLifecycleService.apply(allFindings, store.loadBaselineSafely(auditRunId));
+            FindingConfidence.assessAll(allFindings, store.loadRuleQualitySafely(), globalAuthOf(clonedPath),
                     GeneratedFiles.detect(clonedPath, allFindings));
             long linesOfCode = sizing.lines();
             RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
             progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
-            persistResultsAndComplete(auditRunId, allFindings, riskScore, linesOfCode, commitSha);
+            store.persistResultsAndComplete(auditRunId, allFindings, riskScore, linesOfCode, commitSha);
             saveSbomSafely(auditRunId, context, clonedPath);
             saveContextSafely(auditRunId, clonedPath, analysis.runs());
 
             LOG.infof("Auditoria %d concluída: %d findings, score %s",
                     auditRunId, allFindings.size(), riskScore.getOverall());
-            notifySafely(auditRunId);
+            store.notifySafely(auditRunId);
 
         } catch (AuditCancelledException e) {
             LOG.infof("Auditoria %d cancelada pelo usuário", auditRunId);
-            markCancelled(auditRunId);
+            store.markCancelled(auditRunId);
         } catch (Exception e) {
             LOG.errorf(e, "Auditoria %d falhou: %s", auditRunId, e.getMessage());
-            markFailed(auditRunId, e);
-            notifySafely(auditRunId);
+            store.markFailed(auditRunId, e);
+            store.notifySafely(auditRunId);
             throw new IllegalStateException("Auditoria " + auditRunId + " falhou", e);
         } finally {
             progress.finish(auditRunId);
@@ -240,32 +215,11 @@ public class AuditOrchestrationService {
      * @return {@code false} se a auditoria não existe mais em andamento (já terminou ou nunca existiu)
      */
     public boolean cancel(Long auditRunId) {
-        if (!markCancelledByUser(auditRunId)) {
+        if (!store.markCancelledByUser(auditRunId)) {
             return false;
         }
         progress.requestCancel(auditRunId);
         return true;
-    }
-
-    @Transactional
-    boolean markCancelledByUser(Long auditRunId) {
-        AuditRun run = auditRunRepository.findById(auditRunId);
-        if (run == null || (run.getStatus() != AuditStatus.PENDING && run.getStatus() != AuditStatus.RUNNING)) {
-            return false;
-        }
-        run.setStatus(AuditStatus.CANCELLED);
-        run.setCompletedAt(LocalDateTime.now());
-        run.setErrorMessage("Cancelada pelo usuário");
-        return true;
-    }
-
-    /** Garante o estado final quando a parada veio do pedido do usuário; nunca lança exceção. */
-    void markCancelled(Long auditRunId) {
-        try {
-            markCancelledByUser(auditRunId);
-        } catch (Exception e) {
-            LOG.errorf(e, "Não foi possível marcar a auditoria %d como CANCELLED", auditRunId);
-        }
     }
 
     /** O SBOM é um extra: se não der para gerar ou salvar, a auditoria continua COMPLETED. */
@@ -273,7 +227,7 @@ public class AuditOrchestrationService {
         try {
             String sbom = SbomWriter.toCycloneDx(context.systemName(), context.branch(),
                     DependencyExtractor.extract(projectPath), Instant.now(), UUID.randomUUID());
-            storeSbom(auditRunId, sbom);
+            store.storeSbom(auditRunId, sbom);
         } catch (RuntimeException e) {
             LOG.warnf("Não foi possível gerar/salvar o SBOM da auditoria %d: %s", auditRunId, e.getMessage());
         }
@@ -283,34 +237,9 @@ public class AuditOrchestrationService {
     private void saveContextSafely(Long auditRunId, Path projectPath, List<AnalyzerRunInfo> runs) {
         try {
             ProjectMap map = ProjectProfiler.profile(projectPath);
-            storeContext(auditRunId, new ObjectMapper().writeValueAsString(new AuditContextData(map, runs)));
+            store.storeContext(auditRunId, new ObjectMapper().writeValueAsString(new AuditContextData(map, runs)));
         } catch (Exception e) {
             LOG.warnf("Não foi possível salvar o mapa do projeto da auditoria %d: %s", auditRunId, e.getMessage());
-        }
-    }
-
-    @Transactional
-    void storeContext(Long auditRunId, String json) {
-        AuditRun run = auditRunRepository.findById(auditRunId);
-        if (run != null) {
-            run.setContextJson(json);
-        }
-    }
-
-    @Transactional
-    void storeSbom(Long auditRunId, String sbom) {
-        AuditRun run = auditRunRepository.findById(auditRunId);
-        if (run != null) {
-            run.setSbomJson(sbom);
-        }
-    }
-
-    /** O aviso é secundário: nada que dê errado nele pode mudar o resultado da auditoria. */
-    private void notifySafely(Long auditRunId) {
-        try {
-            notifications.notifyFinished(auditRunId);
-        } catch (RuntimeException e) {
-            LOG.warnf("Falha ao notificar a auditoria %d: %s", auditRunId, e.getMessage());
         }
     }
 
@@ -342,129 +271,8 @@ public class AuditOrchestrationService {
         return kept;
     }
 
-    /** Sem a qualidade das regras a confiança ainda sai (pelos demais sinais): nada aqui pode derrubar a auditoria. */
     /** Barreira de autenticação global do projeto (filtro, Spring Security, política do Quarkus), ou nulo. */
     private static String globalAuthOf(Path clonedPath) {
         return clonedPath == null ? null : com.sentinel.audit.analyzer.structure.GlobalAuth.detect(clonedPath);
-    }
-
-    private java.util.Map<String, RuleQualityService.RuleQuality> loadRuleQualitySafely() {
-        try {
-            return ruleQualityService.byRule();
-        } catch (RuntimeException e) {
-            LOG.warnf("Não foi possível carregar a qualidade das regras: %s", e.getMessage());
-            return java.util.Map.of();
-        }
-    }
-
-    /** Falha ao buscar a base de comparação não pode derrubar a auditoria: segue sem "novos" e sem supressões. */
-    private FindingLifecycleService.Baseline loadBaselineSafely(Long auditRunId) {
-        try {
-            return lifecycle.loadBaseline(auditRunId);
-        } catch (RuntimeException e) {
-            LOG.warnf("Não foi possível carregar a base de comparação da auditoria %d: %s", auditRunId, e.getMessage());
-            return FindingLifecycleService.Baseline.empty();
-        }
-    }
-
-    /**
-     * Marca a auditoria como RUNNING e devolve os dados necessários para o restante do fluxo.
-     * <p>
-     * O disparo da auditoria ocorre de dentro da transação que cria o registro; por isso, esta
-     * thread pode rodar antes do commit. Aguarda (com limite de tempo) o registro ficar visível.
-     */
-    AuditContext markRunning(Long auditRunId) {
-        long deadline = System.nanoTime() + RUN_VISIBILITY_TIMEOUT.toNanos();
-        while (true) {
-            AuditContext context = tryMarkRunning(auditRunId);
-            if (context != null) {
-                return context;
-            }
-            if (System.nanoTime() >= deadline) {
-                throw new IllegalStateException(
-                        "Auditoria " + auditRunId + " não encontrada no banco após "
-                                + RUN_VISIBILITY_TIMEOUT.toSeconds() + "s");
-            }
-            try {
-                Thread.sleep(RUN_VISIBILITY_POLL_MILLIS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrompido aguardando a auditoria " + auditRunId, e);
-            }
-        }
-    }
-
-    @Transactional
-    AuditContext tryMarkRunning(Long auditRunId) {
-        AuditRun run = auditRunRepository.findById(auditRunId);
-        if (run == null) {
-            return null;
-        }
-        if (run.getStatus() == AuditStatus.CANCELLED) {
-            throw new AuditCancelledException(auditRunId);
-        }
-        run.setStatus(AuditStatus.RUNNING);
-        run.setStartedAt(LocalDateTime.now());
-        // Leituras do sistema (lazy) acontecem aqui, dentro da transação.
-        return new AuditContext(
-                run.getSystem().getRepoUrl(),
-                run.getBranch(),
-                run.getSystem().getStack(),
-                run.getSystem().getName(),
-                run.getSystem().effectiveProfile(),
-                run.getBaseRef(),
-                secretBox.decrypt(run.getSystem().getGitTokenEnc()),
-                run.getSystem().getGitTokenHosts(),
-                run.getSystem().getGitHistoryDepth(),
-                run.getSystem().getId(),
-                run.getSystem().effectiveSourceType(),
-                run.getSystem().getLocalPath(),
-                run.getSystem().effectiveLocalSnapshot());
-    }
-
-    @Transactional
-    void persistResultsAndComplete(Long auditRunId, List<Finding> findings, RiskScore riskScore, long linesOfCode, String commitSha) {
-        AuditRun run = auditRunRepository.findById(auditRunId);
-        if (run == null) {
-            throw new IllegalStateException("Auditoria " + auditRunId + " não encontrada ao persistir resultados");
-        }
-        if (run.getStatus() == AuditStatus.CANCELLED) {
-            // O usuário cancelou no último instante: nada do que foi analisado deve ser gravado.
-            throw new AuditCancelledException(auditRunId);
-        }
-
-        for (Finding finding : findings) {
-            RunText.fitColumns(finding);
-            finding.setAuditRun(run);
-            findingRepository.persist(finding);
-        }
-
-        run.setRiskScore(riskScore);
-        run.setLinesOfCode(linesOfCode);
-        run.setCommitSha(commitSha);
-        run.setStatus(AuditStatus.COMPLETED);
-        run.setCompletedAt(LocalDateTime.now());
-    }
-
-    /**
-     * Marca a auditoria como FAILED. Nunca lança exceção: já estamos tratando uma falha
-     * e não podemos mascará-la com outra.
-     */
-    void markFailed(Long auditRunId, Throwable cause) {
-        try {
-            updateStatusFailed(auditRunId, RunText.describe(cause));
-        } catch (Exception e) {
-            LOG.errorf(e, "Não foi possível marcar a auditoria %d como FAILED", auditRunId);
-        }
-    }
-
-    @Transactional
-    void updateStatusFailed(Long auditRunId, String reason) {
-        AuditRun run = auditRunRepository.findById(auditRunId);
-        if (run != null) {
-            run.setStatus(AuditStatus.FAILED);
-            run.setCompletedAt(LocalDateTime.now());
-            run.setErrorMessage(RunText.error(reason));
-        }
     }
 }
