@@ -62,6 +62,18 @@ public class ScoringService {
     @ConfigProperty(name = "sentinel.audit.score.confidence-weighting.enabled", defaultValue = "false")
     boolean confidenceWeighting = false;
 
+    /**
+     * Curva da nota. {@code linear} (padrão): 100 menos a penalidade, com piso em 0, então várias dimensões chegam a 0 e
+     * deixam de mostrar melhora. {@code suave}: 100 * e^(-penalidade/100), que fica quase igual à linear para penalidades
+     * pequenas (10 pontos de penalidade dão 90,5 em vez de 90) mas nunca chega a 0, e por isso continua distinguindo um
+     * sistema ruim de um péssimo. Desligada por padrão para não mudar as notas existentes.
+     */
+    @ConfigProperty(name = "sentinel.audit.score.curve", defaultValue = "linear")
+    String curve = "linear";
+
+    /** Escala da curva suave: penalidade em que a nota cai para ~37 (1/e). */
+    static final double SMOOTH_SCALE = 100.0;
+
     /** Mesmo em um sistema enorme, achados HIGH/MEDIUM ainda pesam pelo menos este tanto. */
     static final double MIN_SIZE_FACTOR = 0.2;
 
@@ -156,7 +168,15 @@ public class ScoringService {
             penalty += Math.min(rulePenalty, MAX_LOW_SEVERITY_PENALTY_PER_RULE);
         }
 
-        return Math.max(0.0, 100.0 - criticalPenalty - penalty * sizeFactor);
+        return applyCurve(criticalPenalty + penalty * sizeFactor);
+    }
+
+    /** Converte a penalidade total em nota (0 a 100) conforme a curva configurada. */
+    double applyCurve(double totalPenalty) {
+        if ("suave".equalsIgnoreCase(curve)) {
+            return 100.0 * Math.exp(-Math.max(0.0, totalPenalty) / SMOOTH_SCALE);
+        }
+        return Math.max(0.0, 100.0 - totalPenalty);
     }
 
     private boolean isLowSeverity(Severity severity) {
