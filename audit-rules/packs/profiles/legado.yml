@@ -4,6 +4,8 @@ description: "Limites mais folgados e regras de estilo em modo sombra: aparecem 
 rules:
   # 1 verdadeiro em 9 revisados (cabeçalho de licença, pom.xml e arquivos gerados); volta a pesar quando a precisão subir.
   jscpd-codigo-duplicado: {shadow: true}   # precisao.md
+  # 0 verdadeiros em 7 revisados: modelos EJS que geram código TypeScript (a saída não é HTML, então não há XSS)
+  njsscan-ejs_ect_template: {shadow: true}   # precisao.md
   "sentinel-java-*": {shadow: true}
   "sentinel-ts-*": {shadow: true}
   sentinel-god-object: {severity: low}

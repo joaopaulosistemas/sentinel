@@ -86,6 +86,9 @@ export default tseslint.config(
     rules: {
       ...react.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
+      // Componente sem import é erro de tipo (o tsc pega) e é o jeito normal de projetos com unplugin-auto-import;
+      // medido em 2026-10-28: 6 de 6 lidos eram componentes importados automaticamente (57 achados em 1 repositório)
+      "react/jsx-no-undef": "off",
       "react/prop-types": "off",
       "react/jsx-key": "error",
       "react/no-danger": "warn",
