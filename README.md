@@ -677,7 +677,7 @@ Pacote embutido que liga por SARIF: **njsscan** (segurança de JS/Node), **Style
 - O Stylelint inclui regras de estilo: para não pesar no score, use um perfil `rules: { "stylelint-*": { shadow: true } }`.
 - O SQLFluff e o Squawk olham só arquivos `.sql`; o Squawk, só os de pastas de migration. Dialeto do SQLFluff: `postgres` (troque com `SQLFLUFF_DIALECT`). O Squawk ignora por padrão `prefer-robust-stmts`, `require-lock-timeout` e `require-statement-timeout` (política de ambiente); troque com `SQUAWK_EXCLUDE`. Para silenciar o estilo: `rules: { "sqlfluff-*": { shadow: true } }`.
 - O Dependency-Cruiser roda **sem** `node_modules` (só ciclos e órfãos entre arquivos do próprio projeto). Knip e depcheck ficaram de fora de propósito: sem as dependências instaladas eles acusam como "sem uso" pacotes que o código usa.
-- **Confiança:** `PACKS_TRUSTED_TOOL_PACKS=market-tools` (padrão) libera as ferramentas desse pacote sem ligar `PACKS_ALLOW_TOOLS`.
+- **Confiança:** `PACKS_TRUSTED_TOOL_PACKS=market-tools,java-google-style` (padrão) libera as ferramentas desses pacotes sem ligar `PACKS_ALLOW_TOOLS`.
   Vale **só** para o pacote que vem na pasta do produto; um pacote externo com o mesmo id, mesmo mais novo, não herda a confiança.
   Para desligar tudo: `PACKS_TRUSTED_TOOL_PACKS=` (vazio) ou `PACKS_DISABLED=market-tools`.
 - Não incluídos de propósito: Grype e OSV-Scanner (repetem o OSV interno e o Trivy), Lighthouse (exige navegador e site publicado) e SpotBugs/FindSecBugs (precisam do código Java já compilado).
@@ -690,6 +690,10 @@ Pacote opt-in (desligado por padrão) que transforma o padrão de clean code da 
 - **Perfil `padrao-typescript-angular`**: liga o pacote e fixa os limites do padrão (método 50 linhas, complexidade 10, aninhamento 3, arquivo 500 linhas).
 - **Lint de estrutura e nomes (ESLint)**: use `ESLINT_CONFIG=/opt/eslint/eslint.padrao-ts.config.mjs`. Cobre tipo de retorno, ordem de membros, nomes, linhas em branco, `any`, `console` e `==`.
 - **Nos seus projetos Angular**: copie `docs/padrao-typescript/eslintrc.json` para `.eslintrc.json` (mesmas regras, no formato do ESLint 8 + Angular + Prettier).
+
+### Padrão Google (Java e TypeScript/Angular) + SEI CERT e Sonar
+
+Perfis opt-in baseados em guias públicos: `padrao-google-java` (Google Java Style via Checkstyle, mais 11 regras de robustez e segurança do SEI CERT e do Sonar) e `padrao-google-typescript-angular` (Google TypeScript Style Guide, Angular Style Guide e regras do Sonar via ESLint, com `ESLINT_CONFIG=/opt/eslint/eslint.google-angular.config.mjs`). O perfil TypeScript contradiz o padrão da casa (`padrao-typescript-angular`): use um ou outro. Veja o que é verificado, o que fica para a revisão e as decisões nos conflitos entre os guias em [`docs/padrao-google/README.md`](docs/padrao-google/README.md).
 
 ### Auditoria de PR (só o que mudou)
 

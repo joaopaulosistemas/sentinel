@@ -27,7 +27,7 @@ class PackLoaderTest {
         PackLoader.Discovery d = PackLoader.discover(TestPacks.builtinRoot());
 
         assertEquals(java.util.Map.of(), d.rejected(), "nenhum pacote embutido pode ser rejeitado");
-        assertEquals(List.of("core-architecture", "core-corporativo", "core-frontend", "core-iac", "core-persistencia", "core-quality", "core-security", "core-spring", "market-tools", "ts-clean-code"),
+        assertEquals(List.of("core-architecture", "core-corporativo", "core-frontend", "core-iac", "core-persistencia", "core-quality", "core-security", "core-spring", "java-cert-sonar", "java-google-style", "market-tools", "ts-clean-code"),
                 d.packs().stream().map(RulePack::id).sorted().collect(Collectors.toList()));
         RulePack quality = d.packs().stream().filter(p -> p.id().equals("core-quality")).findFirst().get();
         assertEquals(41, quality.semgrepRuleCount());
@@ -376,5 +376,19 @@ class PackLoaderTest {
         assertFalse(r.pack().manifest().enabledByDefault());
         assertEquals(7, r.pack().semgrepRuleCount());
         assertTrue(r.warnings().isEmpty(), "toda regra tem caso de teste: " + r.warnings());
+    }
+
+    @Test
+    void pacotesGoogleJavaECertSonarEmbutidosSaoValidosEEstaoDesligadosPorPadrao() {
+        PackLoader.Report cert = PackLoader.inspect(TestPacks.builtinRoot().resolve("java-cert-sonar"));
+        assertTrue(cert.ok(), cert.errors().toString());
+        assertFalse(cert.pack().manifest().enabledByDefault());
+        assertEquals(11, cert.pack().semgrepRuleCount());
+        assertTrue(cert.warnings().isEmpty(), "toda regra tem caso de teste: " + cert.warnings());
+
+        PackLoader.Report google = PackLoader.inspect(TestPacks.builtinRoot().resolve("java-google-style"));
+        assertTrue(google.ok(), google.errors().toString());
+        assertFalse(google.pack().manifest().enabledByDefault());
+        assertEquals(List.of("checkstyle-google"), google.pack().tools().stream().map(ToolSpec::id).toList());
     }
 }

@@ -1,5 +1,7 @@
 # Padrão de código TypeScript / Angular
 
+> Existe também o perfil baseado nos guias públicos do Google e do Angular, que **contradiz** este padrão em pontos como `_` nos membros privados e `public` explícito. Veja [`docs/padrao-google/README.md`](../padrao-google/README.md) e use um ou outro, nunca os dois no mesmo sistema.
+
 Este é o padrão de clean code da casa para TypeScript, transformado em verificações automáticas. Ele vale para módulos gerais (containers, components, services, routes, models, interfaces, enums, store), módulo shared e componentes atômicos.
 
 ## Como cada regra é verificada

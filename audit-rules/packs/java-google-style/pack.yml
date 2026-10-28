@@ -1,0 +1,7 @@
+id: java-google-style
+name: "Google Java Style Guide (Checkstyle)"
+version: 1.0.0
+description: "Verifica o Google Java Style Guide (nomenclatura, formatação, imports, chaves, recuo de 2 espaços, 100 colunas e Javadoc) com o Checkstyle e a configuração google-checks.xml que a imagem Docker instala. Complementa a ferramenta checkstyle do pacote market-tools, que já cobre os módulos em comum. Desligado por padrão: ative pelo perfil padrao-google-java."
+author: Sentinel
+languages: [java]
+enabled-by-default: false
