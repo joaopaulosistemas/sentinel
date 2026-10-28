@@ -1,6 +1,7 @@
 import { ActionableNotification, Button, InlineNotification, Modal, Search, Select, SelectItem, Tag, TextInput, Toggle } from '@carbon/react';
 import { useEffect, useMemo, useState } from 'react';
 import { PageShell } from '../../components/PageShell';
+import { RestartOverlay } from '../../components/RestartOverlay';
 import { useResetSetting, useRestartApi, useSaveSettings, useSettings } from '../../hooks/useSettings';
 import type { SettingView } from '../../types';
 import {
@@ -121,6 +122,12 @@ function SettingRow({ s, value, onChange, onReset, showSection }: RowProps) {
 /** Tela de Configurações: as variáveis de ambiente da instalação, explicadas e editáveis (quando é seguro). */
 export function SettingsPage() {
   const [restarting, setRestarting] = useState(false);
+  // O pedido de reinício está a caminho. Estado próprio (e não restart.isPending) para o aviso não piscar entre o pedido e a espera.
+  const [requesting, setRequesting] = useState(false);
+  // Quem fechou o aviso depois do tempo limite continua esperando, só que sem a tela travada.
+  const [overlayDismissed, setOverlayDismissed] = useState(false);
+  // Muda a cada "Continuar esperando" para o aviso recomeçar o cronômetro.
+  const [waitRound, setWaitRound] = useState(0);
   const query = useSettings(restarting ? POLL_MS : false);
   const save = useSaveSettings();
   const reset = useResetSetting();
@@ -172,14 +179,22 @@ export function SettingsPage() {
       onError: (e: Error) => setNotice({ kind: 'error', title: 'Não foi possível restaurar', text: e.message }),
     });
   };
+  const showRestartOverlay = (requesting || restarting) && !overlayDismissed;
   const onRestart = () => {
     setConfirmRestart(false);
+    setOverlayDismissed(false);
+    setWaitRound(0);
+    setRequesting(true);
     restart.mutate(undefined, {
       onSuccess: () => {
         setNotice({ kind: 'info', title: 'Reiniciando a API', text: 'A tela volta a responder em instantes.' });
+        setRequesting(false);
         setRestarting(true);
       },
-      onError: (e: Error) => setNotice({ kind: 'error', title: 'Não foi possível reiniciar', text: e.message }),
+      onError: (e: Error) => {
+        setRequesting(false);
+        setNotice({ kind: 'error', title: 'Não foi possível reiniciar', text: e.message });
+      },
     });
   };
 
@@ -278,6 +293,15 @@ export function SettingsPage() {
       >
         <p>A API fica fora do ar por alguns segundos. Auditorias em andamento são interrompidas.</p>
       </Modal>
+
+      {showRestartOverlay && (
+        <RestartOverlay
+          key={waitRound}
+          phase={restarting ? 'waiting' : 'requesting'}
+          onKeepWaiting={() => setWaitRound((r) => r + 1)}
+          onClose={() => setOverlayDismissed(true)}
+        />
+      )}
     </PageShell>
   );
 }
