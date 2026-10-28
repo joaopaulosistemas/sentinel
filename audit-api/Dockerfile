@@ -128,6 +128,37 @@ RUN if [ "$WITH_ESLINT" = "true" ]; then \
       && npm --prefix /opt/jscpd install --omit=dev --no-audit --no-fund \
       && npm --prefix /opt/extras install --omit=dev --no-audit --no-fund; \
     fi
+# CA corporativo (inspeção SSL, ex.: Zscaler): instalado no sistema (Trivy, Gitleaks, git, curl) e no truststore da JVM.
+# Sem ele a imagem final verifica o SSL e o Trivy falha ao baixar a base de vulnerabilidades ("x509: certificate signed by
+# unknown authority"). Coloque os .crt (PEM) em audit-api/certs/ antes do build (veja audit-api/certs/README.md).
+# Arquivo com vários certificados (cadeia completa) é separado em um certificado por arquivo.
+COPY audit-api/certs/ /tmp/corp-certs/
+RUN set -eu; \
+    dest=/usr/local/share/ca-certificates/corp; mkdir -p "$dest"; \
+    fontes=0; \
+    for f in /tmp/corp-certs/*.crt; do \
+      [ -f "$f" ] || continue; fontes=$((fontes + 1)); \
+      awk -v out="$dest/$(basename "$f" .crt)" \
+        '/-----BEGIN CERTIFICATE-----/{n++; file=out "-" n ".crt"} file{print > file} /-----END CERTIFICATE-----/{close(file); file=""}' "$f"; \
+    done; \
+    instalados=$(find "$dest" -name '*.crt' | wc -l); \
+    if [ "$fontes" -gt 0 ] && [ "$instalados" -eq 0 ]; then \
+      echo "ERRO: nenhum certificado PEM válido em audit-api/certs/ (converta DER com: openssl x509 -inform DER -in x.cer -out x.crt)" >&2; exit 1; \
+    fi; \
+    if [ "$instalados" -gt 0 ]; then \
+      update-ca-certificates; \
+      if command -v keytool >/dev/null 2>&1; then \
+        for c in "$dest"/*.crt; do \
+          alias="corp-$(basename "$c" .crt)"; \
+          keytool -delete -cacerts -storepass changeit -alias "$alias" >/dev/null 2>&1 || true; \
+          keytool -importcert -noprompt -trustcacerts -cacerts -storepass changeit -alias "$alias" -file "$c"; \
+        done; \
+      fi; \
+    else \
+      echo "AVISO: audit-api/certs/ sem .crt; se a rede tem inspeção SSL o Trivy não conseguirá baixar a base de vulnerabilidades" >&2; \
+    fi; \
+    rm -rf /tmp/corp-certs
+
 # Remove as configurações inseguras: a imagem final volta a verificar SSL normalmente
 RUN rm -f /root/.curlrc /root/.npmrc /etc/pip.conf /etc/apt/apt.conf.d/99insecure \
     && (git config --system --unset-all http.sslVerify || true)

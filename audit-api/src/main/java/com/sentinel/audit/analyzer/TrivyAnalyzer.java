@@ -85,7 +85,9 @@ public class TrivyAnalyzer implements CodeAnalyzer {
                     projectPath.toString());
             int code = ExternalTools.run(cmd, null, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds, null, stderr);
             if (code != 0) {
-                partial = ExternalTools.falha(code, timeoutSeconds, stderr) + (code == -1 ? "" : " (base de vulnerabilidades indisponível?)");
+                partial = ExternalTools.falha(code, timeoutSeconds, stderr)
+                        + (code == -1 ? "" : " (base de vulnerabilidades indisponível?)")
+                        + dicaCertificado(code, stderr);
                 LOG.warnf("Trivy %s", partial);
             } else {
                 findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
@@ -108,6 +110,22 @@ public class TrivyAnalyzer implements CodeAnalyzer {
         }
         ExternalTools.deleteQuietly(stderr);
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+    }
+
+    /**
+     * Quando o download da base falha por certificado não confiável (inspeção SSL de proxy corporativo, como o
+     * Zscaler), diz o que fazer. Vazio nos demais casos.
+     */
+    static String dicaCertificado(int code, Path stderrFile) {
+        if (code == -1) {
+            return "";
+        }
+        String err = ExternalTools.tail(stderrFile, 4000).toLowerCase(java.util.Locale.ROOT);
+        if (!err.contains("x509") && !err.contains("certificate")) {
+            return "";
+        }
+        return " Rede com inspeção SSL? Coloque o CA raiz da empresa em audit-api/certs/ e refaça a imagem"
+                + " (docker compose build --no-cache audit-api); veja audit-api/certs/README.md.";
     }
 
     private List<String> scannerList() {

@@ -1,10 +1,11 @@
 # Certificados corporativos (inspeção SSL)
 
 Esta pasta (`audit-api/certs/`) recebe o(s) certificado(s) raiz da empresa, para o build do Docker
-confiar na rede corporativa (pip, npm, curl, git, Maven, Trivy, Semgrep).
+confiar na rede corporativa. A imagem final instala o CA no sistema (Trivy, Gitleaks, git, curl) e no truststore da JVM.
 
 Ela precisa existir e ter pelo menos um arquivo, senão o `COPY audit-api/certs/` do Dockerfile falha
-com `"/audit-api/certs": not found`. Este README já cumpre esse papel.
+com `"/audit-api/certs": not found`. Este README já cumpre esse papel. Os `.crt` colocados aqui não são versionados
+(`.gitignore`): cada máquina usa o CA da sua própria rede.
 
 ## Como colocar o certificado
 
@@ -29,7 +30,18 @@ com `"/audit-api/certs": not found`. Este README já cumpre esse papel.
    openssl x509 -inform DER -in corp-ca.cer -out audit-api/certs/corp-ca.crt
    ```
 
-Atalho: `./setup-certs.sh /caminho/do/certificado` faz tudo isso e valida o resultado.
+Atalho (na raiz do projeto): `./audit-api/setup-certs.sh /caminho/do/certificado` faz tudo isso e valida o resultado.
+
+Um arquivo com vários certificados (por exemplo a cadeia completa do Zscaler: raiz + intermediária) funciona: o build
+separa cada um e instala todos.
+
+### Exemplo no WSL com Zscaler
+
+Se o CA já está instalado no WSL (`/usr/local/share/ca-certificates/zscaler.crt`):
+
+```bash
+cp /usr/local/share/ca-certificates/zscaler.crt audit-api/certs/zscaler.crt
+```
 
 ## Build
 
@@ -38,6 +50,15 @@ docker compose build --no-cache audit-api
 ```
 
 No log do estágio de runtime, o `update-ca-certificates` deve mostrar **"1 added"** (ou mais) em vez de "0 added".
+
+Para conferir depois de subir:
+
+```bash
+docker compose up -d
+docker compose exec audit-api trivy image --download-db-only
+```
+
+Sem erro de certificado, o Trivy está baixando a base normalmente.
 
 ## Sem o certificado ainda
 
