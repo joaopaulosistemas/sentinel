@@ -126,11 +126,12 @@ public final class ChangedFiles {
         Thread reader = new Thread(() -> {
             try (InputStream in = process.getInputStream()) {
                 byte[] chunk = new byte[8192];
-                int n;
-                while ((n = in.read(chunk)) > 0) {
+                int n = in.read(chunk);
+                while (n > 0) {
                     if (buf.size() + n <= MAX_OUTPUT_BYTES) {
                         buf.write(chunk, 0, n);
                     }
+                    n = in.read(chunk);
                 }
             } catch (IOException ignored) {
                 // processo encerrado

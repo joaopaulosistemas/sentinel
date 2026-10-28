@@ -88,22 +88,24 @@ final class CoverageChecks {
 
     static List<Unit> lcov(String text) {
         List<Unit> units = new ArrayList<>();
-        String file = null;
+        String file = "";
+        boolean open = false;
         long lf = 0;
         long lh = 0;
         for (String line : text.split("\\R")) {
             if (line.startsWith("SF:")) {
                 file = line.substring(3).strip();
+                open = true;
                 lf = 0;
                 lh = 0;
             } else if (line.startsWith("LF:")) {
                 lf = parse(line.substring(3));
             } else if (line.startsWith("LH:")) {
                 lh = parse(line.substring(3));
-            } else if (line.startsWith("end_of_record") && file != null) {
+            } else if (line.startsWith("end_of_record") && open) {
                 String f = file.replace('\\', '/');
                 units.add(new Unit(f, f, lf - lh, lh));
-                file = null;
+                open = false;
             }
         }
         return units;

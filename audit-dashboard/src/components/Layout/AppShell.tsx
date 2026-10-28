@@ -197,7 +197,6 @@ export function AppShell({ children }: AppShellProps) {
                 <span
                   aria-label={`${pending} ${pending === 1 ? 'pedido do Claude espera' : 'pedidos do Claude esperam'} sua decisão`}
                   className="sentinel-menu-selo"
-                  style={{ marginLeft: 8, minWidth: 18, padding: '0 6px', borderRadius: 9, background: 'var(--s-link)', color: '#fff', fontSize: 11, lineHeight: '18px', display: 'inline-block', textAlign: 'center' }}
                 >
                   {pending}
                 </span>

@@ -125,7 +125,7 @@ public class SecretBox {
                         } catch (UnsupportedOperationException | IOException ignored) {
                             // sistema de arquivos sem permissões POSIX
                         }
-                    } catch (java.nio.file.FileAlreadyExistsException race) {
+                    } catch (java.nio.file.FileAlreadyExistsException ignored) {
                         // outra instância criou primeiro: usa a dela
                     }
                 }

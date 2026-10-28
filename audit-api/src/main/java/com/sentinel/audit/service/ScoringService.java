@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.dto.ScoreExplanationDto;
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.RiskScore;
@@ -7,9 +8,14 @@ import com.sentinel.audit.model.Severity;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Serviço responsável pelo cálculo do score de risco a partir dos findings de uma auditoria.
@@ -63,12 +69,14 @@ public class ScoringService {
     boolean confidenceWeighting = false;
 
     /**
-     * Curva da nota. {@code linear} (padrão): 100 menos a penalidade, com piso em 0, então várias dimensões chegam a 0 e
+     * Curva da nota. {@code linear}: 100 menos a penalidade, com piso em 0, então várias dimensões chegam a 0 e
      * deixam de mostrar melhora. {@code suave}: 100 * e^(-penalidade/100), que fica quase igual à linear para penalidades
      * pequenas (10 pontos de penalidade dão 90,5 em vez de 90) mas nunca chega a 0, e por isso continua distinguindo um
-     * sistema ruim de um péssimo. Desligada por padrão para não mudar as notas existentes.
+     * sistema ruim de um péssimo. É o padrão desde a 12.30.0; {@code linear} continua disponível na configuração.
+     * O valor inicial do campo ({@code linear}) vale só para quem cria o serviço sem o CDI (testes); em execução
+     * quem manda é a configuração.
      */
-    @ConfigProperty(name = "sentinel.audit.score.curve", defaultValue = "linear")
+    @ConfigProperty(name = "sentinel.audit.score.curve", defaultValue = "suave")
     String curve = "linear";
 
     /** Escala da curva suave: penalidade em que a nota cai para ~37 (1/e). */
@@ -151,10 +159,7 @@ public class ScoringService {
             if (f.getCategory() != category) {
                 continue;
             }
-            double p = SEVERITY_PENALTY.getOrDefault(f.getSeverity(), 0.0);
-            if (confidenceWeighting && f.getConfidence() != null && f.getSeverity() != Severity.CRITICAL) {
-                p *= f.getConfidence().scoreWeight();
-            }
+            double p = findingPenalty(f);
             if (f.getSeverity() == Severity.CRITICAL) {
                 criticalPenalty += p;
             } else if (f.getRuleId() != null && isLowSeverity(f.getSeverity())) {
@@ -169,6 +174,109 @@ public class ScoringService {
         }
 
         return applyCurve(criticalPenalty + penalty * sizeFactor);
+    }
+
+    /** Penalidade de um achado: a da severidade, reduzida pela confiança quando essa ponderação está ligada. */
+    private double findingPenalty(Finding f) {
+        double p = SEVERITY_PENALTY.getOrDefault(f.getSeverity(), 0.0);
+        if (confidenceWeighting && f.getConfidence() != null && f.getSeverity() != Severity.CRITICAL) {
+            p *= f.getConfidence().scoreWeight();
+        }
+        return p;
+    }
+
+    /** Quantas regras aparecem por dimensão na explicação da nota; as demais entram só na contagem de "outras". */
+    static final int EXPLAIN_GROUPS_PER_DIMENSION = 12;
+
+    /** Dimensões na ordem em que a explicação é mostrada. */
+    private static final List<Category> EXPLAINED = List.of(Category.SECURITY, Category.QUALITY, Category.ARCHITECTURE,
+            Category.DEPENDENCY, Category.OBSERVABILITY, Category.PERFORMANCE);
+
+    /** Soma de uma regra numa severidade dentro de uma dimensão. */
+    private static final class Acc {
+        final String ruleId;
+        final Severity severity;
+        int count;
+        double raw;
+
+        Acc(String ruleId, Severity severity) {
+            this.ruleId = ruleId;
+            this.severity = severity;
+        }
+    }
+
+    /**
+     * Explica a nota: por dimensão, as regras que mais pesam, quanto cada uma tirou e onde o teto por regra cortou.
+     * Usa as mesmas regras de {@link #calculate(List, Long)}; a soma bate com a nota mostrada.
+     *
+     * @param findings    achados que contam para a nota
+     * @param linesOfCode linhas de código analisadas; nulo = sem ajuste por tamanho
+     */
+    public ScoreExplanationDto explain(List<Finding> findings, Long linesOfCode) {
+        double factor = sizeFactor(linesOfCode);
+        double overall = calculate(findings, linesOfCode).getOverall();
+        List<ScoreExplanationDto.Dimension> dimensions = new ArrayList<>();
+        for (Category category : EXPLAINED) {
+            dimensions.add(explainDimension(findings, category, factor));
+        }
+        return new ScoreExplanationDto(curve, factor, linesOfCode, overall, overall, List.of(), dimensions);
+    }
+
+    /** Teto de regras aceitas na simulação "e se", para a consulta não virar um filtro sem limite. */
+    static final int MAX_SIMULATED_RULES = 50;
+
+    /**
+     * Simulação "e se": a explicação da nota como ficaria sem as regras indicadas (id exato, sem diferenciar
+     * maiúsculas). {@code overallBefore} guarda a nota real, para mostrar quanto cada decisão rende.
+     */
+    public ScoreExplanationDto explainWithout(List<Finding> findings, Long linesOfCode, List<String> removedRules) {
+        if (removedRules == null || removedRules.isEmpty()) {
+            return explain(findings, linesOfCode);
+        }
+        List<String> removed = removedRules.stream().filter(r -> r != null && !r.isBlank()).map(String::strip)
+                .distinct().limit(MAX_SIMULATED_RULES).toList();
+        Set<String> lower = new java.util.HashSet<>();
+        removed.forEach(r -> lower.add(r.toLowerCase(Locale.ROOT)));
+        List<Finding> rest = findings.stream()
+                .filter(f -> f.getRuleId() == null || !lower.contains(f.getRuleId().toLowerCase(Locale.ROOT))).toList();
+        ScoreExplanationDto after = explain(rest, linesOfCode);
+        double before = calculate(findings, linesOfCode).getOverall();
+        return new ScoreExplanationDto(after.curve(), after.sizeFactor(), linesOfCode, before, after.overall(), removed,
+                after.dimensions());
+    }
+
+    private ScoreExplanationDto.Dimension explainDimension(List<Finding> findings, Category category, double factor) {
+        Map<String, Acc> accs = new LinkedHashMap<>();
+        for (Finding f : findings) {
+            if (f.getCategory() != category) {
+                continue;
+            }
+            String rule = f.getRuleId() == null ? "(sem regra)" : f.getRuleId();
+            Acc acc = accs.computeIfAbsent(rule + "|" + f.getSeverity(), k -> new Acc(rule, f.getSeverity()));
+            acc.count++;
+            acc.raw += findingPenalty(f);
+        }
+        List<ScoreExplanationDto.Group> groups = new ArrayList<>();
+        double critical = 0.0;
+        double others = 0.0;
+        for (Acc a : accs.values()) {
+            boolean capCandidate = a.severity != Severity.CRITICAL && !"(sem regra)".equals(a.ruleId) && isLowSeverity(a.severity);
+            double counted = capCandidate ? Math.min(a.raw, MAX_LOW_SEVERITY_PENALTY_PER_RULE) : a.raw;
+            if (a.severity == Severity.CRITICAL) {
+                critical += counted;
+            } else {
+                others += counted;
+            }
+            groups.add(new ScoreExplanationDto.Group(a.ruleId, a.severity, a.count, round(a.raw), round(counted),
+                    capCandidate && a.raw > MAX_LOW_SEVERITY_PENALTY_PER_RULE));
+        }
+        groups.sort(Comparator.comparingDouble((ScoreExplanationDto.Group g) -> g.counted() * (g.severity() == Severity.CRITICAL ? 1.0 : factor))
+                .reversed().thenComparing(ScoreExplanationDto.Group::ruleId));
+        int hidden = Math.max(0, groups.size() - EXPLAIN_GROUPS_PER_DIMENSION);
+        List<ScoreExplanationDto.Group> shown = groups.subList(0, groups.size() - hidden);
+        return new ScoreExplanationDto.Dimension(category, DIMENSION_WEIGHT.get(category),
+                round(calculateDimensionScore(findings, category, factor)), round(critical + others * factor), hidden,
+                List.copyOf(shown));
     }
 
     /** Converte a penalidade total em nota (0 a 100) conforme a curva configurada. */

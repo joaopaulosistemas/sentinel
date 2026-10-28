@@ -62,12 +62,15 @@ RUN if [ "$INSECURE_SSL" = "true" ]; then \
       && printf 'Acquire::https::Verify-Peer "false";\nAcquire::https::Verify-Host "false";\n' > /etc/apt/apt.conf.d/99insecure; \
     fi
 
+# Versões do apt não ficam fixas: a imagem base Debian troca os pacotes a cada ponto de release e a fixação quebraria o build.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git curl ca-certificates gnupg python3 python3-pip \
     && if [ "$INSECURE_SSL" = "true" ]; then git config --system http.sslVerify false; fi \
     && if [ "$WITH_SEMGREP" = "true" ]; then pip3 install --no-cache-dir "semgrep==${SEMGREP_VERSION}"; fi \
     && if [ "$WITH_TRIVY" = "true" ]; then \
-         curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg \
+         curl -fsSL -o /tmp/trivy.key https://aquasecurity.github.io/trivy-repo/deb/public.key \
+         && gpg --dearmor -o /usr/share/keyrings/trivy.gpg /tmp/trivy.key && rm -f /tmp/trivy.key \
          && echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" > /etc/apt/sources.list.d/trivy.list \
          && apt-get update && apt-get install -y --no-install-recommends trivy; \
        fi \
@@ -120,10 +123,10 @@ COPY audit-rules/lint/jscpd /opt/jscpd
 COPY audit-rules/lint/extras /opt/extras
 COPY audit-rules/lint/checkstyle/checks.xml /opt/checkstyle/checks.xml
 RUN if [ "$WITH_ESLINT" = "true" ]; then \
-      cd /opt/eslint && npm install --omit=dev --no-audit --no-fund && ln -s /opt/eslint/node_modules/.bin/eslint /usr/local/bin/eslint \
-      && cd /opt/stylelint && npm install --omit=dev --no-audit --no-fund && ln -s /opt/stylelint/node_modules/.bin/stylelint /usr/local/bin/stylelint \
-      && cd /opt/jscpd && npm install --omit=dev --no-audit --no-fund \
-      && cd /opt/extras && npm install --omit=dev --no-audit --no-fund; \
+      npm --prefix /opt/eslint install --omit=dev --no-audit --no-fund && ln -s /opt/eslint/node_modules/.bin/eslint /usr/local/bin/eslint \
+      && npm --prefix /opt/stylelint install --omit=dev --no-audit --no-fund && ln -s /opt/stylelint/node_modules/.bin/stylelint /usr/local/bin/stylelint \
+      && npm --prefix /opt/jscpd install --omit=dev --no-audit --no-fund \
+      && npm --prefix /opt/extras install --omit=dev --no-audit --no-fund; \
     fi
 # Remove as configurações inseguras: a imagem final volta a verificar SSL normalmente
 RUN rm -f /root/.curlrc /root/.npmrc /etc/pip.conf /etc/apt/apt.conf.d/99insecure \

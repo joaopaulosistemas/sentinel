@@ -264,7 +264,8 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
                 if (cv.forbid() != null) {
                     Matcher m = Pattern.compile(cv.forbid(), Pattern.MULTILINE).matcher(limited(content));
                     int n = 0;
-                    while (m.find() && n++ < MAX_MATCHES_PER_CONVENTION_FILE) {
+                    while (m.find() && n < MAX_MATCHES_PER_CONVENTION_FILE) {
+                        n++;
                         int line = lineOf(content, m.start());
                         String text = m.group().strip();
                         out.add(archFinding(run, rel, line, text.length() > 200 ? text.substring(0, 200) : text, ruleId, sev, cat, title,
@@ -380,7 +381,8 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
             if (f.endsWith("package-lock.json") || f.endsWith("yarn.lock") || f.endsWith("pnpm-lock.yaml")) {
                 continue;                                   // transitivas: só declaradas diretamente
             }
-            if (cp.approvedOnly().stream().noneMatch(r -> globMatches(r.dep(), d.name())) && n++ < 200) {
+            if (cp.approvedOnly().stream().noneMatch(r -> globMatches(r.dep(), d.name())) && n < 200) {
+                n++;
                 out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-not-approved",
                         Severity.MEDIUM, Category.DEPENDENCY, "Biblioteca fora da lista aprovada: " + d.name(),
                         "A política só permite as bibliotecas aprovadas; " + d.name() + " não está na lista."));

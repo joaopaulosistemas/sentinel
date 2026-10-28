@@ -2,6 +2,7 @@ import { InlineNotification, SkeletonText } from '@carbon/react';
 import { Link } from 'react-router-dom';
 import { Fragment, useState } from 'react';
 import { useFixPlan } from '../hooks/useAuditRuns';
+import { ScoreExplanationPanel } from './ScoreExplanationPanel';
 import type { AuditRunResponse, Category, Severity } from '../types';
 import { categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
 import { scoreColor } from '../utils/scoreBand';
@@ -207,6 +208,7 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
         <CategorySection cats={categoriesByScore(run.riskScore)} category={category} onPick={setCategory} />
         <FixSection run={run} plan={plan} category={category} items={items} onOpenFindings={onOpenFindings} />
       </div>
+      <ScoreExplanationPanel run={run} />
     </div>
   );
 }

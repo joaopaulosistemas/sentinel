@@ -63,12 +63,13 @@ public final class SourceSizer {
                             || name.endsWith(".spec.ts") || name.contains(".test.")) {
                         return FileVisitResult.CONTINUE;
                     }
-                    if (++files[0] > MAX_FILES) {
+                    files[0]++;
+                    if (files[0] > MAX_FILES) {
                         return FileVisitResult.TERMINATE;
                     }
                     try (var lines = Files.lines(file, StandardCharsets.UTF_8)) {
                         total[0] += lines.filter(l -> !l.isBlank()).count();
-                    } catch (IOException | RuntimeException e) {
+                    } catch (IOException | RuntimeException ignored) {
                         // arquivo binário ou com codificação inválida: fica fora da contagem
                     }
                     return FileVisitResult.CONTINUE;
@@ -79,7 +80,7 @@ public final class SourceSizer {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException ignored) {
             // devolve o que contou até aqui
         }
         return new Stats(files[0], total[0]);

@@ -69,7 +69,7 @@ public final class SourceFiles {
                 }
                 try {
                     out.add(new Src(rel, Files.readString(file, StandardCharsets.UTF_8)));
-                } catch (IOException e) {
+                } catch (IOException ignored) {
                     // binário ou codificação inesperada: ignora o arquivo
                 }
                 return FileVisitResult.CONTINUE;

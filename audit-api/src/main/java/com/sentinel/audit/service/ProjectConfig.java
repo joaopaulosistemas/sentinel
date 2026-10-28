@@ -331,16 +331,20 @@ public final class ProjectConfig {
     /**
      * O id da regra pode vir com prefixo do pacote (ex.: {@code audit-rules.rules.x.minha-regra}); vale o final.
      * Terminando em {@code *}, vale como prefixo (ex.: {@code gitleaks-*} cobre todas as regras do Gitleaks).
+     * Maiúsculas e minúsculas não contam: as ferramentas escrevem o mesmo id de jeitos diferentes
+     * ({@code pmd-SystemPrintln} no PMD, {@code gitleaks-aws-access-token} no Gitleaks).
      */
     static boolean ruleMatches(String wanted, String actual) {
-        if (actual == null) {
+        if (actual == null || wanted == null) {
             return false;
         }
-        if (wanted.endsWith("*")) {
-            String prefix = wanted.substring(0, wanted.length() - 1);
-            return actual.startsWith(prefix) || actual.contains("." + prefix);
+        String w = wanted.toLowerCase(java.util.Locale.ROOT);
+        String a = actual.toLowerCase(java.util.Locale.ROOT);
+        if (w.endsWith("*")) {
+            String prefix = w.substring(0, w.length() - 1);
+            return a.startsWith(prefix) || a.contains("." + prefix);
         }
-        return actual.equals(wanted) || actual.endsWith("." + wanted);
+        return a.equals(w) || a.endsWith("." + w);
     }
 
     private static boolean matchesAny(List<Pattern> patterns, String path) {

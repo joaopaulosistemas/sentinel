@@ -73,7 +73,8 @@ public final class ProjectProfiler {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                if (++s.count > MAX_FILES) {
+                s.count++;
+                if (s.count > MAX_FILES) {
                     s.truncated = true;
                     return FileVisitResult.TERMINATE;
                 }

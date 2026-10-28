@@ -131,11 +131,11 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
                                 int n = Math.min(parts.length, paisComTipo ? 3 : 3);
                                 roots.add(String.join(".", java.util.Arrays.copyOf(parts, n)));
                             });
-                        } catch (IOException | RuntimeException e) {
+                        } catch (IOException | RuntimeException ignored) {
                             // arquivo ilegível: segue
                         }
                     });
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException ignored) {
             // sem pacotes conhecidos: só o histograma geral é gerado
         }
         return roots;

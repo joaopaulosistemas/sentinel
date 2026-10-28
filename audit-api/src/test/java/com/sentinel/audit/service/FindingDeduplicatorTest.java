@@ -42,6 +42,21 @@ class FindingDeduplicatorTest {
     }
 
     @Test
+    void complexidadeDoCleanCodeAbsorveADoCheckstyleNaMesmaFuncao() {
+        Finding cc = f("CleanCode", "sentinel-cc-complexidade", "api/A.java", 40, Severity.MEDIUM);
+        Finding cs = f("Checkstyle", "checkstyle-com.puppycrawl.tools.checkstyle.checks.metrics.CyclomaticComplexityCheck", "api/A.java", 41, Severity.LOW);
+        Finding outraFuncao = f("Checkstyle", "checkstyle-com.puppycrawl.tools.checkstyle.checks.metrics.CyclomaticComplexityCheck", "api/A.java", 90, Severity.LOW);
+
+        List<Finding> r = FindingDeduplicator.apply(List.of(cc, cs, outraFuncao));
+
+        assertEquals(2, r.size());
+        assertSame(cc, r.get(0));                                              // fica o da ferramenta que o tópico prefere
+        assertSame(outraFuncao, r.get(1));                                     // outra função não some
+        assertEquals(Severity.MEDIUM, cc.getSeverity());
+        assertTrue(cc.getDescription().contains("Também detectado por Checkstyle"));
+    }
+
+    @Test
     void severidadeMenorDoOutroNaoRebaixaOQueFicou() {
         Finding semgrep = f("Semgrep", "sentinel-ts-var", "web/a.ts", 1, Severity.HIGH);
         Finding eslint = f("ESLint", "eslint-no-var", "web/a.ts", 1, Severity.LOW);

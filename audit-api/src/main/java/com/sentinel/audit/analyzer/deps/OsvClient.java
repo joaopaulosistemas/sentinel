@@ -106,9 +106,10 @@ public class OsvClient {
         Map<String, JsonNode> details = new ConcurrentHashMap<>();
         int n = 0;
         for (String id : distinct) {
-            if (n++ >= MAX_VULN_DETAILS) {
+            if (n >= MAX_VULN_DETAILS) {
                 break;
             }
+            n++;
             details.put(id, MAPPER.readTree(get("/v1/vulns/" + java.net.URLEncoder.encode(id,
                     java.nio.charset.StandardCharsets.UTF_8))));
         }

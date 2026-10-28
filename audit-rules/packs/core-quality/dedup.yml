@@ -57,3 +57,12 @@
     - "eslint-react/no-array-index-key"
     - "sentinel-ts-react-key-indice"
   max-lines: 2
+
+# A mesma função complexa aparecia no CleanCode (>10), no Checkstyle (>12) e no PMD; fica o achado do CleanCode,
+# que é o que tem a orientação de correção do catálogo. A severidade final é a maior das duas.
+- name: complexidade-ciclomatica
+  prefer: CleanCode
+  rules:
+    - "sentinel-cc-complexidade"
+    - "cyclomaticcomplexity"
+  max-lines: 3

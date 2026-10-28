@@ -17,15 +17,18 @@
 .sentinel-page > * { min-width: 0; }
 
 /* Cabeçalho enxuto: no celular só ficam o menu, a marca e o tema. */
+/* stylelint-disable declaration-no-important -- os controles do cabeçalho têm display inline do React */
 @media (max-width: 42rem) {
   .sentinel-hide-narrow { display: none !important; }
 }
+/* stylelint-enable declaration-no-important */
 
 /* Texto longo nunca empurra a tela para os lados. */
 .sentinel-content { overflow-wrap: anywhere; min-width: 0; }
 
 /* ------- Tabela de sistemas: vira lista de cartões quando o espaço fica curto ------- */
 .sys-table-wrap { container-type: inline-size; }
+/* stylelint-disable declaration-no-important -- a tabela de sistemas usa estilos inline (padding, alinhamento) que só !important vence */
 @container (max-width: 820px) {
   .sys-table { min-width: 0 !important; }
   .sys-table thead { display: none; }
@@ -48,12 +51,14 @@
   .sys-table td:nth-child(3)::before { content: 'Equipe: '; color: var(--s-text-4); }
   .sys-table td:nth-child(4)::before { content: 'Agendamento: '; color: var(--s-text-4); }
 }
+/* stylelint-enable declaration-no-important */
 
 /* Menu lateral redimensionável: a largura vem de --s-menu-w; abaixo de 140 px vira trilho só com ícones/pontos. */
 .cds--side-nav.sentinel-menu-redim { width: var(--s-menu-w, 16rem); }
 .sentinel-menu-redim .cds--side-nav__link { overflow: hidden; }
 .sentinel-menu-trilho .sentinel-menu-rotulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.sentinel-menu-trilho .sentinel-menu-selo { margin-left: 0 !important; min-width: 8px !important; width: 8px; height: 8px; padding: 0 !important; border-radius: 50% !important; font-size: 0 !important; line-height: 0 !important; }
+.sentinel-menu-selo { margin-left: 8px; min-width: 18px; padding: 0 6px; border-radius: 9px; background: var(--s-link); color: #fff; font-size: 12px; line-height: 18px; display: inline-block; text-align: center; }
+.sentinel-menu-trilho .sentinel-menu-selo { margin-left: 0; min-width: 8px; width: 8px; height: 8px; padding: 0; border-radius: 50%; font-size: 0; line-height: 0; }
 .sentinel-menu-trilho .cds--side-nav__link { padding-left: 1rem; }
 .sentinel-menu-divisor { position: fixed; top: 3rem; bottom: 0; width: 6px; z-index: 8000; cursor: col-resize; background: transparent; touch-action: none; }
 .sentinel-menu-divisor:hover, .sentinel-menu-divisor:focus-visible, .sentinel-menu-divisor--ativo { background: var(--s-link, #0f62fe); opacity: 0.55; }

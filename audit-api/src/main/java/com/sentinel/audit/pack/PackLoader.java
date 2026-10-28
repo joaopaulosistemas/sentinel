@@ -359,6 +359,19 @@ public final class PackLoader {
         return out;
     }
 
+    /** Valor em maiúsculas se estiver entre os permitidos; senão registra o erro e devolve nulo. */
+    private static String oneOf(String raw, Set<String> allowed, List<String> errors, String message) {
+        if (raw == null) {
+            return null;
+        }
+        String value = raw.trim().toUpperCase(Locale.ROOT);
+        if (allowed.contains(value)) {
+            return value;
+        }
+        errors.add(message);
+        return null;
+    }
+
     private static List<RemediationEntry> parseRemediation(Path dir, List<String> errors) {
         List<RemediationEntry> out = new ArrayList<>();
         Set<String> keys = new HashSet<>();
@@ -376,22 +389,10 @@ public final class PackLoader {
                     errors.add(name + ": key '" + key + "' repetida no pacote");
                 }
                 List<String> refs = Yamls.strings(m, "refs", errors, name);
-                String effort = Yamls.str(m, "effort");
-                if (effort != null) {
-                    effort = effort.trim().toUpperCase(Locale.ROOT);
-                    if (!Set.of("S", "M", "L").contains(effort)) {
-                        errors.add(name + ": 'effort' de '" + key + "' deve ser S, M ou L");
-                        effort = null;
-                    }
-                }
-                String risk = Yamls.str(m, "regression-risk");
-                if (risk != null) {
-                    risk = risk.trim().toUpperCase(Locale.ROOT);
-                    if (!Set.of("LOW", "MEDIUM", "HIGH").contains(risk)) {
-                        errors.add(name + ": 'regression-risk' de '" + key + "' deve ser LOW, MEDIUM ou HIGH");
-                        risk = null;
-                    }
-                }
+                String effort = oneOf(Yamls.str(m, "effort"), Set.of("S", "M", "L"), errors,
+                        name + ": 'effort' de '" + key + "' deve ser S, M ou L");
+                String risk = oneOf(Yamls.str(m, "regression-risk"), Set.of("LOW", "MEDIUM", "HIGH"), errors,
+                        name + ": 'regression-risk' de '" + key + "' deve ser LOW, MEDIUM ou HIGH");
                 out.add(new RemediationEntry(key.toLowerCase(Locale.ROOT), summary, Yamls.str(m, "before"),
                         Yamls.str(m, "after"), refs == null ? List.of() : refs, effort, risk));
             }
@@ -406,7 +407,7 @@ public final class PackLoader {
             return out;
         }
         for (Map<String, Object> m : items(read(file, dir, errors), "dedup.yml", errors)) {
-            checkKeys(m, Set.of("name", "rules", "max-lines"), "dedup.yml", errors);
+            checkKeys(m, Set.of("name", "rules", "max-lines", "prefer"), "dedup.yml", errors);
             String name = Yamls.str(m, "name");
             List<String> rules = Yamls.strings(m, "rules", errors, "dedup.yml");
             if (name == null || rules == null || rules.size() < 2) {
@@ -415,7 +416,7 @@ public final class PackLoader {
             }
             Set<String> lower = new HashSet<>();
             rules.forEach(r -> lower.add(r.toLowerCase(Locale.ROOT)));
-            out.add(new DedupTopic(name, lower, Yamls.integer(m, "max-lines", 1, errors, "dedup.yml")));
+            out.add(new DedupTopic(name, lower, Yamls.integer(m, "max-lines", 1, errors, "dedup.yml"), Yamls.str(m, "prefer")));
         }
         return out;
     }

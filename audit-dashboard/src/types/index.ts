@@ -385,6 +385,39 @@ export interface FixPlan {
   items: FixPlanItem[];
 }
 
+// ---------------------------------------------------------------- explicação da nota
+
+export interface ScoreGroup {
+  ruleId: string;
+  severity: Severity;
+  count: number;
+  /** penalidade somada de todas as ocorrências */
+  raw: number;
+  /** penalidade que de fato entra (depois do teto por regra) */
+  counted: number;
+  /** o teto cortou: corrigir só parte das ocorrências não muda a nota */
+  capped: boolean;
+}
+
+export interface ScoreDimension {
+  category: Category;
+  weight: number;
+  score: number;
+  penalty: number;
+  hidden: number;
+  groups: ScoreGroup[];
+}
+
+export interface ScoreExplanation {
+  curve: string;
+  sizeFactor: number;
+  linesOfCode: number | null;
+  overallBefore: number;
+  overall: number;
+  removedRules: string[];
+  dimensions: ScoreDimension[];
+}
+
 // ---------------------------------------------------------------- achados de todos os sistemas
 
 export interface FindingsOverview {

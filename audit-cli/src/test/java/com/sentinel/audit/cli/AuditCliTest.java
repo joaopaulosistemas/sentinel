@@ -116,6 +116,20 @@ class AuditCliTest {
     }
 
     @Test
+    void failOnScoreDropFuncionaComoCatracaDaNota() {
+        diffJson = "{\"hasBaseline\":true,\"baseAuditId\":4,\"newFindings\":[],\"persistingCount\":1,\"scoreDelta\":-3.5}";
+        assertEquals(1, run("--fail-on-score-drop", "0"));
+        assertEquals(1, run("--fail-on-score-drop", "3"));
+        assertEquals(0, run("--fail-on-score-drop", "5"));       // queda dentro do permitido
+
+        diffJson = "{\"hasBaseline\":true,\"baseAuditId\":4,\"newFindings\":[],\"persistingCount\":1,\"scoreDelta\":2.0}";
+        assertEquals(0, run("--fail-on-score-drop", "0"));       // a nota subiu
+
+        diffJson = "{\"hasBaseline\":false,\"newFindings\":[],\"persistingCount\":0}";
+        assertEquals(0, run("--fail-on-score-drop", "0"));       // sem auditoria anterior: nada a comparar
+    }
+
+    @Test
     void gravaSarifJunitEJson() throws Exception {
         Path sarif = tmp.resolve("out/r.sarif");
         Path junit = tmp.resolve("out/r.xml");

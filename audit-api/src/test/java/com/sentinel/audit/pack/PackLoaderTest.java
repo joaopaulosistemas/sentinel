@@ -174,6 +174,19 @@ class PackLoaderTest {
     // ------------------------------------------------------------------ remediação, dedup, ferramentas
 
     @Test
+    void topicoDeDedupPodeEscolherAFerramentaQueFica() throws IOException {
+        Path dir = pack(tempRoot(), "dados", "1.0.0", true);
+        write(dir.resolve("dedup.yml"), "- name: cx\n  prefer: CleanCode\n  rules: [a-regra, b-regra]\n  max-lines: 3\n"
+                + "- name: padrao\n  rules: [c-regra, d-regra]\n");
+
+        PackLoader.Report report = PackLoader.inspect(dir);
+
+        assertEquals("CleanCode", report.pack().dedup().get(0).prefer());
+        assertNull(report.pack().dedup().get(1).prefer());
+        assertTrue(report.errors().isEmpty(), all(report.errors()));
+    }
+
+    @Test
     void validaRemediacaoDedupEFerramentas() throws IOException {
         Path dir = pack(tempRoot(), "dados", "1.0.0", true);
         write(dir.resolve("remediation/r.yml"), "- key: a\n  summary: ok\n- summary: sem chave\n- key: A\n  summary: repetida\n");

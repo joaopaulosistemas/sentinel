@@ -174,7 +174,7 @@ class ScoringServiceTest {
     }
 
     @Test
-    void curvaLinearEhPadraoEZeraComMuitaPenalidade() {
+    void curvaLinearDoServicoCriadoSemConfiguracaoZeraComMuitaPenalidade() {
         assertEquals(0.0, scoringService.applyCurve(250.0));
         assertEquals(90.0, scoringService.applyCurve(10.0), 0.0001);
     }
@@ -199,6 +199,54 @@ class ScoringServiceTest {
                 buildFinding(Category.SECURITY, Severity.CRITICAL), buildFinding(Category.SECURITY, Severity.CRITICAL));
         assertTrue(scoringService.calculate(poucos).getSecurity() > scoringService.calculate(muitos).getSecurity());
         assertTrue(scoringService.calculate(muitos).getSecurity() > 0.0);
+    }
+
+    private Finding withRule(Category category, Severity severity, String rule) {
+        Finding f = buildFinding(category, severity);
+        f.setRuleId(rule);
+        return f;
+    }
+
+    @Test
+    void explicacaoBateComANotaEMarcaOndeOTetoPorRegraCortou() {
+        List<Finding> findings = new java.util.ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            findings.add(withRule(Category.QUALITY, Severity.MEDIUM, "regra-repetida"));   // 6 x 5 = 30, teto 20
+        }
+        findings.add(withRule(Category.QUALITY, Severity.LOW, "regra-rara"));
+        findings.add(withRule(Category.SECURITY, Severity.HIGH, "segredo"));
+
+        var explanation = scoringService.explain(findings, null);
+
+        assertEquals(scoringService.calculate(findings).getOverall(), explanation.overall(), 0.0001);
+        assertEquals(6, explanation.dimensions().size());
+        var security = explanation.dimensions().get(0);
+        assertEquals(Category.SECURITY, security.category());
+        assertEquals(90.0, security.score(), 0.0001);
+        var quality = explanation.dimensions().get(1);
+        assertEquals(78.0, quality.score(), 0.0001);                    // 100 - 20 (com teto) - 2
+        var repetida = quality.groups().get(0);
+        assertEquals("regra-repetida", repetida.ruleId());
+        assertEquals(6, repetida.count());
+        assertEquals(30.0, repetida.raw(), 0.0001);
+        assertEquals(20.0, repetida.counted(), 0.0001);
+        assertTrue(repetida.capped());
+        assertFalse(quality.groups().get(1).capped());
+        assertEquals(0, quality.hidden());
+    }
+
+    @Test
+    void simulacaoSemUmaRegraMostraANotaRealEANova() {
+        List<Finding> findings = List.of(withRule(Category.SECURITY, Severity.HIGH, "segredo"),
+                withRule(Category.SECURITY, Severity.HIGH, "Outra"));
+
+        var simulated = scoringService.explainWithout(findings, null, List.of(" SEGREDO ", ""));
+
+        assertEquals(List.of("SEGREDO"), simulated.removedRules());
+        assertEquals(scoringService.calculate(findings).getOverall(), simulated.overallBefore(), 0.0001);
+        assertTrue(simulated.overall() > simulated.overallBefore());
+        assertEquals(1, simulated.dimensions().get(0).groups().size());
+        assertTrue(scoringService.explainWithout(findings, null, List.of()).removedRules().isEmpty());
     }
 
     private Finding buildFinding(Category category, Severity severity) {

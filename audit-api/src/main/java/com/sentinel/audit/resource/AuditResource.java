@@ -5,6 +5,7 @@ import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.FindingMapper;
 import com.sentinel.audit.dto.FixPlanDto;
+import com.sentinel.audit.dto.ScoreExplanationDto;
 import com.sentinel.audit.dto.CreateAuditRequest;
 import com.sentinel.audit.dto.FindingResponse;
 import com.sentinel.audit.insights.AuditInsights;
@@ -327,6 +328,20 @@ public class AuditResource {
     public AuditInsights getInsights(@PathParam("id") Long id) {
         AuditRun run = runCatalog.require(id);
         return insightsService.forRun(run);
+    }
+
+    /**
+     * De onde vem a nota, por dimensão e regra, com o teto por regra marcado. Com {@code without} (ids de regra
+     * separados por vírgula) mostra como a nota ficaria sem elas: a simulação "e se".
+     */
+    @GET
+    @Path("/{id}/score-explanation")
+    @Operation(summary = "Explicação da nota", description = "Quanto cada regra tirou em cada dimensão; com ?without=regra1,regra2 simula a nota sem elas")
+    public ScoreExplanationDto getScoreExplanation(@PathParam("id") Long id, @QueryParam("without") String without) {
+        AuditRun run = runCatalog.require(id);
+        List<Finding> active = FindingLifecycleService.active(findingCatalog.byRun(run.getId()));
+        List<String> removed = without == null || without.isBlank() ? List.of() : List.of(without.split(","));
+        return scoringService.explainWithout(active, run.getLinesOfCode(), removed);
     }
 
     /**
