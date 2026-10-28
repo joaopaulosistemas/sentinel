@@ -638,3 +638,39 @@ export interface ReviewMetrics {
   rulesDiscarded: number;
   rulePromotion: number | null;
 }
+
+/** Opção de uma configuração de escolha (ex.: qual configuração do ESLint). */
+export interface SettingOption {
+  value: string;
+  label: string;
+  sub: string;
+}
+
+/** Uma configuração da instalação, como a tela de Configurações a mostra. */
+export interface SettingView {
+  key: string;
+  section: string;
+  group: string;
+  label: string;
+  help: string;
+  kind: 'bool' | 'number' | 'text' | 'enum';
+  def: string;
+  options: SettingOption[];
+  unit: string;
+  min: number;
+  max: number;
+  /** false = só se muda no ambiente (banco, chaves, caminhos, execução de programas) */
+  editable: boolean;
+  secret: boolean;
+  /** valor em uso agora (segredos vêm mascarados) */
+  value: string;
+  /** valor salvo pela tela; null = vale o ambiente */
+  savedValue: string | null;
+  source: 'tela' | 'ambiente' | 'padrão';
+  pendingRestart: boolean;
+}
+
+export interface SettingsResponse {
+  settings: SettingView[];
+  restartRequired: boolean;
+}
