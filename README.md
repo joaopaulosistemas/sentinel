@@ -677,7 +677,7 @@ Pacote embutido que liga por SARIF: **njsscan** (segurança de JS/Node), **Style
 - O Stylelint inclui regras de estilo: para não pesar no score, use um perfil `rules: { "stylelint-*": { shadow: true } }`.
 - O SQLFluff e o Squawk olham só arquivos `.sql`; o Squawk, só os de pastas de migration. Dialeto do SQLFluff: `postgres` (troque com `SQLFLUFF_DIALECT`). O Squawk ignora por padrão `prefer-robust-stmts`, `require-lock-timeout` e `require-statement-timeout` (política de ambiente); troque com `SQUAWK_EXCLUDE`. Para silenciar o estilo: `rules: { "sqlfluff-*": { shadow: true } }`.
 - O Dependency-Cruiser roda **sem** `node_modules` (só ciclos e órfãos entre arquivos do próprio projeto). Knip e depcheck ficaram de fora de propósito: sem as dependências instaladas eles acusam como "sem uso" pacotes que o código usa.
-- **Confiança:** `PACKS_TRUSTED_TOOL_PACKS=market-tools` (padrão) libera as ferramentas desse pacote sem ligar `PACKS_ALLOW_TOOLS`.
+- **Confiança:** `PACKS_TRUSTED_TOOL_PACKS=market-tools,java-google-style` (padrão) libera as ferramentas desses pacotes sem ligar `PACKS_ALLOW_TOOLS`.
   Vale **só** para o pacote que vem na pasta do produto; um pacote externo com o mesmo id, mesmo mais novo, não herda a confiança.
   Para desligar tudo: `PACKS_TRUSTED_TOOL_PACKS=` (vazio) ou `PACKS_DISABLED=market-tools`.
 - Não incluídos de propósito: Grype e OSV-Scanner (repetem o OSV interno e o Trivy), Lighthouse (exige navegador e site publicado) e SpotBugs/FindSecBugs (precisam do código Java já compilado).
@@ -690,6 +690,10 @@ Pacote opt-in (desligado por padrão) que transforma o padrão de clean code da 
 - **Perfil `padrao-typescript-angular`**: liga o pacote e fixa os limites do padrão (método 50 linhas, complexidade 10, aninhamento 3, arquivo 500 linhas).
 - **Lint de estrutura e nomes (ESLint)**: use `ESLINT_CONFIG=/opt/eslint/eslint.padrao-ts.config.mjs`. Cobre tipo de retorno, ordem de membros, nomes, linhas em branco, `any`, `console` e `==`.
 - **Nos seus projetos Angular**: copie `docs/padrao-typescript/eslintrc.json` para `.eslintrc.json` (mesmas regras, no formato do ESLint 8 + Angular + Prettier).
+
+### Padrão Google (Java e TypeScript/Angular) + SEI CERT e Sonar
+
+Perfis opt-in baseados em guias públicos: `padrao-google-java` (Google Java Style via Checkstyle, mais 11 regras de robustez e segurança do SEI CERT e do Sonar) e `padrao-google-typescript-angular` (Google TypeScript Style Guide, Angular Style Guide e regras do Sonar via ESLint, com `ESLINT_CONFIG=/opt/eslint/eslint.google-angular.config.mjs`). O perfil TypeScript contradiz o padrão da casa (`padrao-typescript-angular`): use um ou outro. Veja o que é verificado, o que fica para a revisão e as decisões nos conflitos entre os guias em [`docs/padrao-google/README.md`](docs/padrao-google/README.md).
 
 ### Auditoria de PR (só o que mudou)
 
@@ -753,6 +757,19 @@ O segredo é de cada sistema (tela Sistemas > Auditoria automática; há um bot�
 
 **Notificações:** na tela Sistemas, em *Notificações*, informe a URL do Incoming Webhook do Teams ou Slack (guardada cifrada; só https público), o formato (`teams`, `slack` ou `generic`), a queda mínima de nota e a severidade mínima dos achados novos. O aviso só sai quando há motivo: a auditoria falhou, a nota caiu o bastante ou surgiu achado novo da severidade escolhida (ou maior). Falha no envio nunca altera o resultado da auditoria.
 
+## Tela de Configurações
+
+O último item do menu (**Configurações**) reúne as variáveis que antes ficavam em `.env` e `application.properties`, com a explicação ao lado de cada uma: ferramentas de análise (ligar, tempo limite, máximo de achados, limites de clean code), pacotes de regras, Git e evidências. Há busca por nome, variável ou descrição.
+
+- **O que se altera pela tela:** liga/desliga e limites das ferramentas, a configuração do ESLint (padrão do Sentinel, padrão da casa ou Google + Angular + Sonar), os pacotes desativados e de confiança, o laboratório de regras e os tempos do Git. Cada valor é validado antes de gravar.
+- **O que fica só no ambiente (aparece em leitura):** banco de dados, `API_KEY`, `SECRETS_KEY`, CORS, login corporativo, caminhos do servidor (`CLONE_DIR`, `SENTINEL_LOCAL_ROOT`, `SENTINEL_EVIDENCE_DIR`, pastas de pacotes) e tudo que dá poder de executar programas (`PACKS_ALLOW_TOOLS`, repositório central de pacotes, `PMD_RULESET`, `SEMGREP_CONFIG`). Segredos aparecem mascarados. A API recusa alterá-los mesmo por chamada direta.
+- **Quando vale:** a API lê as configurações ao subir. Salvar grava na tabela `app_setting`; o botão **Reiniciar a API** (ou um reinício normal do contêiner) aplica. O valor da tela tem prioridade sobre a variável de ambiente, que passa a ser só o valor inicial; "Voltar ao ambiente" apaga o valor da tela.
+- **Sem banco ou sem a tabela** (primeira subida), a API sobe só com o ambiente. `SENTINEL_SETTINGS_FROM_DB=false` desliga a leitura da tela.
+- **Reinício:** o endpoint encerra o processo e depende do `restart: unless-stopped` do Compose (ou do Kubernetes) para subir de novo. Quem roda a API à mão precisa subir de novo sozinho.
+- **Certificados da empresa (CA)** continuam entrando na imagem pelo `audit-api/certs/` (veja o README dessa pasta); a tela ainda não instala certificados.
+
+API: `GET /api/v1/settings`, `PUT /api/v1/settings` (`{"values": {"CHAVE": "valor"}}`; valor `null` volta ao ambiente), `DELETE /api/v1/settings/{chave}` e `POST /api/v1/settings/restart`. Como toda a API, exigem `API_KEY` quando ela está definida.
+
 ## Login corporativo (OIDC/Keycloak) — opcional
 
 ```bash
@@ -801,6 +818,9 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 | `POST` | `/api/v1/findings/suppress-batch` | Suprime até 200 findings de uma vez (mesmo motivo/justificativa); devolve as falhas por id |
 | `POST` | `/api/v1/webhooks/github` · `/gitlab` | Disparo por push (autenticado por segredo próprio) |
 | `GET` `PUT` | `/api/v1/engine-config/{id}` | Ajuste do motor do sistema (regras, limites, pacotes, analisadores) e o resultado já resolvido |
+| `GET` `PUT` | `/api/v1/settings` | Configurações da instalação (tela de Configurações); `PUT` grava só as editáveis |
+| `DELETE` | `/api/v1/settings/{chave}` | Volta uma configuração para o valor do ambiente |
+| `POST` | `/api/v1/settings/restart` | Reinicia a API para as configurações salvas valerem |
 | `GET` `PUT` | `/api/v1/mcp-access/{id}` | Acesso MCP do sistema: ligar, nível de dado, ferramentas; `POST/DELETE …/key` gera e revoga a chave; `GET …/calls` lista as chamadas |
 | `POST` | `/mcp/{sistema}` | Servidor MCP (JSON-RPC), com a chave do sistema em `Authorization: Bearer`; fora da `API_KEY` global; limite de chamadas (`429`) |
 | `GET` | `/api/v1/claude-review/{id}` | Sugestões e regras propostas do Claude; `…/metrics` mede quanto ele acerta; `POST …/suggestions/{sid}/status` e `…/rules/{rid}/review\|sample\|observe\|promote\|discard\|copy` movem o funil |

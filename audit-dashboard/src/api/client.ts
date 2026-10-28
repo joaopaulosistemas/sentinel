@@ -24,6 +24,7 @@ import type {
   McpConfigRequest,
   McpNewKey,
   ScheduleRequest,
+  SettingsResponse,
   Suppression,
   SuppressRequest,
   BatchSuppressRequest,
@@ -231,6 +232,16 @@ export const api = {
 
   updateEngineConfig: (systemId: number, body: EngineTuning) =>
     apiFetch<EngineConfig>(`/api/v1/engine-config/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  getSettings: () => apiFetch<SettingsResponse>('/api/v1/settings'),
+
+  /** Grava só as chaves informadas; valor null devolve a configuração ao ambiente. */
+  saveSettings: (values: Record<string, string | null>) =>
+    apiFetch<SettingsResponse>('/api/v1/settings', { method: 'PUT', body: JSON.stringify({ values }) }),
+
+  resetSetting: (key: string) => apiFetch<SettingsResponse>(`/api/v1/settings/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+
+  restartApi: () => apiFetch<void>('/api/v1/settings/restart', { method: 'POST' }),
 
   getReviewMetrics: (systemId: number) => apiFetch<ReviewMetrics>(`/api/v1/claude-review/${systemId}/metrics`),
 

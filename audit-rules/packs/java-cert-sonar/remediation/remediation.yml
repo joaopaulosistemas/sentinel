@@ -1,0 +1,76 @@
+- key: "sentinel-cert-interrupted-engolida"
+  summary: "Restaure o sinal de interrupção ou propague a exceção, para que o pool ou o desligamento ordenado saiba que a thread foi chamada a parar."
+  before: "catch (InterruptedException e) { LOG.warn(\"acordou\"); }"
+  after: "catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cert-catch-npe"
+  summary: "Teste o null antes de usar o objeto (ou use Optional/Objects.requireNonNull) e remova o catch de NullPointerException."
+  before: "try { return cliente.getNome().trim(); } catch (NullPointerException e) { return \"\"; }"
+  after: "return cliente == null || cliente.getNome() == null ? \"\" : cliente.getNome().trim();"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-cert-throw-generico"
+  summary: "Troque pela exceção que descreve o problema (argumento inválido, estado inválido, E/S) ou crie uma exceção do domínio."
+  before: "throw new RuntimeException(\"conta inválida\");"
+  after: "throw new IllegalArgumentException(\"conta inválida: \" + numero);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cert-thread-run-direto"
+  summary: "Use start() para criar a thread, ou submeta a tarefa a um ExecutorService."
+  before: "new Thread(tarefa).run();"
+  after: "executor.submit(tarefa);"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-cert-thread-stop"
+  summary: "Peça o encerramento com interrupt() e faça a thread verificar uma flag volatile ou Thread.interrupted() em pontos seguros."
+  before: "worker.stop();"
+  after: "worker.interrupt();   // e a thread testa isInterrupted() no laço"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-cert-wait-fora-de-loop"
+  summary: "Coloque o wait() dentro de um while que reteste a condição; trate acordos espúrios e notificações perdidas."
+  before: "synchronized (lock) { lock.wait(); }"
+  after: "synchronized (lock) { while (!pronto) { lock.wait(); } }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cert-sync-em-string-ou-boxed"
+  summary: "Sincronize em um objeto privado e dedicado, nunca em String, literal ou tipo empacotado."
+  before: "synchronized (\"trava\") { ... }"
+  after: "private final Object lock = new Object();  ...  synchronized (lock) { ... }"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cert-retorno-ignorado-arquivo"
+  summary: "Prefira java.nio.file.Files, que lança IOException com a causa; com File, verifique o retorno."
+  before: "arquivo.delete();"
+  after: "Files.deleteIfExists(arquivo.toPath());"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cert-locale-implicito"
+  summary: "Informe o Locale: Locale.ROOT para identificadores, chaves e protocolos; o Locale do usuário para texto de tela."
+  before: "String chave = nome.toLowerCase();"
+  after: "String chave = nome.toLowerCase(Locale.ROOT);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cert-charset-implicito"
+  summary: "Informe StandardCharsets.UTF_8 (ou o charset do contrato) em toda conversão entre texto e bytes."
+  before: "byte[] dados = texto.getBytes();"
+  after: "byte[] dados = texto.getBytes(StandardCharsets.UTF_8);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cert-securerandom-semente-fixa"
+  summary: "Não dê semente: new SecureRandom() se semeia com entropia do sistema. Use generateSeed só para complementar."
+  before: "SecureRandom r = new SecureRandom(semente);"
+  after: "SecureRandom r = new SecureRandom();"
+  effort: S
+  regression-risk: LOW

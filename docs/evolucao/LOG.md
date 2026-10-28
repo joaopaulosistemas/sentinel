@@ -451,3 +451,14 @@ Causa: a regra de taint só tinha sanitizadores de shell (`encodeForOS`, `quote`
 O que mudou: `Integer.parseInt`, `Long.parseLong`, `Double.parseDouble`, `Boolean.parseBoolean` e `UUID.fromString` passam a ser sanitizadores; testes `cmdiNumeroConvertido` (ok) e `cmdiTextoSemConverter` (ruleid); `version` do pack 1.1.2 → 1.1.3.
 Verificado: `semgrep --test` sobre `sentinel-injection.yml` e `sentinel-injection.java`: 7/7 passaram.
 NÃO verificado: efeito no job `benchmark` (não li o código do Benchmark, como manda a regra; a queda do FPR só aparece no CI). O backlog 1/2 `cmdi` segue aberto e `baseline.json` não foi alterado; se o CI mostrar `cmdi` acima de 0,209, a linha de base deve subir em PR seguinte.
+
+## Dashboard 12.34.0 / API — Tela de Configurações
+
+Reúne na tela, como último item do menu, as variáveis que ficavam espalhadas em `.env.example`, `application.properties`, `docker-compose.yml` e nos README.
+
+- API: pacote `settings` com o catálogo (54 configurações, 31 editáveis), a tabela `app_setting`, `GET/PUT /api/v1/settings`, `DELETE /api/v1/settings/{chave}` e `POST /api/v1/settings/restart`. Uma fonte de configuração (`DbConfigSource`, ordinal 450) entrega à API, na subida, o que foi salvo; o valor da tela vale por cima da variável de ambiente.
+- Segurança: banco, chaves, CORS, login, caminhos do servidor e tudo que executa programas (`PACKS_ALLOW_TOOLS`, repositório de pacotes, `PMD_RULESET`, `SEMGREP_CONFIG`) são só leitura, na tela e na API; segredos saem mascarados. Teste fixa essa lista.
+- Dashboard: página `/settings` com seções, busca, validação de faixa, "Voltar ao ambiente", aviso de reinício e botão de reiniciar com confirmação.
+- Testes novos: catálogo (inclui conferir propriedades e padrões contra `application.properties`), serviço, fonte de configuração, utilitários e página.
+
+Verificado: `tsc`, `vitest` (233 testes) e `vite build` no dashboard; a API foi compilada com `javac` contra stubs das bibliotecas e a validação do catálogo foi executada. Não verificado: Maven e testes Java (só o CI); o reinício real e a leitura da tabela por JDBC contra um Postgres.

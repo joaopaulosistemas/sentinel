@@ -122,6 +122,7 @@ COPY audit-rules/lint/stylelint /opt/stylelint
 COPY audit-rules/lint/jscpd /opt/jscpd
 COPY audit-rules/lint/extras /opt/extras
 COPY audit-rules/lint/checkstyle/checks.xml /opt/checkstyle/checks.xml
+COPY audit-rules/lint/checkstyle/google-checks.xml /opt/checkstyle/google-checks.xml
 RUN if [ "$WITH_ESLINT" = "true" ]; then \
       npm --prefix /opt/eslint install --omit=dev --no-audit --no-fund && ln -s /opt/eslint/node_modules/.bin/eslint /usr/local/bin/eslint \
       && npm --prefix /opt/stylelint install --omit=dev --no-audit --no-fund && ln -s /opt/stylelint/node_modules/.bin/stylelint /usr/local/bin/stylelint \

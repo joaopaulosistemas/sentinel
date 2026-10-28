@@ -1,0 +1,51 @@
+id: padrao-google-typescript-angular
+name: "Padrão Google TypeScript + Angular Style Guide + Sonar"
+description: "Pacotes padrão com o Google TypeScript Style Guide, o Angular Style Guide e as regras de robustez e segurança do Sonar, verificados pelo ESLint. Para ligar o lint de estilo e nomes, construa a imagem com WITH_ESLINT=true e defina ESLINT_CONFIG=/opt/eslint/eslint.google-angular.config.mjs. Não liga o pacote ts-clean-code: o padrão da casa (membros privados com '_', modificador de acesso explícito) contradiz o Google TS (sem '_', sem 'public'); use este perfil ou o padrao-typescript-angular, nunca os dois."
+packs: [core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, market-tools]
+rules:
+  # Em sombra por medida (docs/evolucao/precisao.md): 0 verdadeiros em 6 revisados cada, em scripts/CLI sem entrada externa.
+  "eslint-regexp/no-super-linear-move": {shadow: true}   # precisao.md
+  "eslint-security/detect-non-literal-fs-filename": {shadow: true}   # precisao.md
+  # 1 verdadeiro em 9 revisados (cabeçalho de licença, pom.xml e arquivos gerados); volta a pesar quando a precisão subir.
+  jscpd-codigo-duplicado: {shadow: true}   # precisao.md
+  # 0 verdadeiros em 7 revisados: modelos EJS que geram código TypeScript (a saída não é HTML, então não há XSS)
+  njsscan-ejs_ect_template: {shadow: true}   # precisao.md
+  # Estilo do Google e do Angular é legibilidade, não defeito: severidade baixa.
+  "eslint-@typescript-eslint/naming-convention": {severity: low}
+  "eslint-@typescript-eslint/explicit-member-accessibility": {severity: low}
+  "eslint-sentinel-angular/nome-de-arquivo": {severity: low}
+  "eslint-@stylistic/*": {severity: low}
+  # Regras Sonar acrescentadas por este perfil, ainda sem precisão medida: aparecem no relatório sem pesar no score
+  # até serem revisadas (docs/evolucao/precisao.md). As que a configuração padrão já ligava continuam pesando.
+  "eslint-sonarjs/no-hardcoded-passwords": {shadow: true}
+  "eslint-sonarjs/no-hardcoded-secrets": {shadow: true}
+  "eslint-sonarjs/no-hardcoded-ip": {shadow: true}
+  "eslint-sonarjs/no-clear-text-protocols": {shadow: true}
+  "eslint-sonarjs/no-os-command-from-path": {shadow: true}
+  "eslint-sonarjs/os-command": {shadow: true}
+  "eslint-sonarjs/pseudo-random": {shadow: true}
+  "eslint-sonarjs/weak-ssl": {shadow: true}
+  "eslint-sonarjs/hashing": {shadow: true}
+  "eslint-sonarjs/encryption-secure-mode": {shadow: true}
+  "eslint-sonarjs/insecure-cookie": {shadow: true}
+  "eslint-sonarjs/insecure-jwt-token": {shadow: true}
+  "eslint-sonarjs/no-unsafe-unzip": {shadow: true}
+  "eslint-sonarjs/unverified-certificate": {shadow: true}
+  "eslint-sonarjs/unverified-hostname": {shadow: true}
+  "eslint-sonarjs/disabled-auto-escaping": {shadow: true}
+  "eslint-sonarjs/post-message": {shadow: true}
+  "eslint-sonarjs/no-ignored-return": {shadow: true}
+  "eslint-sonarjs/no-ignored-exceptions": {shadow: true}
+  "eslint-sonarjs/no-try-promise": {shadow: true}
+  "eslint-sonarjs/no-misleading-array-reverse": {shadow: true}
+  "eslint-sonarjs/no-array-delete": {shadow: true}
+  "eslint-sonarjs/no-unthrown-error": {shadow: true}
+  "eslint-sonarjs/no-in-misuse": {shadow: true}
+  "eslint-sonarjs/no-invariant-returns": {shadow: true}
+  "eslint-sonarjs/no-useless-catch": {shadow: true}
+  "eslint-sonarjs/no-nested-switch": {shadow: true}
+thresholds:
+  max-function-lines: 50
+  max-complexity: 10
+  max-nesting: 4
+  max-component-lines: 500

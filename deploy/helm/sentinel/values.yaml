@@ -34,7 +34,7 @@ packs:
   dirs: ""
   disabled: ""
   allowTools: false                       # permite pacotes executarem ferramentas externas (risco: ver README)
-  trustedToolPacks: "market-tools"      # pacotes embutidos cujas ferramentas (Bandit, Checkov...) rodam sem allowTools
+  trustedToolPacks: "market-tools,java-google-style"   # pacotes embutidos cujas ferramentas (Checkov, Hadolint, Checkstyle...) rodam sem allowTools
   publicKey: ""                           # chave pública Ed25519 (Base64)
   requireSignature: false
 
