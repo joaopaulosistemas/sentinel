@@ -11,6 +11,7 @@ import {
   SkipToContent,
   Theme,
 } from '@carbon/react';
+import { Application, ChartBar, Dashboard, Report, Security } from '@carbon/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
@@ -47,11 +48,11 @@ export function SentinelLogo({ size = 24 }: { size?: number }) {
 }
 
 const ITENS = [
-  { nome: 'Visão geral', rota: '/', exata: true },
-  { nome: 'Sistemas', rota: '/systems' },
-  { nome: 'Informações de Auditoria', rota: '/findings' },
-  { nome: 'Ranking de Sistemas', rota: '/ranking' },
-  { nome: 'Relatórios', rota: '/reports' },
+  { nome: 'Visão geral', rota: '/', exata: true, icone: Dashboard },
+  { nome: 'Sistemas', rota: '/systems', icone: Application },
+  { nome: 'Informações de Auditoria', rota: '/findings', icone: Security },
+  { nome: 'Ranking de Sistemas', rota: '/ranking', icone: ChartBar },
+  { nome: 'Relatórios', rota: '/reports', icone: Report },
 ];
 
 /** Largura a partir da qual o menu lateral fica fixo (66rem = 1056 px, o "lg" do Carbon). */
@@ -184,6 +185,7 @@ export function AppShell({ children }: AppShellProps) {
             <SideNavLink
               key={i.rota}
               href={i.rota}
+              renderIcon={i.icone}
               isActive={i.exata ? location.pathname === i.rota : location.pathname.startsWith(i.rota)}
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
