@@ -132,7 +132,9 @@ export default tseslint.config(
       "@html-eslint/require-frame-title": "warn",
       "@html-eslint/require-meta-viewport": "warn",
       "@html-eslint/require-meta-charset": "warn",
-      "@html-eslint/require-closing-tags": "warn",
+      // desligada: com o padrão ("never") acusa <meta />, <link /> e <base /> (HTML válido, só estilo); 6 de 6 achados
+      // lidos em primefaces/sakai-ng (index.html) eram isso
+      "@html-eslint/require-closing-tags": "off",
       "@html-eslint/no-duplicate-id": "error",
       "@html-eslint/no-duplicate-attrs": "error",
       "@html-eslint/no-positive-tabindex": "warn",
@@ -171,6 +173,11 @@ export default tseslint.config(
   {
     files: ["**/*.component.html"],
     extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],
+    rules: {
+      // desligada: o conteúdo de <button pButton label="..." icon="..."> vem da diretiva (PrimeNG e similares), que a
+      // regra não enxerga; 12 de 12 achados lidos em primefaces/sakai-ng eram isso
+      "@angular-eslint/template/elements-content": "off",
+    },
   },
   { ignores: ["**/*.spec.ts", "**/*.test.{ts,tsx,js,jsx}", "**/*.stories.*"] },
 );
