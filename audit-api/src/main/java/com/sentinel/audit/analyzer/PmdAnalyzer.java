@@ -133,12 +133,21 @@ public class PmdAnalyzer implements CodeAnalyzer {
                     "--format", "json", "--report-file", report.toString(),
                     "--no-cache", "--no-progress", "--no-fail-on-violation");
             int code = ExternalTools.run(cmd, null, Map.of(), timeoutSeconds, null, stderr);
-            if (code != 0) {
+            if (code != 0 && code != EXIT_RECOVERABLE_ERRORS) {
                 partial = ExternalTools.falha(code, timeoutSeconds, stderr);
                 LOG.warnf("PMD %s", partial);
             } else {
-                findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
+                String json = Files.readString(report, StandardCharsets.UTF_8);
+                findings = parse(json, projectPath, auditRun);
                 LOG.infof("PMD encontrou %d problemas", findings.size());
+                if (code == EXIT_RECOVERABLE_ERRORS) {
+                    // Código 5: o PMD não conseguiu ler/analisar alguns arquivos (sintaxe nova, arquivo gerado etc.),
+                    // mas o relatório com o resto está completo. Aproveita os achados e avisa em vez de descartar tudo.
+                    int n = processingErrors(json);
+                    partial = "o PMD não conseguiu analisar " + (n > 0 ? n + " arquivo(s)" : "alguns arquivos")
+                            + "; os demais foram analisados";
+                    LOG.warnf("PMD %s", partial);
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -152,6 +161,18 @@ public class PmdAnalyzer implements CodeAnalyzer {
             deleteQuietly(tempRuleset);
         }
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+    }
+
+    /** Código de saída 5 do PMD 7: houve erros recuperáveis (arquivo não analisável), mas o relatório foi gravado. */
+    static final int EXIT_RECOVERABLE_ERRORS = 5;
+
+    /** Quantidade de arquivos com erro de processamento no relatório JSON do PMD (0 se ilegível). */
+    static int processingErrors(String json) {
+        try {
+            return MAPPER.readTree(json).path("processingErrors").size();
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private static void deleteQuietly(Path p) {
