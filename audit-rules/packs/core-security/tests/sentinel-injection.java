@@ -124,6 +124,18 @@ class PropagacaoEmColecoes {
         new ProcessBuilder(args).start();
     }
 
+    void cmdiNumeroConvertido(javax.servlet.http.HttpServletRequest request) throws Exception {
+        String n = String.valueOf(Integer.parseInt(request.getParameter("n")));
+        // ok: sentinel-command-injection-requisicao
+        new ProcessBuilder(n, "-x").start();
+    }
+
+    void cmdiTextoSemConverter(javax.servlet.http.HttpServletRequest request) throws Exception {
+        String n = request.getParameter("n");
+        // ruleid: sentinel-command-injection-requisicao
+        new ProcessBuilder(n, "-x").start();
+    }
+
     void cmdiAmbiente(javax.servlet.http.HttpServletRequest request) throws Exception {
         String[] env = {request.getHeader("X-Env")};
         // ruleid: sentinel-command-injection-requisicao

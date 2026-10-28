@@ -142,6 +142,13 @@ rules:
           - metavariable-regex:
               metavariable: $F
               regex: ^(encodeFor(OS|Shell)|quote|escapeShell.*)$
+      # conversão para número ou booleano descarta qualquer metacaractere de shell
+      - pattern: Integer.parseInt(...)
+      - pattern: Long.parseLong(...)
+      - pattern: Double.parseDouble(...)
+      - pattern: Boolean.parseBoolean(...)
+      - pattern: java.util.UUID.fromString(...)
+      - pattern: UUID.fromString(...)
     message: >
       Possível Command Injection (CWE-78): dado da requisição chega à execução de um comando do sistema operacional.
       Valide contra uma lista de permitidos e passe os argumentos como lista, nunca como texto concatenado.

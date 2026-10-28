@@ -444,6 +444,14 @@ Fecha o item "Números mágicos" deixado pelo PR da auditoria #46. Refatoração
 Verificado: Checkstyle com a configuração do projeto sobre `audit-api` e `audit-cli`: 0 `MagicNumber` (antes 322); `javac` sem erro novo em relação à `main` (diferença só em `Response.Status`, que o `javac` local não resolve por faltar o jakarta) e o CLI compila sem erros.
 Não verificado: Maven e testes (só o CI); não rodei comparação de saída antes/depois, só revisei cada troca.
 
+## 2026-10-28 — falso positivo — `sentinel-command-injection-requisicao` (pacote core-security 1.1.3)
+
+Classe: falso positivo (eixo 1/2, OWASP Benchmark `cmdi`: TPR 0,92, FPR 0,71, pontuação 0,21 na linha de base).
+Causa: a regra de taint só tinha sanitizadores de shell (`encodeForOS`, `quote`…); um valor da requisição convertido para número ou booleano continuava marcado como contaminado.
+O que mudou: `Integer.parseInt`, `Long.parseLong`, `Double.parseDouble`, `Boolean.parseBoolean` e `UUID.fromString` passam a ser sanitizadores; testes `cmdiNumeroConvertido` (ok) e `cmdiTextoSemConverter` (ruleid); `version` do pack 1.1.2 → 1.1.3.
+Verificado: `semgrep --test` sobre `sentinel-injection.yml` e `sentinel-injection.java`: 7/7 passaram.
+NÃO verificado: efeito no job `benchmark` (não li o código do Benchmark, como manda a regra; a queda do FPR só aparece no CI). O backlog 1/2 `cmdi` segue aberto e `baseline.json` não foi alterado; se o CI mostrar `cmdi` acima de 0,209, a linha de base deve subir em PR seguinte.
+
 ## Dashboard 12.34.0 / API — Tela de Configurações
 
 Reúne na tela, como último item do menu, as variáveis que ficavam espalhadas em `.env.example`, `application.properties`, `docker-compose.yml` e nos README.
