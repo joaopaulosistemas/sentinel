@@ -43,11 +43,11 @@ public final class FindingDeduplicator {
         for (DedupTopic topic : topics) {
             List<Finding> inTopic = findings.stream().filter(f -> topicOf(f, topics) == topic).toList();
             for (Finding candidate : inTopic) {
-                if (removed.contains(candidate) || isPreferred(candidate)) {
+                if (removed.contains(candidate) || isPreferred(candidate, topic)) {
                     continue;
                 }
                 Finding anchor = inTopic.stream()
-                        .filter(a -> isPreferred(a) && !removed.contains(a))
+                        .filter(a -> isPreferred(a, topic) && !removed.contains(a))
                         .filter(a -> sameFile(a, candidate) && near(a, candidate, topic.maxLines()))
                         .findFirst().orElse(null);
                 if (anchor != null) {
@@ -80,8 +80,10 @@ public final class FindingDeduplicator {
         return null;
     }
 
-    private static boolean isPreferred(Finding f) {
-        return PREFERRED_TOOL.equalsIgnoreCase(f.getToolSource());
+    /** O achado que fica é o da ferramenta que o tópico prefere (padrão: {@link #PREFERRED_TOOL}). */
+    private static boolean isPreferred(Finding f, DedupTopic topic) {
+        String tool = topic.prefer() == null || topic.prefer().isBlank() ? PREFERRED_TOOL : topic.prefer();
+        return tool.equalsIgnoreCase(f.getToolSource());
     }
 
     private static boolean sameFile(Finding a, Finding b) {

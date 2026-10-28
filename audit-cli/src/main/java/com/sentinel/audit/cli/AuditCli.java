@@ -26,6 +26,7 @@ import java.util.Map;
  *     --api-key $AUDIT_API_KEY \
  *     --fail-below 70 \
  *     --fail-on-new HIGH \
+ *     --fail-on-score-drop 0 \
  *     --sarif resultado.sarif --junit resultado.xml
  * </pre>
  *
@@ -105,10 +106,12 @@ public class AuditCli {
                 writeReports(args, findings, auditRunId);
             }
 
-            boolean belowScore = failedBelowScore(args, finalResult);
-            boolean badFindings = failedOnFindings(args, findings);
-            boolean newFindings = failedOnNewFindings(args, auditRunId);
-            if (belowScore || badFindings || newFindings) {
+            // Todas as verificações rodam (cada uma explica sua falha); basta uma para reprovar.
+            boolean failed = failedBelowScore(args, finalResult);
+            failed |= failedOnFindings(args, findings);
+            failed |= failedOnNewFindings(args, auditRunId);
+            failed |= failedOnScoreDrop(args, auditRunId);
+            if (failed) {
                 return 1;
             }
 
@@ -194,12 +197,32 @@ public class AuditCli {
         return false;
     }
 
+    /** Catraca da nota: reprova se ela caiu mais que o permitido em relação à auditoria anterior. */
+    private boolean failedOnScoreDrop(CliArgs args, long auditRunId) throws Exception {
+        if (args.failOnScoreDrop == null) {
+            return false;
+        }
+        JsonNode diff = fetchJson(args, "/api/v1/audits/" + auditRunId + "/diff");
+        JsonNode delta = diff.path("scoreDelta");
+        if (!diff.path("hasBaseline").asBoolean(false) || !delta.isNumber()) {
+            System.out.println("\n--fail-on-score-drop ignorado: sem auditoria anterior para comparar.");
+            return false;
+        }
+        double drop = -delta.asDouble();
+        if (drop > args.failOnScoreDrop) {
+            System.err.printf("%nFALHA: a nota caiu %.2f ponto(s) desde a auditoria #%d (permitido: %.2f)%n",
+                    drop, diff.path("baseAuditId").asLong(), args.failOnScoreDrop);
+            return true;
+        }
+        return false;
+    }
+
     private JsonNode fetchJson(CliArgs args, String path) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(args.apiUrl + path)).GET();
         addAuth(builder, args.token);
         HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
-            throw new RuntimeException("Falha ao consultar " + path + " (HTTP " + response.statusCode() + ")");
+            throw new IllegalStateException("Falha ao consultar " + path + " (HTTP " + response.statusCode() + ")");
         }
         return objectMapper.readTree(response.body());
     }
@@ -291,7 +314,7 @@ public class AuditCli {
                 HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 202) {
-            throw new RuntimeException("Falha ao criar auditoria (HTTP " + response.statusCode() + "): " + response.body());
+            throw new IllegalStateException("Falha ao criar auditoria (HTTP " + response.statusCode() + "): " + response.body());
         }
 
         JsonNode responseBody = objectMapper.readTree(response.body());
@@ -389,6 +412,7 @@ public class AuditCli {
             "Uso: java -jar sentinel-audit-cli.jar --system-id <id> [--branch <branch>] [--api-url <url>]\n"
           + "       [--api-key <chave> | env AUDIT_API_KEY] [--fail-below <score>]\n"
           + "       [--fail-on <CRITICAL|HIGH|MEDIUM|LOW>] [--fail-on-new <CRITICAL|HIGH|MEDIUM|LOW>]\n"
+          + "       [--fail-on-score-drop <pontos>  reprova se a nota cair mais que isso desde a auditoria anterior]\n"
           + "       [--sarif <arquivo>] [--junit <arquivo>] [--json <arquivo>] [--repo <url> (informativo)]\n"
           + "       [--base-ref <branch-base>  audita só o que mudou em relação a ele (modo PR)]\n"
           + "       [--pr-comment <arquivo.md>  grava o resumo em Markdown para comentar no PR]";
@@ -437,6 +461,7 @@ public class AuditCli {
             case "--fail-below"  -> result.failBelow  = parseNumber(flag, value);
             case "--fail-on"     -> result.failOn     = parseSeverity(flag, value);
             case "--fail-on-new" -> result.failOnNew  = parseSeverity(flag, value);
+            case "--fail-on-score-drop" -> result.failOnScoreDrop = parseNumber(flag, value);
             case "--sarif"       -> result.sarifFile  = value;
             case "--junit"       -> result.junitFile  = value;
             case "--json"        -> result.jsonFile   = value;
@@ -474,6 +499,7 @@ public class AuditCli {
         Double failBelow;
         String failOn;
         String failOnNew;
+        Double failOnScoreDrop;
         String sarifFile;
         String junitFile;
         String jsonFile;

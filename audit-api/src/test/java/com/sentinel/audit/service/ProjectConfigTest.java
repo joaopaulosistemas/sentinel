@@ -97,6 +97,27 @@ class ProjectConfigTest {
     }
 
     @Test
+    void idDaRegraNaoDiferenciaMaiusculasDeMinusculas() {
+        String yml = """
+                suppress:
+                  - rule: "pmd-systemprintln"
+                    path: "cli/**"
+                    reason: "o CLI escreve no console de propósito"
+                  - rule: "GITLEAKS-*"
+                    reason: "teste"
+                """;
+        Finding pmd = f("pmd-SystemPrintln", "cli/A.java");
+        Finding fora = f("pmd-SystemPrintln", "api/A.java");
+        Finding gitleaks = f("gitleaks-generic-api-key", "x/B.java");
+
+        ProjectConfig.parse(yml).apply(List.of(pmd, fora, gitleaks), HOJE);
+
+        assertEquals(FindingStatus.SUPPRESSED, pmd.getStatus());
+        assertNull(fora.getStatus());
+        assertEquals(FindingStatus.SUPPRESSED, gitleaks.getStatus());
+    }
+
+    @Test
     void supressaoVencidaNaoValeEGeraAviso() {
         Finding vencida = f("regra-vencida", "src/A.java");
         Finding futura = f("com-data-futura", "src/B.java");

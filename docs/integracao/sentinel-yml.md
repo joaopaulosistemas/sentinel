@@ -14,7 +14,7 @@ exclude:
 
 # Achados aceitos. Continuam na lista, marcados como suprimidos, com o motivo; só deixam de pesar na nota.
 suppress:
-  - rule: sentinel-java-retorna-null-colecao   # id exato, sufixo depois do ponto ou prefixo com *
+  - rule: sentinel-java-retorna-null-colecao   # id exato, sufixo depois do ponto ou prefixo com *; maiúsculas não contam
     path: "src/main/java/pack/Yamls.java"      # opcional (glob); sem ele vale para o projeto todo
     reason: "null é o sinal de valor inválido" # obrigatório
     until: 2027-06-30                          # opcional; depois da data a supressão deixa de valer

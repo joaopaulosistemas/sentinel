@@ -111,7 +111,7 @@ public class HotspotAnalyzer implements CodeAnalyzer {
                 if (worst != null) {
                     out.put(rel, new Cx(worst.complexity(), worst.name(), worst.startLine()));
                 }
-            } catch (IOException ex) {
+            } catch (IOException ignored) {
                 // binário ou codificação inesperada: ignora o arquivo
             }
         }

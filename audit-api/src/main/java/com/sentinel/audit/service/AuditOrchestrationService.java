@@ -316,16 +316,47 @@ public class AuditOrchestrationService {
      * Executa em paralelo os analisadores que suportam a stack, isolando falhas individuais.
      */
     private Analysis runAnalyzers(Path projectPath, AuditRun runRef, Stack stack, AuditPolicy policy) {
-        List<CodeAnalyzer> candidates = Stream.concat(Stream.of(
+        List<CodeAnalyzer> candidates = candidateAnalyzers();
+        // Analisador desligado para este sistema sai antes da escolha, para não "substituir" outro por engano.
+        List<CodeAnalyzer> analyzers = selectAnalyzers(candidates.stream().filter(c -> !policy.analyzerDisabled(c.getName())).toList());
+
+        List<AnalyzerRunInfo> runs = skippedBeforeRun(candidates, analyzers, policy);
+        Long runId = runRef.getId();
+        List<CodeAnalyzer> started = new ArrayList<>();
+        List<CompletableFuture<Outcome>> futures = new ArrayList<>();
+        List<AuditProgressDto.AnalyzerProgress> plan = new ArrayList<>();
+        for (AnalyzerRunInfo r : runs) {
+            plan.add(new AuditProgressDto.AnalyzerProgress(r.name(), r.status(), 0, 0, r.note()));
+        }
+        for (CodeAnalyzer analyzer : analyzers) {
+            AnalyzerRunInfo skipped = skipReason(analyzer, stack, projectPath);
+            if (skipped != null) {
+                runs.add(skipped);
+                plan.add(new AuditProgressDto.AnalyzerProgress(skipped.name(), skipped.status(), 0, 0, skipped.note()));
+                continue;
+            }
+            started.add(analyzer);
+            plan.add(new AuditProgressDto.AnalyzerProgress(analyzer.getName(), "ESPERANDO", 0, 0, null));
+            futures.add(startAnalyzer(analyzer, projectPath, runRef, policy));
+        }
+
+        progress.planned(runId, plan);
+        return collectOutcomes(runId, started, futures, runs);
+    }
+
+    /** Todos os analisadores conhecidos (os estruturais entram se o conjunto existir). */
+    private List<CodeAnalyzer> candidateAnalyzers() {
+        return Stream.concat(Stream.of(
                 semgrepAnalyzer, dependencyAnalyzer, architectureAnalyzer, secretsAnalyzer, historyAnalyzer,
                 trivyAnalyzer, gitleaksAnalyzer, cleanCodeAnalyzer,
                 pmdAnalyzer, eslintAnalyzer, sarifAnalyzer, architecturePolicyAnalyzer, hygieneAnalyzer,
                 evidenceAnalyzer),
                 structuralAnalyzers == null ? Stream.<CodeAnalyzer>empty() : structuralAnalyzers.all().stream())
                 .filter(Objects::nonNull).toList();
-        // Analisador desligado para este sistema sai antes da escolha, para não "substituir" outro por engano.
-        List<CodeAnalyzer> analyzers = selectAnalyzers(candidates.stream().filter(c -> !policy.analyzerDisabled(c.getName())).toList());
+    }
 
+    /** Analisadores que nem chegam a rodar: desligados no sistema, sem a ferramenta ou cobertos por outro. */
+    private static List<AnalyzerRunInfo> skippedBeforeRun(List<CodeAnalyzer> candidates, List<CodeAnalyzer> analyzers, AuditPolicy policy) {
         List<AnalyzerRunInfo> runs = new ArrayList<>();
         for (CodeAnalyzer c : candidates) {
             if (policy.analyzerDisabled(c.getName())) {
@@ -336,48 +367,45 @@ public class AuditOrchestrationService {
                 runs.add(new AnalyzerRunInfo(c.getName(), "SUBSTITUIDO", 0, 0, "outro analisador cobre o mesmo"));
             }
         }
+        return runs;
+    }
 
+    /** Motivo de um analisador escolhido não rodar nesta stack ou sem evidência; nulo se ele deve rodar. */
+    private static AnalyzerRunInfo skipReason(CodeAnalyzer analyzer, Stack stack, Path projectPath) {
+        if (stack != null && !analyzer.supports(stack)) {
+            LOG.infof("Analisador %s ignorado: não suporta a stack %s", analyzer.getName(), stack);
+            return new AnalyzerRunInfo(analyzer.getName(), "NAO_SUPORTADO", 0, 0, "não se aplica à stack " + stack);
+        }
+        if (analyzer instanceof EvidenceAnalyzer ev && !ev.hasEvidence(projectPath)) {
+            return new AnalyzerRunInfo(analyzer.getName(), "SEM_EVIDENCIA", 0, 0,
+                    "nenhum arquivo em " + EvidenceAnalyzer.DIR + " (dump do banco, estatísticas, cobertura ou histograma de memória)");
+        }
+        return null;
+    }
+
+    /** Dispara um analisador em paralelo; uma falha dele vira resultado vazio com o erro anotado. */
+    private CompletableFuture<Outcome> startAnalyzer(CodeAnalyzer analyzer, Path projectPath, AuditRun runRef, AuditPolicy policy) {
         Long runId = runRef.getId();
-        List<CodeAnalyzer> started = new ArrayList<>();
-        List<CompletableFuture<Outcome>> futures = new ArrayList<>();
-        List<AuditProgressDto.AnalyzerProgress> plan = new ArrayList<>();
-        for (AnalyzerRunInfo r : runs) {
-            plan.add(new AuditProgressDto.AnalyzerProgress(r.name(), r.status(), 0, 0, r.note()));
-        }
-        for (CodeAnalyzer analyzer : analyzers) {
-            if (stack != null && !analyzer.supports(stack)) {
-                LOG.infof("Analisador %s ignorado: não suporta a stack %s", analyzer.getName(), stack);
-                runs.add(new AnalyzerRunInfo(analyzer.getName(), "NAO_SUPORTADO", 0, 0, "não se aplica à stack " + stack));
-                plan.add(new AuditProgressDto.AnalyzerProgress(analyzer.getName(), "NAO_SUPORTADO", 0, 0, "não se aplica à stack " + stack));
-                continue;
-            }
-            if (analyzer instanceof EvidenceAnalyzer ev && !ev.hasEvidence(projectPath)) {
-                runs.add(new AnalyzerRunInfo(analyzer.getName(), "SEM_EVIDENCIA", 0, 0,
-                        "nenhum arquivo em " + EvidenceAnalyzer.DIR + " (dump do banco, estatísticas, cobertura ou histograma de memória)"));
-                plan.add(new AuditProgressDto.AnalyzerProgress(analyzer.getName(), "SEM_EVIDENCIA", 0, 0,
-                        "nenhum arquivo em " + EvidenceAnalyzer.DIR));
-                continue;
-            }
-            started.add(analyzer);
-            plan.add(new AuditProgressDto.AnalyzerProgress(analyzer.getName(), "ESPERANDO", 0, 0, null));
-            futures.add(CompletableFuture
-                    .supplyAsync(() -> {
-                        progress.analyzerStarted(runId, analyzer.getName());
-                        AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
-                        progress.analyzerFinished(runId, analyzer.getName(), r.partial() ? "PARCIAL" : "OK", r.findings().size(),
-                                r.duration() == null ? 0 : r.duration().toMillis(),
-                                r.partial() ? truncate(r.partialNote(), 300) : null, severityCounts(r.findings()));
-                        return new Outcome(r, null);
-                    }, executor)
-                    .exceptionally(error -> {
-                        LOG.errorf(error, "Analisador %s falhou; seguindo sem seus resultados", analyzer.getName());
-                        progress.analyzerFinished(runId, analyzer.getName(), "FALHOU", 0, 0, truncate(error.getMessage(), 200));
-                        return new Outcome(new AnalyzerResult(List.of(), analyzer.getName(), Duration.ZERO),
-                                error.getMessage());
-                    }));
-        }
+        return CompletableFuture
+                .supplyAsync(() -> {
+                    progress.analyzerStarted(runId, analyzer.getName());
+                    AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
+                    progress.analyzerFinished(runId, analyzer.getName(), r.partial() ? "PARCIAL" : "OK", r.findings().size(),
+                            r.duration() == null ? 0 : r.duration().toMillis(),
+                            r.partial() ? truncate(r.partialNote(), 300) : null, severityCounts(r.findings()));
+                    return new Outcome(r, null);
+                }, executor)
+                .exceptionally(error -> {
+                    LOG.errorf(error, "Analisador %s falhou; seguindo sem seus resultados", analyzer.getName());
+                    progress.analyzerFinished(runId, analyzer.getName(), "FALHOU", 0, 0, truncate(error.getMessage(), 200));
+                    return new Outcome(new AnalyzerResult(List.of(), analyzer.getName(), Duration.ZERO),
+                            error.getMessage());
+                });
+    }
 
-        progress.planned(runId, plan);
+    /** Espera cada analisador na ordem em que foi disparado e junta achados e situação de cada um. */
+    private Analysis collectOutcomes(Long runId, List<CodeAnalyzer> started, List<CompletableFuture<Outcome>> futures,
+                                     List<AnalyzerRunInfo> runs) {
         List<Finding> allFindings = new ArrayList<>();
         for (int i = 0; i < futures.size(); i++) {
             Outcome outcome = awaitOutcome(runId, futures.get(i), futures);

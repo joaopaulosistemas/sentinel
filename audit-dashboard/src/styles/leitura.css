@@ -39,9 +39,11 @@
  *  - Entrelinha de 1,5 no corpo; números da tabela alinhados (algarismos tabulares), para comparar notas sem esforço.
  *  - "Texto grande": amplia a área de conteúdo em 12% (o menu e o cabeçalho ficam como estão).
  */
+/* stylelint-disable declaration-no-important -- o piso de leitura precisa vencer font-size inline do React */
 :root:not([data-texto='pequeno']) .sentinel-content-theme [style*='font-size: 12px'] { font-size: 13px !important; }
 :root:not([data-texto='pequeno']) .sentinel-content-theme [style*='font-size: 11px'] { font-size: 12px !important; }
 :root:not([data-texto='pequeno']) .sentinel-content-theme { line-height: 1.5; }
 .sentinel-content-theme { font-variant-numeric: tabular-nums; }
 :root[data-texto='grande'] .sentinel-content-theme { zoom: 1.12; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+/* stylelint-enable declaration-no-important */

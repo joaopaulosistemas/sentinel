@@ -115,12 +115,12 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
         boolean scan = false;
         int line = 0;
         try (BufferedReader reader = Files.newBufferedReader(logFile, StandardCharsets.ISO_8859_1)) {
-            String l;
-            while ((l = reader.readLine()) != null && findings.size() < MAX_FINDINGS) {
+            String l = reader.readLine();
+            while (l != null && findings.size() < MAX_FINDINGS) {
                 if (l.startsWith("@@commit ")) {
                     commit = l.substring(9).trim();
                 } else if (l.startsWith("+++ ")) {
-                    path = l.startsWith("+++ b/") ? l.substring(6) : null;
+                    path = diffPath(l);
                     scan = path != null && SecretsAnalyzer.isScannablePath(path);
                 } else if (l.startsWith("@@ ")) {
                     line = hunkStart(l);
@@ -134,9 +134,15 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
                     }
                     line++;
                 }
+                l = reader.readLine();
             }
         }
         return findings;
+    }
+
+    /** Caminho do arquivo novo no cabeçalho {@code +++ b/...} do diff; nulo para {@code /dev/null}. */
+    private static String diffPath(String header) {
+        return header.startsWith("+++ b/") ? header.substring(6) : null;
     }
 
     private static int hunkStart(String header) {

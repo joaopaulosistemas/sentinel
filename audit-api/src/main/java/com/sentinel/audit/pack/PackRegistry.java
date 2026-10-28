@@ -263,6 +263,11 @@ public class PackRegistry {
         integrity.put(p.id(), integ.state().name().toLowerCase(Locale.ROOT).replace('_', '-'));
     }
 
+    /** Perfil de que {@code p} herda, ou nulo se não herda de ninguém (ou o pai não existe). */
+    private static Profile parentOf(Snapshot s, Profile p) {
+        return p.extendsId() == null ? null : s.profiles().get(p.extendsId().toLowerCase(Locale.ROOT));
+    }
+
     /** Remove perfis com herança quebrada ou circular; pacote desconhecido num perfil vira aviso. */
     private static void validateProfiles(Map<String, Profile> profiles, Map<String, RulePack> packs,
                                          Map<String, List<String>> rejected, List<String> warnings) {
@@ -277,13 +282,11 @@ public class PackRegistry {
                 if (parent == null) {
                     rejected.put("profiles/" + p.id(), List.of("estende o perfil '" + cur.extendsId() + "', que não existe"));
                     profiles.remove(p.id());
-                    cur = null;
                     break;
                 }
                 if (chain.contains(parent.id())) {
                     rejected.put("profiles/" + p.id(), List.of("herança circular: " + String.join(" -> ", chain) + " -> " + parent.id()));
                     profiles.remove(p.id());
-                    cur = null;
                     break;
                 }
                 cur = parent;
@@ -358,7 +361,7 @@ public class PackRegistry {
             throw new IllegalArgumentException("Perfil não encontrado: " + id);
         }
         List<Profile> chain = new ArrayList<>();
-        for (Profile cur = profile; cur != null; cur = cur.extendsId() == null ? null : s.profiles().get(cur.extendsId().toLowerCase(Locale.ROOT))) {
+        for (Profile cur = profile; cur != null; cur = parentOf(s, cur)) {
             chain.add(0, cur);                       // do ancestral para o próprio perfil
         }
         Set<String> selected = null;

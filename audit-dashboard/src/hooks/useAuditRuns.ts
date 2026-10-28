@@ -34,6 +34,15 @@ export function useAudit(id: number) {
   });
 }
 
+export function useScoreExplanation(auditId: number, enabled: boolean, without: string[]) {
+  return useQuery({
+    queryKey: ['scoreExplanation', auditId, without],
+    queryFn: () => api.getScoreExplanation(auditId, without),
+    enabled: enabled && auditId > 0,
+    placeholderData: (previous) => previous,
+  });
+}
+
 export function useFixPlan(auditId: number, enabled: boolean) {
   return useQuery({
     queryKey: ['fixPlan', auditId],

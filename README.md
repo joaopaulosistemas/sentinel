@@ -444,6 +444,7 @@ Opções extras do CLI:
 | `--fail-on HIGH` | Reprova se houver qualquer finding daquela severidade (ou acima) |
 | `--json resultado.json` | Grava os findings em JSON |
 | `--fail-on-new CRITICAL` | Reprova se surgir finding **novo** daquela severidade (ou acima) desde a auditoria anterior |
+| `--fail-on-score-drop 0` | Catraca da nota: reprova se ela cair mais que esses pontos desde a auditoria anterior (sem anterior, não reprova) |
 | `--sarif relatorio.sarif` | Grava SARIF 2.1.0 (GitHub Code Scanning, Azure DevOps, GitLab) |
 | `--junit relatorio.xml` | Grava JUnit XML (aparece como teste no pipeline) |
 
@@ -561,7 +562,7 @@ meu-pacote/
 ├── rules/*.yml           # regras Semgrep (metadata.status: draft|experimental|stable|deprecated)
 ├── tests/                # casos "// ruleid:" / "// ok:" — mesmo nome do arquivo de regra
 ├── remediation/*.yml     # orientação de correção por id de regra (key, summary, before, after, refs)
-├── dedup.yml             # regras que descrevem o mesmo problema (agrupa em um achado)
+├── dedup.yml             # regras que descrevem o mesmo problema (agrupa em um achado; `prefer: <Ferramenta>` escolhe qual fica, padrão Semgrep)
 ├── tools/*.yml           # fontes SARIF de outras ferramentas (veja abaixo)
 └── architecture.yml      # camadas, convenções, arquivos obrigatórios, política de bibliotecas
 ```

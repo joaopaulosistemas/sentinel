@@ -180,9 +180,10 @@ public final class PackIntegrity {
         try (InputStream in = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS)) {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] buf = new byte[8192];
-            int n;
-            while ((n = in.read(buf)) > 0) {
+            int n = in.read(buf);
+            while (n > 0) {
                 md.update(buf, 0, n);
+                n = in.read(buf);
             }
             return HexFormat.of().formatHex(md.digest());
         } catch (java.security.NoSuchAlgorithmException e) {

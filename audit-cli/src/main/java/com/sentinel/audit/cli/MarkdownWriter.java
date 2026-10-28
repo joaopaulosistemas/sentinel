@@ -44,9 +44,10 @@ final class MarkdownWriter {
             md.append("| Severidade | Regra | Local | Problema |\n|---|---|---|---|\n");
             int shown = 0;
             for (JsonNode f : active) {
-                if (shown++ >= MAX_ROWS) {
+                if (shown >= MAX_ROWS) {
                     break;
                 }
+                shown++;
                 String file = f.path("filePath").asText("");
                 int line = f.path("lineNumber").asInt(0);
                 md.append("| ").append(cell(f.path("severity").asText("")))

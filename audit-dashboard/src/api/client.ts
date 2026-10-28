@@ -8,6 +8,7 @@ import type {
   FindingResponse,
   FindingsOverview,
   FixPlan,
+  ScoreExplanation,
   FindingStatus,
   Severity,
   PathCheck,
@@ -143,6 +144,8 @@ export const api = {
   },
 
   getFixPlan: (auditId: number) => apiFetch<FixPlan>(`/api/v1/audits/${auditId}/fix-plan`),
+  getScoreExplanation: (auditId: number, without: string[]) =>
+    apiFetch<ScoreExplanation>(`/api/v1/audits/${auditId}/score-explanation${without.length > 0 ? `?without=${encodeURIComponent(without.join(','))}` : ''}`),
 
   getFindingsOverview: (params: {
     systemId?: number;

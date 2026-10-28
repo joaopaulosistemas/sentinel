@@ -34,3 +34,10 @@ suppress:
   - rule: "pmd-systemprintln"
     path: "audit-cli/**"
     reason: "o CLI escreve o resultado no console de propósito"
+  # O CLI devolve o código de saída ao shell: encerrar a JVM com System.exit é o contrato dele.
+  - rule: "pmd-DoNotTerminateVM"
+    path: "audit-cli/**"
+    reason: "o CLI termina com o código de saída que o pipeline lê"
+  - rule: "sentinel-system-exit"
+    path: "audit-api/src/main/java/com/sentinel/audit/pack/PackTool.java"
+    reason: "PackTool.main é um programa de linha de comando (códigos de saída 0, 1 e 2)"

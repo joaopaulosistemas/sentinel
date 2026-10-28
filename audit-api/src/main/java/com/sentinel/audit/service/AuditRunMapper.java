@@ -72,7 +72,7 @@ public class AuditRunMapper {
                     dto.setPreviousAuditId(diff.baseAuditId());
                     dto.setScoreDelta(diff.scoreDelta());
                 }
-            } catch (RuntimeException e) {
+            } catch (RuntimeException ignored) {
                 // a comparação é um complemento: sem ela a resposta segue valendo
             }
         }
