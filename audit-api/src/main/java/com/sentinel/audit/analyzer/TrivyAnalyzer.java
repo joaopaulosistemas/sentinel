@@ -72,27 +72,31 @@ public class TrivyAnalyzer implements CodeAnalyzer {
         }
 
         Path report = null;
+        Path stderr = null;
+        String partial = null;
         try {
             report = Files.createTempFile("trivy-", ".json");
+            stderr = Files.createTempFile("trivy-err-", ".txt");
             List<String> cmd = List.of(exe.toString(), "fs", "--quiet", "--no-progress",
                     "--format", "json", "--output", report.toString(),
                     "--scanners", String.join(",", scannerList()),
                     "--skip-dirs", "node_modules,.git",
                     "--timeout", timeoutSeconds + "s",
                     projectPath.toString());
-            int code = ExternalTools.run(cmd, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds);
-            if (code == -1) {
-                LOG.warnf("Trivy excedeu o tempo limite de %ds e foi encerrado", timeoutSeconds);
-            } else if (code != 0) {
-                LOG.warnf("Trivy terminou com código %d (base de vulnerabilidades indisponível?)", code);
+            int code = ExternalTools.run(cmd, null, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds, null, stderr);
+            if (code != 0) {
+                partial = ExternalTools.falha(code, timeoutSeconds, stderr) + (code == -1 ? "" : " (base de vulnerabilidades indisponível?)");
+                LOG.warnf("Trivy %s", partial);
             } else {
                 findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
                 LOG.infof("Trivy encontrou %d findings", findings.size());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            partial = "execução interrompida";
         } catch (Exception e) {
             LOG.errorf("Erro ao executar o Trivy: %s", e.getMessage());
+            partial = "erro ao executar: " + e.getMessage();
         } finally {
             if (report != null) {
                 try {
@@ -102,7 +106,8 @@ public class TrivyAnalyzer implements CodeAnalyzer {
                 }
             }
         }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+        ExternalTools.deleteQuietly(stderr);
+        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
     }
 
     private List<String> scannerList() {

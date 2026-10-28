@@ -371,3 +371,18 @@ Em resposta ao relatório da auditoria #68 (commit a3a74a5). Reproduzi localment
 - `Locale.ROOT` em 18 pontos de formatação/comparação de texto.
 Verificado: `tsc`, `vitest` (205), `vite build`, ESLint do Sentinel (0), teste diferencial acima; classes Java dos pacotes e do CLI compiladas com `javac` contra os jars disponíveis. Não verificado: a compilação e os testes JUnit completos da API (Maven não alcança o repositório de artefatos neste ambiente; só o CI compila a API inteira). O achado de segredo em `.env.example:15` do relatório não foi reproduzido localmente.
 
+
+## Confiabilidade do motor de regras — 2026-10-28
+
+PR único com seis frentes (feito a pedido da pessoa que mantém o projeto, fora dos agentes `evolucao/*`).
+
+| Frente | O que mudou | Evidência |
+|---|---|---|
+| 1 Configuração sem ligação | `application.properties` volta a ligar `PACKS_*`, `TRIVY_*`, `GITLEAKS_*`, `PMD_*`, `ESLINT_*`, `CLEANCODE_*`, evidências, laboratório e OIDC (removidos por engano em `cefaf1e`) | `EnvBindingTest` confere que toda variável do compose e do Helm tem `${VAR:padrão}`; simulação em Python: 33/33 do compose e 15/15 do Helm |
+| 2 Status honesto | `AnalyzerResult.partialNote` e status `PARCIAL` (timeout, saída anormal, erros do Semgrep) no orquestrador, andamento, relatório de insights e dashboard; Semgrep passa a declarar `isAvailable`; fim do stderr vira nota; Semgrep fixado em 1.172.0 no Dockerfile | `AnalyzerHonestStatusTest`; dashboard: `tsc` e vitest verdes |
+| 3 Portão por categoria | `benchmark-owasp.py --tolerancia-categoria` (padrão 0,10) além da média (0,02) | rodado contra o baseline: passa |
+| 4 Taint | propagação por `list.add`/`map.put`, `getHeaderNames()` como fonte e variáveis de ambiente de `Runtime.exec` em sqli, cmdi e pathtraver | Benchmark com Semgrep 1.172.0: média 0,444 → 0,461 (treino 0,486 → 0,507; validação 0,410 → 0,422); cmdi 0,053 → 0,209, pathtraver 0,129 → 0,161, sqli 0,244 → 0,248; FPR dessas categorias subiu |
+| 5 Peso só com precisão medida | `eslint-regexp/no-super-linear-move`, `eslint-security/detect-non-literal-fs-filename` (0/6) e `jscpd-codigo-duplicado` (1/9) em sombra nos perfis; `scripts/precisao-regras.py --verifica` exige a evidência do `precisao.md` | script verde; `PackRegistryTest` cobre as sobrescritas |
+| 6 Veredito humano | `scripts/concordancia-revisao.py` calcula a concordância quando a coluna "Veredito humano" for preenchida | hoje 0 de 20 preenchidas: sem número |
+
+Não verificado: Maven, Quarkus e Docker não rodaram aqui (Maven Central inacessível). As mudanças em Java foram checadas só por `javac` sobre as fontes (nenhum erro novo além dos de dependência ausente) e por um teste de fumaça de `ExternalTools`; o CI decide. O veredito humano (frente 6) continua dependendo de uma pessoa.

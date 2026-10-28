@@ -8,7 +8,8 @@ O gabarito é o `expectedresults-1.2.csv` oficial do OWASP Benchmark (licença G
 Métrica por categoria: TPR (casos vulneráveis detectados), FPR (casos seguros marcados) e pontuação = TPR - FPR
 (a "pontuação de Youden" do próprio Benchmark: 0 = chute, 1 = perfeito). Um caso conta como detectado quando algum achado
 de uma regra mapeada para a categoria cai no arquivo do caso. O mapa regra -> categoria está em MAPA_REGRAS.
-Sai com 1 se a pontuação média cair mais que a tolerância contra o baseline.
+Sai com 1 se a pontuação média cair mais que --tolerancia, OU se qualquer categoria cair mais que
+--tolerancia-categoria contra o baseline (a média sozinha deixa uma categoria despencar enquanto outra sobe).
 """
 import argparse, csv, json, os, re, sys
 
@@ -89,6 +90,16 @@ def medir(achados, casos):
     return tabela, media
 
 
+def regressoes_por_categoria(tabela, base, tolerancia):
+    """Categorias cuja pontuação caiu mais que a tolerância contra o baseline: [(categoria, antes, agora)]."""
+    out = []
+    for cat, antes in sorted(base["categorias"].items()):
+        agora = tabela.get(cat, {}).get("pontuacao", 0.0)
+        if agora < antes["pontuacao"] - tolerancia:
+            out.append((cat, antes["pontuacao"], agora))
+    return out
+
+
 def markdown(tabela, media, base=None):
     linhas = ["| Categoria | Vulneráveis | Seguros | TPR | FPR | Pontuação | Antes |", "|---|---:|---:|---:|---:|---:|---:|"]
     for cat in sorted(tabela):
@@ -103,6 +114,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("achados"); ap.add_argument("--baseline"); ap.add_argument("--grava-baseline")
     ap.add_argument("--markdown"); ap.add_argument("--conjunto", default="todos", choices=["todos", "treino", "validacao"]); ap.add_argument("--tolerancia", type=float, default=0.02)
+    ap.add_argument("--tolerancia-categoria", type=float, default=0.10, help="queda máxima por categoria; 0.10 tolera ruído de um caso nas categorias pequenas")
     a = ap.parse_args()
     casos = carregar_gabarito(a.conjunto)
     tabela, media = medir(carregar_achados(a.achados), casos)
@@ -119,6 +131,12 @@ def main():
     if base and media < base["media"] - a.tolerancia:
         print("::error title=Regressão no OWASP Benchmark::média caiu de %.3f para %.3f" % (base["media"], media))
         sys.exit(1)
+    if base:
+        piores = regressoes_por_categoria(tabela, base, a.tolerancia_categoria)
+        for cat, antes, agora in piores:
+            print("::error title=Regressão por categoria no OWASP Benchmark::%s caiu de %.3f para %.3f" % (cat, antes, agora))
+        if piores:
+            sys.exit(1)
 
 
 if __name__ == "__main__":

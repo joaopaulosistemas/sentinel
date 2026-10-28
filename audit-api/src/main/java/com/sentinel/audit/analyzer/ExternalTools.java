@@ -55,19 +55,62 @@ final class ExternalTools {
     /** Como o anterior, mas grava a saída padrão em {@code stdoutFile} (ferramentas que só imprimem o SARIF). */
     static int run(List<String> command, Path workingDir, Map<String, String> env, long timeoutSeconds, Path stdoutFile)
             throws IOException, InterruptedException {
+        return run(command, workingDir, env, timeoutSeconds, stdoutFile, null);
+    }
+
+    /**
+     * Como o anterior, mas grava a saída de erro em {@code stderrFile} (quando não nulo), para que uma falha da
+     * ferramenta possa ser explicada ao usuário em vez de ficar só no log.
+     */
+    static int run(List<String> command, Path workingDir, Map<String, String> env, long timeoutSeconds, Path stdoutFile,
+                   Path stderrFile) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(command);
         if (workingDir != null) {
             pb.directory(workingDir.toFile());
         }
         pb.environment().putAll(env);
         pb.redirectOutput(stdoutFile == null ? ProcessBuilder.Redirect.DISCARD : ProcessBuilder.Redirect.to(stdoutFile.toFile()));
-        pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+        pb.redirectError(stderrFile == null ? ProcessBuilder.Redirect.DISCARD : ProcessBuilder.Redirect.to(stderrFile.toFile()));
         Process process = pb.start();
         if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
             process.destroyForcibly();
             return -1;
         }
         return process.exitValue();
+    }
+
+    static void deleteQuietly(Path p) {
+        try {
+            if (p != null) {
+                Files.deleteIfExists(p);
+            }
+        } catch (Exception ignored) {
+            // arquivo temporário; não vale falhar por isso
+        }
+    }
+
+    /** Últimos caracteres do arquivo (espaços colapsados); vazio se não der para ler. Nunca lança. */
+    static String tail(Path file, int maxChars) {
+        try {
+            if (file == null || !Files.isRegularFile(file)) {
+                return "";
+            }
+            String t = Files.readString(file, java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ").trim();
+            return t.length() <= maxChars ? t : "…" + t.substring(t.length() - maxChars);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Texto da nota de resultado PARCIAL quando a ferramenta não terminou direito: {@code code == -1} é tempo
+     * esgotado; qualquer outro valor, saída anormal. Junta o fim do stderr (a causa real) quando houver.
+     */
+    static String falha(int code, long timeoutSeconds, Path stderrFile) {
+        String base = code == -1 ? "excedeu o tempo limite de " + timeoutSeconds + "s e foi encerrado"
+                : "terminou com código " + code;
+        String err = tail(stderrFile, 300);
+        return err.isEmpty() ? base : base + " — " + err;
     }
 
     /** Caminho relativo à raiz do projeto quando a ferramenta devolve caminho absoluto. */

@@ -363,8 +363,9 @@ public class AuditOrchestrationService {
                     .supplyAsync(() -> {
                         progress.analyzerStarted(runId, analyzer.getName());
                         AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
-                        progress.analyzerFinished(runId, analyzer.getName(), "OK", r.findings().size(),
-                                r.duration() == null ? 0 : r.duration().toMillis(), null, severityCounts(r.findings()));
+                        progress.analyzerFinished(runId, analyzer.getName(), r.partial() ? "PARCIAL" : "OK", r.findings().size(),
+                                r.duration() == null ? 0 : r.duration().toMillis(),
+                                r.partial() ? truncate(r.partialNote(), 300) : null, severityCounts(r.findings()));
                         return new Outcome(r, null);
                     }, executor)
                     .exceptionally(error -> {
@@ -381,9 +382,11 @@ public class AuditOrchestrationService {
             Outcome outcome = awaitOutcome(runId, futures.get(i), futures);
             AnalyzerResult result = outcome.result();
             allFindings.addAll(result.findings());
-            runs.add(new AnalyzerRunInfo(started.get(i).getName(), outcome.error() == null ? "OK" : "FALHOU",
-                    result.findings().size(), result.duration() == null ? 0 : result.duration().toMillis(),
-                    outcome.error() == null ? null : truncate(outcome.error(), 200)));
+            String status = outcome.error() != null ? "FALHOU" : result.partial() ? "PARCIAL" : "OK";
+            String note = outcome.error() != null ? truncate(outcome.error(), 200)
+                    : result.partial() ? truncate(result.partialNote(), 300) : null;
+            runs.add(new AnalyzerRunInfo(started.get(i).getName(), status,
+                    result.findings().size(), result.duration() == null ? 0 : result.duration().toMillis(), note));
         }
         return new Analysis(allFindings, runs);
     }

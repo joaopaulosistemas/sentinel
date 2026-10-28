@@ -40,6 +40,8 @@ const state = (a: AnalyzerProgress) => {
     case 'OK':
       return { icon: <CheckIcon label="Concluído" />, accent: '#198038', bar: '#198038', width: 100,
         text: a.durationMs > 0 ? `concluído em ${Math.max(1, Math.round(a.durationMs / 1000))} s` : 'concluído' };
+    case 'PARCIAL':
+      return { icon: <DashIcon label="Parcial" color="#b28600" />, accent: '#f1c21b', bar: '#f1c21b', width: 100, text: 'parcial — resultado pode estar incompleto' };
     case 'EXECUTANDO':
       return { icon: <SpinnerIcon label="Executando" />, accent: '#0f62fe', bar: '#0f62fe', width: 45, text: 'executando', pulse: true };
     case 'FALHOU':

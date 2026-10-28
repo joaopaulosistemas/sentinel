@@ -1,14 +1,14 @@
 {
- "media": 0.444,
+ "media": 0.461,
  "categorias": {
   "pathtraver": {
    "vuln": 133,
    "seguro": 135,
-   "tp": 97,
-   "fp": 81,
-   "tpr": 0.729,
-   "fpr": 0.6,
-   "pontuacao": 0.129
+   "tp": 118,
+   "fp": 98,
+   "tpr": 0.887,
+   "fpr": 0.726,
+   "pontuacao": 0.161
   },
   "hash": {
    "vuln": 129,
@@ -40,20 +40,20 @@
   "cmdi": {
    "vuln": 126,
    "seguro": 125,
-   "tp": 64,
-   "fp": 56,
-   "tpr": 0.508,
-   "fpr": 0.448,
-   "pontuacao": 0.06
+   "tp": 116,
+   "fp": 89,
+   "tpr": 0.921,
+   "fpr": 0.712,
+   "pontuacao": 0.209
   },
   "sqli": {
    "vuln": 272,
    "seguro": 232,
-   "tp": 234,
-   "fp": 143,
-   "tpr": 0.86,
-   "fpr": 0.616,
-   "pontuacao": 0.244
+   "tp": 255,
+   "fp": 160,
+   "tpr": 0.938,
+   "fpr": 0.69,
+   "pontuacao": 0.248
   },
   "weakrand": {
    "vuln": 218,

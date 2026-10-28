@@ -61,6 +61,7 @@ rules:
       - pattern: $REQ.getParameterValues(...)
       - pattern: $REQ.getHeader(...)
       - pattern: $REQ.getHeaders(...)
+      - pattern: $REQ.getHeaderNames()
       - pattern: $REQ.getParameterNames()
       - pattern: $REQ.getParameterMap()
       - pattern: $REQ.getRequestURL()
@@ -74,6 +75,14 @@ rules:
               metavariable: $A
               regex: ^(RequestParam|PathVariable|RequestHeader|QueryParam|PathParam|FormParam|HeaderParam)$
           - focus-metavariable: $P
+    # O dado que entra numa coleção continua sendo dado externo quando sai dela (list.add / map.put).
+    pattern-propagators:
+      - pattern: $L.add($X)
+        from: $X
+        to: $L
+      - pattern: $M.put($K, $X)
+        from: $X
+        to: $M
     pattern-sinks:
       - pattern: new java.io.File(...)
       - pattern: new File(...)

@@ -33,6 +33,8 @@ ARG NO_PROXY
 # Semgrep (SAST): instalado por padrão; para uma imagem menor use --build-arg WITH_SEMGREP=false
 # (sem ele o SAST é ignorado com um aviso no log).
 ARG WITH_SEMGREP=true
+# Mesma versão do CI (scripts/requirements-ci.txt) e do benchmark: motor e portão medem o mesmo Semgrep.
+ARG SEMGREP_VERSION=1.172.0
 # Trivy (vulnerabilidades e IaC) e Gitleaks (segredos + histórico): quando presentes substituem os analisadores
 # internos equivalentes. Imagem menor/sem rede na build: --build-arg WITH_TRIVY=false --build-arg WITH_GITLEAKS=false
 ARG WITH_TRIVY=true
@@ -63,7 +65,7 @@ RUN if [ "$INSECURE_SSL" = "true" ]; then \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git curl ca-certificates gnupg python3 python3-pip \
     && if [ "$INSECURE_SSL" = "true" ]; then git config --system http.sslVerify false; fi \
-    && if [ "$WITH_SEMGREP" = "true" ]; then pip3 install --no-cache-dir semgrep; fi \
+    && if [ "$WITH_SEMGREP" = "true" ]; then pip3 install --no-cache-dir "semgrep==${SEMGREP_VERSION}"; fi \
     && if [ "$WITH_TRIVY" = "true" ]; then \
          curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg \
          && echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" > /etc/apt/sources.list.d/trivy.list \

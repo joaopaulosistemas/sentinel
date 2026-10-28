@@ -211,5 +211,9 @@ class PackRegistryTest {
         assertEquals(3, padraoTs.threshold("max-nesting", 0));
         assertEquals(500, padraoTs.threshold("max-component-lines", 0));
         assertEquals(com.sentinel.audit.model.Severity.LOW, padraoTs.overrideFor("sentinel-tsp-abreviacao").severity());
+        // regras com precisão medida baixa (docs/evolucao/precisao.md) pesam no score só depois de melhorarem
+        assertEquals(Boolean.TRUE, padraoTs.overrideFor("eslint-regexp/no-super-linear-move").shadow());
+        assertEquals(Boolean.TRUE, padraoTs.overrideFor("jscpd-codigo-duplicado").shadow());
+        assertEquals(Boolean.TRUE, legado.overrideFor("jscpd-codigo-duplicado").shadow());
     }
 }

@@ -106,7 +106,10 @@ public class PmdAnalyzer implements CodeAnalyzer {
         }
         Path report = null;
         Path tempRuleset = null;
+        Path stderr = null;
+        String partial = null;
         try {
+            stderr = Files.createTempFile("pmd-err-", ".txt");
             report = Files.createTempFile("pmd-", ".json");
             String ruleset = rulesetPath.orElse(null);
             if (ruleset == null || ruleset.isBlank() || !Files.isRegularFile(Path.of(ruleset))) {
@@ -118,24 +121,26 @@ public class PmdAnalyzer implements CodeAnalyzer {
                     "--dir", projectPath.toString(), "--rulesets", ruleset,
                     "--format", "json", "--report-file", report.toString(),
                     "--no-cache", "--no-progress", "--no-fail-on-violation");
-            int code = ExternalTools.run(cmd, Map.of(), timeoutSeconds);
-            if (code == -1) {
-                LOG.warnf("PMD excedeu o tempo limite de %ds e foi encerrado", timeoutSeconds);
-            } else if (code != 0) {
-                LOG.warnf("PMD terminou com código %d", code);
+            int code = ExternalTools.run(cmd, null, Map.of(), timeoutSeconds, null, stderr);
+            if (code != 0) {
+                partial = ExternalTools.falha(code, timeoutSeconds, stderr);
+                LOG.warnf("PMD %s", partial);
             } else {
                 findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
                 LOG.infof("PMD encontrou %d problemas", findings.size());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            partial = "execução interrompida";
         } catch (Exception e) {
             LOG.errorf("Erro ao executar o PMD: %s", e.getMessage());
+            partial = "erro ao executar: " + e.getMessage();
         } finally {
+            ExternalTools.deleteQuietly(stderr);
             deleteQuietly(report);
             deleteQuietly(tempRuleset);
         }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
     }
 
     private static void deleteQuietly(Path p) {
