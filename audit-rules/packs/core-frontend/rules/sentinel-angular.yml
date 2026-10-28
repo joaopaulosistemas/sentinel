@@ -42,7 +42,7 @@ rules:
       category: quality
 
   - id: sentinel-ng-http-any
-    pattern-regex: '\.(?:get|post|put|patch|delete)<any>\s*\('
+    pattern-regex: '\b\w*[Hh]ttp\w*\.(?:get|post|put|patch|delete)<any>\s*\('
     message: >
       Chamada HttpClient tipada como any: a resposta chega sem contrato e erros de campo só aparecem em tempo de
       execução. Declare uma interface para a resposta.

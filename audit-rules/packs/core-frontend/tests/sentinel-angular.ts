@@ -25,5 +25,7 @@ export class Exemplo {
     this._http.get<any>('/api/contas').subscribe();
     // ok: sentinel-ng-http-any
     this._http.get<ContaInterface>('/api/contas').subscribe();
+    // ok: sentinel-ng-http-any
+    this._rest.get<any>('/api/contas');
   }
 }
