@@ -2,8 +2,9 @@ import { InlineNotification, SkeletonText } from '@carbon/react';
 import { Link } from 'react-router-dom';
 import { Fragment, useState } from 'react';
 import { useFixPlan } from '../hooks/useAuditRuns';
+import { useInsights } from '../hooks/useLifecycle';
 import { ScoreExplanationPanel } from './ScoreExplanationPanel';
-import type { AuditRunResponse, Category, Severity } from '../types';
+import type { AnalyzerRunInfo, AuditRunResponse, Category, Severity } from '../types';
 import { categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
 import { TARGET_SCORE, scoreColor } from '../utils/scoreBand';
 
@@ -247,6 +248,52 @@ function CategorySection({ cats, category, onPick }: { cats: ReturnType<typeof c
   );
 }
 
+const TOOL_STATUS: Record<string, { text: string; color: string; ok: boolean }> = {
+  OK: { text: 'concluído', color: 'var(--s-success-text)', ok: true },
+  PARCIAL: { text: 'parcial: resultado pode estar incompleto', color: 'var(--s-warn-text)', ok: true },
+  FALHOU: { text: 'falhou', color: 'var(--s-danger-text)', ok: false },
+  INDISPONIVEL: { text: 'ferramenta ausente', color: 'var(--s-text-3)', ok: false },
+  NAO_SUPORTADO: { text: 'não se aplica', color: 'var(--s-text-3)', ok: false },
+  DESLIGADO: { text: 'desligado neste sistema', color: 'var(--s-text-3)', ok: false },
+  SUBSTITUIDO: { text: 'coberto por outro', color: 'var(--s-text-3)', ok: false },
+};
+
+function toolView(a: AnalyzerRunInfo) {
+  const known = TOOL_STATUS[a.status] ?? { text: 'sem evidência', color: 'var(--s-text-3)', ok: false };
+  const seconds = a.durationMs > 0 ? ` em ${Math.max(1, Math.round(a.durationMs / 1000))} s` : '';
+  return { ...known, text: a.status === 'OK' ? `concluído${seconds}` : known.text };
+}
+
+/** Ferramentas de análise que rodaram nesta auditoria: situação, achados e tempo de cada uma. */
+function ToolsSection({ runId }: { runId: number }) {
+  const { data } = useInsights(runId);
+  const tools = Array.isArray(data?.analyzers) ? data.analyzers : [];
+  if (tools.length === 0) return null;
+  const done = tools.filter((t) => toolView(t).ok).length;
+  return (
+    <section aria-label="Ferramentas de análise" style={box}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>Ferramentas de análise</span>
+        <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>{done} de {tools.length} concluídas</span>
+      </div>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))', gap: 12 }}>
+        {tools.map((t) => {
+          const v = toolView(t);
+          return (
+            <li key={t.name} className="sentinel-linha-hover" title={t.note ?? undefined} style={{ borderLeft: `4px solid ${v.color}`, padding: '6px 12px', borderRadius: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <strong style={{ fontWeight: 600 }}>{t.name}</strong>
+                <span style={{ fontSize: 13, color: 'var(--s-text-2)' }}>{t.findings} {t.findings === 1 ? 'achado' : 'achados'}</span>
+              </div>
+              <div style={{ fontSize: 12, color: v.color }}>{v.text}</div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function stepThreeTitle(category: Category | null, criticalCount: number): string {
   if (category) return `Achados de ${categoryLabels[category]}`;
   if (criticalCount === 0) return 'Em ordem de ganho de nota';
@@ -339,6 +386,7 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
         <CategorySection cats={categoriesByScore(run.riskScore)} category={category} onPick={setCategory} />
         <FixSection run={run} plan={plan} category={category} items={items} onOpenFindings={onOpenFindings} />
       </div>
+      <ToolsSection runId={run.id} />
       <ScoreExplanationPanel run={run} />
     </div>
   );
