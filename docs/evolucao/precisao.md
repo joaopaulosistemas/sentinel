@@ -6,8 +6,8 @@ Para o eixo 10 do placar chegar a 3 são necessários ≥ 100 achados revisados 
 
 | Regra | Revisados | VP | FP | Duvidosos | Última rodada |
 |---|---:|---:|---:|---:|---|
-| `eslint-@angular-eslint/prefer-inject` | 1 | 0 | 1 | 0 | 2026-10-21 (corrigida: só vale em projeto com `@angular/*`) |
-| `sentinel-ts-any-explicito` | 18 | 14 | 0 | 4 | 2026-10-28 (D: `any[]` em restrição genérica de decorator; `JSXElementConstructor<any>` e `React.FC<any>`, tipos de componente de biblioteca) |
+| `eslint-@angular-eslint/prefer-inject` | 17 | 16 | 1 | 0 | 2026-10-28 Angular (16 de 16 injeções por construtor em `sakai-ng`, Angular 21; VP de modernização, MEDIUM alto); 2026-10-21 (corrigida: só vale em projeto com `@angular/*`) |
+| `sentinel-ts-any-explicito` | 77 | 73 | 0 | 4 | 2026-10-28 Angular (59 de 59 `any` reais em `sakai-ng`, 46 em `src/app/pages/uikit` de demonstração; MEDIUM para estado de demo é alto; o mesmo `any` na mesma linha aparece 2 vezes em `app.configurator.ts:417` e `inputdemo.ts:330-331`); 2026-10-28 React (D: `any[]` em restrição genérica de decorator; `JSXElementConstructor<any>` e `React.FC<any>`, tipos de componente de biblioteca) |
 | `sqlfluff-RF06` | 1 | 0 | 1 | 0 | 2026-10-21 (migração gerada pelo Prisma) |
 | `squawk-require-concurrent-index-creation` | 1 | 0 | 1 | 0 | 2026-10-21 (tabela nova na mesma migração) |
 | `eslint-prefer-const` | 1 | 1 | 0 | 0 | 2026-10-21 |
@@ -15,11 +15,11 @@ Para o eixo 10 do placar chegar a 3 são necessários ≥ 100 achados revisados 
 | `eslint-react/jsx-no-undef` | 6 | 0 | 6 | 0 | 2026-10-28 (corrigida: desligada; componentes vêm de `unplugin-auto-import`, e o tsc pega o erro real) |
 | `stylelint-lightness-notation` | 6 | 6 | 0 | 0 | 2026-10-28 (corrigida: desligada; VP só de estilo, `oklch(0.5 …)` gerado pelo shadcn, 32% dos achados de um repositório) |
 | `sentinel-ts-supressao-de-tipos` | 1 | 0 | 1 | 0 | 2026-10-21 (corrigida: ignora `**/generated/**`) |
-| `sentinel-int-http-sem-tls` | 3 | 2 | 1 | 0 | 2026-10-28 Java (FP: `http://` num link de Javadoc em `UUID.java:211`); 2026-10-21 |
+| `sentinel-int-http-sem-tls` | 4 | 2 | 2 | 0 | 2026-10-28 Angular (FP: `http://angular.io` como URL de item de menu de demonstração em `buttondemo.ts:185`, link e não tráfego); 2026-10-28 Java (FP: `http://` num link de Javadoc em `UUID.java:211`); 2026-10-21 |
 | `gitleaks-generic-api-key` | 8 | 3 | 4 | 1 | 2026-10-28 Java (VP: `client_secret` de realm do Keycloak versionado ×3; FP: texto de `description` de coleção Postman ×2); 2026-10-22 (FP: selo de README com `token=` de placeholder) |
 | `eslint-regexp/no-super-linear-move` | 6 | 0 | 6 | 0 | 2026-10-22 (scripts de instalação sem entrada externa; pendente) |
 | `eslint-@typescript-eslint/no-explicit-any` | 6 | 4 | 0 | 2 | 2026-10-22 (D: `T = any` padrão de genérico) |
-| `eslint-@typescript-eslint/no-unused-vars` | 8 | 5 | 2 | 1 | 2026-10-22 (FP: omissão por rest, parâmetro de decorator) |
+| `eslint-@typescript-eslint/no-unused-vars` | 10 | 7 | 2 | 1 | 2026-10-28 Angular (VP: `computed` em `app.sidebar.ts:1` e `HttpClient` em `node.service.ts:1`, conferidos por busca; o 3º achado, `product.service.ts:4`, não li); 2026-10-22 (FP: omissão por rest, parâmetro de decorator) |
 | `sentinel-cc-funcao-longa` | 20 | 13 | 5 | 2 | 2026-10-22 Java (FP: 3 em jQuery embutido, 1 em `ejs.js:137` com 886 linhas que a leitura não confirma; D: classe anônima contada como função) |
 | `sentinel-cc-complexidade` | 28 | 21 | 5 | 2 | 2026-10-28 Java (4 HIGH recontados à mão: `initColumnField` 26, `dataScopeFilter` 21, `textToNumericFormatV4` 21, `importExcel` 43 contra 42 do analisador; antes: 2026-10-28 React e 2026-10-22 Java); 2026-10-28 React (VP: `getFileFormat` 12 e `generateRoutes` 13, recontados à mão; D: componentes React como `MenuAuthorize` (45) e `ApiTreeSelect` (11), em que a soma inclui todos os closures de hooks, e cada closure sozinho é bem menor; 2026-10-22 Java: FP em jQuery embutido, `ejs.js:137` com 175) |
 | `sentinel-ts-console-log` | 6 | 4 | 2 | 0 | 2026-10-22 (FP: saída de CLI) |
@@ -28,7 +28,7 @@ Para o eixo 10 do placar chegar a 3 são necessários ≥ 100 achados revisados 
 | `eslint-security/detect-non-literal-fs-filename` | 6 | 0 | 6 | 0 | 2026-10-22 (CLI/scripts, sem entrada externa; pendente) |
 | `gitleaks-jwt` | 8 | 0 | 0 | 8 | 2026-10-28 Java (D: tokens de exemplo em `README.backup.md` e em coleções Bruno, com `exp` já vencido; 0 de 8 confirmados como credencial viva); 2026-10-22 (dump SQL de demonstração, tokens vencidos) |
 | `sentinel-proj-committed-env` | 10 | 4 | 6 | 0 | 2026-10-28 (corrigida no PR #72: só `.env` com chave de nome sensível ou URL com senha; 6 de 7 eram só configuração pública de Vite, 1 era chave de criptografia fixa) |
-| `sentinel-proj-no-tests` | 2 | 2 | 0 | 0 | 2026-10-22 |
+| `sentinel-proj-no-tests` | 3 | 3 | 0 | 0 | 2026-10-28 Angular (nenhum `*.spec.ts` em `sakai-ng`, embora `package.json` tenha `ng test`); 2026-10-22 |
 | `owasp-dependency-CVE-2022-0235-node-fetch` | 1 | 0 | 1 | 0 | 2026-10-22 (corrigida: maior correção do mesmo major) |
 | `hadolint-DL3044` | 1 | 1 | 0 | 0 | 2026-10-22 |
 | `sentinel-sql-injection` | 6 | 0 | 6 | 0 | 2026-10-22 Java (`update`/`execute`/`query` em qualquer objeto; corrigida no PR #14) |
@@ -36,8 +36,8 @@ Para o eixo 10 do placar chegar a 3 são necessários ≥ 100 achados revisados 
 | `sentinel-xxe-parser-xml` | 3 | 1 | 1 | 1 | 2026-10-22 Java (FP: `TransformerFactory` só serializa DOM; D: só cria documento vazio) |
 | `checkstyle-magic.number` | 19 | 7 | 6 | 6 | 2026-10-28 Java (FP: máscara `0xFF` e deslocamento de bits em `Base64`; D: `1024 * 1024`, índice 62 do alfabeto Base64; VP: tamanho de placa 7, cache de 5 horas); 2026-10-22 Java (FP: layout Swing gerado, máscaras hexadecimais; D: código HTTP em `switch`, capacidade inicial) |
 | `jscpd-codigo-duplicado` | 18 | 1 | 13 | 4 | 2026-10-28 Java (FP: cabeçalho de `pom.xml` ×2, interface repetida na implementação de serviço ×2, bloco de `import`; D: `GlobalException`/`ServiceException`; em sombra nos perfis); 2026-10-22 Java (FP: cabeçalho de licença, `pom.xml`, `README.html` gerado, `nbactions.xml`) |
-| `sentinel-ts-var` | 6 | 0 | 6 | 0 | 2026-10-22 Java (6 de 6 em biblioteca embutida: `ejs.js`, `bootstrap.js`, jQuery; corrigida no PR #16) |
-| `sentinel-ts-igualdade-frouxa` | 14 | 8 | 6 | 0 | 2026-10-28 React (8 de 8 `==` reais em código próprio, de estilo; 2026-10-22 Java: 6 FP em `base.js`, `ejs.js`, `bootstrap.js`; corrigida no PR #16, que tirou bibliotecas embutidas da auditoria) |
+| `sentinel-ts-var` | 7 | 1 | 6 | 0 | 2026-10-28 Angular (VP: `var` em `crud.ts:338`, código próprio); 2026-10-22 Java (6 de 6 em biblioteca embutida: `ejs.js`, `bootstrap.js`, jQuery; corrigida no PR #16) |
+| `sentinel-ts-igualdade-frouxa` | 15 | 9 | 6 | 0 | 2026-10-28 Angular (1 de 1, `inputdemo.ts:332`, `== 0` com `indexOf`); 2026-10-28 React (8 de 8 `==` reais em código próprio, de estilo; 2026-10-22 Java: 6 FP em `base.js`, `ejs.js`, `bootstrap.js`; corrigida no PR #16, que tirou bibliotecas embutidas da auditoria) |
 | `stylelint-a11y/content-property-no-static-value` | 3 | 0 | 3 | 0 | 2026-10-22 Java (CSS de fonte de ícones embutido; todos os 936 achados estão em 1 repositório; menos de 5 lidos, de um só arquivo) |
 | `checkstyle-redundantModifier` | 14 | 13 | 0 | 1 | 2026-10-28 Java (VP de estilo: 793 de 797 são `public` em método de interface, 25% dos achados de cada RuoYi-Vue; corrigida: módulo removido do `checks.xml` no PR #75); 2026-10-22 Java (VP de estilo) |
 | `checkstyle-hide.utility.class` | 20 | 11 | 5 | 4 | 2026-10-28 Java (FP: `@SpringBootApplication` em 2 de 2 lidos; heurística sobre os 98 achados: 88 classes só com estáticos, 6 anotadas com `@SpringBootApplication`/`@Configuration` (FP), 2 `ScheduleConstants` com membro de instância, 2 `EscapeUtil` com `main`); 2026-10-22 Java (FP: `@SpringBootApplication` e classe com construtor privado do Lombok; D: classes com `main`; nos VP só conferi o cabeçalho da classe) |
@@ -72,6 +72,21 @@ Para o eixo 10 do placar chegar a 3 são necessários ≥ 100 achados revisados 
 | `sentinel-api-cors-wildcard` | 1 | 1 | 0 | 0 | 2026-10-28 Java (VP: cabeçalho `Access-Control-Allow-Origin: *` em `GenController.java:257`; o `CorsFilter` com `addAllowedOriginPattern("*")` de `ResourcesConfig.java:58` não é apontado: falso negativo) |
 | `sentinel-spring-requestmapping-sem-method` | 1 | 0 | 0 | 1 | 2026-10-28 Java (D: `@RequestMapping("/")` de página inicial, método sem efeito colateral) |
 | `sentinel-codigo-comentado` | 3 | 3 | 0 | 0 | 2026-10-28 Java (VP de estilo; inclui blocos de configuração do Quartz comentados) |
+| `eslint-@angular-eslint/template/elements-content` | 12 | 0 | 12 | 0 | 2026-10-28 Angular (corrigida no PR #78: desligada; `<button pButton label=… icon=…>` tem o conteúdo na diretiva do PrimeNG; li a linha do `<button>`, não todo o contexto) |
+| `eslint-@html-eslint/require-closing-tags` | 6 | 0 | 6 | 0 | 2026-10-28 Angular (corrigida no PR #78: desligada; `<meta />`, `<link />`, `<base />` em `src/index.html`) |
+| `eslint-@typescript-eslint/no-unused-expressions` | 2 | 0 | 2 | 0 | 2026-10-28 Angular (`this.layoutService.layoutConfig().darkTheme;` dentro de `effect()` lê o signal de propósito para registrar a dependência; pendente: regra continua ligada) |
+| `eslint-promise/catch-or-return` | 14 | 0 | 0 | 14 | 2026-10-28 Angular (`.then(...)` sem `.catch` em serviços de dados locais (`Promise.resolve`) que, pelo que li, não rejeitam; conferi o serviço de clientes, não todos) |
+| `eslint-@angular-eslint/template/prefer-control-flow` | 10 | 10 | 0 | 0 | 2026-10-28 Angular (VP de modernização: `*ngIf`/`*ngFor` em Angular 21) |
+| `eslint-@angular-eslint/use-lifecycle-interface` | 1 | 1 | 0 | 0 | 2026-10-28 Angular (`app.menu.ts:24` tem `ngOnInit` sem `implements OnInit`; os outros 8 não li) |
+| `eslint-@angular-eslint/template/click-events-have-key-events` | 5 | 5 | 0 | 0 | 2026-10-28 Angular (`<a (click)>` sem `href` nem tecla; VP; duplicado por `interactive-supports-focus` nas mesmas 5 linhas, corrigido no PR #79) |
+| `eslint-@angular-eslint/template/interactive-supports-focus` | 5 | 5 | 0 | 0 | 2026-10-28 Angular (VP, mas duplicata do anterior; PR #79) |
+| `eslint-@angular-eslint/template/alt-text` | 4 | 4 | 0 | 0 | 2026-10-28 Angular (`<img>` sem `alt`: `mediademo.ts:50,53`, `tabledemo.ts:164,365`) |
+| `sentinel-cc-funcao-longa` (Angular) | 12 | 0 | 0 | 12 | 2026-10-28 Angular (8 de 12 são funções que só devolvem tabela de dados de exemplo (`getData`, `get*Data` em `pages/service`); os outros 4 (`getPresetExt`, `ngOnInit` de `app.menu.ts`, `initCharts`, `initChart`) não tive tempo de medir; pendente: ignorar função que só devolve literal) |
+| `sentinel-dup-bloco` / `jscpd-codigo-duplicado` (Angular) | 6 | 0 | 0 | 6 | 2026-10-28 Angular (repetição de item de menu de demonstração em `menudemo.ts` e de cartão de preço em `pricingwidget.ts`; li só o início do bloco) |
+| `sentinel-ng-http-any` | 1 | 1 | 0 | 0 | 2026-10-28 Angular (`customer.service.ts:9055`, `get<any>` mais `.toPromise()`) |
+| `sentinel-ng-dom-direto` | 1 | 0 | 0 | 1 | 2026-10-28 Angular (`document.querySelector` somente leitura em `app.sidebar.ts:105`) |
+| `sentinel-proj-no-ci` | 1 | 0 | 0 | 1 | 2026-10-28 Angular (sem `.github/` no clone raso; outro CI, como GitLab, não conferi) |
+| `sentinel-mem-subscribe-sem-desinscrever` | 0 | 0 | 0 | 0 | 2026-10-28 Angular: falso negativo em `app.menuitem.ts:133`, corrigido no PR #80 |
 | `kube-score-container-resources` | 4 | 1 | 0 | 3 | 2026-10-28 Java (VP: `grafana.yml`, Deployment sem `resources`; D ×3: o achado fica na linha 0, no 1º recurso do arquivo (ConfigMap), e não conferi o Deployment correspondente) |
 
 Taxa de VP nas regras de severidade média ou alta com ao menos 5 revisados (critério do eixo 2): `no-explicit-any` 4/6, `no-unused-vars` 5/8, `funcao-longa` 6/8 (MEDIUM/LOW), `complexidade` 7/8, `any-explicito` 8/10, `gitleaks-jwt` 0/5 (duvidosos), `no-super-linear-move` e `detect-non-literal-fs-filename` 0/6 (LOW). Várias regras ficam abaixo de 80%; o eixo 2 continua em 2.
@@ -79,3 +94,5 @@ Taxa de VP nas regras de severidade média ou alta com ao menos 5 revisados (cri
 Segunda rodada de 2026-10-22 (Java/Spring, 140 achados lidos): `sql-injection` 0/6, `senha-fixa-no-codigo` 3/11, `ts-var` 0/6 e `igualdade-frouxa` 0/6 (o motivo é código de terceiros embutido, não a regra), `xxe-parser-xml` 1/3, `magic.number` 5/13, `jscpd` 1/12 (as demais regras de estilo acima ficam em 100% de VP, de pouco valor). Regras `pmd-ReturnEmptyCollectionRatherThanNull` (6) e `pmd-SingletonClassReturningNewInstance` (3) foram vistas, mas não classificadas (não conferi o tipo de retorno nem o padrão de uso).
 
 Rodada de 2026-10-28 (5 aplicações React, 100 achados lidos; sem Java/Spring nem Angular): taxa de VP nas regras de severidade média ou alta com ao menos 5 lidos nesta rodada: `any-explicito` 6/8 (2 duvidosos), `igualdade-frouxa` 8/8 (estilo), `mem-addeventlistener-sem-remove` 0/6, `jsx-no-undef` 0/6, `njsscan-ejs_ect_template` 0/7, `proj-committed-env` 1/7, `proj-no-lockfile` 5/12, `declaration-no-important` 7/7 (estilo), `dup-bloco` 3/6 (LOW, sem contar 2 duvidosos). `sentinel-cc-funcao-longa` foi vista (11 amostras) mas só conferi a métrica, não a contagem de linhas nem se o JSX infla o número; fica sem linha de contagem. As correções saíram nos PRs #70, #71 e #72.
+
+Rodada de 2026-10-28 (terceira, 1 aplicação Angular, `primefaces/sakai-ng`, modelo de painel do PrimeNG, 179 achados; li a linha de cada regra, o contexto só onde indicado): é o primeiro repositório Angular das rodadas. `any-explicito` 59/59, `prefer-inject` 16/16, `prefer-control-flow` 10/10, `alt-text` 4/4, `click-events-have-key-events` 5/5 (estilo e acessibilidade reais), `elements-content` 0/12, `require-closing-tags` 0/6, `no-unused-expressions` 0/2. As correções saíram nos PRs #78, #79 e #80. Um só repositório: as taxas não generalizam.
