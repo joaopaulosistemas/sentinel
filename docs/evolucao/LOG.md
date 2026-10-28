@@ -359,3 +359,15 @@ Com muitos achados a nota de várias dimensões chega a 0 e deixa de distinguir 
 - `suave`: 100 × e^(−penalidade/100). Para penalidade pequena fica quase igual (10 pontos → 90,5 em vez de 90); para penalidade média fica mais branda (50 → 60,7); nunca chega a 0 (140 → 24,7; 250 → 8,2; 400 → 1,8).
 Nada muda sem ligar a opção; ligá-la muda as notas de todos os sistemas e quebra a comparação com auditorias antigas, por isso é decisão de quem opera. Testes novos em `ScoringServiceTest`.
 Verificado: os valores da curva (calculados à parte). Não verificado localmente: compilação e testes Java (só o CI compila a API).
+
+## Dashboard 12.26.0 / API — Melhorias da auditoria #68 (nota 25,6)
+
+Em resposta ao relatório da auditoria #68 (commit a3a74a5). Reproduzi localmente os achados que dá para reproduzir e tratei a causa, não o sintoma.
+- **`.sentinel.yml` por projeto** (`ProjectConfig`, guia em `docs/integracao/sentinel-yml.md`): `exclude` e `suppress` com motivo obrigatório e validade opcional, aplicados antes da confiança e da nota. Suprimidos continuam visíveis. O Sentinel passa a usar o próprio arquivo (regras de teste, remediação e relatórios deixam de ser auditados como produto).
+- **PMD menos ruidoso**: 7 regras de estilo saem do conjunto padrão (`LiteralsFirstInComparisons`, `UseVarargs`, `AvoidLiteralsInIfCondition`, `AvoidFieldNameMatchingMethodName`, `CognitiveComplexity`, `GodClass`, `UseObjectForClearerAPI`); eram cerca de 190 achados de estilo. Três tópicos novos no `dedup.yml` (`catch Throwable`, `System.exit`, chave de lista por índice), `core-quality` 1.0.3.
+- **Arquitetura**: `SystemCatalog`, `RunCatalog` e `FindingCatalog` isolam o acesso a dados; 9 controllers deixam de importar repositório. Respostas 404 padronizadas.
+- **Dashboard**: ESLint do Sentinel sobre o dashboard de 37 para 0 (regexes de validação sem backtracking, `eqeqeq` aceitando `== null`, acessibilidade de rótulos). Configuração do ESLint alinhada e lockfiles das regras criados para a instalação ser reprodutível.
+- **Complexidade**: todas as funções com complexidade ciclomática acima de 20 (12 no dashboard, 11 na API, 2 no CLI) foram divididas; nenhuma passa de 20 na medição do próprio analisador. Comportamento igual: parsers puros (`Csv`, `SchemaParser`, `SourceSanitizer`, `PackLoader`, `ProfileLoader`, `TuningJson`, `ProjectProfiler`, `AuditCli.parse`) conferidos contra a versão anterior por teste diferencial (centenas de milhares de entradas aleatórias e pacotes reais, 0 diferenças). Ajustes do motor viram funções puras em `utils/engineTuning.ts`.
+- `Locale.ROOT` em 18 pontos de formatação/comparação de texto.
+Verificado: `tsc`, `vitest` (205), `vite build`, ESLint do Sentinel (0), teste diferencial acima; classes Java dos pacotes e do CLI compiladas com `javac` contra os jars disponíveis. Não verificado: a compilação e os testes JUnit completos da API (Maven não alcança o repositório de artefatos neste ambiente; só o CI compila a API inteira). O achado de segredo em `.env.example:15` do relatório não foi reproduzido localmente.
+
