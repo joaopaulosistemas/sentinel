@@ -11,7 +11,7 @@ interface McpMock {
   pending?: Array<Partial<PendingAction>>;
 }
 
-function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan, history: Array<Partial<AuditRunResponse>> = [], mcp?: McpMock) {
+function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan, history: Array<Partial<AuditRunResponse>> = [], mcp?: McpMock, insights?: { analyzers: unknown[] }) {
   const full: AuditRunResponse = {
     id: 215,
     systemName: 'conta-corrente-api',
@@ -29,6 +29,7 @@ function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan, history: Arr
     vi.fn(async (url: string, init?: RequestInit) => {
       const u = String(url);
       calls.push({ url: u, method: init?.method ?? 'GET' });
+      if (u.endsWith('/insights')) return new Response(JSON.stringify(insights ?? { analyzers: [] }), { status: 200 });
       if (u.endsWith('/fix-plan')) return new Response(JSON.stringify(plan), { status: 200 });
       if (u.includes('/systems/') && u.endsWith('/audits')) return new Response(JSON.stringify(history), { status: 200 });
       if (u.endsWith('/cancel')) return new Response(JSON.stringify({ ...full, status: 'CANCELLED' }), { status: 202 });
@@ -146,6 +147,26 @@ describe('AuditRunPage', () => {
     const changes = await screen.findByRole('region', { name: 'O que mudou' });
     expect(within(changes).getByText(/ainda não há com o que comparar/)).toBeInTheDocument();
     expect(screen.getByText('Dentro da meta de 75')).toBeInTheDocument();
+  });
+
+  it('concluída lista as ferramentas de análise com situação e achados', async () => {
+    renderPage(
+      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } },
+      { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] },
+      [],
+      undefined,
+      { analyzers: [
+        { name: 'Semgrep', status: 'OK', findings: 61, durationMs: 4200, note: null },
+        { name: 'PMD', status: 'INDISPONIVEL', findings: 0, durationMs: 0, note: 'ausente' },
+        { name: 'Checkstyle', status: 'PARCIAL', findings: 1, durationMs: 900, note: null },
+      ] },
+    );
+    const tools = await screen.findByRole('region', { name: 'Ferramentas de análise' });
+    expect(within(tools).getByText('2 de 3 concluídas')).toBeInTheDocument();
+    expect(within(tools).getByText('concluído em 4 s')).toBeInTheDocument();
+    expect(within(tools).getByText('61 achados')).toBeInTheDocument();
+    expect(within(tools).getByText('ferramenta ausente')).toBeInTheDocument();
+    expect(within(tools).getByText('1 achado')).toBeInTheDocument();
   });
 
   it('falha mostra o motivo', async () => {
