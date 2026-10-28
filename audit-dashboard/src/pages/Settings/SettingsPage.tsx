@@ -95,7 +95,8 @@ function SettingRow({ s, value, onChange, onReset, showSection }: RowProps) {
   const warn = s.key === 'ESLINT_CONFIG' ? eslintWarning(value) : null;
   const fromScreen = s.editable && (s.savedValue !== null || s.source === 'tela');
   return (
-    <div style={{ borderTop: '1px solid var(--s-border)', padding: '16px 0', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 360px)', gap: 24 }}>
+    // Margem negativa + padding igual: o fundo do foco ganha respiro nas laterais sem mudar o alinhamento do texto.
+    <div className="sentinel-linha-hover" style={{ borderTop: '1px solid var(--s-border)', padding: '16px 12px', margin: '0 -12px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 360px)', gap: 24 }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 600 }}>{s.label}</span>

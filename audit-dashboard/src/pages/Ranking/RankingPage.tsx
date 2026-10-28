@@ -127,6 +127,7 @@ export function RankingPage() {
             <button
               key={s.id}
               type="button"
+              className="sentinel-linha-hover"
               onClick={() => navigate(`/systems/${s.id}`)}
               style={{
                 all: 'unset',

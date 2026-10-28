@@ -52,6 +52,7 @@ describe('ReportsPage', () => {
     expect(within(list).getByText('Executivo · 30 dias')).toBeInTheDocument();
     expect(within(list).getByText('Todos os sistemas')).toBeInTheDocument();
     expect(within(list).getByText('agora')).toBeInTheDocument();
+    expect(within(list).getByText('Executivo · 30 dias').parentElement).toHaveClass('sentinel-linha-hover');
     expect(within(list).getByRole('link', { name: 'Abrir' })).toHaveAttribute('href', expect.stringContaining('/reports/portfolio'));
   });
 

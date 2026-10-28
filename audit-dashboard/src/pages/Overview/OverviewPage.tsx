@@ -186,7 +186,7 @@ export function OverviewPage() {
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {attention.map(({ system, score, reason }) => (
-                <li key={system.id} style={{ borderBottom: '1px solid var(--s-border)' }}>
+                <li key={system.id} className="sentinel-linha-hover" style={{ borderBottom: '1px solid var(--s-border)' }}>
                   <Link to={`/systems/${system.id}`} style={{ display: 'grid', gridTemplateColumns: '44px 1fr auto', gap: 12, alignItems: 'center', padding: '12px 16px', textDecoration: 'none', color: 'var(--s-text)' }}>
                     <span style={{ fontSize: 22, fontWeight: 300, color: scoreColor(score) }}>{score ?? '-'}</span>
                     <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
