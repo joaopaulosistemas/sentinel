@@ -6,7 +6,7 @@ import { categoryLabels } from '../utils/resultVerdict';
 import { deltaLabel, groupHint, toggleRule } from '../utils/scoreExplanation';
 import { scoreColor } from '../utils/scoreBand';
 
-const box = { background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '1.25rem 1.5rem' } as const;
+const box = { background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderRadius: 8, padding: '1.25rem 1.5rem' } as const;
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 const cell = { padding: '6px 8px', textAlign: 'left', verticalAlign: 'top', fontSize: 13 } as const;
 const num = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });

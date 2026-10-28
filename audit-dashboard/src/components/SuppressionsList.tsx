@@ -1,6 +1,7 @@
-import { Button, InlineNotification, SkeletonText, Tag, Tile } from '@carbon/react';
+import { Button, InlineNotification, SkeletonText, Tag } from '@carbon/react';
 import { useRemoveSuppression, useSuppressions } from '../hooks/useLifecycle';
 import type { SuppressionReason } from '../types';
+import { PageSection } from './PageSection';
 
 const reasonLabels: Record<SuppressionReason, string> = {
   FALSE_POSITIVE: 'Falso positivo',
@@ -14,13 +15,10 @@ export function SuppressionsList({ systemId }: { systemId: number }) {
   const remove = useRemoveSuppression();
 
   if (isLoading) return <SkeletonText lineCount={2} />;
-  if (!data || data.length === 0) return null;
+  if (!Array.isArray(data) || data.length === 0) return null;
 
   return (
-    <Tile style={{ marginBottom: '2rem', padding: '1.25rem' }}>
-      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-        Findings suprimidos ({data.length})
-      </h3>
+    <PageSection id="suprimidos" title={`Achados suprimidos (${data.length})`}>
       {remove.isError && (
         <InlineNotification
           kind="error"
@@ -29,11 +27,12 @@ export function SuppressionsList({ systemId }: { systemId: number }) {
           style={{ marginBottom: '0.75rem' }}
         />
       )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {data.map((s) => (
           <div
             key={s.id}
-            style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.75rem', background: 'var(--s-layer)', borderRadius: '4px' }}
+            className="sentinel-linha-hover"
+            style={{ display: 'flex', gap: 16, alignItems: 'center', padding: '14px 0', borderTop: '1px solid var(--s-border)' }}
           >
             <Tag type={s.active ? 'purple' : 'warm-gray'} size="sm">
               {s.active ? reasonLabels[s.reason] : 'Vencida'}
@@ -60,6 +59,6 @@ export function SuppressionsList({ systemId }: { systemId: number }) {
           </div>
         ))}
       </div>
-    </Tile>
+    </PageSection>
   );
 }

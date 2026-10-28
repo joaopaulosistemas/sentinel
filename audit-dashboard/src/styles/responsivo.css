@@ -67,3 +67,12 @@
 
 /* Cabeçalhos de tabela nunca quebram uma palavra no meio (a regra "anywhere" do conteúdo valia para eles também). */
 .sentinel-content th { overflow-wrap: normal; word-break: normal; hyphens: none; white-space: nowrap; }
+
+/* Tela do sistema: índice fixo à esquerda e conteúdo à direita; em tela estreita o índice some e o conteúdo ocupa tudo. */
+.sentinel-com-indice { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 48px; align-items: start; }
+.sentinel-indice { position: sticky; top: 72px; display: flex; flex-direction: column; gap: 2px; }
+.sentinel-secoes { display: flex; flex-direction: column; gap: 48px; min-width: 0; }
+@media (max-width: 1000px) {
+  .sentinel-com-indice { grid-template-columns: minmax(0, 1fr); }
+  .sentinel-indice { display: none; }
+}

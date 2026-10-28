@@ -1,6 +1,7 @@
-import { SkeletonText, Tile } from '@carbon/react';
+import { SkeletonText } from '@carbon/react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTrend } from '../hooks/useLifecycle';
+import { PageSection } from './PageSection';
 
 /** Evolução do score geral e da segurança ao longo das auditorias concluídas. */
 export function TrendChart({ systemId }: { systemId: number }) {
@@ -15,12 +16,11 @@ export function TrendChart({ systemId }: { systemId: number }) {
   }));
 
   return (
-    <Tile style={{ marginBottom: '2rem', padding: '1.25rem' }}>
-      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Evolução do Score</h3>
+    <PageSection id="tendencia" title="Evolução da nota" hint="Nota geral, segurança e dependências nas auditorias concluídas.">
       {isLoading ? (
         <SkeletonText lineCount={4} />
       ) : points.length < 2 ? (
-        <p style={{ color: 'var(--s-text-4)' }}>
+        <p style={{ margin: 0, color: 'var(--s-text-3)' }}>
           {points.length === 0
             ? 'Nenhuma auditoria concluída ainda.'
             : 'Rode mais uma auditoria para ver a evolução ao longo do tempo.'}
@@ -41,6 +41,6 @@ export function TrendChart({ systemId }: { systemId: number }) {
           </ResponsiveContainer>
         </div>
       )}
-    </Tile>
+    </PageSection>
   );
 }
