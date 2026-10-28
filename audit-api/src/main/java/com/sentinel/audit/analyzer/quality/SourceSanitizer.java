@@ -12,66 +12,106 @@ public final class SourceSanitizer {
     private SourceSanitizer() {}
 
     public static String strip(String src) {
-        char[] in = src.toCharArray();
-        char[] out = in.clone();
-        int n = in.length;
-        int i = 0;
-        while (i < n) {
+        Blanker b = new Blanker(src);
+        while (b.i < b.n) {
+            b.step();
+        }
+        return new String(b.out);
+    }
+
+    /** Percorre o texto e apaga, em {@code out}, o que está em comentários e textos. */
+    private static final class Blanker {
+        final char[] in;
+        final char[] out;
+        final int n;
+        int i;
+
+        Blanker(String src) {
+            in = src.toCharArray();
+            out = in.clone();
+            n = in.length;
+        }
+
+        char at(int k) {
+            return k < n ? in[k] : '\0';
+        }
+
+        /** Consome o próximo trecho: um comentário, um texto ou um caractere comum. */
+        void step() {
             char c = in[i];
-            char next = i + 1 < n ? in[i + 1] : '\0';
-            if (c == '/' && next == '/') {                       // comentário de linha
-                while (i < n && in[i] != '\n') {
-                    out[i++] = ' ';
-                }
-            } else if (c == '/' && next == '*') {                // comentário de bloco
-                out[i++] = ' ';
-                out[i++] = ' ';
-                while (i < n && !(in[i] == '*' && i + 1 < n && in[i + 1] == '/')) {
-                    if (in[i] != '\n') {
-                        out[i] = ' ';
-                    }
-                    i++;
-                }
-                if (i < n) {                                     // fecha "*/"
-                    out[i++] = ' ';
-                    if (i < n) {
-                        out[i++] = ' ';
-                    }
-                }
-            } else if (c == '"' && next == '"' && i + 2 < n && in[i + 2] == '"') {   // text block do Java
-                i += 3;
-                while (i < n && !(in[i] == '"' && i + 2 < n && in[i + 1] == '"' && in[i + 2] == '"')) {
-                    if (in[i] == '\\' && i + 1 < n) {
-                        out[i++] = ' ';
-                    }
-                    if (in[i] != '\n') {
-                        out[i] = ' ';
-                    }
-                    i++;
-                }
-                i = Math.min(n, i + 3);
-            } else if (c == '"' || c == '\'' || c == '`') {      // string, caractere ou template literal
-                char quote = c;
-                i++;
-                while (i < n && in[i] != quote) {
-                    if (in[i] == '\n' && quote != '`') {         // string não fechada: não engole o resto do arquivo
-                        break;
-                    }
-                    if (in[i] == '\\' && i + 1 < n) {
-                        out[i++] = ' ';
-                    }
-                    if (in[i] != '\n') {
-                        out[i] = ' ';
-                    }
-                    i++;
-                }
-                if (i < n && in[i] == quote) {
-                    i++;
-                }
+            char next = at(i + 1);
+            if (c == '/' && next == '/') {
+                lineComment();
+            } else if (c == '/' && next == '*') {
+                blockComment();
+            } else if (c == '"' && next == '"' && at(i + 2) == '"') {
+                textBlock();
+            } else if (c == '"' || c == '\'' || c == '`') {
+                quoted(c);
             } else {
                 i++;
             }
         }
-        return new String(out);
+
+        private void lineComment() {
+            while (i < n && in[i] != '\n') {
+                out[i++] = ' ';
+            }
+        }
+
+        private void blockComment() {
+            out[i++] = ' ';
+            out[i++] = ' ';
+            while (i < n && !(in[i] == '*' && at(i + 1) == '/')) {
+                blank(i);
+                i++;
+            }
+            if (i < n) {                                         // fecha "*/"
+                out[i++] = ' ';
+                if (i < n) {
+                    out[i++] = ' ';
+                }
+            }
+        }
+
+        /** Text block do Java: três aspas até as três seguintes. */
+        private void textBlock() {
+            i += 3;
+            while (i < n && !(in[i] == '"' && at(i + 1) == '"' && at(i + 2) == '"')) {
+                skipEscape();
+                blank(i);
+                i++;
+            }
+            i = Math.min(n, i + 3);
+        }
+
+        /** String, caractere ou template literal. */
+        private void quoted(char quote) {
+            i++;
+            while (i < n && in[i] != quote) {
+                if (in[i] == '\n' && quote != '`') {             // string não fechada: não engole o resto do arquivo
+                    break;
+                }
+                skipEscape();
+                blank(i);
+                i++;
+            }
+            if (i < n && in[i] == quote) {
+                i++;
+            }
+        }
+
+        /** Barra invertida: apaga ela e deixa o caractere seguinte para o laço apagar. */
+        private void skipEscape() {
+            if (in[i] == '\\' && i + 1 < n) {
+                out[i++] = ' ';
+            }
+        }
+
+        private void blank(int k) {
+            if (in[k] != '\n') {
+                out[k] = ' ';
+            }
+        }
     }
 }

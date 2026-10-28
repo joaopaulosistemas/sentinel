@@ -50,65 +50,95 @@ final class Csv {
     private Csv() {
     }
 
-    static List<Row> parse(String text) {
-        List<List<String>> records = new ArrayList<>();
-        List<Integer> startLines = new ArrayList<>();
+    /** Estado da leitura: registros fechados, o campo em montagem e a contagem de linhas do texto. */
+    private static final class Reader {
+        final List<List<String>> records = new ArrayList<>();
+        final List<Integer> startLines = new ArrayList<>();
         List<String> fields = new ArrayList<>();
-        StringBuilder cur = new StringBuilder();
-        boolean quoted = false;
-        boolean any = false;
+        final StringBuilder cur = new StringBuilder();
+        boolean quoted;
+        boolean any;
         int line = 1;
         int recordStart = 1;
-        int n = text.length();
-        for (int i = 0; i < n; i++) {
-            char c = text.charAt(i);
-            if (quoted) {
-                if (c == '"') {
-                    if (i + 1 < n && text.charAt(i + 1) == '"') {
-                        cur.append('"');
-                        i++;
-                    } else {
-                        quoted = false;
-                    }
-                } else {
-                    if (c == '\n') {
-                        line++;
-                    }
-                    cur.append(c);
-                }
-                continue;
-            }
-            if (c == '"' && cur.length() == 0) {
-                quoted = true;
-                any = true;
-            } else if (c == ',') {
-                fields.add(cur.toString());
-                cur.setLength(0);
-                any = true;
-            } else if (c == '\n' || c == '\r') {
-                if (c == '\r' && i + 1 < n && text.charAt(i + 1) == '\n') {
-                    i++;
-                }
-                if (any || cur.length() > 0 || !fields.isEmpty()) {
-                    fields.add(cur.toString());
-                    records.add(fields);
-                    startLines.add(recordStart);
-                }
-                fields = new ArrayList<>();
-                cur.setLength(0);
-                any = false;
-                line++;
-                recordStart = line;
-            } else {
-                cur.append(c);
-                any = true;
-            }
+
+        boolean hasPending() {
+            return any || cur.length() > 0 || !fields.isEmpty();
         }
-        if (any || cur.length() > 0 || !fields.isEmpty()) {
+
+        void closeRecord() {
             fields.add(cur.toString());
             records.add(fields);
             startLines.add(recordStart);
         }
+
+        void endField() {
+            fields.add(cur.toString());
+            cur.setLength(0);
+            any = true;
+        }
+
+        void endLine() {
+            if (hasPending()) {
+                closeRecord();
+            }
+            fields = new ArrayList<>();
+            cur.setLength(0);
+            any = false;
+            line++;
+            recordStart = line;
+        }
+
+        /** Dentro de aspas: devolve a posição do último caractere consumido. */
+        int quotedChar(String text, int i) {
+            char c = text.charAt(i);
+            if (c == '"') {
+                if (i + 1 < text.length() && text.charAt(i + 1) == '"') {
+                    cur.append('"');
+                    return i + 1;
+                }
+                quoted = false;
+                return i;
+            }
+            if (c == '\n') {
+                line++;
+            }
+            cur.append(c);
+            return i;
+        }
+
+        /** Fora de aspas: devolve a posição do último caractere consumido. */
+        int plainChar(String text, int i) {
+            char c = text.charAt(i);
+            if (c == '"' && cur.length() == 0) {
+                quoted = true;
+                any = true;
+            } else if (c == ',') {
+                endField();
+            } else if (c == '\n' || c == '\r') {
+                boolean crlf = c == '\r' && i + 1 < text.length() && text.charAt(i + 1) == '\n';
+                endLine();
+                return crlf ? i + 1 : i;
+            } else {
+                cur.append(c);
+                any = true;
+            }
+            return i;
+        }
+    }
+
+    static List<Row> parse(String text) {
+        Reader reader = new Reader();
+        for (int i = 0; i < text.length(); i++) {
+            i = reader.quoted ? reader.quotedChar(text, i) : reader.plainChar(text, i);
+        }
+        if (reader.hasPending()) {
+            reader.closeRecord();
+        }
+        return toRows(reader.records, reader.startLines);
+    }
+
+    /** A primeira linha é o cabeçalho (minúsculo, sem BOM); as demais viram linhas com os campos pelo nome da coluna. */
+    private static List<Row> toRows(List<List<String>> records, List<Integer> startLines) {
         List<Row> rows = new ArrayList<>();
         if (records.isEmpty()) {
             return rows;

@@ -51,8 +51,36 @@ public final class ProfileLoader {
         return out;
     }
 
+    private static final Set<String> PROFILE_KEYS = Set.of("id", "name", "description", "extends", "packs", "disable-packs", "rules", "thresholds");
+    private static final Set<String> RULE_KEYS = Set.of("severity", "disabled", "shadow");
+
     static Profile parse(Path file, List<String> errors) {
         String where = file.getFileName().toString();
+        Map<String, Object> m = readMap(file, where, errors);
+        if (m == null) {
+            return null;
+        }
+        for (String k : m.keySet()) {
+            if (!PROFILE_KEYS.contains(k)) {
+                errors.add(where + ": chave desconhecida '" + k + "'");
+            }
+        }
+        String id = Yamls.str(m, "id");
+        if (id == null || !PackManifest.ID.matcher(id).matches()) {
+            errors.add(where + ": 'id' ausente ou inválido (minúsculas, números e hífen)");
+            return null;
+        }
+        List<String> packs = Yamls.strings(m, "packs", errors, where);
+        List<String> disable = Yamls.strings(m, "disable-packs", errors, where);
+        Map<String, RuleOverride> rules = parseRules(m.get("rules"), where, errors);
+        Map<String, Integer> thresholds = parseThresholds(m.get("thresholds"), where, errors);
+        String name = Yamls.str(m, "name");
+        return new Profile(id, name == null ? id : name, Yamls.str(m, "description"),
+                Yamls.str(m, "extends"), packs, disable == null ? List.of() : disable, rules, thresholds);
+    }
+
+    /** O arquivo como mapa de chaves; {@code null} (com o erro registrado) se for grande, ilegível ou não for um mapa. */
+    private static Map<String, Object> readMap(Path file, String where, List<String> errors) {
         Map<String, Object> m;
         try {
             if (Files.size(file) > PackLoader.MAX_FILE_BYTES) {
@@ -66,74 +94,72 @@ public final class ProfileLoader {
         }
         if (m == null) {
             errors.add(where + ": esperava um mapa de chaves");
-            return null;
         }
-        for (String k : m.keySet()) {
-            if (!Set.of("id", "name", "description", "extends", "packs", "disable-packs", "rules", "thresholds").contains(k)) {
-                errors.add(where + ": chave desconhecida '" + k + "'");
-            }
-        }
-        String id = Yamls.str(m, "id");
-        if (id == null || !PackManifest.ID.matcher(id).matches()) {
-            errors.add(where + ": 'id' ausente ou inválido (minúsculas, números e hífen)");
-            return null;
-        }
-        List<String> packs = Yamls.strings(m, "packs", errors, where);
-        List<String> disable = Yamls.strings(m, "disable-packs", errors, where);
+        return m;
+    }
 
+    private static Map<String, RuleOverride> parseRules(Object raw, String where, List<String> errors) {
         Map<String, RuleOverride> rules = new LinkedHashMap<>();
-        Map<String, Object> rawRules = Yamls.map(m.get("rules"));
-        if (m.get("rules") != null && rawRules == null) {
+        Map<String, Object> rawRules = Yamls.map(raw);
+        if (raw != null && rawRules == null) {
             errors.add(where + ": 'rules' deve ser um mapa id-da-regra -> ajustes");
         }
-        if (rawRules != null) {
-            for (Map.Entry<String, Object> e : rawRules.entrySet()) {
-                String w = where + " rules." + e.getKey();
-                Map<String, Object> o = Yamls.map(e.getValue());
-                if (o == null) {
-                    errors.add(w + ": esperava {severity, disabled, shadow}");
-                    continue;
-                }
-                for (String k : o.keySet()) {
-                    if (!Set.of("severity", "disabled", "shadow").contains(k)) {
-                        errors.add(w + ": chave desconhecida '" + k + "'");
-                    }
-                }
-                Severity sev = null;
-                String sv = Yamls.str(o, "severity");
-                if (sv != null) {
-                    try {
-                        sev = Severity.valueOf(sv.toUpperCase(Locale.ROOT));
-                    } catch (IllegalArgumentException ex) {
-                        errors.add(w + ".severity: inválida '" + sv + "'");
-                    }
-                }
-                Boolean shadow = o.get("shadow") instanceof Boolean b ? b : null;
-                if (o.get("shadow") != null && shadow == null) {
-                    errors.add(w + ".shadow: use true ou false");
-                }
-                rules.put(e.getKey().toLowerCase(Locale.ROOT), new RuleOverride(sev, Yamls.bool(o, "disabled", false), shadow));
+        if (rawRules == null) {
+            return rules;
+        }
+        for (Map.Entry<String, Object> e : rawRules.entrySet()) {
+            String w = where + " rules." + e.getKey();
+            Map<String, Object> o = Yamls.map(e.getValue());
+            if (o == null) {
+                errors.add(w + ": esperava {severity, disabled, shadow}");
+                continue;
+            }
+            rules.put(e.getKey().toLowerCase(Locale.ROOT), parseOverride(o, w, errors));
+        }
+        return rules;
+    }
+
+    private static RuleOverride parseOverride(Map<String, Object> o, String w, List<String> errors) {
+        for (String k : o.keySet()) {
+            if (!RULE_KEYS.contains(k)) {
+                errors.add(w + ": chave desconhecida '" + k + "'");
             }
         }
+        Severity sev = null;
+        String sv = Yamls.str(o, "severity");
+        if (sv != null) {
+            try {
+                sev = Severity.valueOf(sv.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ex) {
+                errors.add(w + ".severity: inválida '" + sv + "'");
+            }
+        }
+        Boolean shadow = o.get("shadow") instanceof Boolean b ? b : null;
+        if (o.get("shadow") != null && shadow == null) {
+            errors.add(w + ".shadow: use true ou false");
+        }
+        return new RuleOverride(sev, Yamls.bool(o, "disabled", false), shadow);
+    }
 
+    private static Map<String, Integer> parseThresholds(Object raw, String where, List<String> errors) {
         Map<String, Integer> thresholds = new LinkedHashMap<>();
-        Map<String, Object> rawT = Yamls.map(m.get("thresholds"));
-        if (m.get("thresholds") != null && rawT == null) {
+        Map<String, Object> rawT = Yamls.map(raw);
+        if (raw != null && rawT == null) {
             errors.add(where + ": 'thresholds' deve ser um mapa");
         }
-        if (rawT != null) {
-            for (Map.Entry<String, Object> e : rawT.entrySet()) {
-                if (!KNOWN_THRESHOLDS.contains(e.getKey())) {
-                    errors.add(where + " thresholds: limite desconhecido '" + e.getKey() + "' (conhecidos: "
-                            + String.join(", ", new java.util.TreeSet<>(KNOWN_THRESHOLDS)) + ")");
-                } else if (!(e.getValue() instanceof Number n) || n.intValue() < 1) {
-                    errors.add(where + " thresholds." + e.getKey() + ": use um inteiro maior que zero");
-                } else {
-                    thresholds.put(e.getKey(), n.intValue());
-                }
+        if (rawT == null) {
+            return thresholds;
+        }
+        for (Map.Entry<String, Object> e : rawT.entrySet()) {
+            if (!KNOWN_THRESHOLDS.contains(e.getKey())) {
+                errors.add(where + " thresholds: limite desconhecido '" + e.getKey() + "' (conhecidos: "
+                        + String.join(", ", new java.util.TreeSet<>(KNOWN_THRESHOLDS)) + ")");
+            } else if (!(e.getValue() instanceof Number n) || n.intValue() < 1) {
+                errors.add(where + " thresholds." + e.getKey() + ": use um inteiro maior que zero");
+            } else {
+                thresholds.put(e.getKey(), n.intValue());
             }
         }
-        return new Profile(id, Yamls.str(m, "name") == null ? id : Yamls.str(m, "name"), Yamls.str(m, "description"),
-                Yamls.str(m, "extends"), packs, disable == null ? List.of() : disable, rules, thresholds);
+        return thresholds;
     }
 }

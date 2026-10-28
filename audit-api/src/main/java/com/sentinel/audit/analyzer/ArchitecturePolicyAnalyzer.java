@@ -326,42 +326,64 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
         }
         List<Dependency> deps = DependencyExtractor.extract(root);
         for (Dependency d : deps) {
-            for (DepRule r : cp.forbidden()) {
-                if (globMatches(r.dep(), d.name())) {
-                    out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-forbidden",
-                            r.severity() == null ? Severity.HIGH : r.severity(), Category.DEPENDENCY,
-                            "Biblioteca proibida: " + d.name(),
-                            reason(r, "A política proíbe " + d.name() + ".") + " (versão " + d.version() + ")"));
-                }
-            }
-            for (DepRule r : cp.minVersion()) {
-                if (globMatches(r.dep(), d.name()) && Boolean.FALSE.equals(Versions.satisfies(d.version(), r.version()))) {
-                    out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-min-version",
-                            r.severity() == null ? Severity.HIGH : r.severity(), Category.DEPENDENCY,
-                            "Versão fora da política: " + d.name() + " " + d.version() + " (exigido " + r.version() + ")",
-                            reason(r, "A política exige " + d.name() + " " + r.version() + ".")));
-                }
+            checkForbidden(cp, d, run, out);
+            checkMinVersion(cp, d, run, out);
+        }
+        checkRequired(cp, deps, run, out);
+        checkApprovedOnly(cp, deps, run, out);
+    }
+
+    private static Severity severityOr(DepRule r, Severity fallback) {
+        return r.severity() == null ? fallback : r.severity();
+    }
+
+    private void checkForbidden(ArchitecturePolicy.Components cp, Dependency d, AuditRun run, List<Finding> out) {
+        for (DepRule r : cp.forbidden()) {
+            if (globMatches(r.dep(), d.name())) {
+                out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-forbidden",
+                        severityOr(r, Severity.HIGH), Category.DEPENDENCY,
+                        "Biblioteca proibida: " + d.name(),
+                        reason(r, "A política proíbe " + d.name() + ".") + " (versão " + d.version() + ")"));
             }
         }
+    }
+
+    private void checkMinVersion(ArchitecturePolicy.Components cp, Dependency d, AuditRun run, List<Finding> out) {
+        for (DepRule r : cp.minVersion()) {
+            if (globMatches(r.dep(), d.name()) && Boolean.FALSE.equals(Versions.satisfies(d.version(), r.version()))) {
+                out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-min-version",
+                        severityOr(r, Severity.HIGH), Category.DEPENDENCY,
+                        "Versão fora da política: " + d.name() + " " + d.version() + " (exigido " + r.version() + ")",
+                        reason(r, "A política exige " + d.name() + " " + r.version() + ".")));
+            }
+        }
+    }
+
+    private void checkRequired(ArchitecturePolicy.Components cp, List<Dependency> deps, AuditRun run, List<Finding> out) {
         for (DepRule r : cp.required()) {
             if (deps.stream().noneMatch(d -> globMatches(r.dep(), d.name()))) {
                 out.add(archFinding(run, "(dependências)", 0, "", "sentinel-comp-required",
-                        r.severity() == null ? Severity.MEDIUM : r.severity(), Category.DEPENDENCY,
+                        severityOr(r, Severity.MEDIUM), Category.DEPENDENCY,
                         "Biblioteca obrigatória ausente: " + r.dep(), reason(r, "A política exige " + r.dep() + ".")));
             }
         }
-        if (!cp.approvedOnly().isEmpty()) {
-            int n = 0;
-            for (Dependency d : deps) {
-                String f = d.filePath().toLowerCase(Locale.ROOT);
-                if (f.endsWith("package-lock.json") || f.endsWith("yarn.lock") || f.endsWith("pnpm-lock.yaml")) {
-                    continue;                                   // transitivas: só declaradas diretamente
-                }
-                if (cp.approvedOnly().stream().noneMatch(r -> globMatches(r.dep(), d.name())) && n++ < 200) {
-                    out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-not-approved",
-                            Severity.MEDIUM, Category.DEPENDENCY, "Biblioteca fora da lista aprovada: " + d.name(),
-                            "A política só permite as bibliotecas aprovadas; " + d.name() + " não está na lista."));
-                }
+    }
+
+    /** Com lista aprovada, toda dependência declarada fora dela vira achado (no máximo 200). */
+    private void checkApprovedOnly(ArchitecturePolicy.Components cp, List<Dependency> deps, AuditRun run, List<Finding> out) {
+        if (cp.approvedOnly().isEmpty()) {
+            return;
+        }
+        int n = 0;
+        for (Dependency d : deps) {
+            String f = d.filePath().toLowerCase(Locale.ROOT);
+            if (f.endsWith("package-lock.json") || f.endsWith("yarn.lock") || f.endsWith("pnpm-lock.yaml")) {
+                continue;                                   // transitivas: só declaradas diretamente
+            }
+            if (cp.approvedOnly().stream().noneMatch(r -> globMatches(r.dep(), d.name())) && n++ < 200) {
+                out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-not-approved",
+                        Severity.MEDIUM, Category.DEPENDENCY, "Biblioteca fora da lista aprovada: " + d.name(),
+                        "A política só permite as bibliotecas aprovadas; " + d.name() + " não está na lista."));
             }
         }
     }

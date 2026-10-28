@@ -138,24 +138,7 @@ public final class ProjectProfiler {
             String rel = rel(file);
             Path dir = file.getParent();
 
-            if (lower.startsWith("readme")) {
-                if (dir.equals(root)) {
-                    readme = true;
-                    readmeLines = countLines(file);
-                }
-                docs.add(rel);
-            } else if (lower.startsWith("license") || lower.startsWith("licence") || lower.equals("copying")) {
-                if (dir.equals(root)) {
-                    license = true;
-                }
-            } else if (lower.equals("changelog.md") || lower.equals("contributing.md") || lower.equals("architecture.md")
-                    || lower.equals("security.md") || rel.startsWith("docs/") && lower.endsWith(".md")) {
-                docs.add(rel);
-            }
-            if (lower.equals(".gitignore") && dir.equals(root)) {
-                gitignore = true;
-            }
-
+            projectDocs(file, lower, rel, dir);
             build(lower, rel);
             ci(lower, rel);
             lock(lower, rel, dir);
@@ -163,28 +146,56 @@ public final class ProjectProfiler {
             boolean inTestDir = isTest(rel, name);
             if (!inTestDir) {
                 docker(name, lower, rel, dir);          // Dockerfiles de fixtures de teste não são do projeto
+                infrastructure(lower, rel);
             }
+            countSource(lower, rel, name);
+        }
 
-            if (inTestDir) {
-                // fixtures de teste não contam como infraestrutura
-            } else if (lower.endsWith(".tf")) {
+        /** README, licença, .gitignore e documentos (os da raiz marcam o que o projeto tem). */
+        private void projectDocs(Path file, String lower, String rel, Path dir) {
+            boolean atRoot = dir.equals(root);
+            if (lower.startsWith("readme")) {
+                if (atRoot) {
+                    readme = true;
+                    readmeLines = countLines(file);
+                }
+                docs.add(rel);
+            } else if (lower.startsWith("license") || lower.startsWith("licence") || lower.equals("copying")) {
+                license |= atRoot;
+            } else if (lower.equals("changelog.md") || lower.equals("contributing.md") || lower.equals("architecture.md")
+                    || lower.equals("security.md") || rel.startsWith("docs/") && lower.endsWith(".md")) {
+                docs.add(rel);
+            }
+            if (lower.equals(".gitignore") && atRoot) {
+                gitignore = true;
+            }
+        }
+
+        /** Terraform e manifestos de Kubernetes/Helm; fixtures de teste não contam como infraestrutura. */
+        private void infrastructure(String lower, String rel) {
+            if (lower.endsWith(".tf")) {
                 iac.add(rel);
             } else if ((lower.endsWith(".yaml") || lower.endsWith(".yml")) && (rel.contains("k8s/") || rel.contains("helm/")
                     || rel.contains("deploy/") || rel.contains("manifests/"))) {
                 iac.add(rel);
             }
+        }
 
+        /** Conta o arquivo como código-fonte ou teste da sua linguagem (declarações .d.ts não contam). */
+        private void countSource(String lower, String rel, String name) {
             int dot = lower.lastIndexOf('.');
-            if (dot > 0) {
-                String lang = LANG_BY_EXT.get(lower.substring(dot + 1));
-                if (lang != null && !lower.endsWith(".d.ts")) {
-                    langs.merge(lang, 1, Integer::sum);
-                    if (isTest(rel, name)) {
-                        tests++;
-                    } else {
-                        source++;
-                    }
-                }
+            if (dot <= 0) {
+                return;
+            }
+            String lang = LANG_BY_EXT.get(lower.substring(dot + 1));
+            if (lang == null || lower.endsWith(".d.ts")) {
+                return;
+            }
+            langs.merge(lang, 1, Integer::sum);
+            if (isTest(rel, name)) {
+                tests++;
+            } else {
+                source++;
             }
         }
 

@@ -327,9 +327,18 @@ public class SystemResource {
     }
 
     private void applyGitAccess(AuditedSystem system, CreateSystemRequest request) {
+        applyGitSettings(system, request);
+        applyNotifySettings(system, request);
+        applySecrets(system, request);
+    }
+
+    private static String blankToNull(String trimmed) {
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static void applyGitSettings(AuditedSystem system, CreateSystemRequest request) {
         if (request.getGitTokenHosts() != null) {
-            String hosts = request.getGitTokenHosts().trim();
-            system.setGitTokenHosts(hosts.isEmpty() ? null : hosts);
+            system.setGitTokenHosts(blankToNull(request.getGitTokenHosts().trim()));
         }
         if (Boolean.TRUE.equals(request.getClearGitToken())) {
             system.setGitTokenEnc(null);
@@ -337,20 +346,20 @@ public class SystemResource {
         if (request.getGitHistoryDepth() != null) {
             system.setGitHistoryDepth(request.getGitHistoryDepth());
         }
+    }
+
+    private void applyNotifySettings(AuditedSystem system, CreateSystemRequest request) {
         if (request.getNotifyFormat() != null) {
-            String f = request.getNotifyFormat().trim().toLowerCase(java.util.Locale.ROOT);
-            system.setNotifyFormat(f.isEmpty() ? null : f);
+            system.setNotifyFormat(blankToNull(request.getNotifyFormat().trim().toLowerCase(java.util.Locale.ROOT)));
         }
         if (request.getNotifyMinSeverity() != null) {
-            String sev = request.getNotifyMinSeverity().trim().toUpperCase(java.util.Locale.ROOT);
-            system.setNotifyMinSeverity(sev.isEmpty() ? null : sev);
+            system.setNotifyMinSeverity(blankToNull(request.getNotifyMinSeverity().trim().toUpperCase(java.util.Locale.ROOT)));
         }
         if (request.getNotifyMinScoreDrop() != null) {
             system.setNotifyMinScoreDrop(request.getNotifyMinScoreDrop());
         }
         if (request.getNotifyPublicUrl() != null) {
-            String u = request.getNotifyPublicUrl().trim();
-            system.setNotifyPublicUrl(u.isEmpty() ? null : u);
+            system.setNotifyPublicUrl(blankToNull(request.getNotifyPublicUrl().trim()));
         }
         if (Boolean.TRUE.equals(request.getClearNotifyUrl())) {
             system.setNotifyUrlEnc(null);
@@ -362,28 +371,30 @@ public class SystemResource {
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException(e.getMessage());
             }
-            if (!secretBox.available()) {
-                throw new BadRequestException("Não foi possível guardar a URL: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
-            }
-            system.setNotifyUrlEnc(secretBox.encrypt(notifyUrl.trim()));
+            system.setNotifyUrlEnc(encrypted(notifyUrl, "a URL"));
         }
+    }
+
+    /** Segredos novos (webhook e token Git): cifrados antes de gravar; "remover" apaga o que já estava salvo. */
+    private void applySecrets(AuditedSystem system, CreateSystemRequest request) {
         if (Boolean.TRUE.equals(request.getClearWebhookSecret())) {
             system.setWebhookSecretEnc(null);
         }
         String webhook = request.getWebhookSecret();
         if (webhook != null && !webhook.isBlank()) {
-            if (!secretBox.available()) {
-                throw new BadRequestException("Não foi possível guardar o segredo: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
-            }
-            system.setWebhookSecretEnc(secretBox.encrypt(webhook.trim()));
+            system.setWebhookSecretEnc(encrypted(webhook, "o segredo"));
         }
         String token = request.getGitToken();
         if (token != null && !token.isBlank()) {
-            if (!secretBox.available()) {
-                throw new BadRequestException("Não foi possível guardar o token: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
-            }
-            system.setGitTokenEnc(secretBox.encrypt(token.trim()));
+            system.setGitTokenEnc(encrypted(token, "o token"));
         }
+    }
+
+    private String encrypted(String value, String what) {
+        if (!secretBox.available()) {
+            throw new BadRequestException("Não foi possível guardar " + what + ": a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
+        }
+        return secretBox.encrypt(value.trim());
     }
 
     private SystemSummaryResponse toSummary(AuditedSystem system) {
