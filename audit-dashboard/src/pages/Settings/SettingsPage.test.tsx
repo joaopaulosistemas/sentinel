@@ -109,6 +109,50 @@ describe('SettingsPage', () => {
     expect(screen.getByLabelText('Tempo limite do Trivy')).toHaveValue(900);
   });
 
+  it('reiniciar a API trava a tela, explica e libera quando a API volta', async () => {
+    const pendente: SettingsResponse = { restartRequired: true, settings: base.settings.map((s) => ({ ...s, pendingRestart: true })) };
+    let reiniciou = false;
+    let consultasDepois = 0;
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        reiniciou = true;
+        return new Response(null, { status: 202 }); // como a API real: sem corpo
+      }
+      if (!reiniciou) return new Response(JSON.stringify(pendente), { status: 200 });
+      consultasDepois += 1;
+      if (consultasDepois === 1) throw new TypeError('Failed to fetch'); // API fora do ar
+      return new Response(JSON.stringify(base), { status: 200 }); // voltou, sem pendência
+    }));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Reiniciar a API' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reiniciar' }));
+
+    const aviso = await screen.findByRole('alertdialog', { name: 'Reiniciando a API' });
+    expect(aviso).toHaveTextContent('só são lidas quando a API sobe');
+    expect(screen.queryByText('Não foi possível reiniciar')).toBeNull();
+
+    await waitFor(() => expect(screen.queryByTestId('restart-overlay')).toBeNull(), { timeout: 8000 });
+    expect(screen.getByText('API reiniciada')).toBeInTheDocument();
+    expect(screen.queryByText('Há configurações salvas aguardando reinício')).toBeNull();
+  }, 15000);
+
+  it('se o pedido de reinício falha, não trava a tela e mostra o erro', async () => {
+    const pendente: SettingsResponse = { restartRequired: true, settings: base.settings };
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return new Response(JSON.stringify({ message: 'Sem permissão' }), { status: 403 });
+      return new Response(JSON.stringify(pendente), { status: 200 });
+    }));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Reiniciar a API' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reiniciar' }));
+
+    expect(await screen.findByText('Não foi possível reiniciar')).toBeInTheDocument();
+    expect(screen.getByText('Sem permissão')).toBeInTheDocument();
+    expect(screen.queryByTestId('restart-overlay')).toBeNull();
+  });
+
   it('mostra o erro da API ao salvar', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') return new Response(JSON.stringify({ message: 'Tempo limite: use um valor entre 10 e 7200' }), { status: 400 });

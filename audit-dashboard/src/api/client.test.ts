@@ -28,3 +28,25 @@ describe('apiFetch: mensagem de erro', () => {
     await expect(api.getMcp(1)).rejects.toThrow('HTTP 400: Bad Request');
   });
 });
+
+describe('apiFetch: resposta de sucesso sem corpo', () => {
+  it('202 sem corpo (reinício da API) não tenta ler JSON', async () => {
+    stub(new Response(null, { status: 202 }));
+    await expect(api.restartApi()).resolves.toBeUndefined();
+  });
+
+  it('204 continua sem corpo', async () => {
+    stub(new Response(null, { status: 204 }));
+    await expect(api.restartApi()).resolves.toBeUndefined();
+  });
+
+  it('200 com corpo vazio também não quebra', async () => {
+    stub(new Response('', { status: 200 }));
+    await expect(api.restartApi()).resolves.toBeUndefined();
+  });
+
+  it('200 com JSON continua devolvendo o objeto', async () => {
+    stub(new Response(JSON.stringify({ restartRequired: true, settings: [] }), { status: 200 }));
+    await expect(api.getSettings()).resolves.toEqual({ restartRequired: true, settings: [] });
+  });
+});
