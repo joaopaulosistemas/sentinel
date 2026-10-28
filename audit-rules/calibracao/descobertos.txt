@@ -17,3 +17,6 @@ dingyi214/slash-admin
 nellavio/nellavio
 sankeyangshu/lemon-admin
 southliu/south-admin-react
+Nasruddin/spring-boot-based-microservices
+yangzongzhuan/RuoYi-Vue-Oracle
+yangzongzhuan/RuoYi-Vue-fast
