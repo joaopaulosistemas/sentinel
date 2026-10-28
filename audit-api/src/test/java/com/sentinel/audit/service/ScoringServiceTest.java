@@ -173,6 +173,34 @@ class ScoringServiceTest {
         assertEquals(90.0, scoringService.calculate(achados, 1_000_000L).getQuality());
     }
 
+    @Test
+    void curvaLinearEhPadraoEZeraComMuitaPenalidade() {
+        assertEquals(0.0, scoringService.applyCurve(250.0));
+        assertEquals(90.0, scoringService.applyCurve(10.0), 0.0001);
+    }
+
+    @Test
+    void curvaSuaveNuncaZeraEPreservaPenalidadesPequenas() {
+        scoringService.curve = "suave";
+        assertEquals(100.0, scoringService.applyCurve(0.0), 0.0001);
+        assertEquals(90.48, scoringService.applyCurve(10.0), 0.01);
+        assertTrue(scoringService.applyCurve(250.0) > 0.0);
+        // continua distinguindo ruim de péssimo
+        assertTrue(scoringService.applyCurve(250.0) > scoringService.applyCurve(400.0));
+    }
+
+    @Test
+    void curvaSuaveNaoMudaOrdemDeSistemas() {
+        scoringService.curve = "suave";
+        List<Finding> poucos = List.of(buildFinding(Category.SECURITY, Severity.HIGH));
+        List<Finding> muitos = List.of(buildFinding(Category.SECURITY, Severity.CRITICAL),
+                buildFinding(Category.SECURITY, Severity.CRITICAL), buildFinding(Category.SECURITY, Severity.CRITICAL),
+                buildFinding(Category.SECURITY, Severity.CRITICAL), buildFinding(Category.SECURITY, Severity.CRITICAL),
+                buildFinding(Category.SECURITY, Severity.CRITICAL), buildFinding(Category.SECURITY, Severity.CRITICAL));
+        assertTrue(scoringService.calculate(poucos).getSecurity() > scoringService.calculate(muitos).getSecurity());
+        assertTrue(scoringService.calculate(muitos).getSecurity() > 0.0);
+    }
+
     private Finding buildFinding(Category category, Severity severity) {
         Finding f = new Finding();
         f.setCategory(category);

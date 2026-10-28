@@ -351,3 +351,11 @@ Na auditoria #34 havia 1 alto e 9 médios de "Possível Command Injection" que e
 - `sentinel-command-injection-variable` (médio): `new ProcessBuilder(List<String>)`, `new ProcessBuilder(String[])` e `exec(String[])` ficam de fora; texto único em variável continua apontado.
 Testes novos no pacote (`comandoComListaDeArgumentos`). Rodando só as regras de injeção contra `audit-api/src/main/java` do próprio Sentinel: 10 achados de command injection antes, 0 depois; `semgrep --test` passa (6/6).
 Verificado: `semgrep --test` e a comparação acima. Não verificado: o recall no OWASP Benchmark (só o CI, que compara com a linha de base).
+
+## Dashboard 12.25.0 — Curva suave opcional para a nota
+
+Com muitos achados a nota de várias dimensões chega a 0 e deixa de distinguir "ruim" de "péssimo" (na auditoria #34 isso escondia melhoras). Nova opção `sentinel.audit.score.curve`:
+- `linear` (padrão, nada muda): 100 menos a penalidade, piso em 0.
+- `suave`: 100 × e^(−penalidade/100). Para penalidade pequena fica quase igual (10 pontos → 90,5 em vez de 90); para penalidade média fica mais branda (50 → 60,7); nunca chega a 0 (140 → 24,7; 250 → 8,2; 400 → 1,8).
+Nada muda sem ligar a opção; ligá-la muda as notas de todos os sistemas e quebra a comparação com auditorias antigas, por isso é decisão de quem opera. Testes novos em `ScoringServiceTest`.
+Verificado: os valores da curva (calculados à parte). Não verificado localmente: compilação e testes Java (só o CI compila a API).
