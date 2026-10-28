@@ -38,7 +38,10 @@ public final class ProjectProfiler {
     private static final Pattern TEST_NAME = Pattern.compile(
             "(?i)(.*(Test|Tests|IT|Spec)\\.(java|kt|cs)|.*\\.(test|spec)\\.(ts|tsx|js|jsx|mjs)|test_.*\\.py|.*_test\\.(py|go))");
     private static final Set<String> LOCKS = Set.of("package-lock.json", "yarn.lock", "pnpm-lock.yaml", "npm-shrinkwrap.json");
-    private static final Set<String> PY_LOCKS = Set.of("poetry.lock", "Pipfile.lock", "uv.lock");
+    private static final Pattern ENV_SECRET_KEY = Pattern.compile(
+            "(?i)(SECRET|PASSWORD|PASSWD|TOKEN|PRIVATE_?KEY|API_?KEY|ACCESS_?KEY|CREDENTIAL|ENCRYPTION_?KEY|SIGNING_?KEY)");
+    private static final Pattern ENV_URL_CREDENTIALS = Pattern.compile("[a-z][a-z0-9+.-]*://[^\\s/:@]+:[^\\s/@]+@");
+    private static final Set<String> PY_LOCKS =Set.of("poetry.lock", "Pipfile.lock", "uv.lock");
 
     private ProjectProfiler() {
     }
@@ -281,13 +284,13 @@ public final class ProjectProfiler {
                 lockfiles.add(rel);
             }
             if (lower.equals("package.json")) {
+                // monorepo: o lock fica na pasta do pacote ou em qualquer pasta acima dela, até a raiz do repositório
+                // (workspace em subpasta, como "frontend/pnpm-lock.yaml", cobre "frontend/packages/ui/package.json")
                 boolean hasLock = false;
-                for (String l : LOCKS) {
-                    hasLock |= Files.exists(dir.resolve(l));
-                }
-                // monorepo: o lock pode estar na raiz
-                for (String l : LOCKS) {
-                    hasLock |= Files.exists(root.resolve(l));
+                for (Path d = dir; d != null && d.startsWith(root) && !hasLock; d = d.getParent()) {
+                    for (String l : LOCKS) {
+                        hasLock |= Files.exists(d.resolve(l));
+                    }
                 }
                 if (!hasLock) {
                     pkgNoLock.add(rel);
@@ -298,7 +301,7 @@ public final class ProjectProfiler {
         void secrets(String name, String lower, String rel, BasicFileAttributes attrs) {
             boolean envFile = lower.equals(".env") || lower.startsWith(".env.") && !(lower.endsWith(".example")
                     || lower.endsWith(".sample") || lower.endsWith(".template") || lower.endsWith(".dist"));
-            if (envFile && attrs.size() > 0) {
+            if (envFile && attrs.size() > 0 && envHasSecret(read(root.resolve(rel)))) {
                 envFiles.add(rel);
             }
             boolean keyName = lower.equals("id_rsa") || lower.equals("id_ed25519") || lower.endsWith(".pem")
@@ -329,6 +332,46 @@ public final class ProjectProfiler {
             if (entry.size() < MAX_LIST && !entry.contains(rel)) {
                 entry.add(rel);
             }
+        }
+
+        /**
+         * Um .env versionado só é achado quando guarda um segredo: chave de nome sensível com valor que não é
+         * marcador, ou URL com usuário e senha. Arquivos só com configuração pública (VITE_*, URL de API, modo,
+         * flags) são convenção de Vite/CRA e não vazam nada.
+         */
+        static boolean envHasSecret(String text) {
+            for (String line : text.split("\\R")) {
+                String l = line.strip();
+                if (l.startsWith("export ")) {
+                    l = l.substring(7).strip();
+                }
+                int eq = l.indexOf('=');
+                if (l.startsWith("#") || eq <= 0) {
+                    continue;
+                }
+                String key = l.substring(0, eq).strip();
+                String value = unquote(l.substring(eq + 1).strip());
+                if (ENV_URL_CREDENTIALS.matcher(value).find()
+                        || ENV_SECRET_KEY.matcher(key).find() && !isEnvPlaceholder(value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static String unquote(String v) {
+            if (v.length() >= 2 && (v.charAt(0) == '"' || v.charAt(0) == '\'') && v.charAt(v.length() - 1) == v.charAt(0)) {
+                return v.substring(1, v.length() - 1).strip();
+            }
+            int hash = v.indexOf(" #");
+            return hash >= 0 ? v.substring(0, hash).strip() : v;
+        }
+
+        private static boolean isEnvPlaceholder(String v) {
+            String s = v.toLowerCase(Locale.ROOT);
+            return s.isEmpty() || s.equals("true") || s.equals("false") || s.equals("null") || s.startsWith("${")
+                    || s.startsWith("<") || s.startsWith("your") || s.startsWith("change") || s.startsWith("xxx")
+                    || s.startsWith("todo") || s.equals("secret") || s.equals("password") || s.equals("token");
         }
 
         static String read(Path p) {
