@@ -1,0 +1,7 @@
+id: java-cert-sonar
+name: "Robustez e segurança em Java (SEI CERT + Sonar)"
+version: 1.0.0
+description: "Regras de robustez e segurança em Java com origem no SEI CERT Oracle Coding Standard for Java e nas regras do Sonar (SonarWay). Cada regra traz o código de origem (por exemplo ERR08-J e S1696) na metadata. Só entram lacunas que o Sentinel ainda não cobria: zip-slip, injeção, TLS, criptografia, System.exit e catch de Throwable já têm regra própria nos pacotes core-*. Desligado por padrão: ative pelo perfil padrao-google-java."
+author: Sentinel
+languages: [java]
+enabled-by-default: false

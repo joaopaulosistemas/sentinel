@@ -1,0 +1,245 @@
+# Robustez e segurança em Java com origem no SEI CERT (https://wiki.sei.cmu.edu/confluence/display/java) e no Sonar
+# (https://rules.sonarsource.com/java/). Casos de teste: tests/sentinel-cert-sonar-java.java
+# (rode: semgrep --test --config rules tests).
+# Fora daqui de propósito (já cobertos por outro lugar; repetir contaria o mesmo problema duas vezes no score):
+#   IDS04-J / S5042 zip-slip, IDS07-J / S2076 injeção de comando, ENV/ERR09-J / S1147 System.exit, S4830 TLS,
+#   MSC02-J / S2245 Random previsível: regras do pacote core-security.
+#   ERR04-J / S1143 return em finally, FIO04-J / S2095 recurso não fechado, MET12-J finalize: PMD e Checkstyle.
+rules:
+  - id: sentinel-cert-interrupted-engolida
+    patterns:
+      - pattern: |
+          try { ... } catch (InterruptedException $E) { ... }
+      - pattern-not: |
+          try { ... } catch (InterruptedException $E) { ... Thread.currentThread().interrupt(); ... }
+      - pattern-not: |
+          try { ... } catch (InterruptedException $E) { ... throw $X; ... }
+    message: >
+      InterruptedException capturada e descartada: quem pediu para a thread parar nunca fica sabendo, e pools e
+      desligamentos ordenados travam. Restaure o sinal com Thread.currentThread().interrupt() ou propague a exceção.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      sonar: "S2142"
+      cert: "THI05-J"
+      references: ["https://rules.sonarsource.com/java/RSPEC-2142/"]
+
+  - id: sentinel-cert-catch-npe
+    pattern: |
+      try { ... } catch (NullPointerException $E) { ... }
+    message: >
+      Capturar NullPointerException para tratar um null esconde o defeito: o NPE pode vir de qualquer ponto do bloco.
+      Teste o null antes (ou use Optional/Objects.requireNonNull) e deixe o NPE de verdade estourar.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      sonar: "S1696"
+      cert: "ERR08-J"
+      cwe: "CWE-395: Use of NullPointerException Catch to Detect NULL Pointer Dereference"
+      references: ["https://wiki.sei.cmu.edu/confluence/display/java/ERR08-J.+Do+not+catch+NullPointerException+or+any+of+its+ancestors"]
+
+  - id: sentinel-cert-throw-generico
+    pattern-either:
+      - pattern: throw new RuntimeException(...);
+      - pattern: throw new Exception(...);
+      - pattern: throw new Throwable(...);
+      - pattern: throw new Error(...);
+    message: >
+      Lançar RuntimeException, Exception, Throwable ou Error genéricos obriga quem chama a capturar tudo para tratar
+      um caso específico. Use uma exceção que diga o que houve (IllegalArgumentException, IllegalStateException,
+      UncheckedIOException ou uma exceção do domínio).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      sonar: "S112"
+      cert: "ERR07-J"
+      cwe: "CWE-397: Declaration of Throws for Generic Exception"
+      references: ["https://rules.sonarsource.com/java/RSPEC-112/"]
+
+  - id: sentinel-cert-thread-run-direto
+    pattern-either:
+      - pattern: (Thread $T).run()
+      - pattern: new Thread(...).run()
+    message: >
+      Chamar run() direto executa o código na thread atual e não cria nenhuma thread nova. Para rodar em paralelo,
+      use start() (ou melhor, um ExecutorService).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      sonar: "S1217"
+      cert: "THI00-J"
+      cwe: "CWE-572: Call to Thread run() instead of start()"
+      references: ["https://rules.sonarsource.com/java/RSPEC-1217/"]
+
+  - id: sentinel-cert-thread-stop
+    pattern-either:
+      - pattern: (Thread $T).stop()
+      - pattern: (Thread $T).suspend()
+      - pattern: (Thread $T).resume()
+      - pattern: Thread.currentThread().stop()
+    message: >
+      Thread.stop(), suspend() e resume() são obsoletos e inseguros: param a thread no meio de uma operação, deixando
+      dados inconsistentes e travas presas. Peça o encerramento com interrupt() e uma flag volatile que a thread
+      verifica.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      cert: "THI05-J"
+      references: ["https://wiki.sei.cmu.edu/confluence/display/java/THI05-J.+Do+not+use+Thread.stop%28%29+to+terminate+threads"]
+
+  - id: sentinel-cert-wait-fora-de-loop
+    patterns:
+      - pattern-either:
+          - pattern: $O.wait(...)
+          - pattern: wait(...)
+      - pattern-not-inside: |
+          while (...) { ... }
+      - pattern-not-inside: |
+          do { ... } while (...);
+    message: >
+      wait() precisa ficar dentro de um while que reteste a condição: a thread pode acordar sem notify (acordo
+      espúrio) ou depois que outra thread já consumiu a condição. Use while (!condicao) { lock.wait(); }.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      sonar: "S2274"
+      cert: "THI03-J"
+      references: ["https://rules.sonarsource.com/java/RSPEC-2274/"]
+
+  - id: sentinel-cert-sync-em-string-ou-boxed
+    pattern-either:
+      - patterns:
+          - pattern: |
+              synchronized ($X) { ... }
+          - metavariable-type:
+              metavariable: $X
+              types: [String, Boolean, Integer, Long, Short, Byte, Character]
+      - pattern: |
+          synchronized ("...") { ... }
+      - pattern: |
+          synchronized (Boolean.TRUE) { ... }
+      - pattern: |
+          synchronized (Boolean.FALSE) { ... }
+    message: >
+      Sincronizar em String, literal ou tipo primitivo empacotado é perigoso: literais e valores pequenos são
+      compartilhados pela JVM (e por bibliotecas de terceiros), então código sem relação nenhuma acaba disputando a
+      mesma trava, com bloqueios e deadlocks sem explicação. Use um objeto dedicado
+      (private final Object lock = new Object()).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      sonar: "S1860"
+      cert: "LCK01-J"
+      references: ["https://wiki.sei.cmu.edu/confluence/display/java/LCK01-J.+Do+not+synchronize+on+objects+that+may+be+reused", "https://rules.sonarsource.com/java/RSPEC-1860/"]
+
+  - id: sentinel-cert-retorno-ignorado-arquivo
+    patterns:
+      - pattern-either:
+          - pattern: (File $F).delete();
+          - pattern: (File $F).mkdir();
+          - pattern: (File $F).mkdirs();
+          - pattern: (File $F).createNewFile();
+          - pattern: (File $F).renameTo(...);
+      - pattern-not-inside: |
+          $T $V = ...;
+      - pattern-not-inside: |
+          $V = $E;
+      - pattern-not-inside: |
+          return ...;
+    message: >
+      java.io.File devolve false em vez de lançar exceção quando a operação falha, e o resultado foi descartado: o
+      arquivo continua lá (ou a pasta não foi criada) e ninguém percebe. Use java.nio.file.Files (Files.delete,
+      Files.createDirectories, Files.move), que lançam IOException com a causa, ou verifique o retorno.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      sonar: "S899"
+      cert: "EXP00-J"
+      cwe: "CWE-252: Unchecked Return Value"
+      references: ["https://rules.sonarsource.com/java/RSPEC-899/"]
+
+  - id: sentinel-cert-locale-implicito
+    pattern-either:
+      - pattern: (String $S).toLowerCase()
+      - pattern: (String $S).toUpperCase()
+    message: >
+      toLowerCase()/toUpperCase() sem Locale usa o idioma do servidor: com locale turco, "TITLE".toLowerCase() vira
+      "tıtle" e comparações e chaves quebram. Informe o Locale (Locale.ROOT para identificadores e protocolos,
+      o Locale do usuário para texto de tela).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      sonar: "S1449"
+      cert: "STR02-J"
+      references: ["https://rules.sonarsource.com/java/RSPEC-1449/"]
+
+  - id: sentinel-cert-charset-implicito
+    pattern-either:
+      - pattern: (String $S).getBytes()
+      - patterns:
+          - pattern: new String($B)
+          - metavariable-type:
+              metavariable: $B
+              type: byte[]
+      - pattern: new InputStreamReader($IN)
+      - pattern: new OutputStreamWriter($OUT)
+    message: >
+      Conversão entre texto e bytes sem charset usa a codificação padrão da JVM, que muda de máquina para máquina
+      (até o Java 17) e corrompe acentos. Informe StandardCharsets.UTF_8 explicitamente.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: quality
+      cert: "STR04-J"
+      references: ["https://wiki.sei.cmu.edu/confluence/display/java/STR04-J.+Use+compatible+character+encodings+when+communicating+string+data+between+JVMs"]
+
+  - id: sentinel-cert-securerandom-semente-fixa
+    patterns:
+      - pattern-either:
+          - pattern: new SecureRandom($SEED)
+          - pattern: (SecureRandom $R).setSeed($SEED)
+      - pattern-not: new SecureRandom((SecureRandom $O).generateSeed(...))
+      - pattern-not: (SecureRandom $R).setSeed((SecureRandom $O).generateSeed(...))
+    message: >
+      Dar semente a um SecureRandom (construtor com bytes ou setSeed) pode torná-lo previsível: com a mesma semente
+      ele gera sempre a mesma sequência. Deixe o SecureRandom se semear sozinho (new SecureRandom()) e só
+      complemente com generateSeed.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      sonar: "S4347"
+      cert: "MSC02-J"
+      cwe: "CWE-330: Use of Insufficiently Random Values"
+      references: ["https://rules.sonarsource.com/java/RSPEC-4347/"]

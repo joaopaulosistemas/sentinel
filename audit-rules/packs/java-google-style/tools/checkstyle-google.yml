@@ -1,0 +1,9 @@
+# Google Java Style Guide. Precisa de /opt/checkstyle (jar e google-checks.xml que a imagem Docker instala) e de uma JVM no PATH.
+# Roda só quando o perfil padrao-google-java liga este pacote.
+- id: checkstyle-google
+  name: "Checkstyle (Google Java Style)"
+  category: quality
+  applies-to: ["**/*.java"]
+  command: [java, -jar, /opt/checkstyle/checkstyle.jar, -c, /opt/checkstyle/google-checks.xml, -f, sarif, -o, "{output}", "{files}"]
+  severity-map: {warning: low, error: medium}
+  timeout-seconds: 600

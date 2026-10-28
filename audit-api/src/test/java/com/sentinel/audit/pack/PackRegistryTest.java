@@ -216,4 +216,25 @@ class PackRegistryTest {
         assertEquals(Boolean.TRUE, padraoTs.overrideFor("jscpd-codigo-duplicado").shadow());
         assertEquals(Boolean.TRUE, legado.overrideFor("jscpd-codigo-duplicado").shadow());
     }
+
+    @Test
+    void perfisGoogleLigamOsPacotesDoPadraoEFicamDesligadosPorPadrao() {
+        PackRegistry r = TestPacks.registry();
+        assertTrue(r.snapshot().rejected().isEmpty(), r.snapshot().rejected().toString());
+
+        List<String> padrao = ids(r.policyFor("default"));
+        assertFalse(padrao.contains("java-google-style"), "Google Java Style é opt-in");
+        assertFalse(padrao.contains("java-cert-sonar"), "CERT e Sonar são opt-in");
+
+        AuditPolicy java = r.policyFor("padrao-google-java");
+        assertTrue(ids(java).containsAll(List.of("java-google-style", "java-cert-sonar", "market-tools", "core-security")));
+        assertEquals(50, java.threshold("max-function-lines", 0));
+        assertEquals(com.sentinel.audit.model.Severity.LOW, java.overrideFor("checkstyle-google-import.customOrder").severity());
+
+        AuditPolicy ts = r.policyFor("padrao-google-typescript-angular");
+        assertFalse(ids(ts).contains("ts-clean-code"), "o padrão da casa contradiz o Google TypeScript: não pode ligar junto");
+        assertEquals(500, ts.threshold("max-component-lines", 0));
+        assertEquals(Boolean.TRUE, ts.overrideFor("eslint-sonarjs/no-hardcoded-secrets").shadow());
+        assertEquals(com.sentinel.audit.model.Severity.LOW, ts.overrideFor("eslint-@typescript-eslint/naming-convention").severity());
+    }
 }
