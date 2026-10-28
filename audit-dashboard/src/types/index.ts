@@ -150,6 +150,7 @@ export type AnalyzerProgressStatus =
   | 'ESPERANDO'
   | 'EXECUTANDO'
   | 'OK'
+  | 'PARCIAL'
   | 'FALHOU'
   | 'INDISPONIVEL'
   | 'NAO_SUPORTADO'

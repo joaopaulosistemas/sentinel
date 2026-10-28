@@ -71,7 +71,10 @@ public class GitleaksAnalyzer implements CodeAnalyzer {
         }
 
         Path report = null;
+        Path stderr = null;
+        String partial = null;
         try {
+            stderr = Files.createTempFile("gitleaks-err-", ".txt");
             report = Files.createTempFile("gitleaks-", ".json");   // 0600 em sistemas POSIX
             List<String> cmd = new ArrayList<>(List.of(exe.toString(), "detect",
                     "--source", projectPath.toString(),
@@ -80,20 +83,22 @@ public class GitleaksAnalyzer implements CodeAnalyzer {
             if (!Files.isDirectory(projectPath.resolve(".git"))) {
                 cmd.add("--no-git");
             }
-            int code = ExternalTools.run(cmd, Map.of(), timeoutSeconds);
-            if (code == -1) {
-                LOG.warnf("Gitleaks excedeu o tempo limite de %ds e foi encerrado", timeoutSeconds);
-            } else if (code != 0) {
-                LOG.warnf("Gitleaks terminou com código %d", code);
+            int code = ExternalTools.run(cmd, null, Map.of(), timeoutSeconds, null, stderr);
+            if (code != 0) {
+                partial = ExternalTools.falha(code, timeoutSeconds, stderr);
+                LOG.warnf("Gitleaks %s", partial);
             } else {
                 findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
                 LOG.infof("Gitleaks encontrou %d segredos", findings.size());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            partial = "execução interrompida";
         } catch (Exception e) {
             LOG.errorf("Erro ao executar o Gitleaks: %s", e.getMessage());
+            partial = "erro ao executar: " + e.getMessage();
         } finally {
+            ExternalTools.deleteQuietly(stderr);
             if (report != null) {
                 try {
                     Files.deleteIfExists(report);
@@ -102,7 +107,7 @@ public class GitleaksAnalyzer implements CodeAnalyzer {
                 }
             }
         }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
     }
 
     /** Converte o relatório JSON (lista) em findings; o valor do segredo é descartado aqui. */

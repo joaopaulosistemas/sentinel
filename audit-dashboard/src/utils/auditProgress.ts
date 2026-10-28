@@ -12,6 +12,7 @@ export const analyzerStatusLabel: Record<AnalyzerProgressStatus, string> = {
   ESPERANDO: 'Na fila',
   EXECUTANDO: 'Executando',
   OK: 'Concluído',
+  PARCIAL: 'Parcial',
   FALHOU: 'Falhou',
   INDISPONIVEL: 'Ferramenta ausente',
   NAO_SUPORTADO: 'Não se aplica',
@@ -22,9 +23,9 @@ export const analyzerStatusLabel: Record<AnalyzerProgressStatus, string> = {
 
 /** Analisadores que realmente rodam (os demais não contam para o andamento). */
 const isCounted = (a: AnalyzerProgress) =>
-  a.status === 'ESPERANDO' || a.status === 'EXECUTANDO' || a.status === 'OK' || a.status === 'FALHOU';
+  a.status === 'ESPERANDO' || a.status === 'EXECUTANDO' || a.status === 'OK' || a.status === 'PARCIAL' || a.status === 'FALHOU';
 
-const isSettled = (a: AnalyzerProgress) => a.status === 'OK' || a.status === 'FALHOU';
+const isSettled = (a: AnalyzerProgress) => a.status === 'OK' || a.status === 'PARCIAL' || a.status === 'FALHOU';
 
 /** Posição da etapa atual (0 a 4). Concluída = 5, ou seja, todas as etapas prontas. */
 export function phaseIndex(run: Pick<AuditRunResponse, 'status' | 'progress'>): number {

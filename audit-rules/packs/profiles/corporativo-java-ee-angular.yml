@@ -3,6 +3,11 @@ name: "Corporativo: Java EE (EJB/JPA) + Angular + SQL"
 description: "Pacotes padrão mais o core-corporativo (guias internos de Java, REST, logging e banco de dados). As regras de nomenclatura de banco entram em modo sombra: aparecem no relatório, mas só pesam no score depois de promovidas, já que o legado não segue a norma."
 packs: [core-security, core-iac, core-spring, core-persistencia, core-quality, core-architecture, core-frontend, core-corporativo, market-tools]
 rules:
+  # Em sombra por medida (docs/evolucao/precisao.md): 0 verdadeiros em 6 revisados cada, em scripts/CLI sem entrada externa.
+  "eslint-regexp/no-super-linear-move": {shadow: true}   # precisao.md
+  "eslint-security/detect-non-literal-fs-filename": {shadow: true}   # precisao.md
+  # 1 verdadeiro em 9 revisados (cabeçalho de licença, pom.xml e arquivos gerados); volta a pesar quando a precisão subir.
+  jscpd-codigo-duplicado: {shadow: true}   # precisao.md
   "sentinel-sqlnorma-*": {shadow: true}
   sentinel-ng-componente-sem-onpush: {shadow: true}
   sentinel-ee-ejb-sem-interface: {shadow: true}

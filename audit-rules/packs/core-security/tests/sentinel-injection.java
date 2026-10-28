@@ -102,3 +102,45 @@ class InjectionCases {
         xp.evaluate("//usuario", doc);
     }
 }
+
+// Dado externo que passa por uma coleção continua sendo dado externo (list.add / map.put).
+class PropagacaoEmColecoes {
+    void cmdiLista(javax.servlet.http.HttpServletRequest request) throws Exception {
+        String param = request.getParameter("c");
+        java.util.List<String> args = new java.util.ArrayList<String>();
+        args.add("sh");
+        args.add("-c");
+        args.add("echo " + param);
+        // ruleid: sentinel-command-injection-requisicao
+        new ProcessBuilder(args).start();
+    }
+
+    void cmdiListaSoComConstantes(javax.servlet.http.HttpServletRequest request) throws Exception {
+        String param = request.getParameter("c");
+        java.util.List<String> args = new java.util.ArrayList<String>();
+        args.add("echo");
+        args.add("fixo");
+        // ok: sentinel-command-injection-requisicao
+        new ProcessBuilder(args).start();
+    }
+
+    void cmdiAmbiente(javax.servlet.http.HttpServletRequest request) throws Exception {
+        String[] env = {request.getHeader("X-Env")};
+        // ruleid: sentinel-command-injection-requisicao
+        Runtime.getRuntime().exec(new String[] {"/bin/ls"}, env);
+    }
+
+    void sqlViaMapa(javax.servlet.http.HttpServletRequest request, java.sql.Statement st) throws Exception {
+        java.util.Map<String, Object> m = new java.util.HashMap<String, Object>();
+        m.put("a", request.getParameter("u"));
+        String bar = (String) m.get("a");
+        // ruleid: sentinel-sql-injection
+        st.executeQuery("select * from u where n = '" + bar + "'");
+    }
+
+    void sqlNomeDeCabecalho(javax.servlet.http.HttpServletRequest request, java.sql.Statement st) throws Exception {
+        String nome = request.getHeaderNames().nextElement();
+        // ruleid: sentinel-sql-injection
+        st.executeQuery("select * from u where n = '" + nome + "'");
+    }
+}

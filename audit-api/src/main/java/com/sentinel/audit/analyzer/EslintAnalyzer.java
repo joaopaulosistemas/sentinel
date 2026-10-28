@@ -70,7 +70,10 @@ public class EslintAnalyzer implements CodeAnalyzer {
             return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
         }
         Path report = null;
+        Path stderr = null;
+        String partial = null;
         try {
+            stderr = Files.createTempFile("eslint-err-", ".txt");
             report = Files.createTempFile("eslint-", ".json");
             List<String> cmd = new ArrayList<>(List.of(exe.toString(), "--no-config-lookup", "-c", configPath,
                     "-f", "json", "-o", report.toString(), "--no-warn-ignored"));
@@ -80,20 +83,22 @@ public class EslintAnalyzer implements CodeAnalyzer {
             }
             cmd.addAll(List.of("--ignore-pattern", "**/*.d.ts", "--ignore-pattern", "**/*.min.js", "."));
             Map<String, String> env = usaAngular(projectPath) ? Map.of() : Map.of("SENTINEL_ESLINT_ANGULAR", "0");
-            int code = ExternalTools.run(cmd, projectPath, env, timeoutSeconds);
-            if (code == -1) {
-                LOG.warnf("ESLint excedeu o tempo limite de %ds e foi encerrado", timeoutSeconds);
-            } else if (code > 1) {                       // 1 = há problemas (normal); 2 = erro de execução
-                LOG.warnf("ESLint terminou com código %d", code);
+            int code = ExternalTools.run(cmd, projectPath, env, timeoutSeconds, null, stderr);
+            if (code == -1 || code > 1) {                // 1 = há problemas (normal); 2 = erro de execução
+                partial = ExternalTools.falha(code, timeoutSeconds, stderr);
+                LOG.warnf("ESLint %s", partial);
             } else {
                 findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
                 LOG.infof("ESLint encontrou %d problemas", findings.size());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            partial = "execução interrompida";
         } catch (Exception e) {
             LOG.errorf("Erro ao executar o ESLint: %s", e.getMessage());
+            partial = "erro ao executar: " + e.getMessage();
         } finally {
+            ExternalTools.deleteQuietly(stderr);
             if (report != null) {
                 try {
                     Files.deleteIfExists(report);
@@ -102,7 +107,7 @@ public class EslintAnalyzer implements CodeAnalyzer {
                 }
             }
         }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
     }
 
     /** Algum package.json (fora de pastas ignoradas) menciona {@code @angular/}: só então valem as regras do Angular. */

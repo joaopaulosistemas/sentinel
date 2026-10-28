@@ -132,6 +132,9 @@ public class AuditProgressTracker {
         }
         String msg = "FALHOU".equals(status)
                 ? name + " falhou" + (note == null ? "" : ": " + note)
+                : "PARCIAL".equals(status)
+                ? name + " terminou de forma parcial (" + findings + (findings == 1 ? " achado" : " achados") + ")"
+                        + (note == null ? "" : ": " + note)
                 : name + " concluído: " + findings + (findings == 1 ? " achado" : " achados");
         update(auditId, name, status, findings, durationMs, note, msg);
     }

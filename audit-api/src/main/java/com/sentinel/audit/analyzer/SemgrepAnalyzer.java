@@ -58,6 +58,11 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
     long timeoutSeconds;
 
     @Override
+    public boolean isAvailable() {
+        return isSemgrepAvailable();
+    }
+
+    @Override
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun) {
         return analyze(projectPath, auditRun, null);
     }
@@ -66,6 +71,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun, AuditPolicy policy) {
         Instant start = Instant.now();
         List<Finding> findings = new ArrayList<>();
+        String partial = null;
 
         if (!isSemgrepAvailable()) {
             LOG.warnf("Semgrep não está instalado. Análise SAST ignorada para %s", projectPath);
@@ -77,19 +83,28 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             if (policy != null && policy.localRulesDir() != null) {
                 configs.add(policy.localRulesDir().toString());   // regras locais do sistema (observação ou promovidas)
             }
-            String jsonOutput = configs.isEmpty() ? null : runSemgrep(projectPath, configs);
-            if (jsonOutput != null) {
-                findings = parseSemgrepOutput(jsonOutput, projectPath, auditRun);
-                LOG.infof("Semgrep encontrou %d findings", findings.size());
+            SemgrepRun run = configs.isEmpty() ? null : runSemgrep(projectPath, configs);
+            if (run != null) {
+                partial = run.partial();
+                if (run.json() != null) {
+                    String jsonProblem = problemasNoJson(run.json());
+                    if (jsonProblem != null) {
+                        partial = partial == null ? jsonProblem : partial + "; " + jsonProblem;
+                    }
+                    findings = parseSemgrepOutput(run.json(), projectPath, auditRun);
+                    LOG.infof("Semgrep encontrou %d findings", findings.size());
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             LOG.warn("Execução do Semgrep interrompida");
+            partial = "execução interrompida";
         } catch (Exception e) {
             LOG.errorf(e, "Erro ao executar Semgrep");
+            partial = "erro ao executar: " + e.getMessage();
         }
 
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
     }
 
     @Override
@@ -135,10 +150,57 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             "jquery*.js", "jquery*.css", "font-awesome*.css", "fontawesome*.css", "patternfly*.css", "patternfly*.js",
             "js/bootstrap*.js", "css/bootstrap*.css");
 
+    /** Saída do Semgrep: o JSON (ou null) e, se a execução não foi limpa, o motivo (resultado possivelmente incompleto). */
+    record SemgrepRun(String json, String partial) {
+    }
+
     /**
-     * Executa o Semgrep e devolve o JSON de saída, ou {@code null} se a execução falhou.
+     * Procura, no JSON do Semgrep, sinais de que parte do código não foi analisada: JSON ilegível, erros de nível
+     * "error" (regra inválida, falha interna) e timeouts por arquivo/regra. Avisos de parse parcial (nível "warn")
+     * são comuns em código real e não contam.
+     *
+     * @return descrição do problema, ou {@code null} se a saída parece completa
      */
-    private String runSemgrep(Path projectPath, List<String> configs) throws IOException, InterruptedException {
+    static String problemasNoJson(String json) {
+        try {
+            JsonNode errors = new ObjectMapper().readTree(json).path("errors");
+            int graves = 0;
+            int timeouts = 0;
+            String primeiro = null;
+            for (JsonNode e : errors) {
+                String type = e.path("type").asText("");
+                boolean timeout = type.toLowerCase(java.util.Locale.ROOT).contains("timeout");
+                if (timeout) {
+                    timeouts++;
+                } else if ("error".equalsIgnoreCase(e.path("level").asText(""))) {
+                    graves++;
+                } else {
+                    continue;
+                }
+                if (primeiro == null) {
+                    primeiro = e.path("message").asText(type).replaceAll("\\s+", " ");
+                    if (primeiro.length() > 200) {
+                        primeiro = primeiro.substring(0, 200) + "…";
+                    }
+                }
+            }
+            if (graves == 0 && timeouts == 0) {
+                return null;
+            }
+            return (graves > 0 ? graves + " erro(s) do Semgrep" : "")
+                    + (graves > 0 && timeouts > 0 ? " e " : "")
+                    + (timeouts > 0 ? timeouts + " timeout(s) por arquivo/regra" : "")
+                    + " — ex.: " + primeiro;
+        } catch (Exception e) {
+            return "saída JSON do Semgrep ilegível";
+        }
+    }
+
+    /**
+     * Executa o Semgrep e devolve a saída. Em timeout o JSON é nulo e a nota diz isso; com código de saída anormal
+     * ainda se aproveita o JSON parcial, mas a nota registra a causa (fim do stderr).
+     */
+    private SemgrepRun runSemgrep(Path projectPath, List<String> configs) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>();
         command.add("semgrep");
         for (String config : configs) {
@@ -158,29 +220,35 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         command.add(projectPath.toString());
 
         Path outputFile = Files.createTempFile("semgrep-out-", ".json");
+        Path errFile = Files.createTempFile("semgrep-err-", ".txt");
         try {
             ProcessBuilder pb = new ProcessBuilder(command);
             pb.environment().put("SEMGREP_SEND_METRICS", "off");
             pb.environment().put("SEMGREP_ENABLE_VERSION_CHECK", "0");
             pb.redirectOutput(outputFile.toFile());               // somente stdout (JSON)
-            pb.redirectError(ProcessBuilder.Redirect.DISCARD);    // stderr nunca contamina o JSON
+            pb.redirectError(errFile.toFile());                   // stderr nunca contamina o JSON; só o fim vira nota
             Process process = pb.start();
 
             if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
                 process.destroyForcibly();
                 LOG.warnf("Semgrep excedeu o tempo limite de %ds e foi encerrado", timeoutSeconds);
-                return null;
+                return new SemgrepRun(null, ExternalTools.falha(-1, timeoutSeconds, null));
             }
             String output = Files.readString(outputFile, StandardCharsets.UTF_8);
             // 0 = ok; 1 = achados (com --error). Outros códigos (ex.: 2 = regra inválida ou arquivo que
             // não pôde ser analisado) ainda podem trazer resultados parciais em JSON: aproveita se houver.
+            String partial = null;
             if (process.exitValue() > 1) {
-                LOG.warnf("Semgrep terminou com código %d; usando os resultados parciais, se existirem",
-                        process.exitValue());
+                partial = ExternalTools.falha(process.exitValue(), timeoutSeconds, errFile);
+                LOG.warnf("Semgrep %s; usando os resultados parciais, se existirem", partial);
             }
-            return output.isBlank() ? null : output;
+            if (output.isBlank()) {
+                return new SemgrepRun(null, partial != null ? partial : "terminou sem produzir saída JSON");
+            }
+            return new SemgrepRun(output, partial);
         } finally {
             Files.deleteIfExists(outputFile);
+            Files.deleteIfExists(errFile);
         }
     }
 

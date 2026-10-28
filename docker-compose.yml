@@ -92,8 +92,6 @@ services:
       PACKS_REQUIRE_SIGNATURE: ${PACKS_REQUIRE_SIGNATURE:-false}
       PLAYGROUND_ENABLED: ${PLAYGROUND_ENABLED:-true}
       CLONE_DIR: /tmp/sentinel-audit-clones
-      WATSONX_URL: ${WATSONX_URL:-}
-      WATSONX_API_KEY: ${WATSONX_API_KEY:-}
     ports:
       - "127.0.0.1:8080:8080"
     volumes:

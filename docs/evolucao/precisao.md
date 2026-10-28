@@ -34,7 +34,7 @@ Para o eixo 10 do placar chegar a 3 são necessários ≥ 100 achados revisados 
 | `checkstyle-magic.number` | 13 | 5 | 4 | 4 | 2026-10-22 Java (FP: layout Swing gerado, máscaras hexadecimais; D: código HTTP em `switch`, capacidade inicial) |
 | `jscpd-codigo-duplicado` | 12 | 1 | 8 | 3 | 2026-10-22 Java (FP: cabeçalho de licença, `pom.xml`, `README.html` gerado, `nbactions.xml`) |
 | `sentinel-ts-var` | 6 | 0 | 6 | 0 | 2026-10-22 Java (6 de 6 em biblioteca embutida: `ejs.js`, `bootstrap.js`, jQuery; corrigida no PR #16) |
-| `sentinel-ts-igualdade-frouxa` | 6 | 0 | 6 | 0 | 2026-10-22 Java (idem: `base.js`, `ejs.js`, `bootstrap.js`) |
+| `sentinel-ts-igualdade-frouxa` | 6 | 0 | 6 | 0 | 2026-10-22 Java (idem: `base.js`, `ejs.js`, `bootstrap.js`; corrigida no PR #16, que tirou bibliotecas embutidas da auditoria) |
 | `stylelint-a11y/content-property-no-static-value` | 3 | 0 | 3 | 0 | 2026-10-22 Java (CSS de fonte de ícones embutido; todos os 936 achados estão em 1 repositório; menos de 5 lidos, de um só arquivo) |
 | `checkstyle-redundantModifier` | 9 | 8 | 0 | 1 | 2026-10-22 Java (VP de estilo) |
 | `checkstyle-hide.utility.class` | 14 | 7 | 3 | 4 | 2026-10-22 Java (FP: `@SpringBootApplication` e classe com construtor privado do Lombok; D: classes com `main`; nos VP só conferi o cabeçalho da classe) |

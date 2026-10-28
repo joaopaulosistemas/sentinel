@@ -3,6 +3,11 @@ name: "Padrão TypeScript / Angular (clean code)"
 description: "Pacotes padrão mais o ts-clean-code, com os limites do padrão: método até 50 linhas, complexidade 10, aninhamento 3 e arquivo até 500 linhas. Para o lint de estrutura e nomes, aponte ESLINT_CONFIG para /opt/eslint/eslint.padrao-ts.config.mjs."
 packs: [core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, market-tools, ts-clean-code]
 rules:
+  # Em sombra por medida (docs/evolucao/precisao.md): 0 verdadeiros em 6 revisados cada, em scripts/CLI sem entrada externa.
+  "eslint-regexp/no-super-linear-move": {shadow: true}   # precisao.md
+  "eslint-security/detect-non-literal-fs-filename": {shadow: true}   # precisao.md
+  # 1 verdadeiro em 9 revisados (cabeçalho de licença, pom.xml e arquivos gerados); volta a pesar quando a precisão subir.
+  jscpd-codigo-duplicado: {shadow: true}   # precisao.md
   "sentinel-tsp-*": {severity: low}
 thresholds:
   max-function-lines: 50

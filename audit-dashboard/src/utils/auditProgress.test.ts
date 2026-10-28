@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AnalyzerProgress, AuditRunResponse } from '../types';
 import {
   analyzerCounts,
+  analyzerStatusLabel,
   averageDurationSeconds,
   elapsedSeconds,
   formatDuration,
@@ -37,6 +38,11 @@ describe('andamento da auditoria', () => {
   it('conta só os analisadores que realmente rodam', () => {
     const list = [an('A', 'OK'), an('B', 'EXECUTANDO'), an('C', 'FALHOU'), an('D', 'INDISPONIVEL'), an('E', 'NAO_SUPORTADO')];
     expect(analyzerCounts(list)).toEqual({ done: 2, total: 3 });
+  });
+
+  it('analisador parcial conta como concluído (terminou), mas com rótulo próprio', () => {
+    expect(analyzerCounts([an('A', 'PARCIAL'), an('B', 'EXECUTANDO')])).toEqual({ done: 1, total: 2 });
+    expect(analyzerStatusLabel.PARCIAL).toBe('Parcial');
   });
 
   it('a análise anda com os analisadores e nunca passa de 80', () => {

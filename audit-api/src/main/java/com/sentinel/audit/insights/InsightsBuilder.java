@@ -324,6 +324,11 @@ public final class InsightsBuilder {
         List<String> out = new ArrayList<>();
         for (AnalyzerRunInfo r : runs) {
             if (!r.ok() && !"NAO_SUPORTADO".equals(r.status()) && !"SUBSTITUIDO".equals(r.status())) {
+                if (r.partial()) {
+                    out.add("Analisador " + r.name() + " terminou de forma parcial" + (r.note() == null ? "" : " (" + r.note() + ")")
+                            + ": o resultado pode estar incompleto — \"nenhum achado\" dele não prova ausência de problema");
+                    continue;
+                }
                 out.add("Analisador " + r.name() + " não executou (" + r.status().toLowerCase(Locale.ROOT) + (r.note() == null ? "" : ": " + r.note())
                         + "): o que ele cobriria não foi verificado");
             }
