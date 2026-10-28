@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import pkg from '../../../package.json';
@@ -10,7 +10,14 @@ function Wrap({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{children}</QueryClientProvider>;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+const matchMediaOriginal = window.matchMedia;
+afterEach(() => { vi.unstubAllGlobals(); window.localStorage.clear(); window.matchMedia = matchMediaOriginal; });
+
+/** Simula tela larga, em que o menu fica fixo e o divisor aparece. */
+function telaLarga() {
+  window.matchMedia = ((query: string) => ({ matches: true, media: query, onchange: null, addListener: () => {}, removeListener: () => {},
+    addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+}
 
 describe('AppShell', () => {
   it('mostra quantos pedidos do Claude esperam decisão no item de Informações de Auditoria', async () => {
@@ -51,5 +58,31 @@ describe('AppShell', () => {
       'Ranking de Sistemas',
       'Relatórios',
     ]);
+  });
+  it('tem um divisor acessível que muda a largura com o teclado e guarda a escolha', () => {
+    telaLarga();
+    render(<Wrap><MemoryRouter><AppShell><p>x</p></AppShell></MemoryRouter></Wrap>);
+    const sep = screen.getByRole('separator', { name: 'Largura do menu' });
+    expect(sep).toHaveAttribute('aria-valuenow', '256');
+    fireEvent.keyDown(sep, { key: 'ArrowRight' });
+    expect(sep).toHaveAttribute('aria-valuenow', '272');
+    expect(window.localStorage.getItem('sentinel.menu-largura')).toBe('272');
+    fireEvent.keyDown(sep, { key: 'Home' });
+    expect(sep).toHaveAttribute('aria-valuenow', '48');
+    expect(screen.getByRole('navigation', { name: 'Navegação principal' }).className).toContain('sentinel-menu-trilho');
+    fireEvent.doubleClick(sep);
+    expect(sep).toHaveAttribute('aria-valuenow', '256');
+  });
+
+  it('começa com a largura guardada', () => {
+    telaLarga();
+    window.localStorage.setItem('sentinel.menu-largura', '320');
+    render(<Wrap><MemoryRouter><AppShell><p>x</p></AppShell></MemoryRouter></Wrap>);
+    expect(screen.getByRole('separator', { name: 'Largura do menu' })).toHaveAttribute('aria-valuenow', '320');
+  });
+
+  it('em tela estreita não mostra o divisor', () => {
+    render(<Wrap><MemoryRouter><AppShell><p>x</p></AppShell></MemoryRouter></Wrap>);
+    expect(screen.queryByRole('separator', { name: 'Largura do menu' })).toBeNull();
   });
 });

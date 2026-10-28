@@ -48,3 +48,14 @@
   .sys-table td:nth-child(3)::before { content: 'Equipe: '; color: var(--s-text-4); }
   .sys-table td:nth-child(4)::before { content: 'Agendamento: '; color: var(--s-text-4); }
 }
+
+/* Menu lateral redimensionável: a largura vem de --s-menu-w; abaixo de 140 px vira trilho só com ícones/pontos. */
+.cds--side-nav.sentinel-menu-redim { width: var(--s-menu-w, 16rem); }
+.sentinel-menu-redim .cds--side-nav__link { overflow: hidden; }
+.sentinel-menu-trilho .sentinel-menu-rotulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sentinel-menu-trilho .sentinel-menu-selo { margin-left: 0 !important; min-width: 8px !important; width: 8px; height: 8px; padding: 0 !important; border-radius: 50% !important; font-size: 0 !important; line-height: 0 !important; }
+.sentinel-menu-trilho .cds--side-nav__link { padding-left: 1rem; }
+.sentinel-menu-divisor { position: fixed; top: 3rem; bottom: 0; width: 6px; z-index: 8000; cursor: col-resize; background: transparent; touch-action: none; }
+.sentinel-menu-divisor:hover, .sentinel-menu-divisor:focus-visible, .sentinel-menu-divisor--ativo { background: var(--s-link, #0f62fe); opacity: 0.55; }
+.sentinel-menu-divisor:focus-visible { outline: 2px solid var(--s-link, #0f62fe); outline-offset: -2px; opacity: 1; }
+@media (prefers-reduced-motion: no-preference) { .sentinel-menu-divisor { transition: background 0.12s; } }

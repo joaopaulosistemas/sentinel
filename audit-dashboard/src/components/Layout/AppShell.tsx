@@ -11,9 +11,10 @@ import {
   SkipToContent,
   Theme,
 } from '@carbon/react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
+import { MENU_MIN, MENU_PADRAO, MENU_TRILHO, clampMenu, menuMaxFor, readMenuWidth, saveMenuWidth } from '../../utils/menuWidth';
 import { PALETTES, TEXT_SIZES, useThemeStore, type Palette, type TextSize } from '../../store/useThemeStore';
 
 interface AppShellProps {
@@ -68,6 +69,45 @@ function useMenuFixo(): boolean {
   return fixo;
 }
 
+
+/** Largura do menu (arrastável e salva no navegador) e o gesto de arrastar. */
+function useMenuLargura() {
+  const [largura, setLargura] = useState(() => readMenuWidth(window.innerWidth));
+  const [arrastando, setArrastando] = useState(false);
+  const ref = useRef(largura);
+  ref.current = largura;
+  const aplicar = (w: number) => {
+    const v = clampMenu(w, window.innerWidth);
+    setLargura(v);
+    saveMenuWidth(v);
+  };
+  const iniciar = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    setArrastando(true);
+  };
+  const mover = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (arrastando) setLargura(clampMenu(e.clientX, window.innerWidth));
+  };
+  const soltar = () => {
+    if (!arrastando) return;
+    setArrastando(false);
+    saveMenuWidth(ref.current);
+  };
+  const teclado = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const passo = e.shiftKey ? 48 : 16;
+    const max = menuMaxFor(window.innerWidth);
+    if (e.key === 'ArrowRight') aplicar(ref.current === MENU_TRILHO ? MENU_MIN : Math.min(max, ref.current + passo));
+    else if (e.key === 'ArrowLeft') aplicar(ref.current - passo < MENU_MIN ? 0 : ref.current - passo);
+    else if (e.key === 'Home') aplicar(0);
+    else if (e.key === 'End') aplicar(max);
+    else if (e.key === 'Enter') aplicar(ref.current === MENU_TRILHO ? MENU_PADRAO : MENU_TRILHO);
+    else return;
+    e.preventDefault();
+  };
+  return { largura, arrastando, props: { onPointerDown: iniciar, onPointerMove: mover, onPointerUp: soltar, onPointerCancel: soltar, onKeyDown: teclado, onDoubleClick: () => aplicar(MENU_PADRAO) } };
+}
+
 /** Cabeçalho escuro no topo e a navegação principal fixa na lateral esquerda. */
 export function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate();
@@ -79,6 +119,8 @@ export function AppShell({ children }: AppShellProps) {
   const palette = useThemeStore((st) => st.palette);
   const setPalette = useThemeStore((st) => st.setPalette);
   const fixo = useMenuFixo();
+  const menu = useMenuLargura();
+  const trilho = fixo && menu.largura === MENU_TRILHO;
   const [aberto, setAberto] = useState(false);
   // Ao trocar de tela ou ao voltar para a tela larga, o menu sobreposto fecha.
   useEffect(() => setAberto(false), [location.pathname, fixo]);
@@ -136,7 +178,7 @@ export function AppShell({ children }: AppShellProps) {
           </HeaderGlobalAction>
         </HeaderGlobalBar>
       </Header>
-      <SideNav isFixedNav expanded={fixo || aberto} isChildOfHeader={!fixo} onOverlayClick={() => setAberto(false)} aria-label="Navegação principal">
+      <SideNav isFixedNav expanded={fixo || aberto} className={fixo ? `sentinel-menu-redim${trilho ? ' sentinel-menu-trilho' : ''}` : undefined} style={fixo ? ({ '--s-menu-w': `${menu.largura}px` } as React.CSSProperties) : undefined} isChildOfHeader={!fixo} onOverlayClick={() => setAberto(false)} aria-label="Navegação principal">
         <SideNavItems>
           {ITENS.map((i) => (
             <SideNavLink
@@ -148,10 +190,11 @@ export function AppShell({ children }: AppShellProps) {
                 navigate(i.rota);
               }}
             >
-              {i.nome}
+              <span className="sentinel-menu-rotulo" title={trilho ? i.nome : undefined}>{i.nome}</span>
               {i.rota === '/findings' && pending > 0 && (
                 <span
                   aria-label={`${pending} ${pending === 1 ? 'pedido do Claude espera' : 'pedidos do Claude esperam'} sua decisão`}
+                  className="sentinel-menu-selo"
                   style={{ marginLeft: 8, minWidth: 18, padding: '0 6px', borderRadius: 9, background: 'var(--s-link)', color: '#fff', fontSize: 11, lineHeight: '18px', display: 'inline-block', textAlign: 'center' }}
                 >
                   {pending}
@@ -161,11 +204,28 @@ export function AppShell({ children }: AppShellProps) {
           ))}
         </SideNavItems>
       </SideNav>
+      {fixo && (
+        // Separador focável = "window splitter" do WAI-ARIA: o teclado também ajusta a largura.
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Largura do menu"
+          aria-valuenow={menu.largura}
+          aria-valuemin={MENU_TRILHO}
+          aria-valuemax={menuMaxFor(window.innerWidth)}
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+          tabIndex={0}
+          className={`sentinel-menu-divisor${menu.arrastando ? ' sentinel-menu-divisor--ativo' : ''}`}
+          style={{ left: menu.largura - 3 }}
+          title="Arraste para ajustar a largura do menu; duplo clique restaura"
+          {...menu.props}
+        />
+      )}
       </Theme>
 
       {/* Os componentes do Carbon (campos, abas, modais) seguem o mesmo tema do restante da página. */}
       <Theme theme={dark ? 'g100' : 'white'} className="sentinel-content-theme">
-        <Content className="sentinel-content" style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh', marginLeft: fixo ? '16rem' : 0, padding: 0 }}>{children}</Content>
+        <Content className="sentinel-content" style={{ background: 'var(--s-bg)', color: 'var(--s-text)', minHeight: '100vh', marginLeft: fixo ? menu.largura : 0, padding: 0 }}>{children}</Content>
       </Theme>
     </>
   );
