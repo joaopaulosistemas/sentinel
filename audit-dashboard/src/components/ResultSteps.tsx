@@ -15,11 +15,21 @@ const sevBadge: Record<Severity, { label: string; bg: string; fg: string }> = {
   INFO: { label: 'INFO', bg: '#a6c8ff', fg: '#161616' },
 };
 
+/** Divide o texto nos pares de ** **; cada trecho leva a posição em que começa, que é uma chave estável (o texto não muda). */
+function splitEmphasis(text: string): Array<{ start: number; part: string; bold: boolean }> {
+  let start = 0;
+  return text.split('**').map((part, index) => {
+    const segment = { start, part, bold: index % 2 === 1 };
+    start += part.length + 2;
+    return segment;
+  });
+}
+
 /** Texto com trechos entre ** ** em negrito. */
 function Emphasis({ text }: { text: string }) {
   return (
     <>
-      {text.split('**').map((part, i) => (i % 2 === 1 ? <strong key={i} style={{ fontWeight: 600, color: 'var(--s-text)' }}>{part}</strong> : <Fragment key={i}>{part}</Fragment>))}
+      {splitEmphasis(text).map((s) => (s.bold ? <strong key={s.start} style={{ fontWeight: 600, color: 'var(--s-text)' }}>{s.part}</strong> : <Fragment key={s.start}>{s.part}</Fragment>))}
     </>
   );
 }

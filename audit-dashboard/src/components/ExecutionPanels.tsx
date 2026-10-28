@@ -146,8 +146,8 @@ export function EventLog({ startedAt, events }: { startedAt: string; events: Aud
         <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 13 }}>Aguardando o início.</p>
       ) : (
         <ul aria-live="polite" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {rows.map((e, i) => (
-            <li key={`${e.at}-${i}`} style={{ display: 'flex', gap: 10, fontSize: 13, lineHeight: 1.35 }}>
+          {rows.map((e) => (
+            <li key={`${e.at}-${e.message}`} style={{ display: 'flex', gap: 10, fontSize: 13, lineHeight: 1.35 }}>
               <span style={{ flex: 'none', fontFamily: mono, fontSize: 12, color: 'var(--s-text-4)', width: 42 }}>{clock(secondsBetween(startedAt, e.at))}</span>
               <span style={{ color: /falhou/i.test(e.message) ? 'var(--s-danger-text)' : 'var(--s-text)' }}>{e.message}</span>
             </li>

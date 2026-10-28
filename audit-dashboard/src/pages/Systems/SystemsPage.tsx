@@ -22,6 +22,157 @@ import {
 import { SystemsTable } from './SystemsTable';
 import { SystemFormFields } from './SystemFormFields';
 
+type Tab = 'cadastro' | 'motor' | 'analisadores' | 'mcp';
+
+const TABS: ReadonlyArray<readonly [Tab, string]> = [
+  ['cadastro', 'Cadastro e Git'],
+  ['motor', 'Motor de regras'],
+  ['analisadores', 'Analisadores'],
+  ['mcp', 'Claude (MCP)'],
+];
+
+/** O sistema já cadastrado que está sendo editado (nulo ao criar ou com o painel fechado). */
+function savedSystem(editing: SystemSummaryResponse | 'new' | null): SystemSummaryResponse | null {
+  return editing !== null && editing !== 'new' ? editing : null;
+}
+
+async function saveSystem(values: SystemFormValues, current: SystemSummaryResponse | null) {
+  const body = toRequest(values);
+  const system = current ? await api.updateSystem(current.id, body) : await api.createSystem(body);
+  return scheduleChanged(values, current) ? api.updateSchedule(system.id, toSchedule(values)) : system;
+}
+
+function filterSystems(systems: SystemSummaryResponse[], query: string): SystemSummaryResponse[] {
+  const term = query.trim().toLowerCase();
+  return [...systems]
+    .filter((s) => term === '' || `${s.name} ${s.team} ${s.repoUrl ?? ''} ${s.localPath ?? ''}`.toLowerCase().includes(term))
+    .sort((a, b) => (a.lastAuditScore ?? -1) - (b.lastAuditScore ?? -1));
+}
+
+function dirtyLabels(cadastro: boolean, engine: { motor: boolean; analisadores: boolean }): string[] {
+  const labels: string[] = [];
+  if (cadastro) labels.push('Cadastro e Git');
+  if (engine.motor) labels.push('Motor de regras');
+  if (engine.analisadores) labels.push('Analisadores');
+  return labels;
+}
+
+interface SystemTabsProps {
+  tab: Tab;
+  onSelect: (tab: Tab) => void;
+  isNew: boolean;
+  dirty: Record<'cadastro' | 'motor' | 'analisadores', boolean>;
+}
+
+function SystemTabs({ tab, onSelect, isNew, dirty }: SystemTabsProps) {
+  return (
+    <div role="tablist" aria-label="Seções do sistema" style={{ display: 'flex', borderBottom: '1px solid var(--s-border)', padding: '0 12px' }}>
+      {TABS.map(([id, nome]) => {
+        const bloqueada = id !== 'cadastro' && isNew;
+        const alterada = id !== 'mcp' && dirty[id];
+        return (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            disabled={bloqueada}
+            title={bloqueada ? 'Salve o sistema primeiro' : undefined}
+            onClick={() => onSelect(id)}
+            style={{
+              background: 'none',
+              border: 0,
+              borderBottom: tab === id ? '3px solid var(--s-link)' : '3px solid transparent',
+              padding: '10px 14px',
+              fontSize: 14,
+              fontWeight: tab === id ? 600 : 400,
+              color: bloqueada ? 'var(--s-disabled)' : 'var(--s-text)',
+              cursor: bloqueada ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {nome}
+            {alterada && (
+              <span role="img" aria-label="alterações não salvas" title="Alterações não salvas" style={{ color: 'var(--s-warn-text)', marginLeft: 6 }}>●</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ConfirmCloseBar({ tabs, onKeep, onDiscard }: { tabs: string[]; onKeep: () => void; onDiscard: () => void }) {
+  return (
+    <div role="alert" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 24px', display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 14 }}>
+        Há alterações não salvas em <strong>{tabs.join(', ')}</strong>. Se fechar agora, elas serão perdidas.
+      </span>
+      <span style={{ display: 'flex', gap: 8 }}>
+        <button type="button" onClick={onKeep} style={{ height: 32, padding: '0 12px', border: '1px solid var(--s-link)', background: 'var(--s-surface)', color: 'var(--s-link)', cursor: 'pointer' }}>
+          Continuar editando
+        </button>
+        <button type="button" onClick={onDiscard} style={{ height: 32, padding: '0 12px', border: '1px solid #da1e28', background: 'var(--s-surface)', color: 'var(--s-danger-text)', cursor: 'pointer' }}>
+          Descartar e fechar
+        </button>
+      </span>
+    </div>
+  );
+}
+
+/** Esc fecha o pop-up; com alteração sem salvar, pergunta antes (e um segundo Esc cancela a pergunta). */
+function useEscapeToClose(
+  open: boolean,
+  dirty: boolean,
+  confirming: boolean,
+  setConfirming: (value: boolean) => void,
+  close: () => void,
+) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (confirming) setConfirming(false);
+      else if (dirty) setConfirming(true);
+      else close();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // close e setConfirming mudam a cada render, mas só leem estado já listado
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, dirty, confirming]);
+}
+
+const footerButton = { flex: '1 1 120px', height: 56, border: 0, fontSize: 14, cursor: 'pointer', textAlign: 'left', padding: '0 16px' } as const;
+
+function FormFooter({ pending, onCancel, onSave }: { pending: boolean; onCancel: () => void; onSave: (auditNow: boolean) => void }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid var(--s-border)', position: 'sticky', bottom: 0, background: 'var(--s-surface)', marginTop: 'auto' }}>
+      <button type="button" onClick={onCancel} style={{ ...footerButton, background: 'var(--s-surface)', color: 'var(--s-text)', borderRight: '1px solid var(--s-border)' }}>
+        Cancelar
+      </button>
+      <button type="button" disabled={pending} onClick={() => onSave(false)} style={{ ...footerButton, flex: '1 1 140px', background: '#393939', color: '#fff' }}>
+        Salvar
+      </button>
+      <button type="button" disabled={pending} onClick={() => onSave(true)} style={{ ...footerButton, flex: '1 1 180px', background: 'var(--s-primary)', color: '#fff' }}>
+        {pending ? 'Salvando…' : 'Salvar e auditar agora'}
+      </button>
+    </div>
+  );
+}
+
+function EmptyList({ hasSystems }: { hasSystems: boolean }) {
+  return (
+    <div style={{ padding: 16 }}>
+      <InlineNotification
+        kind="info"
+        title={hasSystems ? 'Nenhum sistema encontrado' : 'Nenhum sistema cadastrado'}
+        subtitle={hasSystems ? 'Tente outro termo de busca.' : 'Clique em "Novo sistema" para cadastrar o primeiro.'}
+        hideCloseButton
+      />
+    </div>
+  );
+}
+
 /** Cadastro e edição de sistemas: lista com busca e um formulário único para criar ou editar. */
 export function SystemsPage() {
   const queryClient = useQueryClient();
@@ -35,7 +186,6 @@ export function SystemsPage() {
   const [touched, setTouched] = useState(false);
   const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SystemSummaryResponse | null>(null);
-  type Tab = 'cadastro' | 'motor' | 'analisadores' | 'mcp';
   const [tab, setTabState] = useState<Tab>('cadastro');
   // As abas de ajuste do motor ficam montadas depois da primeira visita: trocar de aba não descarta o que foi digitado.
   const [visited, setVisited] = useState<Tab[]>(['cadastro']);
@@ -71,7 +221,7 @@ export function SystemsPage() {
   const check = useMutation({
     mutationFn: () =>
       api.checkRepo(values.repoUrl.trim(), values.scheduledBranch.trim() || undefined, {
-        systemId: editing && editing !== 'new' ? editing.id : undefined,
+        systemId: savedSystem(editing)?.id,
         gitToken: values.gitToken.trim(),
         gitTokenHosts: values.gitTokenHosts.trim(),
       }),
@@ -90,15 +240,10 @@ export function SystemsPage() {
   }).data === true;
 
   const save = useMutation({
-    mutationFn: async (vars: { auditNow: boolean }) => {
-      const body = toRequest(values);
-      const current = editing && editing !== 'new' ? editing : null;
-      let system = current ? await api.updateSystem(current.id, body) : await api.createSystem(body);
-      if (scheduleChanged(values, current)) {
-        system = await api.updateSchedule(system.id, toSchedule(values));
-      }
-      return { system, auditNow: vars.auditNow };
-    },
+    mutationFn: async (vars: { auditNow: boolean }) => ({
+      system: await saveSystem(values, savedSystem(editing)),
+      auditNow: vars.auditNow,
+    }),
     onSuccess: ({ system, auditNow }) => {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
       setEditing(null);
@@ -134,27 +279,13 @@ export function SystemsPage() {
 
   // Esc fecha o pop-up de cadastro, mas pergunta antes se houver alteração sem salvar.
   const modalOpen = editing !== null;
-  const dirtyTabs = [
-    JSON.stringify(values) !== snapshot ? 'Cadastro e Git' : null,
-    engineDirty.motor ? 'Motor de regras' : null,
-    engineDirty.analisadores ? 'Analisadores' : null,
-  ].filter((t): t is string => t !== null);
+  const dirtyTabs = dirtyLabels(JSON.stringify(values) !== snapshot, engineDirty);
   const anyDirty = modalOpen && dirtyTabs.length > 0;
   const requestClose = () => {
     if (anyDirty) setConfirmClose(true);
     else setEditing(null);
   };
-  useEffect(() => {
-    if (!modalOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (confirmClose) setConfirmClose(false);
-      else if (anyDirty) setConfirmClose(true);
-      else setEditing(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [modalOpen, anyDirty, confirmClose]);
+  useEscapeToClose(modalOpen, anyDirty, confirmClose, setConfirmClose, () => setEditing(null));
 
   if (isLoading) return <DataTableSkeleton columnCount={6} rowCount={5} />;
   if (error) {
@@ -167,20 +298,17 @@ export function SystemsPage() {
     );
   }
 
-  const term = query.trim().toLowerCase();
-  const list = [...(systems ?? [])]
-    .filter((s) => term === '' || `${s.name} ${s.team} ${s.repoUrl ?? ''} ${s.localPath ?? ''}`.toLowerCase().includes(term))
-    .sort((a, b) => (a.lastAuditScore ?? -1) - (b.lastAuditScore ?? -1));
+  const list = filterSystems(systems ?? [], query);
 
   const profiles = packs?.profiles ?? [];
   const isNew = editing === 'new';
-  const notifySaved = editing !== null && editing !== 'new' && !!editing.notifyUrlSet;
-  const webhookSaved = editing !== null && editing !== 'new' && !!editing.webhookSecretSet;
-  const tokenSaved = editing !== null && editing !== 'new' && !!editing.gitTokenSet;
+  const current = savedSystem(editing);
+  const notifySaved = !!current?.notifyUrlSet;
+  const webhookSaved = !!current?.webhookSecretSet;
+  const tokenSaved = !!current?.gitTokenSet;
   const profileInfo = profiles.find((p) => p.id === values.profile);
   const mono = "'IBM Plex Mono', ui-monospace, monospace";
   const count = systems?.length ?? 0;
-  const footerButton = { flex: '1 1 120px', height: 56, border: 0, fontSize: 14, cursor: 'pointer', textAlign: 'left', padding: '0 16px' } as const;
 
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas' }]}>
@@ -218,21 +346,15 @@ export function SystemsPage() {
             <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Ordenado por nota, menor primeiro</span>
           </div>
           {list.length === 0 ? (
-            <div style={{ padding: 16 }}>
-              <InlineNotification
-                kind="info"
-                title={systems?.length ? 'Nenhum sistema encontrado' : 'Nenhum sistema cadastrado'}
-                subtitle={systems?.length ? 'Tente outro termo de busca.' : 'Clique em "Novo sistema" para cadastrar o primeiro.'}
-                hideCloseButton
-              />
-            </div>
+            <EmptyList hasSystems={!!systems?.length} />
           ) : (
-            <SystemsTable systems={list} selectedId={editing !== null && editing !== 'new' ? editing.id : null} onAudit={setAuditTarget} onEdit={open} onDelete={(s) => { remove.reset(); setDeleteTarget(s); }} />
+            <SystemsTable systems={list} selectedId={savedSystem(editing)?.id ?? null} onAudit={setAuditTarget} onEdit={open} onDelete={(s) => { remove.reset(); setDeleteTarget(s); }} />
           )}
         </section>
 
         {editing !== null && (
           <div
+            role="presentation"
             style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(22,22,22,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) requestClose();
@@ -254,53 +376,14 @@ export function SystemsPage() {
               </button>
             </div>
 
-            <div role="tablist" aria-label="Seções do sistema" style={{ display: 'flex', borderBottom: '1px solid var(--s-border)', padding: '0 12px' }}>
-              {([['cadastro', 'Cadastro e Git'], ['motor', 'Motor de regras'], ['analisadores', 'Analisadores'], ['mcp', 'Claude (MCP)']] as const).map(([id, nome]) => {
-                const bloqueada = id !== 'cadastro' && isNew;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={tab === id}
-                    disabled={bloqueada}
-                    title={bloqueada ? 'Salve o sistema primeiro' : undefined}
-                    onClick={() => setTab(id)}
-                    style={{
-                      background: 'none',
-                      border: 0,
-                      borderBottom: tab === id ? '3px solid var(--s-link)' : '3px solid transparent',
-                      padding: '10px 14px',
-                      fontSize: 14,
-                      fontWeight: tab === id ? 600 : 400,
-                      color: bloqueada ? 'var(--s-disabled)' : 'var(--s-text)',
-                      cursor: bloqueada ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    {nome}
-                    {(id === 'cadastro' ? JSON.stringify(values) !== snapshot : id === 'motor' ? engineDirty.motor : id === 'analisadores' ? engineDirty.analisadores : false) && (
-                      <span role="img" aria-label="alterações não salvas" title="Alterações não salvas" style={{ color: 'var(--s-warn-text)', marginLeft: 6 }}>●</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <SystemTabs
+              tab={tab}
+              onSelect={setTab}
+              isNew={isNew}
+              dirty={{ cadastro: JSON.stringify(values) !== snapshot, motor: engineDirty.motor, analisadores: engineDirty.analisadores }}
+            />
 
-            {confirmClose && (
-              <div role="alert" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 24px', display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 14 }}>
-                  Há alterações não salvas em <strong>{dirtyTabs.join(', ')}</strong>. Se fechar agora, elas serão perdidas.
-                </span>
-                <span style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={() => setConfirmClose(false)} style={{ height: 32, padding: '0 12px', border: '1px solid var(--s-link)', background: 'var(--s-surface)', color: 'var(--s-link)', cursor: 'pointer' }}>
-                    Continuar editando
-                  </button>
-                  <button type="button" onClick={() => { setConfirmClose(false); setEditing(null); }} style={{ height: 32, padding: '0 12px', border: '1px solid #da1e28', background: 'var(--s-surface)', color: 'var(--s-danger-text)', cursor: 'pointer' }}>
-                    Descartar e fechar
-                  </button>
-                </span>
-              </div>
-            )}
+            {confirmClose && <ConfirmCloseBar tabs={dirtyTabs} onKeep={() => setConfirmClose(false)} onDiscard={() => { setConfirmClose(false); setEditing(null); }} />}
 
             {!isNew && visited.includes('motor') && (
               <div hidden={tab !== 'motor'}>
@@ -318,33 +401,14 @@ export function SystemsPage() {
               <>
             <SystemFormFields values={values} setValues={setValues} errors={errors} touched={touched} check={check} checkPath={checkPath} localEnabled={localEnabled} save={save} profiles={profiles} profileInfo={profileInfo} tokenSaved={tokenSaved} notifySaved={notifySaved} webhookSaved={webhookSaved} mono={mono} />
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid var(--s-border)', position: 'sticky', bottom: 0, background: 'var(--s-surface)', marginTop: 'auto' }}>
-              <button type="button" onClick={requestClose} style={{ ...footerButton, background: 'var(--s-surface)', color: 'var(--s-text)', borderRight: '1px solid var(--s-border)' }}>
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={save.isPending}
-                onClick={() => {
-                  setTouched(true);
-                  if (!invalid) save.mutate({ auditNow: false });
-                }}
-                style={{ ...footerButton, flex: '1 1 140px', background: '#393939', color: '#fff' }}
-              >
-                Salvar
-              </button>
-              <button
-                type="button"
-                disabled={save.isPending}
-                onClick={() => {
-                  setTouched(true);
-                  if (!invalid) save.mutate({ auditNow: true });
-                }}
-                style={{ ...footerButton, flex: '1 1 180px', background: 'var(--s-primary)', color: '#fff' }}
-              >
-                {save.isPending ? 'Salvando…' : 'Salvar e auditar agora'}
-              </button>
-            </div>
+            <FormFooter
+              pending={save.isPending}
+              onCancel={requestClose}
+              onSave={(auditNow) => {
+                setTouched(true);
+                if (!invalid) save.mutate({ auditNow });
+              }}
+            />
               </>
             )}
           </div>

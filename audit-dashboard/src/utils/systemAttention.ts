@@ -64,25 +64,30 @@ const points = (n: number) => `${n} ${n === 1 ? 'ponto' : 'pontos'}`;
 /** Cor da nota: ver `scoreBand` (régua única). */
 export const scoreColor = (n: number | null) => bandColor(n);
 
+function attentionReason(system: SystemSummaryResponse, lastScore: number | null, now: number): string {
+  if (lastScore === null) return 'nunca auditado';
+  const critical = system.openCritical > 0 ? `${system.openCritical} ${system.openCritical === 1 ? 'crítico' : 'críticos'}` : 'Sem críticos';
+  return `${critical} · ${auditDetail(system, lastScore, now)}`;
+}
+
+function auditDetail(system: SystemSummaryResponse, lastScore: number, now: number): string {
+  const days = daysSinceAudit(system, now);
+  if (days !== null && days > STALE_DAYS) return `não é auditado há ${days} dias`;
+  const delta = system.scoreDelta == null ? 0 : Math.round(system.scoreDelta);
+  if (delta !== 0) return `nota ${delta > 0 ? 'subiu' : 'caiu'} ${points(Math.abs(delta))}`;
+  return lastScore >= TARGET_SCORE ? 'dentro da meta' : 'abaixo da meta';
+}
+
 /**
  * Todos os sistemas do menor para o maior nota (nunca auditados primeiro), cada um com o motivo em uma linha:
  * críticos abertos, e depois o dado mais relevante (auditoria velha, variação da nota ou meta).
  */
 export function attentionRows(systems: SystemSummaryResponse[], now: number): AttentionRow[] {
   return systems
-    .map((system): AttentionRow => {
-      const parts: string[] = [];
-      if (system.lastAuditScore === null) {
-        parts.push('nunca auditado');
-      } else {
-        parts.push(system.openCritical > 0 ? `${system.openCritical} ${system.openCritical === 1 ? 'crítico' : 'críticos'}` : 'Sem críticos');
-        const days = daysSinceAudit(system, now);
-        const delta = system.scoreDelta == null ? 0 : Math.round(system.scoreDelta);
-        if (days !== null && days > STALE_DAYS) parts.push(`não é auditado há ${days} dias`);
-        else if (delta !== 0) parts.push(`nota ${delta > 0 ? 'subiu' : 'caiu'} ${points(Math.abs(delta))}`);
-        else parts.push(system.lastAuditScore >= TARGET_SCORE ? 'dentro da meta' : 'abaixo da meta');
-      }
-      return { system, score: system.lastAuditScore === null ? null : Math.round(system.lastAuditScore), reason: parts.join(' · ') };
-    })
+    .map((system): AttentionRow => ({
+      system,
+      score: system.lastAuditScore === null ? null : Math.round(system.lastAuditScore),
+      reason: attentionReason(system, system.lastAuditScore, now),
+    }))
     .sort((a, b) => (a.score ?? -1) - (b.score ?? -1) || a.system.name.localeCompare(b.system.name));
 }

@@ -57,6 +57,52 @@ const mono = "'IBM Plex Mono', ui-monospace, monospace";
 const cell = { padding: '12px 8px' } as const;
 
 /** "252 (4 novos, 9 resolvidos)"; sem comparação mostra só o total. */
+function truncated(message: string): string {
+  return message.length > 60 ? `${message.slice(0, 60)}…` : message;
+}
+
+/** Estado da execução na tabela: andamento com barra, concluída, falhou ou cancelada. */
+function RunStatus({ run, active, pct }: { run: AuditRunResponse; active: boolean; pct: number }) {
+  if (active) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-link)', fontWeight: 500 }}>
+          <SpinnerIcon size={14} color="#0043ce" />
+          Em execução · {stepLabel(run)}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ flex: 1, height: 6, background: 'var(--s-border)' }}>
+            <span style={{ display: 'block', height: 6, background: 'var(--s-primary)', width: `${pct}%` }} />
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono, width: 36 }}>{pct}%</span>
+        </span>
+      </div>
+    );
+  }
+  if (run.status === 'COMPLETED') {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-success-strong)', fontWeight: 500 }}>
+        <CheckIcon size={14} />
+        Concluída
+      </span>
+    );
+  }
+  if (run.status === 'FAILED') {
+    return (
+      <span title={run.errorMessage ?? undefined} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-danger-text)', fontWeight: 500 }}>
+        <CrossIcon size={14} />
+        Falhou{run.errorMessage ? ` · ${truncated(run.errorMessage)}` : ''}
+      </span>
+    );
+  }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-text-3)', fontWeight: 500 }}>
+      <DashIcon size={14} />
+      Cancelada
+    </span>
+  );
+}
+
 function findingsText(run: AuditRunResponse): string {
   if (run.status === 'PENDING' || run.status === 'RUNNING') return 'calculando';
   if (run.status !== 'COMPLETED' || run.totalFindings === null || run.totalFindings === undefined) return '-';
@@ -172,35 +218,7 @@ export function SystemDetailPage() {
                       </td>
                       <td style={{ ...cell, fontFamily: mono, fontSize: 13 }}>{run.branch}</td>
                       <td style={{ ...cell, minWidth: 240 }}>
-                        {active ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-link)', fontWeight: 500 }}>
-                              <SpinnerIcon size={14} color="#0043ce" />
-                              Em execução · {stepLabel(run)}
-                            </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ flex: 1, height: 6, background: 'var(--s-border)' }}>
-                                <span style={{ display: 'block', height: 6, background: 'var(--s-primary)', width: `${pct}%` }} />
-                              </span>
-                              <span style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono, width: 36 }}>{pct}%</span>
-                            </span>
-                          </div>
-                        ) : run.status === 'COMPLETED' ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-success-strong)', fontWeight: 500 }}>
-                            <CheckIcon size={14} />
-                            Concluída
-                          </span>
-                        ) : run.status === 'FAILED' ? (
-                          <span title={run.errorMessage ?? undefined} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-danger-text)', fontWeight: 500 }}>
-                            <CrossIcon size={14} />
-                            Falhou{run.errorMessage ? ` · ${run.errorMessage.length > 60 ? `${run.errorMessage.slice(0, 60)}…` : run.errorMessage}` : ''}
-                          </span>
-                        ) : (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-text-3)', fontWeight: 500 }}>
-                            <DashIcon size={14} />
-                            Cancelada
-                          </span>
-                        )}
+                        <RunStatus run={run} active={active} pct={pct} />
                       </td>
                       <td style={{ ...cell, fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
                       <td style={{ ...cell, color: 'var(--s-text-2)' }}>{findingsText(run)}</td>

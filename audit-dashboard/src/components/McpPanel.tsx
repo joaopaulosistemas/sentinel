@@ -213,8 +213,8 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
                 </tr>
               </thead>
               <tbody>
-                {calls.data.map((c, i) => (
-                  <tr key={`${c.at}-${i}`} style={{ borderTop: '1px solid var(--s-border)' }}>
+                {calls.data.map((c) => (
+                  <tr key={`${c.at}-${c.tool}`} style={{ borderTop: '1px solid var(--s-border)' }}>
                     <td style={{ padding: '6px 8px' }}>{startLabel(c.at)}</td>
                     <td style={{ padding: '6px 8px', fontFamily: mono }}>{c.tool}</td>
                     <td style={{ padding: '6px 8px', color: c.ok ? 'var(--s-success-text)' : 'var(--s-danger-text)' }}>{c.ok ? 'ok' : (c.detail?.split(' | ')[0] || 'recusada')}</td>

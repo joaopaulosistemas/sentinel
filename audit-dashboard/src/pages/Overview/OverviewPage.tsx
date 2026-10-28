@@ -13,6 +13,63 @@ import { STALE_DAYS, attentionRows, isStale, scoreColor } from '../../utils/syst
 
 const names = (list: string[]) => (list.length <= 2 ? list.join(', ') : `${list.slice(0, 2).join(', ')} e mais ${list.length - 2}`);
 
+interface Kpi {
+  label: string;
+  value: number | string;
+  color: string;
+  note: string;
+}
+
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+function averageDelta(list: SystemSummaryResponse[]): number | null {
+  const deltas = list.map((s) => s.scoreDelta).filter((d): d is number => d != null);
+  return deltas.length > 0 ? Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length) : null;
+}
+
+function averageScore(list: SystemSummaryResponse[]): number | null {
+  const scores = list.map((s) => s.lastAuditScore).filter((s): s is number => s !== null);
+  return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+}
+
+function averageNote(avgDelta: number | null, total: number): string {
+  if (avgDelta !== null && avgDelta !== 0) return `${avgDelta > 0 ? '+' : ''}${avgDelta} desde a auditoria anterior`;
+  return `${total} ${plural(total, 'sistema', 'sistemas')}`;
+}
+
+function criticalKpi(list: SystemSummaryResponse[]): Kpi {
+  const criticalSystems = list.filter((s) => s.openCritical > 0);
+  const totalCritical = list.reduce((acc, s) => acc + s.openCritical, 0);
+  return {
+    label: 'Achados críticos abertos',
+    value: totalCritical,
+    color: totalCritical > 0 ? 'var(--s-danger-text)' : 'var(--s-success-text)',
+    note: totalCritical > 0 ? `em ${criticalSystems.length} ${plural(criticalSystems.length, 'sistema', 'sistemas')}` : 'nenhum em aberto',
+  };
+}
+
+function buildKpis(list: SystemSummaryResponse[], recent: AuditRunResponse[], now: number): Kpi[] {
+  const avg = averageScore(list);
+  const runningRuns = recent.filter(isActiveRun);
+  const staleSystems = list.filter((s) => isStale(s, now));
+  return [
+    { label: 'Nota média', value: avg ?? '-', color: scoreColor(avg), note: averageNote(averageDelta(list), list.length) },
+    criticalKpi(list),
+    {
+      label: 'Em execução agora',
+      value: runningRuns.length,
+      color: 'var(--s-link)',
+      note: runningRuns.length > 0 ? names([...new Set(runningRuns.map((r) => r.systemName))]) : 'nenhuma auditoria',
+    },
+    {
+      label: `Sem auditar há mais de ${STALE_DAYS} dias`,
+      value: staleSystems.length,
+      color: 'var(--s-text)',
+      note: staleSystems.length > 0 ? names(staleSystems.map((s) => s.name)) : 'todos em dia',
+    },
+  ];
+}
+
 /** Visão geral: quatro números, quem precisa de atenção e as últimas auditorias; daqui se inicia uma auditoria. */
 export function OverviewPage() {
   const { data: systems, isLoading, error } = useSystems();
@@ -46,43 +103,9 @@ export function OverviewPage() {
   }
 
   const total = list.length;
-  const criticalSystems = list.filter((s) => s.openCritical > 0);
-  const totalCritical = list.reduce((acc, s) => acc + s.openCritical, 0);
-  const scores = list.map((s) => s.lastAuditScore).filter((s): s is number => s !== null);
-  const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-  const deltas = list.map((s) => s.scoreDelta).filter((d): d is number => d != null);
-  const avgDelta = deltas.length > 0 ? Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length) : null;
-  const runningRuns = (recent ?? []).filter(isActiveRun);
   const now = Date.now();
-  const staleSystems = list.filter((s) => isStale(s, now));
+  const kpis = buildKpis(list, recent ?? [], now);
   const attention = attentionRows(list, now);
-
-  const kpis = [
-    {
-      label: 'Nota média',
-      value: avg ?? '-',
-      color: scoreColor(avg),
-      note: avgDelta !== null && avgDelta !== 0 ? `${avgDelta > 0 ? '+' : ''}${avgDelta} desde a auditoria anterior` : `${total} ${total === 1 ? 'sistema' : 'sistemas'}`,
-    },
-    {
-      label: 'Achados críticos abertos',
-      value: totalCritical,
-      color: totalCritical > 0 ? 'var(--s-danger-text)' : 'var(--s-success-text)',
-      note: totalCritical > 0 ? `em ${criticalSystems.length} ${criticalSystems.length === 1 ? 'sistema' : 'sistemas'}` : 'nenhum em aberto',
-    },
-    {
-      label: 'Em execução agora',
-      value: runningRuns.length,
-      color: 'var(--s-link)',
-      note: runningRuns.length > 0 ? names([...new Set(runningRuns.map((r) => r.systemName))]) : 'nenhuma auditoria',
-    },
-    {
-      label: `Sem auditar há mais de ${STALE_DAYS} dias`,
-      value: staleSystems.length,
-      color: 'var(--s-text)',
-      note: staleSystems.length > 0 ? names(staleSystems.map((s) => s.name)) : 'todos em dia',
-    },
-  ];
 
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Visão geral' }]}>
@@ -121,7 +144,7 @@ export function OverviewPage() {
       {started && (
         <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid var(--s-link)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <span>
-            <strong style={{ fontWeight: 600 }}>Auditoria #{started.id} iniciada</strong> em {started.systemName}. Ela já aparece em "Últimas auditorias" abaixo.
+            <strong style={{ fontWeight: 600 }}>Auditoria #{started.id} iniciada</strong> em {started.systemName}. Ela já aparece em &quot;Últimas auditorias&quot; abaixo.
           </span>
           <Link to={`/audits/${started.id}`} style={{ fontWeight: 500 }}>Acompanhar execução</Link>
         </div>

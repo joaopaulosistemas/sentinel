@@ -146,7 +146,6 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   useEffect(() => {
     if (!cfg || dirtyRef.current) return;
     syncFrom(cfg);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg]);
 
   const allRows = useMemo(

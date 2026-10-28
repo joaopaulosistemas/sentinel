@@ -103,7 +103,12 @@ export function formFrom(system: SystemSummaryResponse): SystemFormValues {
 }
 
 /** Mesma regra da API: só https, host e caminho. */
-const REPO_URL = /^https:\/\/[A-Za-z0-9.-]+(:[0-9]{1,5})?\/[^\s]+$/;
+const REPO_URL_PADRAO = /^https:\/\/[A-Za-z0-9.-]+\/\S+$/;
+const REPO_URL_COM_PORTA = /^https:\/\/[A-Za-z0-9.-]+:\d{1,5}\/\S+$/;
+
+function isRepoUrl(value: string): boolean {
+  return REPO_URL_PADRAO.test(value) || REPO_URL_COM_PORTA.test(value);
+}
 
 export interface FormErrors {
   name?: string;
@@ -118,42 +123,88 @@ export interface FormErrors {
   notifyPublicUrl?: string;
 }
 
-const HOSTS = /^[A-Za-z0-9.-]+(\s*,\s*[A-Za-z0-9.-]+)*$/;
+const HOST_NAME = /^[A-Za-z0-9.-]+$/;
+
+/** Nomes de host separados por vírgula (sem regex com repetição aninhada). */
+function isHostList(value: string): boolean {
+  return value.split(',').every((host) => HOST_NAME.test(host.trim()));
+}
+
+const WEBHOOK_SO_HOST = /^https:\/\/[^\s/]+$/;
+const WEBHOOK_COM_CAMINHO = /^https:\/\/[^\s/]+\/\S*$/;
+
+/** https:// com host e, se houver, um caminho sem espaços. */
+function isWebhookUrl(value: string): boolean {
+  return WEBHOOK_SO_HOST.test(value) || WEBHOOK_COM_CAMINHO.test(value);
+}
 
 export const BRANCH_NAME = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 export const MAX_INTERVAL_HOURS = 720;
 
+function validateName(name: string): string | undefined {
+  if (name.trim() === '') return 'Informe o nome do sistema';
+  if (name.length > 255) return 'No máximo 255 caracteres';
+  return undefined;
+}
+
+function validateLocalPath(raw: string): string | undefined {
+  const path = raw.trim();
+  if (path === '') return 'Informe a pasta do projeto';
+  if (path.length > 500) return 'No máximo 500 caracteres';
+  if (path.split(/[\\/]/).includes('..')) return 'Não use ".." no caminho';
+  return undefined;
+}
+
+function validateRepoUrl(raw: string): string | undefined {
+  const url = raw.trim();
+  if (url === '') return 'Informe o endereço do repositório';
+  if (!isRepoUrl(url)) return 'Use um endereço https://, por exemplo https://github.com/org/repositorio';
+  return undefined;
+}
+
+function outOfRange(value: number, max: number, integer: boolean): boolean {
+  return (integer && !Number.isInteger(value)) || !Number.isFinite(value) || value < 0 || value > max;
+}
+
+function validateOptional(raw: string, isValid: (value: string) => boolean, message: string): string | undefined {
+  const value = raw.trim();
+  return value !== '' && !isValid(value) ? message : undefined;
+}
+
+function validateSchedule(values: SystemFormValues): FormErrors {
+  return {
+    scheduledBranch: validateOptional(values.scheduledBranch, (v) => BRANCH_NAME.test(v), 'Nome de branch inválido'),
+    auditIntervalHours: outOfRange(values.auditIntervalHours, MAX_INTERVAL_HOURS, true)
+      ? `Use um número de 0 a ${MAX_INTERVAL_HOURS} horas`
+      : undefined,
+    gitTokenHosts: validateOptional(
+      values.gitTokenHosts,
+      isHostList,
+      'Use nomes de host separados por vírgula, por exemplo github.com, git.empresa.com',
+    ),
+    gitHistoryDepth: outOfRange(values.gitHistoryDepth, 5000, true) ? 'Use um número inteiro de 0 a 5000' : undefined,
+  };
+}
+
+function validateNotify(values: SystemFormValues): FormErrors {
+  return {
+    notifyUrl: validateOptional(values.notifyUrl, isWebhookUrl, 'Use o endereço https:// do webhook do Teams ou do Slack'),
+    notifyMinScoreDrop: outOfRange(values.notifyMinScoreDrop, 100, false) ? 'Use um número de 0 a 100' : undefined,
+    notifyPublicUrl: validateOptional(values.notifyPublicUrl, (v) => /^https?:\/\/\S+$/.test(v), 'Use um endereço http:// ou https://'),
+  };
+}
+
 export function validate(values: SystemFormValues): FormErrors {
-  const errors: FormErrors = {};
-  if (values.name.trim() === '') errors.name = 'Informe o nome do sistema';
-  else if (values.name.length > 255) errors.name = 'No máximo 255 caracteres';
-  if (values.sourceType === 'LOCAL_PATH') {
-    const path = values.localPath.trim();
-    if (path === '') errors.localPath = 'Informe a pasta do projeto';
-    else if (path.length > 500) errors.localPath = 'No máximo 500 caracteres';
-    else if (path.split(/[\\/]/).includes('..')) errors.localPath = 'Não use ".." no caminho';
-  } else if (values.repoUrl.trim() === '') errors.repoUrl = 'Informe o endereço do repositório';
-  else if (!REPO_URL.test(values.repoUrl.trim())) errors.repoUrl = 'Use um endereço https://, por exemplo https://github.com/org/repositorio';
-  if (values.scheduledBranch.trim() !== '' && !BRANCH_NAME.test(values.scheduledBranch.trim())) errors.scheduledBranch = 'Nome de branch inválido';
-  if (!Number.isInteger(values.auditIntervalHours) || values.auditIntervalHours < 0 || values.auditIntervalHours > MAX_INTERVAL_HOURS) {
-    errors.auditIntervalHours = `Use um número de 0 a ${MAX_INTERVAL_HOURS} horas`;
-  }
-  if (values.gitTokenHosts.trim() !== '' && !HOSTS.test(values.gitTokenHosts.trim())) {
-    errors.gitTokenHosts = 'Use nomes de host separados por vírgula, por exemplo github.com, git.empresa.com';
-  }
-  if (!Number.isInteger(values.gitHistoryDepth) || values.gitHistoryDepth < 0 || values.gitHistoryDepth > 5000) {
-    errors.gitHistoryDepth = 'Use um número inteiro de 0 a 5000';
-  }
-  if (values.notifyUrl.trim() !== '' && !/^https:\/\/[^\s/]+\/?\S*$/.test(values.notifyUrl.trim())) {
-    errors.notifyUrl = 'Use o endereço https:// do webhook do Teams ou do Slack';
-  }
-  if (!Number.isFinite(values.notifyMinScoreDrop) || values.notifyMinScoreDrop < 0 || values.notifyMinScoreDrop > 100) {
-    errors.notifyMinScoreDrop = 'Use um número de 0 a 100';
-  }
-  if (values.notifyPublicUrl.trim() !== '' && !/^https?:\/\/\S+$/.test(values.notifyPublicUrl.trim())) {
-    errors.notifyPublicUrl = 'Use um endereço http:// ou https://';
-  }
-  return errors;
+  const all: FormErrors = {
+    name: validateName(values.name),
+    ...(values.sourceType === 'LOCAL_PATH'
+      ? { localPath: validateLocalPath(values.localPath) }
+      : { repoUrl: validateRepoUrl(values.repoUrl) }),
+    ...validateSchedule(values),
+    ...validateNotify(values),
+  };
+  // só as chaves com erro (os testes e a tela usam toEqual({}) / chave ausente)
+  return Object.fromEntries(Object.entries(all).filter(([, message]) => message !== undefined)) as FormErrors;
 }
 
 export const notifyFormats = [

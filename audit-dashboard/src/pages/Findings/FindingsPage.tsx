@@ -1,46 +1,41 @@
-import { DataTableSkeleton, InlineNotification } from '@carbon/react';
+import { InlineNotification } from '@carbon/react';
 import { PageShell } from '../../components/PageShell';
 import { useQueries } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ClaudeReviewPanel } from '../../components/ClaudeReviewPanel';
 import { ReauditPanel } from '../../components/ReauditPanel';
-import { FindingsTable, type FindingOrigin } from '../../components/FindingsTable';
 import { api } from '../../api/client';
 import { useAudit } from '../../hooks/useAuditRuns';
 import { useFindings, useFindingsOverview } from '../../hooks/useFindings';
 import { useDiff, useFreshness } from '../../hooks/useLifecycle';
 import { useSystems } from '../../hooks/useSystems';
 import { useAuditStore } from '../../store/useAuditStore';
-import type { Category, FindingResponse, Severity } from '../../types';
+import type { AuditRunResponse, Category, SystemSummaryResponse } from '../../types';
 import {
   DEFAULT_SEVERITY,
   DEFAULT_SITUATION,
   activeFilterChips,
   footerText,
-  groupBySystem,
   severityChoices,
   situationChoices,
   type SeverityChoice,
   type SituationChoice,
 } from '../../utils/findingsView';
-import { suggestionFor } from '../../utils/claudeHint';
-import { startLabel } from '../../utils/timeAgo';
-import { stackShort } from '../Systems/systemForm';
 import { FindingsFilters, PaginationFooter } from './FindingsFilters';
+import { claudeNoteFinder, findingsCrumbs, pickRows, reviewSystemIds } from './findingsRows';
+import { FindingsListBody, PageHeading, ResolvedSection, SystemSummaryCards, TabBar, originFinder, type AbaId } from './FindingsParts';
 
-const ABAS = [
-  { id: 'achados', nome: 'Achados e nota' },
-  { id: 'revisao', nome: 'Revisão do Claude' },
-  { id: 'reauditoria', nome: 'Reauditoria' },
-];
+/** `?systemId=` válido (inteiro positivo) ou nada. */
+function linkedSystemId(raw: string | null): number | undefined {
+  const value = Number(raw ?? '0');
+  return value > 0 ? value : undefined;
+}
 
-type AbaId = 'achados' | 'revisao' | 'reauditoria';
-
-const mono = "'IBM Plex Mono', ui-monospace, monospace";
-
-/** Cor da borda do cartão do sistema: vermelho com críticos (ou muitos altos), laranja só com altos, verde sem nenhum. */
-const edgeColor = (critical: number, high: number) => (critical > 0 || high >= 50 ? '#da1e28' : high > 0 ? '#ff832b' : '#198038');
+/** Sistema da auditoria aberta: pelo id, ou pelo nome quando a resposta ainda não traz o id. */
+function findAuditSystemId(audit: AuditRunResponse | undefined, systems: SystemSummaryResponse[]): number | undefined {
+  return audit?.systemId ?? systems.find((s) => s.name === audit?.systemName)?.id;
+}
 
 /**
  * Achados. Sem auditoria na URL, mostra os de todos os sistemas (última auditoria concluída de cada um) e deixa
@@ -54,8 +49,7 @@ export function FindingsPage() {
   const auditMode = auditId > 0;
 
   // Com ?aba=reauditoria&systemId=ID (faixa do Claude na execução da auditoria), abre direto nos pedidos desse sistema.
-  const linkedSystem = Number(searchParams.get('systemId') ?? '0');
-  const [systemId, setSystemId] = useState<number | undefined>(linkedSystem > 0 ? linkedSystem : undefined);
+  const [systemId, setSystemId] = useState<number | undefined>(() => linkedSystemId(searchParams.get('systemId')));
   const [severity, setSeverity] = useState<SeverityChoice>(DEFAULT_SEVERITY);
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const [situation, setSituation] = useState<SituationChoice>(searchParams.get('onlyNew') === '1' ? 'new' : DEFAULT_SITUATION);
@@ -96,47 +90,35 @@ export function FindingsPage() {
     !auditMode,
   );
 
-  const loading = auditMode ? single.isLoading : overview.isLoading;
-  const error = auditMode ? single.error : overview.error;
+  const current = auditMode ? single : overview;
+  const { isLoading: loading, error } = current;
 
-  // Uma auditoria só: várias severidades (ex.: crítica e alta) são filtradas aqui, a API recebe uma por vez.
-  const bySeverity = (single.data ?? []).filter((f) => sev.length === 0 || sev.includes(f.severity as Severity));
-  // Baixa confiança (teste, exemplo, regra com muitos falsos positivos) fica oculta por padrão; vale para uma auditoria.
-  const lowHidden = auditMode && !showLow ? bySeverity.filter((f) => f.confidence === 'LOW').length : 0;
-  const lowTotal = auditMode ? bySeverity.filter((f) => f.confidence === 'LOW').length : 0;
-  const singleRows = auditMode && !showLow ? bySeverity.filter((f) => f.confidence !== 'LOW') : bySeverity;
-  const rows: FindingResponse[] = auditMode
-    ? singleRows.slice((page - 1) * pageSize, page * pageSize)
-    : (overview.data?.items.map((i) => i.finding) ?? []);
-  const total = auditMode ? singleRows.length : (overview.data?.total ?? 0);
-  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const { rows, total, pages, lowHidden, lowTotal } = pickRows({
+    auditMode,
+    single: single.data ?? [],
+    severities: sev,
+    showLow,
+    page,
+    pageSize,
+    overview: overview.data,
+  });
 
   const itemByFinding = new Map(overview.data?.items.map((i) => [i.finding.id, i]) ?? []);
   const summary = overview.data?.bySystem ?? [];
   const stackByName = new Map(summary.map((s) => [s.systemId, s.stack]));
 
   const reset = () => setPage(1);
-  const systemName = systemId !== undefined ? (summary.find((b) => b.systemId === systemId)?.systemName ?? '') : '';
+  const systemName = summary.find((b) => b.systemId === systemId)?.systemName ?? '';
 
   const chips = activeFilterChips({ systemName, showSystem: !auditMode, severity, category, situation });
   const isDefault = severity === DEFAULT_SEVERITY && situation === DEFAULT_SITUATION && category === undefined && systemId === undefined;
 
   const systemOf = auditMode
     ? undefined
-    : (f: FindingResponse): FindingOrigin | undefined => {
-        const hit = itemByFinding.get(f.id);
-        if (!hit) return undefined;
-        const stack = stackByName.get(hit.systemId);
-        return {
-          name: hit.systemName,
-          stack: stack ? (stackShort[stack as keyof typeof stackShort] ?? stack) : undefined,
-          auditId: hit.auditId,
-          onClick: () => {
-            setSelectedAudit(hit.auditId);
-            navigate(`/systems/${hit.systemId}`);
-          },
-        };
-      };
+    : originFinder(itemByFinding, stackByName, (hit) => {
+        setSelectedAudit(hit.auditId);
+        navigate(`/systems/${hit.systemId}`);
+      });
 
   const pickSystem = (value: number | undefined) => {
     // Escolher um sistema sai do modo "uma auditoria" e volta a olhar a última de cada sistema.
@@ -155,75 +137,23 @@ export function FindingsPage() {
 
   // Sistema em foco: o da auditoria aberta (vindo de "Ver todos os achados") ou o escolhido no filtro.
   // As três abas partem dele, então quem escolheu o sistema não precisa escolher de novo.
-  const auditSystemId = auditMode
-    ? (audit?.systemId ?? (systems ?? []).find((s) => s.name === audit?.systemName)?.id)
-    : undefined;
+  const auditSystemId = auditMode ? findAuditSystemId(audit, systems ?? []) : undefined;
   const activeSystemId = auditMode ? auditSystemId : systemId;
   // Sugestões abertas do Claude, para marcar na lista os achados de que elas falam (mesma consulta da aba Revisão).
-  const reviewIds = auditMode
-    ? (auditSystemId !== undefined ? [auditSystemId] : [])
-    : systemId !== undefined
-      ? [systemId]
-      : [...new Set([...itemByFinding.values()].map((i) => i.systemId))];
+  const reviewIds = reviewSystemIds(auditMode, auditSystemId, systemId, [...itemByFinding.values()]);
   const reviews = useQueries({
     queries: reviewIds.map((id) => ({ queryKey: ['claude-review', id], queryFn: () => api.getClaudeReview(id), staleTime: 30_000 })),
   });
   const suggestionsBySystem = new Map(reviewIds.map((id, i) => [id, reviews[i]?.data?.suggestions ?? []]));
-  const claudeNoteOf = (f: FindingResponse) => {
-    const sid = auditMode ? auditSystemId : systemId ?? itemByFinding.get(f.id)?.systemId;
-    return sid === undefined ? undefined : suggestionFor(f, suggestionsBySystem.get(sid) ?? []);
-  };
-  const currentSystemValue = activeSystemId !== undefined ? String(activeSystemId) : '';
+  const claudeNoteOf = claudeNoteFinder(auditMode, auditSystemId, systemId, itemByFinding, suggestionsBySystem);
+  const currentSystemValue = String(activeSystemId ?? '');
   const sysCount = auditMode ? 1 : summary.length;
 
   return (
-    <PageShell
-      crumbs={
-        auditMode
-          ? [{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, ...(audit ? [{ label: audit.systemName, to: audit.systemId !== undefined ? `/systems/${audit.systemId}` : undefined }] : []), { label: `Auditoria #${auditId}`, to: `/audits/${auditId}` }, { label: 'Achados' }]
-          : [{ label: 'Início', to: '/' }, { label: 'Informações de Auditoria' }]
-      }
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>
-          Informações de Auditoria
-          {auditMode && (
-            <span style={{ fontSize: 16, color: 'var(--s-text-4)', marginLeft: 12 }}>
-              — {audit?.systemName ? `${audit.systemName} · ` : ''}Auditoria #{auditId}
-            </span>
-          )}
-        </h1>
-        <span style={{ color: 'var(--s-text-3)' }}>
-          {auditMode
-            ? 'Achados desta auditoria.'
-            : 'Da última auditoria concluída de cada sistema. Escolha um sistema para focar, ou veja todos juntos e saiba de onde cada achado vem.'}
-        </span>
-      </div>
+    <PageShell crumbs={findingsCrumbs(auditMode, audit, auditId)}>
+      <PageHeading auditMode={auditMode} auditId={auditId} systemName={audit?.systemName} />
 
-      <div role="tablist" aria-label="Seções de Informações de Auditoria" style={{ display: 'flex', borderBottom: '1px solid var(--s-border-subtle)' }}>
-        {ABAS.map((a) => (
-          <button
-            key={a.id}
-            type="button"
-            role="tab"
-            id={`aba-${a.id}`}
-            aria-selected={a.id === aba}
-            onClick={() => setAba(a.id as AbaId)}
-            style={{
-              background: 'none',
-              border: 0,
-              borderBottom: a.id === aba ? '3px solid var(--s-link)' : '3px solid transparent',
-              padding: '10px 16px',
-              fontSize: 14,
-              fontWeight: a.id === aba ? 600 : 400,
-              color: 'var(--s-text)',
-              cursor: 'pointer',
-            }}
-          >
-            {a.nome}
-          </button>
-        ))}
-      </div>
+      <TabBar aba={aba} onSelect={setAba} />
 
       {aba === 'revisao' ? (
         <ClaudeReviewPanel key={activeSystemId ?? 'sem-sistema'} systems={systems ?? []} initialSystemId={activeSystemId} />
@@ -261,81 +191,36 @@ export function FindingsPage() {
         onRestore={restoreDefaults}
       />
 
-      {!auditMode && summary.length > 0 && (
-        <section aria-label="Resumo por sistema" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 12 }}>
-          {summary.map((s) => (
-            <Link
-              key={s.systemId}
-              to={`/systems/${s.systemId}`}
-              style={{ textDecoration: 'none', color: 'inherit', background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: `4px solid ${edgeColor(s.critical ?? 0, s.high ?? 0)}`, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}
-            >
-              <span style={{ fontWeight: 600, color: 'var(--s-text)' }}>{s.systemName}</span>
-              <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
-                Auditoria #{s.auditId}{s.auditedAt ? ` · ${startLabel(s.auditedAt)}` : ''}
-              </span>
-              <span style={{ display: 'flex', gap: 14, fontSize: 13, color: 'var(--s-text)' }}>
-                <span><strong style={{ fontFamily: mono, color: 'var(--s-crit-text)' }}>{s.critical ?? 0}</strong> críticos</span>
-                <span><strong style={{ fontFamily: mono, color: 'var(--s-high-text)' }}>{s.high ?? 0}</strong> altos</span>
-              </span>
-            </Link>
-          ))}
-        </section>
-      )}
+      {!auditMode && summary.length > 0 && <SystemSummaryCards summary={summary} />}
 
       <section aria-label="Lista de findings" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
-        {loading ? (
-          <div style={{ padding: 16 }}><DataTableSkeleton columnCount={6} rowCount={8} /></div>
-        ) : error ? (
-          <div style={{ padding: 16 }}>
-            <InlineNotification kind="error" title="Erro ao carregar findings" subtitle={error instanceof Error ? error.message : 'Erro desconhecido'} />
-          </div>
-        ) : total === 0 ? (
-          <div style={{ padding: 16 }}>
-            <InlineNotification
-              kind="info"
-              title="Nenhum achado com esses filtros"
-              subtitle={auditMode ? 'Tente remover algum filtro.' : 'Pode ser que nenhum sistema tenha auditoria concluída ainda, ou que os filtros sejam restritivos.'}
-              hideCloseButton
-            />
-          </div>
-        ) : grouped && !auditMode ? (
-          <div style={{ display: 'grid', gap: 24, padding: '16px 0 0' }}>
-            {groupBySystem(overview.data?.items ?? []).map((g) => (
-              <section key={g.systemId} aria-label={`Achados de ${g.systemName}`}>
-                <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 16px 8px' }}>
-                  {g.systemName}
-                  <span style={{ fontWeight: 400, color: 'var(--s-text-3)', marginLeft: 8 }}>
-                    {g.findings.length} {g.findings.length === 1 ? 'achado nesta página' : 'achados nesta página'}
-                  </span>
-                </h2>
-                <FindingsTable findings={g.findings} systemOf={systemOf} claudeNoteOf={claudeNoteOf} />
-              </section>
-            ))}
-          </div>
-        ) : (
-          <FindingsTable findings={rows} systemName={auditMode ? audit?.systemName : undefined} auditId={auditMode ? auditId : undefined} systemOf={systemOf} claudeNoteOf={claudeNoteOf} />
-        )}
+        <FindingsListBody
+          loading={loading}
+          error={error}
+          total={total}
+          auditMode={auditMode}
+          auditId={auditId}
+          auditSystemName={audit?.systemName}
+          grouped={grouped}
+          rows={rows}
+          items={overview.data?.items ?? []}
+          systemOf={systemOf}
+          claudeNoteOf={claudeNoteOf}
+        />
         {!loading && !error && total > 0 && (
           <PaginationFooter text={footerText(rows.length, total, situation, severity, sysCount)} page={page} pages={pages} pageSize={pageSize} onPage={setPage} onPageSize={(n) => { setPageSize(n); setPage(1); }} />
         )}
       </section>
 
       {auditMode && resolved.length > 0 && (
-        <section aria-label="Resolvidos">
-          <button
-            type="button"
-            aria-expanded={showResolved}
-            onClick={() => setShowResolved(!showResolved)}
-            style={{ height: 36, padding: '0 14px', background: 'var(--s-surface)', border: '1px solid var(--s-link)', color: 'var(--s-link)', cursor: 'pointer', fontSize: 13 }}
-          >
-            {showResolved ? 'Ocultar' : 'Mostrar'} {resolved.length} {resolved.length === 1 ? 'achado resolvido' : 'achados resolvidos'} desde a auditoria anterior
-          </button>
-          {showResolved && (
-            <div style={{ marginTop: 16, background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
-              <FindingsTable findings={resolved} systemName={audit?.systemName} auditId={auditId} claudeNoteOf={claudeNoteOf} />
-            </div>
-          )}
-        </section>
+        <ResolvedSection
+          resolved={resolved}
+          open={showResolved}
+          onToggle={() => setShowResolved(!showResolved)}
+          systemName={audit?.systemName}
+          auditId={auditId}
+          claudeNoteOf={claudeNoteOf}
+        />
       )}
         </>
       )}

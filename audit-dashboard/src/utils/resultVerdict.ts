@@ -16,19 +16,7 @@ export interface Verdict {
 export function verdict(plan: FixPlan): Verdict {
   const now = Math.round(plan.scoreNow);
   const tone = now >= TARGET_SCORE ? 'good' : now >= WARN_SCORE ? 'warn' : 'bad';
-  if (plan.criticalCount > 0) {
-    const after = Math.round(plan.scoreIfCriticalFixed);
-    const plural = plan.criticalCount === 1 ? 'problema crítico' : 'problemas críticos';
-    const headline =
-      now >= TARGET_SCORE
-        ? `Dentro da meta, mas com **${plan.criticalCount} ${plural}** em aberto.`
-        : `Atenção: **${plan.criticalCount} ${plural}** ${plan.criticalCount === 1 ? 'impede' : 'impedem'} a nota de passar de ${TARGET_SCORE}.`;
-    return {
-      tone,
-      headline,
-      detail: `Corrigindo só os críticos, a nota estimada ${after >= now ? 'sobe' : 'fica'} para **${after}**. Meta do sistema: ${TARGET_SCORE}.`,
-    };
-  }
+  if (plan.criticalCount > 0) return { tone, ...criticalVerdict(plan, now) };
   if (plan.items.length === 0) {
     return { tone, headline: 'Nada a corrigir', detail: 'Nenhum achado ativo pesa na nota.' };
   }
@@ -37,6 +25,19 @@ export function verdict(plan: FixPlan): Verdict {
     tone,
     headline: now >= TARGET_SCORE ? 'Dentro da meta, sem problemas críticos' : 'Sem críticos, mas abaixo da meta',
     detail: `O maior ganho vem de "${top.title}": a nota sobe ${top.scoreGain.toFixed(1)} ponto${top.scoreGain === 1 ? '' : 's'}.`,
+  };
+}
+
+function criticalVerdict(plan: FixPlan, now: number): Pick<Verdict, 'headline' | 'detail'> {
+  const after = Math.round(plan.scoreIfCriticalFixed);
+  const plural = plan.criticalCount === 1 ? 'problema crítico' : 'problemas críticos';
+  const headline =
+    now >= TARGET_SCORE
+      ? `Dentro da meta, mas com **${plan.criticalCount} ${plural}** em aberto.`
+      : `Atenção: **${plan.criticalCount} ${plural}** ${plan.criticalCount === 1 ? 'impede' : 'impedem'} a nota de passar de ${TARGET_SCORE}.`;
+  return {
+    headline,
+    detail: `Corrigindo só os críticos, a nota estimada ${after >= now ? 'sobe' : 'fica'} para **${after}**. Meta do sistema: ${TARGET_SCORE}.`,
   };
 }
 
