@@ -5,6 +5,7 @@ import { FindingsPage } from './pages/Findings/FindingsPage';
 import { OverviewPage } from './pages/Overview/OverviewPage';
 import { RankingPage } from './pages/Ranking/RankingPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
+import { SettingsPage } from './pages/Settings/SettingsPage';
 import { SystemsPage } from './pages/Systems/SystemsPage';
 import { SystemDetailPage } from './pages/SystemDetail/SystemDetailPage';
 
@@ -19,6 +20,7 @@ export function App() {
         <Route path="/ranking" element={<RankingPage />} />
         <Route path="/findings" element={<FindingsPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </AppShell>
   );

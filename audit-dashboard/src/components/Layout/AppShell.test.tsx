@@ -57,6 +57,7 @@ describe('AppShell', () => {
       'Informações de Auditoria',
       'Ranking de Sistemas',
       'Relatórios',
+      'Configurações',
     ]);
   });
   it('tem um divisor acessível que muda a largura com o teclado e guarda a escolha', () => {

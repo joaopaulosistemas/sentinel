@@ -443,3 +443,14 @@ Fecha o item "Números mágicos" deixado pelo PR da auditoria #46. Refatoração
 
 Verificado: Checkstyle com a configuração do projeto sobre `audit-api` e `audit-cli`: 0 `MagicNumber` (antes 322); `javac` sem erro novo em relação à `main` (diferença só em `Response.Status`, que o `javac` local não resolve por faltar o jakarta) e o CLI compila sem erros.
 Não verificado: Maven e testes (só o CI); não rodei comparação de saída antes/depois, só revisei cada troca.
+
+## Dashboard 12.34.0 / API — Tela de Configurações
+
+Reúne na tela, como último item do menu, as variáveis que ficavam espalhadas em `.env.example`, `application.properties`, `docker-compose.yml` e nos README.
+
+- API: pacote `settings` com o catálogo (54 configurações, 31 editáveis), a tabela `app_setting`, `GET/PUT /api/v1/settings`, `DELETE /api/v1/settings/{chave}` e `POST /api/v1/settings/restart`. Uma fonte de configuração (`DbConfigSource`, ordinal 450) entrega à API, na subida, o que foi salvo; o valor da tela vale por cima da variável de ambiente.
+- Segurança: banco, chaves, CORS, login, caminhos do servidor e tudo que executa programas (`PACKS_ALLOW_TOOLS`, repositório de pacotes, `PMD_RULESET`, `SEMGREP_CONFIG`) são só leitura, na tela e na API; segredos saem mascarados. Teste fixa essa lista.
+- Dashboard: página `/settings` com seções, busca, validação de faixa, "Voltar ao ambiente", aviso de reinício e botão de reiniciar com confirmação.
+- Testes novos: catálogo (inclui conferir propriedades e padrões contra `application.properties`), serviço, fonte de configuração, utilitários e página.
+
+Verificado: `tsc`, `vitest` (233 testes) e `vite build` no dashboard; a API foi compilada com `javac` contra stubs das bibliotecas e a validação do catálogo foi executada. Não verificado: Maven e testes Java (só o CI); o reinício real e a leitura da tabela por JDBC contra um Postgres.

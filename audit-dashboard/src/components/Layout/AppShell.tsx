@@ -11,7 +11,7 @@ import {
   SkipToContent,
   Theme,
 } from '@carbon/react';
-import { Application, ChartBar, Dashboard, Report, Security } from '@carbon/icons-react';
+import { Application, ChartBar, Dashboard, Report, Security, Settings } from '@carbon/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
@@ -53,6 +53,7 @@ const ITENS = [
   { nome: 'Informações de Auditoria', rota: '/findings', icone: Security },
   { nome: 'Ranking de Sistemas', rota: '/ranking', icone: ChartBar },
   { nome: 'Relatórios', rota: '/reports', icone: Report },
+  { nome: 'Configurações', rota: '/settings', icone: Settings },
 ];
 
 /** Largura a partir da qual o menu lateral fica fixo (66rem = 1056 px, o "lg" do Carbon). */
