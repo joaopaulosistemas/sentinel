@@ -15,7 +15,6 @@
 //   - Nome de arquivo: o Google TS manda snake_case, o Angular manda hífen. Vale o Angular (projeto Angular).
 //   - Constantes de módulo: aceita CONSTANT_CASE e lowerCamelCase (o Google permite os dois conforme o caso).
 import path from "node:path";
-import tseslint from "typescript-eslint";
 import angular from "angular-eslint";
 import sonarjs from "eslint-plugin-sonarjs";
 import stylistic from "@stylistic/eslint-plugin";

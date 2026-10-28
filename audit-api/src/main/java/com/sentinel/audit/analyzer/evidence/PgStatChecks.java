@@ -179,7 +179,7 @@ final class PgStatChecks {
                         "Tabela lida por varredura sequencial: " + name,
                         name + " tem " + Ev.fmt(live) + " linhas e sofreu " + Ev.fmt(seq) + " varreduras sequenciais ("
                                 + Ev.fmt(seqRead) + " linhas lidas) contra " + Ev.fmt(idx) + " por índice. Falta índice para o "
-                                + "filtro mais comum, ou o filtro não consegue usá-lo (função na coluna, LIKE '%x').",
+                                + "filtro mais comum, ou o filtro não consegue usá-lo (função na coluna ou busca com curinga no início do texto).",
                         file, r.line(), name));
             }
             if (dead >= MIN_DEAD_ROWS && live + dead > 0 && dead / (live + dead) >= MIN_DEAD_RATIO) {
