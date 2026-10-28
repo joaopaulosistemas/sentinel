@@ -42,7 +42,9 @@ public final class LocalSource {
     private static final long MAX_OUTPUT_BYTES = 64L * 1024 * 1024;
     private static final int MAX_PATH_CHARS = 500;
     /** Limite da verificação mostrada na tela: um repositório enorme não pode deixar o formulário esperando. */
-    private static final long CHECK_TIMEOUT_SECONDS = 30;
+    private static final long CHECK_TIMEOUT_SECONDS = 15;
+    /** Contagem de arquivos e de alterações: informativa, então tem prazo curto (o navegador desiste aos 30s). */
+    private static final long COUNT_TIMEOUT_SECONDS = 6;
     /** Commits baixados quando o sistema não define: o bastante para achar segredos já removidos do código. */
     static final int DEFAULT_HISTORY_DEPTH = 100;
 
@@ -172,10 +174,10 @@ public final class LocalSource {
             if (branch != null && !branch.isBlank()) {
                 branchFound = branchExists(dir, branch);
             }
-            Out files = git(dir, CHECK_TIMEOUT_SECONDS, "ls-files", "-z");
-            Out dirty = git(dir, CHECK_TIMEOUT_SECONDS, "status", "--porcelain");
-            long fileCount = files.exit() == 0 ? countOf(files.text(), '\0') : 0;
-            long uncommitted = dirty.exit() == 0 ? countOf(dirty.text(), '\n') : 0;
+            // Contagens são só informativas e ficam lentas em repositório grande ou em disco de rede (/mnt/c no WSL):
+            // com tempo curto, a pasta continua válida e as contagens saem em branco em vez de a verificação inteira falhar.
+            Long fileCount = optionalCount(dir, '\0', "ls-files", "-z");
+            Long uncommitted = optionalCount(dir, '\n', "status", "--porcelain");
             if (current == null && (branch == null || branch.isBlank())) {
                 return new PathCheck(true, "O repositório está sem branch ativa (HEAD solto); informe a branch a auditar",
                         null, null, fileCount, uncommitted);
@@ -234,6 +236,16 @@ public final class LocalSource {
             return null;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return null;
+        }
+    }
+
+    /** Conta linhas/itens da saída de um comando git dentro de {@link #COUNT_TIMEOUT_SECONDS}; nulo se demorar ou falhar. */
+    private Long optionalCount(Path dir, char separator, String... args) throws IOException, InterruptedException {
+        try {
+            Out out = git(dir, COUNT_TIMEOUT_SECONDS, args);
+            return out.exit() == 0 ? countOf(out.text(), separator) : null;
+        } catch (IllegalStateException e) {
             return null;
         }
     }
