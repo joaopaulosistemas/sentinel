@@ -11,6 +11,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,13 +82,17 @@ public class TrivyAnalyzer implements CodeAnalyzer {
         try {
             report = Files.createTempFile("trivy-", ".json");
             stderr = Files.createTempFile("trivy-err-", ".txt");
-            List<String> cmd = List.of(exe.toString(), "fs", "--quiet", "--no-progress",
-                    "--format", "json", "--output", report.toString(),
-                    "--scanners", String.join(",", scannerList()),
-                    "--skip-dirs", "node_modules,.git",
-                    "--timeout", timeoutSeconds + "s",
-                    projectPath.toString());
-            int code = ExternalTools.run(cmd, null, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds, null, stderr);
+            int code = executar(exe, projectPath, report, stderr, false);
+            if (code != 0 && code != -1 && limiteDoMaven(stderr)) {
+                // O Maven Central bloqueou o IP (429) ao baixar POMs pai: o Trivy aborta a varredura inteira.
+                // Refaz sem consultar repositórios remotos; o que já estiver no ~/.m2 continua sendo usado.
+                LOG.warn("Trivy: repositório Maven limitou as requisições; repetindo com --offline-scan");
+                code = executar(exe, projectPath, report, stderr, true);
+                if (code == 0) {
+                    partial = "dependências Maven resolvidas só pelo cache local (o Maven Central limitou as requisições); "
+                            + "para cobertura completa rode `mvn dependency:resolve` antes ou monte um volume em ~/.m2";
+                }
+            }
             if (code != 0) {
                 partial = ExternalTools.falha(code, timeoutSeconds, stderr)
                         + (code == -1 ? "" : " (base de vulnerabilidades indisponível?)")
@@ -114,6 +119,26 @@ public class TrivyAnalyzer implements CodeAnalyzer {
         }
         ExternalTools.deleteQuietly(stderr);
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+    }
+
+    private int executar(Path exe, Path projectPath, Path report, Path stderr, boolean offline)
+            throws IOException, InterruptedException {
+        List<String> cmd = new ArrayList<>(List.of(exe.toString(), "fs", "--quiet", "--no-progress",
+                "--format", "json", "--output", report.toString(),
+                "--scanners", String.join(",", scannerList()),
+                "--skip-dirs", "node_modules,.git",
+                "--timeout", timeoutSeconds + "s"));
+        if (offline) {
+            cmd.add("--offline-scan");
+        }
+        cmd.add(projectPath.toString());
+        return ExternalTools.run(cmd, null, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds, null, stderr);
+    }
+
+    /** O stderr do Trivy indica bloqueio/limite de taxa do Maven Central (HTTP 429, Retry-After). */
+    static boolean limiteDoMaven(Path stderrFile) {
+        String err = ExternalTools.tail(stderrFile, ERROR_TAIL_CHARS).toLowerCase(java.util.Locale.ROOT);
+        return err.contains("retry-after") || err.contains("429") || err.contains("too many requests");
     }
 
     /**
