@@ -9,7 +9,6 @@ import com.sentinel.audit.dto.ScoreExplanationDto;
 import com.sentinel.audit.dto.CreateAuditRequest;
 import com.sentinel.audit.dto.FindingResponse;
 import com.sentinel.audit.insights.AuditInsights;
-import com.sentinel.audit.insights.InsightsService;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
@@ -18,15 +17,7 @@ import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.service.AuditOrchestrationService;
 import com.sentinel.audit.service.AuditRequestService;
 import com.sentinel.audit.service.FindingCatalog;
-import com.sentinel.audit.service.FindingLifecycleService;
-import com.sentinel.audit.service.FixPlanner;
 import com.sentinel.audit.service.RunCatalog;
-import com.sentinel.audit.service.ScoreTrend;
-import com.sentinel.audit.dto.TrendPoint;
-import com.sentinel.audit.service.ScoringService;
-import com.sentinel.audit.service.PdfReportService;
-import com.sentinel.audit.service.ReportService;
-import com.sentinel.audit.service.AuditProgressTracker;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -58,28 +49,10 @@ public class AuditResource {
     static final double TARGET_SCORE = 75;
 
     @Inject
-    AuditProgressTracker progressTracker;
-
-    @Inject
-    InsightsService insightsService;
-
-    @Inject
     RunCatalog runCatalog;
 
     @Inject
     FindingCatalog findingCatalog;
-
-    @Inject
-    ReportService reportService;
-
-    @Inject
-    PdfReportService pdfReportService;
-
-    @Inject
-    ScoringService scoringService;
-
-    @Inject
-    FindingLifecycleService lifecycleService;
 
     @Inject
     AuditRequestService requestService;
@@ -88,33 +61,19 @@ public class AuditResource {
     AuditOrchestrationService orchestration;
 
     @Inject
-    com.sentinel.audit.service.IngestionService ingestionService;
+    AuditReports reports;
 
     @Inject
-    com.sentinel.audit.service.SecretBox secretBox;
+    AuditStatusViews statusViews;
 
     @Context
     SecurityContext securityContext;
 
-    /** Se o código mudou desde a auditoria: {@code stale} é nulo quando não dá para saber. */
-    public record Freshness(String auditedCommit, String currentCommit, Boolean stale) {
-    }
-
     @GET
     @Path("/{id}/freshness")
     @Operation(summary = "Auditoria desatualizada?", description = "Compara o commit auditado com a ponta atual da branch no remoto (git ls-remote)")
-    public Freshness freshness(@PathParam("id") Long id) {
-        AuditRun run = runCatalog.require(id);
-        String audited = run.getCommitSha();
-        com.sentinel.audit.model.AuditedSystem system = run.getSystem();
-        if (audited == null || audited.isBlank() || system == null || run.getBranch() == null) {
-            return new Freshness(audited, null, null);
-        }
-        String token = system.hasGitToken() ? secretBox.decrypt(system.getGitTokenEnc()) : null;
-        String current = system.isLocalSource()
-                ? ingestionService.localHeadSha(system.getLocalPath(), run.getBranch())
-                : ingestionService.remoteHeadSha(system.getRepoUrl(), run.getBranch(), token, system.getGitTokenHosts());
-        return new Freshness(audited, current, current == null ? null : !current.equals(audited));
+    public AuditStatusViews.Freshness freshness(@PathParam("id") Long id) {
+        return statusViews.freshness(id);
     }
 
     /**
@@ -213,7 +172,7 @@ public class AuditResource {
     @Operation(summary = "Comparar com a auditoria anterior",
             description = "Findings novos e corrigidos desde a auditoria anterior (mesmo sistema e branch)")
     public AuditDiffResponse getDiff(@PathParam("id") Long id) {
-        return lifecycleService.diff(id);
+        return reports.diff(id);
     }
 
     /**
@@ -227,31 +186,7 @@ public class AuditResource {
     public Response getReport(@PathParam("id") Long id,
                               @QueryParam("type") String type,
                               @QueryParam("days") Integer days) {
-        AuditRun run = runCatalog.require(id);
-        ReportService.Type kind;
-        try {
-            kind = ReportService.Type.parse(type);
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException(e.getMessage());
-        }
-
-        List<Finding> findings = findingCatalog.byRun(id);
-        String html = switch (kind) {
-            case TECNICO -> reportService.generateHtmlReport(run, findings);
-            case EXECUTIVO -> reportService.generateExecutiveReport(run, findings,
-                    FixPlanner.plan(FindingLifecycleService.active(findings), run.getLinesOfCode(), scoringService),
-                    ScoreTrend.delta(runCatalog.bySystem(run.getSystem().getId())), TARGET_SCORE);
-            case COMPARATIVO -> reportService.generateComparativeReport(run, comparativePoints(run, days),
-                    days == null || days <= 0 ? null : days);
-        };
-        return Response.ok(html, MediaType.TEXT_HTML).build();
-    }
-
-    private List<TrendPoint> comparativePoints(AuditRun run, Integer days) {
-        java.time.LocalDateTime since = days == null || days <= 0 ? null : java.time.LocalDateTime.now().minusDays(days);
-        return lifecycleService.trend(run.getSystem().getId(), 100).stream()
-                .filter(p -> since == null || (p.completedAt() != null && p.completedAt().isAfter(since)))
-                .collect(Collectors.toList());
+        return Response.ok(reports.html(id, type, days), MediaType.TEXT_HTML).build();
     }
 
     /** Mesmos relatórios em PDF, gerado no servidor. */
@@ -262,25 +197,9 @@ public class AuditResource {
     public Response getReportPdf(@PathParam("id") Long id,
                                  @QueryParam("type") String type,
                                  @QueryParam("days") Integer days) {
-        AuditRun run = runCatalog.require(id);
-        ReportService.Type kind;
-        try {
-            kind = ReportService.Type.parse(type);
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException(e.getMessage());
-        }
-        List<Finding> findings = findingCatalog.byRun(id);
-        byte[] pdf = switch (kind) {
-            case TECNICO -> pdfReportService.technical(run, findings);
-            case EXECUTIVO -> pdfReportService.executive(run, findings,
-                    FixPlanner.plan(FindingLifecycleService.active(findings), run.getLinesOfCode(), scoringService),
-                    ScoreTrend.delta(runCatalog.bySystem(run.getSystem().getId())), TARGET_SCORE);
-            case COMPARATIVO -> pdfReportService.comparative(run, comparativePoints(run, days),
-                    days == null || days <= 0 ? null : days);
-        };
-        String name = "auditoria-" + id + "-" + kind.name().toLowerCase(java.util.Locale.ROOT) + ".pdf";
-        return Response.ok(pdf, "application/pdf")
-                .header("Content-Disposition", "inline; filename=\"" + name + "\"")
+        AuditReports.PdfFile pdf = reports.pdf(id, type, days);
+        return Response.ok(pdf.bytes(), "application/pdf")
+                .header("Content-Disposition", "inline; filename=\"" + pdf.filename() + "\"")
                 .build();
     }
 
@@ -292,8 +211,7 @@ public class AuditResource {
     @Produces("text/csv")
     @Operation(summary = "Achados em CSV", description = "Achados ativos da auditoria, prontos para planilha")
     public Response getFindingsCsv(@PathParam("id") Long id) {
-        runCatalog.require(id);
-        String csv = reportService.generateCsv(findingCatalog.byRun(id));
+        String csv = reports.csv(id);
         return Response.ok("\uFEFF" + csv, "text/csv; charset=UTF-8")
                 .header("Content-Disposition", "attachment; filename=\"achados-auditoria-" + id + ".csv\"")
                 .build();
@@ -326,8 +244,7 @@ public class AuditResource {
     @Operation(summary = "Visão de auditoria completa",
             description = "Áreas, dívida técnica priorizada, quick wins, roadmap em fases e limites da verificação")
     public AuditInsights getInsights(@PathParam("id") Long id) {
-        AuditRun run = runCatalog.require(id);
-        return insightsService.forRun(run);
+        return statusViews.insights(id);
     }
 
     /**
@@ -338,10 +255,7 @@ public class AuditResource {
     @Path("/{id}/score-explanation")
     @Operation(summary = "Explicação da nota", description = "Quanto cada regra tirou em cada dimensão; com ?without=regra1,regra2 simula a nota sem elas")
     public ScoreExplanationDto getScoreExplanation(@PathParam("id") Long id, @QueryParam("without") String without) {
-        AuditRun run = runCatalog.require(id);
-        List<Finding> active = FindingLifecycleService.active(findingCatalog.byRun(run.getId()));
-        List<String> removed = without == null || without.isBlank() ? List.of() : List.of(without.split(","));
-        return scoringService.explainWithout(active, run.getLinesOfCode(), removed);
+        return reports.scoreExplanation(id, without);
     }
 
     /**
@@ -351,8 +265,6 @@ public class AuditResource {
     @Path("/{id}/fix-plan")
     @Operation(summary = "Plano de correção", description = "Problemas ordenados pelo ganho de nota, com a orientação de correção")
     public FixPlanDto getFixPlan(@PathParam("id") Long id) {
-        AuditRun run = runCatalog.require(id);
-        List<Finding> active = FindingLifecycleService.active(findingCatalog.byRun(run.getId()));
-        return FixPlanner.plan(active, run.getLinesOfCode(), scoringService);
+        return reports.fixPlan(id);
     }
 }

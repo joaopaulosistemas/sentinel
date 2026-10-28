@@ -66,8 +66,8 @@ class AuditOrchestrationServiceTest {
         service.secretBox = new SecretBox("chave-de-teste");
         service.scoringService = new ScoringService();
         service.evidenceStager = new EvidenceStager();
-        service.evidenceAnalyzer = new com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer();
-        service.packRegistry = com.sentinel.audit.pack.TestPacks.registry();
+        service.analyzerSet.evidenceAnalyzer = new com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer();
+        service.policies.packRegistry = com.sentinel.audit.pack.TestPacks.registry();
 
         service.auditRunRepository = new AuditRunRepository() {
             @Override
@@ -118,26 +118,26 @@ class AuditOrchestrationServiceTest {
                 cleaned.add(dir);
             }
         };
-        service.semgrepAnalyzer = new SemgrepAnalyzer() {
+        service.analyzerSet.semgrepAnalyzer = new SemgrepAnalyzer() {
             @Override
             public AnalyzerResult analyze(Path p, AuditRun r, com.sentinel.audit.pack.AuditPolicy policy) {
                 return result("Semgrep", finding(Category.SECURITY, Severity.HIGH, "x".repeat(600), "y".repeat(3000)));
             }
         };
-        service.dependencyAnalyzer = new OWASPDependencyAnalyzer() {
+        service.analyzerSet.dependencyAnalyzer = new OWASPDependencyAnalyzer() {
             @Override
             public AnalyzerResult analyze(Path p, AuditRun r) {
                 return result("OWASP-Dependency", finding(Category.DEPENDENCY, Severity.CRITICAL, "dep", "d"));
             }
         };
-        service.architectureAnalyzer = new ArchitectureAnalyzer() {
+        service.analyzerSet.architectureAnalyzer = new ArchitectureAnalyzer() {
             @Override
             public AnalyzerResult analyze(Path p, AuditRun r) {
                 architectureCalls.incrementAndGet();
                 return result("Architecture", finding(Category.ARCHITECTURE, Severity.LOW, "arch", "a"));
             }
         };
-        service.secretsAnalyzer = new SecretsAnalyzer() {
+        service.analyzerSet.secretsAnalyzer = new SecretsAnalyzer() {
             @Override
             public AnalyzerResult analyze(Path p, AuditRun r) {
                 if (secretsError != null) {
@@ -339,7 +339,7 @@ class AuditOrchestrationServiceTest {
     void cancelarDuranteAAnaliseDescartaOResultado() throws Exception {
         java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
         java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
-        service.semgrepAnalyzer = new SemgrepAnalyzer() {
+        service.analyzerSet.semgrepAnalyzer = new SemgrepAnalyzer() {
             @Override
             public AnalyzerResult analyze(Path p, AuditRun r, com.sentinel.audit.pack.AuditPolicy policy) {
                 started.countDown();

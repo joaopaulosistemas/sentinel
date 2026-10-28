@@ -89,7 +89,7 @@ public final class PackTool {
             try (Stream<Path> s = Files.list(target)) {
                 s.filter(Files::isDirectory).filter(d -> !d.getFileName().toString().equals("profiles")).sorted().forEach(dirs::add);
             } catch (IOException e) {
-                throw new IllegalArgumentException("Não foi possível listar " + target);
+                throw new IllegalArgumentException("Não foi possível listar " + target, e);
             }
         }
         int bad = 0;

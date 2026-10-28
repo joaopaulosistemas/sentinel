@@ -46,21 +46,21 @@ class AnalyzerSelectionTest {
 
     @Test
     void ferramentaExternaDisponivelSubstituiOInternoEquivalente() {
-        List<CodeAnalyzer> r = AuditOrchestrationService.selectAnalyzers(
+        List<CodeAnalyzer> r = AnalyzerRunner.selectAnalyzers(
                 List.of(new Internal("interno"), new Fake("outro", true, List.of()), new External(true)));
         assertEquals(List.of("outro", "externo"), names(r));
     }
 
     @Test
     void semAFerramentaExternaOInternoContinuaRodando() {
-        List<CodeAnalyzer> r = AuditOrchestrationService.selectAnalyzers(
+        List<CodeAnalyzer> r = AnalyzerRunner.selectAnalyzers(
                 List.of(new Internal("interno"), new Fake("outro", true, List.of()), new External(false)));
         assertEquals(List.of("interno", "outro"), names(r));
     }
 
     @Test
     void indisponivelNuncaSubstituiNemRoda() {
-        List<CodeAnalyzer> r = AuditOrchestrationService.selectAnalyzers(
+        List<CodeAnalyzer> r = AnalyzerRunner.selectAnalyzers(
                 List.of(new Fake("fora", false, List.of(Internal.class)), new Internal("interno")));
         assertEquals(List.of("interno"), names(r));
     }

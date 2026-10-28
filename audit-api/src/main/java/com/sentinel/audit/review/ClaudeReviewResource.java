@@ -131,7 +131,7 @@ public class ClaudeReviewResource {
         try {
             return SuggestionStatus.valueOf(body == null || body.status() == null ? "" : body.status().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Situação inválida.");
+            throw new BadRequestException("Situação inválida.", e);
         }
     }
 
@@ -139,7 +139,7 @@ public class ClaudeReviewResource {
         try {
             action.run();
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException(e.getMessage());
+            throw new BadRequestException(e.getMessage(), e);
         }
         return response(id);
     }

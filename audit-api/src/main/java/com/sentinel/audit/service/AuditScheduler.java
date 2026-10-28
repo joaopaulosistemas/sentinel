@@ -100,12 +100,14 @@ public class AuditScheduler {
     /** @return quantas auditorias foram disparadas */
     int runDue(LocalDateTime now) {
         int started = 0;
+        // Uma consulta para o último início de todos os sistemas (antes era uma por sistema).
+        java.util.Map<Long, AuditRun> lastBySystem = auditRunRepository.findLastStartedBySystem();
         for (AuditedSystem system : systemRepository.listAll()) {
             try {
                 if (system.getAuditIntervalHours() == null || system.getAuditIntervalHours() <= 0) {
                     continue;
                 }
-                AuditRun last = auditRunRepository.findLastStarted(system.getId());
+                AuditRun last = lastBySystem.get(system.getId());
                 LocalDateTime lastStart = last == null ? null : last.getStartedAt();
                 if (isDue(system.getAuditIntervalHours(), lastStart, now)
                         && requestService.requestIfIdle(system.getId(), system.effectiveScheduledBranch(), "scheduler").isPresent()) {

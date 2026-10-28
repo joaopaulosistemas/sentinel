@@ -135,32 +135,32 @@ class IngestionServiceTest {
     @Test
     void extraiAbranchPadraoDaSaidaDoLsRemote() {
         String out = "ref: refs/heads/develop\tHEAD\nabc123\tHEAD\nabc123\trefs/heads/develop\n";
-        assertEquals("develop", IngestionService.parseDefaultBranch(out));
-        assertNull(IngestionService.parseDefaultBranch("abc123\tHEAD\n"));
-        assertNull(IngestionService.parseDefaultBranch(null));
+        assertEquals("develop", RemoteProbe.parseDefaultBranch(out));
+        assertNull(RemoteProbe.parseDefaultBranch("abc123\tHEAD\n"));
+        assertNull(RemoteProbe.parseDefaultBranch(null));
     }
 
     @Test
     void extraiOShaDaPontaDaBranch() {
         String out = "aaa111\trefs/heads/main2\nbbb222\trefs/heads/main\n";
-        assertEquals("bbb222", IngestionService.parseRefSha(out, "main"));
-        assertNull(IngestionService.parseRefSha(out, "dev"));
-        assertNull(IngestionService.parseRefSha(null, "main"));
+        assertEquals("bbb222", RemoteProbe.parseRefSha(out, "main"));
+        assertNull(RemoteProbe.parseRefSha(out, "dev"));
+        assertNull(RemoteProbe.parseRefSha(null, "main"));
     }
 
     @Test
     void brancheListadaPrecisaSerExata() {
         String out = "abc\trefs/heads/main2\n";
-        assertFalse(IngestionService.branchListed(out, "main"));
-        assertTrue(IngestionService.branchListed(out, "main2"));
+        assertFalse(RemoteProbe.branchListed(out, "main"));
+        assertTrue(RemoteProbe.branchListed(out, "main2"));
     }
 
     @Test
     void traduzOsErrosMaisComunsDoGit() {
-        assertTrue(IngestionService.friendlyGitError("fatal: repository 'x' not found").contains("não encontrado"));
-        assertTrue(IngestionService.friendlyGitError("fatal: Authentication failed for 'x'").contains("permissão"));
-        assertTrue(IngestionService.friendlyGitError("fatal: unable to access: Could not resolve host").contains("alcançar"));
-        assertEquals("Não foi possível acessar o repositório", IngestionService.friendlyGitError("???"));
+        assertTrue(RemoteProbe.friendlyGitError("fatal: repository 'x' not found").contains("não encontrado"));
+        assertTrue(RemoteProbe.friendlyGitError("fatal: Authentication failed for 'x'").contains("permissão"));
+        assertTrue(RemoteProbe.friendlyGitError("fatal: unable to access: Could not resolve host").contains("alcançar"));
+        assertEquals("Não foi possível acessar o repositório", RemoteProbe.friendlyGitError("???"));
     }
 
     @Test

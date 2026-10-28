@@ -257,7 +257,8 @@ public final class ProjectConfig {
             g = g + "**";
         }
         StringBuilder re = new StringBuilder(anywhere ? "^(?:.*/)?" : "^");
-        for (int i = 0; i < g.length(); i++) {
+        int i = 0;
+        while (i < g.length()) {
             char c = g.charAt(i);
             if (c == '*' && i + 1 < g.length() && g.charAt(i + 1) == '*') {
                 boolean slashAfter = i + 2 < g.length() && g.charAt(i + 2) == '/';
@@ -270,6 +271,7 @@ public final class ProjectConfig {
             } else {
                 re.append(Pattern.quote(String.valueOf(c)));
             }
+            i++;
         }
         re.append(anywhere ? "(?:/.*)?$" : "$");
         try {

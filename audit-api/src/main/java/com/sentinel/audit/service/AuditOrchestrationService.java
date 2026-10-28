@@ -1,29 +1,11 @@
 package com.sentinel.audit.service;
 
-import com.sentinel.audit.analyzer.AnalyzerResult;
-import com.sentinel.audit.analyzer.ArchitectureAnalyzer;
-import com.sentinel.audit.analyzer.ArchitecturePolicyAnalyzer;
-import com.sentinel.audit.analyzer.CleanCodeAnalyzer;
-import com.sentinel.audit.analyzer.CodeAnalyzer;
-import com.sentinel.audit.analyzer.EslintAnalyzer;
-import com.sentinel.audit.analyzer.GitleaksAnalyzer;
-import com.sentinel.audit.analyzer.HygieneAnalyzer;
-import com.sentinel.audit.analyzer.evidence.EvidenceAnalyzer;
-import com.sentinel.audit.dto.AuditProgressDto;
 import com.sentinel.audit.insights.AnalyzerRunInfo;
 import com.sentinel.audit.insights.AuditContextData;
 import com.sentinel.audit.insights.ProjectMap;
 import com.sentinel.audit.insights.ProjectProfiler;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sentinel.audit.analyzer.PmdAnalyzer;
-import com.sentinel.audit.analyzer.SarifAnalyzer;
 import com.sentinel.audit.pack.AuditPolicy;
-import com.sentinel.audit.pack.PackRegistry;
-import com.sentinel.audit.analyzer.HistorySecretsAnalyzer;
-import com.sentinel.audit.analyzer.OWASPDependencyAnalyzer;
-import com.sentinel.audit.analyzer.SecretsAnalyzer;
-import com.sentinel.audit.analyzer.SemgrepAnalyzer;
-import com.sentinel.audit.analyzer.TrivyAnalyzer;
 import com.sentinel.audit.analyzer.deps.DependencyExtractor;
 import com.sentinel.audit.analyzer.deps.SbomWriter;
 import com.sentinel.audit.model.AuditRun;
@@ -48,14 +30,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 /**
  * Serviço de orquestração do fluxo completo de auditoria.
@@ -81,26 +60,9 @@ public class AuditOrchestrationService {
     /** Tempo máximo de espera pelo commit do registro da auditoria. */
     private static final Duration RUN_VISIBILITY_TIMEOUT = Duration.ofSeconds(15);
     private static final long RUN_VISIBILITY_POLL_MILLIS = 200L;
-    private static final long CANCEL_POLL_MILLIS = 500L;
-
-    // Limites das colunas da entidade Finding
-    private static final int MAX_TITLE        = 500;
-    private static final int MAX_DESCRIPTION  = 2000;
-    private static final int MAX_FILE_PATH    = 1000;
-    private static final int MAX_SNIPPET      = 2000;
-    private static final int MAX_RULE_ID      = 255;
-    private static final int MAX_TOOL_SOURCE  = 100;
-    private static final int MAX_CVE_ID       = 50;
-    private static final int MAX_ERROR_MESSAGE = 1000;
 
     @Inject
     RuleQualityService ruleQualityService;
-
-    @Inject
-    com.sentinel.audit.review.LocalRuleMaterializer localRules;
-
-    @Inject
-    com.sentinel.audit.tuning.SystemTuningService tuningService;
 
     @Inject
     IngestionService ingestionService;
@@ -109,55 +71,13 @@ public class AuditOrchestrationService {
     SecretBox secretBox;
 
     @Inject
-    SemgrepAnalyzer semgrepAnalyzer;
-
-    @Inject
-    OWASPDependencyAnalyzer dependencyAnalyzer;
-
-    @Inject
-    HistorySecretsAnalyzer historyAnalyzer;
-
-    @Inject
-    TrivyAnalyzer trivyAnalyzer;
-
-    @Inject
-    GitleaksAnalyzer gitleaksAnalyzer;
-
-    @Inject
-    ArchitectureAnalyzer architectureAnalyzer;
-
-    @Inject
-    CleanCodeAnalyzer cleanCodeAnalyzer;
-
-    @Inject
-    PmdAnalyzer pmdAnalyzer;
-
-    @Inject
-    EslintAnalyzer eslintAnalyzer;
-
-    @Inject
-    SarifAnalyzer sarifAnalyzer;
-
-    @Inject
-    ArchitecturePolicyAnalyzer architecturePolicyAnalyzer;
-
-    @Inject
-    HygieneAnalyzer hygieneAnalyzer;
-
-    @Inject
-    EvidenceAnalyzer evidenceAnalyzer;
-
-    @Inject
-    com.sentinel.audit.analyzer.StructuralAnalyzers structuralAnalyzers;
-
-    @Inject
     EvidenceStager evidenceStager;
 
     @Inject
-    SecretsAnalyzer secretsAnalyzer;
+    AnalyzerSet analyzerSet = new AnalyzerSet();
 
     @Inject
-    PackRegistry packRegistry;
+    AuditPolicyResolver policies = new AuditPolicyResolver();
 
     @Inject
     ScoringService scoringService;
@@ -239,7 +159,6 @@ public class AuditOrchestrationService {
 
     private void executeAudit(Long auditRunId) {
         Path clonedPath = null;
-        String commitSha = null;
         AuditPolicy policy = null;
         try {
             AuditContext context = markRunning(auditRunId);
@@ -253,7 +172,7 @@ public class AuditOrchestrationService {
                     : ingestionService.cloneRepository(context.repoUrl(), context.branch(), context.gitToken(), context.gitTokenHosts(), context.gitHistoryDepth());
             checkNotCancelled(auditRunId);
             SourceSizer.Stats sizing = SourceSizer.stats(clonedPath);
-            commitSha = ingestionService.headCommit(clonedPath);
+            String commitSha = ingestionService.headCommit(clonedPath);
             progress.sourceStats(auditRunId, context.sourceLabel(), sizing.files(), sizing.lines());
             evidenceStager.stage(context.systemName(), context.local() ? context.localPath() : context.repoUrl(), clonedPath);
 
@@ -262,12 +181,10 @@ public class AuditOrchestrationService {
             AuditRun runRef = new AuditRun();
             runRef.setId(auditRunId);
 
-            policy = resolvePolicy(context.profile(), loadTuning(context.systemId()));
-            if (localRules != null) {
-                policy = localRules.apply(policy, context.systemId());
-            }
+            policy = policies.forAudit(context.profile(), context.systemId());
             progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
-            Analysis analysis = runAnalyzers(clonedPath, runRef, context.stack(), policy);
+            AnalyzerRunner.Analysis analysis = new AnalyzerRunner(analyzerSet, progress, executor)
+                    .run(clonedPath, runRef, context.stack(), policy);
             checkNotCancelled(auditRunId);
             List<Finding> allFindings = policy.apply(FindingDeduplicator.apply(analysis.findings()));
             allFindings = onlyChangedFiles(allFindings, context, clonedPath);
@@ -303,152 +220,11 @@ public class AuditOrchestrationService {
             throw new IllegalStateException("Auditoria " + auditRunId + " falhou", e);
         } finally {
             progress.finish(auditRunId);
-            if (localRules != null) {
-                localRules.cleanup(policy);
-            }
+            policies.cleanup(policy);
             if (clonedPath != null) {
                 ingestionService.cleanupDirectory(clonedPath);
             }
         }
-    }
-
-    /**
-     * Executa em paralelo os analisadores que suportam a stack, isolando falhas individuais.
-     */
-    private Analysis runAnalyzers(Path projectPath, AuditRun runRef, Stack stack, AuditPolicy policy) {
-        List<CodeAnalyzer> candidates = candidateAnalyzers();
-        // Analisador desligado para este sistema sai antes da escolha, para não "substituir" outro por engano.
-        List<CodeAnalyzer> analyzers = selectAnalyzers(candidates.stream().filter(c -> !policy.analyzerDisabled(c.getName())).toList());
-
-        List<AnalyzerRunInfo> runs = skippedBeforeRun(candidates, analyzers, policy);
-        Long runId = runRef.getId();
-        List<CodeAnalyzer> started = new ArrayList<>();
-        List<CompletableFuture<Outcome>> futures = new ArrayList<>();
-        List<AuditProgressDto.AnalyzerProgress> plan = new ArrayList<>();
-        for (AnalyzerRunInfo r : runs) {
-            plan.add(new AuditProgressDto.AnalyzerProgress(r.name(), r.status(), 0, 0, r.note()));
-        }
-        for (CodeAnalyzer analyzer : analyzers) {
-            AnalyzerRunInfo skipped = skipReason(analyzer, stack, projectPath);
-            if (skipped != null) {
-                runs.add(skipped);
-                plan.add(new AuditProgressDto.AnalyzerProgress(skipped.name(), skipped.status(), 0, 0, skipped.note()));
-                continue;
-            }
-            started.add(analyzer);
-            plan.add(new AuditProgressDto.AnalyzerProgress(analyzer.getName(), "ESPERANDO", 0, 0, null));
-            futures.add(startAnalyzer(analyzer, projectPath, runRef, policy));
-        }
-
-        progress.planned(runId, plan);
-        return collectOutcomes(runId, started, futures, runs);
-    }
-
-    /** Todos os analisadores conhecidos (os estruturais entram se o conjunto existir). */
-    private List<CodeAnalyzer> candidateAnalyzers() {
-        return Stream.concat(Stream.of(
-                semgrepAnalyzer, dependencyAnalyzer, architectureAnalyzer, secretsAnalyzer, historyAnalyzer,
-                trivyAnalyzer, gitleaksAnalyzer, cleanCodeAnalyzer,
-                pmdAnalyzer, eslintAnalyzer, sarifAnalyzer, architecturePolicyAnalyzer, hygieneAnalyzer,
-                evidenceAnalyzer),
-                structuralAnalyzers == null ? Stream.<CodeAnalyzer>empty() : structuralAnalyzers.all().stream())
-                .filter(Objects::nonNull).toList();
-    }
-
-    /** Analisadores que nem chegam a rodar: desligados no sistema, sem a ferramenta ou cobertos por outro. */
-    private static List<AnalyzerRunInfo> skippedBeforeRun(List<CodeAnalyzer> candidates, List<CodeAnalyzer> analyzers, AuditPolicy policy) {
-        List<AnalyzerRunInfo> runs = new ArrayList<>();
-        for (CodeAnalyzer c : candidates) {
-            if (policy.analyzerDisabled(c.getName())) {
-                runs.add(new AnalyzerRunInfo(c.getName(), "DESLIGADO", 0, 0, "desligado nos ajustes deste sistema"));
-            } else if (!c.isAvailable()) {
-                runs.add(new AnalyzerRunInfo(c.getName(), "INDISPONIVEL", 0, 0, "ferramenta ausente neste ambiente"));
-            } else if (!analyzers.contains(c)) {
-                runs.add(new AnalyzerRunInfo(c.getName(), "SUBSTITUIDO", 0, 0, "outro analisador cobre o mesmo"));
-            }
-        }
-        return runs;
-    }
-
-    /** Motivo de um analisador escolhido não rodar nesta stack ou sem evidência; nulo se ele deve rodar. */
-    private static AnalyzerRunInfo skipReason(CodeAnalyzer analyzer, Stack stack, Path projectPath) {
-        if (stack != null && !analyzer.supports(stack)) {
-            LOG.infof("Analisador %s ignorado: não suporta a stack %s", analyzer.getName(), stack);
-            return new AnalyzerRunInfo(analyzer.getName(), "NAO_SUPORTADO", 0, 0, "não se aplica à stack " + stack);
-        }
-        if (analyzer instanceof EvidenceAnalyzer ev && !ev.hasEvidence(projectPath)) {
-            return new AnalyzerRunInfo(analyzer.getName(), "SEM_EVIDENCIA", 0, 0,
-                    "nenhum arquivo em " + EvidenceAnalyzer.DIR + " (dump do banco, estatísticas, cobertura ou histograma de memória)");
-        }
-        return null;
-    }
-
-    /** Dispara um analisador em paralelo; uma falha dele vira resultado vazio com o erro anotado. */
-    private CompletableFuture<Outcome> startAnalyzer(CodeAnalyzer analyzer, Path projectPath, AuditRun runRef, AuditPolicy policy) {
-        Long runId = runRef.getId();
-        return CompletableFuture
-                .supplyAsync(() -> {
-                    progress.analyzerStarted(runId, analyzer.getName());
-                    AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
-                    progress.analyzerFinished(runId, analyzer.getName(), r.partial() ? "PARCIAL" : "OK", r.findings().size(),
-                            r.duration() == null ? 0 : r.duration().toMillis(),
-                            r.partial() ? truncate(r.partialNote(), 300) : null, severityCounts(r.findings()));
-                    return new Outcome(r, null);
-                }, executor)
-                .exceptionally(error -> {
-                    LOG.errorf(error, "Analisador %s falhou; seguindo sem seus resultados", analyzer.getName());
-                    progress.analyzerFinished(runId, analyzer.getName(), "FALHOU", 0, 0, truncate(error.getMessage(), 200));
-                    return new Outcome(new AnalyzerResult(List.of(), analyzer.getName(), Duration.ZERO),
-                            error.getMessage());
-                });
-    }
-
-    /** Espera cada analisador na ordem em que foi disparado e junta achados e situação de cada um. */
-    private Analysis collectOutcomes(Long runId, List<CodeAnalyzer> started, List<CompletableFuture<Outcome>> futures,
-                                     List<AnalyzerRunInfo> runs) {
-        List<Finding> allFindings = new ArrayList<>();
-        for (int i = 0; i < futures.size(); i++) {
-            Outcome outcome = awaitOutcome(runId, futures.get(i), futures);
-            AnalyzerResult result = outcome.result();
-            allFindings.addAll(result.findings());
-            String status = outcome.error() != null ? "FALHOU" : result.partial() ? "PARCIAL" : "OK";
-            String note = outcome.error() != null ? truncate(outcome.error(), 200)
-                    : result.partial() ? truncate(result.partialNote(), 300) : null;
-            runs.add(new AnalyzerRunInfo(started.get(i).getName(), status,
-                    result.findings().size(), result.duration() == null ? 0 : result.duration().toMillis(), note));
-        }
-        return new Analysis(allFindings, runs);
-    }
-
-    /** Espera o analisador, mas acorda a cada meio segundo para atender um pedido de cancelamento. */
-    private Outcome awaitOutcome(Long runId, CompletableFuture<Outcome> future, List<CompletableFuture<Outcome>> all) {
-        while (true) {
-            try {
-                return future.get(CANCEL_POLL_MILLIS, java.util.concurrent.TimeUnit.MILLISECONDS);
-            } catch (java.util.concurrent.TimeoutException e) {
-                progress.heartbeat(runId);
-                if (progress.isCancelRequested(runId)) {
-                    all.forEach(f -> f.cancel(true));
-                    throw new AuditCancelledException(runId);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrompido aguardando os analisadores da auditoria " + runId, e);
-            } catch (java.util.concurrent.ExecutionException e) {
-                throw new IllegalStateException("Falha inesperada aguardando um analisador", e.getCause());
-            }
-        }
-    }
-
-    /** Achados por severidade (nome da severidade → quantidade), para o resultado parcial na tela. */
-    private static java.util.Map<String, Integer> severityCounts(List<Finding> findings) {
-        java.util.Map<String, Integer> counts = new java.util.LinkedHashMap<>();
-        for (Finding f : findings) {
-            if (f.getSeverity() != null) {
-                counts.merge(f.getSeverity().name(), 1, Integer::sum);
-            }
-        }
-        return counts;
     }
 
     private void checkNotCancelled(Long auditRunId) {
@@ -490,59 +266,6 @@ public class AuditOrchestrationService {
         } catch (Exception e) {
             LOG.errorf(e, "Não foi possível marcar a auditoria %d como CANCELLED", auditRunId);
         }
-    }
-
-    private record Outcome(AnalyzerResult result, String error) {}
-
-    private record Analysis(List<Finding> findings, List<AnalyzerRunInfo> runs) {}
-
-    /** Perfil apagado/renomeado depois de cadastrado não pode derrubar a auditoria: cai no perfil padrão, com aviso. */
-    AuditPolicy resolvePolicy(String profile) {
-        return resolvePolicy(profile, com.sentinel.audit.pack.SystemTuning.EMPTY);
-    }
-
-    /** Ajustes do sistema; qualquer falha na leitura vale como "sem ajustes" para nunca derrubar a auditoria. */
-    private com.sentinel.audit.pack.SystemTuning loadTuning(Long systemId) {
-        if (tuningService == null || systemId == null) {
-            return com.sentinel.audit.pack.SystemTuning.EMPTY;
-        }
-        try {
-            return tuningService.load(systemId);
-        } catch (RuntimeException e) {
-            LOG.warnf("Não foi possível ler os ajustes do sistema %d: %s", systemId, e.getMessage());
-            return com.sentinel.audit.pack.SystemTuning.EMPTY;
-        }
-    }
-
-    /** Perfil do sistema com os ajustes do próprio sistema por cima; sem ajustes é exatamente o perfil. */
-    AuditPolicy resolvePolicy(String profile, com.sentinel.audit.pack.SystemTuning tuning) {
-        AuditPolicy base;
-        try {
-            base = packRegistry.policyFor(profile);
-        } catch (IllegalArgumentException e) {
-            LOG.warnf("%s; usando o perfil padrão", e.getMessage());
-            base = packRegistry.policyFor(null);
-        }
-        return base.withTuning(tuning, packRegistry.snapshot().packs());
-    }
-
-    /**
-     * Mantém só os analisadores disponíveis e retira os que outro, também disponível, já cobre por inteiro
-     * (ex.: com o Gitleaks no PATH, os analisadores internos de segredos não rodam).
-     */
-    static List<CodeAnalyzer> selectAnalyzers(List<CodeAnalyzer> all) {
-        List<CodeAnalyzer> available = all.stream().filter(CodeAnalyzer::isAvailable).toList();
-        List<CodeAnalyzer> selected = new ArrayList<>();
-        for (CodeAnalyzer a : available) {
-            boolean replaced = available.stream().anyMatch(other -> other != a
-                    && other.replaces().stream().anyMatch(type -> type.isInstance(a)));
-            if (replaced) {
-                LOG.infof("Analisador %s não será executado: outro disponível já cobre o que ele faz", a.getName());
-            } else {
-                selected.add(a);
-            }
-        }
-        return selected;
     }
 
     /** O SBOM é um extra: se não der para gerar ou salvar, a auditoria continua COMPLETED. */
@@ -711,7 +434,7 @@ public class AuditOrchestrationService {
         }
 
         for (Finding finding : findings) {
-            truncateToColumnLimits(finding);
+            RunText.fitColumns(finding);
             finding.setAuditRun(run);
             findingRepository.persist(finding);
         }
@@ -729,7 +452,7 @@ public class AuditOrchestrationService {
      */
     void markFailed(Long auditRunId, Throwable cause) {
         try {
-            updateStatusFailed(auditRunId, describe(cause));
+            updateStatusFailed(auditRunId, RunText.describe(cause));
         } catch (Exception e) {
             LOG.errorf(e, "Não foi possível marcar a auditoria %d como FAILED", auditRunId);
         }
@@ -741,38 +464,7 @@ public class AuditOrchestrationService {
         if (run != null) {
             run.setStatus(AuditStatus.FAILED);
             run.setCompletedAt(LocalDateTime.now());
-            run.setErrorMessage(truncate(reason, MAX_ERROR_MESSAGE));
+            run.setErrorMessage(RunText.error(reason));
         }
-    }
-
-    /** Resume a causa raiz da exceção em uma frase curta, sem stack trace nem segredos. */
-    private static String describe(Throwable error) {
-        Throwable root = error;
-        while (root.getCause() != null && root.getCause() != root) {
-            root = root.getCause();
-        }
-        String message = root.getMessage() != null ? root.getMessage() : root.getClass().getSimpleName();
-        return root.getClass().getSimpleName() + ": " + message;
-    }
-
-    /**
-     * Garante que nenhum texto estoure o tamanho da coluna — um único valor longo
-     * (ex.: mensagem do Semgrep) faria a transação inteira falhar.
-     */
-    private void truncateToColumnLimits(Finding f) {
-        f.setTitle(truncate(f.getTitle(), MAX_TITLE));
-        f.setDescription(truncate(f.getDescription(), MAX_DESCRIPTION));
-        f.setFilePath(truncate(f.getFilePath(), MAX_FILE_PATH));
-        f.setCodeSnippet(truncate(f.getCodeSnippet(), MAX_SNIPPET));
-        f.setRuleId(truncate(f.getRuleId(), MAX_RULE_ID));
-        f.setToolSource(truncate(f.getToolSource(), MAX_TOOL_SOURCE));
-        f.setCveId(truncate(f.getCveId(), MAX_CVE_ID));
-    }
-
-    private static String truncate(String value, int max) {
-        if (value == null || value.length() <= max) {
-            return value;
-        }
-        return value.substring(0, max - 3) + "...";
     }
 }

@@ -41,7 +41,7 @@ public class PortfolioReportService {
             try {
                 return valueOf(raw.trim().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Formato inválido: " + raw + ". Use html, pdf ou csv.");
+                throw new IllegalArgumentException("Formato inválido: " + raw + ". Use html, pdf ou csv.", e);
             }
         }
     }

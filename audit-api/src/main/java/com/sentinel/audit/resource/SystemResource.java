@@ -1,28 +1,20 @@
 package com.sentinel.audit.resource;
 
-import com.sentinel.audit.service.AuditRunMapper;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.CreateSystemRequest;
 import com.sentinel.audit.dto.ProfileRequest;
 import com.sentinel.audit.dto.ScheduleRequest;
 import com.sentinel.audit.dto.SystemSummaryResponse;
-import com.sentinel.audit.model.AuditRun;
-import com.sentinel.audit.model.AuditStatus;
 import com.sentinel.audit.model.AuditedSystem;
-import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.pack.PackRegistry;
-import com.sentinel.audit.service.FindingCatalog;
-import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.dto.TrendPoint;
-import com.sentinel.audit.service.AuditProgressTracker;
 import com.sentinel.audit.service.IngestionService;
 import com.sentinel.audit.dto.PathCheckRequest;
 import com.sentinel.audit.dto.RepoCheckRequest;
 import com.sentinel.audit.model.LocalSnapshot;
 import com.sentinel.audit.model.SourceType;
 import com.sentinel.audit.service.LocalSource;
-import com.sentinel.audit.service.RunCatalog;
 import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -46,12 +38,6 @@ import java.util.stream.Collectors;
 @Tag(name = "Systems", description = "Gerenciamento de sistemas auditados")
 public class SystemResource {
 
-    @Inject
-    AuditRunMapper runMapper;
-
-
-    @Inject
-    AuditProgressTracker progressTracker;
 
     @Inject
     PackRegistry packRegistry;
@@ -66,25 +52,10 @@ public class SystemResource {
     SystemCatalog systemCatalog;
 
     @Inject
-    RunCatalog runCatalog;
+    SystemViews views;
 
     @Inject
-    FindingCatalog findingCatalog;
-
-    @Inject
-    FindingLifecycleService lifecycleService;
-
-    @Inject
-    com.sentinel.audit.mcp.McpGateService mcpGate;
-
-    @Inject
-    com.sentinel.audit.tuning.SystemTuningService tuningService;
-
-    @Inject
-    com.sentinel.audit.review.ReviewService reviewService;
-
-    @Inject
-    com.sentinel.audit.actions.PendingActionService pendingActions;
+    SystemCleanup cleanup;
 
     /**
      * Lista todos os sistemas cadastrados com um resumo da última auditoria.
@@ -93,7 +64,7 @@ public class SystemResource {
     @Operation(summary = "Listar sistemas", description = "Retorna todos os sistemas cadastrados com resumo da última auditoria")
     public List<SystemSummaryResponse> listSystems() {
         return systemCatalog.all().stream()
-                .map(this::toSummary)
+                .map(views::summary)
                 .collect(Collectors.toList());
     }
 
@@ -113,7 +84,7 @@ public class SystemResource {
         system.setProfile(validProfile(request.getProfile()));
         applyGitAccess(system, request);
         systemCatalog.add(system);
-        return Response.status(Response.Status.CREATED).entity(toSummary(system)).build();
+        return Response.status(Response.Status.CREATED).entity(views.summary(system)).build();
     }
 
     /**
@@ -174,7 +145,7 @@ public class SystemResource {
             system.setProfile(validProfile(request.getProfile()));
         }
         applyGitAccess(system, request);
-        return toSummary(system);
+        return views.summary(system);
     }
 
     /**
@@ -185,7 +156,7 @@ public class SystemResource {
     @Operation(summary = "Buscar sistema", description = "Retorna os dados de um sistema específico")
     public SystemSummaryResponse getSystem(@PathParam("id") Long id) {
         AuditedSystem system = systemCatalog.require(id);
-        return toSummary(system);
+        return views.summary(system);
     }
 
     /**
@@ -197,10 +168,7 @@ public class SystemResource {
     @Operation(summary = "Remover sistema", description = "Remove um sistema e todas as suas auditorias")
     public Response deleteSystem(@PathParam("id") Long id) {
         AuditedSystem system = systemCatalog.require(id);
-        mcpGate.purge(id);
-        tuningService.purge(id);
-        reviewService.purge(id);
-        pendingActions.purge(id);
+        cleanup.purgeRelated(id);
         systemCatalog.remove(system);
         return Response.noContent().build();
     }
@@ -213,7 +181,7 @@ public class SystemResource {
     @Operation(summary = "Tendência do score", description = "Score e contagem por severidade das últimas auditorias concluídas")
     public List<TrendPoint> trend(@PathParam("id") Long id, @QueryParam("limit") @DefaultValue("30") int limit) {
         systemCatalog.require(id);
-        return lifecycleService.trend(id, limit);
+        return views.trend(id, limit);
     }
 
     /**
@@ -224,10 +192,7 @@ public class SystemResource {
     @Operation(summary = "Listar supressões")
     public List<SuppressionResponse> suppressions(@PathParam("id") Long id) {
         systemCatalog.require(id);
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        return lifecycleService.listSuppressions(id).stream()
-                .map(s -> SuppressionResponse.from(s, now))
-                .collect(Collectors.toList());
+        return views.suppressions(id);
     }
 
     /**
@@ -237,7 +202,7 @@ public class SystemResource {
     @Path("/{id}/suppressions/{suppressionId}")
     @Operation(summary = "Remover supressão")
     public Response removeSuppression(@PathParam("id") Long id, @PathParam("suppressionId") Long suppressionId) {
-        lifecycleService.removeSuppression(id, suppressionId);
+        views.removeSuppression(id, suppressionId);
         return Response.noContent().build();
     }
 
@@ -255,7 +220,7 @@ public class SystemResource {
         system.setAuditIntervalHours(hours == null || hours <= 0 ? null : hours);
         system.setScheduledBranch(request.branch() == null || request.branch().isBlank() ? null : request.branch().trim());
         system.setAuditOnPush(Boolean.TRUE.equals(request.auditOnPush()));
-        return toSummary(system);
+        return views.summary(system);
     }
 
     /**
@@ -267,9 +232,7 @@ public class SystemResource {
     public List<AuditRunResponse> listAudits(@PathParam("id") Long id) {
         systemCatalog.require(id);
 
-        return runCatalog.bySystem(id).stream()
-                .map(r -> runMapper.toResponse(r, true))
-                .collect(Collectors.toList());
+        return views.audits(id);
     }
 
     /**
@@ -283,7 +246,7 @@ public class SystemResource {
     public SystemSummaryResponse updateProfile(@PathParam("id") Long id, @Valid ProfileRequest request) {
         AuditedSystem system = systemCatalog.require(id);
         system.setProfile(validProfile(request == null ? null : request.profile()));
-        return toSummary(system);
+        return views.summary(system);
     }
 
     /** Perfil conhecido (ou vazio = default); desconhecido é erro 400 para o erro de digitação aparecer na hora. */
@@ -314,7 +277,7 @@ public class SystemResource {
                 try {
                     system.setLocalPath(ingestionService.validateLocalPath(request.getLocalPath(), null));
                 } catch (IllegalArgumentException e) {
-                    throw new BadRequestException(e.getMessage());
+                    throw new BadRequestException(e.getMessage(), e);
                 }
             }
             system.setLocalSnapshot(request.getLocalSnapshot() == null ? LocalSnapshot.COMMIT : request.getLocalSnapshot());
@@ -369,7 +332,7 @@ public class SystemResource {
             try {
                 com.sentinel.audit.service.NotificationService.validateTarget(notifyUrl.trim());
             } catch (IllegalArgumentException e) {
-                throw new BadRequestException(e.getMessage());
+                throw new BadRequestException(e.getMessage(), e);
             }
             system.setNotifyUrlEnc(encrypted(notifyUrl, "a URL"));
         }
@@ -395,50 +358,5 @@ public class SystemResource {
             throw new BadRequestException("Não foi possível guardar " + what + ": a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
         }
         return secretBox.encrypt(value.trim());
-    }
-
-    private SystemSummaryResponse toSummary(AuditedSystem system) {
-        SystemSummaryResponse dto = new SystemSummaryResponse();
-        dto.setId(system.getId());
-        dto.setName(system.getName());
-        dto.setStack(system.getStack());
-        dto.setTeam(system.getTeam());
-        dto.setAuditIntervalHours(system.getAuditIntervalHours());
-        dto.setScheduledBranch(system.effectiveScheduledBranch());
-        dto.setAuditOnPush(Boolean.TRUE.equals(system.getAuditOnPush()));
-        dto.setProfile(system.effectiveProfile());
-        dto.setRepoUrl(system.getRepoUrl());
-        dto.setSourceType(system.effectiveSourceType());
-        dto.setLocalPath(system.getLocalPath());
-        dto.setLocalSnapshot(system.isLocalSource() ? system.effectiveLocalSnapshot() : null);
-        dto.setDescription(system.getDescription());
-        dto.setGitTokenSet(system.hasGitToken());
-        dto.setWebhookSecretSet(system.hasWebhookSecret());
-        dto.setGitHistoryDepth(system.getGitHistoryDepth());
-        dto.setNotifyUrlSet(system.hasNotifyUrl());
-        dto.setNotifyFormat(system.getNotifyFormat());
-        dto.setNotifyMinScoreDrop(system.getNotifyMinScoreDrop());
-        dto.setNotifyMinSeverity(system.getNotifyMinSeverity());
-        dto.setNotifyPublicUrl(system.getNotifyPublicUrl());
-        dto.setGitTokenHosts(system.getGitTokenHosts());
-
-        List<AuditRun> runs = runCatalog.bySystem(system.getId());
-        dto.setScoreDelta(com.sentinel.audit.service.ScoreTrend.delta(runs));
-        dto.setAuditCount(runs.size());
-        runs.stream()
-            .filter(r -> r.getStatus() == AuditStatus.COMPLETED)
-            .findFirst()
-            .ifPresent(lastRun -> {
-                if (lastRun.getRiskScore() != null) {
-                    dto.setLastAuditScore(lastRun.getRiskScore().getOverall());
-                }
-                dto.setLastAuditDate(lastRun.getCompletedAt());
-
-                Map<Severity, Long> counts = findingCatalog.countBySeverity(lastRun.getId());
-                dto.setOpenCritical(counts.getOrDefault(Severity.CRITICAL, 0L));
-                dto.setOpenHigh(counts.getOrDefault(Severity.HIGH, 0L));
-            });
-
-        return dto;
     }
 }
