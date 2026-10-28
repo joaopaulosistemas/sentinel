@@ -52,3 +52,6 @@
    As demais tabelas são <table> comuns; !important porque várias linhas têm fundo inline (selecionada, zebra). */
 table:not(.cds--data-table) > tbody > tr { transition: background-color 70ms ease; }
 table:not(.cds--data-table) > tbody > tr:hover { background: var(--s-header-row) !important; }
+/* Listas que não são <table> (ul/li, div e button em grade): recebem a classe e ficam iguais às tabelas. */
+.sentinel-linha-hover { transition: background-color 70ms ease; }
+.sentinel-linha-hover:hover { background: var(--s-header-row) !important; }

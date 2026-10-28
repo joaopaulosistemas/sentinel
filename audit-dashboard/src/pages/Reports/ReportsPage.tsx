@@ -186,6 +186,7 @@ function FormatStep({ formats, format, url, waiting, onFormat, onGenerate }: For
 function HistoryRow({ entry: e, fresh }: { entry: ReportHistoryEntry; fresh: boolean }) {
   return (
     <div
+      className="sentinel-linha-hover"
       style={{
         display: 'grid',
         gridTemplateColumns: 'minmax(220px, 3fr) minmax(140px, 2fr) 90px 150px 110px',

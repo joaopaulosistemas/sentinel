@@ -54,6 +54,8 @@ describe('SettingsPage', () => {
     expect(screen.getByText('TRIVY_ENABLED')).toBeInTheDocument();
     expect(screen.getByText('Dependências e infraestrutura')).toBeInTheDocument();
     expect(screen.getAllByText('Origem: ambiente').length).toBeGreaterThan(0);
+    // Foco suave ao passar o mouse na linha, igual ao das tabelas.
+    expect(screen.getByText('TRIVY_ENABLED').closest('.sentinel-linha-hover')).not.toBeNull();
   });
 
   it('o que só se muda no ambiente aparece em leitura, sem campo para editar e com o segredo mascarado', async () => {

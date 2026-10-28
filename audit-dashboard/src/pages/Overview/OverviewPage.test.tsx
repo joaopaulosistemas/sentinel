@@ -71,6 +71,8 @@ describe('OverviewPage', () => {
     expect(items[1]).toHaveTextContent('conta');
     expect(items[1]).toHaveTextContent('3 críticos');
     expect(items[2]).toHaveTextContent('Sem críticos · dentro da meta');
+    // Foco suave ao passar o mouse, igual ao das tabelas.
+    items.forEach((li) => expect(li).toHaveClass('sentinel-linha-hover'));
   });
 
   it('conta as auditorias em execução agora e mostra o passo na tabela', async () => {
