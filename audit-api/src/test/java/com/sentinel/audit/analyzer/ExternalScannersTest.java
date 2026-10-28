@@ -247,6 +247,29 @@ class ExternalScannersTest {
     }
 
     @Test
+    void trivyComErroDeCertificadoExplicaOQueFazer() throws Exception {
+        Path bin = Files.createTempDirectory("fakebin");
+        Path project = Files.createTempDirectory("proj");
+        fakeBin(bin, "trivy", "echo 'failed to download artifact from mirror.gcr.io: tls: failed to verify certificate: "
+                + "x509: certificate signed by unknown authority' >&2\nexit 1");
+
+        TrivyAnalyzer t = new TrivyAnalyzer();
+        t.enabled = true;
+        t.scanners = "vuln,misconfig";
+        t.timeoutSeconds = 30;
+        t.pathEnv = bin.toString();
+
+        AnalyzerResult r = t.analyze(project, run());
+        assertTrue(r.partial());
+        assertTrue(r.partialNote().contains("x509"), r.partialNote());
+        assertTrue(r.partialNote().contains("audit-api/certs/"), r.partialNote());
+
+        // falha sem relação com certificado: não inventa a dica
+        fakeBin(bin, "trivy", "echo 'connection refused' >&2\nexit 1");
+        assertFalse(t.analyze(project, run()).partialNote().contains("audit-api/certs/"));
+    }
+
+    @Test
     void trivySoSubstituiOScaInternoQuandoOScannerVulnEstaLigado() {
         TrivyAnalyzer t = new TrivyAnalyzer();
         t.scanners = "vuln,misconfig";

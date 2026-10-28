@@ -5,3 +5,7 @@ dist/
 *.log
 .idea/
 .vscode/
+
+# CA corporativo local (cada rede tem o seu): só o README da pasta é versionado
+audit-api/certs/*
+!audit-api/certs/README.md

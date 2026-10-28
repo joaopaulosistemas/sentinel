@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prepara audit-api/certs/ com o CA corporativo para o build do Docker.
 # Rode na RAIZ do projeto:
-#   ./setup-certs.sh /caminho/do/certificado.(crt|cer|pem)
+#   ./audit-api/setup-certs.sh /caminho/do/certificado.(crt|cer|pem)
 # Sem argumento, só garante que a pasta existe (com um README) e mostra quem assina a conexão com o PyPI.
 set -euo pipefail
 
