@@ -1,0 +1,18 @@
+# MyBatis (arquivos de mapeamento XML). No MyBatis, #{x} vira parâmetro de PreparedStatement e ${x} é colado no texto
+# do SQL, como concatenação. Casos de teste: tests/UsuarioMapper.xml (verificador: scripts/testar-regex-sql.py).
+rules:
+  - id: sentinel-mybatis-cifrao-sql
+    pattern-regex: '\$\{[^}\r\n]+\}'
+    message: >
+      Em mapeamento MyBatis, ${...} é colado no texto do SQL sem parâmetro (injeção de SQL se o valor puder vir de
+      fora). Use #{...} para valores. Para nome de coluna, tabela ou ORDER BY, que não aceitam parâmetro, valide o
+      texto contra uma lista fixa antes de passar ao mapeador, e confira de onde vem o que entra em ${...}.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*Mapper.xml", "*mapper.xml", "*Dao.xml", "**/mapper/**/*.xml", "**/mappers/**/*.xml", "**/mybatis/**/*.xml"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
