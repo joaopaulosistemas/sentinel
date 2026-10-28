@@ -74,3 +74,10 @@
   after: "logging.level.org.hibernate.SQL=WARN"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-mybatis-cifrao-sql"
+  summary: "Use #{...} para valores; para coluna, tabela ou ORDER BY, valide contra uma lista fixa antes de chamar o mapeador."
+  before: "select id, nome from usuario where nome = '${nome}'"
+  after: "select id, nome from usuario where nome = #{nome}"
+  effort: S
+  regression-risk: MEDIUM

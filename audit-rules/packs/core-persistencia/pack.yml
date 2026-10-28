@@ -1,7 +1,7 @@
 id: core-persistencia
 name: "Persistência e SQL (núcleo)"
-version: 1.0.0
-description: "Consultas que gastam muito: N+1 (repositório dentro de loop), findAll sem paginação, SELECT *, LIKE com curinga inicial, ORDER BY aleatório, DELETE/UPDATE sem WHERE, ManyToOne/OneToOne EAGER por padrão e log de SQL em DEBUG."
+version: 1.0.1
+description: "Consultas que gastam muito: N+1 (repositório dentro de loop), findAll sem paginação, SELECT *, LIKE com curinga inicial, ORDER BY aleatório, DELETE/UPDATE sem WHERE, ManyToOne/OneToOne EAGER por padrão e log de SQL em DEBUG. Mapeamentos MyBatis (XML) com ${...} colado no SQL."
 author: Sentinel
 languages: [java]
 enabled-by-default: true

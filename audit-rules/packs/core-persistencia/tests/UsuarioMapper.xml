@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper namespace="exemplo.UsuarioMapper">
+  <select id="porNome" resultType="Usuario">
+    <!-- ok: sentinel-mybatis-cifrao-sql -->
+    select id, nome from usuario where nome = #{nome}
+  </select>
+  <select id="ordenado" resultType="Usuario">
+    <!-- ruleid: sentinel-mybatis-cifrao-sql -->
+    select id, nome from usuario order by ${coluna}
+  </select>
+  <select id="filtroLivre" resultType="Usuario">
+    select id, nome from usuario where 1 = 1
+    <!-- ruleid: sentinel-mybatis-cifrao-sql -->
+    ${params.filtro}
+  </select>
+  <select id="porTabela" resultType="Usuario">
+    <!-- ruleid: sentinel-mybatis-cifrao-sql -->
+    select * from ${tabela} where id = #{id}
+  </select>
+</mapper>
