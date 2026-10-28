@@ -419,7 +419,7 @@ public class AuditCli {
     }
 
     private static String parseSeverity(String flag, String value) {
-        String v = value.toUpperCase();
+        String v = value.toUpperCase(java.util.Locale.ROOT);
         if (severityRank(v) < 2) { // INFO não faz sentido como limite de falha
             throw new IllegalArgumentException(flag + " deve ser CRITICAL, HIGH, MEDIUM ou LOW: " + value);
         }

@@ -3,7 +3,7 @@ package com.sentinel.audit.mcp;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.model.AuditedSystem;
-import com.sentinel.audit.repository.AuditedSystemRepository;
+import com.sentinel.audit.service.SystemCatalog;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -37,7 +37,7 @@ public class McpResource {
     private static final String UNAUTHORIZED_BODY = "{\"error\":\"Chave ausente, inválida ou acesso MCP desligado para este sistema\"}";
 
     @Inject
-    AuditedSystemRepository systemRepository;
+    SystemCatalog systemCatalog;
 
     @Inject
     McpGateService gate;
@@ -74,7 +74,7 @@ public class McpResource {
     public Response post(@PathParam("system") String systemRef,
                          @HeaderParam("Authorization") String authorization,
                          String body) {
-        String ref = systemRef == null ? "" : systemRef.trim().toLowerCase();
+        String ref = systemRef == null ? "" : systemRef.trim().toLowerCase(java.util.Locale.ROOT);
         if (failureLimiter.blocked("fail:" + ref)) {
             return tooMany(failureLimiter.retryAfterSeconds("fail:" + ref));
         }
@@ -164,12 +164,12 @@ public class McpResource {
         if (ref == null || ref.isBlank()) {
             return Optional.empty();
         }
-        List<AuditedSystem> byName = systemRepository.list("lower(name) = ?1", ref.trim().toLowerCase());
+        List<AuditedSystem> byName = systemCatalog.byLowerName(ref.trim().toLowerCase(java.util.Locale.ROOT));
         if (byName.size() == 1) {
             return Optional.of(byName.get(0));
         }
         if (byName.isEmpty() && ref.trim().matches("\\d{1,18}")) {
-            return systemRepository.findByIdOptional(Long.parseLong(ref.trim()));
+            return systemCatalog.find(Long.parseLong(ref.trim()));
         }
         return Optional.empty();
     }

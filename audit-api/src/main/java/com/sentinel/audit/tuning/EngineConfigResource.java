@@ -7,15 +7,14 @@ import com.sentinel.audit.pack.AuditPolicy;
 import com.sentinel.audit.pack.PackRegistry;
 import com.sentinel.audit.pack.RuleOverride;
 import com.sentinel.audit.pack.SystemTuning;
-import com.sentinel.audit.repository.AuditRunRepository;
-import com.sentinel.audit.repository.AuditedSystemRepository;
-import com.sentinel.audit.repository.FindingRepository;
 import com.sentinel.audit.service.AnalyzerCatalog;
+import com.sentinel.audit.service.FindingCatalog;
+import com.sentinel.audit.service.RunCatalog;
+import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -60,15 +59,15 @@ public class EngineConfigResource {
                                        List<KnownRule> knownRules, List<CatalogRule> catalog) {}
 
     @Inject
-    AuditedSystemRepository systemRepository;
+    SystemCatalog systemCatalog;
     @Inject
     SystemTuningService tuningService;
     @Inject
     PackRegistry packRegistry;
     @Inject
-    AuditRunRepository runRepository;
+    RunCatalog runCatalog;
     @Inject
-    FindingRepository findingRepository;
+    FindingCatalog findingCatalog;
 
     @GET
     @Operation(summary = "Ajustes do sistema e o que vem do perfil")
@@ -132,17 +131,17 @@ public class EngineConfigResource {
                 .map(k -> new ThresholdState(k, base.thresholds().get(k), tuning.thresholds().get(k)))
                 .toList();
         List<KnownRule> known = new ArrayList<>();
-        List<AuditRun> last = runRepository.findLatestCompleted(system.getId(), 1);
+        List<AuditRun> last = runCatalog.latestCompleted(system.getId(), 1);
         if (!last.isEmpty()) {
-            for (Object[] row : findingRepository.ruleCountsForRun(last.get(0).getId())) {
+            for (Object[] row : findingCatalog.ruleCounts(last.get(0).getId())) {
                 known.add(new KnownRule(String.valueOf(row[0]), (Long) row[1]));
             }
         }
         Tuning dto = new Tuning(rules(tuning.rules()), tuning.thresholds(), tuning.enablePacks().stream().sorted().toList(),
                 tuning.disablePacks().stream().sorted().toList(), tuning.disableAnalyzers().stream().sorted().toList(),
                 List.copyOf(tuning.ignorePaths()));
-        String description = packRegistry.snapshot().profiles().containsKey(profileId == null ? "" : profileId.toLowerCase())
-                ? packRegistry.snapshot().profiles().get(profileId.toLowerCase()).description() : null;
+        String description = packRegistry.snapshot().profiles().containsKey(profileId == null ? "" : profileId.toLowerCase(java.util.Locale.ROOT))
+                ? packRegistry.snapshot().profiles().get(profileId.toLowerCase(java.util.Locale.ROOT)).description() : null;
         List<CatalogRule> catalog = com.sentinel.audit.pack.RuleCatalog.of(packRegistry.snapshot().packs()).stream()
                 .map(e -> new CatalogRule(e.id(), e.pack(), e.message(), e.severity(), e.category()))
                 .toList();
@@ -158,7 +157,6 @@ public class EngineConfigResource {
     }
 
     private AuditedSystem requireSystem(Long id) {
-        return systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        return systemCatalog.require(id);
     }
 }

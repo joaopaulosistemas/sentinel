@@ -26,7 +26,7 @@ try {
       "--format", "java,typescript,javascript,tsx,jsx,css,scss,markup",
       "--ignore", ignorar,
     ], { stdio: ["ignore", "ignore", "ignore"], maxBuffer: 64 * 1024 * 1024 });
-  } catch (e) {
+  } catch {
     // o jscpd sai com código diferente de zero em alguns casos; o relatório é o que importa
   }
   const arquivo = join(tmp, "jscpd-report.json");

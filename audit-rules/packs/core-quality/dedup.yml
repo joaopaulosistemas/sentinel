@@ -39,3 +39,21 @@
     - "pmd-returnemptycollectionratherthannull"
     - "sentinel-java-retorna-null-colecao"
   max-lines: 10
+
+- name: java-catch-throwable
+  rules:
+    - "pmd-avoidcatchingthrowable"
+    - "sentinel-java-catch-throwable"
+  max-lines: 2
+
+- name: java-system-exit
+  rules:
+    - "pmd-donotterminatevm"
+    - "sentinel-system-exit"
+  max-lines: 1
+
+- name: ts-react-key-indice
+  rules:
+    - "eslint-react/no-array-index-key"
+    - "sentinel-ts-react-key-indice"
+  max-lines: 2

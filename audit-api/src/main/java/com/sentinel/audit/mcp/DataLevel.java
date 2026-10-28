@@ -17,7 +17,7 @@ public enum DataLevel {
             return fallback;
         }
         try {
-            return valueOf(raw.trim().toUpperCase());
+            return valueOf(raw.trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return fallback;
         }

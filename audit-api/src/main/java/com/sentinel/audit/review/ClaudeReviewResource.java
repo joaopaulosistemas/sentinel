@@ -1,11 +1,10 @@
 package com.sentinel.audit.review;
 
-import com.sentinel.audit.repository.AuditedSystemRepository;
+import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -47,7 +46,7 @@ public class ClaudeReviewResource {
     public record CopyRequest(Long targetSystemId) {}
 
     @Inject
-    AuditedSystemRepository systemRepository;
+    SystemCatalog systemCatalog;
     @Inject
     ReviewService service;
 
@@ -130,7 +129,7 @@ public class ClaudeReviewResource {
 
     private static SuggestionStatus parseStatus(StatusRequest body) {
         try {
-            return SuggestionStatus.valueOf(body == null || body.status() == null ? "" : body.status().toUpperCase());
+            return SuggestionStatus.valueOf(body == null || body.status() == null ? "" : body.status().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Situação inválida.");
         }
@@ -165,8 +164,6 @@ public class ClaudeReviewResource {
     }
 
     private void requireSystem(Long id) {
-        if (systemRepository.findByIdOptional(id).isEmpty()) {
-            throw new NotFoundException("Sistema não encontrado: " + id);
-        }
+        systemCatalog.requireExists(id);
     }
 }

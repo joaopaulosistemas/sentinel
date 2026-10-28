@@ -25,8 +25,10 @@ import java.util.Map;
  * Lint de código Java com o PMD (boas práticas, propensão a erro e design).
  * <p>
  * Só atua quando o executável {@code pmd} (PMD 7+) está no PATH. Usa o conjunto de regras embutido
- * ({@link #DEFAULT_RULESET}), que deixa de fora o que já é coberto pelo {@link CleanCodeAnalyzer}
- * (complexidade, parâmetros) e as regras mais ruidosas; para usar outro, aponte
+ * ({@link #DEFAULT_RULESET}), que deixa de fora o que já é coberto por outro analisador
+ * (complexidade cognitiva pelo {@link CleanCodeAnalyzer} e pelo ESLint, classe grande pelo detector de God Object)
+ * e as regras de estilo que mais geram ruído (literal primeiro em {@code equals}, literal em {@code if},
+ * método com o mesmo nome do campo, varargs; na auditoria #68 somavam 190 achados); para usar outro, aponte
  * {@code sentinel.audit.pmd.ruleset} para um XML de ruleset.
  */
 @ApplicationScoped
@@ -43,10 +45,14 @@ public class PmdAnalyzer implements CodeAnalyzer {
               <rule ref="category/java/bestpractices.xml">
                 <exclude name="GuardLogStatement"/>
                 <exclude name="UnitTestShouldIncludeAssert"/>
+                <exclude name="LiteralsFirstInComparisons"/>
+                <exclude name="UseVarargs"/>
               </rule>
               <rule ref="category/java/errorprone.xml">
                 <exclude name="AvoidDuplicateLiterals"/>
                 <exclude name="MissingSerialVersionUID"/>
+                <exclude name="AvoidLiteralsInIfCondition"/>
+                <exclude name="AvoidFieldNameMatchingMethodName"/>
               </rule>
               <rule ref="category/java/design.xml">
                 <exclude name="LawOfDemeter"/>
@@ -61,6 +67,9 @@ public class PmdAnalyzer implements CodeAnalyzer {
                 <exclude name="DataClass"/>
                 <exclude name="UseUtilityClass"/>
                 <exclude name="SignatureDeclareThrowsException"/>
+                <exclude name="CognitiveComplexity"/>
+                <exclude name="GodClass"/>
+                <exclude name="UseObjectForClearerAPI"/>
               </rule>
               <rule ref="category/java/security.xml"/>
             </ruleset>

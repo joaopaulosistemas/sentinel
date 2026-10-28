@@ -7,7 +7,6 @@ import com.sentinel.audit.dto.FindingMapper;
 import com.sentinel.audit.dto.FixPlanDto;
 import com.sentinel.audit.dto.CreateAuditRequest;
 import com.sentinel.audit.dto.FindingResponse;
-import com.sentinel.audit.dto.RiskScoreDto;
 import com.sentinel.audit.insights.AuditInsights;
 import com.sentinel.audit.insights.InsightsService;
 import com.sentinel.audit.model.AuditRun;
@@ -15,19 +14,18 @@ import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.Severity;
-import com.sentinel.audit.repository.AuditRunRepository;
-import com.sentinel.audit.repository.FindingRepository;
 import com.sentinel.audit.service.AuditOrchestrationService;
 import com.sentinel.audit.service.AuditRequestService;
+import com.sentinel.audit.service.FindingCatalog;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.service.FixPlanner;
+import com.sentinel.audit.service.RunCatalog;
 import com.sentinel.audit.service.ScoreTrend;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.service.ScoringService;
 import com.sentinel.audit.service.PdfReportService;
 import com.sentinel.audit.service.ReportService;
 import com.sentinel.audit.service.AuditProgressTracker;
-import com.sentinel.audit.model.AuditStatus;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -65,10 +63,10 @@ public class AuditResource {
     InsightsService insightsService;
 
     @Inject
-    AuditRunRepository auditRunRepository;
+    RunCatalog runCatalog;
 
     @Inject
-    FindingRepository findingRepository;
+    FindingCatalog findingCatalog;
 
     @Inject
     ReportService reportService;
@@ -105,8 +103,7 @@ public class AuditResource {
     @Path("/{id}/freshness")
     @Operation(summary = "Auditoria desatualizada?", description = "Compara o commit auditado com a ponta atual da branch no remoto (git ls-remote)")
     public Freshness freshness(@PathParam("id") Long id) {
-        AuditRun run = auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        AuditRun run = runCatalog.require(id);
         String audited = run.getCommitSha();
         com.sentinel.audit.model.AuditedSystem system = run.getSystem();
         if (audited == null || audited.isBlank() || system == null || run.getBranch() == null) {
@@ -148,7 +145,7 @@ public class AuditResource {
     @Operation(summary = "Listar auditorias recentes", description = "Últimas auditorias de todos os sistemas, da mais nova para a mais antiga")
     public List<AuditRunResponse> listRecent(@QueryParam("limit") @DefaultValue("8") int limit) {
         int size = Math.max(1, Math.min(limit, 50));
-        return auditRunRepository.findRecent(size).stream().map(runMapper::toResponse).collect(Collectors.toList());
+        return runCatalog.recent(size).stream().map(runMapper::toResponse).collect(Collectors.toList());
     }
 
     /**
@@ -158,14 +155,13 @@ public class AuditResource {
     @Path("/{id}/cancel")
     @Operation(summary = "Cancelar auditoria", description = "Interrompe uma auditoria pendente ou em execução; 409 se ela já terminou")
     public Response cancel(@PathParam("id") Long id) {
-        AuditRun run = auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        AuditRun run = runCatalog.require(id);
         if (!orchestration.cancel(run.getId())) {
             return Response.status(Response.Status.CONFLICT)
                     .entity(java.util.Map.of("message", "A auditoria já terminou e não pode ser cancelada"))
                     .build();
         }
-        return Response.accepted(runMapper.toResponse(auditRunRepository.findById(id))).build();
+        return Response.accepted(runMapper.toResponse(runCatalog.findOrNull(id))).build();
     }
 
     /**
@@ -175,8 +171,7 @@ public class AuditResource {
     @Path("/{id}")
     @Operation(summary = "Buscar auditoria", description = "Retorna o estado atual de uma execução de auditoria")
     public AuditRunResponse getAudit(@PathParam("id") Long id) {
-        AuditRun run = auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        AuditRun run = runCatalog.require(id);
         return runMapper.toResponse(run, true);
     }
 
@@ -194,10 +189,9 @@ public class AuditResource {
             @QueryParam("includeSuppressed") @DefaultValue("false") boolean includeSuppressed,
             @QueryParam("onlyNew") @DefaultValue("false") boolean onlyNew) {
 
-        auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        runCatalog.require(id);
 
-        List<Finding> findings = findingRepository.findByAuditRunId(id);
+        List<Finding> findings = findingCatalog.byRun(id);
 
         return findings.stream()
                 .filter(f -> severity == null || f.getSeverity() == severity)
@@ -232,8 +226,7 @@ public class AuditResource {
     public Response getReport(@PathParam("id") Long id,
                               @QueryParam("type") String type,
                               @QueryParam("days") Integer days) {
-        AuditRun run = auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        AuditRun run = runCatalog.require(id);
         ReportService.Type kind;
         try {
             kind = ReportService.Type.parse(type);
@@ -241,12 +234,12 @@ public class AuditResource {
             throw new BadRequestException(e.getMessage());
         }
 
-        List<Finding> findings = findingRepository.findByAuditRunId(id);
+        List<Finding> findings = findingCatalog.byRun(id);
         String html = switch (kind) {
             case TECNICO -> reportService.generateHtmlReport(run, findings);
             case EXECUTIVO -> reportService.generateExecutiveReport(run, findings,
                     FixPlanner.plan(FindingLifecycleService.active(findings), run.getLinesOfCode(), scoringService),
-                    ScoreTrend.delta(auditRunRepository.findBySystemId(run.getSystem().getId())), TARGET_SCORE);
+                    ScoreTrend.delta(runCatalog.bySystem(run.getSystem().getId())), TARGET_SCORE);
             case COMPARATIVO -> reportService.generateComparativeReport(run, comparativePoints(run, days),
                     days == null || days <= 0 ? null : days);
         };
@@ -268,20 +261,19 @@ public class AuditResource {
     public Response getReportPdf(@PathParam("id") Long id,
                                  @QueryParam("type") String type,
                                  @QueryParam("days") Integer days) {
-        AuditRun run = auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        AuditRun run = runCatalog.require(id);
         ReportService.Type kind;
         try {
             kind = ReportService.Type.parse(type);
         } catch (IllegalArgumentException e) {
             throw new BadRequestException(e.getMessage());
         }
-        List<Finding> findings = findingRepository.findByAuditRunId(id);
+        List<Finding> findings = findingCatalog.byRun(id);
         byte[] pdf = switch (kind) {
             case TECNICO -> pdfReportService.technical(run, findings);
             case EXECUTIVO -> pdfReportService.executive(run, findings,
                     FixPlanner.plan(FindingLifecycleService.active(findings), run.getLinesOfCode(), scoringService),
-                    ScoreTrend.delta(auditRunRepository.findBySystemId(run.getSystem().getId())), TARGET_SCORE);
+                    ScoreTrend.delta(runCatalog.bySystem(run.getSystem().getId())), TARGET_SCORE);
             case COMPARATIVO -> pdfReportService.comparative(run, comparativePoints(run, days),
                     days == null || days <= 0 ? null : days);
         };
@@ -299,9 +291,8 @@ public class AuditResource {
     @Produces("text/csv")
     @Operation(summary = "Achados em CSV", description = "Achados ativos da auditoria, prontos para planilha")
     public Response getFindingsCsv(@PathParam("id") Long id) {
-        auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
-        String csv = reportService.generateCsv(findingRepository.findByAuditRunId(id));
+        runCatalog.require(id);
+        String csv = reportService.generateCsv(findingCatalog.byRun(id));
         return Response.ok("\uFEFF" + csv, "text/csv; charset=UTF-8")
                 .header("Content-Disposition", "attachment; filename=\"achados-auditoria-" + id + ".csv\"")
                 .build();
@@ -315,8 +306,7 @@ public class AuditResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "SBOM CycloneDX", description = "Lista de materiais de software da auditoria (CycloneDX 1.5)")
     public Response getSbom(@PathParam("id") Long id) {
-        AuditRun run = auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        AuditRun run = runCatalog.require(id);
         if (run.getSbomJson() == null) {
             throw new NotFoundException("Esta auditoria não tem SBOM (auditorias antigas ou falha na geração)");
         }
@@ -335,8 +325,7 @@ public class AuditResource {
     @Operation(summary = "Visão de auditoria completa",
             description = "Áreas, dívida técnica priorizada, quick wins, roadmap em fases e limites da verificação")
     public AuditInsights getInsights(@PathParam("id") Long id) {
-        AuditRun run = auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        AuditRun run = runCatalog.require(id);
         return insightsService.forRun(run);
     }
 
@@ -347,9 +336,8 @@ public class AuditResource {
     @Path("/{id}/fix-plan")
     @Operation(summary = "Plano de correção", description = "Problemas ordenados pelo ganho de nota, com a orientação de correção")
     public FixPlanDto getFixPlan(@PathParam("id") Long id) {
-        AuditRun run = auditRunRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
-        List<Finding> active = FindingLifecycleService.active(findingRepository.findByAuditRunId(run.getId()));
+        AuditRun run = runCatalog.require(id);
+        List<Finding> active = FindingLifecycleService.active(findingCatalog.byRun(run.getId()));
         return FixPlanner.plan(active, run.getLinesOfCode(), scoringService);
     }
 }

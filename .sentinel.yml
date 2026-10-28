@@ -1,0 +1,36 @@
+# Ajustes do próprio Sentinel para as auditorias do Sentinel (formato: audit-api ProjectConfig).
+# Tudo o que sai da nota aparece aqui, com o motivo, em revisão como qualquer outra mudança.
+version: 1
+
+# Caminhos que não são código do produto: dados do motor de regras e relatórios. Não entram na auditoria.
+exclude:
+  # O texto das regras cita de propósito os padrões que elas procuram (ex.: allowPrivilegeEscalation: true).
+  - "audit-rules/packs/*/rules/**"
+  # Casos de teste das regras: código vulnerável de propósito.
+  - "audit-rules/packs/*/tests/**"
+  # Exemplos "antes/depois" da remediação: trechos ruins escritos para ensinar.
+  - "audit-rules/packs/*/remediation/**"
+  - "audit-rules/calibracao/**"
+  # Relatórios e triagens que citam trechos de código auditado.
+  - "docs/evolucao/**"
+
+# Achados aceitos: continuam na lista, marcados como suprimidos, e não pesam na nota.
+suppress:
+  # Os testes do SecretsAnalyzer precisam de chaves e tokens de mentira para provar que ele os encontra.
+  - rule: "gitleaks-*"
+    path: "audit-api/src/test/**"
+    reason: "segredos de mentira usados como caso de teste dos analisadores de segredo"
+
+  # Estas funções devolvem null de propósito: é o sinal de "valor inválido", que o chamador trata
+  # (decisão registrada em docs/evolucao/LOG.md, 12.23.1). Trocar por coleção vazia esconderia o erro.
+  - rule: "sentinel-java-retorna-null-colecao"
+    path: "audit-api/src/main/java/com/sentinel/audit/pack/Versions.java"
+    reason: "null significa valor inválido (LOG.md 12.23.1)"
+  - rule: "sentinel-java-retorna-null-colecao"
+    path: "audit-api/src/main/java/com/sentinel/audit/pack/Yamls.java"
+    reason: "null significa valor inválido (LOG.md 12.23.1)"
+
+  # O CLI é um programa de linha de comando: imprimir no console é a função dele (os logs da API usam o logger).
+  - rule: "pmd-systemprintln"
+    path: "audit-cli/**"
+    reason: "o CLI escreve o resultado no console de propósito"

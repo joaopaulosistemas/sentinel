@@ -108,7 +108,7 @@ public class TrivyAnalyzer implements CodeAnalyzer {
     private List<String> scannerList() {
         List<String> list = new ArrayList<>();
         for (String s : (scanners == null ? "" : scanners).split(",")) {
-            String t = s.trim().toLowerCase();
+            String t = s.trim().toLowerCase(java.util.Locale.ROOT);
             if ((t.equals("vuln") || t.equals("misconfig")) && !list.contains(t)) {
                 list.add(t);
             }
@@ -188,7 +188,7 @@ public class TrivyAnalyzer implements CodeAnalyzer {
     }
 
     static Severity severity(String s) {
-        return switch (s.toUpperCase()) {
+        return switch (s.toUpperCase(java.util.Locale.ROOT)) {
             case "CRITICAL" -> Severity.CRITICAL;
             case "HIGH" -> Severity.HIGH;
             case "MEDIUM" -> Severity.MEDIUM;

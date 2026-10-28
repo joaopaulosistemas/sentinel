@@ -3,14 +3,14 @@ package com.sentinel.audit.resource;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
-import com.sentinel.audit.repository.AuditRunRepository;
-import com.sentinel.audit.repository.AuditedSystemRepository;
-import com.sentinel.audit.repository.FindingRepository;
+import com.sentinel.audit.service.FindingCatalog;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.service.PortfolioReportService;
 import com.sentinel.audit.service.PortfolioReportService.Format;
 import com.sentinel.audit.service.PortfolioReportService.SystemSnapshot;
 import com.sentinel.audit.service.ReportService;
+import com.sentinel.audit.service.RunCatalog;
+import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.GET;
@@ -34,13 +34,13 @@ import java.util.Locale;
 public class ReportResource {
 
     @Inject
-    AuditedSystemRepository systemRepository;
+    SystemCatalog systemCatalog;
 
     @Inject
-    AuditRunRepository auditRunRepository;
+    RunCatalog runCatalog;
 
     @Inject
-    FindingRepository findingRepository;
+    FindingCatalog findingCatalog;
 
     @Inject
     FindingLifecycleService lifecycleService;
@@ -68,12 +68,12 @@ public class ReportResource {
         LocalDateTime since = period == null ? null : LocalDateTime.now().minusDays(period);
         List<SystemSnapshot> systems = new ArrayList<>();
         // Última auditoria, contagens e (no relatório técnico) achados de todos os sistemas em poucas consultas.
-        Map<Long, AuditRun> latestBySystem = auditRunRepository.findLatestCompletedBySystem();
+        Map<Long, AuditRun> latestBySystem = runCatalog.latestCompletedBySystem();
         List<Long> runIds = latestBySystem.values().stream().map(AuditRun::getId).toList();
-        Map<Long, Map<com.sentinel.audit.model.Severity, Long>> countsByRun = findingRepository.countBySeverityForRuns(runIds);
+        Map<Long, Map<com.sentinel.audit.model.Severity, Long>> countsByRun = findingCatalog.countBySeverityForRuns(runIds);
         Map<Long, List<com.sentinel.audit.model.Finding>> findingsByRun =
-                kind == ReportService.Type.TECNICO ? findingRepository.findByAuditRunIds(runIds) : Map.of();
-        for (AuditedSystem system : systemRepository.listAll()) {
+                kind == ReportService.Type.TECNICO ? findingCatalog.byRuns(runIds) : Map.of();
+        for (AuditedSystem system : systemCatalog.all()) {
             if (systemId != null && !systemId.equals(system.getId())) {
                 continue;
             }

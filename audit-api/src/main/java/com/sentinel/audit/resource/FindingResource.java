@@ -10,12 +10,12 @@ import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.Severity;
-import com.sentinel.audit.repository.AuditRunRepository;
-import com.sentinel.audit.repository.AuditedSystemRepository;
-import com.sentinel.audit.repository.FindingRepository;
+import com.sentinel.audit.service.FindingCatalog;
 import com.sentinel.audit.service.FindingsOverview;
 import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.service.FindingLifecycleService;
+import com.sentinel.audit.service.RunCatalog;
+import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -46,13 +46,13 @@ public class FindingResource {
     FindingLifecycleService lifecycleService;
 
     @Inject
-    AuditedSystemRepository systemRepository;
+    SystemCatalog systemCatalog;
 
     @Inject
-    AuditRunRepository auditRunRepository;
+    RunCatalog runCatalog;
 
     @Inject
-    FindingRepository findingRepository;
+    FindingCatalog findingCatalog;
 
     /**
      * Achados de todos os sistemas juntos, da última auditoria concluída de cada um.
@@ -71,10 +71,10 @@ public class FindingResource {
             @QueryParam("offset") @DefaultValue("0") int offset) {
         List<FindingsOverview.Source> sources = new ArrayList<>();
         // Última auditoria de cada sistema e os achados delas em duas consultas (antes eram duas por sistema).
-        Map<Long, AuditRun> latestBySystem = auditRunRepository.findLatestCompletedBySystem();
-        Map<Long, List<Finding>> findingsByRun = findingRepository.findByAuditRunIds(
+        Map<Long, AuditRun> latestBySystem = runCatalog.latestCompletedBySystem();
+        Map<Long, List<Finding>> findingsByRun = findingCatalog.byRuns(
                 latestBySystem.values().stream().map(AuditRun::getId).toList());
-        for (AuditedSystem system : systemRepository.listAll()) {
+        for (AuditedSystem system : systemCatalog.all()) {
             AuditRun run = latestBySystem.get(system.getId());
             if (run == null) {
                 continue;

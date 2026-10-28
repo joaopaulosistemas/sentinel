@@ -33,7 +33,7 @@ final class SarifWriter {
         ArrayNode results = run.putArray("results");
 
         for (JsonNode f : findings) {
-            String ruleId = text(f, "ruleId", "sentinel-audit-" + text(f, "category", "finding").toLowerCase());
+            String ruleId = text(f, "ruleId", "sentinel-audit-" + text(f, "category", "finding").toLowerCase(java.util.Locale.ROOT));
             String severity = text(f, "severity", "MEDIUM");
 
             rules.computeIfAbsent(ruleId, id -> {
