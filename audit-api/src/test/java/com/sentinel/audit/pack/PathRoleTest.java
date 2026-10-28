@@ -28,6 +28,9 @@ class PathRoleTest {
         assertEquals(GENERATED, PathRole.of("target/classes/Foo.class"));
         assertEquals(GENERATED, PathRole.of("web/node_modules/x/index.js"));
         assertEquals(GENERATED, PathRole.of("static/app.min.js"));
+        assertEquals(GENERATED, PathRole.of("api/opensource/ntlm/ntlm.js"));
+        assertEquals(GENERATED, PathRole.of("src/third_party/lib/util.js"));
+        assertEquals(PRODUCTION, PathRole.of("src/opensource.ts"));
     }
 
     @Test
