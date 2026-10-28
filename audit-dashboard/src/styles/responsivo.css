@@ -59,3 +59,6 @@
 .sentinel-menu-divisor:hover, .sentinel-menu-divisor:focus-visible, .sentinel-menu-divisor--ativo { background: var(--s-link, #0f62fe); opacity: 0.55; }
 .sentinel-menu-divisor:focus-visible { outline: 2px solid var(--s-link, #0f62fe); outline-offset: -2px; opacity: 1; }
 @media (prefers-reduced-motion: no-preference) { .sentinel-menu-divisor { transition: background 0.12s; } }
+
+/* Cabeçalhos de tabela nunca quebram uma palavra no meio (a regra "anywhere" do conteúdo valia para eles também). */
+.sentinel-content th { overflow-wrap: normal; word-break: normal; hyphens: none; white-space: nowrap; }
