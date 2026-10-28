@@ -11,6 +11,9 @@ Para o eixo 10 do placar chegar a 3 são necessários ≥ 100 achados revisados 
 | `sqlfluff-RF06` | 1 | 0 | 1 | 0 | 2026-10-21 (migração gerada pelo Prisma) |
 | `squawk-require-concurrent-index-creation` | 1 | 0 | 1 | 0 | 2026-10-21 (tabela nova na mesma migração) |
 | `eslint-prefer-const` | 1 | 1 | 0 | 0 | 2026-10-21 |
+| `njsscan-ejs_ect_template` | 7 | 0 | 7 | 0 | 2026-10-28 (modelos EJS que geram código TypeScript, sem HTML; em sombra nos perfis, PR desta rodada) |
+| `eslint-react/jsx-no-undef` | 6 | 0 | 6 | 0 | 2026-10-28 (corrigida: desligada; componentes vêm de `unplugin-auto-import`, e o tsc pega o erro real) |
+| `stylelint-lightness-notation` | 6 | 6 | 0 | 0 | 2026-10-28 (corrigida: desligada; VP só de estilo, `oklch(0.5 …)` gerado pelo shadcn, 32% dos achados de um repositório) |
 | `sentinel-ts-supressao-de-tipos` | 1 | 0 | 1 | 0 | 2026-10-21 (corrigida: ignora `**/generated/**`) |
 | `sentinel-int-http-sem-tls` | 2 | 2 | 0 | 0 | 2026-10-21 |
 | `gitleaks-generic-api-key` | 3 | 0 | 2 | 1 | 2026-10-22 (FP: selo de README com `token=` de placeholder) |

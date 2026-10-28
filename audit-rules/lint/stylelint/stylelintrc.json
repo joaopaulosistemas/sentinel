@@ -98,6 +98,7 @@
     "keyframes-name-pattern": null,
     "custom-property-pattern": null,
     "color-function-alias-notation": null,
+    "lightness-notation": null,
     "hue-degree-notation": null,
     "import-notation": null,
     "selector-pseudo-element-colon-notation": null,

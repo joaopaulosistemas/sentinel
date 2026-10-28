@@ -8,6 +8,8 @@ rules:
   "eslint-security/detect-non-literal-fs-filename": {shadow: true}   # precisao.md
   # 1 verdadeiro em 9 revisados (cabeçalho de licença, pom.xml e arquivos gerados); volta a pesar quando a precisão subir.
   jscpd-codigo-duplicado: {shadow: true}   # precisao.md
+  # 0 verdadeiros em 7 revisados: modelos EJS que geram código TypeScript (a saída não é HTML, então não há XSS)
+  njsscan-ejs_ect_template: {shadow: true}   # precisao.md
   "sentinel-tsp-*": {severity: low}
 thresholds:
   max-function-lines: 50
