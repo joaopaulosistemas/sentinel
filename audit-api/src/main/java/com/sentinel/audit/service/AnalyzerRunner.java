@@ -24,6 +24,10 @@ import java.util.concurrent.ExecutorService;
  */
 final class AnalyzerRunner {
 
+    private static final int PARTIAL_NOTE_MAX_CHARS = 300;
+    private static final int ERROR_NOTE_MAX_CHARS = 200;
+
+
     private static final Logger LOG = Logger.getLogger(AnalyzerRunner.class);
     private static final long CANCEL_POLL_MILLIS = 500L;
 
@@ -106,12 +110,12 @@ final class AnalyzerRunner {
                     AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
                     progress.analyzerFinished(runId, analyzer.getName(), r.partial() ? "PARCIAL" : "OK", r.findings().size(),
                             r.duration() == null ? 0 : r.duration().toMillis(),
-                            r.partial() ? RunText.truncate(r.partialNote(), 300) : null, severityCounts(r.findings()));
+                            r.partial() ? RunText.truncate(r.partialNote(), PARTIAL_NOTE_MAX_CHARS) : null, severityCounts(r.findings()));
                     return new Outcome(r, null);
                 }, executor)
                 .exceptionally(error -> {
                     LOG.errorf(error, "Analisador %s falhou; seguindo sem seus resultados", analyzer.getName());
-                    progress.analyzerFinished(runId, analyzer.getName(), "FALHOU", 0, 0, RunText.truncate(error.getMessage(), 200));
+                    progress.analyzerFinished(runId, analyzer.getName(), "FALHOU", 0, 0, RunText.truncate(error.getMessage(), ERROR_NOTE_MAX_CHARS));
                     return new Outcome(new AnalyzerResult(List.of(), analyzer.getName(), Duration.ZERO),
                             error.getMessage());
                 });
@@ -126,8 +130,8 @@ final class AnalyzerRunner {
             AnalyzerResult result = outcome.result();
             allFindings.addAll(result.findings());
             String status = outcome.error() != null ? "FALHOU" : result.partial() ? "PARCIAL" : "OK";
-            String note = outcome.error() != null ? RunText.truncate(outcome.error(), 200)
-                    : result.partial() ? RunText.truncate(result.partialNote(), 300) : null;
+            String note = outcome.error() != null ? RunText.truncate(outcome.error(), ERROR_NOTE_MAX_CHARS)
+                    : result.partial() ? RunText.truncate(result.partialNote(), PARTIAL_NOTE_MAX_CHARS) : null;
             runs.add(new AnalyzerRunInfo(started.get(i).getName(), status,
                     result.findings().size(), result.duration() == null ? 0 : result.duration().toMillis(), note));
         }

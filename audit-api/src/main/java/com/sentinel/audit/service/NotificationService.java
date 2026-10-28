@@ -33,6 +33,17 @@ import java.util.Locale;
 @ApplicationScoped
 public class NotificationService {
 
+    private static final int DEFAULT_MIN_SCORE_DROP = 5;
+    /** IPv6 tem 16 bytes; endereço local único (fc00::/7) tem o primeiro byte 0xfc ou 0xfd. */
+    private static final int IPV6_BYTES = 16;
+    private static final int IPV6_ULA_MASK = 0xfe;
+    private static final int IPV6_ULA_PREFIX = 0xfc;
+    private static final int RANK_CRITICAL = 5;
+    private static final int RANK_HIGH = 4;
+    private static final int RANK_MEDIUM = 3;
+    private static final int HTTP_TIMEOUT_SECONDS = 15;
+
+
     private static final Logger LOG = Logger.getLogger(NotificationService.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -82,7 +93,7 @@ public class NotificationService {
         String url = secretBox.decrypt(system.getNotifyUrlEnc());
         return new Settings(url,
                 system.getNotifyFormat() == null ? "slack" : system.getNotifyFormat(),
-                system.getNotifyMinScoreDrop() == null ? 5 : system.getNotifyMinScoreDrop(),
+                system.getNotifyMinScoreDrop() == null ? DEFAULT_MIN_SCORE_DROP : system.getNotifyMinScoreDrop(),
                 system.getNotifyMinSeverity() == null ? "HIGH" : system.getNotifyMinSeverity(),
                 system.getNotifyPublicUrl());
     }
@@ -115,7 +126,7 @@ public class NotificationService {
 
     private static boolean isUniqueLocalV6(java.net.InetAddress a) {
         byte[] b = a.getAddress();
-        return b.length == 16 && (b[0] & 0xfe) == 0xfc;
+        return b.length == IPV6_BYTES && (b[0] & IPV6_ULA_MASK) == IPV6_ULA_PREFIX;
     }
 
     @Transactional
@@ -234,9 +245,9 @@ public class NotificationService {
 
     private static int rank(String severity) {
         return switch (severity == null ? "" : severity.toUpperCase(Locale.ROOT)) {
-            case "CRITICAL" -> 5;
-            case "HIGH" -> 4;
-            case "MEDIUM" -> 3;
+            case "CRITICAL" -> RANK_CRITICAL;
+            case "HIGH" -> RANK_HIGH;
+            case "MEDIUM" -> RANK_MEDIUM;
             case "LOW" -> 2;
             default -> 1;
         };
@@ -253,7 +264,7 @@ public class NotificationService {
             http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         }
         HttpResponse<String> response = http.send(HttpRequest.newBuilder(uri)
-                .timeout(Duration.ofSeconds(15))
+                .timeout(Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json)).build(), HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() / 100 != 2) {

@@ -23,6 +23,12 @@ import org.w3c.dom.NodeList;
  */
 final class CoverageChecks {
 
+    /** Tamanho do rótulo de uma linha do lcov ({@code SF:}, {@code LF:}, {@code LH:}). */
+    private static final int LCOV_TAG_LENGTH = 3;
+    /** Arquivo com tantas linhas sem cobertura ou mais é médio; menos, baixo. */
+    private static final int MEDIUM_UNCOVERED_LINES = 150;
+
+
     static final int MAX_CLASS_FINDINGS = 25;
     private static final int MIN_UNTESTED_LINES = 40;
 
@@ -94,14 +100,14 @@ final class CoverageChecks {
         long lh = 0;
         for (String line : text.split("\\R")) {
             if (line.startsWith("SF:")) {
-                file = line.substring(3).strip();
+                file = line.substring(LCOV_TAG_LENGTH).strip();
                 open = true;
                 lf = 0;
                 lh = 0;
             } else if (line.startsWith("LF:")) {
-                lf = parse(line.substring(3));
+                lf = parse(line.substring(LCOV_TAG_LENGTH));
             } else if (line.startsWith("LH:")) {
-                lh = parse(line.substring(3));
+                lh = parse(line.substring(LCOV_TAG_LENGTH));
             } else if (line.startsWith("end_of_record") && open) {
                 String f = file.replace('\\', '/');
                 units.add(new Unit(f, f, lf - lh, lh));
@@ -141,7 +147,7 @@ final class CoverageChecks {
         }
         units.stream().filter(u -> u.linesCovered() == 0 && u.lines() >= MIN_UNTESTED_LINES)
                 .sorted(Comparator.comparingLong(Unit::lines).reversed()).limit(MAX_CLASS_FINDINGS).forEach(u ->
-                        out.add(Ev.finding(run, Category.QUALITY, u.lines() >= 150 ? Severity.MEDIUM : Severity.LOW,
+                        out.add(Ev.finding(run, Category.QUALITY, u.lines() >= MEDIUM_UNCOVERED_LINES ? Severity.MEDIUM : Severity.LOW,
                                 "evidencia-cobertura-classe-sem-teste",
                                 "Nenhum teste exercita " + shortName(u.name()) + " (" + u.lines() + " linhas)",
                                 u.name() + " tem " + u.lines() + " linhas e 0% de cobertura no relatório. Quanto maior a "

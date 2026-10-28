@@ -19,6 +19,13 @@ import java.util.List;
 @ApplicationScoped
 public class ReviewService {
 
+    private static final int TITLE_MAX_CHARS = 200;
+    private static final int TEXT_MAX_CHARS = 2000;
+    private static final int RULE_REF_MAX_CHARS = 255;
+    private static final int FILE_PATH_MAX_CHARS = 500;
+    private static final int NOTE_MAX_CHARS = 500;
+
+
     static final int MAX_OPEN_SUGGESTIONS = 200;
     static final int MAX_ACTIVE_PROPOSALS = 30;
 
@@ -52,10 +59,10 @@ public class ReviewService {
         }
         ReviewSuggestion s = new ReviewSuggestion();
         s.setSystemId(systemId);
-        s.setTitle(cut(title.strip(), 200));
-        s.setDetail(detail == null ? null : cut(detail.strip(), 2000));
-        s.setRuleRef(ruleRef == null || ruleRef.isBlank() ? null : cut(ruleRef.strip(), 255));
-        s.setFilePath(file == null || file.isBlank() ? null : cut(file.strip(), 500));
+        s.setTitle(cut(title.strip(), TITLE_MAX_CHARS));
+        s.setDetail(detail == null ? null : cut(detail.strip(), TEXT_MAX_CHARS));
+        s.setRuleRef(ruleRef == null || ruleRef.isBlank() ? null : cut(ruleRef.strip(), RULE_REF_MAX_CHARS));
+        s.setFilePath(file == null || file.isBlank() ? null : cut(file.strip(), FILE_PATH_MAX_CHARS));
         s.setLineNumber(line != null && line > 0 ? line : null);
         suggestions.persist(s);
         return s;
@@ -95,8 +102,8 @@ public class ReviewService {
         RuleProposal p = new RuleProposal();
         p.setSystemId(systemId);
         p.setSlug(slug);
-        p.setTitle(cut(title.strip(), 200));
-        p.setRationale(rationale == null ? null : cut(rationale.strip(), 2000));
+        p.setTitle(cut(title.strip(), TITLE_MAX_CHARS));
+        p.setRationale(rationale == null ? null : cut(rationale.strip(), TEXT_MAX_CHARS));
         p.setSemgrepYaml(yaml);
         proposals.persist(p);
         return p;
@@ -125,7 +132,7 @@ public class ReviewService {
     public RuleProposal sampleTest(Long systemId, Long id, boolean passed, String note) {
         RuleProposal p = own(systemId, id);
         check(RuleFunnel.sampleTest(p.getStage()));
-        p.setSampleNote(note == null ? null : cut(note.strip(), 500));
+        p.setSampleNote(note == null ? null : cut(note.strip(), NOTE_MAX_CHARS));
         if (passed) {
             p.setStage(RuleStage.SAMPLE_PASSED);
         }
@@ -147,7 +154,7 @@ public class ReviewService {
         check(RuleFunnel.promote(p.getStage(), evidence(p), minPrecision, minHits));
         p.setStage(RuleStage.PROMOTED);
         p.setDecidedAt(LocalDateTime.now());
-        p.setDecisionNote(note == null ? null : cut(note.strip(), 500));
+        p.setDecisionNote(note == null ? null : cut(note.strip(), NOTE_MAX_CHARS));
         return p;
     }
 
@@ -157,7 +164,7 @@ public class ReviewService {
         check(RuleFunnel.discard(p.getStage()));
         p.setStage(RuleStage.DISCARDED);
         p.setDecidedAt(LocalDateTime.now());
-        p.setDecisionNote(note == null ? null : cut(note.strip(), 500));
+        p.setDecisionNote(note == null ? null : cut(note.strip(), NOTE_MAX_CHARS));
         return p;
     }
 

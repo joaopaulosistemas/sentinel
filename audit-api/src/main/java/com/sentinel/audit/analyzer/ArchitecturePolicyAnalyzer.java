@@ -43,6 +43,14 @@ import java.util.regex.Pattern;
 @ApplicationScoped
 public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
 
+    private static final int SNIPPET_MAX_CHARS = 200;
+    private static final String ELLIPSIS = "...";
+    private static final int TITLE_MAX_CHARS = 500;
+    /** Quantas vezes o {@code /**}{@code /} de um glob pode ser expandido (uma ou mais pastas / nenhuma). */
+    private static final int MAX_GLOB_EXPANSION_DEPTH = 3;
+    private static final String ANY_DIRS = "/**/";
+
+
     private static final Logger LOG = Logger.getLogger(ArchitecturePolicyAnalyzer.class);
     private static final String ANALYZER_NAME = "Arquitetura (pacotes)";
     private static final long MAX_FILE_BYTES = 1_000_000;
@@ -264,7 +272,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
                         n++;
                         int line = lineOf(content, m.start());
                         String text = m.group().strip();
-                        out.add(archFinding(run, rel, line, text.length() > 200 ? text.substring(0, 200) : text, ruleId, sev, cat, title,
+                        out.add(archFinding(run, rel, line, text.length() > SNIPPET_MAX_CHARS ? text.substring(0, SNIPPET_MAX_CHARS) : text, ruleId, sev, cat, title,
                                 cv.message() == null ? "Trecho proibido pela convenção: /" + cv.forbid() + "/." : cv.message()));
                     }
                 }
@@ -324,7 +332,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
         f.setCategory(cat);
         f.setSeverity(sev);
         f.setRuleId(ruleId);
-        f.setTitle(title.length() > 500 ? title.substring(0, 497) + "..." : title);
+        f.setTitle(title.length() > TITLE_MAX_CHARS ? title.substring(0, TITLE_MAX_CHARS - ELLIPSIS.length()) + ELLIPSIS : title);
         f.setDescription(description);
         f.setFilePath(file);
         f.setLineNumber(line);
@@ -457,19 +465,19 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
 
         /** No glob do Java, {@code a/**}{@code /b} exige ao menos uma pasta no meio; aqui {@code **}{@code /} também vale para zero pastas. */
         private static List<String> expand(String glob, int depth) {
-            int i = glob.indexOf("/**/");
-            if (i < 0 || depth >= 3) {
+            int i = glob.indexOf(ANY_DIRS);
+            if (i < 0 || depth >= MAX_GLOB_EXPANSION_DEPTH) {
                 return List.of(glob);
             }
             List<String> out = new ArrayList<>();
-            String with = glob.substring(0, i + 3) + glob.substring(i + 3);
-            String without = glob.substring(0, i) + "/" + glob.substring(i + 4);
+            String with = glob.substring(0, i + ANY_DIRS.length() - 1) + glob.substring(i + ANY_DIRS.length() - 1);
+            String without = glob.substring(0, i) + "/" + glob.substring(i + ANY_DIRS.length());
             for (String v : expand(without, depth + 1)) {
                 out.add(v);
             }
             // mantém o original (uma ou mais pastas); procura o próximo "/**/" depois deste
-            String head = with.substring(0, i + 4);
-            for (String tail : expand(with.substring(i + 4), depth + 1)) {
+            String head = with.substring(0, i + ANY_DIRS.length());
+            for (String tail : expand(with.substring(i + ANY_DIRS.length()), depth + 1)) {
                 out.add(head + tail);
             }
             return out;

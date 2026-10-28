@@ -5,6 +5,9 @@ import com.sentinel.audit.model.Finding;
 /** Textos que vão para o banco ou para a tela: cortados ao tamanho da coluna e sem segredo nem stack trace. */
 final class RunText {
 
+    private static final String ELLIPSIS = "...";
+
+
     // Limites das colunas da entidade Finding
     private static final int MAX_TITLE        = 500;
     private static final int MAX_DESCRIPTION  = 2000;
@@ -51,6 +54,6 @@ final class RunText {
         if (value == null || value.length() <= max) {
             return value;
         }
-        return value.substring(0, max - 3) + "...";
+        return value.substring(0, max - ELLIPSIS.length()) + ELLIPSIS;
     }
 }

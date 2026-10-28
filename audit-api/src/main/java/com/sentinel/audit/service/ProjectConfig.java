@@ -44,6 +44,10 @@ import java.util.regex.Pattern;
  */
 public final class ProjectConfig {
 
+    private static final int BYTES_PER_KB = 1024;
+    private static final int MAX_ALIASES = 20;
+
+
     private static final Logger LOG = Logger.getLogger(ProjectConfig.class);
 
     public static final String FILE_NAME = ".sentinel.yml";
@@ -114,7 +118,7 @@ public final class ProjectConfig {
         }
         try {
             if (Files.size(file) > MAX_BYTES) {
-                return withProblem(FILE_NAME + " passa de " + (MAX_BYTES / 1024) + " KB e foi ignorado");
+                return withProblem(FILE_NAME + " passa de " + (MAX_BYTES / BYTES_PER_KB) + " KB e foi ignorado");
             }
             return parse(Files.readString(file, StandardCharsets.UTF_8));
         } catch (IOException | RuntimeException e) {
@@ -134,7 +138,7 @@ public final class ProjectConfig {
         try {
             LoaderOptions options = new LoaderOptions();
             options.setAllowDuplicateKeys(false);
-            options.setMaxAliasesForCollections(20);
+            options.setMaxAliasesForCollections(MAX_ALIASES);
             options.setCodePointLimit((int) MAX_BYTES);
             root = new Yaml(new SafeConstructor(options)).load(text);
         } catch (RuntimeException e) {

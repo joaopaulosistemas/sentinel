@@ -28,6 +28,11 @@ import java.util.stream.Stream;
 @ApplicationScoped
 public class RulePlaygroundService {
 
+    private static final int DEFAULT_TIMEOUT_SECONDS = 30;
+    private static final int ENGINE_ERROR_MAX_CHARS = 300;
+    private static final long NANOS_PER_MILLI = 1_000_000;
+
+
     private static final Logger LOG = Logger.getLogger(RulePlaygroundService.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -67,7 +72,7 @@ public class RulePlaygroundService {
     boolean enabled = true;
 
     @ConfigProperty(name = "sentinel.audit.playground.timeout-seconds", defaultValue = "30")
-    int timeoutSeconds = 30;
+    int timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
 
     /** Substituível em testes. */
     String pathEnv = System.getenv("PATH");
@@ -176,13 +181,13 @@ public class RulePlaygroundService {
         List<String> engineErrors = new ArrayList<>();
         for (JsonNode e : out.path("errors")) {
             String msg = e.path("message").asText(e.path("type").asText("erro"));
-            engineErrors.add(msg.length() > 300 ? msg.substring(0, 297) + "..." : msg);
+            engineErrors.add(msg.length() > ENGINE_ERROR_MAX_CHARS ? msg.substring(0, ENGINE_ERROR_MAX_CHARS - "...".length()) + "..." : msg);
         }
         return new Result(true, List.of(), warnings, matches, engineErrors, millis);
     }
 
     private static long millis(long t0) {
-        return (System.nanoTime() - t0) / 1_000_000;
+        return (System.nanoTime() - t0) / NANOS_PER_MILLI;
     }
 
     private static void deleteQuietly(Path dir) {

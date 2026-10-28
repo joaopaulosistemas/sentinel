@@ -21,6 +21,10 @@ import java.util.regex.Pattern;
  */
 public final class UnusedExports {
 
+    /** Quantas linhas acima da declaração são olhadas atrás de decorador de framework. */
+    private static final int DECORATOR_LOOKBACK_LINES = 60;
+
+
     private UnusedExports() {}
 
     /** @param usedInside {@code true} = só o próprio arquivo usa (basta tirar o {@code export}); {@code false} = ninguém usa (código morto) */
@@ -85,7 +89,7 @@ public final class UnusedExports {
     static boolean hasFrameworkDecorator(String text, int declStart) {
         String[] above = text.substring(0, declStart).split("\n", -1);
         StringBuilder region = new StringBuilder();
-        for (int i = above.length - 1, seen = 0; i >= 0 && seen < 60; i--, seen++) {
+        for (int i = above.length - 1, seen = 0; i >= 0 && seen < DECORATOR_LOOKBACK_LINES; i--, seen++) {
             String line = above[i];
             boolean topLevelEnd = !line.isEmpty() && !Character.isWhitespace(line.charAt(0))
                     && (line.stripTrailing().endsWith("}") || line.stripTrailing().endsWith("};") || line.stripTrailing().endsWith(";"));

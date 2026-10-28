@@ -36,6 +36,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 public class OsvClient {
 
+    private static final String ELLIPSIS = "...";
+    private static final int SUMMARY_MAX_CHARS = 200;
+    /** Faixas de severidade da nota CVSS (FIRST): crítico a partir de 9,0, alto de 7,0 e médio de 4,0. */
+    private static final double CVSS_CRITICAL_FROM = 9.0;
+    private static final double CVSS_HIGH_FROM = 7.0;
+    private static final double CVSS_MEDIUM_FROM = 4.0;
+
+
     private static final Logger LOG = Logger.getLogger(OsvClient.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final int BATCH_SIZE = 500;
@@ -140,7 +148,7 @@ public class OsvClient {
         String summary = v.path("summary").asText("");
         if (summary.isBlank()) {
             String details = v.path("details").asText("").strip();
-            summary = details.length() > 200 ? details.substring(0, 197) + "..." : details;
+            summary = details.length() > SUMMARY_MAX_CHARS ? details.substring(0, SUMMARY_MAX_CHARS - ELLIPSIS.length()) + ELLIPSIS : details;
         }
         return new OsvVulnerability(id, cve, summary.isBlank() ? id : summary, severityOf(v), fixedIn(v, dep));
     }
@@ -161,7 +169,7 @@ public class OsvClient {
         if (best < 0) {
             return Severity.MEDIUM;
         }
-        return best >= 9.0 ? Severity.CRITICAL : best >= 7.0 ? Severity.HIGH : best >= 4.0 ? Severity.MEDIUM : Severity.LOW;
+        return best >= CVSS_CRITICAL_FROM ? Severity.CRITICAL : best >= CVSS_HIGH_FROM ? Severity.HIGH : best >= CVSS_MEDIUM_FROM ? Severity.MEDIUM : Severity.LOW;
     }
 
     static String fixedIn(JsonNode v, Dependency dep) {

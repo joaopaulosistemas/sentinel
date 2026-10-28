@@ -12,6 +12,10 @@ import java.util.concurrent.TimeUnit;
 /** Utilidades para analisadores que delegam o trabalho a uma ferramenta externa (Trivy, Gitleaks...). */
 final class ExternalTools {
 
+    /** Quanto da saída de erro de uma ferramenta entra na mensagem. */
+    private static final int ERROR_TAIL_CHARS = 300;
+
+
     private ExternalTools() {}
 
     /**
@@ -109,7 +113,7 @@ final class ExternalTools {
     static String falha(int code, long timeoutSeconds, Path stderrFile) {
         String base = code == -1 ? "excedeu o tempo limite de " + timeoutSeconds + "s e foi encerrado"
                 : "terminou com código " + code;
-        String err = tail(stderrFile, 300);
+        String err = tail(stderrFile, ERROR_TAIL_CHARS);
         return err.isEmpty() ? base : base + " — " + err;
     }
 

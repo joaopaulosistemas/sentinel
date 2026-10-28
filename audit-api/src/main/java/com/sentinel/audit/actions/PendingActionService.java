@@ -29,6 +29,11 @@ import java.util.Optional;
 @ApplicationScoped
 public class PendingActionService {
 
+    /** Teto de pedidos recentes devolvidos por consulta. */
+    private static final int MAX_RECENT = 50;
+    private static final int MAX_SUMMARY_CHARS = 600;
+
+
     @Inject
     PendingActionRepository repository;
     @Inject
@@ -127,7 +132,7 @@ public class PendingActionService {
     @Transactional
     public List<PendingAction> recent(Long systemId, int limit) {
         LocalDateTime now = LocalDateTime.now();
-        List<PendingAction> list = repository.recent(systemId, Math.max(1, Math.min(limit, 50)));
+        List<PendingAction> list = repository.recent(systemId, Math.max(1, Math.min(limit, MAX_RECENT)));
         for (PendingAction a : list) {
             if (a.getStatus() == PendingStatus.PENDING && PendingActionRules.expired(a.getExpiresAt(), now)) {
                 a.setStatus(PendingStatus.EXPIRED);
@@ -147,7 +152,7 @@ public class PendingActionService {
 
     private PendingAction create(AuditedSystem system, PendingKind kind, String summary, ObjectNode payload) {
         Long systemId = system.getId();
-        recent(systemId, 50);                                   // vence o que expirou antes de contar
+        recent(systemId, MAX_RECENT);                                   // vence o que expirou antes de contar
         if (repository.pendingCount(systemId) >= PendingActionRules.MAX_PENDING_PER_SYSTEM) {
             throw new IllegalArgumentException("Há " + PendingActionRules.MAX_PENDING_PER_SYSTEM
                     + " pedidos esperando aprovação: uma pessoa precisa decidir antes de novos pedidos.");
@@ -159,7 +164,7 @@ public class PendingActionService {
         PendingAction a = new PendingAction();
         a.setSystemId(systemId);
         a.setKind(kind);
-        a.setSummary(summary.length() > 600 ? summary.substring(0, 600) : summary);
+        a.setSummary(summary.length() > MAX_SUMMARY_CHARS ? summary.substring(0, MAX_SUMMARY_CHARS) : summary);
         a.setPayload(json);
         a.setExpiresAt(PendingActionRules.expiresAt(a.getCreatedAt()));
         repository.persist(a);

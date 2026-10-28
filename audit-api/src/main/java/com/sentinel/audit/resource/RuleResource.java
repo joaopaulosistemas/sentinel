@@ -24,6 +24,10 @@ import java.util.List;
 @Tag(name = "Rules", description = "Qualidade das regras de análise")
 public class RuleResource {
 
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+    private static final int HTTP_UNPROCESSABLE = 422;
+
+
     public record PlaygroundRequest(@NotNull String rule, @NotNull String code, @NotNull String extension) {}
 
     @Inject
@@ -50,13 +54,13 @@ public class RuleResource {
         try {
             return Response.ok(playground.run(request.rule(), request.code(), request.extension())).build();
         } catch (IllegalArgumentException e) {
-            return Response.status(400).entity(java.util.Map.of("error", e.getMessage())).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(java.util.Map.of("error", e.getMessage())).build();
         } catch (RulePlaygroundService.BusyException e) {
-            return Response.status(429).entity(java.util.Map.of("error", e.getMessage())).build();
+            return Response.status(HTTP_TOO_MANY_REQUESTS).entity(java.util.Map.of("error", e.getMessage())).build();
         } catch (RulePlaygroundService.UnavailableException e) {
-            return Response.status(503).entity(java.util.Map.of("error", e.getMessage())).build();
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(java.util.Map.of("error", e.getMessage())).build();
         } catch (IllegalStateException e) {
-            return Response.status(422).entity(java.util.Map.of("error", e.getMessage())).build();
+            return Response.status(HTTP_UNPROCESSABLE).entity(java.util.Map.of("error", e.getMessage())).build();
         }
     }
 }

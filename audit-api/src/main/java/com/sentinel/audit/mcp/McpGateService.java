@@ -23,6 +23,15 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class McpGateService {
 
+    private static final int API_KEY_BYTES = 32;
+    /** Cada byte vira dois caracteres hexadecimais. */
+    private static final int API_KEY_HEX_CHARS = API_KEY_BYTES * 2;
+    /** Caracteres aleatórios mostrados depois do prefixo fixo da chave. */
+    private static final int KEY_PREFIX_RANDOM_CHARS = 6;
+    private static final int LOG_DETAIL_MAX_CHARS = 300;
+    private static final int MAX_RECENT_LOGS = 200;
+
+
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String KEY_PREFIX = "snt_";
 
@@ -37,7 +46,7 @@ public class McpGateService {
 
     /** Chave nova, longa e aleatória. */
     static String newKey() {
-        byte[] raw = new byte[32];
+        byte[] raw = new byte[API_KEY_BYTES];
         RANDOM.nextBytes(raw);
         return KEY_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
     }
@@ -45,7 +54,7 @@ public class McpGateService {
     static String hash(String key) {
         try {
             byte[] d = MessageDigest.getInstance("SHA-256").digest(key.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(64);
+            StringBuilder sb = new StringBuilder(API_KEY_HEX_CHARS);
             for (byte b : d) {
                 sb.append(String.format("%02x", b));
             }
@@ -75,7 +84,7 @@ public class McpGateService {
         McpAccess access = accessFor(systemId);
         String key = newKey();
         access.setKeyHash(hash(key));
-        access.setKeyPrefix(key.substring(0, KEY_PREFIX.length() + 6));
+        access.setKeyPrefix(key.substring(0, KEY_PREFIX.length() + KEY_PREFIX_RANDOM_CHARS));
         access.setKeyCreatedAt(LocalDateTime.now());
         return new IssuedKey(key, access.getKeyPrefix());
     }
@@ -138,12 +147,12 @@ public class McpGateService {
         entry.setCalledAt(LocalDateTime.now());
         entry.setOk(ok);
         entry.setDurationMs(durationMs);
-        entry.setDetail(detail == null ? null : detail.substring(0, Math.min(detail.length(), 300)));
+        entry.setDetail(detail == null ? null : detail.substring(0, Math.min(detail.length(), LOG_DETAIL_MAX_CHARS)));
         logRepository.persist(entry);
     }
 
     public List<McpCallLog> recentCalls(Long systemId, int limit) {
-        return logRepository.recent(systemId, Math.max(1, Math.min(limit, 200)));
+        return logRepository.recent(systemId, Math.max(1, Math.min(limit, MAX_RECENT_LOGS)));
     }
 
     /** Remove acesso e registro de um sistema que está sendo apagado. */

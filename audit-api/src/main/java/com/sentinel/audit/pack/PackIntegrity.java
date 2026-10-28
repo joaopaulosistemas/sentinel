@@ -29,6 +29,11 @@ import java.util.stream.Stream;
  */
 public final class PackIntegrity {
 
+    /** Tamanho de um SHA-256 em hexadecimal. */
+    private static final int SHA256_HEX_CHARS = 64;
+    private static final int READ_BUFFER_BYTES = 8192;
+
+
     public static final String LOCK = "pack.lock";
     public static final String SIG = "pack.sig";
 
@@ -137,7 +142,7 @@ public final class PackIntegrity {
                 continue;
             }
             int sep = line.indexOf("  ");
-            if (sep != 64) {
+            if (sep != SHA256_HEX_CHARS) {
                 return "pack.lock malformado";
             }
             String rel = line.substring(sep + 2);
@@ -145,7 +150,7 @@ public final class PackIntegrity {
             if (!onDisk.contains(rel)) {
                 return "arquivo removido: " + rel;
             }
-            if (!sha256(dir.resolve(rel)).equals(line.substring(0, 64))) {
+            if (!sha256(dir.resolve(rel)).equals(line.substring(0, SHA256_HEX_CHARS))) {
                 return "arquivo alterado: " + rel;
             }
         }
@@ -179,7 +184,7 @@ public final class PackIntegrity {
     private static String sha256(Path file) throws IOException {
         try (InputStream in = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS)) {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] buf = new byte[8192];
+            byte[] buf = new byte[READ_BUFFER_BYTES];
             int n = in.read(buf);
             while (n > 0) {
                 md.update(buf, 0, n);

@@ -34,6 +34,17 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class EvidenceAnalyzer implements CodeAnalyzer {
 
+    private static final double DEFAULT_MIN_LINE_COVERAGE = 60;
+    private static final long BYTES_PER_MB = 1024L * 1024;
+    private static final int PACKAGE_SCAN_DEPTH = 12;
+    private static final int PACKAGE_SCAN_MAX_FILES = 5000;
+    /** Quantas linhas do início de cada arquivo .java são lidas para achar o {@code package}. */
+    private static final int PACKAGE_SCAN_HEAD_LINES = 40;
+    /** Pacote raiz da aplicação: os três primeiros segmentos (br.com.empresa). */
+    private static final int ROOT_PACKAGE_SEGMENTS = 3;
+    private static final int MIN_SEGMENTS_FOR_COUNTRY_TYPE = 4;
+
+
     private static final Logger LOG = Logger.getLogger(EvidenceAnalyzer.class);
     public static final String NAME = "Evidências";
     public static final String DIR = ".sentinel/evidence";
@@ -41,7 +52,7 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
     private static final Pattern PACKAGE = Pattern.compile("^\\s*package\\s+([\\w.]+)\\s*;", Pattern.MULTILINE);
 
     @ConfigProperty(name = "sentinel.audit.evidence.min-line-coverage", defaultValue = "60")
-    double minLineCoverage = 60;
+    double minLineCoverage = DEFAULT_MIN_LINE_COVERAGE;
 
     /** Há algo para analisar em {@code .sentinel/evidence}? Sem evidências o analisador nem entra na auditoria. */
     public boolean hasEvidence(Path projectPath) {
@@ -70,7 +81,7 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
                 String rel = DIR + "/" + file.getFileName();
                 try {
                     if (Files.size(file) > MAX_FILE_BYTES) {
-                        LOG.warnf("Evidência %s ignorada: maior que %d MB", rel, MAX_FILE_BYTES / 1024 / 1024);
+                        LOG.warnf("Evidência %s ignorada: maior que %d MB", rel, MAX_FILE_BYTES / BYTES_PER_MB);
                         continue;
                     }
                     String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
@@ -118,17 +129,17 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
     /** Pacotes raiz das classes do projeto (dois primeiros níveis do {@code package}), para separar código próprio de biblioteca. */
     static Set<String> applicationPackages(Path projectPath) {
         Set<String> roots = new LinkedHashSet<>();
-        try (Stream<Path> files = Files.walk(projectPath, 12)) {
+        try (Stream<Path> files = Files.walk(projectPath, PACKAGE_SCAN_DEPTH)) {
             files.filter(p -> p.toString().endsWith(".java") && !p.toString().contains("/node_modules/")
                             && !p.toString().contains("/.sentinel/"))
-                    .limit(5000).forEach(p -> {
+                    .limit(PACKAGE_SCAN_MAX_FILES).forEach(p -> {
                         try (Stream<String> lines = Files.lines(p, StandardCharsets.UTF_8)) {
-                            lines.limit(40).map(PACKAGE::matcher).filter(Matcher::find).findFirst().ifPresent(m -> {
+                            lines.limit(PACKAGE_SCAN_HEAD_LINES).map(PACKAGE::matcher).filter(Matcher::find).findFirst().ifPresent(m -> {
                                 String[] parts = m.group(1).split("\\.");
                                 // br.com.empresa.app -> "br.com.empresa"; com.empresa.app -> "com.empresa.app"
-                                boolean paisComTipo = parts.length >= 4 && parts[0].length() == 2
+                                boolean paisComTipo = parts.length >= MIN_SEGMENTS_FOR_COUNTRY_TYPE && parts[0].length() == 2
                                         && Set.of("com", "org", "gov", "net", "edu").contains(parts[1]);
-                                int n = Math.min(parts.length, paisComTipo ? 3 : 3);
+                                int n = Math.min(parts.length, ROOT_PACKAGE_SEGMENTS);
                                 roots.add(String.join(".", java.util.Arrays.copyOf(parts, n)));
                             });
                         } catch (IOException | RuntimeException ignored) {

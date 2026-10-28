@@ -12,6 +12,9 @@ import java.util.List;
  */
 final class MarkdownWriter {
 
+    private static final int CELL_MAX_CHARS = 160;
+
+
     private static final int MAX_ROWS = 25;
 
     private MarkdownWriter() {}
@@ -37,8 +40,8 @@ final class MarkdownWriter {
             md.append("Nenhum problema encontrado");
             md.append(baseRef == null ? "" : " nos arquivos alterados").append(". ✅\n");
         } else {
-            long crit = active.stream().filter(f -> AuditCli.severityRank(f.path("severity").asText("")) >= 5).count();
-            long high = active.stream().filter(f -> AuditCli.severityRank(f.path("severity").asText("")) == 4).count();
+            long crit = active.stream().filter(f -> AuditCli.severityRank(f.path("severity").asText("")) >= AuditCli.RANK_CRITICAL).count();
+            long high = active.stream().filter(f -> AuditCli.severityRank(f.path("severity").asText("")) == AuditCli.RANK_HIGH).count();
             md.append("**").append(active.size()).append(" problema(s)**");
             md.append(" — ").append(crit).append(" crítico(s), ").append(high).append(" alto(s)\n\n");
             md.append("| Severidade | Regra | Local | Problema |\n|---|---|---|---|\n");
@@ -68,8 +71,8 @@ final class MarkdownWriter {
     /** Texto vindo do repositório auditado não pode virar Markdown/HTML ativo no comentário. */
     private static String cell(String s) {
         String t = s.replace("\r", " ").replace("\n", " ");
-        if (t.length() > 160) {
-            t = t.substring(0, 157) + "...";
+        if (t.length() > CELL_MAX_CHARS) {
+            t = t.substring(0, CELL_MAX_CHARS - "...".length()) + "...";
         }
         return t.replace("\\", "\\\\").replace("|", "\\|").replace("<", "&lt;").replace(">", "&gt;")
                 .replace("`", "'").replace("[", "\\[").replace("]", "\\]").replace("@", "@​");

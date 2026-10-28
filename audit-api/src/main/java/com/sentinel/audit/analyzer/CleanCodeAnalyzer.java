@@ -42,6 +42,15 @@ import java.util.Set;
 @ApplicationScoped
 public class CleanCodeAnalyzer implements CodeAnalyzer {
 
+    private static final int DEFAULT_MAX_LINES = 50;
+    private static final int DEFAULT_MAX_PARAMS = 5;
+    private static final int DEFAULT_MAX_NESTING = 4;
+    private static final int DEFAULT_MAX_FINDINGS = 300;
+    /** Quantos parâmetros acima do limite passam o achado de baixo para médio. */
+    private static final int PARAMS_MARGIN_FOR_MEDIUM = 3;
+    private static final int SIGNATURE_MAX_CHARS = 200;
+
+
     private static final Logger LOG = Logger.getLogger(CleanCodeAnalyzer.class);
     private static final String ANALYZER_NAME = "CleanCode";
     private static final long MAX_FILE_BYTES = 1024 * 1024;
@@ -55,18 +64,18 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
     @ConfigProperty(name = "sentinel.audit.cleancode.enabled", defaultValue = "true")
     boolean enabled = true;
     @ConfigProperty(name = "sentinel.audit.cleancode.max-function-lines", defaultValue = "50")
-    int maxLines = 50;
+    int maxLines = DEFAULT_MAX_LINES;
     /** Componentes React concentram JSX e costumam ser mais longos: limite próprio para .tsx/.jsx. */
     @ConfigProperty(name = "sentinel.audit.cleancode.max-component-lines", defaultValue = "100")
     int maxLinesJsx = 100;
     @ConfigProperty(name = "sentinel.audit.cleancode.max-parameters", defaultValue = "5")
-    int maxParams = 5;
+    int maxParams = DEFAULT_MAX_PARAMS;
     @ConfigProperty(name = "sentinel.audit.cleancode.max-complexity", defaultValue = "10")
     int maxComplexity = 10;
     @ConfigProperty(name = "sentinel.audit.cleancode.max-nesting", defaultValue = "4")
-    int maxNesting = 4;
+    int maxNesting = DEFAULT_MAX_NESTING;
     @ConfigProperty(name = "sentinel.audit.cleancode.max-findings", defaultValue = "300")
-    int maxFindings = 300;
+    int maxFindings = DEFAULT_MAX_FINDINGS;
 
     /** Limites efetivos de uma auditoria (imutáveis: o analisador é compartilhado entre auditorias simultâneas). */
     record Limits(int lines, int linesJsx, int params, int complexity, int nesting, int maxFindings) {}
@@ -167,7 +176,7 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
                                 + "que diga o que fazem.", fn.name(), fn.codeLines(), lineLimit)));
             }
             if (fn.paramCount() > lim.params()) {
-                Severity sev = fn.paramCount() > lim.params() + 3 ? Severity.MEDIUM : Severity.LOW;
+                Severity sev = fn.paramCount() > lim.params() + PARAMS_MARGIN_FOR_MEDIUM ? Severity.MEDIUM : Severity.LOW;
                 out.add(finding(run, relPath, fn, signature, "sentinel-cc-muitos-parametros", sev,
                         String.format("Muitos parâmetros: %s recebe %d", fn.name(), fn.paramCount()),
                         String.format("%s recebe %d parâmetros (limite recomendado: %d). Chamadas ficam difíceis de ler e "
@@ -223,7 +232,7 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
 
     private static String signatureLine(String[] lines, int line) {
         String s = line >= 1 && line <= lines.length ? lines[line - 1].strip() : "";
-        return s.length() > 200 ? s.substring(0, 200) : s;
+        return s.length() > SIGNATURE_MAX_CHARS ? s.substring(0, SIGNATURE_MAX_CHARS) : s;
     }
 
     // ------------------------------------------------------------------ varredura de arquivos

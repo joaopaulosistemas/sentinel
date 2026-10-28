@@ -25,6 +25,9 @@ import java.util.Optional;
 @Priority(Priorities.AUTHENTICATION)
 public class ApiKeyFilter implements ContainerRequestFilter {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
+
     private static final String HEALTH_PATH = "api/v1/health";
     /** Webhooks se autenticam por assinatura HMAC / token próprio (segredo cadastrado no sistema), não pela API key. */
     private static final String WEBHOOK_PATH = "api/v1/webhooks/";
@@ -53,8 +56,8 @@ public class ApiKeyFilter implements ContainerRequestFilter {
         String provided = ctx.getHeaderString("X-API-Key");
         if (provided == null) {
             String auth = ctx.getHeaderString("Authorization");
-            if (auth != null && auth.regionMatches(true, 0, "Bearer ", 0, 7)) {
-                provided = auth.substring(7).trim();
+            if (auth != null && auth.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
+                provided = auth.substring(BEARER_PREFIX.length()).trim();
             }
         }
 

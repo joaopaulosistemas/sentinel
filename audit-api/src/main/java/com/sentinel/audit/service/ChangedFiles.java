@@ -21,6 +21,10 @@ import java.util.regex.Pattern;
  */
 public final class ChangedFiles {
 
+    private static final int COPY_BUFFER_BYTES = 8192;
+    private static final long READER_JOIN_MILLIS = 2000;
+
+
     static final Pattern REF = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$");
     private static final int FETCH_DEPTH = 200;
     private static final long MAX_OUTPUT_BYTES = 8L * 1024 * 1024;
@@ -125,7 +129,7 @@ public final class ChangedFiles {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         Thread reader = new Thread(() -> {
             try (InputStream in = process.getInputStream()) {
-                byte[] chunk = new byte[8192];
+                byte[] chunk = new byte[COPY_BUFFER_BYTES];
                 int n = in.read(chunk);
                 while (n > 0) {
                     if (buf.size() + n <= MAX_OUTPUT_BYTES) {
@@ -143,7 +147,7 @@ public final class ChangedFiles {
             process.destroyForcibly();
             return new GitOut(-1, "");
         }
-        reader.join(2000);
+        reader.join(READER_JOIN_MILLIS);
         return new GitOut(process.exitValue(), buf.toString(StandardCharsets.UTF_8));
     }
 }

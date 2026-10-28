@@ -27,6 +27,9 @@ import java.util.stream.Stream;
  */
 public final class PackTool {
 
+    private static final long MAX_INSPECTED_FILE_BYTES = 10_000;
+
+
     private PackTool() {}
 
     public static void main(String[] args) {
@@ -307,7 +310,7 @@ public final class PackTool {
     }
 
     private static String readSmall(Path file) throws IOException {
-        if (!Files.isRegularFile(file) || Files.size(file) > 10_000) {
+        if (!Files.isRegularFile(file) || Files.size(file) > MAX_INSPECTED_FILE_BYTES) {
             throw new IllegalArgumentException("Arquivo de chave inválido: " + file);
         }
         return Files.readString(file, StandardCharsets.UTF_8);

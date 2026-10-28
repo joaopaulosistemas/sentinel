@@ -32,6 +32,13 @@ import java.util.concurrent.TimeUnit;
 @ApplicationScoped
 public class HistorySecretsAnalyzer implements CodeAnalyzer {
 
+    private static final int GIT_TIMEOUT_SECONDS = 30;
+    private static final String COMMIT_MARKER = "@@commit ";
+    private static final String DIFF_NEW_FILE_PREFIX = "+++ b/";
+    private static final int SHORT_SHA_LENGTH = 8;
+    private static final long MAX_SCANNED_FILE_BYTES = 1024L * 1024;
+
+
     private static final Logger LOG = Logger.getLogger(HistorySecretsAnalyzer.class);
     private static final String ANALYZER_NAME = "Secrets-History";
     private static final int MAX_FINDINGS = 200;
@@ -73,7 +80,7 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
             Process p = new ProcessBuilder("git", "-C", repo.toString(), "rev-list", "--count", "HEAD")
                     .redirectError(ProcessBuilder.Redirect.DISCARD).start();
             String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-            return p.waitFor(30, TimeUnit.SECONDS) && p.exitValue() == 0 ? Integer.parseInt(out) : 0;
+            return p.waitFor(GIT_TIMEOUT_SECONDS, TimeUnit.SECONDS) && p.exitValue() == 0 ? Integer.parseInt(out) : 0;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return 0;
@@ -117,8 +124,8 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
         try (BufferedReader reader = Files.newBufferedReader(logFile, StandardCharsets.ISO_8859_1)) {
             String l = reader.readLine();
             while (l != null && findings.size() < MAX_FINDINGS) {
-                if (l.startsWith("@@commit ")) {
-                    commit = l.substring(9).trim();
+                if (l.startsWith(COMMIT_MARKER)) {
+                    commit = l.substring(COMMIT_MARKER.length()).trim();
                 } else if (l.startsWith("+++ ")) {
                     path = diffPath(l);
                     scan = path != null && SecretsAnalyzer.isScannablePath(path);
@@ -142,7 +149,7 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
 
     /** Caminho do arquivo novo no cabeçalho {@code +++ b/...} do diff; nulo para {@code /dev/null}. */
     private static String diffPath(String header) {
-        return header.startsWith("+++ b/") ? header.substring(6) : null;
+        return header.startsWith(DIFF_NEW_FILE_PREFIX) ? header.substring(DIFF_NEW_FILE_PREFIX.length()) : null;
     }
 
     private static int hunkStart(String header) {
@@ -166,7 +173,7 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
         try {
             Path file = repo.resolve(relPath).normalize();
             if (!file.startsWith(repo) || !Files.isRegularFile(file) || Files.isSymbolicLink(file)
-                    || Files.size(file) > 1024 * 1024) {
+                    || Files.size(file) > MAX_SCANNED_FILE_BYTES) {
                 return false;
             }
             return Files.readString(file, StandardCharsets.ISO_8859_1).contains(value);
@@ -177,7 +184,7 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
 
     private Finding build(String path, int line, String commit, String added, SecretsAnalyzer.SecretMatch m,
                           AuditRun auditRun) {
-        String shortSha = commit == null ? "?" : commit.substring(0, Math.min(8, commit.length()));
+        String shortSha = commit == null ? "?" : commit.substring(0, Math.min(SHORT_SHA_LENGTH, commit.length()));
         Finding f = new Finding();
         f.setAuditRun(auditRun);
         f.setCategory(Category.SECURITY);

@@ -37,6 +37,13 @@ import java.util.Map;
 @ApplicationScoped
 public class PmdAnalyzer implements CodeAnalyzer {
 
+    /** Prioridade do PMD assumida quando o relatório não informa. */
+    private static final int DEFAULT_PRIORITY = 3;
+    private static final int PRIORITY_HIGH = 1;
+    private static final int PRIORITY_MEDIUM = 2;
+    private static final int PRIORITY_LOW = 3;
+
+
     private static final Logger LOG = Logger.getLogger(PmdAnalyzer.class);
     private static final String ANALYZER_NAME = "PMD";
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -180,7 +187,7 @@ public class PmdAnalyzer implements CodeAnalyzer {
                     f.setAuditRun(auditRun);
                     f.setToolSource(ANALYZER_NAME);
                     f.setCategory(category(ruleset));
-                    f.setSeverity(severity(v.path("priority").asInt(3), ruleset));
+                    f.setSeverity(severity(v.path("priority").asInt(DEFAULT_PRIORITY), ruleset));
                     f.setRuleId("pmd-" + rule);
                     f.setFilePath(rel);
                     f.setLineNumber(v.path("beginline").asInt(0));
@@ -204,9 +211,9 @@ public class PmdAnalyzer implements CodeAnalyzer {
     /** Prioridade do PMD (1 = mais grave); regras de propensão a erro e de segurança sobem um nível. */
     static Severity severity(int priority, String ruleset) {
         Severity base = switch (priority) {
-            case 1 -> Severity.HIGH;
-            case 2 -> Severity.MEDIUM;
-            case 3 -> Severity.LOW;
+            case PRIORITY_HIGH -> Severity.HIGH;
+            case PRIORITY_MEDIUM -> Severity.MEDIUM;
+            case PRIORITY_LOW -> Severity.LOW;
             default -> Severity.INFO;
         };
         boolean risky = "Error Prone".equalsIgnoreCase(ruleset) || "Security".equalsIgnoreCase(ruleset);

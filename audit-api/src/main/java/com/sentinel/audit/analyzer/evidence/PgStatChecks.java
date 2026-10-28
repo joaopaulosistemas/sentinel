@@ -17,6 +17,11 @@ import java.util.regex.Pattern;
  */
 final class PgStatChecks {
 
+    private static final double HIGH_SEQ_TUPLES_READ = 10_000_000;
+    private static final long UNUSED_INDEX_MIN_BYTES = 1_048_576;
+    private static final long UNUSED_INDEX_MEDIUM_BYTES = 104_857_600;
+
+
     static final double SLOW_MEAN_MS = 500;
     static final double VERY_SLOW_MEAN_MS = 2000;
     static final double TOP_SHARE_LOW = 0.05;
@@ -169,7 +174,7 @@ final class PgStatChecks {
             double seqRead = r.number("seq_tup_read");
             double idx = r.number("idx_scan");
             if (seq >= MIN_SEQ_SCANS && live >= MIN_LIVE_ROWS && seq > idx) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, seqRead >= 10_000_000 ? Severity.HIGH : Severity.MEDIUM,
+                out.add(Ev.finding(run, Category.PERFORMANCE, seqRead >= HIGH_SEQ_TUPLES_READ ? Severity.HIGH : Severity.MEDIUM,
                         "evidencia-tabela-varredura-sequencial",
                         "Tabela lida por varredura sequencial: " + name,
                         name + " tem " + Ev.fmt(live) + " linhas e sofreu " + Ev.fmt(seq) + " varreduras sequenciais ("
@@ -201,8 +206,8 @@ final class PgStatChecks {
             double size = r.number("size_bytes", "index_size", "pg_relation_size");
             String def = r.get("indexdef").toLowerCase(Locale.ROOT);
             boolean unique = def.contains("create unique") || index.endsWith("_pkey");
-            if (scans == 0 && !unique && size >= 1_048_576) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, size >= 104_857_600 ? Severity.MEDIUM : Severity.LOW,
+            if (scans == 0 && !unique && size >= UNUSED_INDEX_MIN_BYTES) {
+                out.add(Ev.finding(run, Category.PERFORMANCE, size >= UNUSED_INDEX_MEDIUM_BYTES ? Severity.MEDIUM : Severity.LOW,
                         "evidencia-indice-nao-usado",
                         "Índice nunca usado (" + Ev.bytes(size) + "): " + index,
                         "O índice " + index + " em " + table + " ocupa " + Ev.bytes(size) + " e não foi usado em nenhuma consulta "

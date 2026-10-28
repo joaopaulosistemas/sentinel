@@ -8,6 +8,11 @@ import com.sentinel.audit.model.Severity;
 /** Montagem dos findings das evidências (todos levam o analisador "Evidências" como origem). */
 final class Ev {
 
+    private static final int TITLE_MAX_CHARS = 480;
+    private static final int TEXT_MAX_CHARS = 1900;
+    private static final double BYTES_PER_UNIT = 1024;
+
+
     static final String TOOL = "Evidências";
 
     private Ev() {
@@ -20,11 +25,11 @@ final class Ev {
         f.setCategory(category);
         f.setSeverity(severity);
         f.setRuleId(ruleId);
-        f.setTitle(limit(title, 480));
-        f.setDescription(limit(description, 1900));
+        f.setTitle(limit(title, TITLE_MAX_CHARS));
+        f.setDescription(limit(description, TEXT_MAX_CHARS));
         f.setFilePath(file);
         f.setLineNumber(line);
-        f.setCodeSnippet(snippet == null ? null : limit(snippet.strip(), 1900));
+        f.setCodeSnippet(snippet == null ? null : limit(snippet.strip(), TEXT_MAX_CHARS));
         f.setToolSource(TOOL);
         return f;
     }
@@ -51,8 +56,8 @@ final class Ev {
     static String bytes(double b) {
         String[] unit = {"B", "KB", "MB", "GB", "TB"};
         int i = 0;
-        while (b >= 1024 && i < unit.length - 1) {
-            b /= 1024;
+        while (b >= BYTES_PER_UNIT && i < unit.length - 1) {
+            b /= BYTES_PER_UNIT;
             i++;
         }
         return String.format(java.util.Locale.ROOT, i == 0 ? "%.0f %s" : "%.1f %s", b, unit[i]);

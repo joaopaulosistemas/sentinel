@@ -41,6 +41,9 @@ import java.util.regex.Pattern;
 @ApplicationScoped
 public class IngestionService {
 
+    private static final int BRANCH_MAX_CHARS = 255;
+
+
     private static final Logger LOG = Logger.getLogger(IngestionService.class);
 
     private static final Pattern BRANCH_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._/-]*$");
@@ -356,7 +359,7 @@ public class IngestionService {
         if (branch == null || branch.isBlank()) {
             return;
         }
-        if (branch.length() > 255 || !BRANCH_PATTERN.matcher(branch).matches() || branch.contains("..")) {
+        if (branch.length() > BRANCH_MAX_CHARS || !BRANCH_PATTERN.matcher(branch).matches() || branch.contains("..")) {
             throw new IllegalArgumentException("Nome de branch inválido");
         }
     }

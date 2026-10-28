@@ -26,6 +26,9 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class EvidenceStager {
 
+    private static final String GIT_SUFFIX = ".git";
+
+
     private static final Logger LOG = Logger.getLogger(EvidenceStager.class);
     static final long MAX_FILE_BYTES = 200L * 1024 * 1024;
     static final int MAX_FILES = 50;
@@ -88,7 +91,7 @@ public class EvidenceStager {
         }
         String s = repoUrl.strip().replaceAll("/+$", "");
         s = s.substring(Math.max(s.lastIndexOf('/'), s.lastIndexOf(':')) + 1);
-        return s.endsWith(".git") ? s.substring(0, s.length() - 4) : s;
+        return s.endsWith(GIT_SUFFIX) ? s.substring(0, s.length() - GIT_SUFFIX.length()) : s;
     }
 
     /** "Sistema de Câmbio" -> "sistema-de-cambio". */

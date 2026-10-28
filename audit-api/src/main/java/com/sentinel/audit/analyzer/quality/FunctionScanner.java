@@ -13,6 +13,10 @@ import java.util.regex.Pattern;
  */
 public final class FunctionScanner {
 
+    /** Quantos caracteres antes do nome são olhados para reconhecer {@code new X(...)}, record, class etc. */
+    private static final int LOOKBEHIND_CHARS = 40;
+
+
     private FunctionScanner() {}
 
     /** Uma função encontrada. Os índices são posições no texto limpo. */
@@ -48,7 +52,7 @@ public final class FunctionScanner {
             if (NOT_FUNCTIONS.contains(name)) {
                 continue;
             }
-            String before = clean.substring(Math.max(0, m.start(1) - 40), m.start(1));
+            String before = clean.substring(Math.max(0, m.start(1) - LOOKBEHIND_CHARS), m.start(1));
             Matcher prev = PREV_TOKEN.matcher(before);
             if (prev.find() && ("new".equals(prev.group(1)) || "record".equals(prev.group(1))
                     || "class".equals(prev.group(1)) || "interface".equals(prev.group(1))

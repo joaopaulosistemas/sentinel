@@ -8,6 +8,9 @@ import com.sentinel.audit.model.Severity;
 /** Monta os achados dos analisadores estruturais (ciclos, duplicação, pontos quentes, código morto). */
 final class StructuralFindings {
 
+    private static final int SNIPPET_MAX_CHARS = 300;
+
+
     private StructuralFindings() {}
 
     static Finding make(AuditRun run, String tool, String ruleId, Severity severity, Category category,
@@ -22,7 +25,7 @@ final class StructuralFindings {
         f.setDescription(description);
         f.setFilePath(file);
         f.setLineNumber(Math.max(1, line));
-        f.setCodeSnippet(snippet == null ? null : (snippet.length() > 300 ? snippet.substring(0, 300) : snippet));
+        f.setCodeSnippet(snippet == null ? null : (snippet.length() > SNIPPET_MAX_CHARS ? snippet.substring(0, SNIPPET_MAX_CHARS) : snippet));
         return f;
     }
 

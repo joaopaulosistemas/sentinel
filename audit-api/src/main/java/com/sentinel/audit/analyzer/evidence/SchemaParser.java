@@ -15,6 +15,11 @@ import java.util.regex.Pattern;
  */
 final class SchemaParser {
 
+    private static final String COPY_PREFIX = "COPY ";
+    private static final int INDEX_METHOD_GROUP = 4;
+    private static final int INDEX_TABLE_GROUP = 3;
+
+
     record Column(String name, String type, boolean notNull) {}
 
     record ForeignKey(List<String> columns, String refTable, int line) {}
@@ -217,7 +222,7 @@ final class SchemaParser {
             boolean copyData = false;
             if (!text.isEmpty()) {
                 out.add(new Statement(text, startLine < 0 ? line : startLine));
-                copyData = text.regionMatches(true, 0, "COPY ", 0, 5) && text.toLowerCase(Locale.ROOT).contains("from stdin");
+                copyData = text.regionMatches(true, 0, COPY_PREFIX, 0, COPY_PREFIX.length()) && text.toLowerCase(Locale.ROOT).contains("from stdin");
             }
             cur.setLength(0);
             startLine = -1;
@@ -457,7 +462,7 @@ final class SchemaParser {
 
     private static void parseIndex(String t, Matcher m, int line, List<Index> indexes) {
         boolean unique = m.group(1) != null;
-        String method = m.group(4) == null ? "btree" : m.group(4).toLowerCase(Locale.ROOT);
+        String method = m.group(INDEX_METHOD_GROUP) == null ? "btree" : m.group(INDEX_METHOD_GROUP).toLowerCase(Locale.ROOT);
         String body = balanced(t, m.end() - 1);
         List<String> cols = new ArrayList<>();
         for (String element : splitTopLevel(body)) {
@@ -466,7 +471,7 @@ final class SchemaParser {
         }
         boolean partial = Pattern.compile("\\)\\s*(?:INCLUDE\\s*\\([^)]*\\)\\s*)?(?:WITH\\s*\\([^)]*\\)\\s*)?(?:TABLESPACE\\s+\\S+\\s*)?WHERE\\b",
                 Pattern.CASE_INSENSITIVE | Pattern.DOTALL).matcher(t).find();
-        indexes.add(new Index(ident(m.group(2)), tableKey(m.group(3)), cols, unique, method, partial, line));
+        indexes.add(new Index(ident(m.group(2)), tableKey(m.group(INDEX_TABLE_GROUP)), cols, unique, method, partial, line));
     }
 
     private static void parseAlter(String t, Matcher m, int line, Map<String, Table> tables) {

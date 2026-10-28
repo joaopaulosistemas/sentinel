@@ -22,6 +22,11 @@ import java.util.Locale;
 @ApplicationScoped
 public class PortfolioReportService {
 
+    /** Sistema sem nota fica depois de todos na ordenação. */
+    private static final int UNSCORED_SORT_VALUE = 101;
+    private static final int REPORT_BUFFER_CHARS = 4096;
+
+
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @Inject
@@ -65,7 +70,7 @@ public class PortfolioReportService {
 
     private Doc executive(List<SystemSnapshot> systems, double target) {
         List<SystemSnapshot> sorted = new ArrayList<>(systems);
-        sorted.sort(Comparator.comparing((SystemSnapshot s) -> s.overall() == null ? 101 : s.overall()));
+        sorted.sort(Comparator.comparing((SystemSnapshot s) -> s.overall() == null ? UNSCORED_SORT_VALUE : s.overall()));
         long below = sorted.stream().filter(s -> s.overall() != null && s.overall() < target).count();
         long critical = sorted.stream().mapToLong(SystemSnapshot::critical).sum();
         List<List<String>> rows = new ArrayList<>();
@@ -150,7 +155,7 @@ public class PortfolioReportService {
     // ------------------------------------------------------------------ HTML
 
     private String html(Doc doc) {
-        StringBuilder h = new StringBuilder(4096)
+        StringBuilder h = new StringBuilder(REPORT_BUFFER_CHARS)
                 .append("<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\">")
                 .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
                 .append("<title>").append(ReportService.esc(doc.title())).append("</title>")

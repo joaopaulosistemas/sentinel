@@ -9,6 +9,9 @@ package com.sentinel.audit.analyzer.quality;
  */
 public final class SourceSanitizer {
 
+    private static final int TEXT_BLOCK_DELIMITER_LENGTH = 3;
+
+
     private SourceSanitizer() {}
 
     public static String strip(String src) {
@@ -76,13 +79,13 @@ public final class SourceSanitizer {
 
         /** Text block do Java: três aspas até as três seguintes. */
         private void textBlock() {
-            i += 3;
+            i += TEXT_BLOCK_DELIMITER_LENGTH;
             while (i < n && !(in[i] == '"' && at(i + 1) == '"' && at(i + 2) == '"')) {
                 skipEscape();
                 blank(i);
                 i++;
             }
-            i = Math.min(n, i + 3);
+            i = Math.min(n, i + TEXT_BLOCK_DELIMITER_LENGTH);
         }
 
         /** String, caractere ou template literal. */

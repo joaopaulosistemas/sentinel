@@ -38,6 +38,15 @@ import java.util.concurrent.TimeUnit;
 @ApplicationScoped
 public class HotspotAnalyzer implements CodeAnalyzer {
 
+    private static final int DEFAULT_MIN_COMMITS = 20;
+    private static final int DEFAULT_MIN_CHURN = 5;
+    private static final int DEFAULT_MIN_COMPLEXITY = 15;
+    private static final int DEFAULT_MAX_HOTSPOTS = 15;
+    /** Complexidade a partir da qual um ponto quente muito mexido vira alto. */
+    private static final int HIGH_COMPLEXITY = 30;
+    private static final int GIT_TIMEOUT_SECONDS = 30;
+
+
     private static final Logger LOG = Logger.getLogger(HotspotAnalyzer.class);
     static final String ANALYZER_NAME = "Pontos quentes";
     private static final long MAX_FILE_BYTES = 1024 * 1024;
@@ -51,10 +60,10 @@ public class HotspotAnalyzer implements CodeAnalyzer {
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun, AuditPolicy policy) {
         Instant start = Instant.now();
         List<Finding> findings = new ArrayList<>();
-        int minCommits = policy == null ? 20 : policy.threshold("hotspot-min-commits", 20);
-        int minChurn = policy == null ? 5 : policy.threshold("hotspot-min-churn", 5);
-        int minCx = policy == null ? 15 : policy.threshold("hotspot-min-complexity", 15);
-        int top = policy == null ? 15 : policy.threshold("hotspot-max", 15);
+        int minCommits = policy == null ? DEFAULT_MIN_COMMITS : policy.threshold("hotspot-min-commits", DEFAULT_MIN_COMMITS);
+        int minChurn = policy == null ? DEFAULT_MIN_CHURN : policy.threshold("hotspot-min-churn", DEFAULT_MIN_CHURN);
+        int minCx = policy == null ? DEFAULT_MIN_COMPLEXITY : policy.threshold("hotspot-min-complexity", DEFAULT_MIN_COMPLEXITY);
+        int top = policy == null ? DEFAULT_MAX_HOTSPOTS : policy.threshold("hotspot-max", DEFAULT_MAX_HOTSPOTS);
         try {
             Hotspots.Log log = Hotspots.parseLog(gitLog(projectPath));
             if (log.commits() >= minCommits) {
@@ -72,7 +81,7 @@ public class HotspotAnalyzer implements CodeAnalyzer {
     static List<Finding> toFindings(AuditRun run, List<Hotspot> hotspots, int commits) {
         List<Finding> out = new ArrayList<>();
         for (Hotspot h : hotspots) {
-            Severity sev = h.churn() >= 10 && h.cx().complexity() >= 30 ? Severity.HIGH : Severity.MEDIUM;
+            Severity sev = h.churn() >= 10 && h.cx().complexity() >= HIGH_COMPLEXITY ? Severity.HIGH : Severity.MEDIUM;
             out.add(StructuralFindings.make(run, ANALYZER_NAME, "sentinel-hotspot", sev, Category.QUALITY,
                     h.file(), h.cx().line(),
                     "Ponto quente: " + h.file().substring(h.file().lastIndexOf('/') + 1) + " mudou " + h.churn()
@@ -125,7 +134,7 @@ public class HotspotAnalyzer implements CodeAnalyzer {
             Process p = new ProcessBuilder("git", "-C", root.toString(), "log", "--name-only", "--no-merges",
                     "--pretty=format:%H", "-n", "500")
                     .redirectErrorStream(true).redirectOutput(out.toFile()).start();
-            if (!p.waitFor(30, TimeUnit.SECONDS)) {
+            if (!p.waitFor(GIT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 p.destroyForcibly();
                 return "";
             }

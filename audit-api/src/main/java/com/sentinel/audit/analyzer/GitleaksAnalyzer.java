@@ -37,6 +37,10 @@ import java.util.Set;
 @ApplicationScoped
 public class GitleaksAnalyzer implements CodeAnalyzer {
 
+    private static final int SHORT_SHA_LENGTH = 8;
+    private static final int FINGERPRINT_HEX_CHARS = 12;
+
+
     private static final Logger LOG = Logger.getLogger(GitleaksAnalyzer.class);
     private static final String ANALYZER_NAME = "Gitleaks";
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -142,7 +146,7 @@ public class GitleaksAnalyzer implements CodeAnalyzer {
                 String what = n.path("Description").asText(rule);
                 f.setTitle("Segredo exposto: " + what);
                 f.setDescription("O Gitleaks detectou " + what + " em " + file
-                        + (commit.isBlank() ? "" : " (commit " + commit.substring(0, Math.min(8, commit.length())) + ")")
+                        + (commit.isBlank() ? "" : " (commit " + commit.substring(0, Math.min(SHORT_SHA_LENGTH, commit.length())) + ")")
                         + ". Revogue/rotacione a credencial: removê-la do código não basta se ela ficou no histórico.");
                 f.setCodeSnippet("segredo sha256:" + secretHash);   // identifica sem revelar
                 out.add(f);
@@ -157,7 +161,7 @@ public class GitleaksAnalyzer implements CodeAnalyzer {
     private static String shortHash(String value) {
         try {
             byte[] d = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(d).substring(0, 12);
+            return HexFormat.of().formatHex(d).substring(0, FINGERPRINT_HEX_CHARS);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

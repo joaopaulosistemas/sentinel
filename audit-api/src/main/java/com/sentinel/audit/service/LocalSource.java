@@ -33,6 +33,10 @@ import java.util.regex.Pattern;
  */
 public final class LocalSource {
 
+    private static final int BRANCH_MAX_CHARS = 255;
+    private static final int OUTPUT_TAIL_CHARS = 600;
+
+
     private static final Pattern BRANCH = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._/-]*$");
     private static final long MAX_FILE_BYTES = 10L * 1024 * 1024;
     private static final long MAX_OUTPUT_BYTES = 64L * 1024 * 1024;
@@ -90,7 +94,7 @@ public final class LocalSource {
         if (branch == null || branch.isBlank()) {
             return;
         }
-        if (branch.length() > 255 || !BRANCH.matcher(branch).matches() || branch.contains("..")) {
+        if (branch.length() > BRANCH_MAX_CHARS || !BRANCH.matcher(branch).matches() || branch.contains("..")) {
             throw new IllegalArgumentException("Nome de branch inválido");
         }
     }
@@ -426,6 +430,6 @@ public final class LocalSource {
 
     private static String tail(String output) {
         String s = output == null ? "" : output.strip();
-        return s.length() > 600 ? s.substring(s.length() - 600) : s;
+        return s.length() > OUTPUT_TAIL_CHARS ? s.substring(s.length() - OUTPUT_TAIL_CHARS) : s;
     }
 }

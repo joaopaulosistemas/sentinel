@@ -43,6 +43,11 @@ import java.util.regex.Pattern;
 @ApplicationScoped
 public class SemgrepAnalyzer implements CodeAnalyzer {
 
+    private static final int FIRST_LINE_MAX_CHARS = 200;
+    private static final String ELLIPSIS = "...";
+    private static final int TITLE_MAX_CHARS = 500;
+
+
     private static final Logger LOG = Logger.getLogger(SemgrepAnalyzer.class);
     private static final String ANALYZER_NAME = "Semgrep";
     private static final String DEFAULT_REGISTRY_CONFIG = "p/default";
@@ -179,8 +184,8 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
                 }
                 if (primeiro == null) {
                     primeiro = e.path("message").asText(type).replaceAll("\\s+", " ");
-                    if (primeiro.length() > 200) {
-                        primeiro = primeiro.substring(0, 200) + "…";
+                    if (primeiro.length() > FIRST_LINE_MAX_CHARS) {
+                        primeiro = primeiro.substring(0, FIRST_LINE_MAX_CHARS) + "…";
                     }
                 }
             }
@@ -318,7 +323,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
 
         JsonNode extra = result.path("extra");
         String message = extra.path("message").asText(checkId);
-        finding.setTitle(message.length() > 500 ? message.substring(0, 497) + "..." : message);
+        finding.setTitle(message.length() > TITLE_MAX_CHARS ? message.substring(0, TITLE_MAX_CHARS - ELLIPSIS.length()) + ELLIPSIS : message);
         finding.setDescription(message);
 
         // Sem login, o Semgrep devolve "requires login" no lugar do trecho de código.
