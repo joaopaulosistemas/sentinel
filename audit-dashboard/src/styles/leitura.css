@@ -47,3 +47,8 @@
 :root[data-texto='grande'] .sentinel-content-theme { zoom: 1.12; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 /* stylelint-enable declaration-no-important */
+
+/* Foco suave ao passar o mouse na linha: o mesmo da tabela "Qualidade das regras" (Carbon usa --cds-layer-hover = --s-header-row).
+   As demais tabelas são <table> comuns; !important porque várias linhas têm fundo inline (selecionada, zebra). */
+table:not(.cds--data-table) > tbody > tr { transition: background-color 70ms ease; }
+table:not(.cds--data-table) > tbody > tr:hover { background: var(--s-header-row) !important; }
