@@ -48,6 +48,15 @@ public final class FindingConfidence {
      *                   com ela, "endpoint sem anotação de autorização" perde confiança
      */
     public static void assessAll(List<Finding> findings, Map<String, RuleQuality> ruleQuality, String globalAuth) {
+        assessAll(findings, ruleQuality, globalAuth, Set.of());
+    }
+
+    /**
+     * @param generatedPaths arquivos com cabeçalho de código gerado (ver {@link GeneratedFiles}); contam como
+     *                       {@link PathRole#GENERATED} mesmo fora de uma pasta com esse nome
+     */
+    public static void assessAll(List<Finding> findings, Map<String, RuleQuality> ruleQuality, String globalAuth,
+                                 Set<String> generatedPaths) {
         Map<String, List<Finding>> byFile = new HashMap<>();
         for (Finding f : findings) {
             if (f.getFilePath() != null) {
@@ -55,7 +64,8 @@ public final class FindingConfidence {
             }
         }
         for (Finding f : findings) {
-            assess(f, ruleQuality, byFile.getOrDefault(f.getFilePath(), List.of()), globalAuth);
+            assess(f, ruleQuality, byFile.getOrDefault(f.getFilePath(), List.of()), globalAuth,
+                    generatedPaths != null && generatedPaths.contains(f.getFilePath()));
         }
     }
 
@@ -69,7 +79,12 @@ public final class FindingConfidence {
     }
 
     static void assess(Finding f, Map<String, RuleQuality> ruleQuality, List<Finding> sameFile, String globalAuth) {
-        PathRole role = PathRole.of(f.getFilePath());
+        assess(f, ruleQuality, sameFile, globalAuth, false);
+    }
+
+    static void assess(Finding f, Map<String, RuleQuality> ruleQuality, List<Finding> sameFile, String globalAuth,
+                       boolean generatedByHeader) {
+        PathRole role = generatedByHeader ? PathRole.GENERATED : PathRole.of(f.getFilePath());
         if (role.isNonProduction() && f.getCategory() != Category.DEPENDENCY) {
             set(f, Confidence.LOW, "Em " + role.describe() + ": provavelmente não afeta o sistema em produção.");
             return;

@@ -280,7 +280,8 @@ public class AuditOrchestrationService {
             progress.phase(auditRunId, AuditProgressTracker.PONTUACAO,
                     "Análise concluída: " + allFindings.size() + " achados" + projectConfig.summary() + "; calculando a nota");
             FindingLifecycleService.apply(allFindings, loadBaselineSafely(auditRunId));
-            FindingConfidence.assessAll(allFindings, loadRuleQualitySafely(), globalAuthOf(clonedPath));
+            FindingConfidence.assessAll(allFindings, loadRuleQualitySafely(), globalAuthOf(clonedPath),
+                    GeneratedFiles.detect(clonedPath, allFindings));
             long linesOfCode = sizing.lines();
             RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
             progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
