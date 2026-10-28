@@ -80,12 +80,7 @@ public class AuditCli {
      */
     public int run(CliArgs args) {
         try {
-            System.out.println("=== Sentinel Audit CLI ===");
-            System.out.printf("API:    %s%n", args.apiUrl);
-            System.out.printf("Repo:   %s%n", args.repo != null ? args.repo : "(cadastrado no sistema)");
-            System.out.printf("Branch: %s%n", args.branch);
-            System.out.printf("System: %s%n", args.systemId);
-            System.out.println();
+            printHeader(args);
 
             long auditRunId = createAudit(args);
             System.out.printf("Auditoria criada com ID: %d%n", auditRunId);
@@ -97,58 +92,23 @@ public class AuditCli {
                 System.err.println("Timeout: auditoria não concluída em " + MAX_WAIT_MINUTES + " minutos.");
                 return 3;
             }
-
-            String status = finalResult.path("status").asText();
-            if ("CANCELLED".equals(status)) {
-                System.err.println("Auditoria CANCELADA antes de terminar.");
-                return 2;
-            }
-            if ("FAILED".equals(status)) {
-                String reason = finalResult.path("errorMessage").asText("");
-                System.err.println("Auditoria FALHOU." + (reason.isBlank() ? "" : " Motivo: " + reason));
-                return 2;
+            Integer abnormalExit = exitForAbnormalEnd(finalResult);
+            if (abnormalExit != null) {
+                return abnormalExit;
             }
 
             printSummary(finalResult);
 
             JsonNode findings = null;
-            if (args.sarifFile != null || args.junitFile != null || args.jsonFile != null || args.failOn != null
-                    || args.prCommentFile != null) {
+            if (needsFindings(args)) {
                 findings = fetchFindings(args, auditRunId);
                 writeReports(args, findings, auditRunId);
             }
 
-            boolean failed = false;
-            if (args.failBelow != null) {
-                double overall = finalResult.path("riskScore").path("overall").asDouble(-1);
-                if (overall >= 0 && overall < args.failBelow) {
-                    System.err.printf("%nFALHA: score %.2f está abaixo do threshold %.2f%n",
-                            overall, args.failBelow);
-                    failed = true;
-                }
-            }
-            if (args.failOn != null) {
-                long count = countAtLeast(findings, args.failOn);
-                if (count > 0) {
-                    System.err.printf("%nFALHA: %d finding(s) com severidade %s ou maior (--fail-on %s)%n",
-                            count, args.failOn, args.failOn);
-                    failed = true;
-                }
-            }
-            if (args.failOnNew != null) {
-                JsonNode diff = fetchJson(args, "/api/v1/audits/" + auditRunId + "/diff");
-                if (!diff.path("hasBaseline").asBoolean(false)) {
-                    System.out.println("\n--fail-on-new ignorado: primeira auditoria desta branch (sem base de comparação).");
-                } else {
-                    long count = countAtLeast(diff.path("newFindings"), args.failOnNew);
-                    if (count > 0) {
-                        System.err.printf("%nFALHA: %d finding(s) NOVO(S) com severidade %s ou maior desde a auditoria #%d%n",
-                                count, args.failOnNew, diff.path("baseAuditId").asLong());
-                        failed = true;
-                    }
-                }
-            }
-            if (failed) {
+            boolean belowScore = failedBelowScore(args, finalResult);
+            boolean badFindings = failedOnFindings(args, findings);
+            boolean newFindings = failedOnNewFindings(args, auditRunId);
+            if (belowScore || badFindings || newFindings) {
                 return 1;
             }
 
@@ -159,6 +119,79 @@ public class AuditCli {
             System.err.println("Erro ao executar auditoria: " + e.getMessage());
             return 2;
         }
+    }
+
+    private static void printHeader(CliArgs args) {
+        System.out.println("=== Sentinel Audit CLI ===");
+        System.out.printf("API:    %s%n", args.apiUrl);
+        System.out.printf("Repo:   %s%n", args.repo != null ? args.repo : "(cadastrado no sistema)");
+        System.out.printf("Branch: %s%n", args.branch);
+        System.out.printf("System: %s%n", args.systemId);
+        System.out.println();
+    }
+
+    /** Auditoria cancelada ou que falhou: avisa e devolve o código de saída; {@code null} se terminou normalmente. */
+    private static Integer exitForAbnormalEnd(JsonNode finalResult) {
+        String status = finalResult.path("status").asText();
+        if ("CANCELLED".equals(status)) {
+            System.err.println("Auditoria CANCELADA antes de terminar.");
+            return 2;
+        }
+        if ("FAILED".equals(status)) {
+            String reason = finalResult.path("errorMessage").asText("");
+            System.err.println("Auditoria FALHOU." + (reason.isBlank() ? "" : " Motivo: " + reason));
+            return 2;
+        }
+        return null;
+    }
+
+    /** Relatórios e --fail-on precisam da lista de achados. */
+    private static boolean needsFindings(CliArgs args) {
+        return args.sarifFile != null || args.junitFile != null || args.jsonFile != null || args.failOn != null
+                || args.prCommentFile != null;
+    }
+
+    private static boolean failedBelowScore(CliArgs args, JsonNode finalResult) {
+        if (args.failBelow == null) {
+            return false;
+        }
+        double overall = finalResult.path("riskScore").path("overall").asDouble(-1);
+        if (overall >= 0 && overall < args.failBelow) {
+            System.err.printf("%nFALHA: score %.2f está abaixo do threshold %.2f%n", overall, args.failBelow);
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean failedOnFindings(CliArgs args, JsonNode findings) {
+        if (args.failOn == null) {
+            return false;
+        }
+        long count = countAtLeast(findings, args.failOn);
+        if (count > 0) {
+            System.err.printf("%nFALHA: %d finding(s) com severidade %s ou maior (--fail-on %s)%n",
+                    count, args.failOn, args.failOn);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean failedOnNewFindings(CliArgs args, long auditRunId) throws Exception {
+        if (args.failOnNew == null) {
+            return false;
+        }
+        JsonNode diff = fetchJson(args, "/api/v1/audits/" + auditRunId + "/diff");
+        if (!diff.path("hasBaseline").asBoolean(false)) {
+            System.out.println("\n--fail-on-new ignorado: primeira auditoria desta branch (sem base de comparação).");
+            return false;
+        }
+        long count = countAtLeast(diff.path("newFindings"), args.failOnNew);
+        if (count > 0) {
+            System.err.printf("%nFALHA: %d finding(s) NOVO(S) com severidade %s ou maior desde a auditoria #%d%n",
+                    count, args.failOnNew, diff.path("baseAuditId").asLong());
+            return true;
+        }
+        return false;
     }
 
     private JsonNode fetchJson(CliArgs args, String path) throws Exception {
@@ -377,23 +410,7 @@ public class AuditCli {
             if (i + 1 >= args.length) {
                 throw new IllegalArgumentException("O parâmetro " + flag + " precisa de um valor");
             }
-            String value = args[++i];
-            switch (flag) {
-                case "--repo"        -> result.repo       = value;
-                case "--branch"      -> result.branch     = value;
-                case "--system-id"   -> result.systemId   = value;
-                case "--api-url"     -> result.apiUrl     = value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
-                case "--token", "--api-key" -> result.token = value;
-                case "--fail-below"  -> result.failBelow  = parseNumber(flag, value);
-                case "--fail-on"     -> result.failOn     = parseSeverity(flag, value);
-                case "--fail-on-new" -> result.failOnNew  = parseSeverity(flag, value);
-                case "--sarif"       -> result.sarifFile  = value;
-                case "--junit"       -> result.junitFile  = value;
-                case "--json"        -> result.jsonFile   = value;
-                case "--base-ref"    -> result.baseRef    = value;
-                case "--pr-comment"  -> result.prCommentFile = value;
-                default -> throw new IllegalArgumentException("Parâmetro desconhecido: " + flag);
-            }
+            applyFlag(result, flag, args[++i]);
         }
 
         if (result.token == null || result.token.isBlank()) {
@@ -410,6 +427,25 @@ public class AuditCli {
         return result;
     }
 
+    private static void applyFlag(CliArgs result, String flag, String value) {
+        switch (flag) {
+            case "--repo"        -> result.repo       = value;
+            case "--branch"      -> result.branch     = value;
+            case "--system-id"   -> result.systemId   = value;
+            case "--api-url"     -> result.apiUrl     = value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+            case "--token", "--api-key" -> result.token = value;
+            case "--fail-below"  -> result.failBelow  = parseNumber(flag, value);
+            case "--fail-on"     -> result.failOn     = parseSeverity(flag, value);
+            case "--fail-on-new" -> result.failOnNew  = parseSeverity(flag, value);
+            case "--sarif"       -> result.sarifFile  = value;
+            case "--junit"       -> result.junitFile  = value;
+            case "--json"        -> result.jsonFile   = value;
+            case "--base-ref"    -> result.baseRef    = value;
+            case "--pr-comment"  -> result.prCommentFile = value;
+            default -> throw new IllegalArgumentException("Parâmetro desconhecido: " + flag);
+        }
+    }
+
     private static double parseNumber(String flag, String value) {
         try {
             return Double.parseDouble(value);
@@ -419,7 +455,7 @@ public class AuditCli {
     }
 
     private static String parseSeverity(String flag, String value) {
-        String v = value.toUpperCase();
+        String v = value.toUpperCase(java.util.Locale.ROOT);
         if (severityRank(v) < 2) { // INFO não faz sentido como limite de falha
             throw new IllegalArgumentException(flag + " deve ser CRITICAL, HIGH, MEDIUM ou LOW: " + value);
         }

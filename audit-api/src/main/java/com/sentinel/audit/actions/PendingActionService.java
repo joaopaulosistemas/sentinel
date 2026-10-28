@@ -65,7 +65,7 @@ public class PendingActionService {
         AuditedSystem system = system(systemId);
         SuppressionReason r;
         try {
-            r = SuppressionReason.valueOf(reason == null ? "" : reason.strip().toUpperCase());
+            r = SuppressionReason.valueOf(reason == null ? "" : reason.strip().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Motivo inválido: use FALSE_POSITIVE.");
         }

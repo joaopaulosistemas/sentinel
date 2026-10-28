@@ -72,115 +72,164 @@ final class SchemaParser {
 
     record Statement(String text, int line) {}
 
+    private static final Pattern DOLLAR_TAG = Pattern.compile("\\$([A-Za-z_]\\w*)?\\$");
+
     /** Divide o script em comandos terminados por ';', respeitando aspas, comentários, $$...$$ e blocos COPY. */
     static List<Statement> split(String sql) {
-        List<Statement> out = new ArrayList<>();
-        StringBuilder cur = new StringBuilder();
-        int line = 1;
-        int startLine = -1;
-        int n = sql.length();
-        int i = 0;
-        boolean atLineStart = true;
-        while (i < n) {
-            char c = sql.charAt(i);
-            if (atLineStart && c == '\\' && cur.toString().isBlank()) {          // meta-comando do psql (\connect, \restrict)
-                while (i < n && sql.charAt(i) != '\n') {
+        return new Splitter(sql).run();
+    }
+
+    /** Percorre o script um trecho por vez; cada {@code try...} consome o que reconhece e diz se o fez. */
+    private static final class Splitter {
+        private final String sql;
+        private final int n;
+        private final List<Statement> out = new ArrayList<>();
+        private final StringBuilder cur = new StringBuilder();
+        private int i;
+        private int line = 1;
+        private int startLine = -1;
+        private boolean atLineStart = true;
+
+        Splitter(String sql) {
+            this.sql = sql;
+            this.n = sql.length();
+        }
+
+        List<Statement> run() {
+            while (i < n) {
+                char c = sql.charAt(i);
+                if (!consumeSpecial(c)) {
+                    cur.append(c);
                     i++;
                 }
-                continue;
+            }
+            String rest = cur.toString().strip();
+            if (!rest.isEmpty()) {
+                out.add(new Statement(rest, startLine < 0 ? line : startLine));
+            }
+            return out;
+        }
+
+        /** Meta-comando, quebra de linha, comentário, texto entre aspas, $$...$$ ou ';'. */
+        private boolean consumeSpecial(char c) {
+            if (atLineStart && c == '\\' && cur.toString().isBlank()) {       // meta-comando do psql (\connect, \restrict)
+                skipToEndOfLine();
+                return true;
             }
             if (c == '\n') {
                 line++;
                 atLineStart = true;
                 cur.append(c);
                 i++;
-                continue;
+                return true;
             }
             if (!Character.isWhitespace(c)) {
                 atLineStart = false;
             }
-            if (c == '-' && i + 1 < n && sql.charAt(i + 1) == '-') {
-                while (i < n && sql.charAt(i) != '\n') {
-                    i++;
-                }
-                continue;
-            }
-            if (c == '/' && i + 1 < n && sql.charAt(i + 1) == '*') {
-                int end = sql.indexOf("*/", i + 2);
-                int stop = end < 0 ? n : end + 2;
-                for (int k = i; k < stop; k++) {
-                    if (sql.charAt(k) == '\n') {
-                        line++;
-                    }
-                }
-                i = stop;
-                continue;
+            if (isCommentStart(c)) {
+                skipComment(c);
+                return true;
             }
             if (startLine < 0 && !Character.isWhitespace(c)) {
                 startLine = line;
             }
-            if (c == '\'' || c == '"') {
-                int j = i + 1;
-                while (j < n) {
-                    if (sql.charAt(j) == c) {
-                        if (j + 1 < n && sql.charAt(j + 1) == c) {
-                            j += 2;
-                            continue;
-                        }
-                        break;
-                    }
-                    if (sql.charAt(j) == '\n') {
-                        line++;
-                    }
-                    j++;
-                }
-                cur.append(sql, i, Math.min(n, j + 1));
-                i = j + 1;
-                continue;
+            return consumeQuoted(c) || consumeDollarQuoted(c) || consumeSemicolon(c);
+        }
+
+        private boolean isCommentStart(char c) {
+            return i + 1 < n && ((c == '-' && sql.charAt(i + 1) == '-') || (c == '/' && sql.charAt(i + 1) == '*'));
+        }
+
+        private void skipToEndOfLine() {
+            while (i < n && sql.charAt(i) != '\n') {
+                i++;
             }
-            if (c == '$') {
-                Matcher m = Pattern.compile("\\$([A-Za-z_]\\w*)?\\$").matcher(sql);
-                m.region(i, n);
-                if (m.lookingAt()) {
-                    String tag = m.group();
-                    int end = sql.indexOf(tag, m.end());
-                    int stop = end < 0 ? n : end + tag.length();
-                    for (int k = i; k < stop; k++) {
-                        if (sql.charAt(k) == '\n') {
-                            line++;
-                        }
-                    }
-                    cur.append(sql, i, stop);
-                    i = stop;
-                    continue;
+        }
+
+        private void skipComment(char c) {
+            if (c == '-') {
+                skipToEndOfLine();
+                return;
+            }
+            int end = sql.indexOf("*/", i + 2);
+            int stop = end < 0 ? n : end + 2;
+            line += countNewlines(i, stop);
+            i = stop;
+        }
+
+        private int countNewlines(int from, int to) {
+            int count = 0;
+            for (int k = from; k < to; k++) {
+                if (sql.charAt(k) == '\n') {
+                    count++;
                 }
             }
-            if (c == ';') {
-                String text = cur.toString().strip();
-                if (!text.isEmpty()) {
-                    out.add(new Statement(text, startLine < 0 ? line : startLine));
-                    if (text.regionMatches(true, 0, "COPY ", 0, 5) && text.toLowerCase(Locale.ROOT).contains("from stdin")) {
-                        i = skipCopyData(sql, i + 1);
-                        line = 1 + countNewlines(sql, i);
-                        cur.setLength(0);
-                        startLine = -1;
-                        atLineStart = true;
+            return count;
+        }
+
+        /** 'texto' ou "identificador", com a aspa duplicada como escape. */
+        private boolean consumeQuoted(char c) {
+            if (c != '\'' && c != '"') {
+                return false;
+            }
+            int j = i + 1;
+            while (j < n) {
+                if (sql.charAt(j) == c) {
+                    if (j + 1 < n && sql.charAt(j + 1) == c) {
+                        j += 2;
                         continue;
                     }
+                    break;
                 }
-                cur.setLength(0);
-                startLine = -1;
-                i++;
-                continue;
+                if (sql.charAt(j) == '\n') {
+                    line++;
+                }
+                j++;
             }
-            cur.append(c);
-            i++;
+            cur.append(sql, i, Math.min(n, j + 1));
+            i = j + 1;
+            return true;
         }
-        String rest = cur.toString().strip();
-        if (!rest.isEmpty()) {
-            out.add(new Statement(rest, startLine < 0 ? line : startLine));
+
+        private boolean consumeDollarQuoted(char c) {
+            if (c != '$') {
+                return false;
+            }
+            Matcher m = DOLLAR_TAG.matcher(sql);
+            m.region(i, n);
+            if (!m.lookingAt()) {
+                return false;
+            }
+            String tag = m.group();
+            int end = sql.indexOf(tag, m.end());
+            int stop = end < 0 ? n : end + tag.length();
+            line += countNewlines(i, stop);
+            cur.append(sql, i, stop);
+            i = stop;
+            return true;
         }
-        return out;
+
+        private boolean consumeSemicolon(char c) {
+            if (c != ';') {
+                return false;
+            }
+            String text = cur.toString().strip();
+            boolean copyData = false;
+            if (!text.isEmpty()) {
+                out.add(new Statement(text, startLine < 0 ? line : startLine));
+                copyData = text.regionMatches(true, 0, "COPY ", 0, 5) && text.toLowerCase(Locale.ROOT).contains("from stdin");
+            }
+            cur.setLength(0);
+            startLine = -1;
+            if (copyData) {
+                i = skipCopyData(sql, i + 1);
+                line = 1 + SchemaParser.countNewlines(sql, i);
+                atLineStart = true;
+            } else {
+                i++;
+            }
+            return true;
+        }
     }
 
     private static int skipCopyData(String sql, int from) {

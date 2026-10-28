@@ -262,7 +262,7 @@ public class SarifAnalyzer implements CodeAnalyzer {
     /** Severidade: mapa do pacote por nível > {@code security-severity} (convenção do GitHub) > padrão por nível. */
     static Severity severity(JsonNode result, JsonNode rule, ToolSpec spec) {
         String level = result.path("level").asText(rule == null ? "warning"
-                : rule.path("defaultConfiguration").path("level").asText("warning")).toLowerCase();
+                : rule.path("defaultConfiguration").path("level").asText("warning")).toLowerCase(java.util.Locale.ROOT);
         Severity mapped = spec.levelSeverity().get(level);
         if (mapped != null) {
             return mapped;

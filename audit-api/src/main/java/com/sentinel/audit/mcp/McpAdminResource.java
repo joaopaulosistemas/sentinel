@@ -1,14 +1,13 @@
 package com.sentinel.audit.mcp;
 
 import com.sentinel.audit.model.AuditedSystem;
-import com.sentinel.audit.repository.AuditedSystemRepository;
+import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -47,7 +46,7 @@ public class McpAdminResource {
     public record CallResponse(String tool, boolean ok, long durationMs, String detail, String at) {}
 
     @Inject
-    AuditedSystemRepository systemRepository;
+    SystemCatalog systemCatalog;
 
     @Inject
     McpGateService gate;
@@ -110,8 +109,7 @@ public class McpAdminResource {
     }
 
     private AuditedSystem requireSystem(Long id) {
-        return systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        return systemCatalog.require(id);
     }
 
     private McpConfigResponse view(McpAccess access) {

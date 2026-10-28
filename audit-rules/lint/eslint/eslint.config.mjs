@@ -20,7 +20,8 @@ export default tseslint.config(
     extends: [...tseslint.configs.recommended],
     plugins: { security, sonarjs, "no-unsanitized": noUnsanitized, promise, regexp },
     rules: {
-      eqeqeq: "error",
+      // "x == null" (nulo ou indefinido) é a exceção aceita, igual à regra sentinel-ts-igualdade-frouxa do Semgrep
+      eqeqeq: ["error", "always", { null: "ignore" }],
       "no-var": "error",
       "no-console": "warn",
       "prefer-const": "error",
@@ -95,6 +96,8 @@ export default tseslint.config(
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
       ...jsxA11y.flatConfigs.recommended.rules,
+      // o texto do rótulo costuma ficar em <span> aninhados (título + descrição); a profundidade padrão (2) não os alcança
+      "jsx-a11y/label-has-associated-control": ["error", { depth: 3 }],
     },
     languageOptions: jsxA11y.flatConfigs.recommended.languageOptions,
   },

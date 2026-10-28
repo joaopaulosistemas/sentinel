@@ -64,7 +64,7 @@ final class PlanChecks {
                     file, 1, filter));
         }
         String sortMethod = node.path("Sort Method").asText("");
-        if (type.equals("Sort") && sortMethod.toLowerCase().contains("external")) {
+        if (type.equals("Sort") && sortMethod.toLowerCase(java.util.Locale.ROOT).contains("external")) {
             out.add(Ev.finding(run, Category.PERFORMANCE, Severity.MEDIUM, "evidencia-plano-ordenacao-em-disco",
                     "Ordenação em disco (" + node.path("Sort Space Used").asLong(0) + " kB)",
                     "A ordenação não coube em work_mem e usou disco (" + sortMethod + "). Um índice na ordem pedida, um "

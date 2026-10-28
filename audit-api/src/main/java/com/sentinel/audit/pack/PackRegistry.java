@@ -104,108 +104,25 @@ public class PackRegistry {
     }
 
     public synchronized Snapshot reload() {
-        List<Path> roots = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
         Map<String, List<String>> rejected = new LinkedHashMap<>();
+        List<Path> roots = collectRoots(warnings);
 
-        Set<Path> seen = new LinkedHashSet<>();
-        if (fixedRoots != null) {
-            for (Path r : fixedRoots) {
-                Path d = r.toAbsolutePath().normalize();
-                if (Files.isDirectory(d) && seen.add(d)) {
-                    roots.add(d);
-                }
-            }
-        }
-        for (String c : fixedRoots != null ? List.<String>of() : BUILTIN_DIRS) {
-            Path d = Paths.get(c).toAbsolutePath().normalize();
-            if (Files.isDirectory(d) && seen.add(d)) {
-                roots.add(d);
-            }
-        }
-        if (fixedRoots == null) extraDirs.ifPresent(v -> {
-            for (String c : v.split(",")) {
-                if (!c.isBlank()) {
-                    Path d = Paths.get(c.trim()).toAbsolutePath().normalize();
-                    if (!Files.isDirectory(d)) {
-                        warnings.add("pasta de pacotes não encontrada: " + d);
-                    } else if (seen.add(d)) {
-                        roots.add(d);
-                    }
-                }
-            }
-        });
-        if (fixedRoots == null && gitUrl.isPresent() && !gitUrl.get().isBlank()) {
-            try {
-                Path checkout = PackSources.sync(gitUrl.get().trim(), gitRef, Paths.get(cacheDir), 180, allowFileUrl);
-                Path root = gitPath.filter(p -> !p.isBlank()).map(p -> checkout.resolve(p.trim()).normalize()).orElse(checkout);
-                if (!root.startsWith(checkout) || !Files.isDirectory(root)) {
-                    warnings.add("git-path inválido ou inexistente no repositório de pacotes: " + gitPath.orElse(""));
-                } else {
-                    roots.add(root);
-                }
-            } catch (Exception e) {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                }
-                // falha de rede não derruba: segue com o que já havia em cache/embutido
-                warnings.add("não foi possível atualizar os pacotes do Git: " + e.getMessage());
-                LOG.warnf("Pacotes do Git indisponíveis: %s", e.getMessage());
-            }
-        }
-
-        java.security.PublicKey key = null;
-        if (publicKey.isPresent() && !publicKey.get().isBlank()) {
-            try {
-                key = PackIntegrity.publicKey(publicKey.get());
-            } catch (Exception e) {
-                warnings.add("sentinel.audit.packs.public-key inválida: assinaturas não serão conferidas");
-            }
-        }
+        java.security.PublicKey key = configuredKey(warnings);
         if (requireSignature && key == null) {
             warnings.add("require-signature ligado sem public-key válida: nenhum pacote será carregado");
         }
         Map<String, String> integrity = new LinkedHashMap<>();
         Map<String, RulePack> byId = new LinkedHashMap<>();
         Map<String, Profile> profiles = new LinkedHashMap<>();
-        Set<String> off = new LinkedHashSet<>();
-        disabled.ifPresent(v -> {
-            for (String id : v.split(",")) {
-                if (!id.isBlank()) {
-                    off.add(id.trim().toLowerCase(Locale.ROOT));
-                }
-            }
-        });
+        Set<String> off = disabledIds();
 
         for (Path root : roots) {
             PackLoader.Discovery d = PackLoader.discover(root);
             d.rejected().forEach((dir, errs) -> rejected.put(root.getFileName() + "/" + dir, errs));
             warnings.addAll(d.warnings());
             for (RulePack p : d.packs()) {
-                PackIntegrity.Result integ = PackIntegrity.verify(p.dir(), key);
-                if (integ.state() == PackIntegrity.State.INVALID) {
-                    rejected.put(root.getFileName() + "/" + p.dir().getFileName(), List.of("integridade: " + integ.detail()));
-                    continue;
-                }
-                if (requireSignature && integ.state() != PackIntegrity.State.SIGNED) {
-                    rejected.put(root.getFileName() + "/" + p.dir().getFileName(),
-                            List.of("assinatura obrigatória: pacote " + (integ.state() == PackIntegrity.State.UNSIGNED
-                                    ? "sem pack.lock" : "sem assinatura válida para a chave configurada")));
-                    continue;
-                }
-                RulePack prev = byId.get(p.id());
-                if (prev != null) {
-                    int cmp = Versions.compare(Versions.parse(p.manifest().version()), Versions.parse(prev.manifest().version()));
-                    if (cmp < 0) {
-                        warnings.add("pacote '" + p.id() + "' v" + p.manifest().version() + " ignorado: já há a v"
-                                + prev.manifest().version());
-                        continue;
-                    }
-                    warnings.add("pacote '" + p.id() + "': v" + p.manifest().version() + " (" + root + ") substitui a v"
-                            + prev.manifest().version());
-                }
-                byId.put(p.id(), p);
-                integrity.put(p.id(), integ.state().name().toLowerCase(Locale.ROOT).replace('_', '-'));
+                acceptPack(p, root, key, byId, integrity, rejected, warnings);
             }
             profiles.putAll(ProfileLoader.loadAll(root, rejected));
         }
@@ -227,6 +144,123 @@ public class PackRegistry {
                 packs.size(), packs.stream().map(RulePack::id).toList(), profiles.size(), rejected.size());
         rejected.forEach((k, v) -> LOG.warnf("Pacote/perfil rejeitado %s: %s", k, v));
         return s;
+    }
+
+    /** Pastas de pacotes, sem repetição: as fixas (testes) ou as embutidas, as configuradas e o checkout do Git. */
+    private List<Path> collectRoots(List<String> warnings) {
+        List<Path> roots = new ArrayList<>();
+        Set<Path> seen = new LinkedHashSet<>();
+        if (fixedRoots != null) {
+            for (Path r : fixedRoots) {
+                addRoot(roots, seen, r.toAbsolutePath().normalize());
+            }
+            return roots;
+        }
+        for (String c : BUILTIN_DIRS) {
+            addRoot(roots, seen, Paths.get(c).toAbsolutePath().normalize());
+        }
+        extraDirs.ifPresent(v -> addConfiguredDirs(v, roots, seen, warnings));
+        if (gitUrl.isPresent() && !gitUrl.get().isBlank()) {
+            Path root = gitRoot(warnings);
+            if (root != null) {
+                roots.add(root);
+            }
+        }
+        return roots;
+    }
+
+    private static void addRoot(List<Path> roots, Set<Path> seen, Path dir) {
+        if (Files.isDirectory(dir) && seen.add(dir)) {
+            roots.add(dir);
+        }
+    }
+
+    private static void addConfiguredDirs(String csv, List<Path> roots, Set<Path> seen, List<String> warnings) {
+        for (String c : csv.split(",")) {
+            if (c.isBlank()) {
+                continue;
+            }
+            Path d = Paths.get(c.trim()).toAbsolutePath().normalize();
+            if (!Files.isDirectory(d)) {
+                warnings.add("pasta de pacotes não encontrada: " + d);
+            } else if (seen.add(d)) {
+                roots.add(d);
+            }
+        }
+    }
+
+    /** Raiz dos pacotes no repositório Git configurado; {@code null} (com aviso) se não deu para obtê-la. */
+    private Path gitRoot(List<String> warnings) {
+        try {
+            Path checkout = PackSources.sync(gitUrl.get().trim(), gitRef, Paths.get(cacheDir), 180, allowFileUrl);
+            Path root = gitPath.filter(p -> !p.isBlank()).map(p -> checkout.resolve(p.trim()).normalize()).orElse(checkout);
+            if (!root.startsWith(checkout) || !Files.isDirectory(root)) {
+                warnings.add("git-path inválido ou inexistente no repositório de pacotes: " + gitPath.orElse(""));
+                return null;
+            }
+            return root;
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            // falha de rede não derruba: segue com o que já havia em cache/embutido
+            warnings.add("não foi possível atualizar os pacotes do Git: " + e.getMessage());
+            LOG.warnf("Pacotes do Git indisponíveis: %s", e.getMessage());
+            return null;
+        }
+    }
+
+    private java.security.PublicKey configuredKey(List<String> warnings) {
+        if (publicKey.isEmpty() || publicKey.get().isBlank()) {
+            return null;
+        }
+        try {
+            return PackIntegrity.publicKey(publicKey.get());
+        } catch (Exception e) {
+            warnings.add("sentinel.audit.packs.public-key inválida: assinaturas não serão conferidas");
+            return null;
+        }
+    }
+
+    private Set<String> disabledIds() {
+        Set<String> off = new LinkedHashSet<>();
+        disabled.ifPresent(v -> {
+            for (String id : v.split(",")) {
+                if (!id.isBlank()) {
+                    off.add(id.trim().toLowerCase(Locale.ROOT));
+                }
+            }
+        });
+        return off;
+    }
+
+    /** Confere integridade e assinatura e fica com a versão mais nova quando o mesmo pacote aparece em mais de uma pasta. */
+    private void acceptPack(RulePack p, Path root, java.security.PublicKey key, Map<String, RulePack> byId,
+                            Map<String, String> integrity, Map<String, List<String>> rejected, List<String> warnings) {
+        PackIntegrity.Result integ = PackIntegrity.verify(p.dir(), key);
+        String where = root.getFileName() + "/" + p.dir().getFileName();
+        if (integ.state() == PackIntegrity.State.INVALID) {
+            rejected.put(where, List.of("integridade: " + integ.detail()));
+            return;
+        }
+        if (requireSignature && integ.state() != PackIntegrity.State.SIGNED) {
+            rejected.put(where, List.of("assinatura obrigatória: pacote " + (integ.state() == PackIntegrity.State.UNSIGNED
+                    ? "sem pack.lock" : "sem assinatura válida para a chave configurada")));
+            return;
+        }
+        RulePack prev = byId.get(p.id());
+        if (prev != null) {
+            int cmp = Versions.compare(Versions.parse(p.manifest().version()), Versions.parse(prev.manifest().version()));
+            if (cmp < 0) {
+                warnings.add("pacote '" + p.id() + "' v" + p.manifest().version() + " ignorado: já há a v"
+                        + prev.manifest().version());
+                return;
+            }
+            warnings.add("pacote '" + p.id() + "': v" + p.manifest().version() + " (" + root + ") substitui a v"
+                    + prev.manifest().version());
+        }
+        byId.put(p.id(), p);
+        integrity.put(p.id(), integ.state().name().toLowerCase(Locale.ROOT).replace('_', '-'));
     }
 
     /** Remove perfis com herança quebrada ou circular; pacote desconhecido num perfil vira aviso. */

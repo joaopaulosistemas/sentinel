@@ -3,6 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { useDiff } from '../hooks/useLifecycle';
 import { RiskBadge } from './RiskBadge';
 
+function Stat({ value, label, color }: { value: number; label: string; color?: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: '1.5rem', fontWeight: 700, color }}>{value}</div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>{label}</div>
+    </div>
+  );
+}
+
+function scoreTagType(delta: number): 'green' | 'red' | 'warm-gray' {
+  if (delta > 0) return 'green';
+  return delta < 0 ? 'red' : 'warm-gray';
+}
+
 /** O que mudou desde a auditoria anterior: novos, corrigidos e variação do score. */
 export function DiffSummary({ auditId }: { auditId: number }) {
   const { data, isLoading } = useDiff(auditId);
@@ -20,22 +34,11 @@ export function DiffSummary({ auditId }: { auditId: number }) {
       ) : (
         <>
           <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: data.newFindings.length ? '#da1e28' : '#24a148' }}>
-                {data.newFindings.length}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>novos</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#24a148' }}>{data.resolvedFindings.length}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>corrigidos</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{data.persistingCount}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>continuam</div>
-            </div>
+            <Stat value={data.newFindings.length} label="novos" color={data.newFindings.length ? '#da1e28' : '#24a148'} />
+            <Stat value={data.resolvedFindings.length} label="corrigidos" color="#24a148" />
+            <Stat value={data.persistingCount} label="continuam" />
             {data.scoreDelta !== null && (
-              <Tag type={data.scoreDelta > 0 ? 'green' : data.scoreDelta < 0 ? 'red' : 'warm-gray'}>
+              <Tag type={scoreTagType(data.scoreDelta)}>
                 Score {data.scoreDelta > 0 ? '+' : ''}
                 {data.scoreDelta} (auditoria #{data.baseAuditId})
               </Tag>

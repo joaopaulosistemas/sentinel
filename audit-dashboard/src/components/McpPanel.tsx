@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../api/client';
 import { startLabel } from '../utils/timeAgo';
-import type { McpConfigRequest, McpDataLevel, McpNewKey, SystemSummaryResponse } from '../types';
+import type { McpConfig, McpConfigRequest, McpDataLevel, McpNewKey, SystemSummaryResponse } from '../types';
+import { LoadError } from './EngineRulesParts';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
@@ -26,10 +27,6 @@ async function copy(text: string) {
   }
 }
 
-/**
- * Aba "Claude (MCP)" do cadastro de um sistema. Tudo aqui vale só para este sistema e salva na hora:
- * liga a consulta, gera a chave, escolhe quanto do resultado pode sair e quais ferramentas ficam liberadas.
- */
 /** O registro guarda "erro | campo=valor"; chamadas que deram certo guardam só os parâmetros. */
 function callParams(c: { ok: boolean; detail?: string | null }): string {
   if (!c.detail) return '';
@@ -40,11 +37,192 @@ function callParams(c: { ok: boolean; detail?: string | null }): string {
   return c.detail;
 }
 
+
+type UpdateMutation = { isPending: boolean; mutate: (body: McpConfigRequest) => void };
+
+interface KeyProps {
+  cfg: McpConfig;
+  url: string;
+  systemName: string;
+  fresh: McpNewKey | null;
+  confirmNew: boolean;
+  issuing: boolean;
+  revoking: boolean;
+  onIssue: () => void;
+  onRevoke: () => void;
+  onConfirmNew: (on: boolean) => void;
+  onDismissFresh: () => void;
+}
+
+function KeyButtons({ cfg, confirmNew, issuing, revoking, onIssue, onRevoke, onConfirmNew }: Pick<KeyProps, 'cfg' | 'confirmNew' | 'issuing' | 'revoking' | 'onIssue' | 'onRevoke' | 'onConfirmNew'>) {
+  return (
+    <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+      {!cfg.hasKey || confirmNew ? (
+        <Button kind="primary" size="sm" disabled={issuing} onClick={onIssue}>
+          {confirmNew ? 'Confirmar: gerar e invalidar a anterior' : 'Gerar chave'}
+        </Button>
+      ) : (
+        <Button kind="tertiary" size="sm" onClick={() => onConfirmNew(true)}>Gerar nova chave</Button>
+      )}
+      {confirmNew && <Button kind="ghost" size="sm" onClick={() => onConfirmNew(false)}>Cancelar</Button>}
+      {cfg.hasKey && !confirmNew && (
+        <Button kind="danger--tertiary" size="sm" disabled={revoking} onClick={onRevoke}>
+          Revogar e desligar
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function FreshKey({ fresh, url, systemName, onDismiss }: { fresh: McpNewKey; url: string; systemName: string; onDismiss: () => void }) {
+  const command = connectCommand(url, systemName, fresh.key);
+  return (
+    <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
+      <strong>Copie a chave agora: ela não aparece de novo.</strong>
+      <code style={{ fontFamily: mono, fontSize: 13, wordBreak: 'break-all' }}>{fresh.key}</code>
+      <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Para registrar no Claude Code:</div>
+      <code style={{ fontFamily: mono, fontSize: 12, wordBreak: 'break-all' }}>{command}</code>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Button kind="tertiary" size="sm" onClick={() => copy(fresh.key)}>Copiar chave</Button>
+        <Button kind="tertiary" size="sm" onClick={() => copy(command)}>Copiar comando</Button>
+        <Button kind="ghost" size="sm" onClick={onDismiss}>Já copiei</Button>
+      </div>
+    </div>
+  );
+}
+
+function KeySection(props: KeyProps) {
+  const { cfg, url, systemName, fresh, onDismissFresh } = props;
+  return (
+    <section aria-label="Endereço e chave" style={{ display: 'grid', gap: 10 }}>
+      <div>
+        <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Endereço deste sistema</div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <code style={{ fontFamily: mono, fontSize: 13, background: 'var(--s-layer)', padding: '4px 8px', wordBreak: 'break-all' }}>{url}</code>
+          <Button kind="ghost" size="sm" onClick={() => copy(url)}>Copiar</Button>
+        </div>
+      </div>
+
+      <div>
+        <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Chave</div>
+        {cfg.hasKey ? (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <code style={{ fontFamily: mono, fontSize: 13 }}>{cfg.keyPrefix}…</code>
+            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>criada em {startLabel(cfg.keyCreatedAt)}</span>
+          </div>
+        ) : (
+          <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma chave gerada.</span>
+        )}
+        <KeyButtons {...props} />
+      </div>
+
+      {fresh && <FreshKey fresh={fresh} url={url} systemName={systemName} onDismiss={onDismissFresh} />}
+    </section>
+  );
+}
+
+function LevelsFieldset({ cfg, update }: { cfg: McpConfig; update: UpdateMutation }) {
+  return (
+    <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+      <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>O que o Claude pode ver</legend>
+      {LEVELS.map((l) => (
+        <label key={l.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+          <input
+            type="radio"
+            name="mcp-level"
+            checked={cfg.dataLevel === l.id}
+            disabled={update.isPending}
+            onChange={() => update.mutate({ dataLevel: l.id })}
+            style={{ marginTop: 4 }}
+          />
+          <span>
+            <span style={{ fontWeight: 500 }}>{l.titulo}</span>
+            <br />
+            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{l.texto}</span>
+          </span>
+        </label>
+      ))}
+      <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--s-text-3)' }}>
+        O trecho de código nunca sai, em nenhum nível. Quem usa o Claude Code já lê a pasta do projeto no próprio computador:
+        este controle vale para o que o Sentinel entrega.
+      </p>
+    </fieldset>
+  );
+}
+
+function ToolsFieldset({ cfg, update, onToggle }: { cfg: McpConfig; update: UpdateMutation; onToggle: (name: string, on: boolean) => void }) {
+  return (
+    <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+      <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Ferramentas liberadas</legend>
+      {cfg.tools.map((t) => (
+        <Checkbox
+          key={t.name}
+          id={`mcp-tool-${t.name}`}
+          labelText={`${t.name} · ${t.writes ? 'escreve' : 'leitura'}`}
+          helperText={t.description}
+          checked={t.enabled}
+          disabled={update.isPending}
+          onChange={(_, { checked }) => onToggle(t.name, checked)}
+        />
+      ))}
+    </fieldset>
+  );
+}
+
+type CallRow = NonNullable<ReturnType<typeof useCalls>['data']>[number];
+const useCalls = (systemId: number) =>
+  useQuery({ queryKey: ['mcp', systemId, 'calls'], queryFn: () => api.getMcpCalls(systemId), refetchOnWindowFocus: true });
+
+function callResult(c: CallRow): string {
+  if (c.ok) return 'ok';
+  return c.detail?.split(' | ')[0] || 'recusada';
+}
+
+function CallsSection({ calls }: { calls: CallRow[] | undefined }) {
+  return (
+    <section aria-label="Últimas chamadas" style={{ display: 'grid', gap: 6 }}>
+      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Últimas chamadas</h3>
+      {calls && calls.length > 0 ? (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ textAlign: 'left', background: 'var(--s-header-row)' }}>
+                <th style={{ padding: '6px 8px' }}>Quando</th>
+                <th style={{ padding: '6px 8px' }}>Ferramenta</th>
+                <th style={{ padding: '6px 8px' }}>Resultado</th>
+                <th style={{ padding: '6px 8px' }}>Parâmetros</th>
+                <th style={{ padding: '6px 8px' }}>Tempo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {calls.map((c) => (
+                <tr key={`${c.at}-${c.tool}`} style={{ borderTop: '1px solid var(--s-border)' }}>
+                  <td style={{ padding: '6px 8px' }}>{startLabel(c.at)}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: mono }}>{c.tool}</td>
+                  <td style={{ padding: '6px 8px', color: c.ok ? 'var(--s-success-text)' : 'var(--s-danger-text)' }}>{callResult(c)}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: mono, wordBreak: 'break-word' }}>{callParams(c)}</td>
+                  <td style={{ padding: '6px 8px' }}>{c.durationMs} ms</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma chamada ainda.</span>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Aba "Claude (MCP)" do cadastro de um sistema. Tudo aqui vale só para este sistema e salva na hora:
+ * liga a consulta, gera a chave, escolhe quanto do resultado pode sair e quais ferramentas ficam liberadas.
+ */
 export function McpPanel({ system }: { system: SystemSummaryResponse }) {
   const queryClient = useQueryClient();
   const key = ['mcp', system.id];
   const config = useQuery({ queryKey: key, queryFn: () => api.getMcp(system.id) });
-  const calls = useQuery({ queryKey: [...key, 'calls'], queryFn: () => api.getMcpCalls(system.id), refetchOnWindowFocus: true });
+  const calls = useCalls(system.id);
   // A chave completa só existe logo depois de gerada; ao fechar o painel ela some.
   const [fresh, setFresh] = useState<McpNewKey | null>(null);
   const [confirmNew, setConfirmNew] = useState(false);
@@ -73,13 +251,7 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
   });
 
   if (config.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
-  if (config.isError || !config.data) {
-    return (
-      <div style={{ padding: 24 }}>
-        <InlineNotification kind="error" title="Não foi possível carregar" subtitle={config.error instanceof Error ? config.error.message : 'Erro desconhecido'} hideCloseButton />
-      </div>
-    );
-  }
+  if (config.isError || !config.data) return <LoadError error={config.error} />;
 
   const cfg = config.data;
   const url = `${window.location.origin}/mcp/${encodeURIComponent(system.name)}`;
@@ -107,128 +279,22 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
         onChange={(_, { checked }) => update.mutate({ enabled: checked })}
       />
 
-      <section aria-label="Endereço e chave" style={{ display: 'grid', gap: 10 }}>
-        <div>
-          <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Endereço deste sistema</div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <code style={{ fontFamily: mono, fontSize: 13, background: 'var(--s-layer)', padding: '4px 8px', wordBreak: 'break-all' }}>{url}</code>
-            <Button kind="ghost" size="sm" onClick={() => copy(url)}>Copiar</Button>
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Chave</div>
-          {cfg.hasKey ? (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <code style={{ fontFamily: mono, fontSize: 13 }}>{cfg.keyPrefix}…</code>
-              <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>criada em {startLabel(cfg.keyCreatedAt)}</span>
-            </div>
-          ) : (
-            <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma chave gerada.</span>
-          )}
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            {!cfg.hasKey || confirmNew ? (
-              <Button kind="primary" size="sm" disabled={issue.isPending} onClick={() => issue.mutate()}>
-                {confirmNew ? 'Confirmar: gerar e invalidar a anterior' : 'Gerar chave'}
-              </Button>
-            ) : (
-              <Button kind="tertiary" size="sm" onClick={() => setConfirmNew(true)}>Gerar nova chave</Button>
-            )}
-            {confirmNew && <Button kind="ghost" size="sm" onClick={() => setConfirmNew(false)}>Cancelar</Button>}
-            {cfg.hasKey && !confirmNew && (
-              <Button kind="danger--tertiary" size="sm" disabled={revoke.isPending} onClick={() => revoke.mutate()}>
-                Revogar e desligar
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {fresh && (
-          <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
-            <strong>Copie a chave agora: ela não aparece de novo.</strong>
-            <code style={{ fontFamily: mono, fontSize: 13, wordBreak: 'break-all' }}>{fresh.key}</code>
-            <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Para registrar no Claude Code:</div>
-            <code style={{ fontFamily: mono, fontSize: 12, wordBreak: 'break-all' }}>{connectCommand(url, system.name, fresh.key)}</code>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Button kind="tertiary" size="sm" onClick={() => copy(fresh.key)}>Copiar chave</Button>
-              <Button kind="tertiary" size="sm" onClick={() => copy(connectCommand(url, system.name, fresh.key))}>Copiar comando</Button>
-              <Button kind="ghost" size="sm" onClick={() => setFresh(null)}>Já copiei</Button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
-        <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>O que o Claude pode ver</legend>
-        {LEVELS.map((l) => (
-          <label key={l.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
-            <input
-              type="radio"
-              name="mcp-level"
-              checked={cfg.dataLevel === l.id}
-              disabled={update.isPending}
-              onChange={() => update.mutate({ dataLevel: l.id })}
-              style={{ marginTop: 4 }}
-            />
-            <span>
-              <span style={{ fontWeight: 500 }}>{l.titulo}</span>
-              <br />
-              <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{l.texto}</span>
-            </span>
-          </label>
-        ))}
-        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--s-text-3)' }}>
-          O trecho de código nunca sai, em nenhum nível. Quem usa o Claude Code já lê a pasta do projeto no próprio computador:
-          este controle vale para o que o Sentinel entrega.
-        </p>
-      </fieldset>
-
-      <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
-        <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Ferramentas liberadas</legend>
-        {cfg.tools.map((t) => (
-          <Checkbox
-            key={t.name}
-            id={`mcp-tool-${t.name}`}
-            labelText={`${t.name} · ${t.writes ? 'escreve' : 'leitura'}`}
-            helperText={t.description}
-            checked={t.enabled}
-            disabled={update.isPending}
-            onChange={(_, { checked }) => toggleTool(t.name, checked)}
-          />
-        ))}
-      </fieldset>
-
-      <section aria-label="Últimas chamadas" style={{ display: 'grid', gap: 6 }}>
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Últimas chamadas</h3>
-        {calls.data && calls.data.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead>
-                <tr style={{ textAlign: 'left', background: 'var(--s-header-row)' }}>
-                  <th style={{ padding: '6px 8px' }}>Quando</th>
-                  <th style={{ padding: '6px 8px' }}>Ferramenta</th>
-                  <th style={{ padding: '6px 8px' }}>Resultado</th>
-                  <th style={{ padding: '6px 8px' }}>Parâmetros</th>
-                  <th style={{ padding: '6px 8px' }}>Tempo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {calls.data.map((c, i) => (
-                  <tr key={`${c.at}-${i}`} style={{ borderTop: '1px solid var(--s-border)' }}>
-                    <td style={{ padding: '6px 8px' }}>{startLabel(c.at)}</td>
-                    <td style={{ padding: '6px 8px', fontFamily: mono }}>{c.tool}</td>
-                    <td style={{ padding: '6px 8px', color: c.ok ? 'var(--s-success-text)' : 'var(--s-danger-text)' }}>{c.ok ? 'ok' : (c.detail?.split(' | ')[0] || 'recusada')}</td>
-                    <td style={{ padding: '6px 8px', fontFamily: mono, wordBreak: 'break-word' }}>{callParams(c)}</td>
-                    <td style={{ padding: '6px 8px' }}>{c.durationMs} ms</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma chamada ainda.</span>
-        )}
-      </section>
+      <KeySection
+        cfg={cfg}
+        url={url}
+        systemName={system.name}
+        fresh={fresh}
+        confirmNew={confirmNew}
+        issuing={issue.isPending}
+        revoking={revoke.isPending}
+        onIssue={() => issue.mutate()}
+        onRevoke={() => revoke.mutate()}
+        onConfirmNew={setConfirmNew}
+        onDismissFresh={() => setFresh(null)}
+      />
+      <LevelsFieldset cfg={cfg} update={update} />
+      <ToolsFieldset cfg={cfg} update={update} onToggle={toggleTool} />
+      <CallsSection calls={calls.data} />
     </div>
   );
 }

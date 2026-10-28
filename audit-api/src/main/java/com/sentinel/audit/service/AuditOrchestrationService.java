@@ -46,6 +46,7 @@ import org.jboss.logging.Logger;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -270,9 +271,14 @@ public class AuditOrchestrationService {
             checkNotCancelled(auditRunId);
             List<Finding> allFindings = policy.apply(FindingDeduplicator.apply(analysis.findings()));
             allFindings = onlyChangedFiles(allFindings, context, clonedPath);
+            // O projeto pode declarar em .sentinel.yml o que não entra na nota (exclude) e o que aceitou (suppress).
+            ProjectConfig.Result projectConfig = ProjectConfig.load(clonedPath).apply(allFindings, LocalDate.now());
+            allFindings = projectConfig.findings();
+            projectConfig.problems().forEach(problem -> LOG.warnf("Auditoria %d: %s", auditRunId, problem));
 
             // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
-            progress.phase(auditRunId, AuditProgressTracker.PONTUACAO, "Análise concluída: " + allFindings.size() + " achados; calculando a nota");
+            progress.phase(auditRunId, AuditProgressTracker.PONTUACAO,
+                    "Análise concluída: " + allFindings.size() + " achados" + projectConfig.summary() + "; calculando a nota");
             FindingLifecycleService.apply(allFindings, loadBaselineSafely(auditRunId));
             FindingConfidence.assessAll(allFindings, loadRuleQualitySafely(), globalAuthOf(clonedPath));
             long linesOfCode = sizing.lines();

@@ -90,7 +90,7 @@ public class RulePlaygroundService {
         if (code.length() > MAX_CODE_CHARS) {
             throw new IllegalArgumentException("Código grande demais (máximo " + MAX_CODE_CHARS + " caracteres)");
         }
-        String fileName = FILES.get(extension == null ? "" : extension.toLowerCase());
+        String fileName = FILES.get(extension == null ? "" : extension.toLowerCase(java.util.Locale.ROOT));
         if (fileName == null) {
             throw new IllegalArgumentException("Extensão não suportada: " + extension + " (use " + String.join(", ", new java.util.TreeSet<>(FILES.keySet())) + ")");
         }

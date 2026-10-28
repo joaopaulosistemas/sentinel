@@ -426,65 +426,91 @@ public final class PackLoader {
         for (Path file : yamlFiles(dir.resolve("tools"))) {
             String name = dir.relativize(file).toString();
             for (Map<String, Object> m : items(read(file, dir, errors), name, errors)) {
-                checkKeys(m, Set.of("id", "name", "command", "input", "category", "timeout-seconds", "severity-map", "stdout", "applies-to"), name, errors);
-                String id = Yamls.str(m, "id");
-                if (id == null || !PackManifest.ID.matcher(id).matches()) {
-                    errors.add(name + ": 'id' ausente ou inválido");
-                    continue;
+                ToolSpec spec = parseTool(m, name, ids, errors);
+                if (spec != null) {
+                    out.add(spec);
                 }
-                if (!ids.add(id)) {
-                    errors.add(name + ": ferramenta '" + id + "' repetida");
-                }
-                List<String> command = Yamls.strings(m, "command", errors, name + " '" + id + "'");
-                String input = Yamls.str(m, "input");
-                boolean hasCmd = command != null && !command.isEmpty();
-                if (hasCmd == (input != null)) {
-                    errors.add(name + " '" + id + "': informe exatamente um entre 'command' e 'input'");
-                    continue;
-                }
-                boolean stdout = Yamls.bool(m, "stdout", false);
-                if (hasCmd && !stdout && command.stream().noneMatch(a -> a.contains("{output}"))) {
-                    errors.add(name + " '" + id + "': o comando precisa do placeholder {output} (onde a ferramenta grava o SARIF) ou 'stdout: true'");
-                }
-                if (hasCmd && stdout && command.stream().anyMatch(a -> a.contains("{output}"))) {
-                    errors.add(name + " '" + id + "': com 'stdout: true' o comando não usa {output}");
-                }
-                if (!hasCmd && stdout) {
-                    errors.add(name + " '" + id + "': 'stdout' só vale com 'command'");
-                }
-                List<String> applies = Yamls.strings(m, "applies-to", errors, name + " '" + id + "'");
-                if (applies == null) {
-                    applies = List.of();
-                }
-                for (String g : applies) {
-                    if (g.startsWith("/") || g.contains("..")) {
-                        errors.add(name + " '" + id + "': 'applies-to' deve ser glob relativo ao projeto, sem '..'");
-                    }
-                }
-                if (hasCmd && command.stream().anyMatch(a -> a.equals("{files}")) && applies.isEmpty()) {
-                    errors.add(name + " '" + id + "': {files} exige 'applies-to'");
-                }
-                if (input != null && (input.startsWith("/") || input.contains(".."))) {
-                    errors.add(name + " '" + id + "': 'input' deve ser um glob relativo ao projeto, sem '..'");
-                }
-                Map<String, Severity> levels = new LinkedHashMap<>();
-                Map<String, Object> sm = Yamls.map(m.get("severity-map"));
-                if (sm != null) {
-                    for (String lvl : sm.keySet()) {
-                        if (!LEVELS.contains(lvl)) {
-                            errors.add(name + " '" + id + "': nível '" + lvl + "' inválido em severity-map (error, warning, note, none)");
-                        } else {
-                            levels.put(lvl, severity(sm, lvl, Severity.MEDIUM, name + " '" + id + "'.severity-map", errors));
-                        }
-                    }
-                }
-                out.add(new ToolSpec(id, Yamls.str(m, "name") == null ? id : Yamls.str(m, "name"),
-                        hasCmd ? command : List.of(), input,
-                        category(m, "category", Category.QUALITY, name + " '" + id + "'", errors), levels,
-                        Yamls.integer(m, "timeout-seconds", 600, errors, name), stdout, applies));
             }
         }
         return out;
+    }
+
+    /** Uma ferramenta de {@code tools/*.yml}; devolve {@code null} quando o item é inutilizável (o erro já foi registrado). */
+    private static ToolSpec parseTool(Map<String, Object> m, String name, Set<String> ids, List<String> errors) {
+        checkKeys(m, Set.of("id", "name", "command", "input", "category", "timeout-seconds", "severity-map", "stdout", "applies-to"), name, errors);
+        String id = Yamls.str(m, "id");
+        if (id == null || !PackManifest.ID.matcher(id).matches()) {
+            errors.add(name + ": 'id' ausente ou inválido");
+            return null;
+        }
+        if (!ids.add(id)) {
+            errors.add(name + ": ferramenta '" + id + "' repetida");
+        }
+        String where = name + " '" + id + "'";
+        List<String> command = Yamls.strings(m, "command", errors, where);
+        String input = Yamls.str(m, "input");
+        boolean hasCmd = command != null && !command.isEmpty();
+        if (hasCmd == (input != null)) {
+            errors.add(where + ": informe exatamente um entre 'command' e 'input'");
+            return null;
+        }
+        boolean stdout = Yamls.bool(m, "stdout", false);
+        List<String> args = hasCmd ? command : List.of();
+        checkToolOutput(args, hasCmd, stdout, where, errors);
+        List<String> applies = Yamls.strings(m, "applies-to", errors, where);
+        if (applies == null) {
+            applies = List.of();
+        }
+        checkToolGlobs(args, applies, input, where, errors);
+        String toolName = Yamls.str(m, "name");
+        return new ToolSpec(id, toolName == null ? id : toolName, args, input,
+                category(m, "category", Category.QUALITY, where, errors), toolSeverityMap(m, where, errors),
+                Yamls.integer(m, "timeout-seconds", 600, errors, name), stdout, applies);
+    }
+
+    /** O comando grava o SARIF em {output} ou escreve no stdout; nunca os dois, e 'stdout' só vale com 'command'. */
+    private static void checkToolOutput(List<String> command, boolean hasCmd, boolean stdout, String where, List<String> errors) {
+        boolean usesOutput = command.stream().anyMatch(a -> a.contains("{output}"));
+        if (hasCmd && !stdout && !usesOutput) {
+            errors.add(where + ": o comando precisa do placeholder {output} (onde a ferramenta grava o SARIF) ou 'stdout: true'");
+        }
+        if (hasCmd && stdout && usesOutput) {
+            errors.add(where + ": com 'stdout: true' o comando não usa {output}");
+        }
+        if (!hasCmd && stdout) {
+            errors.add(where + ": 'stdout' só vale com 'command'");
+        }
+    }
+
+    /** Globs de 'applies-to' e 'input' são relativos ao projeto; {files} só faz sentido com 'applies-to'. */
+    private static void checkToolGlobs(List<String> command, List<String> applies, String input, String where, List<String> errors) {
+        for (String g : applies) {
+            if (g.startsWith("/") || g.contains("..")) {
+                errors.add(where + ": 'applies-to' deve ser glob relativo ao projeto, sem '..'");
+            }
+        }
+        if (command.stream().anyMatch(a -> a.equals("{files}")) && applies.isEmpty()) {
+            errors.add(where + ": {files} exige 'applies-to'");
+        }
+        if (input != null && (input.startsWith("/") || input.contains(".."))) {
+            errors.add(where + ": 'input' deve ser um glob relativo ao projeto, sem '..'");
+        }
+    }
+
+    private static Map<String, Severity> toolSeverityMap(Map<String, Object> m, String where, List<String> errors) {
+        Map<String, Severity> levels = new LinkedHashMap<>();
+        Map<String, Object> sm = Yamls.map(m.get("severity-map"));
+        if (sm == null) {
+            return levels;
+        }
+        for (String lvl : sm.keySet()) {
+            if (LEVELS.contains(lvl)) {
+                levels.put(lvl, severity(sm, lvl, Severity.MEDIUM, where + ".severity-map", errors));
+            } else {
+                errors.add(where + ": nível '" + lvl + "' inválido em severity-map (error, warning, note, none)");
+            }
+        }
+        return levels;
     }
 
     // ------------------------------------------------------------------ architecture.yml
@@ -505,9 +531,21 @@ public final class PackLoader {
         String f = "architecture.yml";
         checkKeys(m, Set.of("layers", "forbid", "allow", "strict", "conventions", "required-files", "components"), f, errors);
 
+        List<ArchitecturePolicy.Layer> layers = parseLayers(m.get("layers"), f, errors);
+        Set<String> layerNames = new HashSet<>();
+        layers.forEach(l -> layerNames.add(l.name()));
+        List<ArchitecturePolicy.LayerRule> forbid = layerRules(m.get("forbid"), "forbid", layerNames, f, errors);
+        List<ArchitecturePolicy.LayerRule> allow = layerRules(m.get("allow"), "allow", layerNames, f, errors);
+        List<ArchitecturePolicy.Convention> conventions = parseConventions(m.get("conventions"), f, errors);
+        List<ArchitecturePolicy.RequiredFile> required = parseRequiredFiles(m.get("required-files"), f, errors);
+        ArchitecturePolicy.Components components = parseComponents(Yamls.map(m.get("components")), f, errors);
+        return new ArchitecturePolicy(layers, forbid, allow, Yamls.bool(m, "strict", false), conventions, required, components);
+    }
+
+    private static List<ArchitecturePolicy.Layer> parseLayers(Object raw, String f, List<String> errors) {
         List<ArchitecturePolicy.Layer> layers = new ArrayList<>();
         Set<String> layerNames = new HashSet<>();
-        for (Map<String, Object> l : items(m.get("layers"), f + " layers", errors)) {
+        for (Map<String, Object> l : items(raw, f + " layers", errors)) {
             checkKeys(l, Set.of("name", "paths", "packages"), f + " layers", errors);
             String name = Yamls.str(l, "name");
             List<String> paths = Yamls.strings(l, "paths", errors, f + " layers");
@@ -524,12 +562,13 @@ public final class PackLoader {
             }
             layers.add(new ArchitecturePolicy.Layer(name, paths == null ? List.of() : paths, pkgs == null ? List.of() : pkgs));
         }
-        List<ArchitecturePolicy.LayerRule> forbid = layerRules(m.get("forbid"), "forbid", layerNames, f, errors);
-        List<ArchitecturePolicy.LayerRule> allow = layerRules(m.get("allow"), "allow", layerNames, f, errors);
+        return layers;
+    }
 
+    private static List<ArchitecturePolicy.Convention> parseConventions(Object raw, String f, List<String> errors) {
         List<ArchitecturePolicy.Convention> conventions = new ArrayList<>();
         Set<String> convIds = new HashSet<>();
-        for (Map<String, Object> c : items(m.get("conventions"), f + " conventions", errors)) {
+        for (Map<String, Object> c : items(raw, f + " conventions", errors)) {
             checkKeys(c, Set.of("id", "title", "files", "exclude", "require", "forbid", "message", "severity", "category"), f + " conventions", errors);
             String id = Yamls.str(c, "id");
             List<String> files = Yamls.strings(c, "files", errors, f + " conventions");
@@ -552,14 +591,18 @@ public final class PackLoader {
             checkRegex(require, where + ".require", errors);
             checkRegex(forb, where + ".forbid", errors);
             List<String> exclude = Yamls.strings(c, "exclude", errors, where);
-            conventions.add(new ArchitecturePolicy.Convention(id, Yamls.str(c, "title") == null ? id : Yamls.str(c, "title"),
+            String title = Yamls.str(c, "title");
+            conventions.add(new ArchitecturePolicy.Convention(id, title == null ? id : title,
                     files == null ? List.of() : files, exclude == null ? List.of() : exclude, require, forb,
                     Yamls.str(c, "message"), severity(c, "severity", Severity.MEDIUM, where, errors),
                     category(c, "category", Category.ARCHITECTURE, where, errors)));
         }
+        return conventions;
+    }
 
+    private static List<ArchitecturePolicy.RequiredFile> parseRequiredFiles(Object raw, String f, List<String> errors) {
         List<ArchitecturePolicy.RequiredFile> required = new ArrayList<>();
-        for (Map<String, Object> r : items(m.get("required-files"), f + " required-files", errors)) {
+        for (Map<String, Object> r : items(raw, f + " required-files", errors)) {
             checkKeys(r, Set.of("path", "message", "severity"), f + " required-files", errors);
             String path = Yamls.str(r, "path");
             if (path == null) {
@@ -569,9 +612,7 @@ public final class PackLoader {
             required.add(new ArchitecturePolicy.RequiredFile(path, Yamls.str(r, "message"),
                     severity(r, "severity", Severity.LOW, f + " required-file '" + path + "'", errors)));
         }
-
-        ArchitecturePolicy.Components components = parseComponents(Yamls.map(m.get("components")), f, errors);
-        return new ArchitecturePolicy(layers, forbid, allow, Yamls.bool(m, "strict", false), conventions, required, components);
+        return required;
     }
 
     private static List<ArchitecturePolicy.LayerRule> layerRules(Object raw, String kind, Set<String> layerNames,

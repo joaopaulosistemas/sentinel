@@ -5,17 +5,13 @@ import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.CreateSystemRequest;
 import com.sentinel.audit.dto.ProfileRequest;
 import com.sentinel.audit.dto.ScheduleRequest;
-import com.sentinel.audit.dto.RiskScoreDto;
 import com.sentinel.audit.dto.SystemSummaryResponse;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditStatus;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.pack.PackRegistry;
-import com.sentinel.audit.repository.AuditRunRepository;
-import com.sentinel.audit.repository.AuditedSystemRepository;
-import com.sentinel.audit.repository.FindingRepository;
-import com.sentinel.audit.repository.FindingSuppressionRepository;
+import com.sentinel.audit.service.FindingCatalog;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.dto.TrendPoint;
@@ -26,6 +22,8 @@ import com.sentinel.audit.dto.RepoCheckRequest;
 import com.sentinel.audit.model.LocalSnapshot;
 import com.sentinel.audit.model.SourceType;
 import com.sentinel.audit.service.LocalSource;
+import com.sentinel.audit.service.RunCatalog;
+import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -65,19 +63,16 @@ public class SystemResource {
     com.sentinel.audit.service.SecretBox secretBox;
 
     @Inject
-    AuditedSystemRepository systemRepository;
+    SystemCatalog systemCatalog;
 
     @Inject
-    AuditRunRepository auditRunRepository;
+    RunCatalog runCatalog;
 
     @Inject
-    FindingRepository findingRepository;
+    FindingCatalog findingCatalog;
 
     @Inject
     FindingLifecycleService lifecycleService;
-
-    @Inject
-    FindingSuppressionRepository suppressionRepository;
 
     @Inject
     com.sentinel.audit.mcp.McpGateService mcpGate;
@@ -97,7 +92,7 @@ public class SystemResource {
     @GET
     @Operation(summary = "Listar sistemas", description = "Retorna todos os sistemas cadastrados com resumo da última auditoria")
     public List<SystemSummaryResponse> listSystems() {
-        return systemRepository.listAll().stream()
+        return systemCatalog.all().stream()
                 .map(this::toSummary)
                 .collect(Collectors.toList());
     }
@@ -117,7 +112,7 @@ public class SystemResource {
         system.setTeam(request.getTeam());
         system.setProfile(validProfile(request.getProfile()));
         applyGitAccess(system, request);
-        systemRepository.persist(system);
+        systemCatalog.add(system);
         return Response.status(Response.Status.CREATED).entity(toSummary(system)).build();
     }
 
@@ -131,7 +126,7 @@ public class SystemResource {
         String token = request.gitToken();
         String hosts = request.gitTokenHosts();
         if ((token == null || token.isBlank()) && request.systemId() != null) {
-            AuditedSystem system = systemRepository.findById(request.systemId());
+            AuditedSystem system = systemCatalog.findOrNull(request.systemId());
             if (system != null && system.hasGitToken()) {
                 token = secretBox.decrypt(system.getGitTokenEnc());
                 if (hosts == null || hosts.isBlank()) {
@@ -169,8 +164,7 @@ public class SystemResource {
     @Transactional
     @Operation(summary = "Atualizar sistema", description = "Altera nome, descrição, repositório, stack, equipe e (se informado) o perfil de regras")
     public SystemSummaryResponse updateSystem(@PathParam("id") Long id, @Valid CreateSystemRequest request) {
-        AuditedSystem system = systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        AuditedSystem system = systemCatalog.require(id);
         system.setName(request.getName());
         system.setDescription(request.getDescription());
         applySource(system, request);
@@ -190,8 +184,7 @@ public class SystemResource {
     @Path("/{id}")
     @Operation(summary = "Buscar sistema", description = "Retorna os dados de um sistema específico")
     public SystemSummaryResponse getSystem(@PathParam("id") Long id) {
-        AuditedSystem system = systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        AuditedSystem system = systemCatalog.require(id);
         return toSummary(system);
     }
 
@@ -203,15 +196,12 @@ public class SystemResource {
     @Transactional
     @Operation(summary = "Remover sistema", description = "Remove um sistema e todas as suas auditorias")
     public Response deleteSystem(@PathParam("id") Long id) {
-        AuditedSystem system = systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
-        // As supressões referenciam o sistema (FK): precisam sair antes.
-        suppressionRepository.findBySystemId(id).forEach(suppressionRepository::delete);
+        AuditedSystem system = systemCatalog.require(id);
         mcpGate.purge(id);
         tuningService.purge(id);
         reviewService.purge(id);
         pendingActions.purge(id);
-        systemRepository.delete(system);
+        systemCatalog.remove(system);
         return Response.noContent().build();
     }
 
@@ -222,8 +212,7 @@ public class SystemResource {
     @Path("/{id}/trend")
     @Operation(summary = "Tendência do score", description = "Score e contagem por severidade das últimas auditorias concluídas")
     public List<TrendPoint> trend(@PathParam("id") Long id, @QueryParam("limit") @DefaultValue("30") int limit) {
-        systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        systemCatalog.require(id);
         return lifecycleService.trend(id, limit);
     }
 
@@ -234,8 +223,7 @@ public class SystemResource {
     @Path("/{id}/suppressions")
     @Operation(summary = "Listar supressões")
     public List<SuppressionResponse> suppressions(@PathParam("id") Long id) {
-        systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        systemCatalog.require(id);
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         return lifecycleService.listSuppressions(id).stream()
                 .map(s -> SuppressionResponse.from(s, now))
@@ -262,8 +250,7 @@ public class SystemResource {
     @Operation(summary = "Configurar auditoria automática",
             description = "Intervalo em horas (0 desliga), branch auditada e auditoria a cada push")
     public SystemSummaryResponse updateSchedule(@PathParam("id") Long id, @Valid ScheduleRequest request) {
-        AuditedSystem system = systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        AuditedSystem system = systemCatalog.require(id);
         Integer hours = request.auditIntervalHours();
         system.setAuditIntervalHours(hours == null || hours <= 0 ? null : hours);
         system.setScheduledBranch(request.branch() == null || request.branch().isBlank() ? null : request.branch().trim());
@@ -278,10 +265,9 @@ public class SystemResource {
     @Path("/{id}/audits")
     @Operation(summary = "Listar auditorias do sistema", description = "Retorna todas as execuções de auditoria de um sistema")
     public List<AuditRunResponse> listAudits(@PathParam("id") Long id) {
-        systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        systemCatalog.require(id);
 
-        return auditRunRepository.findBySystemId(id).stream()
+        return runCatalog.bySystem(id).stream()
                 .map(r -> runMapper.toResponse(r, true))
                 .collect(Collectors.toList());
     }
@@ -295,8 +281,7 @@ public class SystemResource {
     @Operation(summary = "Definir perfil de regras",
             description = "Escolhe o perfil (pacotes ativos, sobrescritas e limites) usado nas próximas auditorias; vazio = default")
     public SystemSummaryResponse updateProfile(@PathParam("id") Long id, @Valid ProfileRequest request) {
-        AuditedSystem system = systemRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        AuditedSystem system = systemCatalog.require(id);
         system.setProfile(validProfile(request == null ? null : request.profile()));
         return toSummary(system);
     }
@@ -342,9 +327,18 @@ public class SystemResource {
     }
 
     private void applyGitAccess(AuditedSystem system, CreateSystemRequest request) {
+        applyGitSettings(system, request);
+        applyNotifySettings(system, request);
+        applySecrets(system, request);
+    }
+
+    private static String blankToNull(String trimmed) {
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static void applyGitSettings(AuditedSystem system, CreateSystemRequest request) {
         if (request.getGitTokenHosts() != null) {
-            String hosts = request.getGitTokenHosts().trim();
-            system.setGitTokenHosts(hosts.isEmpty() ? null : hosts);
+            system.setGitTokenHosts(blankToNull(request.getGitTokenHosts().trim()));
         }
         if (Boolean.TRUE.equals(request.getClearGitToken())) {
             system.setGitTokenEnc(null);
@@ -352,20 +346,20 @@ public class SystemResource {
         if (request.getGitHistoryDepth() != null) {
             system.setGitHistoryDepth(request.getGitHistoryDepth());
         }
+    }
+
+    private void applyNotifySettings(AuditedSystem system, CreateSystemRequest request) {
         if (request.getNotifyFormat() != null) {
-            String f = request.getNotifyFormat().trim().toLowerCase(java.util.Locale.ROOT);
-            system.setNotifyFormat(f.isEmpty() ? null : f);
+            system.setNotifyFormat(blankToNull(request.getNotifyFormat().trim().toLowerCase(java.util.Locale.ROOT)));
         }
         if (request.getNotifyMinSeverity() != null) {
-            String sev = request.getNotifyMinSeverity().trim().toUpperCase(java.util.Locale.ROOT);
-            system.setNotifyMinSeverity(sev.isEmpty() ? null : sev);
+            system.setNotifyMinSeverity(blankToNull(request.getNotifyMinSeverity().trim().toUpperCase(java.util.Locale.ROOT)));
         }
         if (request.getNotifyMinScoreDrop() != null) {
             system.setNotifyMinScoreDrop(request.getNotifyMinScoreDrop());
         }
         if (request.getNotifyPublicUrl() != null) {
-            String u = request.getNotifyPublicUrl().trim();
-            system.setNotifyPublicUrl(u.isEmpty() ? null : u);
+            system.setNotifyPublicUrl(blankToNull(request.getNotifyPublicUrl().trim()));
         }
         if (Boolean.TRUE.equals(request.getClearNotifyUrl())) {
             system.setNotifyUrlEnc(null);
@@ -377,28 +371,30 @@ public class SystemResource {
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException(e.getMessage());
             }
-            if (!secretBox.available()) {
-                throw new BadRequestException("Não foi possível guardar a URL: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
-            }
-            system.setNotifyUrlEnc(secretBox.encrypt(notifyUrl.trim()));
+            system.setNotifyUrlEnc(encrypted(notifyUrl, "a URL"));
         }
+    }
+
+    /** Segredos novos (webhook e token Git): cifrados antes de gravar; "remover" apaga o que já estava salvo. */
+    private void applySecrets(AuditedSystem system, CreateSystemRequest request) {
         if (Boolean.TRUE.equals(request.getClearWebhookSecret())) {
             system.setWebhookSecretEnc(null);
         }
         String webhook = request.getWebhookSecret();
         if (webhook != null && !webhook.isBlank()) {
-            if (!secretBox.available()) {
-                throw new BadRequestException("Não foi possível guardar o segredo: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
-            }
-            system.setWebhookSecretEnc(secretBox.encrypt(webhook.trim()));
+            system.setWebhookSecretEnc(encrypted(webhook, "o segredo"));
         }
         String token = request.getGitToken();
         if (token != null && !token.isBlank()) {
-            if (!secretBox.available()) {
-                throw new BadRequestException("Não foi possível guardar o token: a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
-            }
-            system.setGitTokenEnc(secretBox.encrypt(token.trim()));
+            system.setGitTokenEnc(encrypted(token, "o token"));
         }
+    }
+
+    private String encrypted(String value, String what) {
+        if (!secretBox.available()) {
+            throw new BadRequestException("Não foi possível guardar " + what + ": a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
+        }
+        return secretBox.encrypt(value.trim());
     }
 
     private SystemSummaryResponse toSummary(AuditedSystem system) {
@@ -426,7 +422,7 @@ public class SystemResource {
         dto.setNotifyPublicUrl(system.getNotifyPublicUrl());
         dto.setGitTokenHosts(system.getGitTokenHosts());
 
-        List<AuditRun> runs = auditRunRepository.findBySystemId(system.getId());
+        List<AuditRun> runs = runCatalog.bySystem(system.getId());
         dto.setScoreDelta(com.sentinel.audit.service.ScoreTrend.delta(runs));
         dto.setAuditCount(runs.size());
         runs.stream()
@@ -438,7 +434,7 @@ public class SystemResource {
                 }
                 dto.setLastAuditDate(lastRun.getCompletedAt());
 
-                Map<Severity, Long> counts = findingRepository.countBySeverityForRun(lastRun.getId());
+                Map<Severity, Long> counts = findingCatalog.countBySeverity(lastRun.getId());
                 dto.setOpenCritical(counts.getOrDefault(Severity.CRITICAL, 0L));
                 dto.setOpenHigh(counts.getOrDefault(Severity.HIGH, 0L));
             });

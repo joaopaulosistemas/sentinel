@@ -23,6 +23,29 @@ describe('formulário de sistema', () => {
     expect(toRequest({ ...emptyForm, profile: 'corporativo-java-ee-angular' }).profile).toBe('corporativo-java-ee-angular');
   });
 
+  it('aceita repositório https com porta e rejeita porta inválida', () => {
+    const ok = { ...emptyForm, name: 'api' };
+    expect(validate({ ...ok, repoUrl: 'https://git.interno.com:8443/org/repo' })).toEqual({});
+    expect(validate({ ...ok, repoUrl: 'https://git.interno.com:abc/org/repo' }).repoUrl).toBeDefined();
+    expect(validate({ ...ok, repoUrl: 'https://github.com' }).repoUrl).toBeDefined();
+  });
+
+  it('valida a lista de hosts do token', () => {
+    const ok = { ...emptyForm, name: 'api', repoUrl: 'https://x.com/a/b' };
+    expect(validate({ ...ok, gitTokenHosts: 'github.com, gitlab.interno.com' })).toEqual({});
+    expect(validate({ ...ok, gitTokenHosts: 'github.com,' }).gitTokenHosts).toBeDefined();
+    expect(validate({ ...ok, gitTokenHosts: 'git hub.com' }).gitTokenHosts).toBeDefined();
+    expect(validate({ ...ok, gitTokenHosts: 'https://github.com' }).gitTokenHosts).toBeDefined();
+  });
+
+  it('valida o endereço do webhook: https, com ou sem caminho', () => {
+    const ok = { ...emptyForm, name: 'api', repoUrl: 'https://x.com/a/b' };
+    expect(validate({ ...ok, notifyUrl: 'https://hooks.slack.com/services/T/B/X' })).toEqual({});
+    expect(validate({ ...ok, notifyUrl: 'https://hooks.exemplo.com' })).toEqual({});
+    expect(validate({ ...ok, notifyUrl: 'http://hooks.exemplo.com/x' }).notifyUrl).toBeDefined();
+    expect(validate({ ...ok, notifyUrl: 'https://hooks.exemplo.com/a b' }).notifyUrl).toBeDefined();
+  });
+
   it('valida a branch e o intervalo do agendamento', () => {
     const ok = { ...emptyForm, name: 'api', repoUrl: 'https://x.com/a/b' };
     expect(validate({ ...ok, scheduledBranch: 'release/1.0', auditIntervalHours: 24 })).toEqual({});

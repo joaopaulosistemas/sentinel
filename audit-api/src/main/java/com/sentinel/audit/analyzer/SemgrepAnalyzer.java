@@ -284,7 +284,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             raw = cwe.asText("");
         }
         Matcher m = CWE_PATTERN.matcher(raw);
-        return m.find() ? m.group().toUpperCase() : null;
+        return m.find() ? m.group().toUpperCase(java.util.Locale.ROOT) : null;
     }
 
     private static String relativize(Path root, String path) {
@@ -300,7 +300,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
     }
 
     private Severity mapSeverity(String semgrepSeverity) {
-        return switch (semgrepSeverity.toUpperCase()) {
+        return switch (semgrepSeverity.toUpperCase(java.util.Locale.ROOT)) {
             case "ERROR", "CRITICAL" -> Severity.HIGH;
             case "WARNING"           -> Severity.MEDIUM;
             default                  -> Severity.LOW;
@@ -320,7 +320,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         if ("performance".equalsIgnoreCase(metadataCategory)) {
             return Category.PERFORMANCE;
         }
-        String lower = checkId.toLowerCase();
+        String lower = checkId.toLowerCase(java.util.Locale.ROOT);
         if (lower.contains("security") || lower.contains("sql") || lower.contains("injection")
                 || lower.contains("xss") || lower.contains("csrf") || lower.contains("ssrf")
                 || lower.contains("secret") || lower.contains("owasp")) {

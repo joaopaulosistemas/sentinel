@@ -64,24 +64,27 @@ public final class TuningJson {
         if (n == null || !n.isObject()) {
             throw new IllegalArgumentException("Corpo inválido");
         }
-        Map<String, RuleOverride> rules = new LinkedHashMap<>();
-        JsonNode rs = n.path("rules");
+        Map<String, RuleOverride> rules = parseRules(n.path("rules"));
+        Map<String, Integer> limits = parseLimits(n.path("thresholds"));
+        Set<String> enable = strings(n.path("enablePacks"));
+        Set<String> disable = strings(n.path("disablePacks"));
+        if (enable.stream().anyMatch(disable::contains)) {
+            throw new IllegalArgumentException("Um pacote não pode ser ligado e desligado ao mesmo tempo");
+        }
+        return new SystemTuning(rules, limits, enable, disable, strings(n.path("disableAnalyzers")), paths(n.path("ignorePaths")));
+    }
+
+    private static Map<String, RuleOverride> parseRules(JsonNode rs) {
         if (rs.size() > MAX_RULES) {
             throw new IllegalArgumentException("No máximo " + MAX_RULES + " ajustes de regra por sistema");
         }
+        Map<String, RuleOverride> rules = new LinkedHashMap<>();
         for (JsonNode r : rs) {
             String id = r.path("id").asText("").trim().toLowerCase(Locale.ROOT);
             if (id.isEmpty() || id.length() > 200 || !id.matches("[a-z0-9_.*:/\\-]+")) {
                 throw new IllegalArgumentException("Id de regra inválido: " + id);
             }
-            Severity sev = null;
-            if (!r.path("severity").isMissingNode() && !r.path("severity").isNull() && !r.path("severity").asText().isBlank()) {
-                try {
-                    sev = Severity.valueOf(r.path("severity").asText().toUpperCase(Locale.ROOT));
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Severidade inválida em " + id + ": " + r.path("severity").asText());
-                }
-            }
+            Severity sev = ruleSeverity(r.path("severity"), id);
             boolean disabled = r.path("disabled").asBoolean(false);
             Boolean shadow = r.path("shadow").isBoolean() ? r.path("shadow").asBoolean() : null;
             if (sev == null && !disabled && shadow == null) {
@@ -89,8 +92,24 @@ public final class TuningJson {
             }
             rules.put(id, new RuleOverride(sev, disabled, shadow));
         }
+        return rules;
+    }
+
+    /** Severidade do ajuste; ausente, nula ou em branco vale "a do perfil" ({@code null}). */
+    private static Severity ruleSeverity(JsonNode node, String ruleId) {
+        if (node.isMissingNode() || node.isNull() || node.asText().isBlank()) {
+            return null;
+        }
+        try {
+            return Severity.valueOf(node.asText().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Severidade inválida em " + ruleId + ": " + node.asText());
+        }
+    }
+
+    private static Map<String, Integer> parseLimits(JsonNode thresholds) {
         Map<String, Integer> limits = new LinkedHashMap<>();
-        n.path("thresholds").fields().forEachRemaining(e -> {
+        thresholds.fields().forEachRemaining(e -> {
             if (!ProfileLoader.KNOWN_THRESHOLDS.contains(e.getKey())) {
                 throw new IllegalArgumentException("Limite desconhecido: " + e.getKey());
             }
@@ -99,12 +118,7 @@ public final class TuningJson {
             }
             limits.put(e.getKey(), e.getValue().asInt());
         });
-        Set<String> enable = strings(n.path("enablePacks"));
-        Set<String> disable = strings(n.path("disablePacks"));
-        if (enable.stream().anyMatch(disable::contains)) {
-            throw new IllegalArgumentException("Um pacote não pode ser ligado e desligado ao mesmo tempo");
-        }
-        return new SystemTuning(rules, limits, enable, disable, strings(n.path("disableAnalyzers")), paths(n.path("ignorePaths")));
+        return limits;
     }
 
     public static final int MAX_IGNORE_PATHS = 50;

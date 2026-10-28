@@ -210,7 +210,7 @@ public class McpToolService {
             return null;
         }
         try {
-            return Enum.valueOf(type, raw.trim().toUpperCase());
+            return Enum.valueOf(type, raw.trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Valor inválido para " + field + ": " + raw);
         }

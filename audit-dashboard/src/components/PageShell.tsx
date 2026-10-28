@@ -31,7 +31,7 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
     <nav aria-label="Caminho" style={{ fontSize: 12, lineHeight: '16px', color: 'var(--s-text-3)' }}>
       {items.map((c, i) => (
-        <span key={`${i}-${c.label}`}>
+        <span key={c.to ?? c.label}>
           {i > 0 && <span aria-hidden="true"> / </span>}
           {c.to ? <Link to={c.to}>{c.label}</Link> : <span aria-current="page">{c.label}</span>}
         </span>

@@ -1,11 +1,10 @@
 package com.sentinel.audit.actions;
 
-import com.sentinel.audit.repository.AuditedSystemRepository;
+import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -28,7 +27,7 @@ public class PendingActionResource {
                              String decidedAt, String resultNote, Long auditRunId) {}
 
     @Inject
-    AuditedSystemRepository systemRepository;
+    SystemCatalog systemCatalog;
     @Inject
     PendingActionService service;
 
@@ -71,8 +70,6 @@ public class PendingActionResource {
     }
 
     private void requireSystem(Long id) {
-        if (systemRepository.findByIdOptional(id).isEmpty()) {
-            throw new NotFoundException("Sistema não encontrado: " + id);
-        }
+        systemCatalog.requireExists(id);
     }
 }
