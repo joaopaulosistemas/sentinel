@@ -427,7 +427,7 @@ Não feito / não verificado:
 Fecha o que o PR anterior deixou como "não feito": `AuditOrchestrationService` tinha 12 `@Inject` (a regra aponta 8 ou mais). Refatoração sem mudança de comportamento.
 
 - Novo `AuditRunStore` (6 `@Inject`) com tudo que lê ou grava a auditoria no banco: marcar como rodando (com a espera pelo commit do registro), cancelada e falha, gravar achados e resultado, guardar SBOM e contexto, carregar a base de comparação e a qualidade das regras, e avisar o fim. Os métodos transacionais foram movidos como estavam.
-- `AuditOrchestrationService`: 12 → 7 `@Inject` e 470 → 286 linhas; fica só a ordem das etapas.
+- `AuditOrchestrationService`: 12 → 7 `@Inject` e 470 → 278 linhas; fica só a ordem das etapas.
 - Testes: `AuditOrchestrationServiceTest` passa a atribuir `service.store.<campo>` (e `service.store.tryMarkRunning`) no lugar dos campos antigos.
 
 Verificado: `javac` sobre a API (só erros de pacote ausente; nenhum erro novo comparado à `main`; o orquestrador tem menos erros porque perdeu as dependências). Não verificado: Maven e testes (só o CI); os testes Java alterados não foram compilados aqui.
