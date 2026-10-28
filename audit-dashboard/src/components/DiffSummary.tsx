@@ -1,13 +1,14 @@
-import { Button, SkeletonText, Tag, Tile } from '@carbon/react';
+import { Button, SkeletonText, Tag } from '@carbon/react';
 import { useNavigate } from 'react-router-dom';
 import { useDiff } from '../hooks/useLifecycle';
+import { PageSection } from './PageSection';
 import { RiskBadge } from './RiskBadge';
 
 function Stat({ value, label, color }: { value: number; label: string; color?: string }) {
   return (
     <div>
-      <div style={{ fontSize: '1.5rem', fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>{label}</div>
+      <div style={{ fontSize: 40, fontWeight: 300, lineHeight: 1, color }}>{value}</div>
+      <div style={{ fontSize: 13, color: 'var(--s-text-3)', marginTop: 4 }}>{label}</div>
     </div>
   );
 }
@@ -23,19 +24,16 @@ export function DiffSummary({ auditId }: { auditId: number }) {
   const navigate = useNavigate();
 
   return (
-    <Tile style={{ marginBottom: '2rem', padding: '1.25rem' }}>
-      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-        O que mudou desde a auditoria anterior
-      </h3>
+    <PageSection id="mudou" title="O que mudou desde a auditoria anterior">
       {isLoading || !data ? (
         <SkeletonText lineCount={3} />
       ) : !data.hasBaseline ? (
-        <p style={{ color: 'var(--s-text-4)' }}>Esta é a primeira auditoria concluída desta branch: ainda não há com o que comparar.</p>
+        <p style={{ margin: 0, color: 'var(--s-text-3)' }}>Esta é a primeira auditoria concluída desta branch: ainda não há com o que comparar.</p>
       ) : (
         <>
-          <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
-            <Stat value={data.newFindings.length} label="novos" color={data.newFindings.length ? '#da1e28' : '#24a148'} />
-            <Stat value={data.resolvedFindings.length} label="corrigidos" color="#24a148" />
+          <div style={{ display: 'flex', gap: '24px 56px', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap' }}>
+            <Stat value={data.newFindings.length} label="novos" color={data.newFindings.length ? 'var(--s-danger-text)' : 'var(--s-success-text)'} />
+            <Stat value={data.resolvedFindings.length} label="corrigidos" color="var(--s-success-text)" />
             <Stat value={data.persistingCount} label="continuam" />
             {data.scoreDelta !== null && (
               <Tag type={scoreTagType(data.scoreDelta)}>
@@ -50,20 +48,20 @@ export function DiffSummary({ auditId }: { auditId: number }) {
             )}
           </div>
           {data.newFindings.length > 0 && (
-            <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }}>
+            <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
               {data.newFindings.slice(0, 5).map((f) => (
-                <li key={f.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.25rem' }}>
+                <li key={f.id} className="sentinel-linha-hover" style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderTop: '1px solid var(--s-border)' }}>
                   <RiskBadge severity={f.severity} />
-                  <span style={{ fontSize: '0.875rem' }}>{f.title}</span>
+                  <span style={{ fontSize: 14 }}>{f.title}</span>
                 </li>
               ))}
               {data.newFindings.length > 5 && (
-                <li style={{ fontSize: '0.8125rem', color: 'var(--s-text-4)' }}>…e mais {data.newFindings.length - 5}</li>
+                <li style={{ padding: '8px 0', borderTop: '1px solid var(--s-border)', fontSize: 13, color: 'var(--s-text-3)' }}>…e mais {data.newFindings.length - 5}</li>
               )}
             </ul>
           )}
         </>
       )}
-    </Tile>
+    </PageSection>
   );
 }

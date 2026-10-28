@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AuditRunResponse, FixPlan, McpCall, PendingAction } from '../../types';
@@ -109,6 +109,43 @@ describe('AuditRunPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Dependências/ }));
     expect(screen.queryByText('SQL montado por concatenação')).not.toBeInTheDocument();
     expect(screen.getByText('CORS aberto')).toBeInTheDocument();
+  });
+
+  it('concluída mostra o medidor da nota, os achados por gravidade e o que mudou', async () => {
+    renderPage(
+      {
+        status: 'COMPLETED',
+        completedAt: '2026-10-22T10:04:12',
+        riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 },
+        findingsSummary: { CRITICAL: 3, HIGH: 12, MEDIUM: 41, LOW: 76, INFO: 25 },
+        totalFindings: 157,
+        newFindings: 8,
+        resolvedFindings: 13,
+        previousAuditId: 214,
+        scoreDelta: -5,
+      },
+      { scoreNow: 63, scoreIfCriticalFixed: 74, criticalCount: 3, items: [] },
+    );
+    expect(await screen.findByRole('img', { name: 'Nota 63 de 100, meta 75' })).toBeInTheDocument();
+    expect(screen.getByText('Meta 75 · faltam 12 pontos', { exact: false })).toBeInTheDocument();
+    const severity = screen.getByRole('region', { name: 'Achados por gravidade' });
+    expect(within(severity).getByText('157')).toBeInTheDocument();
+    expect(within(severity).getByText('críticos').parentElement).toHaveTextContent('3 críticos');
+    const changes = screen.getByRole('region', { name: 'O que mudou' });
+    expect(within(changes).getByText('novos').previousSibling).toHaveTextContent('8');
+    expect(within(changes).getByText('corrigidos').previousSibling).toHaveTextContent('13');
+    expect(within(changes).getByText('continuam').previousSibling).toHaveTextContent('149');
+    expect(within(changes).getByRole('link', { name: 'Ver só os novos' })).toHaveAttribute('href', '/findings?auditId=215&onlyNew=1');
+  });
+
+  it('sem auditoria anterior o cartão "O que mudou" avisa que não há com o que comparar', async () => {
+    renderPage(
+      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 80, security: 80, quality: 80, architecture: 80, dependencies: 80, observability: 80 } },
+      { scoreNow: 80, scoreIfCriticalFixed: 80, criticalCount: 0, items: [] },
+    );
+    const changes = await screen.findByRole('region', { name: 'O que mudou' });
+    expect(within(changes).getByText(/ainda não há com o que comparar/)).toBeInTheDocument();
+    expect(screen.getByText('Dentro da meta de 75')).toBeInTheDocument();
   });
 
   it('falha mostra o motivo', async () => {

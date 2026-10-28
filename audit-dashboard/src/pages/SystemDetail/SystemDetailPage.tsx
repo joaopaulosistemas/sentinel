@@ -1,18 +1,20 @@
-import { InlineNotification, SkeletonText, Tile } from '@carbon/react';
+import { InlineNotification, SkeletonText } from '@carbon/react';
 import { PageShell } from '../../components/PageShell';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { DiffSummary } from '../../components/DiffSummary';
-import { InsightsPanel } from '../../components/InsightsPanel';
+import { InsightsLimits, InsightsPanel } from '../../components/InsightsPanel';
+import { PageSection, SectionIndex, type IndexItem } from '../../components/PageSection';
 import { CheckIcon, CrossIcon, DashIcon, SpinnerIcon } from '../../components/StatusIcons';
-import { ScoreGauge } from '../../components/ScoreGauge';
 import { SuppressionsList } from '../../components/SuppressionsList';
 import { TrendChart } from '../../components/TrendChart';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
+import { useInsights, useSuppressions } from '../../hooks/useLifecycle';
 import { useSystem } from '../../hooks/useSystems';
 import type { AuditRunResponse, Severity, Stack, SystemSummaryResponse } from '../../types';
 import { analyzerCounts, PHASES, phaseIndex, progressPercent } from '../../utils/auditProgress';
+import { TARGET_SCORE, scoreColor as bandColor } from '../../utils/scoreBand';
 import { scoreColor } from '../../utils/systemAttention';
 import { startLabel } from '../../utils/timeAgo';
 
@@ -36,11 +38,18 @@ const dimensionLabels: Array<{ key: keyof NonNullable<AuditRunResponse['riskScor
 
 const severityOrder: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 const severityColors: Record<Severity, string> = {
-  CRITICAL: '#da1e28',
+  CRITICAL: '#a2191f',
   HIGH: '#ff832b',
   MEDIUM: '#f1c21b',
-  LOW: '#24a148',
-  INFO: '#0f62fe',
+  LOW: '#c6c6c6',
+  INFO: '#a6c8ff',
+};
+const severityNames: Record<Severity, string> = {
+  CRITICAL: 'críticos',
+  HIGH: 'altos',
+  MEDIUM: 'médios',
+  LOW: 'baixos',
+  INFO: 'informativos',
 };
 
 /** Etapa atual de uma auditoria em andamento, com a contagem de analisadores durante a análise. */
@@ -155,35 +164,35 @@ function RunRow({ run }: { run: AuditRunResponse }) {
   const active = isActive(run);
   const score = run.riskScore ? Math.round(run.riskScore.overall) : null;
   return (
-    <tr style={{ borderBottom: '1px solid var(--s-border)', background: active ? 'var(--s-selected)' : 'var(--s-surface)' }}>
-      <td style={{ padding: '12px 16px' }}>
-        <Link to={`/audits/${run.id}`} style={{ fontWeight: 500, textDecoration: 'none' }}>#{run.id}</Link>
+    <tr style={{ borderBottom: '1px solid var(--s-border)', background: active ? 'var(--s-selected)' : 'transparent' }}>
+      <td style={{ padding: '14px 16px 14px 0' }}>
+        <Link to={`/audits/${run.id}`} style={{ fontWeight: 600, textDecoration: 'none' }}>#{run.id}</Link>
       </td>
-      <td style={{ ...cell, fontFamily: mono, fontSize: 13 }}>{run.branch}</td>
-      <td style={{ ...cell, minWidth: 240 }}>
+      <td style={{ ...cell, padding: '14px 16px 14px 0', fontFamily: mono, fontSize: 13 }}>{run.branch}</td>
+      <td style={{ ...cell, padding: '14px 16px 14px 0', minWidth: 240 }}>
         <RunStatus run={run} active={active} pct={progressPercent(run)} />
       </td>
-      <td style={{ ...cell, fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
-      <td style={{ ...cell, color: 'var(--s-text-2)' }}>{findingsText(run)}</td>
-      <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--s-text-3)', fontSize: 13 }}>{startLabel(run.startedAt)}</td>
+      <td style={{ ...cell, padding: '14px 16px 14px 0', fontSize: 18, fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
+      <td style={{ ...cell, padding: '14px 16px 14px 0', color: 'var(--s-text-2)' }}>{findingsText(run)}</td>
+      <td style={{ padding: '14px 0', textAlign: 'right', color: 'var(--s-text-3)', fontSize: 13 }}>{startLabel(run.startedAt)}</td>
     </tr>
   );
 }
 
 function RunsBody({ loading, runs }: { loading: boolean; runs: AuditRunResponse[] }) {
-  if (loading) return <div style={{ padding: 16 }}><SkeletonText lineCount={5} /></div>;
-  if (runs.length === 0) return <p style={{ padding: 16, color: 'var(--s-text-3)', margin: 0 }}>Nenhuma auditoria encontrada.</p>;
+  if (loading) return <SkeletonText lineCount={5} />;
+  if (runs.length === 0) return <p style={{ color: 'var(--s-text-3)', margin: 0 }}>Nenhuma auditoria encontrada.</p>;
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
         <thead>
-          <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
-            <th style={{ padding: '12px 16px' }}>Auditoria</th>
-            <th style={{ padding: '12px 8px' }}>Branch</th>
-            <th style={{ padding: '12px 8px' }}>Situação</th>
-            <th style={{ padding: '12px 8px' }}>Nota</th>
-            <th style={{ padding: '12px 8px' }}>Achados</th>
-            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Início</th>
+          <tr style={{ textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)' }}>
+            <th style={{ padding: '8px 16px 8px 0' }}>Auditoria</th>
+            <th style={{ padding: '8px 16px 8px 0' }}>Branch</th>
+            <th style={{ padding: '8px 16px 8px 0' }}>Situação</th>
+            <th style={{ padding: '8px 16px 8px 0' }}>Nota</th>
+            <th style={{ padding: '8px 16px 8px 0' }}>Achados</th>
+            <th style={{ padding: '8px 0', textAlign: 'right' }}>Início</th>
           </tr>
         </thead>
         <tbody>
@@ -198,55 +207,90 @@ function RunsBody({ loading, runs }: { loading: boolean; runs: AuditRunResponse[
 
 function RunsSection({ loading, runs, live }: { loading: boolean; runs: AuditRunResponse[]; live: boolean }) {
   return (
-    <section aria-label="Últimas auditorias" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Últimas auditorias</h2>
+    <PageSection
+      id="auditorias"
+      title="Últimas auditorias"
+      aside={
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--s-text-3)' }}>
           <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: live ? '#0f62fe' : '#198038' }} />
           {live ? 'Atualizando a cada 3 s enquanto houver auditoria em execução' : 'Atualizado agora'}
         </span>
-      </div>
+      }
+    >
       <RunsBody loading={loading} runs={runs} />
-    </section>
+    </PageSection>
   );
 }
 
-/** Nota geral e as seis dimensões da última auditoria concluída. */
+/** Nota geral, as seis dimensões (com a meta marcada) e os achados por gravidade da última auditoria concluída. */
 function ScoreOverview({ latest, fallbackScore }: { latest: AuditRunResponse | undefined; fallbackScore: number | null }) {
+  const overall = latest?.riskScore?.overall ?? fallbackScore;
+  const shown = overall === null || overall === undefined ? null : Math.round(overall);
+  const missing = shown === null ? null : Math.max(0, TARGET_SCORE - shown);
+  const total = severityOrder.reduce((acc, sev) => acc + (latest?.findingsSummary[sev] ?? 0), 0);
   return (
-    <div aria-label="Última auditoria concluída" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '1.5rem' }}>
-      <Tile style={{ textAlign: 'center', padding: '1.5rem' }}>
-        <p style={{ fontSize: '0.875rem', color: 'var(--s-text-4)', marginBottom: '0.75rem' }}>Score Geral</p>
-        <ScoreGauge score={latest?.riskScore?.overall ?? fallbackScore} size="lg" />
-      </Tile>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(110px, 100%), 1fr))', gap: '0.75rem' }}>
-        {dimensionLabels.map(({ key, label }) => (
-          <Tile key={key} style={{ textAlign: 'center', padding: '1rem' }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--s-text-4)', marginBottom: '0.5rem' }}>{label}</p>
-            <ScoreGauge score={latest?.riskScore?.[key] ?? null} size="sm" />
-          </Tile>
+    <PageSection
+      id="visao"
+      first
+      title="Visão geral"
+      aside={latest && <span style={{ fontSize: 14, color: 'var(--s-text-3)' }}>última concluída: #{latest.id}, {startLabel(latest.startedAt)}</span>}
+    >
+      <div aria-label="Última auditoria concluída" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '24px 48px', alignItems: 'center' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 88, fontWeight: 300, lineHeight: 1, color: bandColor(shown) }}>{shown ?? '—'}</span>
+            {shown !== null && <span style={{ color: 'var(--s-text-3)' }}>de 100</span>}
+          </div>
+          <div style={{ color: 'var(--s-text-2)', marginTop: 4 }}>
+            {shown === null ? 'Sem auditoria concluída' : missing === 0 ? `Dentro da meta de ${TARGET_SCORE}` : `Meta ${TARGET_SCORE} · faltam ${missing} ${missing === 1 ? 'ponto' : 'pontos'}`}
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '14px 40px' }}>
+          {dimensionLabels.map(({ key, label }) => {
+            const value = latest?.riskScore?.[key];
+            const n = typeof value === 'number' ? Math.round(value) : null;
+            return (
+              <div key={key}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                  <span>{label}</span>
+                  <strong style={{ color: bandColor(n) }}>{n ?? '—'}</strong>
+                </div>
+                <div style={{ position: 'relative', height: 8, borderRadius: 4, background: 'var(--s-border)', marginTop: 4 }}>
+                  <span style={{ position: 'absolute', inset: '0 auto 0 0', width: `${Math.max(0, Math.min(100, n ?? 0))}%`, borderRadius: 4, background: bandColor(n) }} />
+                  <span aria-hidden="true" title={`Meta ${TARGET_SCORE}`} style={{ position: 'absolute', left: `${TARGET_SCORE}%`, top: -3, bottom: -3, width: 2, background: 'var(--s-text)' }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {latest && <SeverityBar run={latest} total={total} />}
+    </PageSection>
+  );
+}
+
+/** Achados da última auditoria concluída, divididos por gravidade. */
+function SeverityBar({ run, total }: { run: AuditRunResponse; total: number }) {
+  return (
+    <div aria-label="Resumo de achados por gravidade" style={{ marginTop: 28 }}>
+      <div style={{ fontSize: 13, color: 'var(--s-text-2)', marginBottom: 6 }}>{total} {total === 1 ? 'achado' : 'achados'} por gravidade</div>
+      {total > 0 && (
+        <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', background: 'var(--s-border)' }}>
+          {severityOrder.map((sev) => {
+            const count = run.findingsSummary[sev] ?? 0;
+            return count > 0 ? <span key={sev} style={{ display: 'block', width: `${(count / total) * 100}%`, background: severityColors[sev] }} /> : null;
+          })}
+        </div>
+      )}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 28px', marginTop: 12 }}>
+        {severityOrder.map((sev) => (
+          <span key={sev} style={{ fontSize: 13 }}>
+            <span aria-hidden="true" style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: severityColors[sev], marginRight: 6 }} />
+            <strong style={{ fontWeight: 600 }}>{run.findingsSummary[sev] ?? 0}</strong> {severityNames[sev]}
+          </span>
         ))}
       </div>
     </div>
-  );
-}
-
-function FindingsSummaryTile({ run }: { run: AuditRunResponse }) {
-  return (
-    <Tile style={{ padding: '1.25rem' }}>
-      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Resumo de Findings — Última Auditoria Concluída</h3>
-      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-        {severityOrder.map((sev) => {
-          const count = run.findingsSummary[sev] ?? 0;
-          return (
-            <div key={sev} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: count > 0 ? severityColors[sev] : 'var(--s-text-4)' }}>{count}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>{sev}</div>
-            </div>
-          );
-        })}
-      </div>
-    </Tile>
   );
 }
 
@@ -263,6 +307,10 @@ export function SystemDetailPage() {
   const [started, setStarted] = useState<AuditRunResponse | null>(null);
   const { data: system, isLoading: loadingSystem, error: systemError } = useSystem(id);
   const { data: auditRuns, isLoading: loadingRuns } = useAuditRuns(id);
+  // A auditoria concluída mais recente dá as notas e o parecer.
+  const latestCompleted = newestCompleted(auditRuns);
+  const insights = useInsights(latestCompleted?.id);
+  const suppressions = useSuppressions(id);
 
   if (loadingSystem) return (
     <div style={{ padding: '2rem' }}>
@@ -281,22 +329,35 @@ export function SystemDetailPage() {
     );
   }
 
-  // A auditoria concluída mais recente dá as notas.
-  const latestCompleted = newestCompleted(auditRuns);
   const live = (auditRuns ?? []).some(isActive);
+  const runs = auditRuns?.slice(0, 8) ?? [];
+  const index: IndexItem[] = [
+    { id: 'visao', label: 'Visão geral' },
+    { id: 'auditorias', label: 'Auditorias', badge: String(runs.length) },
+    ...(latestCompleted ? [{ id: 'mudou', label: 'O que mudou' }, { id: 'parecer', label: 'Parecer' }] : []),
+    ...(insights.data ? [{ id: 'plano', label: 'O que corrigir', badge: String(insights.data.debtTable.length) }] : []),
+    { id: 'tendencia', label: 'Evolução da nota' },
+    ...(insights.data ? [{ id: 'limites', label: 'Limites e mapa' }] : []),
+    ...(suppressions.data && suppressions.data.length > 0 ? [{ id: 'suprimidos', label: 'Suprimidos', badge: String(suppressions.data.length) }] : []),
+  ];
 
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, { label: system.name }]}>
       {started && <StartedBanner started={started} onClose={() => setStarted(null)} />}
       <SystemHeader system={system} onEdit={() => navigate(`/systems?edit=${system.id}`)} onNewAudit={() => setStarting(true)} />
       <StartAuditModal system={starting ? system : null} onClose={() => setStarting(false)} onStarted={setStarted} />
-      <RunsSection loading={loadingRuns} runs={auditRuns?.slice(0, 8) ?? []} live={live} />
-      <ScoreOverview latest={latestCompleted} fallbackScore={system.lastAuditScore ?? null} />
-      {latestCompleted && <FindingsSummaryTile run={latestCompleted} />}
-      {latestCompleted && <DiffSummary auditId={latestCompleted.id} />}
-      <InsightsPanel auditId={latestCompleted?.id} />
-      <TrendChart systemId={id} />
-      <SuppressionsList systemId={id} />
+      <div className="sentinel-com-indice">
+        <SectionIndex items={index} />
+        <div className="sentinel-secoes">
+          <ScoreOverview latest={latestCompleted} fallbackScore={system.lastAuditScore ?? null} />
+          <RunsSection loading={loadingRuns} runs={runs} live={live} />
+          {latestCompleted && <DiffSummary auditId={latestCompleted.id} />}
+          <InsightsPanel auditId={latestCompleted?.id} />
+          <TrendChart systemId={id} />
+          <InsightsLimits auditId={latestCompleted?.id} />
+          <SuppressionsList systemId={id} />
+        </div>
+      </div>
     </PageShell>
   );
 }
