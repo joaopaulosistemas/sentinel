@@ -25,6 +25,8 @@ COPY audit-api/src audit-api/src
 RUN mvn -B -q -pl audit-api -am package -DskipTests
 
 FROM docker.io/eclipse-temurin:21-jre-jammy
+# Pipes nos RUN abaixo (curl | tar, curl | bash) falham o build se o download falhar
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG INSECURE_SSL=true
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
