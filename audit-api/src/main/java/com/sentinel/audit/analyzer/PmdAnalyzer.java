@@ -28,7 +28,10 @@ import java.util.Map;
  * ({@link #DEFAULT_RULESET}), que deixa de fora o que já é coberto por outro analisador
  * (complexidade cognitiva pelo {@link CleanCodeAnalyzer} e pelo ESLint, classe grande pelo detector de God Object)
  * e as regras de estilo que mais geram ruído (literal primeiro em {@code equals}, literal em {@code if},
- * método com o mesmo nome do campo, varargs; na auditoria #68 somavam 190 achados); para usar outro, aponte
+ * método com o mesmo nome do campo, varargs; na auditoria #68 somavam 190 achados) e o
+ * {@code ReturnEmptyCollectionRatherThanNull}, que também vale para {@code byte[]} (19 de 20 achados em RuoYi-Vue,
+ * onde {@code null} é o sinal de "entrada inválida" de decodificadores) e é coberto para coleções pela regra Semgrep
+ * {@code sentinel-java-retorna-null-colecao}; para usar outro, aponte
  * {@code sentinel.audit.pmd.ruleset} para um XML de ruleset.
  */
 @ApplicationScoped
@@ -53,6 +56,7 @@ public class PmdAnalyzer implements CodeAnalyzer {
                 <exclude name="MissingSerialVersionUID"/>
                 <exclude name="AvoidLiteralsInIfCondition"/>
                 <exclude name="AvoidFieldNameMatchingMethodName"/>
+                <exclude name="ReturnEmptyCollectionRatherThanNull"/>
               </rule>
               <rule ref="category/java/design.xml">
                 <exclude name="LawOfDemeter"/>

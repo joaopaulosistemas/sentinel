@@ -92,6 +92,12 @@ class LintAnalyzersTest {
     }
 
     @Test
+    void pmdNaoUsaARegraDeRetornoNuloQueTambemApontaArrays() {
+        assertTrue(PmdAnalyzer.DEFAULT_RULESET.contains("<exclude name=\"ReturnEmptyCollectionRatherThanNull\"/>"),
+                "null em byte[] é sinal de entrada inválida; coleções ficam com a regra Semgrep");
+    }
+
+    @Test
     void pmdComLimiteMantemOsMaisGravesERelatorioInvalidoNaoQuebra() {
         PmdAnalyzer p = new PmdAnalyzer();
         p.maxFindings = 1;
