@@ -12,3 +12,8 @@ hoangtien2k3/ecommerce-microservices
 jboss-developer/jboss-eap-quickstarts
 jeddict/jeddict-modeler
 yangzongzhuan/RuoYi-Vue
+DLand-Team/moderate-react-admin
+dingyi214/slash-admin
+nellavio/nellavio
+sankeyangshu/lemon-admin
+southliu/south-admin-react
