@@ -19,7 +19,7 @@ public enum PathRole {
     private static final Set<String> FIXTURE_DIRS = Set.of("fixtures", "__fixtures__", "testdata", "test-data", "mocks", "__mocks__",
             "examples", "example", "samples", "sample", "demo", "demos");
     private static final Set<String> GENERATED_DIRS = Set.of("generated", "target", "build", "dist", "node_modules",
-            "vendor", ".next", ".gradle");
+            "vendor", ".next", ".gradle", "third_party", "thirdparty", "opensource");
 
     /** {@code true} para tudo que não é código de produção. */
     public boolean isNonProduction() {
