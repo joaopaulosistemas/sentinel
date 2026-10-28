@@ -62,7 +62,7 @@ public class ReportResource {
             kind = ReportService.Type.parse(type);
             fmt = Format.parse(format);
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException(e.getMessage());
+            throw new BadRequestException(e.getMessage(), e);
         }
         Integer period = days == null || days <= 0 ? null : days;
         LocalDateTime since = period == null ? null : LocalDateTime.now().minusDays(period);

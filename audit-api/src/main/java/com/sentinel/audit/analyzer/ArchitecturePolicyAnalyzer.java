@@ -1,7 +1,5 @@
 package com.sentinel.audit.analyzer;
 
-import com.sentinel.audit.analyzer.deps.Dependency;
-import com.sentinel.audit.analyzer.deps.DependencyExtractor;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
@@ -9,11 +7,9 @@ import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.model.Stack;
 import com.sentinel.audit.pack.ArchitecturePolicy;
 import com.sentinel.audit.pack.ArchitecturePolicy.Convention;
-import com.sentinel.audit.pack.ArchitecturePolicy.DepRule;
 import com.sentinel.audit.pack.ArchitecturePolicy.Layer;
 import com.sentinel.audit.pack.ArchitecturePolicy.LayerRule;
 import com.sentinel.audit.pack.AuditPolicy;
-import com.sentinel.audit.pack.Versions;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
@@ -119,7 +115,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
             }
         }
         checkRequiredFiles(root, relPaths, pol, run, out);
-        checkComponents(root, pol, run, out);
+        ComponentPolicyChecks.check(root, pol, run, out);
         return out.size() > MAX_FINDINGS ? new ArrayList<>(out.subList(0, MAX_FINDINGS)) : out;
     }
 
@@ -318,85 +314,9 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
         }
     }
 
-    // ------------------------------------------------------------------ componentes
-
-    private void checkComponents(Path root, ArchitecturePolicy pol, AuditRun run, List<Finding> out) {
-        ArchitecturePolicy.Components cp = pol.components();
-        if (cp.forbidden().isEmpty() && cp.minVersion().isEmpty() && cp.required().isEmpty() && cp.approvedOnly().isEmpty()) {
-            return;
-        }
-        List<Dependency> deps = DependencyExtractor.extract(root);
-        for (Dependency d : deps) {
-            checkForbidden(cp, d, run, out);
-            checkMinVersion(cp, d, run, out);
-        }
-        checkRequired(cp, deps, run, out);
-        checkApprovedOnly(cp, deps, run, out);
-    }
-
-    private static Severity severityOr(DepRule r, Severity fallback) {
-        return r.severity() == null ? fallback : r.severity();
-    }
-
-    private void checkForbidden(ArchitecturePolicy.Components cp, Dependency d, AuditRun run, List<Finding> out) {
-        for (DepRule r : cp.forbidden()) {
-            if (globMatches(r.dep(), d.name())) {
-                out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-forbidden",
-                        severityOr(r, Severity.HIGH), Category.DEPENDENCY,
-                        "Biblioteca proibida: " + d.name(),
-                        reason(r, "A política proíbe " + d.name() + ".") + " (versão " + d.version() + ")"));
-            }
-        }
-    }
-
-    private void checkMinVersion(ArchitecturePolicy.Components cp, Dependency d, AuditRun run, List<Finding> out) {
-        for (DepRule r : cp.minVersion()) {
-            if (globMatches(r.dep(), d.name()) && Boolean.FALSE.equals(Versions.satisfies(d.version(), r.version()))) {
-                out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-min-version",
-                        severityOr(r, Severity.HIGH), Category.DEPENDENCY,
-                        "Versão fora da política: " + d.name() + " " + d.version() + " (exigido " + r.version() + ")",
-                        reason(r, "A política exige " + d.name() + " " + r.version() + ".")));
-            }
-        }
-    }
-
-    private void checkRequired(ArchitecturePolicy.Components cp, List<Dependency> deps, AuditRun run, List<Finding> out) {
-        for (DepRule r : cp.required()) {
-            if (deps.stream().noneMatch(d -> globMatches(r.dep(), d.name()))) {
-                out.add(archFinding(run, "(dependências)", 0, "", "sentinel-comp-required",
-                        severityOr(r, Severity.MEDIUM), Category.DEPENDENCY,
-                        "Biblioteca obrigatória ausente: " + r.dep(), reason(r, "A política exige " + r.dep() + ".")));
-            }
-        }
-    }
-
-    /** Com lista aprovada, toda dependência declarada fora dela vira achado (no máximo 200). */
-    private void checkApprovedOnly(ArchitecturePolicy.Components cp, List<Dependency> deps, AuditRun run, List<Finding> out) {
-        if (cp.approvedOnly().isEmpty()) {
-            return;
-        }
-        int n = 0;
-        for (Dependency d : deps) {
-            String f = d.filePath().toLowerCase(Locale.ROOT);
-            if (f.endsWith("package-lock.json") || f.endsWith("yarn.lock") || f.endsWith("pnpm-lock.yaml")) {
-                continue;                                   // transitivas: só declaradas diretamente
-            }
-            if (cp.approvedOnly().stream().noneMatch(r -> globMatches(r.dep(), d.name())) && n < 200) {
-                n++;
-                out.add(archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-not-approved",
-                        Severity.MEDIUM, Category.DEPENDENCY, "Biblioteca fora da lista aprovada: " + d.name(),
-                        "A política só permite as bibliotecas aprovadas; " + d.name() + " não está na lista."));
-            }
-        }
-    }
-
-    private static String reason(DepRule r, String fallback) {
-        return r.reason() == null || r.reason().isBlank() ? fallback : r.reason();
-    }
-
     // ------------------------------------------------------------------ utilidades
 
-    private static Finding archFinding(AuditRun run, String file, int line, String snippet, String ruleId, Severity sev,
+    static Finding archFinding(AuditRun run, String file, int line, String snippet, String ruleId, Severity sev,
                                        Category cat, String title, String description) {
         Finding f = new Finding();
         f.setAuditRun(run);

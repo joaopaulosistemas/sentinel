@@ -67,7 +67,7 @@ public class PendingActionService {
         try {
             r = SuppressionReason.valueOf(reason == null ? "" : reason.strip().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Motivo inválido: use FALSE_POSITIVE.");
+            throw new IllegalArgumentException("Motivo inválido: use FALSE_POSITIVE.", e);
         }
         List<String> problems = PendingActionRules.checkSuppression(r, justification);
         if (!problems.isEmpty()) {
@@ -91,7 +91,7 @@ public class PendingActionService {
         try {
             p = mapper.readTree(a.getPayload());
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Pedido ilegível.");
+            throw new IllegalArgumentException("Pedido ilegível.", e);
         }
         if (a.getKind() == PendingKind.START_AUDIT) {
             Optional<AuditRun> run = requestService.requestIfIdle(systemId, p.path("branch").asText(), "claude-aprovado");

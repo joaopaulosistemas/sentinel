@@ -96,7 +96,7 @@ public class NotificationService {
         try {
             uri = URI.create(url);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("URL de notificação inválida");
+            throw new IllegalArgumentException("URL de notificação inválida", e);
         }
         if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || uri.getUserInfo() != null) {
             throw new IllegalArgumentException("A URL de notificação deve ser https://, sem usuário e senha");
@@ -109,7 +109,7 @@ public class NotificationService {
                 }
             }
         } catch (java.net.UnknownHostException e) {
-            throw new IllegalArgumentException("Não foi possível resolver o endereço da notificação: " + uri.getHost());
+            throw new IllegalArgumentException("Não foi possível resolver o endereço da notificação: " + uri.getHost(), e);
         }
     }
 

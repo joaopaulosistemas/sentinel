@@ -122,7 +122,7 @@ public final class LocalSource {
                 wanted = root.relativize(abs);
             }
         } catch (InvalidPathException e) {
-            throw new IllegalArgumentException("Caminho de pasta inválido");
+            throw new IllegalArgumentException("Caminho de pasta inválido", e);
         }
         Path candidate = root.resolve(wanted).normalize();
         if (!candidate.startsWith(root) || candidate.equals(root)) {
@@ -135,7 +135,7 @@ public final class LocalSource {
         try {
             real = candidate.toRealPath();
         } catch (IOException e) {
-            throw new IllegalArgumentException("Pasta não encontrada dentro da raiz de projetos");
+            throw new IllegalArgumentException("Pasta não encontrada dentro da raiz de projetos", e);
         }
         if (!real.startsWith(root) || real.equals(root)) {
             throw new IllegalArgumentException("A pasta aponta para fora da raiz de projetos");

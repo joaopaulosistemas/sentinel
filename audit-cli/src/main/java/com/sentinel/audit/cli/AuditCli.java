@@ -423,7 +423,7 @@ public class AuditCli {
         result.branch  = "main";
         result.apiUrl  = "http://localhost:8080";
 
-        for (int i = 0; i < args.length; i++) {
+        for (int i = 0; i < args.length; i += 2) {
             String flag = args[i];
             if (flag.equals("--help") || flag.equals("-h")) {
                 throw new IllegalArgumentException("Ajuda:");
@@ -434,7 +434,7 @@ public class AuditCli {
             if (i + 1 >= args.length) {
                 throw new IllegalArgumentException("O parâmetro " + flag + " precisa de um valor");
             }
-            applyFlag(result, flag, args[++i]);
+            applyFlag(result, flag, args[i + 1]);
         }
 
         if (result.token == null || result.token.isBlank()) {
@@ -446,7 +446,7 @@ public class AuditCli {
         try {
             Long.parseLong(result.systemId);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("--system-id deve ser um número: " + result.systemId);
+            throw new IllegalArgumentException("--system-id deve ser um número: " + result.systemId, e);
         }
         return result;
     }
@@ -475,7 +475,7 @@ public class AuditCli {
         try {
             return Double.parseDouble(value);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(flag + " deve ser um número: " + value);
+            throw new IllegalArgumentException(flag + " deve ser um número: " + value, e);
         }
     }
 

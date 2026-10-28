@@ -190,7 +190,8 @@ public final class FunctionScanner {
         }
         int depth = 0;
         int count = 1;
-        for (int i = 0; i < params.length(); i++) {
+        int i = 0;
+        while (i < params.length()) {
             char c = params.charAt(i);
             if (c == '=' && i + 1 < params.length() && params.charAt(i + 1) == '>') {
                 i++;                                                 // "=>" não é um '>' de genérico
@@ -201,6 +202,7 @@ public final class FunctionScanner {
             } else if (c == ',' && depth == 0) {
                 count++;
             }
+            i++;
         }
         // vírgula final ("a, b,") não cria um parâmetro a mais
         return params.stripTrailing().endsWith(",") ? count - 1 : count;

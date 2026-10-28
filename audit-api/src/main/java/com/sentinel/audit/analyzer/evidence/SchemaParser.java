@@ -320,11 +320,12 @@ final class SchemaParser {
     /** Conteúdo entre o parêntese aberto na posição {@code open} e o seu par (respeitando aspas e aninhamento). */
     private static String balanced(String s, int open) {
         int depth = 0;
-        for (int i = open; i < s.length(); i++) {
+        int i = open;
+        while (i < s.length()) {
             char c = s.charAt(i);
             if (c == '\'' || c == '"') {
                 int j = s.indexOf(c, i + 1);
-                i = j < 0 ? s.length() : j;
+                i = (j < 0 ? s.length() : j) + 1;
                 continue;
             }
             if (c == '(') {
@@ -335,6 +336,7 @@ final class SchemaParser {
                     return s.substring(open + 1, i);
                 }
             }
+            i++;
         }
         return s.substring(open + 1);
     }
@@ -343,13 +345,14 @@ final class SchemaParser {
         List<String> parts = new ArrayList<>();
         StringBuilder cur = new StringBuilder();
         int depth = 0;
-        for (int i = 0; i < body.length(); i++) {
+        int i = 0;
+        while (i < body.length()) {
             char c = body.charAt(i);
             if (c == '\'' || c == '"') {
                 int j = body.indexOf(c, i + 1);
                 int stop = j < 0 ? body.length() : j + 1;
                 cur.append(body, i, stop);
-                i = stop - 1;
+                i = stop;
                 continue;
             }
             if (c == '(') {
@@ -363,6 +366,7 @@ final class SchemaParser {
             } else {
                 cur.append(c);
             }
+            i++;
         }
         if (!cur.toString().isBlank()) {
             parts.add(cur.toString().strip());

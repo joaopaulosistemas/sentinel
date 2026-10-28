@@ -58,7 +58,7 @@ public class PendingActionResource {
         try {
             action.get();
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException(e.getMessage());
+            throw new BadRequestException(e.getMessage(), e);
         }
         return service.recent(id, 30).stream().map(PendingActionResource::dto).toList();
     }

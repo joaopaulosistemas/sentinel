@@ -64,7 +64,8 @@ public final class PathGlobs {
         if (anywhere) {
             re.append("(?:.*/)?");
         }
-        for (int i = 0; i < p.length(); i++) {
+        int i = 0;
+        while (i < p.length()) {
             char c = p.charAt(i);
             if (c == '*') {
                 if (i + 1 < p.length() && p.charAt(i + 1) == '*') {
@@ -84,6 +85,7 @@ public final class PathGlobs {
             } else {
                 re.append(Pattern.quote(String.valueOf(c)));
             }
+            i++;
         }
         // casou uma pasta: vale também para tudo dentro dela (como no .gitignore)
         re.append("(?:/.*)?");

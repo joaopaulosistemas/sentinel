@@ -54,6 +54,20 @@ public class AuditRunRepository implements PanacheRepository<AuditRun> {
         return out;
     }
 
+    /**
+     * A auditoria mais recente (por início, qualquer situação) de cada sistema, numa consulta só: o mesmo que
+     * {@link #findLastStarted} para todos os sistemas. Chave: id do sistema; sistema sem auditoria iniciada não aparece.
+     */
+    public java.util.Map<Long, AuditRun> findLastStartedBySystem() {
+        List<AuditRun> runs = find("FROM AuditRun r WHERE r.startedAt = "
+                + "(SELECT MAX(r2.startedAt) FROM AuditRun r2 WHERE r2.system.id = r.system.id) ORDER BY r.id").list();
+        java.util.Map<Long, AuditRun> out = new java.util.HashMap<>();
+        for (AuditRun r : runs) {
+            out.put(r.getSystem().getId(), r);   // empate de data: fica a de maior id
+        }
+        return out;
+    }
+
     /** A auditoria mais recente do sistema (qualquer situação), ou {@code null}; sem carregar o histórico inteiro. */
     public AuditRun findLastStarted(Long systemId) {
         return find("system.id = ?1 ORDER BY startedAt DESC", systemId).firstResult();

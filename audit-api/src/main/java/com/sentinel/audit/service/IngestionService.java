@@ -305,8 +305,6 @@ public class IngestionService {
         }
     }
 
-    private static final long CHECK_TIMEOUT_SECONDS = 20;
-
     /**
      * Confere, sem clonar, se o repositório responde e qual é a branch padrão ({@code git ls-remote --symref}).
      * Usa as mesmas regras de URL, token e protocolo do clone. Nunca lança exceção por repositório inacessível:
@@ -319,91 +317,7 @@ public class IngestionService {
     }
 
     public RepoCheck checkRepository(String repoUrl, String branch, String tokenOverride, String hosts) {
-        URI uri;
-        try {
-            uri = validateRepoUrl(repoUrl);
-            validateBranch(branch);
-        } catch (IllegalArgumentException e) {
-            return new RepoCheck(false, null, null, e.getMessage());
-        }
-        String token = resolveToken(tokenOverride);
-        boolean sendToken = !token.isBlank() && isTokenHost(uri.getHost(), hosts);
-        Path logFile = null;
-        try {
-            Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
-            Files.createDirectories(basePath);
-            logFile = Files.createTempFile(basePath, "git-check-", ".log");
-            List<String> command = new ArrayList<>(List.of("git", "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
-                    "ls-remote", "--symref", "--", uri.toString(), "HEAD"));
-            if (branch != null && !branch.isBlank()) {
-                command.add("refs/heads/" + branch);
-            }
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectErrorStream(true);
-            pb.redirectOutput(logFile.toFile());
-            configureEnvironment(pb.environment(), sendToken ? token : null);
-            Process process = pb.start();
-            if (!process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                process.destroyForcibly();
-                return new RepoCheck(false, null, null, "O repositório não respondeu em " + CHECK_TIMEOUT_SECONDS + "s");
-            }
-            String output = Files.readString(logFile, StandardCharsets.UTF_8);
-            if (process.exitValue() != 0) {
-                return new RepoCheck(false, null, null, friendlyGitError(readTail(logFile, token)));
-            }
-            String defaultBranch = parseDefaultBranch(output);
-            Boolean branchFound = branch == null || branch.isBlank() ? null : branchListed(output, branch);
-            String target = branch != null && !branch.isBlank() && Boolean.TRUE.equals(branchFound) ? branch : defaultBranch;
-            return new RepoCheck(true, defaultBranch, branchFound, null, countFiles(uri.toString(), target, sendToken ? token : null));
-        } catch (IOException e) {
-            return new RepoCheck(false, null, null, "Não foi possível executar o git neste servidor");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return new RepoCheck(false, null, null, "Verificação interrompida");
-        } finally {
-            deleteQuietly(logFile);
-        }
-    }
-
-    /**
-     * Conta os arquivos da branch sem baixar o conteúdo (clone raso, sem blobs, só a árvore). Melhor esforço: se
-     * demorar mais que o limite ou falhar, devolve nulo e a verificação segue sem o número.
-     */
-    Long countFiles(String repoUrl, String branch, String token) {
-        Path dir = null;
-        try {
-            Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
-            dir = basePath.resolve("count-" + UUID.randomUUID()).normalize();
-            List<String> clone = new ArrayList<>(List.of("git", "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
-                    "clone", "--depth", "1", "--filter=blob:none", "--no-checkout", "--single-branch"));
-            if (branch != null && !branch.isBlank()) {
-                clone.addAll(List.of("--branch", branch));
-            }
-            clone.addAll(List.of("--", repoUrl, dir.toString()));
-            ProcessBuilder pb = new ProcessBuilder(clone).redirectErrorStream(true);
-            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
-            configureEnvironment(pb.environment(), token);
-            Process cloneProc = pb.start();
-            if (!cloneProc.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS) || cloneProc.exitValue() != 0) {
-                cloneProc.destroyForcibly();
-                return null;
-            }
-            Process ls = new ProcessBuilder("git", "-C", dir.toString(), "ls-tree", "-r", "--name-only", "HEAD")
-                    .redirectErrorStream(true).start();
-            long count;
-            try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(ls.getInputStream(), StandardCharsets.UTF_8))) {
-                count = reader.lines().count();
-            }
-            ls.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            return count;
-        } catch (IOException | RuntimeException e) {
-            return null;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return null;
-        } finally {
-            cleanupDirectory(dir);
-        }
+        return new RemoteProbe(this).check(repoUrl, branch, tokenOverride, hosts);
     }
 
     /**
@@ -411,88 +325,7 @@ public class IngestionService {
      * repositório não responde, a branch não existe ou a URL é inválida.
      */
     public String remoteHeadSha(String repoUrl, String branch, String tokenOverride, String hosts) {
-        if (branch == null || branch.isBlank()) {
-            return null;
-        }
-        Path logFile = null;
-        try {
-            URI uri = validateRepoUrl(repoUrl);
-            validateBranch(branch);
-            String token = resolveToken(tokenOverride);
-            boolean sendToken = !token.isBlank() && isTokenHost(uri.getHost(), hosts);
-            Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
-            Files.createDirectories(basePath);
-            logFile = Files.createTempFile(basePath, "git-head-", ".log");
-            ProcessBuilder pb = new ProcessBuilder("git", "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
-                    "ls-remote", "--", uri.toString(), "refs/heads/" + branch);
-            pb.redirectErrorStream(true);
-            pb.redirectOutput(logFile.toFile());
-            configureEnvironment(pb.environment(), sendToken ? token : null);
-            Process process = pb.start();
-            if (!process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                process.destroyForcibly();
-                return null;
-            }
-            if (process.exitValue() != 0) {
-                return null;
-            }
-            return parseRefSha(Files.readString(logFile, StandardCharsets.UTF_8), branch);
-        } catch (IllegalArgumentException | IOException e) {
-            return null;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return null;
-        } finally {
-            deleteQuietly(logFile);
-        }
-    }
-
-    /** SHA da linha "&lt;sha&gt;\trefs/heads/&lt;branch&gt;" da saída do ls-remote. */
-    static String parseRefSha(String lsRemoteOutput, String branch) {
-        if (lsRemoteOutput == null) {
-            return null;
-        }
-        String suffix = "\trefs/heads/" + branch;
-        for (String line : lsRemoteOutput.split("\\R")) {
-            if (line.endsWith(suffix)) {
-                String sha = line.substring(0, line.length() - suffix.length()).trim();
-                return sha.isEmpty() ? null : sha;
-            }
-        }
-        return null;
-    }
-
-    static boolean branchListed(String lsRemoteOutput, String branch) {
-        String suffix = "\trefs/heads/" + branch;
-        return lsRemoteOutput.lines().anyMatch(l -> l.endsWith(suffix));
-    }
-
-    /** Extrai a branch padrão da saída de {@code git ls-remote --symref} ("ref: refs/heads/main\tHEAD"). */
-    static String parseDefaultBranch(String lsRemoteOutput) {
-        if (lsRemoteOutput == null) {
-            return null;
-        }
-        for (String line : lsRemoteOutput.split("\\R")) {
-            if (line.startsWith("ref: refs/heads/") && line.endsWith("\tHEAD")) {
-                return line.substring("ref: refs/heads/".length(), line.length() - "\tHEAD".length()).trim();
-            }
-        }
-        return null;
-    }
-
-    /** Traduz as falhas mais comuns do git em uma frase que o usuário entende. */
-    static String friendlyGitError(String raw) {
-        String t = raw == null ? "" : raw.toLowerCase(Locale.ROOT);
-        if (t.contains("not found") || t.contains("repository") && t.contains("does not exist")) {
-            return "Repositório não encontrado (confira o endereço ou, se for privado, o token configurado)";
-        }
-        if (t.contains("authentication failed") || t.contains("could not read username") || t.contains("403")) {
-            return "Sem permissão para acessar o repositório (configure o token do Git na API)";
-        }
-        if (t.contains("could not resolve host") || t.contains("unable to access")) {
-            return "Não foi possível alcançar o servidor do repositório";
-        }
-        return "Não foi possível acessar o repositório";
+        return new RemoteProbe(this).headSha(repoUrl, branch, tokenOverride, hosts);
     }
 
     // ------------------------------------------------------------------ validação
@@ -505,7 +338,7 @@ public class IngestionService {
         try {
             uri = new URI(repoUrl.trim());
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("URL de repositório inválida");
+            throw new IllegalArgumentException("URL de repositório inválida", e);
         }
         if (!"https".equalsIgnoreCase(uri.getScheme())) {
             throw new IllegalArgumentException("Somente URLs https:// são aceitas para o repositório");
@@ -530,14 +363,14 @@ public class IngestionService {
 
     // ------------------------------------------------------------------ internos
 
-    private String resolveToken(String token) {
+    String resolveToken(String token) {
         if (token != null && !token.isBlank()) {
             return token;
         }
         return "";
     }
 
-    private boolean isTokenHost(String host, String hosts) {
+    boolean isTokenHost(String host, String hosts) {
         if (host == null) {
             return false;
         }
@@ -586,7 +419,7 @@ public class IngestionService {
                 env, cloneTimeoutSeconds);
     }
 
-    private void configureEnvironment(Map<String, String> env, String token) {
+    void configureEnvironment(Map<String, String> env, String token) {
         env.put("GIT_TERMINAL_PROMPT", "0");
         env.put("GIT_ASKPASS", "echo");
         env.put("GCM_INTERACTIVE", "never");
@@ -601,7 +434,7 @@ public class IngestionService {
         }
     }
 
-    private String readTail(Path logFile, String token) {
+    String readTail(Path logFile, String token) {
         try {
             String output = Files.readString(logFile, StandardCharsets.UTF_8).strip();
             if (!token.isBlank()) {
@@ -615,7 +448,7 @@ public class IngestionService {
         }
     }
 
-    private void deleteQuietly(Path file) {
+    void deleteQuietly(Path file) {
         if (file == null) {
             return;
         }

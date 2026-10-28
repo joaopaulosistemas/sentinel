@@ -66,3 +66,12 @@
     - "sentinel-cc-complexidade"
     - "cyclomaticcomplexity"
   max-lines: 3
+
+# O Architecture avisa "literais numéricos fora de constantes" uma vez por arquivo, na primeira ocorrência; o Checkstyle
+# aponta cada uma. Fica o do Checkstyle (linha exata). O do Architecture só sobra se o Checkstyle não rodou.
+- name: numeros-magicos
+  prefer: Checkstyle
+  rules:
+    - "magicnumber"
+    - "arch-magic-number"
+  max-lines: 1

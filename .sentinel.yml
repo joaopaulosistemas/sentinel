@@ -41,3 +41,18 @@ suppress:
   - rule: "sentinel-system-exit"
     path: "audit-api/src/main/java/com/sentinel/audit/pack/PackTool.java"
     reason: "PackTool.main é um programa de linha de comando (códigos de saída 0, 1 e 2)"
+
+  # Falsos positivos da heurística "consulta/gravação dentro de loop": o código já faz uma consulta só e o laço apenas
+  # monta objetos (conferido na leitura; o lote de gravação vem de quarkus.hibernate-orm.jdbc.statement-batch-size=50).
+  - rule: "sentinel-jpa-n-mais-um"
+    path: "audit-api/src/main/java/com/sentinel/audit/insights/InsightsService.java"
+    reason: "uma única consulta (findByAuditRunId); não há laço sobre ela"
+  - rule: "sentinel-jpa-n-mais-um"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/FindingLifecycleService.java"
+    reason: "trend() já busca as contagens de todas as auditorias numa consulta (countBySeverityForRuns); o laço só monta os pontos"
+  - rule: "sentinel-jpa-escrita-em-loop"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/AuditOrchestrationService.java"
+    reason: "persist() só enfileira no contexto; o envio sai em lotes de 50 (statement-batch-size)"
+  - rule: "pmd-UnusedAssignment"
+    path: "audit-api/src/main/java/com/sentinel/audit/pack/SystemTuning.java"
+    reason: "construtor compacto de record: reatribuir o parâmetro é a forma de normalizar o campo; o PMD não entende isso"

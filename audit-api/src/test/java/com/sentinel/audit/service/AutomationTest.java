@@ -67,8 +67,12 @@ class AutomationTest {
                 return runs.stream().filter(r -> r.getSystem().getId().equals(id))
                         .sorted(Comparator.comparing(AuditRun::getStartedAt).reversed()).toList();
             }
-            @Override public AuditRun findLastStarted(Long id) {
-                return findBySystemId(id).stream().findFirst().orElse(null);
+            @Override public java.util.Map<Long, AuditRun> findLastStartedBySystem() {
+                java.util.Map<Long, AuditRun> out = new java.util.HashMap<>();
+                for (AuditRun r : runs) {
+                    out.merge(r.getSystem().getId(), r, (a, b) -> a.getStartedAt().isAfter(b.getStartedAt()) ? a : b);
+                }
+                return out;
             }
         };
         // request() de verdade exigiria banco/CDI: aqui só registra o pedido; requestIfIdle() é o real
@@ -252,7 +256,7 @@ class AutomationTest {
         scheduler.systemRepository = webhook.systemRepository;
         scheduler.auditRunRepository = new AuditRunRepository() {
             @Override public List<AuditRun> findBySystemId(Long id) { return List.of(); }
-            @Override public AuditRun findLastStarted(Long id) { return null; }
+            @Override public java.util.Map<Long, AuditRun> findLastStartedBySystem() { return java.util.Map.of(); }
         };
         scheduler.requestService = requestService;
 

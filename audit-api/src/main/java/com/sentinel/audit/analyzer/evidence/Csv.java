@@ -128,8 +128,9 @@ final class Csv {
 
     static List<Row> parse(String text) {
         Reader reader = new Reader();
-        for (int i = 0; i < text.length(); i++) {
-            i = reader.quoted ? reader.quotedChar(text, i) : reader.plainChar(text, i);
+        int i = 0;
+        while (i < text.length()) {
+            i = (reader.quoted ? reader.quotedChar(text, i) : reader.plainChar(text, i)) + 1;
         }
         if (reader.hasPending()) {
             reader.closeRecord();

@@ -23,6 +23,25 @@ final class PgStatChecks {
     static final double TOP_SHARE_MEDIUM = 0.10;
     static final double TOP_SHARE_HIGH = 0.25;
     static final int MAX_PER_RULE = 15;
+    /** Tamanho de um bloco do PostgreSQL, para converter "blocos" em bytes. */
+    private static final long PG_BLOCK_BYTES = 8192;
+    /** Tamanho do trecho da consulta guardado como evidência e nos títulos (completo e abreviado). */
+    private static final int SNIPPET_CHARS = 600;
+    private static final int TITLE_QUERY_CHARS = 90;
+    private static final int SHORT_TITLE_QUERY_CHARS = 80;
+    /** Consulta lenta só vale com chamadas suficientes; muito chamada e rápida é "tagarela". */
+    private static final double MIN_CALLS_FOR_SLOW = 5;
+    private static final double MIN_CALLS_CHATTY = 500_000;
+    private static final double CHATTY_MEAN_MS = 5;
+    private static final double MIN_TEMP_BLOCKS = 10_000;
+    private static final double MIN_READ_BLOCKS = 100_000;
+    private static final double MIN_MISS_RATIO = 0.10;
+    private static final double MIN_ROWS_PER_CALL = 10_000;
+    /** Tabelas: varredura sequencial frequente em tabela grande, e muitas linhas mortas. */
+    private static final double MIN_SEQ_SCANS = 100;
+    private static final double MIN_LIVE_ROWS = 10_000;
+    private static final double MIN_DEAD_ROWS = 10_000;
+    private static final double MIN_DEAD_RATIO = 0.20;
     private static final Pattern NOISE = Pattern.compile(
             "^(begin|commit|rollback|set|show|reset|deallocate|discard|listen|notify|savepoint|release|start transaction|"
                     + "fetch|close|declare|vacuum|analyze|checkpoint|explain|copy|create|alter|drop|truncate|grant|revoke)\\b"
@@ -87,54 +106,54 @@ final class PgStatChecks {
             }
             Severity sev = share >= TOP_SHARE_HIGH ? Severity.HIGH : share >= TOP_SHARE_MEDIUM ? Severity.MEDIUM : Severity.LOW;
             out.add(Ev.finding(run, Category.PERFORMANCE, sev, "evidencia-consulta-mais-cara",
-                    "Consulta responde por " + Math.round(share * 100) + "% do tempo do banco: " + Ev.oneLine(s.query(), 90),
+                    "Consulta responde por " + Math.round(share * 100) + "% do tempo do banco: " + Ev.oneLine(s.query(), TITLE_QUERY_CHARS),
                     "Esta consulta somou " + Ev.fmt(s.total() / 1000) + " s em " + Ev.fmt(s.calls()) + " chamadas (média "
                             + Ev.fmt(s.mean()) + " ms), " + Math.round(share * 100) + "% do tempo total de execução registrado. "
                             + "Otimizá-la (índice, menos colunas, paginação, cache) rende mais que qualquer outra mudança no banco.",
-                    file, s.row().line(), Ev.oneLine(s.query(), 600)));
+                    file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS)));
         });
 
-        stmts.stream().filter(s -> s.mean() >= SLOW_MEAN_MS && s.calls() >= 5)
+        stmts.stream().filter(s -> s.mean() >= SLOW_MEAN_MS && s.calls() >= MIN_CALLS_FOR_SLOW)
                 .sorted(Comparator.comparingDouble(Stmt::mean).reversed()).limit(MAX_PER_RULE).forEach(s ->
                         out.add(Ev.finding(run, Category.PERFORMANCE,
                                 s.mean() >= VERY_SLOW_MEAN_MS ? Severity.HIGH : Severity.MEDIUM, "evidencia-consulta-lenta",
-                                "Consulta lenta (média " + Ev.fmt(s.mean()) + " ms): " + Ev.oneLine(s.query(), 90),
+                                "Consulta lenta (média " + Ev.fmt(s.mean()) + " ms): " + Ev.oneLine(s.query(), TITLE_QUERY_CHARS),
                                 "Em média esta consulta leva " + Ev.fmt(s.mean()) + " ms por chamada (" + Ev.fmt(s.calls())
                                         + " chamadas). Veja o plano com EXPLAIN (ANALYZE, BUFFERS) e procure varredura "
                                         + "sequencial, ordenação em disco e junções sem índice.",
-                                file, s.row().line(), Ev.oneLine(s.query(), 600))));
+                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
 
-        stmts.stream().filter(s -> s.temp() >= 10_000)
+        stmts.stream().filter(s -> s.temp() >= MIN_TEMP_BLOCKS)
                 .sorted(Comparator.comparingDouble(Stmt::temp).reversed()).limit(MAX_PER_RULE).forEach(s ->
                         out.add(Ev.finding(run, Category.PERFORMANCE, Severity.MEDIUM, "evidencia-consulta-usa-disco-temporario",
-                                "Consulta grava arquivos temporários (" + Ev.bytes(s.temp() * 8192) + "): " + Ev.oneLine(s.query(), 80),
+                                "Consulta grava arquivos temporários (" + Ev.bytes(s.temp() * PG_BLOCK_BYTES) + "): " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS),
                                 "Ordenações ou junções por hash não couberam em work_mem e foram para o disco. Reduza o volume "
                                         + "(filtro, colunas, índice que entregue já ordenado) ou aumente work_mem para esta carga.",
-                                file, s.row().line(), Ev.oneLine(s.query(), 600))));
+                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
 
-        stmts.stream().filter(s -> s.read() >= 100_000 && s.read() / Math.max(1, s.read() + s.hit()) > 0.10)
+        stmts.stream().filter(s -> s.read() >= MIN_READ_BLOCKS && s.read() / Math.max(1, s.read() + s.hit()) > MIN_MISS_RATIO)
                 .sorted(Comparator.comparingDouble(Stmt::read).reversed()).limit(MAX_PER_RULE).forEach(s ->
                         out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-le-muito-disco",
-                                "Consulta lê muito do disco (" + Ev.bytes(s.read() * 8192) + "): " + Ev.oneLine(s.query(), 80),
+                                "Consulta lê muito do disco (" + Ev.bytes(s.read() * PG_BLOCK_BYTES) + "): " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS),
                                 "Mais de 10% dos blocos lidos não estavam na memória do banco. Confira índices, o tamanho do "
                                         + "shared_buffers e se a consulta lê colunas e linhas a mais.",
-                                file, s.row().line(), Ev.oneLine(s.query(), 600))));
+                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
 
-        stmts.stream().filter(s -> s.calls() > 0 && s.rows() / s.calls() >= 10_000)
+        stmts.stream().filter(s -> s.calls() > 0 && s.rows() / s.calls() >= MIN_ROWS_PER_CALL)
                 .sorted(Comparator.comparingDouble((Stmt s) -> s.rows() / s.calls()).reversed()).limit(MAX_PER_RULE).forEach(s ->
                         out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-retorna-muitas-linhas",
-                                "Consulta devolve ~" + Ev.fmt(s.rows() / s.calls()) + " linhas por chamada: " + Ev.oneLine(s.query(), 80),
+                                "Consulta devolve ~" + Ev.fmt(s.rows() / s.calls()) + " linhas por chamada: " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS),
                                 "Devolver dezenas de milhares de linhas por chamada pressiona rede, memória da aplicação e do banco. "
                                         + "Pagine, filtre no banco ou agregue na própria consulta.",
-                                file, s.row().line(), Ev.oneLine(s.query(), 600))));
+                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
 
-        stmts.stream().filter(s -> s.calls() >= 500_000 && s.mean() < 5)
+        stmts.stream().filter(s -> s.calls() >= MIN_CALLS_CHATTY && s.mean() < CHATTY_MEAN_MS)
                 .sorted(Comparator.comparingDouble(Stmt::calls).reversed()).limit(MAX_PER_RULE).forEach(s ->
                         out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-chamada-em-excesso",
-                                "Consulta chamada " + Ev.fmt(s.calls()) + " vezes: " + Ev.oneLine(s.query(), 80),
+                                "Consulta chamada " + Ev.fmt(s.calls()) + " vezes: " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS),
                                 "Milhões de chamadas rápidas indicam o problema N+1 (uma consulta por item) ou falta de cache. "
                                         + "Busque os dados em lote (IN, JOIN FETCH, @EntityGraph) ou guarde o resultado.",
-                                file, s.row().line(), Ev.oneLine(s.query(), 600))));
+                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
         return out;
     }
 
@@ -149,7 +168,7 @@ final class PgStatChecks {
             double seq = r.number("seq_scan");
             double seqRead = r.number("seq_tup_read");
             double idx = r.number("idx_scan");
-            if (seq >= 100 && live >= 10_000 && seq > idx) {
+            if (seq >= MIN_SEQ_SCANS && live >= MIN_LIVE_ROWS && seq > idx) {
                 out.add(Ev.finding(run, Category.PERFORMANCE, seqRead >= 10_000_000 ? Severity.HIGH : Severity.MEDIUM,
                         "evidencia-tabela-varredura-sequencial",
                         "Tabela lida por varredura sequencial: " + name,
@@ -158,7 +177,7 @@ final class PgStatChecks {
                                 + "filtro mais comum, ou o filtro não consegue usá-lo (função na coluna, LIKE '%x').",
                         file, r.line(), name));
             }
-            if (dead >= 10_000 && live + dead > 0 && dead / (live + dead) >= 0.20) {
+            if (dead >= MIN_DEAD_ROWS && live + dead > 0 && dead / (live + dead) >= MIN_DEAD_RATIO) {
                 out.add(Ev.finding(run, Category.PERFORMANCE, Severity.MEDIUM, "evidencia-tabela-inchada",
                         "Tabela com muitas linhas mortas: " + name,
                         name + " tem " + Ev.fmt(dead) + " linhas mortas (" + Math.round(100 * dead / (live + dead))

@@ -56,7 +56,7 @@ public final class TuningJson {
         try {
             return parse(MAPPER.readTree(json));
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new IllegalArgumentException("Ajustes ilegíveis");
+            throw new IllegalArgumentException("Ajustes ilegíveis", e);
         }
     }
 
@@ -103,7 +103,7 @@ public final class TuningJson {
         try {
             return Severity.valueOf(node.asText().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Severidade inválida em " + ruleId + ": " + node.asText());
+            throw new IllegalArgumentException("Severidade inválida em " + ruleId + ": " + node.asText(), e);
         }
     }
 

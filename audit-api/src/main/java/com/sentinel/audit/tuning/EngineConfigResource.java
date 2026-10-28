@@ -84,7 +84,7 @@ public class EngineConfigResource {
             parsed = TuningJson.parse(body);
             validateAgainstRegistry(parsed);
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException(e.getMessage());
+            throw new BadRequestException(e.getMessage(), e);
         }
         return view(system, tuningService.save(id, parsed));
     }

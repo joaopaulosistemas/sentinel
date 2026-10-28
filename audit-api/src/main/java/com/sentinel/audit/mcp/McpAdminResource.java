@@ -76,7 +76,7 @@ public class McpAdminResource {
         try {
             return view(gate.update(id, request.enabled(), level, request.tools()));
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException(e.getMessage());
+            throw new BadRequestException(e.getMessage(), e);
         }
     }
 
