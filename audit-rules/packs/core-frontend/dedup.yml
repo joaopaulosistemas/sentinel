@@ -19,6 +19,15 @@
     - "sentinel-fe-target-blank"
   max-lines: 1
 
+- name: clique-sem-teclado
+  rules:
+    - "eslint-@angular-eslint/template/click-events-have-key-events"
+    - "eslint-@angular-eslint/template/interactive-supports-focus"
+    - "eslint-jsx-a11y/click-events-have-key-events"
+    - "eslint-jsx-a11y/no-static-element-interactions"
+    - "sentinel-fe-click-sem-role"
+  max-lines: 1
+
 - name: react-key-indice
   rules:
     - "eslint-react/no-array-index-key"
