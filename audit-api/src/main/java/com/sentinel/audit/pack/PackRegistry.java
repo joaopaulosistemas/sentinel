@@ -31,6 +31,9 @@ import java.util.Set;
 @ApplicationScoped
 public class PackRegistry {
 
+    private static final int GIT_SYNC_TIMEOUT_SECONDS = 180;
+
+
     private static final Logger LOG = Logger.getLogger(PackRegistry.class);
 
     static final List<String> BUILTIN_DIRS = List.of("../audit-rules/packs", "audit-rules/packs", "/app/audit-rules/packs");
@@ -192,7 +195,7 @@ public class PackRegistry {
     /** Raiz dos pacotes no repositório Git configurado; {@code null} (com aviso) se não deu para obtê-la. */
     private Path gitRoot(List<String> warnings) {
         try {
-            Path checkout = PackSources.sync(gitUrl.get().trim(), gitRef, Paths.get(cacheDir), 180, allowFileUrl);
+            Path checkout = PackSources.sync(gitUrl.get().trim(), gitRef, Paths.get(cacheDir), GIT_SYNC_TIMEOUT_SECONDS, allowFileUrl);
             Path root = gitPath.filter(p -> !p.isBlank()).map(p -> checkout.resolve(p.trim()).normalize()).orElse(checkout);
             if (!root.startsWith(checkout) || !Files.isDirectory(root)) {
                 warnings.add("git-path inválido ou inexistente no repositório de pacotes: " + gitPath.orElse(""));

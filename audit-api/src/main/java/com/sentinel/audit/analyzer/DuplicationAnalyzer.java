@@ -29,6 +29,13 @@ import java.util.Set;
 @ApplicationScoped
 public class DuplicationAnalyzer implements CodeAnalyzer {
 
+    private static final int DEFAULT_MIN_LINES = 15;
+    /** Menor janela de comparação aceita, em linhas. */
+    private static final int MIN_WINDOW = 4;
+    /** Bloco repetido com tantas linhas ou mais é médio; menor, baixo. */
+    private static final int MEDIUM_MIN_LINES = 30;
+
+
     private static final Logger LOG = Logger.getLogger(DuplicationAnalyzer.class);
     static final String ANALYZER_NAME = "Duplicação";
     private static final int MAX_FILES = 20_000;
@@ -43,13 +50,13 @@ public class DuplicationAnalyzer implements CodeAnalyzer {
         Instant start = Instant.now();
         List<Finding> findings = new ArrayList<>();
         int window = policy == null ? 10 : policy.threshold("dup-window", 10);
-        int minLines = policy == null ? 15 : policy.threshold("dup-min-lines", 15);
+        int minLines = policy == null ? DEFAULT_MIN_LINES : policy.threshold("dup-min-lines", DEFAULT_MIN_LINES);
         int max = policy == null ? 100 : policy.threshold("max-findings", 100);
         try {
             Set<String> exts = new HashSet<>(SourceFiles.JAVA);
             exts.addAll(SourceFiles.TS);
             List<Src> files = SourceFiles.read(projectPath, exts, MAX_FILES, false);
-            findings = toFindings(auditRun, Duplication.find(files, Math.max(4, window), Math.max(window, minLines), max));
+            findings = toFindings(auditRun, Duplication.find(files, Math.max(MIN_WINDOW, window), Math.max(window, minLines), max));
         } catch (Exception e) {
             LOG.warnf("Duplicação não pôde ser verificada: %s", e.getMessage());
         }
@@ -59,7 +66,7 @@ public class DuplicationAnalyzer implements CodeAnalyzer {
     static List<Finding> toFindings(AuditRun run, List<Clone> clones) {
         List<Finding> out = new ArrayList<>();
         for (Clone c : clones) {
-            Severity sev = c.lines() >= 30 ? Severity.MEDIUM : Severity.LOW;
+            Severity sev = c.lines() >= MEDIUM_MIN_LINES ? Severity.MEDIUM : Severity.LOW;
             out.add(StructuralFindings.make(run, ANALYZER_NAME, "sentinel-dup-bloco", sev, Category.QUALITY,
                     c.fileB(), c.lineB(),
                     "Código duplicado: " + c.lines() + " linhas iguais a " + c.fileA() + ":" + c.lineA(),

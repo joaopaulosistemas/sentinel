@@ -20,6 +20,20 @@ import java.util.TreeSet;
  */
 public final class Duplication {
 
+    /** Semente e multiplicador do hash polinomial das janelas (valores clássicos de Java: semente de djb-like e 31). */
+    private static final long WINDOW_HASH_SEED = 1125899906842597L;
+    private static final long WINDOW_HASH_MULTIPLIER = 31;
+    /** Constantes do FNV-1a de 64 bits, usado no hash de cada linha. */
+    private static final long FNV_OFFSET_BASIS = 1469598103934665603L;
+    private static final long FNV_PRIME = 1099511628211L;
+    /** Posição (arquivo, linha) é empacotada num long: arquivo nos 32 bits altos, linha nos baixos. */
+    private static final int FILE_INDEX_SHIFT = 32;
+    /** Mínimo de linhas diferentes numa janela para ela contar como duplicação real. */
+    private static final int MIN_DISTINCT_LINES = 3;
+    /** Linhas com até esse tamanho ({@code "});"}, {@code "}"}) não entram na comparação. */
+    private static final int TRIVIAL_LINE_MAX_CHARS = 3;
+
+
     private Duplication() {}
 
     /** Um bloco repetido: o original, a cópia e quantas linhas significativas se repetem. */
@@ -49,11 +63,11 @@ public final class Duplication {
                 if (!varied(n.lines, i, window)) {
                     continue;
                 }
-                long h = 1125899906842597L;
+                long h = WINDOW_HASH_SEED;
                 for (int k = 0; k < window; k++) {
-                    h = h * 31 + n.hash[i + k];
+                    h = h * WINDOW_HASH_MULTIPLIER + n.hash[i + k];
                 }
-                windows.computeIfAbsent(h, x -> new ArrayList<>(2)).add(((long) fi << 32) | i);
+                windows.computeIfAbsent(h, x -> new ArrayList<>(2)).add(((long) fi << FILE_INDEX_SHIFT) | i);
                 total++;
             }
         }
@@ -66,9 +80,9 @@ public final class Duplication {
             long first = pos.get(0);
             for (int p = 1; p < pos.size(); p++) {
                 long other = pos.get(p);
-                int fa = (int) (first >>> 32);
+                int fa = (int) (first >>> FILE_INDEX_SHIFT);
                 int ia = (int) first;
-                int fb = (int) (other >>> 32);
+                int fb = (int) (other >>> FILE_INDEX_SHIFT);
                 int ib = (int) other;
                 if (!sameWindow(norms.get(fa), ia, norms.get(fb), ib, window)) {
                     continue;                                   // colisão de hash
@@ -124,10 +138,10 @@ public final class Duplication {
     /** Pelo menos 3 linhas diferentes: evita "a.b(); a.b(); a.b();" e tabelas repetitivas. */
     private static boolean varied(String[] lines, int from, int window) {
         Set<String> distinct = new HashSet<>();
-        for (int k = 0; k < window && distinct.size() < 3; k++) {
+        for (int k = 0; k < window && distinct.size() < MIN_DISTINCT_LINES; k++) {
             distinct.add(lines[from + k]);
         }
-        return distinct.size() >= 3;
+        return distinct.size() >= MIN_DISTINCT_LINES;
     }
 
     static Norm normalize(Src f) {
@@ -147,7 +161,7 @@ public final class Duplication {
                 inBlockComment = !line.contains("*/");
                 continue;
             }
-            if (line.isEmpty() || line.startsWith("//") || line.startsWith("*") || line.length() <= 3
+            if (line.isEmpty() || line.startsWith("//") || line.startsWith("*") || line.length() <= TRIVIAL_LINE_MAX_CHARS
                     || line.startsWith("import ") || line.startsWith("package ") || line.startsWith("@Override")) {
                 continue;
             }
@@ -160,9 +174,9 @@ public final class Duplication {
         String[] lines = kept.toArray(new String[0]);
         long[] hash = new long[lines.length];
         for (int i = 0; i < lines.length; i++) {
-            long h = 1469598103934665603L;
+            long h = FNV_OFFSET_BASIS;
             for (int c = 0; c < lines[i].length(); c++) {
-                h = (h ^ lines[i].charAt(c)) * 1099511628211L;
+                h = (h ^ lines[i].charAt(c)) * FNV_PRIME;
             }
             hash[i] = h;
         }

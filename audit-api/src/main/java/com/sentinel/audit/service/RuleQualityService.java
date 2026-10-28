@@ -29,6 +29,10 @@ import java.util.Map;
 @ApplicationScoped
 public class RuleQualityService {
 
+    /** Contadores por regra: aceitos, recusados, pendentes. */
+    private static final int COUNTERS_PER_RULE = 3;
+
+
     /** Amostra mínima para opinar: com poucos casos, 2 de 3 falsos positivos não diz nada. */
     public static final int MIN_SAMPLE = 5;
     /** A partir desta taxa de falso positivo a regra é marcada para revisão. */
@@ -90,7 +94,7 @@ public class RuleQualityService {
                     continue;
                 }
                 String rule = normalize(f);
-                long[] c = counts.computeIfAbsent(rule, k -> new long[3]);
+                long[] c = counts.computeIfAbsent(rule, k -> new long[COUNTERS_PER_RULE]);
                 tools.putIfAbsent(rule, f.getToolSource());
                 c[0]++;
                 SuppressionReason reason = f.getFingerprint() == null ? null : snap.reasonByFingerprint().get(f.getFingerprint());

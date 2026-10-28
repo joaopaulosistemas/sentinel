@@ -33,6 +33,10 @@ import java.util.Set;
 @ApplicationScoped
 public class EslintAnalyzer implements CodeAnalyzer {
 
+    /** Profundidade máxima da busca por arquivos de configuração do ESLint. */
+    private static final int MAX_WALK_DEPTH = 6;
+
+
     private static final Logger LOG = Logger.getLogger(EslintAnalyzer.class);
     private static final String ANALYZER_NAME = "ESLint";
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -112,7 +116,7 @@ public class EslintAnalyzer implements CodeAnalyzer {
 
     /** Algum package.json (fora de pastas ignoradas) menciona {@code @angular/}: só então valem as regras do Angular. */
     static boolean usaAngular(Path projectPath) {
-        try (var paths = Files.walk(projectPath, 6)) {
+        try (var paths = Files.walk(projectPath, MAX_WALK_DEPTH)) {
             return paths.filter(p -> p.getFileName() != null && p.getFileName().toString().equals("package.json"))
                     .filter(p -> !ExternalTools.inIgnoredDir(ExternalTools.relativize(projectPath, p.toString())))
                     .anyMatch(p -> {

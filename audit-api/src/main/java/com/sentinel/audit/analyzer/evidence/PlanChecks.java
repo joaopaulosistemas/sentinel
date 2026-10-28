@@ -15,6 +15,11 @@ import java.util.List;
  */
 final class PlanChecks {
 
+    private static final double HIGH_TIME_MS = 5000;
+    private static final double HIGH_REMOVED_ROWS = 10_000_000;
+    private static final double MIN_ESTIMATE_ROWS = 10_000;
+
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
     static final double SLOW_MS = 1000;
     static final double REMOVED_ROWS = 100_000;
@@ -38,7 +43,7 @@ final class PlanChecks {
         }
         double time = first.path("Execution Time").asDouble(0);
         if (time >= SLOW_MS) {
-            out.add(Ev.finding(run, Category.PERFORMANCE, time >= 5000 ? Severity.HIGH : Severity.MEDIUM, "evidencia-plano-lento",
+            out.add(Ev.finding(run, Category.PERFORMANCE, time >= HIGH_TIME_MS ? Severity.HIGH : Severity.MEDIUM, "evidencia-plano-lento",
                     "Consulta do plano levou " + Ev.fmt(time) + " ms (" + file + ")",
                     "O plano salvo em " + file + " executou em " + Ev.fmt(time) + " ms. Os pontos que mais custam estão "
                             + "listados nos outros achados deste arquivo; comece pelo nó de maior tempo.",
@@ -56,7 +61,7 @@ final class PlanChecks {
         String filter = node.path("Filter").asText("");
 
         if (type.equals("Seq Scan") && removed >= REMOVED_ROWS) {
-            out.add(Ev.finding(run, Category.PERFORMANCE, removed >= 10_000_000 ? Severity.HIGH : Severity.MEDIUM,
+            out.add(Ev.finding(run, Category.PERFORMANCE, removed >= HIGH_REMOVED_ROWS ? Severity.HIGH : Severity.MEDIUM,
                     "evidencia-plano-varredura-sequencial",
                     "Varredura sequencial em " + relation + " descartou " + Ev.fmt(removed) + " linhas",
                     "O plano lê a tabela " + relation + " inteira e joga fora " + Ev.fmt(removed) + " linhas pelo filtro ("
@@ -84,7 +89,7 @@ final class PlanChecks {
             double a = actual * loops;
             double hi = Math.max(planned, a);
             double lo = Math.max(1, Math.min(planned, a));
-            if (hi >= 10_000 && hi / lo >= ESTIMATE_FACTOR) {
+            if (hi >= MIN_ESTIMATE_ROWS && hi / lo >= ESTIMATE_FACTOR) {
                 out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-plano-estimativa-errada",
                         "Estimativa de linhas errada em " + type + (relation.isEmpty() ? "" : " (" + relation + ")"),
                         "O planejador previu " + Ev.fmt(planned) + " linhas e vieram " + Ev.fmt(a) + ". Estatísticas "

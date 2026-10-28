@@ -61,13 +61,13 @@ public class WebhookResource {
         try {
             payload = MAPPER.readTree(new String(body, StandardCharsets.UTF_8));
         } catch (Exception e) {
-            return Response.status(400).entity(Map.of("error", "JSON inválido")).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", "JSON inválido")).build();
         }
         // Só quem tem o segredo de um sistema com este repositório é aceito; os demais recebem 401, sem pistas.
         List<AuditedSystem> valid = webhookService.withSecret(WebhookService.repoUrls(payload)).stream()
                 .filter(authentic).toList();
         if (valid.isEmpty()) {
-            return Response.status(401).entity(Map.of("error", "Assinatura inválida ou sistema sem segredo de webhook")).build();
+            return Response.status(Response.Status.UNAUTHORIZED).entity(Map.of("error", "Assinatura inválida ou sistema sem segredo de webhook")).build();
         }
         if ("ping".equals(event)) {
             return Response.ok(Map.of("message", "pong")).build();

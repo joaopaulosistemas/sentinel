@@ -33,6 +33,20 @@ import java.util.Locale;
 @ApplicationScoped
 public class PdfReportService {
 
+    private static final float[] FINDINGS_COLUMNS = {1.2f, 4f, 3.5f, 1.3f};
+    private static final float[] FIX_PLAN_COLUMNS = {0.6f, 5f, 1.5f, 1.4f, 1.5f};
+    private static final int FIX_PLAN_ITEMS = 5;
+    private static final float PAGE_MARGIN = 40;
+    private static final float H2_SPACING_BEFORE = 14;
+    private static final float H2_SPACING_AFTER = 6;
+    private static final float TABLE_SPACING_BEFORE = 4;
+    private static final float CELL_PADDING = 4;
+    /** Primeiro caractere imprimível do ASCII e o DEL; acima de 0xFF a fonte padrão do PDF não tem glifo. */
+    private static final char FIRST_PRINTABLE = 0x20;
+    private static final char DEL = 0x7f;
+    private static final char LAST_LATIN1 = 0xFF;
+
+
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final Font H1 = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
     private static final Font H2 = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13);
@@ -92,7 +106,7 @@ public class PdfReportService {
                         nz(f.getToolSource())))
                 .toList();
         if (!rows.isEmpty()) {
-            table(doc, List.of("Severidade", "Problema", "Local", "Ferramenta"), rows, new float[]{1.2f, 4f, 3.5f, 1.3f});
+            table(doc, List.of("Severidade", "Problema", "Local", "Ferramenta"), rows, FINDINGS_COLUMNS);
         }
     }
 
@@ -123,12 +137,12 @@ public class PdfReportService {
             }
             List<List<String>> rows = new java.util.ArrayList<>();
             int n = 1;
-            for (FixPlanDto.Item it : plan.items().stream().limit(5).toList()) {
+            for (FixPlanDto.Item it : plan.items().stream().limit(FIX_PLAN_ITEMS).toList()) {
                 rows.add(List.of(String.valueOf(n++), nz(it.title()), String.valueOf(it.severity()),
                         String.valueOf(it.occurrences()), "+" + fmt(it.scoreGain())));
             }
             table(doc, List.of("#", "Problema", "Severidade", "Ocorrências", "Ganho na nota"), rows,
-                    new float[]{0.6f, 5f, 1.5f, 1.4f, 1.5f});
+                    FIX_PLAN_COLUMNS);
         });
     }
 
@@ -170,7 +184,7 @@ public class PdfReportService {
 
     public byte[] tables(String title, List<String> intro, List<TableSection> sections) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Document doc = new Document(PageSize.A4.rotate(), 40, 40, 40, 40);
+        Document doc = new Document(PageSize.A4.rotate(), PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN);
         try {
             PdfWriter.getInstance(doc, out);
             doc.addTitle(clean(title));
@@ -207,7 +221,7 @@ public class PdfReportService {
 
     private byte[] build(String title, AuditRun run, Body body) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Document doc = new Document(PageSize.A4, 40, 40, 40, 40);
+        Document doc = new Document(PageSize.A4, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN);
         try {
             PdfWriter.getInstance(doc, out);
             doc.addTitle(clean(title + " - " + run.getSystem().getName()));
@@ -236,8 +250,8 @@ public class PdfReportService {
 
     private static Paragraph h2(String text) {
         Paragraph p = new Paragraph(clean(text), H2);
-        p.setSpacingBefore(14);
-        p.setSpacingAfter(6);
+        p.setSpacingBefore(H2_SPACING_BEFORE);
+        p.setSpacingAfter(H2_SPACING_AFTER);
         return p;
     }
 
@@ -251,18 +265,18 @@ public class PdfReportService {
         PdfPTable t = new PdfPTable(heads.size());
         t.setWidthPercentage(100);
         t.setWidths(widths);
-        t.setSpacingBefore(4);
+        t.setSpacingBefore(TABLE_SPACING_BEFORE);
         t.setHeaderRows(1);
         for (String h : heads) {
             PdfPCell c = new PdfPCell(new Phrase(clean(h), TH));
             c.setBackgroundColor(HEAD_BG);
-            c.setPadding(4);
+            c.setPadding(CELL_PADDING);
             t.addCell(c);
         }
         for (List<String> row : rows) {
             for (String v : row) {
                 PdfPCell c = new PdfPCell(new Phrase(clean(v), TD));
-                c.setPadding(4);
+                c.setPadding(CELL_PADDING);
                 c.setHorizontalAlignment(Element.ALIGN_LEFT);
                 t.addCell(c);
             }
@@ -304,9 +318,9 @@ public class PdfReportService {
             char c = s.charAt(i);
             if (c == '\n' || c == '\t') {
                 sb.append(c);
-            } else if (c < 0x20 || c == 0x7f) {
+            } else if (c < FIRST_PRINTABLE || c == DEL) {
                 continue;
-            } else if (c > 0xFF) {
+            } else if (c > LAST_LATIN1) {
                 sb.append(c == '–' || c == '—' ? '-' : '?');
             } else {
                 sb.append(c);

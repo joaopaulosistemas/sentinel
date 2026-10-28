@@ -36,6 +36,14 @@ import java.util.regex.Pattern;
 @ApplicationScoped
 public class OWASPDependencyAnalyzer implements CodeAnalyzer {
 
+    /** Quantos identificadores de vulnerabilidade entram no texto do achado. */
+    private static final int MAX_LISTED_IDS = 8;
+    private static final int RANK_CRITICAL = 4;
+    private static final int RANK_HIGH = 3;
+    private static final int RANK_MEDIUM = 2;
+    private static final int RANK_LOW = 1;
+
+
     private static final Logger LOG = Logger.getLogger(OWASPDependencyAnalyzer.class);
     private static final String ANALYZER_NAME = "OWASP-Dependency";
 
@@ -149,11 +157,11 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
                 }
             }
             StringBuilder ids = new StringBuilder();
-            for (int i = 0; i < Math.min(vulns.size(), 8); i++) {
+            for (int i = 0; i < Math.min(vulns.size(), MAX_LISTED_IDS); i++) {
                 ids.append(i == 0 ? "" : ", ").append(vulns.get(i).cve() != null ? vulns.get(i).cve() : vulns.get(i).id());
             }
-            if (vulns.size() > 8) {
-                ids.append(" e mais ").append(vulns.size() - 8);
+            if (vulns.size() > MAX_LISTED_IDS) {
+                ids.append(" e mais ").append(vulns.size() - MAX_LISTED_IDS);
             }
             Finding f = new Finding();
             f.setAuditRun(auditRun);
@@ -173,7 +181,7 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
     }
 
     private static int severityRank(Severity s) {
-        return switch (s) { case CRITICAL -> 4; case HIGH -> 3; case MEDIUM -> 2; case LOW -> 1; default -> 0; };
+        return switch (s) { case CRITICAL -> RANK_CRITICAL; case HIGH -> RANK_HIGH; case MEDIUM -> RANK_MEDIUM; case LOW -> RANK_LOW; default -> 0; };
     }
 
     @Override

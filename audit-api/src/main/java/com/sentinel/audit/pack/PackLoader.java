@@ -36,6 +36,9 @@ import java.util.stream.Stream;
  */
 public final class PackLoader {
 
+    private static final int DEFAULT_TOOL_TIMEOUT_SECONDS = 600;
+
+
     static final long MAX_FILE_BYTES = 1024 * 1024;
     static final int MAX_FILES = 5000;
     private static final Pattern SEMGREP_ID = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_.-]*");
@@ -465,7 +468,7 @@ public final class PackLoader {
         String toolName = Yamls.str(m, "name");
         return new ToolSpec(id, toolName == null ? id : toolName, args, input,
                 category(m, "category", Category.QUALITY, where, errors), toolSeverityMap(m, where, errors),
-                Yamls.integer(m, "timeout-seconds", 600, errors, name), stdout, applies);
+                Yamls.integer(m, "timeout-seconds", DEFAULT_TOOL_TIMEOUT_SECONDS, errors, name), stdout, applies);
     }
 
     /** O comando grava o SARIF em {output} ou escreve no stdout; nunca os dois, e 'stdout' só vale com 'command'. */

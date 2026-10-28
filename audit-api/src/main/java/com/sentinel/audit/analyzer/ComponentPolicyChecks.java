@@ -17,6 +17,10 @@ import java.util.Locale;
 /** Confere as dependências declaradas do projeto com a política de componentes (proibidas, versão mínima, obrigatórias, lista aprovada). */
 final class ComponentPolicyChecks {
 
+    /** Teto de achados "fora da lista aprovada" por auditoria. */
+    private static final int MAX_NOT_APPROVED = 200;
+
+
     private ComponentPolicyChecks() {
     }
 
@@ -81,7 +85,7 @@ final class ComponentPolicyChecks {
             if (f.endsWith("package-lock.json") || f.endsWith("yarn.lock") || f.endsWith("pnpm-lock.yaml")) {
                 continue;                                   // transitivas: só declaradas diretamente
             }
-            if (cp.approvedOnly().stream().noneMatch(r -> ArchitecturePolicyAnalyzer.globMatches(r.dep(), d.name())) && n < 200) {
+            if (cp.approvedOnly().stream().noneMatch(r -> ArchitecturePolicyAnalyzer.globMatches(r.dep(), d.name())) && n < MAX_NOT_APPROVED) {
                 n++;
                 out.add(ArchitecturePolicyAnalyzer.archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-not-approved",
                         Severity.MEDIUM, Category.DEPENDENCY, "Biblioteca fora da lista aprovada: " + d.name(),

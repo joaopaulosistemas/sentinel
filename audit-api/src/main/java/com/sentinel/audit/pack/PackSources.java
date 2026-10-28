@@ -20,6 +20,10 @@ import java.util.regex.Pattern;
  */
 public final class PackSources {
 
+    /** Quantos caracteres do hash da origem nomeiam a pasta no cache. */
+    private static final int CACHE_DIR_NAME_CHARS = 16;
+
+
     private static final Pattern URL = Pattern.compile("(https://|ssh://)[^\\s]+|git@[A-Za-z0-9.-]+:[^\\s]+");
     private static final Pattern REF = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._/-]*");
 
@@ -35,7 +39,7 @@ public final class PackSources {
         if (ref == null || !REF.matcher(ref).matches() || ref.contains("..")) {
             throw new IOException("ref de pacotes inválida: " + ref);
         }
-        Path dir = cacheRoot.resolve(sha(url + "#" + ref).substring(0, 16));
+        Path dir = cacheRoot.resolve(sha(url + "#" + ref).substring(0, CACHE_DIR_NAME_CHARS));
         Files.createDirectories(cacheRoot);
         if (Files.isDirectory(dir.resolve(".git"))) {
             run(List.of("git", "-C", dir.toString(), "fetch", "--depth", "1", "origin", ref), timeoutSeconds);

@@ -32,6 +32,11 @@ import java.util.Optional;
 @Path("/mcp/{system}")
 public class McpResource {
 
+    private static final long NANOS_PER_MILLI = 1_000_000;
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+    private static final String BEARER_PREFIX = "Bearer ";
+
+
     private static final Logger LOG = Logger.getLogger(McpResource.class);
     private static final int MAX_BODY_CHARS = 64 * 1024;
     private static final String UNAUTHORIZED_BODY = "{\"error\":\"Chave ausente, inválida ou acesso MCP desligado para este sistema\"}";
@@ -125,7 +130,7 @@ public class McpResource {
                         detail = "erro interno";
                     }
                 }
-                long ms = (System.nanoTime() - start) / 1_000_000;
+                long ms = (System.nanoTime() - start) / NANOS_PER_MILLI;
                 try {
                     gate.log(systemId, tool.wire(), result.ok(), ms, McpCallSummary.of(detail, arguments));
                 } catch (RuntimeException e) {
@@ -141,7 +146,7 @@ public class McpResource {
     }
 
     private static Response tooMany(int seconds) {
-        return Response.status(429)
+        return Response.status(HTTP_TOO_MANY_REQUESTS)
                 .header("Retry-After", seconds)
                 .type(MediaType.APPLICATION_JSON)
                 .entity("{\"error\":\"Muitas chamadas em pouco tempo. Tente de novo em " + seconds + " s.\"}")
@@ -175,8 +180,8 @@ public class McpResource {
     }
 
     private static String bearer(String authorization) {
-        if (authorization != null && authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
-            return authorization.substring(7).trim();
+        if (authorization != null && authorization.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
+            return authorization.substring(BEARER_PREFIX.length()).trim();
         }
         return null;
     }

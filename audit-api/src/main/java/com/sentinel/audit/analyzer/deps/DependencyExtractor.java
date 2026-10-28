@@ -35,6 +35,12 @@ import java.util.stream.Stream;
  */
 public final class DependencyExtractor {
 
+    /** Quantas camadas de {@code ${propriedade}} dentro de propriedade o pom.xml resolve. */
+    private static final int MAX_PROPERTY_NESTING = 3;
+    /** Grupo da versão na expressão de coordenada do Gradle. */
+    private static final int GRADLE_VERSION_GROUP = 3;
+
+
     private static final Logger LOG = Logger.getLogger(DependencyExtractor.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Set<String> IGNORED_DIRS =
@@ -158,7 +164,7 @@ public final class DependencyExtractor {
             return null;
         }
         String cur = value;
-        for (int d = 0; d < 3 && cur.contains("${"); d++) {
+        for (int d = 0; d < MAX_PROPERTY_NESTING && cur.contains("${"); d++) {
             Matcher m = PROPERTY_REF.matcher(cur);
             StringBuilder sb = new StringBuilder();
             while (m.find()) {
@@ -229,7 +235,7 @@ public final class DependencyExtractor {
         List<Dependency> out = new ArrayList<>();
         Matcher m = GRADLE_COORD.matcher(Files.readString(file, StandardCharsets.UTF_8));
         while (m.find()) {
-            out.add(new Dependency("Maven", m.group(1) + ":" + m.group(2), m.group(3), rel));
+            out.add(new Dependency("Maven", m.group(1) + ":" + m.group(2), m.group(GRADLE_VERSION_GROUP), rel));
         }
         return out;
     }

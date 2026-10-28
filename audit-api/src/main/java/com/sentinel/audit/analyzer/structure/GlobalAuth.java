@@ -15,6 +15,9 @@ import java.util.regex.Pattern;
  */
 public final class GlobalAuth {
 
+    private static final int MAX_SOURCE_FILES = 20_000;
+
+
     private GlobalAuth() {}
 
     private static final Pattern REJECTS = Pattern.compile("abortWith|UNAUTHORIZED|FORBIDDEN|\\b40[13]\\b");
@@ -27,7 +30,7 @@ public final class GlobalAuth {
     /** Descrição curta da barreira global, ou {@code null} se não houver. */
     public static String detect(Path root) {
         try {
-            List<Src> java = SourceFiles.read(root, SourceFiles.JAVA, 20_000, false);
+            List<Src> java = SourceFiles.read(root, SourceFiles.JAVA, MAX_SOURCE_FILES, false);
             String filter = fromJava(java);
             if (filter != null) {
                 return filter;

@@ -26,6 +26,9 @@ import java.util.Set;
 @ApplicationScoped
 public class ScoringService {
 
+    private static final long DEFAULT_REFERENCE_LINES = 20_000;
+
+
     /** Penalidade por finding de acordo com a severidade. */
     private static final Map<Severity, Double> SEVERITY_PENALTY = Map.of(
             Severity.CRITICAL, 20.0,
@@ -58,7 +61,7 @@ public class ScoringService {
     boolean densityEnabled = true;
 
     @ConfigProperty(name = "sentinel.audit.score.density.reference-lines", defaultValue = "20000")
-    long referenceLines = 20_000;
+    long referenceLines = DEFAULT_REFERENCE_LINES;
 
     /**
      * Quando ligada, achados de baixa confiança (arquivo de teste, valor de exemplo, regra que o time recusa) pesam menos

@@ -43,6 +43,11 @@ public enum McpTool {
     STATUS_PEDIDOS("status_pedidos",
             "Situação dos pedidos recentes feitos por você (esperando, aprovado, recusado, vencido).");
 
+    private static final int MAX_LIST_LIMIT = 50;
+    private static final int TITLE_MAX_LENGTH = 200;
+    private static final int TEXT_MAX_LENGTH = 2000;
+    private static final int SEMGREP_RULE_MAX_LENGTH = 8000;
+
     private final String wire;
     private final String description;
     private final boolean writes;
@@ -93,7 +98,7 @@ public enum McpTool {
             Arrays.stream(Confidence.values()).forEach(c -> conf.add(c.name()));
             props.putObject("somenteNovos").put("type", "boolean")
                     .put("description", "Só os achados que não existiam na auditoria anterior");
-            props.putObject("limite").put("type", "integer").put("minimum", 1).put("maximum", 50)
+            props.putObject("limite").put("type", "integer").put("minimum", 1).put("maximum", MAX_LIST_LIMIT)
                     .put("description", "Quantos achados devolver (padrão 20)");
         }
         if (this == INICIAR_AUDITORIA) {
@@ -110,8 +115,8 @@ public enum McpTool {
             return schema;
         }
         if (this == REGISTRAR_SUGESTAO) {
-            props.putObject("titulo").put("type", "string").put("maxLength", 200).put("description", "Resumo da sugestão");
-            props.putObject("detalhe").put("type", "string").put("maxLength", 2000).put("description", "Explicação e como corrigir");
+            props.putObject("titulo").put("type", "string").put("maxLength", TITLE_MAX_LENGTH).put("description", "Resumo da sugestão");
+            props.putObject("detalhe").put("type", "string").put("maxLength", TEXT_MAX_LENGTH).put("description", "Explicação e como corrigir");
             props.putObject("regra").put("type", "string").put("description", "Id da regra relacionada, se houver");
             props.putObject("arquivo").put("type", "string").put("description", "Arquivo relacionado, se houver");
             props.putObject("linha").put("type", "integer").put("minimum", 1).put("description", "Linha, se houver");
@@ -121,10 +126,10 @@ public enum McpTool {
         if (this == PROPOR_REGRA) {
             props.putObject("id").put("type", "string").put("pattern", "[a-z0-9][a-z0-9-]{2,59}")
                     .put("description", "Id curto da regra (minúsculas, números e hífen)");
-            props.putObject("titulo").put("type", "string").put("maxLength", 200);
-            props.putObject("motivo").put("type", "string").put("maxLength", 2000)
+            props.putObject("titulo").put("type", "string").put("maxLength", TITLE_MAX_LENGTH);
+            props.putObject("motivo").put("type", "string").put("maxLength", TEXT_MAX_LENGTH)
                     .put("description", "Por que a regra vale: o que ela pega e por que se repete");
-            props.putObject("regraSemgrep").put("type", "string").put("maxLength", 8000)
+            props.putObject("regraSemgrep").put("type", "string").put("maxLength", SEMGREP_RULE_MAX_LENGTH)
                     .put("description", "YAML Semgrep com uma única regra, de id 'local-<id>'");
             schema.putArray("required").add("id").add("titulo").add("regraSemgrep");
             return schema;

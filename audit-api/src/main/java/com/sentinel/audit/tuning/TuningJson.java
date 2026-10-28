@@ -18,6 +18,12 @@ import java.util.Set;
 /** Lê e escreve {@link SystemTuning} como JSON, validando tudo que vem de fora. */
 public final class TuningJson {
 
+    private static final int ID_MAX_CHARS = 200;
+    private static final int MAX_WEIGHT_VALUE = 100000;
+    private static final int PATH_MAX_CHARS = 200;
+    private static final int PATH_ERROR_PREVIEW_CHARS = 60;
+
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
     public static final int MAX_RULES = 200;
 
@@ -81,7 +87,7 @@ public final class TuningJson {
         Map<String, RuleOverride> rules = new LinkedHashMap<>();
         for (JsonNode r : rs) {
             String id = r.path("id").asText("").trim().toLowerCase(Locale.ROOT);
-            if (id.isEmpty() || id.length() > 200 || !id.matches("[a-z0-9_.*:/\\-]+")) {
+            if (id.isEmpty() || id.length() > ID_MAX_CHARS || !id.matches("[a-z0-9_.*:/\\-]+")) {
                 throw new IllegalArgumentException("Id de regra inválido: " + id);
             }
             Severity sev = ruleSeverity(r.path("severity"), id);
@@ -113,7 +119,7 @@ public final class TuningJson {
             if (!ProfileLoader.KNOWN_THRESHOLDS.contains(e.getKey())) {
                 throw new IllegalArgumentException("Limite desconhecido: " + e.getKey());
             }
-            if (!e.getValue().isInt() || e.getValue().asInt() < 1 || e.getValue().asInt() > 100000) {
+            if (!e.getValue().isInt() || e.getValue().asInt() < 1 || e.getValue().asInt() > MAX_WEIGHT_VALUE) {
                 throw new IllegalArgumentException("Limite " + e.getKey() + ": use um inteiro entre 1 e 100000");
             }
             limits.put(e.getKey(), e.getValue().asInt());
@@ -131,8 +137,8 @@ public final class TuningJson {
             if (s.isEmpty()) {
                 continue;
             }
-            if (s.length() > 200 || s.chars().anyMatch(Character::isISOControl) || s.contains("..")) {
-                throw new IllegalArgumentException("Caminho ignorado inválido: " + (s.length() > 60 ? s.substring(0, 60) + "…" : s));
+            if (s.length() > PATH_MAX_CHARS || s.chars().anyMatch(Character::isISOControl) || s.contains("..")) {
+                throw new IllegalArgumentException("Caminho ignorado inválido: " + (s.length() > PATH_ERROR_PREVIEW_CHARS ? s.substring(0, PATH_ERROR_PREVIEW_CHARS) + "…" : s));
             }
             out.add(s);
         }

@@ -15,13 +15,17 @@ import java.util.Map;
  */
 final class Yamls {
 
+    private static final int MAX_ALIASES = 20;
+    private static final int CODE_POINT_LIMIT = 2_000_000;
+
+
     private Yamls() {}
 
     static Object parse(String text) {
         LoaderOptions options = new LoaderOptions();
         options.setAllowDuplicateKeys(false);
-        options.setMaxAliasesForCollections(20);
-        options.setCodePointLimit(2_000_000);
+        options.setMaxAliasesForCollections(MAX_ALIASES);
+        options.setCodePointLimit(CODE_POINT_LIMIT);
         return new Yaml(new SafeConstructor(options)).load(text);
     }
 

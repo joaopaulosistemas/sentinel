@@ -18,6 +18,9 @@ import java.util.Locale;
  */
 public final class Fingerprints {
 
+    private static final int SNIPPET_MAX_CHARS = 300;
+
+
     private Fingerprints() {}
 
     public static String compute(Finding f) {
@@ -36,7 +39,7 @@ public final class Fingerprints {
             return null;
         }
         String squashed = text.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
-        return squashed.length() > 300 ? squashed.substring(0, 300) : squashed;
+        return squashed.length() > SNIPPET_MAX_CHARS ? squashed.substring(0, SNIPPET_MAX_CHARS) : squashed;
     }
 
     private static String nullToEmpty(String s) {

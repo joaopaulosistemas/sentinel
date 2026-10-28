@@ -23,6 +23,10 @@ import java.util.function.Supplier;
 @Tag(name = "Pedidos do Claude", description = "Ações pedidas pelo Claude que dependem de aprovação")
 public class PendingActionResource {
 
+    /** Quantos pedidos recentes a tela mostra por sistema. */
+    private static final int RECENT_LIMIT = 30;
+
+
     public record PendingDto(Long id, String kind, String summary, String status, String createdAt, String expiresAt,
                              String decidedAt, String resultNote, Long auditRunId) {}
 
@@ -35,7 +39,7 @@ public class PendingActionResource {
     @Operation(summary = "Pedidos recentes do Claude neste sistema")
     public List<PendingDto> list(@PathParam("id") Long id) {
         requireSystem(id);
-        return service.recent(id, 30).stream().map(PendingActionResource::dto).toList();
+        return service.recent(id, RECENT_LIMIT).stream().map(PendingActionResource::dto).toList();
     }
 
     @POST
@@ -60,7 +64,7 @@ public class PendingActionResource {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException(e.getMessage(), e);
         }
-        return service.recent(id, 30).stream().map(PendingActionResource::dto).toList();
+        return service.recent(id, RECENT_LIMIT).stream().map(PendingActionResource::dto).toList();
     }
 
     static PendingDto dto(PendingAction a) {

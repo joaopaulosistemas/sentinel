@@ -16,11 +16,15 @@ import java.util.Map;
 @Provider
 public class ApiErrorMapper implements ExceptionMapper<WebApplicationException> {
 
+    private static final int CLIENT_ERROR_MIN = 400;
+    private static final int CLIENT_ERROR_END = 500;
+
+
     @Override
     public Response toResponse(WebApplicationException e) {
         Response original = e.getResponse();
         int status = original.getStatus();
-        if (status < 400 || status >= 500 || original.hasEntity()) {
+        if (status < CLIENT_ERROR_MIN || status >= CLIENT_ERROR_END || original.hasEntity()) {
             return original;
         }
         String message = e.getMessage();

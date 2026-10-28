@@ -16,6 +16,13 @@ import java.util.Optional;
  */
 public final class McpProtocol {
 
+    /** Códigos de erro do JSON-RPC 2.0. */
+    private static final int PARSE_ERROR = -32700;
+    private static final int INVALID_REQUEST = -32600;
+    private static final int METHOD_NOT_FOUND = -32601;
+    private static final int INVALID_PARAMS = -32602;
+
+
     static final String LATEST = "2025-06-18";
     static final List<String> SUPPORTED = List.of("2025-06-18", "2025-03-26", "2024-11-05");
 
@@ -32,16 +39,16 @@ public final class McpProtocol {
      */
     public Optional<String> handle(String body, McpBackend backend) {
         if (body == null || body.isBlank()) {
-            return Optional.of(error(null, -32700, "Corpo vazio"));
+            return Optional.of(error(null, PARSE_ERROR, "Corpo vazio"));
         }
         JsonNode msg;
         try {
             msg = mapper.readTree(body);
         } catch (JsonProcessingException e) {
-            return Optional.of(error(null, -32700, "JSON inválido"));
+            return Optional.of(error(null, PARSE_ERROR, "JSON inválido"));
         }
         if (msg == null || !msg.isObject()) {
-            return Optional.of(error(null, -32600, "Envie uma mensagem JSON-RPC por vez"));
+            return Optional.of(error(null, INVALID_REQUEST, "Envie uma mensagem JSON-RPC por vez"));
         }
         JsonNode id = msg.get("id");
         boolean expectsReply = id != null && !id.isNull();
@@ -49,7 +56,7 @@ public final class McpProtocol {
         if (method.isEmpty()) {
             // resposta de um cliente (sem método) ou lixo: não há o que responder
             return expectsReply && !msg.has("result") && !msg.has("error")
-                    ? Optional.of(error(id, -32600, "Requisição sem método"))
+                    ? Optional.of(error(id, INVALID_REQUEST, "Requisição sem método"))
                     : Optional.empty();
         }
         if (!expectsReply) {
@@ -61,7 +68,7 @@ public final class McpProtocol {
             case "ping" -> result(id, mapper.createObjectNode());
             case "tools/list" -> result(id, listTools(backend));
             case "tools/call" -> callTool(id, params, backend);
-            default -> error(id, -32601, "Método não suportado: " + method);
+            default -> error(id, METHOD_NOT_FOUND, "Método não suportado: " + method);
         });
     }
 
@@ -95,7 +102,7 @@ public final class McpProtocol {
         String name = params.path("name").asText("");
         Optional<McpTool> tool = McpTool.byWire(name);
         if (tool.isEmpty()) {
-            return error(id, -32602, "Ferramenta desconhecida: " + name);
+            return error(id, INVALID_PARAMS, "Ferramenta desconhecida: " + name);
         }
         JsonNode args = params.path("arguments");
         if (!args.isObject()) {

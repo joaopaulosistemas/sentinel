@@ -41,6 +41,9 @@ import java.util.stream.Collectors;
 @Tag(name = "Audits", description = "Execução e consulta de auditorias de código")
 public class AuditResource {
 
+    private static final int MAX_PAGE_SIZE = 50;
+
+
     @Inject
     AuditRunMapper runMapper;
 
@@ -104,7 +107,7 @@ public class AuditResource {
     @GET
     @Operation(summary = "Listar auditorias recentes", description = "Últimas auditorias de todos os sistemas, da mais nova para a mais antiga")
     public List<AuditRunResponse> listRecent(@QueryParam("limit") @DefaultValue("8") int limit) {
-        int size = Math.max(1, Math.min(limit, 50));
+        int size = Math.max(1, Math.min(limit, MAX_PAGE_SIZE));
         return runCatalog.recent(size).stream().map(runMapper::toResponse).collect(Collectors.toList());
     }
 

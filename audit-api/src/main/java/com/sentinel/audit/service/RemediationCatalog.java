@@ -19,6 +19,9 @@ import java.util.Map;
  */
 public final class RemediationCatalog {
 
+    private static final String CWE_PREFIX = "CWE-";
+
+
     private static volatile List<RemediationEntry> entries = List.of();
 
     private RemediationCatalog() {}
@@ -59,7 +62,7 @@ public final class RemediationCatalog {
         }
         String v = id.trim().toUpperCase(Locale.ROOT);
         if (v.matches("CWE-\\d+")) {
-            return "https://cwe.mitre.org/data/definitions/" + v.substring(4) + ".html";
+            return "https://cwe.mitre.org/data/definitions/" + v.substring(CWE_PREFIX.length()) + ".html";
         }
         if (v.matches("CVE-\\d{4}-\\d+")) {
             return "https://nvd.nist.gov/vuln/detail/" + v;

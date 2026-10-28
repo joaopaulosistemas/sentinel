@@ -23,6 +23,29 @@ import java.util.Set;
  */
 public final class InsightsBuilder {
 
+    private static final int UNKNOWN_SEVERITY_RANK = 4;
+    private static final double WEIGHT_HIGH = 6;
+    private static final double WEIGHT_MEDIUM = 3;
+    private static final double WEIGHT_INFO = 0.5;
+    private static final double EFFORT_LARGE_COST = 4;
+    /** Quantos achados altos já bastam para o estado da área ser crítico. */
+    private static final int CRITICAL_HIGH_COUNT = 3;
+    private static final int PROBLEMS_SHOWN = 5;
+    private static final int RISKS_SHOWN = 3;
+    private static final int RECOMMENDATIONS_SHOWN = 3;
+    private static final int WORST_AREAS_SHOWN = 3;
+    /** Fases do roadmap, em ordem: 0 bloqueadores, 7 melhorias futuras. */
+    private static final int PHASE_COUNT = 8;
+    private static final int PHASE_BLOCKERS = 0;
+    private static final int PHASE_CODE = 1;
+    private static final int PHASE_PERFORMANCE = 2;
+    private static final int PHASE_SECURITY = 3;
+    private static final int PHASE_TESTING = 4;
+    private static final int PHASE_FRONTEND = 5;
+    private static final int PHASE_DEVOPS = 6;
+    private static final int PHASE_FUTURE = 7;
+
+
     private static final int ROADMAP_ITEMS = 15;
     private static final int TOP = 10;
 
@@ -167,20 +190,20 @@ public final class InsightsBuilder {
     }
 
     private static int ordinal(Severity s) {
-        return s == null ? 4 : s.ordinal();
+        return s == null ? UNKNOWN_SEVERITY_RANK : s.ordinal();
     }
 
     static double score(DebtItem d) {
         double sev = switch (d.severity()) {
             case CRITICAL -> 10;
-            case HIGH -> 6;
-            case MEDIUM -> 3;
+            case HIGH -> WEIGHT_HIGH;
+            case MEDIUM -> WEIGHT_MEDIUM;
             case LOW -> 1;
-            case INFO -> 0.5;
+            case INFO -> WEIGHT_INFO;
         };
         double cost = switch (d.effort()) {
             case "S" -> 1;
-            case "L" -> 4;
+            case "L" -> EFFORT_LARGE_COST;
             default -> 2;
         };
         return sev * (1 + Math.log(Math.max(1, d.occurrences())) / Math.log(2)) / cost;
@@ -216,7 +239,7 @@ public final class InsightsBuilder {
         if (!verified && total == 0) {
             state = "NAO_VERIFICADO";
             current = "Não foi possível verificar: nenhum analisador que cobre esta área executou.";
-        } else if (sev.get("CRITICAL") > 0 || sev.get("HIGH") >= 3) {
+        } else if (sev.get("CRITICAL") > 0 || sev.get("HIGH") >= CRITICAL_HIGH_COUNT) {
             state = "CRITICO";
             current = total + " achado(s), incluindo " + sev.get("CRITICAL") + " crítico(s) e " + sev.get("HIGH") + " alto(s).";
         } else if (sev.get("HIGH") > 0 || sev.get("MEDIUM") > 0) {
@@ -229,11 +252,11 @@ public final class InsightsBuilder {
             state = "SEM_ACHADOS";
             current = "Nenhum achado nas verificações automáticas desta área.";
         }
-        List<String> problems = items.stream().limit(5)
+        List<String> problems = items.stream().limit(PROBLEMS_SHOWN)
                 .map(d -> d.problem() + " (" + d.occurrences() + "×, " + d.priority() + ")").toList();
-        List<String> risks = items.stream().filter(d -> d.priority().equals("P0") || d.priority().equals("P1")).limit(3)
+        List<String> risks = items.stream().filter(d -> d.priority().equals("P0") || d.priority().equals("P1")).limit(RISKS_SHOWN)
                 .map(d -> d.impact() + " — " + d.problem()).toList();
-        List<String> recs = new ArrayList<>(new LinkedHashSet<>(items.stream().limit(3).map(DebtItem::recommendation).toList()));
+        List<String> recs = new ArrayList<>(new LinkedHashSet<>(items.stream().limit(RECOMMENDATIONS_SHOWN).map(DebtItem::recommendation).toList()));
         List<String> notVerified = new ArrayList<>(LIMITS.getOrDefault(area, List.of()));
         return new AreaReport(area.name(), area.label(), state, current, sev, total, problems, risks, recs, notVerified);
     }
@@ -251,14 +274,14 @@ public final class InsightsBuilder {
                 {"DevOps", "Pipeline, contêineres, infraestrutura e observabilidade"},
                 {"Melhorias futuras", "Baixa prioridade e documentação"}};
         List<List<DebtItem>> buckets = new ArrayList<>();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < PHASE_COUNT; i++) {
             buckets.add(new ArrayList<>());
         }
         for (DebtItem d : debt) {
             buckets.get(phaseOf(d)).add(d);
         }
         List<RoadmapPhase> out = new ArrayList<>();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < PHASE_COUNT; i++) {
             List<DebtItem> b = buckets.get(i);
             out.add(new RoadmapPhase(i + 1, phases[i][0], phases[i][1], b.size(), b.stream().limit(ROADMAP_ITEMS).toList()));
         }
@@ -267,19 +290,19 @@ public final class InsightsBuilder {
 
     private static int phaseOf(DebtItem d) {
         if (d.priority().equals("P0")) {
-            return 0;
+            return PHASE_BLOCKERS;
         }
         if (d.priority().equals("P3")) {
-            return 7;
+            return PHASE_FUTURE;
         }
         return switch (AuditArea.valueOf(d.area())) {
-            case ARCHITECTURE, CODE_QUALITY, MAINTAINABILITY -> 1;
-            case PERFORMANCE -> 2;
-            case SECURITY, DEPENDENCIES -> 3;
-            case TESTING -> 4;
-            case FRONTEND -> 5;
-            case DEVOPS, OBSERVABILITY -> 6;
-            case DOCUMENTATION -> 7;
+            case ARCHITECTURE, CODE_QUALITY, MAINTAINABILITY -> PHASE_CODE;
+            case PERFORMANCE -> PHASE_PERFORMANCE;
+            case SECURITY, DEPENDENCIES -> PHASE_SECURITY;
+            case TESTING -> PHASE_TESTING;
+            case FRONTEND -> PHASE_FRONTEND;
+            case DEVOPS, OBSERVABILITY -> PHASE_DEVOPS;
+            case DOCUMENTATION -> PHASE_FUTURE;
         };
     }
 
@@ -304,7 +327,7 @@ public final class InsightsBuilder {
         long p1 = debt.stream().filter(d -> d.priority().equals("P1")).count();
         List<String> worst = areas.stream().filter(a -> a.total() > 0)
                 .sorted(Comparator.comparingInt((AreaReport a) -> -(a.bySeverity().get("CRITICAL") * 100 + a.bySeverity().get("HIGH") * 10 + a.bySeverity().get("MEDIUM"))))
-                .limit(3).map(AreaReport::label).toList();
+                .limit(WORST_AREAS_SHOWN).map(AreaReport::label).toList();
         StringBuilder sb = new StringBuilder();
         sb.append(system == null ? "Auditoria" : "Auditoria de " + system).append(": ").append(total).append(" achado(s) ativo(s) (")
                 .append(sev.get("CRITICAL")).append(" críticos, ").append(sev.get("HIGH")).append(" altos, ")

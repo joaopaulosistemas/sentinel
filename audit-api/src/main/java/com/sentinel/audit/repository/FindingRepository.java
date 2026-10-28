@@ -15,6 +15,9 @@ import java.util.Map;
 @ApplicationScoped
 public class FindingRepository implements PanacheRepository<Finding> {
 
+    private static final int MAX_RULE_COUNTS = 300;
+
+
     /**
      * Busca findings de uma execução filtrando por severidade.
      *
@@ -110,7 +113,7 @@ public class FindingRepository implements PanacheRepository<Finding> {
                 .createQuery("select f.ruleId, count(f) from Finding f where f.auditRun.id = :id and f.ruleId is not null group by f.ruleId order by count(f) desc",
                         Object[].class)
                 .setParameter("id", auditRunId)
-                .setMaxResults(300)
+                .setMaxResults(MAX_RULE_COUNTS)
                 .getResultList();
     }
 }

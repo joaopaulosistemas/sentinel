@@ -8,6 +8,11 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 final class JUnitWriter {
 
+    /** Folga para as entidades XML ({@code &amp;} etc.) que aumentam o texto. */
+    private static final int ESCAPE_HEADROOM = 16;
+    private static final char FIRST_VALID_XML_CHAR = 0x20;
+
+
     private JUnitWriter() {}
 
     static String write(JsonNode findings, String suiteName) {
@@ -40,7 +45,7 @@ final class JUnitWriter {
 
     /** Escapa XML e remove caracteres de controle inválidos em XML 1.0. */
     static String esc(String s) {
-        StringBuilder sb = new StringBuilder(s.length() + 16);
+        StringBuilder sb = new StringBuilder(s.length() + ESCAPE_HEADROOM);
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             switch (c) {
@@ -50,7 +55,7 @@ final class JUnitWriter {
                 case '"' -> sb.append("&quot;");
                 case '\'' -> sb.append("&apos;");
                 default -> {
-                    if (c == '\n' || c == '\r' || c == '\t' || c >= 0x20) {
+                    if (c == '\n' || c == '\r' || c == '\t' || c >= FIRST_VALID_XML_CHAR) {
                         sb.append(c);
                     }
                 }

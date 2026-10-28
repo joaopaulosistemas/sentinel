@@ -24,6 +24,9 @@ import java.util.Locale;
 @ApplicationScoped
 public class WebhookService {
 
+    private static final String GIT_SUFFIX = ".git";
+
+
     private static final Logger LOG = Logger.getLogger(WebhookService.class);
     private static final String ZERO_SHA = "0000000000000000000000000000000000000000";
 
@@ -116,7 +119,7 @@ public class WebhookService {
             u = u.substring(0, u.length() - 1);
         }
         if (u.endsWith(".git")) {
-            u = u.substring(0, u.length() - 4);
+            u = u.substring(0, u.length() - GIT_SUFFIX.length());
         }
         return u;
     }

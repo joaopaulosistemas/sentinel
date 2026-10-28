@@ -17,6 +17,12 @@ import java.util.regex.Pattern;
  */
 final class HeapChecks {
 
+    private static final int CLASS_GROUP = 3;
+    private static final int TOP_CLASSES = 8;
+    /** Classe da aplicação com tantas vezes o limite de bytes ou mais vira alta. */
+    private static final int HIGH_BYTES_MULTIPLIER = 5;
+
+
     private static final Pattern ROW = Pattern.compile("^\\s*\\d+:\\s+(\\d+)\\s+(\\d+)\\s+(\\S+)");
     static final long APP_INSTANCES = 100_000;
     static final long APP_BYTES = 100L * 1024 * 1024;
@@ -34,7 +40,7 @@ final class HeapChecks {
         for (String line : text.split("\\R")) {
             Matcher m = ROW.matcher(line);
             if (m.find()) {
-                entries.add(new Entry(m.group(3), Long.parseLong(m.group(1)), Long.parseLong(m.group(2))));
+                entries.add(new Entry(m.group(CLASS_GROUP), Long.parseLong(m.group(1)), Long.parseLong(m.group(2))));
             }
         }
         return entries;
@@ -47,7 +53,7 @@ final class HeapChecks {
         }
         long total = entries.stream().mapToLong(Entry::bytes).sum();
         StringBuilder top = new StringBuilder();
-        entries.stream().sorted(Comparator.comparingLong(Entry::bytes).reversed()).limit(8).forEach(e ->
+        entries.stream().sorted(Comparator.comparingLong(Entry::bytes).reversed()).limit(TOP_CLASSES).forEach(e ->
                 top.append("\n").append(Ev.bytes(e.bytes())).append("  ").append(Ev.fmt(e.instances())).append("×  ").append(e.clazz()));
         out.add(Ev.finding(run, Category.PERFORMANCE, Severity.INFO, "evidencia-memoria-maiores-consumidores",
                 "Heap de " + Ev.bytes(total) + ": maiores consumidores",
@@ -55,7 +61,7 @@ final class HeapChecks {
                 file, 1, null));
         for (Entry e : entries) {
             if (isApp(e.clazz(), appPackages) && (e.instances() >= APP_INSTANCES || e.bytes() >= APP_BYTES)) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, e.bytes() >= 5 * APP_BYTES ? Severity.HIGH : Severity.MEDIUM,
+                out.add(Ev.finding(run, Category.PERFORMANCE, e.bytes() >= HIGH_BYTES_MULTIPLIER * APP_BYTES ? Severity.HIGH : Severity.MEDIUM,
                         "evidencia-memoria-classe-acumulada",
                         Ev.fmt(e.instances()) + " instâncias de " + shortName(e.clazz()) + " (" + Ev.bytes(e.bytes()) + ")",
                         "A classe do projeto " + e.clazz() + " tem " + Ev.fmt(e.instances()) + " instâncias vivas, ocupando "

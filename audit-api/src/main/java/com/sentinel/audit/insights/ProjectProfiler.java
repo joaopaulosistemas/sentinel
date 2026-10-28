@@ -23,6 +23,11 @@ import java.util.regex.Pattern;
  */
 public final class ProjectProfiler {
 
+    private static final int MAX_FILES_FOR_KEY_SCAN = 20_000;
+    private static final String EXPORT_PREFIX = "export ";
+    private static final long MAX_READ_BYTES = 2_000_000;
+
+
     static final int MAX_FILES = 50_000;
     private static final int MAX_LIST = 25;
     private static final Set<String> SKIP_DIRS = Set.of(".git", ".idea", ".vscode", ".gradle", "vendor", "coverage",
@@ -307,7 +312,7 @@ public final class ProjectProfiler {
             }
             boolean keyName = lower.equals("id_rsa") || lower.equals("id_ed25519") || lower.endsWith(".pem")
                     || lower.endsWith(".key");
-            if (keyName && attrs.size() < 20_000 && read(root.resolve(rel)).contains("PRIVATE KEY-----")) {
+            if (keyName && attrs.size() < MAX_FILES_FOR_KEY_SCAN && read(root.resolve(rel)).contains("PRIVATE KEY-----")) {
                 keyFiles.add(rel);
             } else if (lower.endsWith(".p12") || lower.endsWith(".pfx") || lower.endsWith(".jks") || lower.endsWith(".keystore")) {
                 keyFiles.add(rel);
@@ -343,8 +348,8 @@ public final class ProjectProfiler {
         static boolean envHasSecret(String text) {
             for (String line : text.split("\\R")) {
                 String l = line.strip();
-                if (l.startsWith("export ")) {
-                    l = l.substring(7).strip();
+                if (l.startsWith(EXPORT_PREFIX)) {
+                    l = l.substring(EXPORT_PREFIX.length()).strip();
                 }
                 int eq = l.indexOf('=');
                 if (l.startsWith("#") || eq <= 0) {
@@ -377,7 +382,7 @@ public final class ProjectProfiler {
 
         static String read(Path p) {
             try {
-                if (Files.size(p) > 2_000_000) {
+                if (Files.size(p) > MAX_READ_BYTES) {
                     return "";
                 }
                 return Files.readString(p, StandardCharsets.UTF_8);

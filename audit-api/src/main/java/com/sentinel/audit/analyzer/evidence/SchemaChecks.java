@@ -20,6 +20,9 @@ import java.util.regex.Pattern;
 /** Verificações no esquema do banco (a partir do dump de DDL): modelagem e índices. */
 final class SchemaChecks {
 
+    private static final String PUBLIC_PREFIX = "public.";
+
+
     static final int WIDE_TABLE_COLUMNS = 50;
     static final int MANY_INDEXES = 10;
     private static final Pattern INFRA_TABLE = Pattern.compile(
@@ -45,7 +48,7 @@ final class SchemaChecks {
     }
 
     private static String display(String tableKey) {
-        return tableKey.startsWith("public.") ? tableKey.substring(7) : tableKey;
+        return tableKey.startsWith(PUBLIC_PREFIX) ? tableKey.substring(PUBLIC_PREFIX.length()) : tableKey;
     }
 
     private static void semChavePrimaria(Table t, String file, AuditRun run, List<Finding> out) {

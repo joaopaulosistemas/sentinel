@@ -42,6 +42,17 @@ import java.util.stream.Stream;
 @ApplicationScoped
 public class SarifAnalyzer implements CodeAnalyzer {
 
+    private static final long BYTES_PER_MB = 1024L * 1024;
+    private static final String ELLIPSIS = "...";
+    private static final int TITLE_MAX_CHARS = 500;
+    /** Prefixo {@code **}{@code /} de um glob, que também casa na raiz. */
+    private static final String ANY_DIR_PREFIX = "**/";
+    /** Faixas de severidade da nota CVSS (FIRST): crítico a partir de 9,0, alto de 7,0 e médio de 4,0. */
+    private static final double CVSS_CRITICAL_FROM = 9.0;
+    private static final double CVSS_HIGH_FROM = 7.0;
+    private static final double CVSS_MEDIUM_FROM = 4.0;
+
+
     private static final Logger LOG = Logger.getLogger(SarifAnalyzer.class);
     private static final String ANALYZER_NAME = "SARIF";
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -95,7 +106,7 @@ public class SarifAnalyzer implements CodeAnalyzer {
                     && matcher.matches(projectPath.relativize(p))).limit(MAX_INPUT_FILES).toList();
             for (Path f : files) {
                 if (Files.size(f) > MAX_SARIF_BYTES) {
-                    LOG.warnf("SARIF %s ignorado: maior que %d MB", f.getFileName(), MAX_SARIF_BYTES / 1024 / 1024);
+                    LOG.warnf("SARIF %s ignorado: maior que %d MB", f.getFileName(), MAX_SARIF_BYTES / BYTES_PER_MB);
                     continue;
                 }
                 out.addAll(parse(Files.readString(f, StandardCharsets.UTF_8), spec, projectPath, run));
@@ -150,7 +161,7 @@ public class SarifAnalyzer implements CodeAnalyzer {
                 return List.of();
             }
             if (Files.size(output) > MAX_SARIF_BYTES) {
-                LOG.warnf("SARIF de '%s' ignorado: maior que %d MB", spec.id(), MAX_SARIF_BYTES / 1024 / 1024);
+                LOG.warnf("SARIF de '%s' ignorado: maior que %d MB", spec.id(), MAX_SARIF_BYTES / BYTES_PER_MB);
                 return List.of();
             }
             return parse(Files.readString(output, StandardCharsets.UTF_8), spec, projectPath, run);
@@ -169,9 +180,9 @@ public class SarifAnalyzer implements CodeAnalyzer {
             java.util.Set<String> variants = new java.util.LinkedHashSet<>();
             variants.add(g);
             variants.add(g.replace("/**/", "/"));
-            if (g.startsWith("**/")) {
-                variants.add(g.substring(3));
-                variants.add(g.substring(3).replace("/**/", "/"));
+            if (g.startsWith(ANY_DIR_PREFIX)) {
+                variants.add(g.substring(ANY_DIR_PREFIX.length()));
+                variants.add(g.substring(ANY_DIR_PREFIX.length()).replace("/**/", "/"));
             }
             for (String v : variants) {
                 matchers.add(FileSystems.getDefault().getPathMatcher("glob:" + v));
@@ -249,7 +260,7 @@ public class SarifAnalyzer implements CodeAnalyzer {
         f.setFilePath(relativeUri(projectPath, phys.path("artifactLocation").path("uri").asText("")));
         f.setLineNumber(phys.path("region").path("startLine").asInt(0));
         String title = message.lines().findFirst().orElse(ruleId);
-        f.setTitle(title.length() > 500 ? title.substring(0, 497) + "..." : title);
+        f.setTitle(title.length() > TITLE_MAX_CHARS ? title.substring(0, TITLE_MAX_CHARS - ELLIPSIS.length()) + ELLIPSIS : title);
         String help = rule == null ? "" : rule.path("helpUri").asText("");
         f.setDescription(message + (help.isBlank() ? "" : " Detalhes: " + help));
         String snippet = phys.path("region").path("snippet").path("text").asText("");
@@ -273,13 +284,13 @@ public class SarifAnalyzer implements CodeAnalyzer {
         }
         if (!sec.isMissingNode()) {
             double score = sec.isNumber() ? sec.asDouble() : parseDouble(sec.asText(""));
-            if (score >= 9.0) {
+            if (score >= CVSS_CRITICAL_FROM) {
                 return Severity.CRITICAL;
             }
-            if (score >= 7.0) {
+            if (score >= CVSS_HIGH_FROM) {
                 return Severity.HIGH;
             }
-            if (score >= 4.0) {
+            if (score >= CVSS_MEDIUM_FROM) {
                 return Severity.MEDIUM;
             }
             if (score > 0.0) {

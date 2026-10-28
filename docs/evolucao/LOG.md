@@ -431,3 +431,15 @@ Fecha o que o PR anterior deixou como "não feito": `AuditOrchestrationService` 
 - Testes: `AuditOrchestrationServiceTest` passa a atribuir `service.store.<campo>` (e `service.store.tryMarkRunning`) no lugar dos campos antigos.
 
 Verificado: `javac` sobre a API (só erros de pacote ausente; nenhum erro novo comparado à `main`; o orquestrador tem menos erros porque perdeu as dependências). Não verificado: Maven e testes (só o CI); os testes Java alterados não foram compilados aqui.
+
+## Dashboard 12.33.0 / API — Números mágicos trocados por constantes nomeadas
+
+Fecha o item "Números mágicos" deixado pelo PR da auditoria #46. Refatoração sem mudança de comportamento: cada valor continua o mesmo, só ganhou nome.
+
+- 322 ocorrências do Checkstyle `MagicNumber` em 80 arquivos da API e do CLI viraram constantes com nome do que representam (`MAX_NOT_APPROVED`, `GCM_IV_BYTES`, `PHASE_SECURITY`, `CRITICAL_HIGH_COUNT`…). Onde o número é um padrão, o nome segue o padrão: coeficientes do CVSS 3.1, códigos de erro do JSON-RPC, constantes do FNV-1a, IV e tag do AES-GCM.
+- Cortes de texto com reticências passam a usar `LIMITE - ELLIPSIS.length()` em vez de um `497` solto; o resultado é o mesmo.
+- Respostas HTTP usam `Response.Status` quando o código existe; 422 e 429 viram constantes locais.
+- A nota não muda (o teto por regra já estava no máximo); o ganho é de leitura e de manutenção.
+
+Verificado: Checkstyle com a configuração do projeto sobre `audit-api` e `audit-cli`: 0 `MagicNumber` (antes 322); `javac` sem erro novo em relação à `main` (diferença só em `Response.Status`, que o `javac` local não resolve por faltar o jakarta) e o CLI compila sem erros.
+Não verificado: Maven e testes (só o CI); não rodei comparação de saída antes/depois, só revisei cada troca.

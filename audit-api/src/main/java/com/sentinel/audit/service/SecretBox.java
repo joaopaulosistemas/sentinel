@@ -26,6 +26,12 @@ import java.util.Optional;
 @ApplicationScoped
 public class SecretBox {
 
+    /** AES-GCM: IV de 96 bits (recomendação do NIST) e tag de autenticação de 128 bits. */
+    private static final int GCM_IV_BYTES = 12;
+    private static final int GCM_TAG_BITS = 128;
+    private static final int KEY_BYTES = 32;
+
+
     private static final String PREFIX = "v1:";
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -56,10 +62,10 @@ public class SecretBox {
 
     public String encrypt(String plain) {
         try {
-            byte[] iv = new byte[12];
+            byte[] iv = new byte[GCM_IV_BYTES];
             RANDOM.nextBytes(iv);
             Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-            c.init(Cipher.ENCRYPT_MODE, key(), new GCMParameterSpec(128, iv));
+            c.init(Cipher.ENCRYPT_MODE, key(), new GCMParameterSpec(GCM_TAG_BITS, iv));
             byte[] ct = c.doFinal(plain.getBytes(StandardCharsets.UTF_8));
             byte[] all = new byte[iv.length + ct.length];
             System.arraycopy(iv, 0, all, 0, iv.length);
@@ -80,8 +86,8 @@ public class SecretBox {
         try {
             byte[] all = Base64.getDecoder().decode(stored.substring(PREFIX.length()));
             Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-            c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, all, 0, 12));
-            return new String(c.doFinal(all, 12, all.length - 12), StandardCharsets.UTF_8);
+            c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(GCM_TAG_BITS, all, 0, GCM_IV_BYTES));
+            return new String(c.doFinal(all, GCM_IV_BYTES, all.length - GCM_IV_BYTES), StandardCharsets.UTF_8);
         } catch (Exception e) {
             return null;
         }
@@ -112,7 +118,7 @@ public class SecretBox {
             try {
                 Path path = Path.of(keyFile);
                 if (!Files.isRegularFile(path)) {
-                    byte[] raw = new byte[32];
+                    byte[] raw = new byte[KEY_BYTES];
                     RANDOM.nextBytes(raw);
                     String generated = Base64.getEncoder().encodeToString(raw);
                     if (path.getParent() != null) {

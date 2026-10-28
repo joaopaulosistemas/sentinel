@@ -31,13 +31,20 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class ReportService {
 
+    private static final int HTML_BUFFER_CHARS = 8192;
+    private static final int SECTION_BUFFER_CHARS = 4096;
+    private static final int FIX_PLAN_ITEMS = 5;
+    private static final int DEBT_TABLE_ROWS = 25;
+    private static final int SHORT_SHA_CHARS = 7;
+
+
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     public String generateHtmlReport(AuditRun run, List<Finding> findings) {
         List<Finding> active = findings.stream().filter(f -> f.getStatus() != FindingStatus.SUPPRESSED).toList();
         List<Finding> suppressed = findings.stream().filter(f -> f.getStatus() == FindingStatus.SUPPRESSED).toList();
 
-        StringBuilder h = new StringBuilder(8192);
+        StringBuilder h = new StringBuilder(HTML_BUFFER_CHARS);
         h.append("<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\">")
                 .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
                 .append("<title>Relatório de Auditoria - ").append(esc(run.getSystem().getName())).append("</title>")
@@ -179,7 +186,7 @@ public class ReportService {
         } else {
             h.append("<table><tr><th>#</th><th>Problema</th><th>Severidade</th><th>Ocorrências</th><th>Ganho na nota</th></tr>");
             int n = 1;
-            for (FixPlanDto.Item it : plan.items().stream().limit(5).toList()) {
+            for (FixPlanDto.Item it : plan.items().stream().limit(FIX_PLAN_ITEMS).toList()) {
                 h.append("<tr><td>").append(n++).append("</td><td>").append(esc(it.title())).append("</td><td><span class=\"badge ")
                         .append(it.severity()).append("\">").append(it.severity()).append("</span></td><td>").append(it.occurrences())
                         .append("</td><td>+").append(fmt(it.scoreGain())).append("</td></tr>");
@@ -246,7 +253,7 @@ public class ReportService {
     }
 
     private StringBuilder pageStart(String title, AuditRun run) {
-        return new StringBuilder(4096)
+        return new StringBuilder(SECTION_BUFFER_CHARS)
                 .append("<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\">")
                 .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
                 .append("<title>").append(title).append(" - ").append(esc(run.getSystem().getName())).append("</title>")
@@ -332,14 +339,14 @@ public class ReportService {
         if (!in.debtTable().isEmpty()) {
             h.append("<h3>Dívida técnica (").append(in.debtTable().size()).append(" problemas)</h3>")
                     .append("<table><tr><th>Prioridade</th><th>Problema</th><th>Impacto</th><th>Esforço</th><th>Risco de regressão</th><th>Ocorrências</th></tr>");
-            in.debtTable().stream().limit(25).forEach(d -> h.append("<tr><td>").append(d.priority()).append(" ")
+            in.debtTable().stream().limit(DEBT_TABLE_ROWS).forEach(d -> h.append("<tr><td>").append(d.priority()).append(" ")
                     .append(esc(d.priorityLabel())).append("</td><td>").append(esc(d.problem())).append("<br><small>")
                     .append(esc(d.areaLabel())).append(d.example() == null ? "" : " · " + esc(d.example())).append("</small></td><td>")
                     .append(esc(d.impact())).append("</td><td>").append(d.effort()).append(d.effortEstimated() ? " (estimado)" : "")
                     .append("</td><td>").append(d.regressionRisk() == null ? "—" : d.regressionRisk()).append("</td><td>")
                     .append(d.occurrences()).append("</td></tr>"));
             h.append("</table>");
-            if (in.debtTable().size() > 25) {
+            if (in.debtTable().size() > DEBT_TABLE_ROWS) {
                 h.append("<p class=\"hint\">Mostrando 25 de ").append(in.debtTable().size()).append(" problemas; a lista completa está na API (/insights).</p>");
             }
         }
@@ -372,7 +379,7 @@ public class ReportService {
 
     /** Os 7 primeiros caracteres do commit auditado; "—" quando a auditoria não registrou. */
     static String shortSha(String sha) {
-        return sha == null || sha.isBlank() ? "—" : sha.substring(0, Math.min(7, sha.length()));
+        return sha == null || sha.isBlank() ? "—" : sha.substring(0, Math.min(SHORT_SHA_CHARS, sha.length()));
     }
 
     private static String meta(String k, String v) {

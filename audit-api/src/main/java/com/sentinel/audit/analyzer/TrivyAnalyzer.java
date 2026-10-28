@@ -32,6 +32,10 @@ import java.util.Map;
 @ApplicationScoped
 public class TrivyAnalyzer implements CodeAnalyzer {
 
+    private static final long DEFAULT_GRACE_SECONDS = 30;
+    private static final int ERROR_TAIL_CHARS = 4000;
+
+
     private static final Logger LOG = Logger.getLogger(TrivyAnalyzer.class);
     private static final String ANALYZER_NAME = "Trivy";
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -49,7 +53,7 @@ public class TrivyAnalyzer implements CodeAnalyzer {
     String pathEnv = System.getenv("PATH");
 
     /** Folga além do --timeout do próprio Trivy, para ele encerrar sozinho antes de ser morto. */
-    long graceSeconds = 30;
+    long graceSeconds = DEFAULT_GRACE_SECONDS;
 
     @Override
     public boolean isAvailable() {
@@ -120,7 +124,7 @@ public class TrivyAnalyzer implements CodeAnalyzer {
         if (code == -1) {
             return "";
         }
-        String err = ExternalTools.tail(stderrFile, 4000).toLowerCase(java.util.Locale.ROOT);
+        String err = ExternalTools.tail(stderrFile, ERROR_TAIL_CHARS).toLowerCase(java.util.Locale.ROOT);
         if (!err.contains("x509") && !err.contains("certificate")) {
             return "";
         }

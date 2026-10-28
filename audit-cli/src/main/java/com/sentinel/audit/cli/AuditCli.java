@@ -44,6 +44,15 @@ import java.util.Map;
  */
 public class AuditCli {
 
+    private static final int CONNECT_TIMEOUT_SECONDS = 30;
+    private static final int EXIT_TIMEOUT = 3;
+    private static final int HTTP_OK = 200;
+    private static final int HTTP_ACCEPTED = 202;
+    static final int RANK_CRITICAL = 5;
+    static final int RANK_HIGH = 4;
+    private static final int RANK_MEDIUM = 3;
+
+
     private static final int POLL_INTERVAL_SECONDS = 10;
     private static final int MAX_WAIT_MINUTES      = 15;
     private static final int MAX_POLLS             = (MAX_WAIT_MINUTES * 60) / POLL_INTERVAL_SECONDS;
@@ -56,7 +65,7 @@ public class AuditCli {
 
     public AuditCli() {
         this.httpClient    = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30))
+                .connectTimeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS))
                 .build();
         this.objectMapper  = new ObjectMapper();
     }
@@ -91,7 +100,7 @@ public class AuditCli {
 
             if (finalResult == null) {
                 System.err.println("Timeout: auditoria não concluída em " + MAX_WAIT_MINUTES + " minutos.");
-                return 3;
+                return EXIT_TIMEOUT;
             }
             Integer abnormalExit = exitForAbnormalEnd(finalResult);
             if (abnormalExit != null) {
@@ -221,7 +230,7 @@ public class AuditCli {
         HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(args.apiUrl + path)).GET();
         addAuth(builder, args.token);
         HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) {
+        if (response.statusCode() != HTTP_OK) {
             throw new IllegalStateException("Falha ao consultar " + path + " (HTTP " + response.statusCode() + ")");
         }
         return objectMapper.readTree(response.body());
@@ -275,9 +284,9 @@ public class AuditCli {
 
     static int severityRank(String severity) {
         return switch (severity) {
-            case "CRITICAL" -> 5;
-            case "HIGH" -> 4;
-            case "MEDIUM" -> 3;
+            case "CRITICAL" -> RANK_CRITICAL;
+            case "HIGH" -> RANK_HIGH;
+            case "MEDIUM" -> RANK_MEDIUM;
             case "LOW" -> 2;
             case "INFO" -> 1;
             default -> 0;
@@ -313,7 +322,7 @@ public class AuditCli {
         HttpResponse<String> response = httpClient.send(builder.build(),
                 HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() != 202) {
+        if (response.statusCode() != HTTP_ACCEPTED) {
             throw new IllegalStateException("Falha ao criar auditoria (HTTP " + response.statusCode() + "): " + response.body());
         }
 
@@ -334,7 +343,7 @@ public class AuditCli {
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() != 200) {
+            if (response.statusCode() != HTTP_OK) {
                 System.err.printf("Erro ao consultar auditoria (HTTP %d)%n", response.statusCode());
                 continue;
             }

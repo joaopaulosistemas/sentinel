@@ -13,6 +13,9 @@ import java.util.function.LongSupplier;
  */
 public final class McpRateLimiter {
 
+    private static final long MILLIS_PER_SECOND = 1000;
+
+
     static final long WINDOW_MS = 60_000L;
     static final int MAX_KEYS = 10_000;
 
@@ -69,6 +72,6 @@ public final class McpRateLimiter {
             return 1;
         }
         long wait = WINDOW_MS - (clock.getAsLong() - q.peekFirst());
-        return (int) Math.max(1, (wait + 999) / 1000);
+        return (int) Math.max(1, (wait + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND);
     }
 }
