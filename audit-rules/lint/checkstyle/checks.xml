@@ -43,7 +43,7 @@
     <module name="UpperEll"/>
     <module name="ArrayTypeStyle"/>
     <module name="ModifierOrder"/>
-    <module name="RedundantModifier"/>
+    <!-- RedundantModifier fora: 793 dos 797 achados eram "public" em método de interface (25% dos achados de cada RuoYi-Vue), só estilo -->
     <module name="AvoidStarImport"/>
     <module name="UnusedImports"/>
     <module name="RedundantImport"/>
