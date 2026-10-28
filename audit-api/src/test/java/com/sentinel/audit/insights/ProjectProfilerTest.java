@@ -96,6 +96,34 @@ class ProjectProfilerTest {
     }
 
     @Test
+    void envSoComConfiguracaoPublicaNaoEAchado() throws IOException {
+        w(".env", "VITE_ENV = \"production\"\nVITE_BASE_URL = \"/api\"\n# VITE_TOKEN_TTL comentado\nVITE_USE_MOCK = false\n");
+        w(".env.local", "API_KEY=\nDB_PASSWORD=changeme\nAUTH_TOKEN=${TOKEN_DO_CI}\n");
+        ProjectMap m = ProjectProfiler.profile(tmp);
+        assertTrue(m.committedEnvFiles().isEmpty(), m.committedEnvFiles().toString());
+    }
+
+    @Test
+    void envComSegredoOuUrlComSenhaContinuaSendoAchado() throws IOException {
+        w(".env", "export STRIPE_SECRET_KEY='sk_live_abc123'\n");
+        w(".env.production", "DATABASE_URL=postgres://app:s3nha@db:5432/app\n");
+        ProjectMap m = ProjectProfiler.profile(tmp);
+        assertTrue(m.committedEnvFiles().containsAll(List.of(".env", ".env.production")), m.committedEnvFiles().toString());
+    }
+
+    @Test
+    void lockEmPastaAcimaCobreOsPacotesDoWorkspace() throws IOException {
+        w("frontend/pnpm-lock.yaml", "lockfileVersion: 9");
+        w("frontend/packages/ui/package.json", "{}");
+        w("frontend/packages/ui/a.ts", "export {}");
+        w("outro/package.json", "{}");
+        w("outro/a.ts", "export {}");
+        ProjectMap m = ProjectProfiler.profile(tmp);
+        assertEquals(List.of("outro/package.json"), m.packageJsonWithoutLock(),
+                "o lock de frontend/ cobre frontend/packages/ui, mas não a pasta irmã outro/");
+    }
+
+    @Test
     void lockNaRaizCobreMonorepo() throws IOException {
         w("package-lock.json", "{}");
         w("web/package.json", "{}");
