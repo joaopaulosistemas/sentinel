@@ -94,3 +94,10 @@ suppress:
   - rule: "obs-system-out"
     path: "audit-cli/src/main/java/com/sentinel/audit/cli/AuditCli.java"
     reason: "ferramenta de linha de comando: a saída no console é a interface com o usuário e o CI"
+  # @BeanParam do Quarkus REST só aceita @QueryParam em campos (anotar o setter derruba o build), então os campos ficam públicos.
+  - rule: "checkstyle-*VisibilityModifier*"
+    path: "audit-api/src/main/java/com/sentinel/audit/resource/AuditResource.java"
+    reason: "classe de parâmetros do @BeanParam: o framework exige a anotação no campo; verificado no build do Quarkus 3.33"
+  - rule: "checkstyle-*VisibilityModifier*"
+    path: "audit-api/src/main/java/com/sentinel/audit/resource/FindingResource.java"
+    reason: "classe de parâmetros do @BeanParam: o framework exige a anotação no campo; verificado no build do Quarkus 3.33"

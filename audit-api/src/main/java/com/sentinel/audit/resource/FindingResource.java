@@ -80,96 +80,32 @@ public class FindingResource {
                     system.getStack() == null ? null : system.getStack().name(), run.getCompletedAt()));
         }
         return FindingsOverview.build(sources,
-                new FindingsOverview.Filter(q.getSystemId(), q.getSeverity() == null ? java.util.Set.of() : java.util.Set.copyOf(q.getSeverity()),
-                        q.getCategory(), q.getStatus(), q.isOnlyNew(), q.isIncludeSuppressed()), q.getLimit(), q.getOffset());
+                new FindingsOverview.Filter(q.systemId, q.severity == null ? java.util.Set.of() : java.util.Set.copyOf(q.severity),
+                        q.category, q.status, q.onlyNew, q.includeSuppressed), q.limit, q.offset);
     }
 
     /** Filtros e paginação de {@link #overview}. */
     public static class OverviewQuery {
-        private Long systemId;
-        private List<Severity> severity;
-        private Category category;
-        private FindingStatus status;
-        private boolean onlyNew;
-        private boolean includeSuppressed;
-        private int limit = 20;
-        private int offset;
-
         @QueryParam("systemId")
-        public void setSystemId(Long systemId) {
-            this.systemId = systemId;
-        }
-
-        public Long getSystemId() {
-            return systemId;
-        }
-
+        public Long systemId;
         @QueryParam("severity")
-        public void setSeverity(List<Severity> severity) {
-            this.severity = severity;
-        }
-
-        public List<Severity> getSeverity() {
-            return severity;
-        }
-
+        public List<Severity> severity;
         @QueryParam("category")
-        public void setCategory(Category category) {
-            this.category = category;
-        }
-
-        public Category getCategory() {
-            return category;
-        }
-
+        public Category category;
         @QueryParam("status")
-        public void setStatus(FindingStatus status) {
-            this.status = status;
-        }
-
-        public FindingStatus getStatus() {
-            return status;
-        }
-
+        public FindingStatus status;
         @QueryParam("onlyNew")
         @DefaultValue("false")
-        public void setOnlyNew(boolean onlyNew) {
-            this.onlyNew = onlyNew;
-        }
-
-        public boolean isOnlyNew() {
-            return onlyNew;
-        }
-
+        public boolean onlyNew;
         @QueryParam("includeSuppressed")
         @DefaultValue("false")
-        public void setIncludeSuppressed(boolean includeSuppressed) {
-            this.includeSuppressed = includeSuppressed;
-        }
-
-        public boolean isIncludeSuppressed() {
-            return includeSuppressed;
-        }
-
+        public boolean includeSuppressed;
         @QueryParam("limit")
         @DefaultValue("20")
-        public void setLimit(int limit) {
-            this.limit = limit;
-        }
-
-        public int getLimit() {
-            return limit;
-        }
-
+        public int limit;
         @QueryParam("offset")
         @DefaultValue("0")
-        public void setOffset(int offset) {
-            this.offset = offset;
-        }
-
-        public int getOffset() {
-            return offset;
-        }
+        public int offset;
     }
 
     /**

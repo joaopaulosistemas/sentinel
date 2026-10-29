@@ -163,70 +163,30 @@ public class AuditResource {
         List<Finding> findings = findingCatalog.byRun(id);
 
         return findings.stream()
-                .filter(f -> q.getSeverity() == null || f.getSeverity() == q.getSeverity())
-                .filter(f -> q.getCategory() == null || f.getCategory() == q.getCategory())
-                .filter(f -> q.getStatus() == null || f.getStatus() == q.getStatus())
+                .filter(f -> q.severity == null || f.getSeverity() == q.severity)
+                .filter(f -> q.category == null || f.getCategory() == q.category)
+                .filter(f -> q.status == null || f.getStatus() == q.status)
                 // suprimidos só aparecem se pedidos (includeSuppressed ou status=SUPPRESSED)
-                .filter(f -> q.isIncludeSuppressed() || q.getStatus() == FindingStatus.SUPPRESSED || f.getStatus() != FindingStatus.SUPPRESSED)
-                .filter(f -> !q.isOnlyNew() || Boolean.TRUE.equals(f.getIsNew()))
+                .filter(f -> q.includeSuppressed || q.status == FindingStatus.SUPPRESSED || f.getStatus() != FindingStatus.SUPPRESSED)
+                .filter(f -> !q.onlyNew || Boolean.TRUE.equals(f.getIsNew()))
                 .map(FindingMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     /** Filtros opcionais de {@link #getFindings}. */
     public static class FindingsQuery {
-        private Severity severity;
-        private Category category;
-        private FindingStatus status;
-        private boolean includeSuppressed;
-        private boolean onlyNew;
-
         @QueryParam("severity")
-        public void setSeverity(Severity severity) {
-            this.severity = severity;
-        }
-
-        public Severity getSeverity() {
-            return severity;
-        }
-
+        public Severity severity;
         @QueryParam("category")
-        public void setCategory(Category category) {
-            this.category = category;
-        }
-
-        public Category getCategory() {
-            return category;
-        }
-
+        public Category category;
         @QueryParam("status")
-        public void setStatus(FindingStatus status) {
-            this.status = status;
-        }
-
-        public FindingStatus getStatus() {
-            return status;
-        }
-
+        public FindingStatus status;
         @QueryParam("includeSuppressed")
         @DefaultValue("false")
-        public void setIncludeSuppressed(boolean includeSuppressed) {
-            this.includeSuppressed = includeSuppressed;
-        }
-
-        public boolean isIncludeSuppressed() {
-            return includeSuppressed;
-        }
-
+        public boolean includeSuppressed;
         @QueryParam("onlyNew")
         @DefaultValue("false")
-        public void setOnlyNew(boolean onlyNew) {
-            this.onlyNew = onlyNew;
-        }
-
-        public boolean isOnlyNew() {
-            return onlyNew;
-        }
+        public boolean onlyNew;
     }
 
     /**
