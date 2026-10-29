@@ -8,7 +8,7 @@ import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.pack.RemediationEntry;
-import com.sentinel.audit.service.RemediationCatalog;
+import com.sentinel.audit.pack.RemediationCatalog;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

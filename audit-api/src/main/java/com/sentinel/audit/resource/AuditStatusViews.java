@@ -1,7 +1,7 @@
 package com.sentinel.audit.resource;
 
 import com.sentinel.audit.insights.AuditInsights;
-import com.sentinel.audit.insights.InsightsService;
+import com.sentinel.audit.service.InsightsService;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.service.IngestionService;

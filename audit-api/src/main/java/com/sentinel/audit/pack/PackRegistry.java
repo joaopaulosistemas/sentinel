@@ -1,7 +1,5 @@
 package com.sentinel.audit.pack;
 
-import com.sentinel.audit.service.FindingDeduplicator;
-import com.sentinel.audit.service.RemediationCatalog;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;

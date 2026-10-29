@@ -2,7 +2,7 @@ package com.sentinel.audit.dto;
 
 import com.sentinel.audit.model.Confidence;
 import com.sentinel.audit.model.Finding;
-import com.sentinel.audit.service.RemediationCatalog;
+import com.sentinel.audit.pack.RemediationCatalog;
 
 /** Converte a entidade {@link Finding} no DTO de resposta (inclui a orientação de correção). */
 public final class FindingMapper {

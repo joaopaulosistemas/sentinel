@@ -1,5 +1,10 @@
-package com.sentinel.audit.review;
+package com.sentinel.audit.resource;
 
+import com.sentinel.audit.review.RuleProposal;
+import com.sentinel.audit.review.ReviewService;
+import com.sentinel.audit.review.SuggestionStatus;
+import com.sentinel.audit.review.ReviewSuggestion;
+import com.sentinel.audit.review.ReviewMetrics;
 import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;

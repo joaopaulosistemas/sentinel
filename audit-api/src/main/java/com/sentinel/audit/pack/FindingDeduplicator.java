@@ -1,7 +1,6 @@
-package com.sentinel.audit.service;
+package com.sentinel.audit.pack;
 
 import com.sentinel.audit.model.Finding;
-import com.sentinel.audit.pack.DedupTopic;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -151,7 +151,7 @@ class PackRegistryTest {
 
         com.sentinel.audit.model.Finding f = new com.sentinel.audit.model.Finding();
         f.setRuleId("x.y.regra-do-pacote-123");
-        assertNotNull(com.sentinel.audit.service.RemediationCatalog.forFinding(f), "chave casa por trecho do id");
+        assertNotNull(com.sentinel.audit.pack.RemediationCatalog.forFinding(f), "chave casa por trecho do id");
         TestPacks.registry();      // restaura o catálogo embutido para os demais testes
     }
 

@@ -1,5 +1,6 @@
 package com.sentinel.audit.dto;
 
+import com.sentinel.audit.pack.RemediationDto;
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Confidence;
 import com.sentinel.audit.model.FindingStatus;

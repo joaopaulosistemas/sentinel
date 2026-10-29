@@ -1,7 +1,8 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.pack.RemediationCatalog;
 import com.sentinel.audit.dto.FixPlanDto;
-import com.sentinel.audit.dto.RemediationDto;
+import com.sentinel.audit.pack.RemediationDto;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.Severity;
 

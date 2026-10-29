@@ -1,7 +1,8 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.pack.RemediationCatalog;
 import com.sentinel.audit.dto.AuditDiffResponse;
-import com.sentinel.audit.dto.RemediationDto;
+import com.sentinel.audit.pack.RemediationDto;
 import com.sentinel.audit.dto.SuppressRequest;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.*;

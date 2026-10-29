@@ -1,5 +1,8 @@
-package com.sentinel.audit.insights;
+package com.sentinel.audit.service;
 
+import com.sentinel.audit.insights.AnalyzerRunInfo;
+import com.sentinel.audit.insights.AuditContextData;
+import com.sentinel.audit.insights.ProjectMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
