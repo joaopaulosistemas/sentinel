@@ -42,6 +42,7 @@ public final class AreaClassifier {
         PREFIXES.put("sentinel-dup-", AuditArea.MAINTAINABILITY);
         PREFIXES.put("sentinel-hotspot", AuditArea.MAINTAINABILITY);
         PREFIXES.put("sentinel-morto-", AuditArea.MAINTAINABILITY);
+        PREFIXES.put("sentinel-commit-", AuditArea.MAINTAINABILITY);
         PREFIXES.put("sentinel-taint-", AuditArea.SECURITY);
         PREFIXES.put("sentinel-spring-open-in-view", AuditArea.PERFORMANCE);
         PREFIXES.put("sentinel-ng-ngfor", AuditArea.PERFORMANCE);

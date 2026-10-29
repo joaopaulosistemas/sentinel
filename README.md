@@ -627,6 +627,12 @@ e um `CLAUDE.md` pronto para a IA seguir. As regras vêm dos pacotes carregados;
 `audit-api/src/main/resources/guia/stacks.yml`. A **nota do guia** (0 a 10) só conta o que foi feito: `review.docs` (práticas conferidas na documentação
 oficial), `review.team` (revisão da equipe) e `review.ai` (teste com a IA numa tarefa real) começam em `false` e são marcados à mão.
 
+A seção **Commits e revisão** (bloco `process:` do mesmo arquivo, igual para todas as tecnologias, e também no `CLAUDE.md`) resume mensagem de commit, PR pequeno e
+revisão de código, com base no Google Engineering Practices e no AWS Well-Architected DL.CR.1. O Sentinel confere só a **mensagem dos commits**
+(analisador `Mensagens de commit`, regra `sentinel-commit-fora-do-padrao`, severidade baixa): lê os últimos 200 commits do clone e aponta um achado único quando
+mais de 30% (`commit-max-bad-percent`) fogem de `tipo(escopo): descrição` (até 100 caracteres, sem descrição vazia); precisa de 20 commits avaliáveis
+(`commit-min-commits`). Merge, revert e fixup/squash não contam. Tamanho do PR e qualidade da revisão continuam por conta da equipe.
+
 ### Arquitetura e componentes declarativos (`architecture.yml`)
 
 ```yaml

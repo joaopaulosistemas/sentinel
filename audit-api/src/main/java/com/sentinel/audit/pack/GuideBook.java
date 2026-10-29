@@ -59,6 +59,21 @@ public final class GuideBook {
         }
     }
 
+    /** Práticas de processo (commit, PR, revisão), iguais para todas as tecnologias. */
+    public static List<Practice> process() {
+        String text = GuideCatalog.resource(STACKS_RESOURCE);
+        if (text == null) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> root = Yamls.map(Yamls.parse(text));
+            return root == null ? List.of() : practices(root, "process");
+        } catch (RuntimeException e) {
+            LOG.warnf("guia/stacks.yml inválido, o guia fica sem processo (%s)", e.getMessage());
+            return List.of();
+        }
+    }
+
     private static Stack toStack(Map<String, Object> m) {
         List<String> problems = new ArrayList<>();
         String id = Yamls.str(m, "id");
@@ -69,7 +84,7 @@ public final class GuideBook {
                 Yamls.bool(m, "commandsVerified", false),
                 new Review(review != null && Yamls.bool(review, "docs", false), review != null && Yamls.bool(review, "team", false),
                         review != null && Yamls.bool(review, "ai", false)),
-                practices(m));
+                practices(m, "practices"));
     }
 
     private static List<String> strings(Map<String, Object> m, String key, List<String> problems) {
@@ -77,8 +92,8 @@ public final class GuideBook {
         return v == null ? List.of() : v;
     }
 
-    private static List<Practice> practices(Map<String, Object> m) {
-        List<Object> items = Yamls.list(m.get("practices"));
+    private static List<Practice> practices(Map<String, Object> m, String key) {
+        List<Object> items = Yamls.list(m.get(key));
         List<Practice> out = new ArrayList<>();
         if (items != null) {
             for (Object item : items) {
@@ -200,6 +215,13 @@ public final class GuideBook {
         l.add("- Todo comportamento novo vem com teste que falha se o código quebrar.");
         l.add("- Toda chamada remota tem timeout; repita só operação idempotente, com espera exponencial e jitter.");
         l.add("- Exceção a uma regra: registre no `.sentinel.yml` com motivo e prazo.");
+        l.add("");
+        l.add("## Commits e revisão");
+        l.add("");
+        l.add("- Commit: `tipo(escopo): descrição` no imperativo, até 72 caracteres (feat, fix, docs, refactor, test, chore). O corpo explica o porquê.");
+        l.add("- Um assunto por mudança; refatoração separada de comportamento.");
+        l.add("- Se algo ficou fora do escopo, abra uma issue em vez de deixar \"depois eu arrumo\".");
+        l.add("- Ao revisar, comente o código (não a pessoa) e marque `Nit:`, `Opcional:` ou `FYI:`.");
         return String.join("\n", l) + "\n";
     }
 }

@@ -84,6 +84,22 @@ class GuideBookTest {
     }
 
     @Test
+    void processoTemPraticasCompletasEEntraNoClaudeMd() {
+        List<GuideBook.Practice> process = GuideBook.process();
+
+        assertTrue(process.size() >= 6, "processo cobre commit, PR e revisão");
+        for (GuideBook.Practice p : process) {
+            assertFalse(p.doIt().isEmpty(), p.title() + " diz o que fazer");
+            assertFalse(p.avoid().isEmpty(), p.title() + " diz o que evitar");
+        }
+        GuideBook.Stack s = stack("java");
+        String md = GuideBook.claudeMd(s, GuideBook.rulesOf(s, GuideBook.stacks(), rules()));
+        assertTrue(md.contains("## Commits e revisão"));
+        assertTrue(md.contains("tipo(escopo): descrição"));
+        assertTrue(md.lines().count() < 200);
+    }
+
+    @Test
     void curingaCasaEmQualquerPosicaoELiteralNoResto() {
         assertTrue(GuideBook.matches("sentinel-vue-v-html", "sentinel-vue-*"));
         assertTrue(GuideBook.matches("sentinel-ts-useeffect-async", "sentinel-ts-useeffect-async"));

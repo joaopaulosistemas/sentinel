@@ -95,6 +95,23 @@ export function PracticeGrid({ stack }: { stack: GuideStack }) {
   );
 }
 
+/** Commit, PR e revisão: iguais para todas as tecnologias. */
+export function ProcessSection({ process }: { process: GuidePractice[] }) {
+  if (process.length === 0) return null;
+  return (
+    <section aria-labelledby="guia-processo" style={{ ...card, display: 'grid', gap: 12 }}>
+      <h2 id="guia-processo" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>Commits e revisão</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+        {process.map((p) => <Practice key={p.title} practice={p} />)}
+      </div>
+      <p style={muted}>
+        Valem para todas as tecnologias. Base: Google Engineering Practices (revisão de código) e AWS Well-Architected DL.CR.1.
+        O Sentinel confere só a mensagem dos commits; o resto depende da equipe.
+      </p>
+    </section>
+  );
+}
+
 function Practice({ practice }: { practice: GuidePractice }) {
   return (
     <article style={{ border: '1px solid var(--s-border)', padding: '0.75rem 1rem', display: 'grid', gap: 6 }}>

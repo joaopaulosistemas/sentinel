@@ -717,4 +717,6 @@ export interface GuideStack {
 export interface GuideResponse {
   stacks: GuideStack[];
   rules: GuideRule[];
+  /** Commit, PR e revisão: vale para todas as tecnologias. */
+  process: GuidePractice[];
 }

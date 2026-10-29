@@ -35,7 +35,7 @@ public class GuideResource {
                             List<GuideBook.Practice> practices, boolean baseLanguage, int ownRules, int inheritedRules,
                             List<RuleRef> rules) {}
 
-    public record GuideResponse(List<StackView> stacks, List<RuleView> rules) {}
+    public record GuideResponse(List<StackView> stacks, List<RuleView> rules, List<GuideBook.Practice> process) {}
 
     @Inject
     PackRegistry packRegistry;
@@ -50,7 +50,7 @@ public class GuideResource {
         List<RuleView> ruleViews = rules.stream()
                 .map(r -> new RuleView(r.id(), r.pack(), r.title(), r.action(), r.severity(), r.cwe(), r.before(), r.after()))
                 .toList();
-        return new GuideResponse(views, ruleViews);
+        return new GuideResponse(views, ruleViews, GuideBook.process());
     }
 
     @GET

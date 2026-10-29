@@ -317,6 +317,7 @@ classDiagram
 | `DependencyCyclesAnalyzer` | Ciclos entre pacotes Java e entre arquivos TypeScript/JavaScript (só lê os imports; `import type` não conta) |
 | `DuplicationAnalyzer` | Blocos de código repetidos em produção (ignora comentários, imports, getters e setters); limites `dup-window`, `dup-min-lines` |
 | `HotspotAnalyzer` | Arquivos que mudam muito e têm função complexa (`git log` × complexidade); precisa de histórico no clone |
+| `CommitMessageAnalyzer` | Mensagens de commit fora do padrão Conventional Commits (`git log`, um achado só acima de `commit-max-bad-percent`); limites `commit-min-commits`, `commit-max-bad-percent` |
 | `DeadCodeAnalyzer` | Exportações TypeScript/JavaScript que nenhum arquivo usa; ignora bibliotecas publicadas |
 | `EvidenceAnalyzer` | Lê evidências geradas fora: dump do esquema, estatísticas e planos do Postgres, cobertura, histograma de memória |
 | `ExternalTools` | Utilidades de execução de processos externos e de detecção de ferramenta no PATH |
