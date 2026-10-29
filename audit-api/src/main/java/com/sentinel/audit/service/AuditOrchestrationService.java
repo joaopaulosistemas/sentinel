@@ -1,14 +1,7 @@
 package com.sentinel.audit.service;
 
 import com.sentinel.audit.pack.FindingDeduplicator;
-import com.sentinel.audit.insights.AnalyzerRunInfo;
-import com.sentinel.audit.insights.AuditContextData;
-import com.sentinel.audit.insights.ProjectMap;
-import com.sentinel.audit.insights.ProjectProfiler;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.pack.AuditPolicy;
-import com.sentinel.audit.analyzer.deps.DependencyExtractor;
-import com.sentinel.audit.analyzer.deps.SbomWriter;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.LocalSnapshot;
@@ -23,13 +16,11 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import java.nio.file.Path;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.UUID;
 
 /**
  * Serviço de orquestração do fluxo completo de auditoria.
@@ -195,8 +186,8 @@ public class AuditOrchestrationService {
             RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
             progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
             store.persistResultsAndComplete(auditRunId, allFindings, riskScore, linesOfCode, commitSha);
-            saveSbomSafely(auditRunId, context, clonedPath);
-            saveContextSafely(auditRunId, clonedPath, analysis.runs());
+            AuditExtras.saveSbom(store, auditRunId, context, clonedPath);
+            AuditExtras.saveContext(store, auditRunId, clonedPath, analysis.runs());
 
             LOG.infof("Auditoria %d concluída: %d findings, score %s",
                     auditRunId, allFindings.size(), riskScore.getOverall());
@@ -237,27 +228,6 @@ public class AuditOrchestrationService {
         }
         progress.requestCancel(auditRunId);
         return true;
-    }
-
-    /** O SBOM é um extra: se não der para gerar ou salvar, a auditoria continua COMPLETED. */
-    private void saveSbomSafely(Long auditRunId, AuditContext context, Path projectPath) {
-        try {
-            String sbom = SbomWriter.toCycloneDx(context.systemName(), context.branch(),
-                    DependencyExtractor.extract(projectPath), Instant.now(), UUID.randomUUID());
-            store.storeSbom(auditRunId, sbom);
-        } catch (RuntimeException e) {
-            LOG.warnf("Não foi possível gerar/salvar o SBOM da auditoria %d: %s", auditRunId, e.getMessage());
-        }
-    }
-
-    /** Mapa do projeto e situação dos analisadores: alimentam os insights; se falhar, a auditoria continua COMPLETED. */
-    private void saveContextSafely(Long auditRunId, Path projectPath, List<AnalyzerRunInfo> runs) {
-        try {
-            ProjectMap map = ProjectProfiler.profile(projectPath);
-            store.storeContext(auditRunId, new ObjectMapper().writeValueAsString(new AuditContextData(map, runs)));
-        } catch (Exception e) {
-            LOG.warnf("Não foi possível salvar o mapa do projeto da auditoria %d: %s", auditRunId, e.getMessage());
-        }
     }
 
     /**

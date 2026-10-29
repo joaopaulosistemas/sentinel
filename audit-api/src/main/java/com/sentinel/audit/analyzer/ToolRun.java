@@ -37,7 +37,7 @@ final class ToolRun {
     static AnalyzerResult run(String analyzer, String tag, Logger log, Body body) {
         Instant start = Instant.now();
         List<Finding> findings = new ArrayList<>();
-        String partial = null;
+        String partial;
         Path report = null;
         Path stderr = null;
         try {

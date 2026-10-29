@@ -1,7 +1,6 @@
 package com.sentinel.audit.mcp;
 
 import jakarta.annotation.security.PermitAll;
-import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
@@ -20,7 +19,6 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -66,14 +64,7 @@ public class McpAdminResource {
         if (request == null) {
             throw new BadRequestException("Corpo ausente");
         }
-        DataLevel level = null;
-        if (request.dataLevel() != null) {
-            level = DataLevel.parse(request.dataLevel(), null);
-            if (level == null) {
-                throw new BadRequestException("Nível de dados inválido: " + request.dataLevel()
-                        + " (use " + Arrays.toString(DataLevel.values()) + ")");
-            }
-        }
+        DataLevel level = views.parseLevel(request.dataLevel());
         try {
             return views.view(gate.update(id, request.enabled(), level, request.tools()));
         } catch (IllegalArgumentException e) {
@@ -109,7 +100,7 @@ public class McpAdminResource {
                 .toList();
     }
 
-    private AuditedSystem requireSystem(Long id) {
-        return systemCatalog.require(id);
+    private void requireSystem(Long id) {
+        systemCatalog.require(id);
     }
 }

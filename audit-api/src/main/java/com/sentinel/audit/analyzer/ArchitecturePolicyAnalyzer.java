@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
@@ -119,7 +118,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
                 checkConventions(rel, content, c, run, out);
             }
         }
-        checkRequiredFiles(root, relPaths, pol, run, out);
+        ArchRequiredFiles.check(root, relPaths, pol, run, out);
         ComponentPolicyChecks.check(root, pol, run, out);
         return out.size() > MAX_FINDINGS ? new ArrayList<>(out.subList(0, MAX_FINDINGS)) : out;
     }
@@ -277,24 +276,6 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
     }
 
     // ------------------------------------------------------------------ arquivos obrigatórios
-
-    private void checkRequiredFiles(Path root, Set<String> relPaths, ArchitecturePolicy pol, AuditRun run, List<Finding> out) {
-        for (ArchitecturePolicy.RequiredFile rf : pol.requiredFiles()) {
-            boolean exists;
-            if (rf.path().contains("*")) {
-                PathMatcher m = FileSystems.getDefault().getPathMatcher("glob:" + rf.path());
-                exists = relPaths.stream().anyMatch(p -> m.matches(Path.of(p)));
-            } else {
-                exists = relPaths.contains(rf.path()) || Files.exists(root.resolve(rf.path()), LinkOption.NOFOLLOW_LINKS);
-            }
-            if (!exists) {
-                out.add(archFinding(run, new ArchPlace(rf.path(), 0, ""), new ArchRule("sentinel-arch-required-file",
-                        rf.severity() == null ? Severity.LOW : rf.severity(), Category.ARCHITECTURE,
-                        "Arquivo obrigatório ausente: " + rf.path(),
-                        rf.message() == null ? "A política exige o arquivo " + rf.path() + "." : rf.message())));
-            }
-        }
-    }
 
     // ------------------------------------------------------------------ utilidades
 

@@ -2,6 +2,7 @@ package com.sentinel.audit.mcp;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,5 +30,17 @@ public class McpConfigViews {
         return new McpConfigResponse(access.isEnabled(), access.getKeyHash() != null, access.getKeyPrefix(),
                 access.getKeyCreatedAt() == null ? null : access.getKeyCreatedAt().toString(),
                 access.getDataLevel() == null ? DataLevel.TITLES : access.getDataLevel(), tools);
+    }
+
+    /** Nível de dados pedido; {@code null} quando não veio, e erro 400 quando não existe. */
+    DataLevel parseLevel(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        DataLevel level = DataLevel.parse(raw, null);
+        if (level == null) {
+            throw new BadRequestException("Nível de dados inválido: " + raw + " (use " + Arrays.toString(DataLevel.values()) + ")");
+        }
+        return level;
     }
 }

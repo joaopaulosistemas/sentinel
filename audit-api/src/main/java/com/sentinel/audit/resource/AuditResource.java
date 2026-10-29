@@ -3,22 +3,14 @@ package com.sentinel.audit.resource;
 import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.service.AuditRunMapper;
 import com.sentinel.audit.dto.AuditRunResponse;
-import com.sentinel.audit.dto.FindingMapper;
 import com.sentinel.audit.dto.CreateAuditRequest;
-import com.sentinel.audit.dto.FindingResponse;
 import com.sentinel.audit.model.AuditRun;
-import com.sentinel.audit.model.Category;
-import com.sentinel.audit.model.Finding;
-import com.sentinel.audit.model.FindingStatus;
-import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.service.AuditOrchestrationService;
 import com.sentinel.audit.service.AuditRequestService;
-import com.sentinel.audit.service.FindingCatalog;
 import com.sentinel.audit.service.RunCatalog;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -60,9 +52,6 @@ public class AuditResource {
 
     @Inject
     RunCatalog runCatalog;
-
-    @Inject
-    FindingCatalog findingCatalog;
 
     @Inject
     AuditRequestService requestService;
@@ -140,44 +129,5 @@ public class AuditResource {
     public AuditRunResponse getAudit(@PathParam("id") Long id) {
         AuditRun run = runCatalog.require(id);
         return runMapper.toResponse(run, true);
-    }
-
-    /**
-     * Lista os findings de uma execução, com filtros opcionais por severidade, categoria e status.
-     */
-    @GET
-    @Path("/{id}/findings")
-    @Operation(summary = "Listar findings", description = "Retorna os findings de uma auditoria com filtros opcionais")
-    public List<FindingResponse> getFindings(@PathParam("id") Long id, @BeanParam FindingsQuery q) {
-
-        runCatalog.require(id);
-
-        List<Finding> findings = findingCatalog.byRun(id);
-
-        return findings.stream()
-                .filter(f -> q.severity == null || f.getSeverity() == q.severity)
-                .filter(f -> q.category == null || f.getCategory() == q.category)
-                .filter(f -> q.status == null || f.getStatus() == q.status)
-                // suprimidos só aparecem se pedidos (includeSuppressed ou status=SUPPRESSED)
-                .filter(f -> q.includeSuppressed || q.status == FindingStatus.SUPPRESSED || f.getStatus() != FindingStatus.SUPPRESSED)
-                .filter(f -> !q.onlyNew || Boolean.TRUE.equals(f.getIsNew()))
-                .map(FindingMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    /** Filtros opcionais de {@link #getFindings}. */
-    public static class FindingsQuery {
-        @QueryParam("severity")
-        public Severity severity;
-        @QueryParam("category")
-        public Category category;
-        @QueryParam("status")
-        public FindingStatus status;
-        @QueryParam("includeSuppressed")
-        @DefaultValue("false")
-        public boolean includeSuppressed;
-        @QueryParam("onlyNew")
-        @DefaultValue("false")
-        public boolean onlyNew;
     }
 }

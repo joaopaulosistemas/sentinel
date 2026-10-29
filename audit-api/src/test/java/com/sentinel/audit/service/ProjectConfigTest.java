@@ -179,4 +179,14 @@ class ProjectConfigTest {
         Files.writeString(dir.resolve(ProjectConfig.FILE_NAME), "exclude: [\"docs/**\"]\n");
         assertEquals(1, ProjectConfig.load(dir).apply(List.of(f("r", "docs/x.md")), HOJE).excluded());
     }
+
+    @Test
+    void curingaVaiEmQualquerPosicaoDoIdDaRegra() {
+        assertTrue(ProjectConfig.ruleMatches("checkstyle-*VisibilityModifier*",
+                "checkstyle-com.puppycrawl.tools.checkstyle.checks.design.VisibilityModifierCheck"));
+        assertTrue(ProjectConfig.ruleMatches("gitleaks-*", "gitleaks-aws-access-token"));
+        assertTrue(ProjectConfig.ruleMatches("minha-regra", "audit-rules.rules.x.minha-regra"));
+        assertFalse(ProjectConfig.ruleMatches("checkstyle-*VisibilityModifier*", "checkstyle-MagicNumber"));
+        assertFalse(ProjectConfig.ruleMatches("regra", "outra-regra"));
+    }
 }
