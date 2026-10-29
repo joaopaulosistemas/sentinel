@@ -6,6 +6,7 @@ import com.sentinel.audit.insights.AuditContextData;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.model.AuditRun;
+import com.sentinel.audit.model.Confidence;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.repository.FindingRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -26,10 +27,14 @@ public class InsightsService {
 
     public AuditInsights forRun(AuditRun run) {
         // Achados de baixa confiança (teste, exemplo, falso positivo provável) não entram na leitura de prioridades.
-        List<Finding> active = FindingLifecycleService.active(findingRepository.findByAuditRunId(run.getId())).stream()
-                .filter(f -> f.getConfidence() != com.sentinel.audit.model.Confidence.LOW).toList();
+        List<Finding> all = findingRepository.findByAuditRunId(run.getId());
+        List<Finding> active = withoutLowConfidence(FindingLifecycleService.active(all));
         return InsightsBuilder.build(run.getSystem() == null ? null : run.getSystem().getName(), active,
                 parseContext(run.getContextJson()));
+    }
+
+    private static List<Finding> withoutLowConfidence(List<Finding> findings) {
+        return findings.stream().filter(f -> f.getConfidence() != Confidence.LOW).toList();
     }
 
     /** Contexto ilegível ou ausente (auditoria antiga) vira {@code null}: os insights saem só com os findings. */

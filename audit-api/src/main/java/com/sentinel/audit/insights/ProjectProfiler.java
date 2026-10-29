@@ -333,10 +333,8 @@ public final class ProjectProfiler {
         private static final List<String> ENV_TEMPLATE_SUFFIXES = List.of(".example", ".sample", ".template", ".dist");
 
         private static boolean isEnvFileName(String lower) {
-            if (lower.equals(".env")) {
-                return true;
-            }
-            return lower.startsWith(".env.") && ENV_TEMPLATE_SUFFIXES.stream().noneMatch(lower::endsWith);
+            return lower.equals(".env")
+                    || lower.startsWith(".env.") && ENV_TEMPLATE_SUFFIXES.stream().noneMatch(lower::endsWith);
         }
 
         private static boolean isPrivateKeyName(String lower) {

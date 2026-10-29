@@ -35,7 +35,7 @@ class FindingResourceBatchTest {
         var req = new BatchSuppressRequest(List.of(1L, 2L, 3L, 3L), SuppressionReason.FALSE_POSITIVE,
                 "justificativa longa o bastante", "ana", null);
 
-        BatchSuppressResponse r = FindingResource.runBatch(req, fake);
+        BatchSuppressResponse r = FindingSuppressionResource.runBatch(req, fake);
 
         assertEquals(3, r.requested());
         assertEquals(2, r.suppressed());

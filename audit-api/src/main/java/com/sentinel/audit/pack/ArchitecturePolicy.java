@@ -43,9 +43,12 @@ public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, Lis
                 && components.required().isEmpty() && components.approvedOnly().isEmpty();
     }
 
+    private boolean noLayerRules() {
+        return layers.isEmpty() && forbid.isEmpty() && allow.isEmpty();
+    }
+
     public boolean isEmpty() {
-        return layers.isEmpty() && forbid.isEmpty() && allow.isEmpty() && conventions.isEmpty()
-                && requiredFiles.isEmpty() && noComponentRules();
+        return noLayerRules() && conventions.isEmpty() && requiredFiles.isEmpty() && noComponentRules();
     }
 
     /** Junta as políticas de vários pacotes; camada com o mesmo nome é substituída pela do pacote mais adiante. */

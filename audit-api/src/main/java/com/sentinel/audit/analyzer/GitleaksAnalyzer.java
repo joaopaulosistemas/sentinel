@@ -15,8 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashSet;
@@ -66,20 +64,12 @@ public class GitleaksAnalyzer implements CodeAnalyzer {
 
     @Override
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun) {
-        Instant start = Instant.now();
-        List<Finding> findings = new ArrayList<>();
         Path exe = enabled ? ExternalTools.find("gitleaks", pathEnv) : null;
         if (exe == null) {
-            LOG.warn("Gitleaks indisponível; análise de segredos por esta ferramenta ignorada");
-            return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+            return ToolRun.unavailable(ANALYZER_NAME,
+                    "Gitleaks indisponível; análise de segredos por esta ferramenta ignorada", LOG);
         }
-
-        Path report = null;
-        Path stderr = null;
-        String partial = null;
-        try {
-            stderr = Files.createTempFile("gitleaks-err-", ".txt");
-            report = Files.createTempFile("gitleaks-", ".json");   // 0600 em sistemas POSIX
+        return ToolRun.run(ANALYZER_NAME, "gitleaks", LOG, (report, stderr) -> {
             List<String> cmd = new ArrayList<>(List.of(exe.toString(), "detect",
                     "--source", projectPath.toString(),
                     "--report-format", "json", "--report-path", report.toString(),
@@ -89,29 +79,14 @@ public class GitleaksAnalyzer implements CodeAnalyzer {
             }
             int code = ExternalTools.runTo(cmd, null, Map.of(), timeoutSeconds, new ExternalTools.Output(null, stderr));
             if (code != 0) {
-                partial = ExternalTools.falha(code, timeoutSeconds, stderr);
+                String partial = ExternalTools.falha(code, timeoutSeconds, stderr);
                 LOG.warnf("Gitleaks %s", partial);
-            } else {
-                findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
-                LOG.infof("Gitleaks encontrou %d segredos", findings.size());
+                return new ToolRun.Outcome(new ArrayList<>(), partial);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            partial = "execução interrompida";
-        } catch (Exception e) {
-            LOG.errorf("Erro ao executar o Gitleaks: %s", e.getMessage());
-            partial = "erro ao executar: " + e.getMessage();
-        } finally {
-            ExternalTools.deleteQuietly(stderr);
-            if (report != null) {
-                try {
-                    Files.deleteIfExists(report);
-                } catch (Exception e) {
-                    LOG.warnf("Não foi possível apagar o relatório temporário do Gitleaks: %s", e.getMessage());
-                }
-            }
-        }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+            List<Finding> found = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
+            LOG.infof("Gitleaks encontrou %d segredos", found.size());
+            return new ToolRun.Outcome(found, null);
+        });
     }
 
     /** Converte o relatório JSON (lista) em findings; o valor do segredo é descartado aqui. */

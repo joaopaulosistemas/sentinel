@@ -34,6 +34,7 @@ public class PendingAction {
     private PendingStatus status = PendingStatus.PENDING;
 
     @Column(name = "created_at", nullable = false)
+    @SuppressWarnings("PMD.ImmutableField") // a JPA preenche o campo ao carregar
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "expires_at", nullable = false)

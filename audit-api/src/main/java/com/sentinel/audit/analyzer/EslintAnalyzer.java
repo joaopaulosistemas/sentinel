@@ -14,8 +14,6 @@ import org.jboss.logging.Logger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -66,40 +64,24 @@ public class EslintAnalyzer implements CodeAnalyzer {
 
     @Override
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun) {
-        Instant start = Instant.now();
-        List<Finding> findings = new ArrayList<>();
         Path exe = enabled ? ExternalTools.find("eslint", pathEnv) : null;
         if (exe == null || !Files.isRegularFile(Path.of(configPath))) {
-            LOG.warn("ESLint (ou sua configuração) indisponível; lint TypeScript por esta ferramenta ignorado");
-            return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+            return ToolRun.unavailable(ANALYZER_NAME,
+                    "ESLint (ou sua configuração) indisponível; lint TypeScript por esta ferramenta ignorado", LOG);
         }
-        Path report = null;
-        Path stderr = null;
-        String partial = null;
-        try {
-            stderr = Files.createTempFile("eslint-err-", ".txt");
-            report = Files.createTempFile("eslint-", ".json");
-            List<String> cmd = command(exe, report);
+        return ToolRun.run(ANALYZER_NAME, "eslint", LOG, (report, stderr) -> {
             Map<String, String> env = usaAngular(projectPath) ? Map.of() : Map.of("SENTINEL_ESLINT_ANGULAR", "0");
-            int code = ExternalTools.runTo(cmd, projectPath, env, timeoutSeconds, new ExternalTools.Output(null, stderr));
+            int code = ExternalTools.runTo(command(exe, report), projectPath, env, timeoutSeconds,
+                    new ExternalTools.Output(null, stderr));
             if (code == -1 || code > 1) {                // 1 = há problemas (normal); 2 = erro de execução
-                partial = ExternalTools.falha(code, timeoutSeconds, stderr);
+                String partial = ExternalTools.falha(code, timeoutSeconds, stderr);
                 LOG.warnf("ESLint %s", partial);
-            } else {
-                findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
-                LOG.infof("ESLint encontrou %d problemas", findings.size());
+                return new ToolRun.Outcome(new ArrayList<>(), partial);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            partial = "execução interrompida";
-        } catch (Exception e) {
-            LOG.errorf("Erro ao executar o ESLint: %s", e.getMessage());
-            partial = "erro ao executar: " + e.getMessage();
-        } finally {
-            ExternalTools.deleteQuietly(stderr);
-            deleteReport(report);
-        }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+            List<Finding> found = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
+            LOG.infof("ESLint encontrou %d problemas", found.size());
+            return new ToolRun.Outcome(found, null);
+        });
     }
 
     private List<String> command(Path exe, Path report) {
@@ -111,17 +93,6 @@ public class EslintAnalyzer implements CodeAnalyzer {
         }
         cmd.addAll(List.of("--ignore-pattern", "**/*.d.ts", "--ignore-pattern", "**/*.min.js", "."));
         return cmd;
-    }
-
-    private static void deleteReport(Path report) {
-        if (report == null) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(report);
-        } catch (Exception e) {
-            LOG.warnf("Não foi possível apagar o relatório temporário do ESLint: %s", e.getMessage());
-        }
     }
 
     /** Algum package.json (fora de pastas ignoradas) menciona {@code @angular/}: só então valem as regras do Angular. */

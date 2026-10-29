@@ -43,7 +43,6 @@ import java.util.regex.Pattern;
 @ApplicationScoped
 public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
 
-    private static final int SNIPPET_MAX_CHARS = 200;
     private static final String ELLIPSIS = "...";
     private static final int TITLE_MAX_CHARS = 500;
     /** Quantas vezes o {@code /**}{@code /} de um glob pode ser expandido (uma ou mais pastas / nenhuma). */
@@ -56,8 +55,6 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
     private static final long MAX_FILE_BYTES = 1_000_000;
     private static final int MAX_FILES = 20_000;
     private static final int MAX_FINDINGS = 500;
-    private static final int MAX_MATCHES_PER_CONVENTION_FILE = 20;
-    private static final long REGEX_BUDGET_NANOS = 2_000_000_000L;
 
     private static final Pattern JAVA_IMPORT = Pattern.compile("^\\s*import\\s+(?:static\\s+)?([\\w.]+?)(?:\\.\\*)?\\s*;");
     private static final Pattern TS_IMPORT = Pattern.compile(
@@ -275,70 +272,8 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
             if (!ArchGlobs.matchesAny(c.convFiles.get(cv.id()), rel) || ArchGlobs.matchesAny(c.convExclude.get(cv.id()), rel)) {
                 continue;
             }
-            ConvCtx ctx = new ConvCtx(cv, rel, run);
-            try {
-                requireCheck(ctx, content, out);
-                forbidCheck(ctx, content, out);
-            } catch (RegexBudgetExceeded e) {
-                LOG.warnf("Convenção '%s' abortada em %s: expressão regular muito lenta", cv.id(), rel);
-            }
+            ArchConventions.apply(cv, rel, content, run, out);
         }
-    }
-
-    /** Uma convenção aplicada a um arquivo: de onde vêm o id, a gravidade, a categoria e o título dos findings. */
-    private record ConvCtx(Convention cv, String rel, AuditRun run) {
-        ArchRule rule(String message) {
-            return new ArchRule("sentinel-arch-conv-" + cv.id(),
-                    cv.severity() == null ? Severity.MEDIUM : cv.severity(),
-                    cv.category() == null ? Category.ARCHITECTURE : cv.category(),
-                    cv.title() != null ? cv.title() : cv.id(), message);
-        }
-    }
-
-    /** `require`: o arquivo precisa conter o padrão. */
-    private void requireCheck(ConvCtx x, String content, List<Finding> out) {
-        Convention cv = x.cv();
-        if (cv.require() != null && !Pattern.compile(cv.require(), Pattern.MULTILINE).matcher(limited(content)).find()) {
-            out.add(archFinding(x.run(), new ArchPlace(x.rel(), 1, ""),
-                    x.rule(cv.message() == null ? "O arquivo deveria conter /" + cv.require() + "/." : cv.message())));
-        }
-    }
-
-    /** `forbid`: cada trecho que casa com o padrão vira um finding (até o limite por arquivo). */
-    private void forbidCheck(ConvCtx x, String content, List<Finding> out) {
-        Convention cv = x.cv();
-        if (cv.forbid() == null) {
-            return;
-        }
-        Matcher m = Pattern.compile(cv.forbid(), Pattern.MULTILINE).matcher(limited(content));
-        int n = 0;
-        while (m.find() && n < MAX_MATCHES_PER_CONVENTION_FILE) {
-            n++;
-            String text = m.group().strip();
-            String snippet = text.length() > SNIPPET_MAX_CHARS ? text.substring(0, SNIPPET_MAX_CHARS) : text;
-            out.add(archFinding(x.run(), new ArchPlace(x.rel(), lineOf(content, m.start()), snippet),
-                    x.rule(cv.message() == null ? "Trecho proibido pela convenção: /" + cv.forbid() + "/." : cv.message())));
-        }
-    }
-
-    /** Aborta a busca se a regex consumir tempo demais (proteção contra backtracking catastrófico em pacote de terceiros). */
-    private static CharSequence limited(CharSequence s) {
-        long deadline = System.nanoTime() + REGEX_BUDGET_NANOS;
-        return new CharSequence() {
-            @Override public int length() { return s.length(); }
-            @Override public char charAt(int i) {
-                if (System.nanoTime() > deadline) {
-                    throw new RegexBudgetExceeded();
-                }
-                return s.charAt(i);
-            }
-            @Override public CharSequence subSequence(int a, int b) { return limited(s.subSequence(a, b)); }
-            @Override public String toString() { return s.toString(); }
-        };
-    }
-
-    private static final class RegexBudgetExceeded extends RuntimeException {
-        RegexBudgetExceeded() { super(null, null, false, false); }
     }
 
     // ------------------------------------------------------------------ arquivos obrigatórios
@@ -385,16 +320,6 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
             f.setCodeSnippet(place.snippet());
         }
         return f;
-    }
-
-    private static int lineOf(String content, int offset) {
-        int line = 1;
-        for (int i = 0; i < offset && i < content.length(); i++) {
-            if (content.charAt(i) == '\n') {
-                line++;
-            }
-        }
-        return line;
     }
 
     private static String rel(Path root, Path file) {

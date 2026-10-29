@@ -109,14 +109,11 @@ public class SystemResource {
     public IngestionService.RepoCheck checkRepo(@Valid RepoCheckRequest request) {
         String token = request.gitToken();
         String hosts = request.gitTokenHosts();
-        if ((token == null || token.isBlank()) && request.systemId() != null) {
-            AuditedSystem system = systemCatalog.findOrNull(request.systemId());
-            if (system != null && system.hasGitToken()) {
-                token = secretBox.decrypt(system.getGitTokenEnc());
-                if (hosts == null || hosts.isBlank()) {
-                    hosts = system.getGitTokenHosts();
-                }
-            }
+        AuditedSystem saved = (token == null || token.isBlank()) && request.systemId() != null
+                ? systemCatalog.findOrNull(request.systemId()) : null;
+        if (saved != null && saved.hasGitToken()) {
+            token = secretBox.decrypt(saved.getGitTokenEnc());
+            hosts = hosts == null || hosts.isBlank() ? saved.getGitTokenHosts() : hosts;
         }
         return ingestionService.checkRepository(request.repoUrl(), request.branch(), token, hosts);
     }

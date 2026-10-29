@@ -48,6 +48,7 @@
   .sys-table td:nth-child(3) { grid-row: 3; }
   .sys-table td:nth-child(4) { grid-row: 4; }
   .sys-table td:nth-child(6) { grid-column: 1 / -1; grid-row: 5; margin: 8px -10px 0; white-space: normal !important; display: flex; flex-wrap: wrap; }
+  /* stylelint-disable-next-line a11y/content-property-no-static-value -- o texto vem do atributo, não é fixo */
   .sys-table td[data-rotulo]::before { content: attr(data-rotulo); color: var(--s-text-4); }
 }
 /* stylelint-enable declaration-no-important */

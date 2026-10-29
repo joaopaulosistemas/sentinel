@@ -15,8 +15,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -68,41 +66,21 @@ public class TrivyAnalyzer implements CodeAnalyzer {
 
     @Override
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun) {
-        Instant start = Instant.now();
-        List<Finding> findings = new ArrayList<>();
         Path exe = enabled ? ExternalTools.find("trivy", pathEnv) : null;
         if (exe == null) {
-            LOG.warn("Trivy indisponível; análise por esta ferramenta ignorada");
-            return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+            return ToolRun.unavailable(ANALYZER_NAME, "Trivy indisponível; análise por esta ferramenta ignorada", LOG);
         }
-
-        Path report = null;
-        Path stderr = null;
-        String partial;
-        try {
-            report = Files.createTempFile("trivy-", ".json");
-            stderr = Files.createTempFile("trivy-err-", ".txt");
+        return ToolRun.run(ANALYZER_NAME, "trivy", LOG, (report, stderr) -> {
             Scan scan = scan(exe, projectPath, report, stderr);
-            int code = scan.code();
-            partial = scan.note();
-            if (code != 0) {
-                partial = failureNote(code, stderr);
+            if (scan.code() != 0) {
+                String partial = failureNote(scan.code(), stderr);
                 LOG.warnf("Trivy %s", partial);
-            } else {
-                findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
-                LOG.infof("Trivy encontrou %d findings", findings.size());
+                return new ToolRun.Outcome(new ArrayList<>(), partial);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            partial = "execução interrompida";
-        } catch (Exception e) {
-            LOG.errorf("Erro ao executar o Trivy: %s", e.getMessage());
-            partial = "erro ao executar: " + e.getMessage();
-        } finally {
-            ExternalTools.deleteQuietly(report);      // arquivo temporário sem segredos; não vale falhar por isso
-        }
-        ExternalTools.deleteQuietly(stderr);
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+            List<Finding> found = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
+            LOG.infof("Trivy encontrou %d findings", found.size());
+            return new ToolRun.Outcome(found, scan.note());
+        });
     }
 
     /** Código de saída da varredura e, se foi preciso repetir sem rede, a nota de cobertura parcial. */

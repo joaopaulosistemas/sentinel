@@ -2,14 +2,10 @@ package com.sentinel.audit.resource;
 
 import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.service.AuditRunMapper;
-import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.FindingMapper;
-import com.sentinel.audit.dto.FixPlanDto;
-import com.sentinel.audit.dto.ScoreExplanationDto;
 import com.sentinel.audit.dto.CreateAuditRequest;
 import com.sentinel.audit.dto.FindingResponse;
-import com.sentinel.audit.insights.AuditInsights;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
@@ -26,7 +22,6 @@ import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -74,9 +69,6 @@ public class AuditResource {
 
     @Inject
     AuditOrchestrationService orchestration;
-
-    @Inject
-    AuditReports reports;
 
     @Inject
     AuditStatusViews statusViews;
@@ -187,109 +179,5 @@ public class AuditResource {
         @QueryParam("onlyNew")
         @DefaultValue("false")
         public boolean onlyNew;
-    }
-
-    /**
-     * Compara a auditoria com a anterior do mesmo sistema/branch: o que é novo, o que foi corrigido.
-     */
-    @GET
-    @Path("/{id}/diff")
-    @Operation(summary = "Comparar com a auditoria anterior",
-            description = "Findings novos e corrigidos desde a auditoria anterior (mesmo sistema e branch)")
-    public AuditDiffResponse getDiff(@PathParam("id") Long id) {
-        return reports.diff(id);
-    }
-
-    /**
-     * Gera e retorna um relatório HTML da auditoria. O tipo escolhe o conteúdo: técnico (padrão, com todos os
-     * achados), executivo (uma página para quem decide) ou comparativo (evolução entre auditorias do sistema).
-     */
-    @GET
-    @Path("/{id}/report")
-    @Produces(MediaType.TEXT_HTML)
-    @Operation(summary = "Relatório HTML", description = "Relatório da auditoria: type=tecnico (padrão), executivo ou comparativo; days limita o período do comparativo")
-    public Response getReport(@PathParam("id") Long id,
-                              @QueryParam("type") String type,
-                              @QueryParam("days") Integer days) {
-        return Response.ok(reports.html(id, type, days), MediaType.TEXT_HTML).build();
-    }
-
-    /** Mesmos relatórios em PDF, gerado no servidor. */
-    @GET
-    @Path("/{id}/report.pdf")
-    @Produces("application/pdf")
-    @Operation(summary = "Relatório PDF", description = "Relatório da auditoria em PDF: type=tecnico (padrão), executivo ou comparativo; days limita o período do comparativo")
-    public Response getReportPdf(@PathParam("id") Long id,
-                                 @QueryParam("type") String type,
-                                 @QueryParam("days") Integer days) {
-        AuditReports.PdfFile pdf = reports.pdf(id, type, days);
-        return Response.ok(pdf.bytes(), "application/pdf")
-                .header("Content-Disposition", "inline; filename=\"" + pdf.filename() + "\"")
-                .build();
-    }
-
-    /**
-     * Achados ativos da auditoria em CSV, para abrir em planilha.
-     */
-    @GET
-    @Path("/{id}/findings.csv")
-    @Produces("text/csv")
-    @Operation(summary = "Achados em CSV", description = "Achados ativos da auditoria, prontos para planilha")
-    public Response getFindingsCsv(@PathParam("id") Long id) {
-        String csv = reports.csv(id);
-        return Response.ok("\uFEFF" + csv, "text/csv; charset=UTF-8")
-                .header("Content-Disposition", "attachment; filename=\"achados-auditoria-" + id + ".csv\"")
-                .build();
-    }
-
-    /**
-     * SBOM (CycloneDX 1.5, JSON) das dependências encontradas na auditoria.
-     */
-    @GET
-    @Path("/{id}/sbom")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "SBOM CycloneDX", description = "Lista de materiais de software da auditoria (CycloneDX 1.5)")
-    public Response getSbom(@PathParam("id") Long id) {
-        AuditRun run = runCatalog.require(id);
-        if (run.getSbomJson() == null) {
-            throw new NotFoundException("Esta auditoria não tem SBOM (auditorias antigas ou falha na geração)");
-        }
-        return Response.ok(run.getSbomJson(), MediaType.APPLICATION_JSON)
-                .header("Content-Disposition", "attachment; filename=\"sbom-auditoria-" + id + ".cdx.json\"")
-                .build();
-    }
-
-    /**
-     * Auditoria completa: resumo executivo, relatório por área, tabela de dívida técnica (P0–P3), quick wins,
-     * plano em fases e o que não foi possível verificar.
-     */
-    @GET
-    @Path("/{id}/insights")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Visão de auditoria completa",
-            description = "Áreas, dívida técnica priorizada, quick wins, roadmap em fases e limites da verificação")
-    public AuditInsights getInsights(@PathParam("id") Long id) {
-        return statusViews.insights(id);
-    }
-
-    /**
-     * De onde vem a nota, por dimensão e regra, com o teto por regra marcado. Com {@code without} (ids de regra
-     * separados por vírgula) mostra como a nota ficaria sem elas: a simulação "e se".
-     */
-    @GET
-    @Path("/{id}/score-explanation")
-    @Operation(summary = "Explicação da nota", description = "Quanto cada regra tirou em cada dimensão; com ?without=regra1,regra2 simula a nota sem elas")
-    public ScoreExplanationDto getScoreExplanation(@PathParam("id") Long id, @QueryParam("without") String without) {
-        return reports.scoreExplanation(id, without);
-    }
-
-    /**
-     * O que corrigir primeiro: problemas por regra, com quanto a nota sobe ao resolver cada um.
-     */
-    @GET
-    @Path("/{id}/fix-plan")
-    @Operation(summary = "Plano de correção", description = "Problemas ordenados pelo ganho de nota, com a orientação de correção")
-    public FixPlanDto getFixPlan(@PathParam("id") Long id) {
-        return reports.fixPlan(id);
     }
 }
