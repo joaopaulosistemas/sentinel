@@ -1,13 +1,13 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.pack.RemediationCatalog;
 import com.sentinel.audit.insights.AreaReport;
 import com.sentinel.audit.insights.AuditInsights;
 import com.sentinel.audit.insights.InsightsBuilder;
-import com.sentinel.audit.insights.InsightsService;
 import com.sentinel.audit.insights.RoadmapPhase;
 
 import com.sentinel.audit.dto.FixPlanDto;
-import com.sentinel.audit.dto.RemediationDto;
+import com.sentinel.audit.pack.RemediationDto;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Finding;

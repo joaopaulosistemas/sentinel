@@ -1,11 +1,13 @@
-package com.sentinel.audit.insights;
+package com.sentinel.audit.service;
 
+import com.sentinel.audit.insights.InsightsBuilder;
+import com.sentinel.audit.insights.AuditInsights;
+import com.sentinel.audit.insights.AuditContextData;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.repository.FindingRepository;
-import com.sentinel.audit.service.FindingLifecycleService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;

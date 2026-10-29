@@ -1,4 +1,4 @@
-package com.sentinel.audit.service;
+package com.sentinel.audit.pack;
 
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.Severity;

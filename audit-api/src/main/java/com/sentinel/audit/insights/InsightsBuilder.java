@@ -1,9 +1,9 @@
 package com.sentinel.audit.insights;
 
-import com.sentinel.audit.dto.RemediationDto;
+import com.sentinel.audit.pack.RemediationDto;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.Severity;
-import com.sentinel.audit.service.RemediationCatalog;
+import com.sentinel.audit.pack.RemediationCatalog;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;

@@ -79,8 +79,8 @@ function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: RowProps)
       <td style={{ padding: '12px 8px' }}>
         <span style={{ background: 'var(--s-border)', padding: '2px 8px', borderRadius: 10, fontSize: 12 }}>{stackShort[s.stack] ?? s.stack}</span>
       </td>
-      <td style={{ padding: '12px 8px', color: 'var(--s-text-2)' }}>{s.team || '—'}</td>
-      <td style={{ padding: '12px 8px', color: 'var(--s-text-2)', fontSize: 13 }}>{scheduleText(s)}</td>
+      <td data-rotulo="Equipe: " style={{ padding: '12px 8px', color: 'var(--s-text-2)' }}>{s.team || '—'}</td>
+      <td data-rotulo="Agendamento: " style={{ padding: '12px 8px', color: 'var(--s-text-2)', fontSize: 13 }}>{scheduleText(s)}</td>
       <td style={{ padding: '12px 8px', fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
       <RowActions system={s} onAudit={onAudit} onEdit={onEdit} onDelete={onDelete} />
     </tr>

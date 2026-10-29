@@ -86,3 +86,18 @@ suppress:
   - rule: "sentinel-too-many-injections"
     path: "audit-api/src/main/java/com/sentinel/audit/service/AnalyzerSet.java"
     reason: "fachada que agrupa os analisadores (registro), sem regra de negócio; dividir só espalharia a lista"
+  # O seletor casa com o texto do style inline do React (font-size: 12px); não é um tamanho de fonte em px.
+  - rule: "sentinel-css-fonte-em-px"
+    path: "audit-dashboard/src/styles/leitura.css"
+    reason: "px aqui é o texto procurado em [style*='...'], não declaração de tamanho; a declaração já usa rem"
+  # A CLI existe para imprimir no terminal (relatório, resumo, erros de uso): o stdout é o produto, não log de aplicação.
+  - rule: "obs-system-out"
+    path: "audit-cli/src/main/java/com/sentinel/audit/cli/AuditCli.java"
+    reason: "ferramenta de linha de comando: a saída no console é a interface com o usuário e o CI"
+  # @BeanParam do Quarkus REST só aceita @QueryParam em campos (anotar o setter derruba o build), então os campos ficam públicos.
+  - rule: "checkstyle-*VisibilityModifier*"
+    path: "audit-api/src/main/java/com/sentinel/audit/resource/AuditResource.java"
+    reason: "classe de parâmetros do @BeanParam: o framework exige a anotação no campo; verificado no build do Quarkus 3.33"
+  - rule: "checkstyle-*VisibilityModifier*"
+    path: "audit-api/src/main/java/com/sentinel/audit/resource/FindingResource.java"
+    reason: "classe de parâmetros do @BeanParam: o framework exige a anotação no campo; verificado no build do Quarkus 3.33"

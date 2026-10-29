@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.pack.FindingDeduplicator;
 import com.sentinel.audit.insights.AnalyzerRunInfo;
 import com.sentinel.audit.insights.AuditContextData;
 import com.sentinel.audit.insights.ProjectMap;

@@ -127,8 +127,8 @@ public class NotificationService {
     }
 
     private static boolean isInternal(java.net.InetAddress a) {
-        return a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress() || a.isSiteLocalAddress()
-                || a.isMulticastAddress() || isUniqueLocalV6(a);
+        boolean local = a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress();
+        return local || a.isSiteLocalAddress() || a.isMulticastAddress() || isUniqueLocalV6(a);
     }
 
     private static boolean isUniqueLocalV6(java.net.InetAddress a) {
@@ -152,16 +152,16 @@ public class NotificationService {
         int atLeast = 0;
         FindingResponse top = null;
         for (FindingResponse f : diff.newFindings()) {
-            if (rank(f.getSeverity().name()) >= min) {
+            if (rank(f.severity().name()) >= min) {
                 atLeast++;
             }
-            if (top == null || rank(f.getSeverity().name()) > rank(top.getSeverity().name())) {
+            if (top == null || rank(f.severity().name()) > rank(top.severity().name())) {
                 top = f;
             }
         }
         return new Notice(run.getId(), run.getSystem().getId(), run.getSystem().getName(), run.getBranch(),
                 run.getStatus(), null, score, diff.scoreDelta(), diff.hasBaseline(),
-                diff.newFindings().size(), atLeast, diff.resolvedFindings().size(), top == null ? null : top.getTitle());
+                diff.newFindings().size(), atLeast, diff.resolvedFindings().size(), top == null ? null : top.title());
     }
 
     /** Falha sempre avisa; auditoria concluída só se o score caiu o bastante ou surgiu algo grave novo. */

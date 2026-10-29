@@ -74,12 +74,17 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
         return true;
     }
 
+    private static String firstLine(Process p) throws IOException {
+        String line = p.inputReader(StandardCharsets.UTF_8).readLine();
+        return line == null ? "" : line.trim();
+    }
+
     /** Commits disponíveis no clone: 1 = clone raso (histórico desligado no cadastro do sistema), nada a varrer. */
     private int commitCount(Path repo) {
         try {
             Process p = new ProcessBuilder("git", "-C", repo.toString(), "rev-list", "--count", "HEAD")
                     .redirectError(ProcessBuilder.Redirect.DISCARD).start();
-            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            String out = firstLine(p);
             return p.waitFor(GIT_TIMEOUT_SECONDS, TimeUnit.SECONDS) && p.exitValue() == 0 ? Integer.parseInt(out) : 0;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

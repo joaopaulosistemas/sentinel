@@ -60,10 +60,10 @@ public final class FindingsOverview {
 
         // Os mais graves primeiro; empate resolvido por sistema e local, para a ordem não mudar entre chamadas.
         all.sort(Comparator
-                .comparingInt((FindingsOverviewDto.Item i) -> i.finding().getSeverity().ordinal())
+                .comparingInt((FindingsOverviewDto.Item i) -> i.finding().severity().ordinal())
                 .thenComparing(FindingsOverviewDto.Item::systemName, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(i -> i.finding().getFilePath(), Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(i -> i.finding().getLineNumber(), Comparator.nullsLast(Comparator.naturalOrder())));
+                .thenComparing(i -> i.finding().filePath(), Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(i -> i.finding().lineNumber(), Comparator.nullsLast(Comparator.naturalOrder())));
 
         int from = Math.min(safeOffset, all.size());
         int to = Math.min(from + safeLimit, all.size());
@@ -72,11 +72,13 @@ public final class FindingsOverview {
 
     /** O resumo por sistema ignora o filtro de sistema (senão todos os outros apareceriam com zero). */
     private static boolean matches(Finding f, Filter filter) {
-        return severityMatches(f, filter)
-                && (filter.category() == null || f.getCategory() == filter.category())
-                && (filter.status() == null || f.getStatus() == filter.status())
-                && suppressedMatches(f, filter)
+        return severityMatches(f, filter) && attributesMatch(f, filter) && suppressedMatches(f, filter)
                 && (!filter.onlyNew() || Boolean.TRUE.equals(f.getIsNew()));
+    }
+
+    private static boolean attributesMatch(Finding f, Filter filter) {
+        return (filter.category() == null || f.getCategory() == filter.category())
+                && (filter.status() == null || f.getStatus() == filter.status());
     }
 
     private static boolean severityMatches(Finding f, Filter filter) {

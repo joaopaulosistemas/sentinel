@@ -1,8 +1,6 @@
-package com.sentinel.audit.service;
+package com.sentinel.audit.pack;
 
-import com.sentinel.audit.dto.RemediationDto;
 import com.sentinel.audit.model.Finding;
-import com.sentinel.audit.pack.RemediationEntry;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

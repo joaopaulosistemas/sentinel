@@ -87,9 +87,11 @@ public final class FunctionScanner {
             return false;
         }
         String token = prev.group(1);
-        return "new".equals(token) || "record".equals(token) || "class".equals(token) || "interface".equals(token)
-                || "extends".equals(token) || "implements".equals(token);
+        return DECLARATION_KEYWORDS.contains(token);
     }
+
+    private static final java.util.Set<String> DECLARATION_KEYWORDS =
+            java.util.Set.of("new", "record", "class", "interface", "extends", "implements");
 
     private static void scanArrows(Ctx c) {
         Matcher a = ARROW_DECL.matcher(c.clean());
@@ -146,7 +148,7 @@ public final class FunctionScanner {
      * repositórios reais, um esquema Swagger de 11 níveis aparecia como "aninhamento 11".
      */
     static int nesting(String body) {
-        java.util.ArrayDeque<Boolean> pilha = new java.util.ArrayDeque<>();   // true = bloco de lógica
+        java.util.Deque<Boolean> pilha = new java.util.ArrayDeque<>();   // true = bloco de lógica
         int depth = 0;
         int max = 0;
         for (int i = 0; i < body.length(); i++) {
@@ -158,10 +160,8 @@ public final class FunctionScanner {
                     depth++;
                     max = Math.max(max, depth);
                 }
-            } else if (c == '}') {
-                if (!pilha.isEmpty() && pilha.pop()) {
-                    depth = Math.max(0, depth - 1);
-                }
+            } else if (c == '}' && !pilha.isEmpty() && pilha.pop()) {
+                depth = Math.max(0, depth - 1);
             }
         }
         return max;
@@ -198,6 +198,10 @@ public final class FunctionScanner {
         return "return".equals(palavra) || "yield".equals(palavra) || "await".equals(palavra) || "typeof".equals(palavra);
     }
 
+    private static boolean isArrowEquals(String s, int i) {
+        return s.charAt(i) == '=' && i + 1 < s.length() && s.charAt(i + 1) == '>';
+    }
+
     /** Conta parâmetros no nível de topo (vírgulas dentro de <>, (), [], {} não separam parâmetros). */
     static int countParams(String params) {
         if (params == null || params.isBlank()) {
@@ -205,10 +209,13 @@ public final class FunctionScanner {
         }
         int depth = 0;
         int count = 1;
+        boolean afterArrowEquals = false;
         for (int i = 0; i < params.length(); i++) {
             char c = params.charAt(i);
-            if (c == '=' && i + 1 < params.length() && params.charAt(i + 1) == '>') {
-                i++;                                                 // "=>" não é um '>' de genérico
+            if (afterArrowEquals) {
+                afterArrowEquals = false;                            // o '>' de "=>" não é um '>' de genérico
+            } else if (isArrowEquals(params, i)) {
+                afterArrowEquals = true;
             } else if (c == ',' && depth == 0) {
                 count++;
             } else {

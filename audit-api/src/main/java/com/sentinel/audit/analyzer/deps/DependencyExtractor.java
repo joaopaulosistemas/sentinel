@@ -105,15 +105,15 @@ public final class DependencyExtractor {
         String name = file.getFileName().toString();
         String lower = name.toLowerCase(Locale.ROOT);
         String rel = root.relativize(file).toString();
-        if (name.equals("pom.xml")) {
-            return fromPom(file, rel);
-        }
-        if (name.equals("package-lock.json")) {
-            return fromPackageLock(file, rel);
-        }
-        if (name.equals("package.json")) {
-            return Files.exists(file.resolveSibling("package-lock.json")) ? List.of() : fromPackageJson(file, rel);
-        }
+        return switch (name) {
+            case "pom.xml" -> fromPom(file, rel);
+            case "package-lock.json" -> fromPackageLock(file, rel);
+            case "package.json" -> Files.exists(file.resolveSibling("package-lock.json")) ? List.<Dependency>of() : fromPackageJson(file, rel);
+            default -> dependenciesByName(file, lower, rel);
+        };
+    }
+
+    private static List<Dependency> dependenciesByName(Path file, String lower, String rel) throws Exception {
         if (isGradleBuild(lower)) {
             return fromGradle(file, rel);
         }

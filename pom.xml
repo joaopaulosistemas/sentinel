@@ -23,7 +23,8 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <quarkus.platform.version>3.15.1</quarkus.platform.version>
+        <!-- 3.33 LTS: a 3.15 saiu de manutenção e carrega Netty 4.1.111, Vert.x 4.5.10 e pgjdbc 42.7.4 com CVEs sem correção (auditoria #70) -->
+        <quarkus.platform.version>3.33.4.1</quarkus.platform.version>
         <!-- 2.22.4: corrige as CVEs do jackson-databind apontadas pela auditoria #73 (2.17.2 não tem correção) -->
         <jackson.version>2.22.4</jackson.version>
     </properties>
@@ -37,6 +38,17 @@
                 <version>${jackson.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Versões explícitas (e não só o BOM): scanners de pom como o Trivy não resolvem a ordem dos imports e voltavam a ver 2.17.2 -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus.platform</groupId>

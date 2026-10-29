@@ -114,24 +114,25 @@ public final class PackIntegrity {
             if (problem != null) {
                 return new Result(State.INVALID, problem);
             }
-            Path sigFile = dir.resolve(SIG);
-            boolean hasSig = Files.isRegularFile(sigFile, LinkOption.NOFOLLOW_LINKS);
-            if (!hasSig) {
-                return Result.of(State.CHECKSUM_OK);
-            }
-            if (key == null) {
-                return Result.of(State.CHECKSUM_OK);
-            }
-            Signature s = Signature.getInstance("Ed25519");
-            s.initVerify(key);
-            s.update(lockBytes);
-            boolean ok = s.verify(decode(Files.readString(sigFile, StandardCharsets.UTF_8)));
-            return ok ? Result.of(State.SIGNED) : new Result(State.INVALID, "assinatura não confere com a chave pública");
+            return checkSignature(dir.resolve(SIG), key, lockBytes);
         } catch (IllegalArgumentException e) {
             return new Result(State.INVALID, "pack.sig ilegível");
         } catch (IOException | GeneralSecurityException e) {
             return new Result(State.INVALID, "não foi possível verificar: " + e.getMessage());
         }
+    }
+
+    /** Sem assinatura, ou sem chave para conferi-la, vale só a soma de verificação. */
+    private static Result checkSignature(Path sigFile, PublicKey key, byte[] lockBytes)
+            throws IOException, GeneralSecurityException {
+        if (key == null || !Files.isRegularFile(sigFile, LinkOption.NOFOLLOW_LINKS)) {
+            return Result.of(State.CHECKSUM_OK);
+        }
+        Signature s = Signature.getInstance("Ed25519");
+        s.initVerify(key);
+        s.update(lockBytes);
+        boolean ok = s.verify(decode(Files.readString(sigFile, StandardCharsets.UTF_8)));
+        return ok ? Result.of(State.SIGNED) : new Result(State.INVALID, "assinatura não confere com a chave pública");
     }
 
     private static String compareWithDisk(Path dir, String lock) throws IOException {

@@ -31,6 +31,7 @@ public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer>
         this(rules, thresholds, enablePacks, disablePacks, disableAnalyzers, Set.of());
     }
 
+    @SuppressWarnings("PMD.UnusedAssignment")   // normaliza os componentes do record no construtor compacto
     public SystemTuning {
         rules = rules == null ? Map.of() : copyRules(rules);
         thresholds = thresholds == null ? Map.of() : Map.copyOf(thresholds);
@@ -41,8 +42,7 @@ public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer>
     }
 
     public boolean isEmpty() {
-        return rules.isEmpty() && thresholds.isEmpty() && enablePacks.isEmpty() && disablePacks.isEmpty()
-                && disableAnalyzers.isEmpty() && ignorePaths.isEmpty();
+        return adjustments() == 0;
     }
 
     /** Quantos ajustes existem em relação ao perfil (o número que a tela mostra). */
@@ -51,10 +51,7 @@ public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer>
     }
 
     public boolean analyzerDisabled(String name) {
-        if (name == null) {
-            return false;
-        }
-        return disableAnalyzers.stream().anyMatch(n -> n.equalsIgnoreCase(name));
+        return name != null && disableAnalyzers.stream().anyMatch(n -> n.equalsIgnoreCase(name));
     }
 
     private static Map<String, RuleOverride> copyRules(Map<String, RuleOverride> in) {

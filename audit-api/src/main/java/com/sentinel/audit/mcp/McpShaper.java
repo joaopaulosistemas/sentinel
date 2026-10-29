@@ -26,21 +26,21 @@ public final class McpShaper {
     /** Um achado, sem nada além do que o nível permite. Não use em {@link DataLevel#SENSITIVE}. */
     public static Map<String, Object> finding(FindingResponse f, DataLevel level) {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", f.getId());
-        m.put("severidade", f.getSeverity());
-        m.put("categoria", f.getCategory());
-        m.put("regra", f.getRuleId());
-        m.put("titulo", f.getTitle());
-        m.put("origem", f.getToolSource());
-        m.put("situacao", f.getStatus());
-        m.put("novo", f.getIsNew());
-        m.put("confianca", f.getConfidence());
-        if (f.getConfidenceReason() != null) {
-            m.put("motivoConfianca", f.getConfidenceReason());
+        m.put("id", f.id());
+        m.put("severidade", f.severity());
+        m.put("categoria", f.category());
+        m.put("regra", f.ruleId());
+        m.put("titulo", f.title());
+        m.put("origem", f.toolSource());
+        m.put("situacao", f.status());
+        m.put("novo", f.isNew());
+        m.put("confianca", f.confidence());
+        if (f.confidenceReason() != null) {
+            m.put("motivoConfianca", f.confidenceReason());
         }
         if (level == DataLevel.FILE_LINE) {
-            m.put("arquivo", f.getFilePath());
-            m.put("linha", f.getLineNumber());
+            m.put("arquivo", f.filePath());
+            m.put("linha", f.lineNumber());
         }
         return m;
     }
@@ -49,8 +49,8 @@ public final class McpShaper {
     public static List<Map<String, Object>> findings(List<FindingResponse> list, DataLevel level, int limit) {
         int cap = Math.max(1, Math.min(limit, MAX_LIST));
         return list.stream()
-                .sorted(Comparator.comparingInt((FindingResponse f) -> f.getSeverity().ordinal())
-                        .thenComparing(f -> f.getRuleId() == null ? "" : f.getRuleId()))
+                .sorted(Comparator.comparingInt((FindingResponse f) -> f.severity().ordinal())
+                        .thenComparing(f -> f.ruleId() == null ? "" : f.ruleId()))
                 .limit(cap)
                 .map(f -> finding(f, level))
                 .toList();
@@ -60,16 +60,16 @@ public final class McpShaper {
     public static List<Map<String, Object>> countsByRule(List<FindingResponse> list) {
         Map<String, List<FindingResponse>> byRule = new LinkedHashMap<>();
         for (FindingResponse f : list) {
-            byRule.computeIfAbsent(f.getRuleId() == null ? "sem-regra" : f.getRuleId(), k -> new ArrayList<>()).add(f);
+            byRule.computeIfAbsent(f.ruleId() == null ? "sem-regra" : f.ruleId(), k -> new ArrayList<>()).add(f);
         }
         List<Map<String, Object>> out = new ArrayList<>();
         for (Map.Entry<String, List<FindingResponse>> e : byRule.entrySet()) {
             FindingResponse worst = e.getValue().stream()
-                    .min(Comparator.comparingInt((FindingResponse f) -> f.getSeverity().ordinal())).orElseThrow();
+                    .min(Comparator.comparingInt((FindingResponse f) -> f.severity().ordinal())).orElseThrow();
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("regra", e.getKey());
-            m.put("severidade", worst.getSeverity());
-            m.put("categoria", worst.getCategory());
+            m.put("severidade", worst.severity());
+            m.put("categoria", worst.category());
             m.put("ocorrencias", e.getValue().size());
             out.add(m);
         }

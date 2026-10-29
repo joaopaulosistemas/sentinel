@@ -206,10 +206,10 @@ public class McpToolService {
         int limit = args.path("limite").asInt(DEFAULT_LIMIT);
         List<FindingResponse> list = active(run).stream()
                 .map(FindingMapper::toResponse)
-                .filter(f -> severity == null || f.getSeverity() == severity)
-                .filter(f -> category == null || f.getCategory() == category)
-                .filter(f -> confidence == null || f.getConfidence() == confidence)
-                .filter(f -> !onlyNew || Boolean.TRUE.equals(f.getIsNew()))
+                .filter(f -> severity == null || f.severity() == severity)
+                .filter(f -> category == null || f.category() == category)
+                .filter(f -> confidence == null || f.confidence() == confidence)
+                .filter(f -> !onlyNew || Boolean.TRUE.equals(f.isNew()))
                 .toList();
         return McpShaper.findingsResult(list, level, limit);
     }

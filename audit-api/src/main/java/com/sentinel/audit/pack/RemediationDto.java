@@ -1,4 +1,4 @@
-package com.sentinel.audit.dto;
+package com.sentinel.audit.pack;
 
 import java.util.List;
 

@@ -155,14 +155,12 @@ final class RemoteProbe {
             pb.redirectOutput(logFile.toFile());
             ingestion.configureEnvironment(pb.environment(), sendToken ? token : null);
             Process process = pb.start();
-            if (!process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+            boolean finished = process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            if (!finished) {
                 process.destroyForcibly();
-                return null;
             }
-            if (process.exitValue() != 0) {
-                return null;
-            }
-            return parseRefSha(Files.readString(logFile, StandardCharsets.UTF_8), branch);
+            return finished && process.exitValue() == 0
+                    ? parseRefSha(Files.readString(logFile, StandardCharsets.UTF_8), branch) : null;
         } catch (IllegalArgumentException | IOException e) {
             return null;
         } catch (InterruptedException e) {

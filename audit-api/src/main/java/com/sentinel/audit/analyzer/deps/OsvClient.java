@@ -172,13 +172,18 @@ public class OsvClient {
 
     static Severity severityOf(JsonNode v) {
         String label = v.path("database_specific").path("severity").asText("").toUpperCase(Locale.ROOT);
-        switch (label) {
-            case "CRITICAL": return Severity.CRITICAL;
-            case "HIGH": return Severity.HIGH;
-            case "MODERATE", "MEDIUM": return Severity.MEDIUM;
-            case "LOW": return Severity.LOW;
-            default: break;
-        }
+        Severity byLabel = switch (label) {
+            case "CRITICAL" -> Severity.CRITICAL;
+            case "HIGH" -> Severity.HIGH;
+            case "MODERATE", "MEDIUM" -> Severity.MEDIUM;
+            case "LOW" -> Severity.LOW;
+            default -> null;
+        };
+        return byLabel != null ? byLabel : severityByScore(v);
+    }
+
+    /** Sem rótulo conhecido, vale a maior nota CVSS; sem nota nenhuma, MEDIUM. */
+    private static Severity severityByScore(JsonNode v) {
         double best = -1;
         for (JsonNode s : v.path("severity")) {
             best = Math.max(best, Cvss.baseScore(s.path("score").asText("")));

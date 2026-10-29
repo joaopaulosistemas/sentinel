@@ -58,6 +58,7 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
     record KnownVulnerability(String ecosystem, String artifactId, List<String> fixedVersions,
                               String cve, Severity severity, String description) {}
 
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")   // são versões de biblioteca (2.12.7.1), não endereços IP
     private static final List<KnownVulnerability> KNOWN_VULNERABILITIES = List.of(
             // ---- Maven
             new KnownVulnerability("maven", "log4j-core", List.of("2.3.2", "2.12.4", "2.17.1"),
@@ -198,7 +199,13 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
     }
 
     private static int severityRank(Severity s) {
-        return switch (s) { case CRITICAL -> RANK_CRITICAL; case HIGH -> RANK_HIGH; case MEDIUM -> RANK_MEDIUM; case LOW -> RANK_LOW; default -> 0; };
+        return switch (s) {
+            case CRITICAL -> RANK_CRITICAL;
+            case HIGH -> RANK_HIGH;
+            case MEDIUM -> RANK_MEDIUM;
+            case LOW -> RANK_LOW;
+            default -> 0;
+        };
     }
 
     @Override

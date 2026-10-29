@@ -199,7 +199,8 @@ public class IngestionService {
                 process.destroyForcibly();
                 return null;
             }
-            String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            String line = process.inputReader(StandardCharsets.UTF_8).readLine();
+            String out = line == null ? "" : line.trim();
             return process.exitValue() == 0 && out.matches("[0-9a-f]{7,64}") ? out : null;
         } catch (IOException e) {
             return null;

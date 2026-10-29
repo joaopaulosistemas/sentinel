@@ -86,7 +86,12 @@ final class Cvss {
     }
 
     private static double attackVector(String av) {
-        return switch (av) { case "N" -> AV_NETWORK; case "A" -> AV_ADJACENT; case "L" -> AV_LOCAL; default -> AV_PHYSICAL; };
+        return switch (av) {
+            case "N" -> AV_NETWORK;
+            case "A" -> AV_ADJACENT;
+            case "L" -> AV_LOCAL;
+            default -> AV_PHYSICAL;
+        };
     }
 
     private static double privileges(String pr, boolean changed) {
@@ -98,6 +103,10 @@ final class Cvss {
     }
 
     private static double cia(String v) {
-        return switch (v) { case "H" -> CIA_HIGH; case "L" -> CIA_LOW; default -> 0.0; };
+        return switch (v) {
+            case "H" -> CIA_HIGH;
+            case "L" -> CIA_LOW;
+            default -> 0.0;
+        };
     }
 }

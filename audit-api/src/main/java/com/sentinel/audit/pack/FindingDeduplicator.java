@@ -1,8 +1,6 @@
-package com.sentinel.audit.service;
+package com.sentinel.audit.pack;
 
 import com.sentinel.audit.model.Finding;
-import com.sentinel.audit.model.Severity;
-import com.sentinel.audit.pack.DedupTopic;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +36,10 @@ public final class FindingDeduplicator {
         return apply(findings, topics);
     }
 
-    public static List<Finding> apply(List<Finding> findings, List<DedupTopic> topics) {
+    public static List<Finding> apply(List<Finding> findings, List<DedupTopic> rules) {
         List<Finding> removed = new ArrayList<>();
-        for (DedupTopic topic : topics) {
-            List<Finding> inTopic = findings.stream().filter(f -> topicOf(f, topics) == topic).toList();
+        for (DedupTopic topic : rules) {
+            List<Finding> inTopic = findings.stream().filter(f -> topicOf(f, rules) == topic).toList();
             for (Finding candidate : inTopic) {
                 if (removed.contains(candidate) || isPreferred(candidate, topic)) {
                     continue;
@@ -65,12 +63,12 @@ public final class FindingDeduplicator {
         return result;
     }
 
-    private static DedupTopic topicOf(Finding f, List<DedupTopic> topics) {
+    private static DedupTopic topicOf(Finding f, List<DedupTopic> rules) {
         String rule = f.getRuleId() == null ? "" : f.getRuleId().toLowerCase(Locale.ROOT);
         if (rule.isEmpty()) {
             return null;
         }
-        for (DedupTopic t : topics) {
+        for (DedupTopic t : rules) {
             for (String m : t.rules()) {
                 if (rule.contains(m)) {
                     return t;

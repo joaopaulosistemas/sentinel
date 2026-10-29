@@ -20,7 +20,9 @@ import sonarjs from "eslint-plugin-sonarjs";
 import stylistic from "@stylistic/eslint-plugin";
 import base from "./eslint.config.mjs";
 
-const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+// Sem regex aninhada (a forma /^[a-z0-9]+(-[a-z0-9]+)*$/ é apontada como backtracking): confere parte a parte.
+const MINUSCULAS_E_DIGITOS = /^[a-z0-9]+$/;
+const ehKebab = (nome) => nome.split("-").every((parte) => MINUSCULAS_E_DIGITOS.test(parte));
 const NOMES_GENERICOS = new Set(["helpers", "utils", "util", "common", "misc"]);
 
 // Regra local (sem dependência nova): Angular Style Guide, "File naming" e "Project structure".
@@ -43,7 +45,7 @@ const sentinelAngular = {
               return;
             }
             const partes = nome.replace(/\.(ts|tsx)$/, "").split(".");
-            if (!partes.every((parte) => KEBAB.test(parte))) {
+            if (!partes.every((parte) => ehKebab(parte))) {
               context.report({ node, loc: { line: 1, column: 0 }, messageId: "hifen", data: { nome } });
             } else if (NOMES_GENERICOS.has(partes[0])) {
               context.report({ node, loc: { line: 1, column: 0 }, messageId: "generico", data: { nome } });

@@ -56,7 +56,7 @@ public class PackResource {
 
     static PacksResponse toResponse(PackRegistry.Snapshot s) {
         List<PackInfo> packs = s.packs().stream().map(p -> info(p, s.integrity().getOrDefault(p.id(), "unsigned"))).sorted(Comparator.comparing(PackInfo::id)).toList();
-        List<ProfileInfo> profiles = s.profiles().values().stream().map(PackResource::info)
+        List<ProfileInfo> profiles = s.profiles().values().stream().map(PackResource::profileInfo)
                 .sorted(Comparator.comparing(ProfileInfo::id)).toList();
         return new PacksResponse(packs, profiles, s.rejected(), s.warnings(), s.loadedAt());
     }
@@ -67,7 +67,7 @@ public class PackResource {
                 p.semgrepRuleCount(), p.remediation().size(), p.dedup().size(), p.tools().size(), !p.architecture().isEmpty(), integrity);
     }
 
-    private static ProfileInfo info(Profile p) {
+    private static ProfileInfo profileInfo(Profile p) {
         return new ProfileInfo(p.id(), p.name(), p.description(), p.extendsId(), p.packs(), p.rules().size(), p.thresholds());
     }
 }

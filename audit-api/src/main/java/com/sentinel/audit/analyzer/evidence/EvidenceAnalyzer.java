@@ -42,7 +42,6 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
     private static final int PACKAGE_SCAN_HEAD_LINES = 40;
     /** Pacote raiz da aplicação: os três primeiros segmentos (br.com.empresa). */
     private static final int ROOT_PACKAGE_SEGMENTS = 3;
-    private static final int MIN_SEGMENTS_FOR_COUNTRY_TYPE = 4;
 
 
     private static final Logger LOG = Logger.getLogger(EvidenceAnalyzer.class);
@@ -100,25 +99,36 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
         }
         String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
         String text = Files.readString(file, StandardCharsets.UTF_8);
-        if (name.endsWith(".sql")) {
-            return SchemaChecks.run(text, rel, auditRun);
+        return switch (EvidenceKind.of(name)) {
+            case SQL -> SchemaChecks.run(text, rel, auditRun);
+            case CSV -> csv(text, rel, auditRun);
+            case PLAN -> PlanChecks.run(text, rel, auditRun);
+            case JACOCO -> CoverageChecks.run(CoverageChecks.jacocoXml(text), rel, minLineCoverage, auditRun);
+            case LCOV -> CoverageChecks.run(CoverageChecks.lcov(text), rel, minLineCoverage, auditRun);
+            case HEAP -> HeapChecks.run(HeapChecks.parse(text), packages.get(), rel, auditRun);
+            case OTHER -> List.of();
+        };
+    }
+
+    /** Tipo de evidência pelo nome do arquivo (em minúsculas); a primeira que combina vale. */
+    private enum EvidenceKind {
+        SQL(n -> n.endsWith(".sql")),
+        CSV(n -> n.endsWith(".csv")),
+        PLAN(n -> n.endsWith(".json")),
+        JACOCO(n -> n.endsWith(".xml")),
+        LCOV(n -> n.endsWith(".info") || n.startsWith("lcov")),
+        HEAP(n -> n.endsWith(".txt") || n.endsWith(".histo")),
+        OTHER(n -> true);
+
+        private final java.util.function.Predicate<String> matches;
+
+        EvidenceKind(java.util.function.Predicate<String> matches) {
+            this.matches = matches;
         }
-        if (name.endsWith(".csv")) {
-            return csv(text, rel, auditRun);
+
+        static EvidenceKind of(String name) {
+            return java.util.Arrays.stream(values()).filter(k -> k.matches.test(name)).findFirst().orElse(OTHER);
         }
-        if (name.endsWith(".json")) {
-            return PlanChecks.run(text, rel, auditRun);
-        }
-        if (name.endsWith(".xml")) {
-            return CoverageChecks.run(CoverageChecks.jacocoXml(text), rel, minLineCoverage, auditRun);
-        }
-        if (name.endsWith(".info") || name.startsWith("lcov")) {
-            return CoverageChecks.run(CoverageChecks.lcov(text), rel, minLineCoverage, auditRun);
-        }
-        if (name.endsWith(".txt") || name.endsWith(".histo")) {
-            return HeapChecks.run(HeapChecks.parse(text), packages.get(), rel, auditRun);
-        }
-        return List.of();
     }
 
     /** Os pacotes da aplicação só são levantados (varrendo o projeto) se algum histograma de heap aparecer. */
@@ -151,7 +161,7 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
         };
     }
 
-    /** Pacotes raiz das classes do projeto (dois primeiros níveis do {@code package}), para separar código próprio de biblioteca. */
+    /** Pacotes raiz das classes do projeto (três primeiros níveis do {@code package}), para separar código próprio de biblioteca. */
     static Set<String> applicationPackages(Path projectPath) {
         Set<String> roots = new LinkedHashSet<>();
         try (Stream<Path> files = Files.walk(projectPath, PACKAGE_SCAN_DEPTH)) {
@@ -162,8 +172,6 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
                             lines.limit(PACKAGE_SCAN_HEAD_LINES).map(PACKAGE::matcher).filter(Matcher::find).findFirst().ifPresent(m -> {
                                 String[] parts = m.group(1).split("\\.");
                                 // br.com.empresa.app -> "br.com.empresa"; com.empresa.app -> "com.empresa.app"
-                                boolean paisComTipo = parts.length >= MIN_SEGMENTS_FOR_COUNTRY_TYPE && parts[0].length() == 2
-                                        && Set.of("com", "org", "gov", "net", "edu").contains(parts[1]);
                                 int n = Math.min(parts.length, ROOT_PACKAGE_SEGMENTS);
                                 roots.add(String.join(".", java.util.Arrays.copyOf(parts, n)));
                             });

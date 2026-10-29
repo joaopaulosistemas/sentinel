@@ -83,9 +83,9 @@ public final class SourceFiles {
         }
 
         private boolean isCandidate(BasicFileAttributes attrs, String lower) {
-            return !(attrs.isSymbolicLink() || !attrs.isRegularFile() || attrs.size() > MAX_FILE_BYTES
-                    || extensions.stream().noneMatch(lower::endsWith)
-                    || lower.endsWith(".d.ts") || lower.endsWith(".min.js"));
+            boolean usable = attrs.isRegularFile() && !attrs.isSymbolicLink() && attrs.size() <= MAX_FILE_BYTES;
+            return usable && extensions.stream().anyMatch(lower::endsWith)
+                    && !lower.endsWith(".d.ts") && !lower.endsWith(".min.js");
         }
 
         private void addIfProduction(Path file) {

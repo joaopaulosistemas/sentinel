@@ -1,6 +1,5 @@
-package com.sentinel.audit.service;
+package com.sentinel.audit.pack;
 
-import com.sentinel.audit.dto.RemediationDto;
 import com.sentinel.audit.model.Finding;
 import org.junit.jupiter.api.Test;
 

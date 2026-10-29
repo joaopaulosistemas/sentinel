@@ -19,21 +19,9 @@ class McpShaperTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private FindingResponse finding(long id, Severity sev, String rule, String title) {
-        FindingResponse f = new FindingResponse();
-        f.setId(id);
-        f.setSeverity(sev);
-        f.setCategory(Category.SECURITY);
-        f.setRuleId(rule);
-        f.setTitle(title);
-        f.setDescription("DESCRICAO-SECRETA");
-        f.setCodeSnippet("String senha = \"SNIPPET-SECRETO\";");
-        f.setAiRecommendation("RECOMENDACAO-SECRETA");
-        f.setFilePath("src/main/java/Conta.java");
-        f.setLineNumber(42);
-        f.setToolSource("semgrep");
-        f.setStatus(FindingStatus.OPEN);
-        f.setIsNew(true);
-        return f;
+        return new FindingResponse(id, Category.SECURITY, sev, title, "DESCRICAO-SECRETA", "src/main/java/Conta.java", 42,
+                "String senha = \"SNIPPET-SECRETO\";", rule, "semgrep", null, "RECOMENDACAO-SECRETA", FindingStatus.OPEN,
+                null, null, true, null, null, null, null);
     }
 
     private String json(Object o) throws Exception {

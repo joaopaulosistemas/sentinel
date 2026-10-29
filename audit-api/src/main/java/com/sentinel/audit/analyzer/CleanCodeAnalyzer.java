@@ -274,8 +274,7 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                if (attrs.isRegularFile() && !attrs.isSymbolicLink() && attrs.size() <= MAX_FILE_BYTES
-                        && isSourceFile(file.getFileName().toString())
+                if (isCandidate(file, attrs)
                         && !ExternalTools.isVendoredLibrary(root.relativize(file).toString())
                         && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
                     files.add(file);
@@ -291,11 +290,23 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
         return files;
     }
 
+    private static boolean isCandidate(Path file, BasicFileAttributes attrs) {
+        return attrs.isRegularFile() && !attrs.isSymbolicLink() && attrs.size() <= MAX_FILE_BYTES
+                && isSourceFile(file.getFileName().toString());
+    }
+
+    private static boolean isGeneratedOrSpec(String lower) {
+        return lower.endsWith(".d.ts") || lower.endsWith(".min.js") || lower.contains(".spec.") || lower.contains(".test.");
+    }
+
+    private static boolean isJavaTest(String name) {
+        return name.endsWith("Test.java") || name.endsWith("Tests.java") || name.endsWith("IT.java");
+    }
+
     /** Arquivo de código de produção. Compara o nome original: "Audit.java" não é teste, "AuditIT.java" é. */
     static boolean isSourceFile(String name) {
         String lower = name.toLowerCase(Locale.ROOT);
-        if (lower.endsWith(".d.ts") || lower.endsWith(".min.js") || lower.contains(".spec.") || lower.contains(".test.")
-                || name.endsWith("Test.java") || name.endsWith("Tests.java") || name.endsWith("IT.java")) {
+        if (isGeneratedOrSpec(lower) || isJavaTest(name)) {
             return false;
         }
         return JAVA_EXT.stream().anyMatch(lower::endsWith) || TS_EXT.stream().anyMatch(lower::endsWith);

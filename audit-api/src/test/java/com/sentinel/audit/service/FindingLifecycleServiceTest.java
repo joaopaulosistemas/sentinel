@@ -1,7 +1,8 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.pack.RemediationCatalog;
 import com.sentinel.audit.dto.AuditDiffResponse;
-import com.sentinel.audit.dto.RemediationDto;
+import com.sentinel.audit.pack.RemediationDto;
 import com.sentinel.audit.dto.SuppressRequest;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.*;
@@ -194,8 +195,8 @@ class FindingLifecycleServiceTest {
         assertTrue(diff.hasBaseline());
         assertEquals(1L, diff.baseAuditId());
         assertEquals(1, diff.persistingCount());
-        assertEquals(List.of("ldap"), diff.newFindings().stream().map(f -> f.getRuleId()).toList());
-        assertEquals(Set.of("xss", "pwd"), new HashSet<>(diff.resolvedFindings().stream().map(f -> f.getRuleId()).toList()));
+        assertEquals(List.of("ldap"), diff.newFindings().stream().map(f -> f.ruleId()).toList());
+        assertEquals(Set.of("xss", "pwd"), new HashSet<>(diff.resolvedFindings().stream().map(f -> f.ruleId()).toList()));
         assertTrue(diff.scoreDelta() > 0, "menos problemas graves => score sobe");
         assertEquals(Math.round((diff.overall() - diff.baseOverall()) * 100.0) / 100.0, diff.scoreDelta());
     }

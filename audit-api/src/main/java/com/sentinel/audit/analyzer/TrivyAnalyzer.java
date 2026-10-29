@@ -78,7 +78,7 @@ public class TrivyAnalyzer implements CodeAnalyzer {
 
         Path report = null;
         Path stderr = null;
-        String partial = null;
+        String partial;
         try {
             report = Files.createTempFile("trivy-", ".json");
             stderr = Files.createTempFile("trivy-err-", ".txt");

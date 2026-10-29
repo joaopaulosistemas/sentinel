@@ -85,6 +85,11 @@ class AuditOrchestrationServiceTest {
             public void persist(Finding f) {
                 persisted.add(f);
             }
+
+            @Override
+            public void persist(Iterable<Finding> findings) {
+                findings.forEach(persisted::add);
+            }
         };
         service.store.lifecycle = new FindingLifecycleService() {
             @Override
