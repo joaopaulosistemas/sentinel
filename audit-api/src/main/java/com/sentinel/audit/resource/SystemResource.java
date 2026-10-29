@@ -89,12 +89,12 @@ public class SystemResource {
     @Operation(summary = "Criar sistema", description = "Cadastra um novo sistema para auditoria")
     public Response createSystem(@Valid CreateSystemRequest request) {
         AuditedSystem system = new AuditedSystem();
-        system.setName(request.getName());
-        system.setDescription(request.getDescription());
+        system.setName(request.name());
+        system.setDescription(request.description());
         applySource(system, request);
-        system.setStack(request.getStack());
-        system.setTeam(request.getTeam());
-        system.setProfile(validProfile(request.getProfile()));
+        system.setStack(request.stack());
+        system.setTeam(request.team());
+        system.setProfile(validProfile(request.profile()));
         applyGitAccess(system, request);
         systemCatalog.add(system);
         return Response.status(Response.Status.CREATED).entity(views.summary(system)).build();
@@ -149,13 +149,13 @@ public class SystemResource {
     @Operation(summary = "Atualizar sistema", description = "Altera nome, descrição, repositório, stack, equipe e (se informado) o perfil de regras")
     public SystemSummaryResponse updateSystem(@PathParam("id") Long id, @Valid CreateSystemRequest request) {
         AuditedSystem system = systemCatalog.require(id);
-        system.setName(request.getName());
-        system.setDescription(request.getDescription());
+        system.setName(request.name());
+        system.setDescription(request.description());
         applySource(system, request);
-        system.setStack(request.getStack());
-        system.setTeam(request.getTeam());
-        if (request.getProfile() != null) {
-            system.setProfile(validProfile(request.getProfile()));
+        system.setStack(request.stack());
+        system.setTeam(request.team());
+        if (request.profile() != null) {
+            system.setProfile(validProfile(request.profile()));
         }
         applyGitAccess(system, request);
         return views.summary(system);
@@ -280,24 +280,24 @@ public class SystemResource {
      * Uma origem não carrega dados da outra, para o cadastro não ficar com lixo da escolha anterior.
      */
     private void applySource(AuditedSystem system, CreateSystemRequest request) {
-        SourceType type = request.getSourceType() == null ? SourceType.GIT_URL : request.getSourceType();
-        boolean sameFolder = system.isLocalSource() && LocalSource.normalizeInput(request.getLocalPath()).equals(system.getLocalPath());
+        SourceType type = request.sourceType() == null ? SourceType.GIT_URL : request.sourceType();
+        boolean sameFolder = system.isLocalSource() && LocalSource.normalizeInput(request.localPath()).equals(system.getLocalPath());
         system.setSourceType(type);
         if (type == SourceType.LOCAL_PATH) {
             if (!sameFolder) {
                 // Pasta nova: precisa existir, estar dentro da raiz e ser um repositório Git. Editar outros campos de
                 // um sistema que já usa a pasta não depende de ela estar acessível agora.
                 try {
-                    system.setLocalPath(ingestionService.validateLocalPath(request.getLocalPath(), null));
+                    system.setLocalPath(ingestionService.validateLocalPath(request.localPath(), null));
                 } catch (IllegalArgumentException e) {
                     throw new BadRequestException(e.getMessage(), e);
                 }
             }
-            system.setLocalSnapshot(request.getLocalSnapshot() == null ? LocalSnapshot.COMMIT : request.getLocalSnapshot());
+            system.setLocalSnapshot(request.localSnapshot() == null ? LocalSnapshot.COMMIT : request.localSnapshot());
             system.setRepoUrl(null);
             return;
         }
-        system.setRepoUrl(request.getRepoUrl());
+        system.setRepoUrl(request.repoUrl());
         system.setLocalPath(null);
         system.setLocalSnapshot(null);
     }
@@ -313,34 +313,34 @@ public class SystemResource {
     }
 
     private static void applyGitSettings(AuditedSystem system, CreateSystemRequest request) {
-        if (request.getGitTokenHosts() != null) {
-            system.setGitTokenHosts(blankToNull(request.getGitTokenHosts().trim()));
+        if (request.gitTokenHosts() != null) {
+            system.setGitTokenHosts(blankToNull(request.gitTokenHosts().trim()));
         }
-        if (Boolean.TRUE.equals(request.getClearGitToken())) {
+        if (Boolean.TRUE.equals(request.clearGitToken())) {
             system.setGitTokenEnc(null);
         }
-        if (request.getGitHistoryDepth() != null) {
-            system.setGitHistoryDepth(request.getGitHistoryDepth());
+        if (request.gitHistoryDepth() != null) {
+            system.setGitHistoryDepth(request.gitHistoryDepth());
         }
     }
 
     private void applyNotifySettings(AuditedSystem system, CreateSystemRequest request) {
-        if (request.getNotifyFormat() != null) {
-            system.setNotifyFormat(blankToNull(request.getNotifyFormat().trim().toLowerCase(java.util.Locale.ROOT)));
+        if (request.notifyFormat() != null) {
+            system.setNotifyFormat(blankToNull(request.notifyFormat().trim().toLowerCase(java.util.Locale.ROOT)));
         }
-        if (request.getNotifyMinSeverity() != null) {
-            system.setNotifyMinSeverity(blankToNull(request.getNotifyMinSeverity().trim().toUpperCase(java.util.Locale.ROOT)));
+        if (request.notifyMinSeverity() != null) {
+            system.setNotifyMinSeverity(blankToNull(request.notifyMinSeverity().trim().toUpperCase(java.util.Locale.ROOT)));
         }
-        if (request.getNotifyMinScoreDrop() != null) {
-            system.setNotifyMinScoreDrop(request.getNotifyMinScoreDrop());
+        if (request.notifyMinScoreDrop() != null) {
+            system.setNotifyMinScoreDrop(request.notifyMinScoreDrop());
         }
-        if (request.getNotifyPublicUrl() != null) {
-            system.setNotifyPublicUrl(blankToNull(request.getNotifyPublicUrl().trim()));
+        if (request.notifyPublicUrl() != null) {
+            system.setNotifyPublicUrl(blankToNull(request.notifyPublicUrl().trim()));
         }
-        if (Boolean.TRUE.equals(request.getClearNotifyUrl())) {
+        if (Boolean.TRUE.equals(request.clearNotifyUrl())) {
             system.setNotifyUrlEnc(null);
         }
-        String notifyUrl = request.getNotifyUrl();
+        String notifyUrl = request.notifyUrl();
         if (notifyUrl != null && !notifyUrl.isBlank()) {
             try {
                 com.sentinel.audit.service.NotificationService.validateTarget(notifyUrl.trim());
@@ -353,14 +353,14 @@ public class SystemResource {
 
     /** Segredos novos (webhook e token Git): cifrados antes de gravar; "remover" apaga o que já estava salvo. */
     private void applySecrets(AuditedSystem system, CreateSystemRequest request) {
-        if (Boolean.TRUE.equals(request.getClearWebhookSecret())) {
+        if (Boolean.TRUE.equals(request.clearWebhookSecret())) {
             system.setWebhookSecretEnc(null);
         }
-        String webhook = request.getWebhookSecret();
+        String webhook = request.webhookSecret();
         if (webhook != null && !webhook.isBlank()) {
             system.setWebhookSecretEnc(encrypted(webhook, "o segredo"));
         }
-        String token = request.getGitToken();
+        String token = request.gitToken();
         if (token != null && !token.isBlank()) {
             system.setGitTokenEnc(encrypted(token, "o token"));
         }

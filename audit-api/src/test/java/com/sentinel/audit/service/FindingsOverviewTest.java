@@ -42,8 +42,8 @@ class FindingsOverviewTest {
         FindingsOverviewDto r = FindingsOverview.build(sources, NONE, 20, 0);
         assertEquals(3, r.total()); // o suprimido não conta
         assertEquals(List.of("api", "portal", "api"), r.items().stream().map(FindingsOverviewDto.Item::systemName).toList());
-        assertEquals(Severity.CRITICAL, r.items().get(0).finding().getSeverity());
-        assertEquals(Severity.HIGH, r.items().get(2).finding().getSeverity());
+        assertEquals(Severity.CRITICAL, r.items().get(0).finding().severity());
+        assertEquals(Severity.HIGH, r.items().get(2).finding().severity());
     }
 
     @Test

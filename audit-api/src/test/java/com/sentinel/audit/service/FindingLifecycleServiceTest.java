@@ -195,8 +195,8 @@ class FindingLifecycleServiceTest {
         assertTrue(diff.hasBaseline());
         assertEquals(1L, diff.baseAuditId());
         assertEquals(1, diff.persistingCount());
-        assertEquals(List.of("ldap"), diff.newFindings().stream().map(f -> f.getRuleId()).toList());
-        assertEquals(Set.of("xss", "pwd"), new HashSet<>(diff.resolvedFindings().stream().map(f -> f.getRuleId()).toList()));
+        assertEquals(List.of("ldap"), diff.newFindings().stream().map(f -> f.ruleId()).toList());
+        assertEquals(Set.of("xss", "pwd"), new HashSet<>(diff.resolvedFindings().stream().map(f -> f.ruleId()).toList()));
         assertTrue(diff.scoreDelta() > 0, "menos problemas graves => score sobe");
         assertEquals(Math.round((diff.overall() - diff.baseOverall()) * 100.0) / 100.0, diff.scoreDelta());
     }

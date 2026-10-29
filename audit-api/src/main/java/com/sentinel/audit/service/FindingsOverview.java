@@ -60,10 +60,10 @@ public final class FindingsOverview {
 
         // Os mais graves primeiro; empate resolvido por sistema e local, para a ordem não mudar entre chamadas.
         all.sort(Comparator
-                .comparingInt((FindingsOverviewDto.Item i) -> i.finding().getSeverity().ordinal())
+                .comparingInt((FindingsOverviewDto.Item i) -> i.finding().severity().ordinal())
                 .thenComparing(FindingsOverviewDto.Item::systemName, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(i -> i.finding().getFilePath(), Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(i -> i.finding().getLineNumber(), Comparator.nullsLast(Comparator.naturalOrder())));
+                .thenComparing(i -> i.finding().filePath(), Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(i -> i.finding().lineNumber(), Comparator.nullsLast(Comparator.naturalOrder())));
 
         int from = Math.min(safeOffset, all.size());
         int to = Math.min(from + safeLimit, all.size());

@@ -59,47 +59,23 @@ public class SystemViews {
     }
 
     SystemSummaryResponse summary(AuditedSystem system) {
-        SystemSummaryResponse dto = new SystemSummaryResponse();
-        dto.setId(system.getId());
-        dto.setName(system.getName());
-        dto.setStack(system.getStack());
-        dto.setTeam(system.getTeam());
-        dto.setAuditIntervalHours(system.getAuditIntervalHours());
-        dto.setScheduledBranch(system.effectiveScheduledBranch());
-        dto.setAuditOnPush(Boolean.TRUE.equals(system.getAuditOnPush()));
-        dto.setProfile(system.effectiveProfile());
-        dto.setRepoUrl(system.getRepoUrl());
-        dto.setSourceType(system.effectiveSourceType());
-        dto.setLocalPath(system.getLocalPath());
-        dto.setLocalSnapshot(system.isLocalSource() ? system.effectiveLocalSnapshot() : null);
-        dto.setDescription(system.getDescription());
-        dto.setGitTokenSet(system.hasGitToken());
-        dto.setWebhookSecretSet(system.hasWebhookSecret());
-        dto.setGitHistoryDepth(system.getGitHistoryDepth());
-        dto.setNotifyUrlSet(system.hasNotifyUrl());
-        dto.setNotifyFormat(system.getNotifyFormat());
-        dto.setNotifyMinScoreDrop(system.getNotifyMinScoreDrop());
-        dto.setNotifyMinSeverity(system.getNotifyMinSeverity());
-        dto.setNotifyPublicUrl(system.getNotifyPublicUrl());
-        dto.setGitTokenHosts(system.getGitTokenHosts());
-
         List<AuditRun> runs = runCatalog.bySystem(system.getId());
-        dto.setScoreDelta(ScoreTrend.delta(runs));
-        dto.setAuditCount(runs.size());
-        runs.stream()
-            .filter(r -> r.getStatus() == AuditStatus.COMPLETED)
-            .findFirst()
-            .ifPresent(lastRun -> {
-                if (lastRun.getRiskScore() != null) {
-                    dto.setLastAuditScore(lastRun.getRiskScore().getOverall());
-                }
-                dto.setLastAuditDate(lastRun.getCompletedAt());
-
-                Map<Severity, Long> counts = findingCatalog.countBySeverity(lastRun.getId());
-                dto.setOpenCritical(counts.getOrDefault(Severity.CRITICAL, 0L));
-                dto.setOpenHigh(counts.getOrDefault(Severity.HIGH, 0L));
-            });
-
-        return dto;
+        AuditRun lastRun = runs.stream().filter(r -> r.getStatus() == AuditStatus.COMPLETED).findFirst().orElse(null);
+        Map<Severity, Long> counts = lastRun == null ? Map.of() : findingCatalog.countBySeverity(lastRun.getId());
+        boolean scored = lastRun != null && lastRun.getRiskScore() != null;
+        return new SystemSummaryResponse(
+                system.getId(), system.getName(), system.getStack(), system.getTeam(),
+                scored ? lastRun.getRiskScore().getOverall() : null,
+                lastRun == null ? null : lastRun.getCompletedAt(),
+                lastRun == null ? null : counts.getOrDefault(Severity.CRITICAL, 0L),
+                lastRun == null ? null : counts.getOrDefault(Severity.HIGH, 0L),
+                system.getAuditIntervalHours(), system.effectiveScheduledBranch(),
+                Boolean.TRUE.equals(system.getAuditOnPush()), system.effectiveProfile(),
+                ScoreTrend.delta(runs), runs.size(),
+                system.getRepoUrl(), system.getDescription(), system.effectiveSourceType(), system.getLocalPath(),
+                system.isLocalSource() ? system.effectiveLocalSnapshot() : null,
+                system.hasGitToken(), system.getGitTokenHosts(), system.hasWebhookSecret(), system.getGitHistoryDepth(),
+                system.hasNotifyUrl(), system.getNotifyFormat(), system.getNotifyMinScoreDrop(),
+                system.getNotifyMinSeverity(), system.getNotifyPublicUrl());
     }
 }

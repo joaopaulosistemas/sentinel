@@ -1,6 +1,7 @@
 package com.sentinel.audit.service;
 
 import com.sentinel.audit.dto.AuditDiffResponse;
+import com.sentinel.audit.dto.AuditProgressDto;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.RiskScoreDto;
 import com.sentinel.audit.model.AuditRun;
@@ -35,54 +36,34 @@ public class AuditRunMapper {
      *                 em relação à anterior
      */
     public AuditRunResponse toResponse(AuditRun run, boolean withDiff) {
-        AuditRunResponse dto = new AuditRunResponse();
-        dto.setId(run.getId());
-        dto.setSystemId(run.getSystem().getId());
-        dto.setSystemName(run.getSystem().getName());
-        dto.setBranch(run.getBranch());
-        dto.setBaseRef(run.getBaseRef());
-        dto.setStatus(run.getStatus());
-        dto.setStartedAt(run.getStartedAt());
-        dto.setCompletedAt(run.getCompletedAt());
-        dto.setErrorMessage(run.getErrorMessage());
-        dto.setTriggeredBy(run.getTriggeredBy());
-        dto.setProfile(run.getSystem().effectiveProfile());
-        dto.setCommitSha(run.getCommitSha());
-        dto.setLinesOfCode(run.getLinesOfCode());
-
-        if (run.getRiskScore() != null) {
-            var s = run.getRiskScore();
-            RiskScoreDto score = new RiskScoreDto();
-            score.setOverall(s.getOverall());
-            score.setSecurity(s.getSecurity());
-            score.setQuality(s.getQuality());
-            score.setArchitecture(s.getArchitecture());
-            score.setDependencies(s.getDependencies());
-            score.setObservability(s.getObservability());
-            score.setPerformance(s.getPerformance());
-            dto.setRiskScore(score);
-        }
-
         Map<Severity, Long> summary = findingRepository.countBySeverityForRun(run.getId());
-        dto.setFindingsSummary(summary);
-        dto.setTotalFindings(summary.values().stream().mapToLong(Long::longValue).sum());
+        boolean running = run.getStatus() == AuditStatus.RUNNING || run.getStatus() == AuditStatus.PENDING;
+        AuditProgressDto progress = running ? progressTracker.snapshot(run.getId()).orElse(null) : null;
+        AuditDiffResponse diff = withDiff && run.getStatus() == AuditStatus.COMPLETED ? comparison(run) : null;
+        boolean compared = diff != null && diff.hasBaseline();
+        return new AuditRunResponse(
+                run.getId(), run.getSystem().getId(), run.getSystem().getName(), run.getBranch(), run.getBaseRef(),
+                run.getStatus(), scoreOf(run), summary, run.getStartedAt(), run.getCompletedAt(), run.getErrorMessage(),
+                progress, run.getTriggeredBy(), run.getSystem().effectiveProfile(), run.getCommitSha(),
+                run.getLinesOfCode(), summary.values().stream().mapToLong(Long::longValue).sum(),
+                compared ? diff.newFindings().size() : null,
+                compared ? diff.resolvedFindings().size() : null,
+                compared ? diff.baseAuditId() : null,
+                compared ? diff.scoreDelta() : null);
+    }
 
-        if (run.getStatus() == AuditStatus.RUNNING || run.getStatus() == AuditStatus.PENDING) {
-            progressTracker.snapshot(run.getId()).ifPresent(dto::setProgress);
+    private static RiskScoreDto scoreOf(AuditRun run) {
+        var s = run.getRiskScore();
+        return s == null ? null : new RiskScoreDto(s.getOverall(), s.getSecurity(), s.getQuality(),
+                s.getArchitecture(), s.getDependencies(), s.getObservability(), s.getPerformance());
+    }
+
+    /** A comparação é um complemento: sem ela a resposta segue valendo. */
+    private AuditDiffResponse comparison(AuditRun run) {
+        try {
+            return lifecycleService.diff(run.getId());
+        } catch (RuntimeException ignored) {
+            return null;
         }
-        if (withDiff && run.getStatus() == AuditStatus.COMPLETED) {
-            try {
-                AuditDiffResponse diff = lifecycleService.diff(run.getId());
-                if (diff.hasBaseline()) {
-                    dto.setNewFindings(diff.newFindings().size());
-                    dto.setResolvedFindings(diff.resolvedFindings().size());
-                    dto.setPreviousAuditId(diff.baseAuditId());
-                    dto.setScoreDelta(diff.scoreDelta());
-                }
-            } catch (RuntimeException ignored) {
-                // a comparação é um complemento: sem ela a resposta segue valendo
-            }
-        }
-        return dto;
     }
 }
