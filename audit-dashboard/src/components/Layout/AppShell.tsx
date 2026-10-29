@@ -11,7 +11,7 @@ import {
   SkipToContent,
   Theme,
 } from '@carbon/react';
-import { Application, ChartBar, Dashboard, Report, Security, Settings } from '@carbon/icons-react';
+import { Application, Book, ChartBar, Dashboard, Report, Security, Settings } from '@carbon/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
@@ -52,6 +52,7 @@ const ITENS = [
   { nome: 'Sistemas', rota: '/systems', icone: Application },
   { nome: 'Informações de Auditoria', rota: '/findings', icone: Security },
   { nome: 'Ranking de Sistemas', rota: '/ranking', icone: ChartBar },
+  { nome: 'Guia de código', rota: '/guide', icone: Book },
   { nome: 'Relatórios', rota: '/reports', icone: Report },
   { nome: 'Configurações', rota: '/settings', icone: Settings },
 ];

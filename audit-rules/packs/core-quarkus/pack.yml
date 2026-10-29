@@ -1,0 +1,7 @@
+id: core-quarkus
+name: "Quarkus (núcleo)"
+version: 1.0.0
+description: "Armadilhas de Quarkus: injeção por reflexão (@Inject privado), leitura direta do ambiente, chamadas que travam o event loop (Mutiny), HQL/Panache concatenado, segredo em application.properties e reflexão que quebra a imagem nativa."
+author: Sentinel
+languages: [java]
+enabled-by-default: false

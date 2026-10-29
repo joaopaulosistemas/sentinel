@@ -8,6 +8,7 @@ import type {
   FindingResponse,
   FindingsOverview,
   FixPlan,
+  GuideResponse,
   ScoreExplanation,
   FindingStatus,
   Severity,
@@ -78,7 +79,21 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return JSON.parse(text) as T;
 }
 
+/** Resposta em texto (o CLAUDE.md vem como Markdown, não JSON). */
+async function apiText(path: string): Promise<string> {
+  const res = await fetch(`${BASE_URL}${path}`, { signal: AbortSignal.timeout(30_000) });
+  if (!res.ok) {
+    const detail = await readErrorDetail(res);
+    throw new Error(detail || `HTTP ${res.status}: ${res.statusText}`);
+  }
+  return res.text();
+}
+
 export const api = {
+  getGuide: () => apiFetch<GuideResponse>('/api/v1/guide'),
+
+  getGuideClaudeMd: (stackId: string) => apiText(`/api/v1/guide/${encodeURIComponent(stackId)}/claude-md`),
+
   getSystems: () => apiFetch<SystemSummaryResponse[]>('/api/v1/systems'),
 
   getSystem: (id: number) =>

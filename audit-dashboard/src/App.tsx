@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/Layout/AppShell';
 import { AuditRunPage } from './pages/AuditRun/AuditRunPage';
 import { FindingsPage } from './pages/Findings/FindingsPage';
+import { GuidePage } from './pages/Guide/GuidePage';
 import { OverviewPage } from './pages/Overview/OverviewPage';
 import { RankingPage } from './pages/Ranking/RankingPage';
 import { ReportsPage } from './pages/Reports/ReportsPage';
@@ -18,6 +19,7 @@ export function App() {
         <Route path="/systems/:systemId" element={<SystemDetailPage />} />
         <Route path="/audits/:auditId" element={<AuditRunPage />} />
         <Route path="/ranking" element={<RankingPage />} />
+        <Route path="/guide" element={<GuidePage />} />
         <Route path="/findings" element={<FindingsPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/settings" element={<SettingsPage />} />

@@ -1,0 +1,7 @@
+id: core-boas-praticas
+name: "Boas práticas por tecnologia"
+version: 1.0.0
+description: "Lacunas de boas práticas de Java, Spring, TypeScript, React e Angular: recurso sem try-with-resources, @Transactional no controller, mensagem de exceção devolvida ao cliente, strict desligado, cast sem validação, fetch em useEffect e componente não standalone."
+author: Sentinel
+languages: [java, typescript, javascript]
+enabled-by-default: false

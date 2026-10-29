@@ -56,6 +56,7 @@ describe('AppShell', () => {
       'Sistemas',
       'Informações de Auditoria',
       'Ranking de Sistemas',
+      'Guia de código',
       'Relatórios',
       'Configurações',
     ]);

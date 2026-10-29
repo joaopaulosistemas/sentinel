@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    // ruleid: sentinel-boas-ts-strict-desligado
+    "strict": false
+  }
+}

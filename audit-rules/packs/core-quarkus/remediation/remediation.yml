@@ -1,0 +1,69 @@
+- key: "sentinel-quarkus-inject-campo-privado"
+  summary: "Injete pelo construtor, ou deixe o campo visível no pacote em vez de private."
+  before: |-
+    @Inject
+    private ContaService service;
+  after: |-
+    private final ContaService service;
+
+    @Inject
+    ContaResource(ContaService service) {
+        this.service = service;
+    }
+  refs:
+    - "https://quarkus.io/guides/cdi-reference"
+
+- key: "sentinel-quarkus-getenv-direto"
+  summary: "Leia a configuração com @ConfigProperty ou @ConfigMapping, que aceita valor padrão e perfis."
+  before: "String url = System.getenv(\"DB_URL\");"
+  after: |-
+    @ConfigProperty(name = "db.url")
+    String url;
+  refs:
+    - "https://quarkus.io/guides/config-reference"
+
+- key: "sentinel-quarkus-await-indefinido"
+  summary: "Devolva o Uni/Multi e deixe o framework assinar; se precisar bloquear, marque o método com @Blocking."
+  before: "String v = servico.buscar().await().indefinitely();"
+  after: |-
+    @GET
+    public Uni<String> buscar() {
+        return servico.buscar();
+    }
+  refs:
+    - "https://quarkus.io/guides/mutiny-primer"
+
+- key: "sentinel-quarkus-sleep-em-reativo"
+  summary: "Espere sem bloquear: use delayIt() do Mutiny em vez de Thread.sleep."
+  before: |-
+    Thread.sleep(100);
+    return Uni.createFrom().item("x");
+  after: "return Uni.createFrom().item(\"x\").onItem().delayIt().by(Duration.ofMillis(100));"
+  refs:
+    - "https://quarkus.io/guides/mutiny-primer"
+
+- key: "sentinel-quarkus-panache-consulta-concatenada"
+  summary: "Use parâmetros posicionais ou nomeados; nunca concatene valores na consulta."
+  before: "Conta.find(\"nome = '\" + nome + \"'\");"
+  after: |-
+    Conta.find("nome = ?1", nome);
+    Conta.find("nome = :nome", Parameters.with("nome", nome));
+  refs:
+    - "https://quarkus.io/guides/hibernate-orm-panache"
+    - "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-quarkus-segredo-em-properties"
+  summary: "Tire o segredo do arquivo: leia de variável de ambiente, de Secret do Kubernetes ou de um cofre."
+  before: "quarkus.datasource.password=senha123"
+  after: "quarkus.datasource.password=${DB_PASSWORD}"
+  refs:
+    - "https://quarkus.io/guides/config-secrets"
+
+- key: "sentinel-quarkus-reflexao-nativa"
+  summary: "Evite reflexão; se for inevitável, registre a classe com @RegisterForReflection."
+  before: "Class<?> c = Class.forName(nome);"
+  after: |-
+    @RegisterForReflection
+    public class Conta { }
+  refs:
+    - "https://quarkus.io/guides/writing-native-applications-tips"

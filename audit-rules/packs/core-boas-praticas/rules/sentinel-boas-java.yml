@@ -1,0 +1,72 @@
+# Boas práticas de Java e Spring. Casos de teste: tests/sentinel-boas-java.java
+rules:
+  - id: sentinel-boas-java-recurso-sem-try-with-resources
+    patterns:
+      - pattern-either:
+          - pattern: $V = new FileInputStream(...)
+          - pattern: $V = new FileOutputStream(...)
+          - pattern: $V = new FileReader(...)
+          - pattern: $V = new FileWriter(...)
+          - pattern: $V = new Socket(...)
+          - pattern: $V = DriverManager.getConnection(...)
+          - pattern: $V = new ZipFile(...)
+      - pattern-not-inside: |
+          try ($RT $RV = ...) { ... }
+    message: >
+      Recurso aberto fora de try-with-resources. Se uma exceção acontecer antes do close(), o arquivo, o socket ou a conexão ficam abertos.
+      Declare o recurso no try: try (var in = new FileInputStream(f)) { ... }.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: quality
+      cwe: "CWE-772: Missing Release of Resource after Effective Lifetime"
+
+  - id: sentinel-boas-spring-transactional-no-controller
+    patterns:
+      - pattern-inside: |
+          @RestController
+          class $C { ... }
+      - pattern: |
+          @Transactional
+          $RET $M(...) { ... }
+    message: >
+      @Transactional num controller prende a transação à requisição HTTP, inclusive ao tempo de serialização da resposta.
+      Ponha a transação no serviço, no método que realmente grava, e deixe o controller só traduzir HTTP.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-boas-spring-mensagem-de-excecao-ao-cliente
+    pattern-either:
+      - pattern: ResponseEntity.$S(...).body($E.getMessage())
+      - pattern: ResponseEntity.status(...).body($E.getMessage())
+      - pattern: ResponseEntity.ok($E.getMessage())
+    message: >
+      A mensagem da exceção vai para o cliente. Ela pode revelar tabela, caminho, versão ou trecho de consulta. Devolva uma mensagem
+      própria e um código de erro (ProblemDetail, RFC 9457) e registre a exceção no log.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-209: Generation of Error Message Containing Sensitive Information"
+      owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-boas-spring-value-espalhado
+    pattern-regex: '(?m)@Value\(\s*"\$\{'
+    message: >
+      @Value espalha a configuração pelo código e não valida nada na partida. Agrupe as propriedades numa classe com
+      @ConfigurationProperties e @Validated: ficam tipadas, documentadas e falham cedo.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.java"]
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: quality

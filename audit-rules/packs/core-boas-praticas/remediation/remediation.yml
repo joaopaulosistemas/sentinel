@@ -1,0 +1,89 @@
+- key: "sentinel-boas-java-recurso-sem-try-with-resources"
+  summary: "Declare o recurso no try: ele é fechado sozinho, mesmo se houver exceção."
+  before: |-
+    InputStream in = new FileInputStream(f);
+    in.read();
+    in.close();
+  after: |-
+    try (InputStream in = new FileInputStream(f)) {
+        in.read();
+    }
+  refs:
+    - "https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html"
+
+- key: "sentinel-boas-spring-transactional-no-controller"
+  summary: "Mova a transação para o serviço, no método que grava; o controller só traduz HTTP."
+  before: |-
+    @RestController
+    class ContaController {
+        @Transactional
+        public void gravar() { }
+    }
+  after: |-
+    @Service
+    class ContaService {
+        @Transactional
+        public void gravar() { }
+    }
+  refs:
+    - "https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative.html"
+
+- key: "sentinel-boas-spring-mensagem-de-excecao-ao-cliente"
+  summary: "Devolva uma mensagem própria (ProblemDetail) e registre a exceção no log."
+  before: "return ResponseEntity.status(500).body(e.getMessage());"
+  after: |-
+    log.error("Falha ao gravar conta", e);
+    return ResponseEntity.status(500).body(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno"));
+  refs:
+    - "https://cwe.mitre.org/data/definitions/209.html"
+    - "https://www.rfc-editor.org/rfc/rfc9457"
+
+- key: "sentinel-boas-spring-value-espalhado"
+  summary: "Agrupe as propriedades numa classe com @ConfigurationProperties e @Validated."
+  before: |-
+    @Value("${app.url}")
+    String url;
+  after: |-
+    @ConfigurationProperties("app")
+    @Validated
+    record AppProperties(@NotBlank String url) { }
+  refs:
+    - "https://docs.spring.io/spring-boot/reference/features/external-config.html"
+
+- key: "sentinel-boas-ts-json-sem-validacao"
+  summary: "Valide o dado externo com um esquema (zod, valibot) e use o tipo que ele infere."
+  before: "const conta = JSON.parse(texto) as Conta;"
+  after: |-
+    const ContaSchema = z.object({ id: z.number(), nome: z.string() });
+    const conta = ContaSchema.parse(JSON.parse(texto));
+  refs:
+    - "https://zod.dev"
+
+- key: "sentinel-boas-react-fetch-em-effect"
+  summary: "Use TanStack Query (ou o carregador do framework); se mantiver o fetch, cancele na limpeza."
+  before: |-
+    useEffect(() => {
+      fetch('/api/contas').then((r) => r.json()).then(setContas);
+    }, []);
+  after: |-
+    const { data: contas } = useQuery({
+      queryKey: ['contas'],
+      queryFn: () => fetch('/api/contas').then((r) => r.json()),
+    });
+  refs:
+    - "https://react.dev/learn/synchronizing-with-effects#fetching-data"
+    - "https://tanstack.com/query/latest"
+
+- key: "sentinel-boas-ng-componente-nao-standalone"
+  summary: "Torne o componente standalone e importe o que ele usa."
+  before: "@Component({ selector: 'app-x', standalone: false, template: '' })"
+  after: "@Component({ selector: 'app-x', imports: [CommonModule], template: '' })"
+  refs:
+    - "https://angular.dev/guide/components/importing"
+
+- key: "sentinel-boas-ts-strict-desligado"
+  summary: "Ligue \"strict\": true; em projeto legado, ligue as opções uma a uma."
+  before: "\"strict\": false"
+  after: "\"strict\": true"
+  refs:
+    - "https://www.typescriptlang.org/tsconfig#strict"

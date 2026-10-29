@@ -1,0 +1,7 @@
+id: core-vue
+name: "Vue (núcleo)"
+version: 1.0.0
+description: "Armadilhas de Vue 3 em arquivos .vue: v-html, v-for sem key, v-if junto de v-for, reactive desestruturado, links inseguros e Options API em código novo."
+author: Sentinel
+languages: [typescript, javascript]
+enabled-by-default: false

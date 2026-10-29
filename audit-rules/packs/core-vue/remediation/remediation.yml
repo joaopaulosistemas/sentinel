@@ -1,0 +1,62 @@
+- key: "sentinel-vue-v-html"
+  summary: "Use a interpolação {{ }}, que escapa o texto; se o HTML for inevitável, sanitize antes."
+  before: "<div v-html=\"comentario\"></div>"
+  after: |-
+    <div>{{ comentario }}</div>
+    <!-- ou, com HTML confiável e limpo: -->
+    <div v-html="DOMPurify.sanitize(comentario)"></div>
+  refs:
+    - "https://vuejs.org/guide/best-practices/security.html"
+
+- key: "sentinel-vue-v-for-sem-key"
+  summary: "Dê ao v-for uma :key estável, com o id do dado."
+  before: "<li v-for=\"item in itens\">{{ item.nome }}</li>"
+  after: "<li v-for=\"item in itens\" :key=\"item.id\">{{ item.nome }}</li>"
+  refs:
+    - "https://vuejs.org/guide/essentials/list.html#maintaining-state-with-key"
+
+- key: "sentinel-vue-v-if-com-v-for"
+  summary: "Filtre numa propriedade computed, ou ponha o v-if num <template> dentro do laço."
+  before: "<li v-for=\"item in itens\" v-if=\"item.ativo\">{{ item.nome }}</li>"
+  after: |-
+    const ativos = computed(() => itens.value.filter((i) => i.ativo));
+    <li v-for="item in ativos" :key="item.id">{{ item.nome }}</li>
+  refs:
+    - "https://vuejs.org/style-guide/rules-essential.html#avoid-v-if-with-v-for"
+
+- key: "sentinel-vue-reactive-desestruturado"
+  summary: "Use ref() por valor, ou toRefs() ao desestruturar."
+  before: "const { a, b } = reactive({ a: 1, b: 2 });"
+  after: |-
+    const estado = reactive({ a: 1, b: 2 });
+    const { a, b } = toRefs(estado);
+  refs:
+    - "https://vuejs.org/guide/essentials/reactivity-fundamentals.html#limitations-of-reactive"
+
+- key: "sentinel-vue-link-javascript"
+  summary: "Troque o link por um botão com @click ou por um router-link."
+  before: "<a href=\"javascript:apagar()\">apagar</a>"
+  after: "<button type=\"button\" @click=\"apagar\">apagar</button>"
+  refs:
+    - "https://vuejs.org/guide/best-practices/security.html"
+
+- key: "sentinel-vue-target-blank-sem-rel"
+  summary: "Acrescente rel=\"noopener noreferrer\"."
+  before: "<a href=\"https://exemplo.com\" target=\"_blank\">site</a>"
+  after: "<a href=\"https://exemplo.com\" target=\"_blank\" rel=\"noopener noreferrer\">site</a>"
+  refs:
+    - "https://developer.mozilla.org/docs/Web/HTML/Attributes/rel/noopener"
+
+- key: "sentinel-vue-options-api-mixins"
+  summary: "Extraia a lógica para um composable (função use...) da Composition API."
+  before: "mixins: [paginacao]"
+  after: "const { pagina, proxima } = usePaginacao();"
+  refs:
+    - "https://vuejs.org/guide/reusability/composables.html"
+
+- key: "sentinel-vue-define-props-sem-tipo"
+  summary: "Declare as props com tipos: defineProps<{ ... }>()."
+  before: "const props = defineProps(['titulo']);"
+  after: "const props = defineProps<{ titulo: string }>();"
+  refs:
+    - "https://vuejs.org/guide/typescript/composition-api.html#typing-component-props"

@@ -674,3 +674,47 @@ export interface SettingsResponse {
   settings: SettingView[];
   restartRequired: boolean;
 }
+
+// ---- Guia de código ----
+
+export type GuideSeverity = 'alta' | 'media' | 'baixa';
+
+export interface GuideRule {
+  id: string;
+  pack: string;
+  title: string;
+  action: string;
+  severity: GuideSeverity;
+  cwe: string;
+  before: string;
+  after: string;
+}
+
+export interface GuidePractice {
+  title: string;
+  doIt: string;
+  avoid: string;
+}
+
+export interface GuideStack {
+  id: string;
+  name: string;
+  kind: 'backend' | 'frontend';
+  summary: string;
+  tools: string[];
+  gaps: string[];
+  commands: string[];
+  commandsVerified: boolean;
+  review: { docs: boolean; team: boolean; ai: boolean };
+  practices: GuidePractice[];
+  /** Linguagem base (Java, TypeScript): não tem regras próprias, só as herdadas da linguagem. */
+  baseLanguage: boolean;
+  ownRules: number;
+  inheritedRules: number;
+  rules: Array<{ id: string; own: boolean }>;
+}
+
+export interface GuideResponse {
+  stacks: GuideStack[];
+  rules: GuideRule[];
+}
