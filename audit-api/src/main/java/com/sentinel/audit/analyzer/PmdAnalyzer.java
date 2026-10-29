@@ -120,16 +120,21 @@ public class PmdAnalyzer implements CodeAnalyzer {
                     Files.writeString(tempRuleset, DEFAULT_RULESET, StandardCharsets.UTF_8);
                     ruleset = tempRuleset.toString();
                 }
-                return execute(exe, projectPath, auditRun, ruleset, report, stderr);
+                return execute(new Target(exe, projectPath, auditRun), ruleset, report, stderr);
             } finally {
                 deleteQuietly(tempRuleset);
             }
         });
     }
 
-    private ToolRun.Outcome execute(Path exe, Path projectPath, AuditRun auditRun, String ruleset, Path report,
-                                    Path stderr) throws IOException, InterruptedException {
-        int code = ExternalTools.runTo(command(exe, projectPath, ruleset, report), null, Map.of(), timeoutSeconds,
+    /** O que o PMD analisa: o executável, a pasta do projeto e a auditoria a que os achados pertencem. */
+    private record Target(Path exe, Path projectPath, AuditRun auditRun) { }
+
+    private ToolRun.Outcome execute(Target target, String ruleset, Path report, Path stderr)
+            throws IOException, InterruptedException {
+        Path projectPath = target.projectPath();
+        AuditRun auditRun = target.auditRun();
+        int code = ExternalTools.runTo(command(target.exe(), projectPath, ruleset, report), null, Map.of(), timeoutSeconds,
                 new ExternalTools.Output(null, stderr));
         if (code != 0 && code != EXIT_RECOVERABLE_ERRORS) {
             String partial = ExternalTools.falha(code, timeoutSeconds, stderr);

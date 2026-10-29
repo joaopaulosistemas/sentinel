@@ -344,7 +344,7 @@ public final class ProjectConfig {
 
     /**
      * O id da regra pode vir com prefixo do pacote (ex.: {@code audit-rules.rules.x.minha-regra}); vale o final.
-     * Terminando em {@code *}, vale como prefixo (ex.: {@code gitleaks-*} cobre todas as regras do Gitleaks).
+     * O {@code *} vale por qualquer trecho (ex.: {@code gitleaks-*} cobre todas as regras do Gitleaks).
      * Maiúsculas e minúsculas não contam: as ferramentas escrevem o mesmo id de jeitos diferentes
      * ({@code pmd-SystemPrintln} no PMD, {@code gitleaks-aws-access-token} no Gitleaks).
      */
@@ -352,13 +352,30 @@ public final class ProjectConfig {
         if (actual == null || wanted == null) {
             return false;
         }
-        String w = wanted.toLowerCase(java.util.Locale.ROOT);
+        Pattern p = wildcard(wanted.toLowerCase(java.util.Locale.ROOT));
         String a = actual.toLowerCase(java.util.Locale.ROOT);
-        if (w.endsWith("*")) {
-            String prefix = w.substring(0, w.length() - 1);
-            return a.startsWith(prefix) || a.contains("." + prefix);
+        if (p.matcher(a).matches()) {
+            return true;
         }
-        return a.equals(w) || a.endsWith("." + w);
+        for (int dot = a.indexOf('.'); dot >= 0; dot = a.indexOf('.', dot + 1)) {
+            if (p.matcher(a.substring(dot + 1)).matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** {@code *} em qualquer posição vale por qualquer trecho (ex.: {@code checkstyle-*VisibilityModifier*}). */
+    private static Pattern wildcard(String wanted) {
+        StringBuilder re = new StringBuilder();
+        String[] parts = wanted.split("\\*", -1);
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                re.append(".*");
+            }
+            re.append(Pattern.quote(parts[i]));
+        }
+        return Pattern.compile(re.toString());
     }
 
     private static boolean matchesAny(List<Pattern> patterns, String path) {
