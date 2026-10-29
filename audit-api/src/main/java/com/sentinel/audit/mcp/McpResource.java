@@ -1,5 +1,6 @@
 package com.sentinel.audit.mcp;
 
+import jakarta.annotation.security.PermitAll;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.model.AuditedSystem;
@@ -29,6 +30,8 @@ import java.util.Optional;
  * sistema tem a sua chave, que só enxerga esse sistema. Sem chave válida a resposta é sempre a mesma 401, exista o
  * sistema ou não, para não revelar quais sistemas estão cadastrados.
  */
+// Acesso: fora de /api/*; autenticado aqui dentro pela chave do sistema (guardada como hash), não pela API key global.
+@PermitAll
 @Path("/mcp/{system}")
 public class McpResource {
 

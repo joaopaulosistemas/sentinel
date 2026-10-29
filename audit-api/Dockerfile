@@ -12,6 +12,8 @@ ARG HTTPS_PROXY
 ARG NO_PROXY
 WORKDIR /build
 # Maven sem verificação de SSL (3.9 usa o transporte nativo; as flags wagon cobrem plugins antigos)
+# $MAVEN_OPTS deve ficar literal (expandido só quando o .mavenrc for lido): aspas simples intencionais.
+# hadolint ignore=SC2016
 RUN if [ "$INSECURE_SSL" = "true" ]; then \
       echo 'export MAVEN_OPTS="$MAVEN_OPTS -Daether.connector.https.securityMode=insecure -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true"' > /root/.mavenrc; \
     fi

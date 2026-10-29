@@ -1,5 +1,6 @@
 package com.sentinel.audit.review;
 
+import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
@@ -19,6 +20,8 @@ import java.util.List;
  * Revisão do Claude: sugestões e regras propostas de um sistema e as decisões das pessoas sobre elas.
  * Fica sob a API key global. Nada aqui altera achado ou nota.
  */
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/claude-review/{id}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

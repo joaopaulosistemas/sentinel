@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.pack.PackManifest;
 import com.sentinel.audit.pack.PackRegistry;
 import com.sentinel.audit.pack.Profile;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 /** Pacotes de regras e perfis carregados. Caminhos do servidor não são expostos. */
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/packs")
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Packs", description = "Pacotes de regras e perfis")

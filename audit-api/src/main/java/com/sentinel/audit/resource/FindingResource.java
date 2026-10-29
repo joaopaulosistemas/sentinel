@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.dto.BatchSuppressRequest;
 import com.sentinel.audit.dto.BatchSuppressResponse;
 import com.sentinel.audit.dto.FindingsOverviewDto;
@@ -36,6 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Ações sobre findings individuais. */
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/findings")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

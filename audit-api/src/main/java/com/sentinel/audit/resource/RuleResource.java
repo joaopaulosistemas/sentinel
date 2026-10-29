@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.service.RulePlaygroundService;
 import com.sentinel.audit.service.RuleQualityService;
 import com.sentinel.audit.service.RuleQualityService.RuleQuality;
@@ -19,6 +20,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/rules")
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Rules", description = "Qualidade das regras de análise")

@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import jakarta.annotation.security.PermitAll;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.model.AuditedSystem;
@@ -27,6 +28,8 @@ import java.util.stream.Collectors;
  * (HMAC-SHA256) ou o token do GitLab, conferidos com o <b>segredo cadastrado no sistema</b> dono do repositório.
  * Sistema sem segredo não recebe webhook.
  */
+// Acesso: público por desenho; autenticado por assinatura HMAC/token do sistema (ver WebhookResource).
+@PermitAll
 @Path("/api/v1/webhooks")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.WILDCARD)

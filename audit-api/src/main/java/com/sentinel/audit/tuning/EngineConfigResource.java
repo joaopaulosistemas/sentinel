@@ -1,5 +1,6 @@
 package com.sentinel.audit.tuning;
 
+import jakarta.annotation.security.PermitAll;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
@@ -31,6 +32,8 @@ import java.util.Map;
  * Ajustes do motor de regras de cada sistema, usados pelas abas "Motor de regras" e "Analisadores".
  * Tudo vale por cima do perfil do sistema e a partir da próxima auditoria; sem ajustes o sistema audita como o perfil.
  */
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/engine-config/{id}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

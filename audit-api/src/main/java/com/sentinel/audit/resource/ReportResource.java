@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Locale;
 
 /** Relatórios que juntam todos os sistemas. */
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/reports")
 @Tag(name = "Relatórios", description = "Relatórios consolidados")
 public class ReportResource {

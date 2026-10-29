@@ -93,7 +93,7 @@ rules:
       category: quality
 
   - id: sentinel-int-http-sem-tls
-    pattern-regex: '["''`]http://(?!www\.w3\.org|apache\.org|java\.sun\.com|xmlns\.jcp\.org|json-schema\.org|adaptivecards\.io|schemas\.|www\.springframework\.org|localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|host\.docker\.internal|[\w.-]*\.(local|internal|svc|cluster\.local)\b)[\w.-]+'
+    pattern-regex: '["''`]http://(?!www\.w3\.org|apache\.org|pmd\.sourceforge\.net|java\.sun\.com|xmlns\.jcp\.org|json-schema\.org|adaptivecards\.io|schemas\.|www\.springframework\.org|localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|host\.docker\.internal|[\w.-]*\.(local|internal|svc|cluster\.local)\b)[\w.-]+'
     message: >
       URL http:// (sem TLS) fixa no código: dados e credenciais trafegam em texto claro. Use https:// e leia o
       endereço da configuração do ambiente.

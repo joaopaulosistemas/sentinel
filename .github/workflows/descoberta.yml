@@ -7,6 +7,7 @@ name: Sentinel Descoberta
 on:
   schedule:
     - cron: "17 9 * * 1"
+  # checkov:skip=CKV_GHA_7: os inputs só definem quantos/quais repositórios públicos auditar; nenhum artefato de release é gerado
   workflow_dispatch:
     inputs:
       quantidade:

@@ -13,15 +13,12 @@
     opacity: 0.45;
   }
 }
-.sentinel-spin {
-  animation: sentinel-spin 900ms linear infinite;
-}
-.sentinel-pulse {
-  animation: sentinel-pulse 1.4s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .sentinel-spin,
+/* Só anima quando a pessoa não pediu "reduzir movimento". */
+@media (prefers-reduced-motion: no-preference) {
+  .sentinel-spin {
+    animation: sentinel-spin 900ms linear infinite;
+  }
   .sentinel-pulse {
-    animation: none;
+    animation: sentinel-pulse 1.4s ease-in-out infinite;
   }
 }

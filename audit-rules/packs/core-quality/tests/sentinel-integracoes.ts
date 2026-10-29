@@ -28,3 +28,6 @@ export const URL_SEGURA = 'https://api.parceiro.com.br/v1';
 
 // ok: sentinel-int-http-sem-tls
 export const URL_LOCAL = 'http://localhost:3000';
+
+// ok: sentinel-int-http-sem-tls
+export const NAMESPACE_PMD = 'http://pmd.sourceforge.net/ruleset/2.0.0';

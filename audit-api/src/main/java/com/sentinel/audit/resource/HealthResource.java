@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import jakarta.annotation.security.PermitAll;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -13,6 +14,8 @@ import java.util.Map;
 /**
  * Endpoint de verificação de saúde da aplicação.
  */
+// Acesso: público por desenho (health check).
+@PermitAll
 @Path("/api/v1/health")
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Health", description = "Verificação de saúde da API")

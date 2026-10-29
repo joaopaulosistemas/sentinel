@@ -7,7 +7,6 @@ import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.FindingResponse;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditStatus;
-import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.repository.AuditRunRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

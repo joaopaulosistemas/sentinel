@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.CreateSystemRequest;
 import com.sentinel.audit.dto.ProfileRequest;
@@ -32,6 +33,8 @@ import java.util.stream.Collectors;
 /**
  * Endpoint REST para gerenciamento de sistemas auditados.
  */
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/systems")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
