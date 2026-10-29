@@ -108,14 +108,16 @@ final class AnalyzerRunner {
                 .supplyAsync(() -> {
                     progress.analyzerStarted(runId, analyzer.getName());
                     AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
-                    progress.analyzerFinished(runId, analyzer.getName(), r.partial() ? "PARCIAL" : "OK", r.findings().size(),
+                    progress.analyzerFinished(runId, analyzer.getName(), new AuditProgressTracker.Done(
+                            r.partial() ? "PARCIAL" : "OK", r.findings().size(),
                             r.duration() == null ? 0 : r.duration().toMillis(),
-                            r.partial() ? RunText.truncate(r.partialNote(), PARTIAL_NOTE_MAX_CHARS) : null, severityCounts(r.findings()));
+                            r.partial() ? RunText.truncate(r.partialNote(), PARTIAL_NOTE_MAX_CHARS) : null, severityCounts(r.findings())));
                     return new Outcome(r, null);
                 }, executor)
                 .exceptionally(error -> {
                     LOG.errorf(error, "Analisador %s falhou; seguindo sem seus resultados", analyzer.getName());
-                    progress.analyzerFinished(runId, analyzer.getName(), "FALHOU", 0, 0, RunText.truncate(error.getMessage(), ERROR_NOTE_MAX_CHARS));
+                    progress.analyzerFinished(runId, analyzer.getName(), AuditProgressTracker.Done.of("FALHOU", 0, 0,
+                            RunText.truncate(error.getMessage(), ERROR_NOTE_MAX_CHARS)));
                     return new Outcome(new AnalyzerResult(List.of(), analyzer.getName(), Duration.ZERO),
                             error.getMessage());
                 });

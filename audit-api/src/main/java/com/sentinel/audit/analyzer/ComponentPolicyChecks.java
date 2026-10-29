@@ -45,10 +45,7 @@ final class ComponentPolicyChecks {
     private static void checkForbidden(ArchitecturePolicy.Components cp, Dependency d, AuditRun run, List<Finding> out) {
         for (DepRule r : cp.forbidden()) {
             if (ArchitecturePolicyAnalyzer.globMatches(r.dep(), d.name())) {
-                out.add(ArchitecturePolicyAnalyzer.archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-forbidden",
-                        severityOr(r, Severity.HIGH), Category.DEPENDENCY,
-                        "Biblioteca proibida: " + d.name(),
-                        reason(r, "A política proíbe " + d.name() + ".") + " (versão " + d.version() + ")"));
+                out.add(ArchitecturePolicyAnalyzer.archFinding(run, new ArchitecturePolicyAnalyzer.ArchPlace(d.filePath(), 0, d.name() + ":" + d.version()), new ArchitecturePolicyAnalyzer.ArchRule("sentinel-comp-forbidden", severityOr(r, Severity.HIGH), Category.DEPENDENCY, "Biblioteca proibida: " + d.name(), reason(r, "A política proíbe " + d.name() + ".") + " (versão " + d.version() + ")")));
             }
         }
     }
@@ -56,10 +53,7 @@ final class ComponentPolicyChecks {
     private static void checkMinVersion(ArchitecturePolicy.Components cp, Dependency d, AuditRun run, List<Finding> out) {
         for (DepRule r : cp.minVersion()) {
             if (ArchitecturePolicyAnalyzer.globMatches(r.dep(), d.name()) && Boolean.FALSE.equals(Versions.satisfies(d.version(), r.version()))) {
-                out.add(ArchitecturePolicyAnalyzer.archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-min-version",
-                        severityOr(r, Severity.HIGH), Category.DEPENDENCY,
-                        "Versão fora da política: " + d.name() + " " + d.version() + " (exigido " + r.version() + ")",
-                        reason(r, "A política exige " + d.name() + " " + r.version() + ".")));
+                out.add(ArchitecturePolicyAnalyzer.archFinding(run, new ArchitecturePolicyAnalyzer.ArchPlace(d.filePath(), 0, d.name() + ":" + d.version()), new ArchitecturePolicyAnalyzer.ArchRule("sentinel-comp-min-version", severityOr(r, Severity.HIGH), Category.DEPENDENCY, "Versão fora da política: " + d.name() + " " + d.version() + " (exigido " + r.version() + ")", reason(r, "A política exige " + d.name() + " " + r.version() + "."))));
             }
         }
     }
@@ -67,9 +61,7 @@ final class ComponentPolicyChecks {
     private static void checkRequired(ArchitecturePolicy.Components cp, List<Dependency> deps, AuditRun run, List<Finding> out) {
         for (DepRule r : cp.required()) {
             if (deps.stream().noneMatch(d -> ArchitecturePolicyAnalyzer.globMatches(r.dep(), d.name()))) {
-                out.add(ArchitecturePolicyAnalyzer.archFinding(run, "(dependências)", 0, "", "sentinel-comp-required",
-                        severityOr(r, Severity.MEDIUM), Category.DEPENDENCY,
-                        "Biblioteca obrigatória ausente: " + r.dep(), reason(r, "A política exige " + r.dep() + ".")));
+                out.add(ArchitecturePolicyAnalyzer.archFinding(run, new ArchitecturePolicyAnalyzer.ArchPlace("(dependências)", 0, ""), new ArchitecturePolicyAnalyzer.ArchRule("sentinel-comp-required", severityOr(r, Severity.MEDIUM), Category.DEPENDENCY, "Biblioteca obrigatória ausente: " + r.dep(), reason(r, "A política exige " + r.dep() + "."))));
             }
         }
     }
@@ -87,9 +79,7 @@ final class ComponentPolicyChecks {
             }
             if (cp.approvedOnly().stream().noneMatch(r -> ArchitecturePolicyAnalyzer.globMatches(r.dep(), d.name())) && n < MAX_NOT_APPROVED) {
                 n++;
-                out.add(ArchitecturePolicyAnalyzer.archFinding(run, d.filePath(), 0, d.name() + ":" + d.version(), "sentinel-comp-not-approved",
-                        Severity.MEDIUM, Category.DEPENDENCY, "Biblioteca fora da lista aprovada: " + d.name(),
-                        "A política só permite as bibliotecas aprovadas; " + d.name() + " não está na lista."));
+                out.add(ArchitecturePolicyAnalyzer.archFinding(run, new ArchitecturePolicyAnalyzer.ArchPlace(d.filePath(), 0, d.name() + ":" + d.version()), new ArchitecturePolicyAnalyzer.ArchRule("sentinel-comp-not-approved", Severity.MEDIUM, Category.DEPENDENCY, "Biblioteca fora da lista aprovada: " + d.name(), "A política só permite as bibliotecas aprovadas; " + d.name() + " não está na lista.")));
             }
         }
     }

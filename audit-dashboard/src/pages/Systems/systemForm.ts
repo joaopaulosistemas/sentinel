@@ -73,7 +73,15 @@ export const emptyForm: SystemFormValues = {
   notifyPublicUrl: '',
 };
 
+type FormPart<K extends keyof SystemFormValues> = Pick<SystemFormValues, K>;
+
 export function formFrom(system: SystemSummaryResponse): SystemFormValues {
+  return { ...identityFrom(system), ...scheduleFrom(system), ...gitFrom(system), ...notifyFrom(system) };
+}
+
+function identityFrom(system: SystemSummaryResponse): FormPart<
+  'name' | 'sourceType' | 'repoUrl' | 'localPath' | 'localSnapshot' | 'stack' | 'team' | 'description' | 'profile'
+> {
   return {
     name: system.name,
     sourceType: system.sourceType === 'LOCAL_PATH' ? 'LOCAL_PATH' : 'GIT_URL',
@@ -84,15 +92,35 @@ export function formFrom(system: SystemSummaryResponse): SystemFormValues {
     team: system.team ?? '',
     description: system.description ?? '',
     profile: system.profile || 'default',
+  };
+}
+
+function scheduleFrom(system: SystemSummaryResponse): FormPart<'auditIntervalHours' | 'scheduledBranch' | 'auditOnPush'> {
+  return {
     auditIntervalHours: system.auditIntervalHours ?? 0,
     scheduledBranch: system.scheduledBranch ?? '',
     auditOnPush: !!system.auditOnPush,
+  };
+}
+
+/** Segredos nunca voltam da API: os campos de digitação começam vazios. */
+function gitFrom(
+  system: SystemSummaryResponse,
+): FormPart<'gitToken' | 'gitTokenHosts' | 'clearGitToken' | 'gitHistoryDepth' | 'webhookSecret' | 'clearWebhookSecret'> {
+  return {
     gitToken: '',
     gitTokenHosts: system.gitTokenHosts ?? '',
     clearGitToken: false,
     gitHistoryDepth: system.gitHistoryDepth ?? 100,
     webhookSecret: '',
     clearWebhookSecret: false,
+  };
+}
+
+function notifyFrom(
+  system: SystemSummaryResponse,
+): FormPart<'notifyUrl' | 'clearNotifyUrl' | 'notifyFormat' | 'notifyMinScoreDrop' | 'notifyMinSeverity' | 'notifyPublicUrl'> {
+  return {
     notifyUrl: '',
     clearNotifyUrl: false,
     notifyFormat: system.notifyFormat || 'slack',
@@ -221,6 +249,12 @@ export const notifySeverities = [
 ];
 
 export function toRequest(values: SystemFormValues): SystemRequest {
+  return { ...requestIdentity(values), ...requestGit(values), ...requestNotify(values) };
+}
+
+function requestIdentity(
+  values: SystemFormValues,
+): Pick<SystemRequest, 'name' | 'description' | 'stack' | 'team'> & Partial<SystemRequest> {
   const local = values.sourceType === 'LOCAL_PATH';
   return {
     name: values.name.trim(),
@@ -232,18 +266,32 @@ export function toRequest(values: SystemFormValues): SystemRequest {
     team: values.team.trim(),
     description: values.description.trim(),
     profile: values.profile === 'default' ? '' : values.profile,
-    ...(values.gitToken.trim() ? { gitToken: values.gitToken.trim() } : {}),
+  };
+}
+
+/** Segredo digitado agora é enviado; "limpar" só vale se nada novo foi digitado. */
+function requestGit(values: SystemFormValues): Partial<SystemRequest> {
+  const token = values.gitToken.trim();
+  const secret = values.webhookSecret.trim();
+  return {
+    ...(token ? { gitToken: token } : {}),
     gitTokenHosts: values.gitTokenHosts.trim(),
     gitHistoryDepth: values.gitHistoryDepth,
-    ...(values.clearGitToken && !values.gitToken.trim() ? { clearGitToken: true } : {}),
-    ...(values.webhookSecret.trim() ? { webhookSecret: values.webhookSecret.trim() } : {}),
-    ...(values.notifyUrl.trim() ? { notifyUrl: values.notifyUrl.trim() } : {}),
-    ...(values.clearNotifyUrl && !values.notifyUrl.trim() ? { clearNotifyUrl: true } : {}),
+    ...(values.clearGitToken && !token ? { clearGitToken: true } : {}),
+    ...(secret ? { webhookSecret: secret } : {}),
+    ...(values.clearWebhookSecret && !secret ? { clearWebhookSecret: true } : {}),
+  };
+}
+
+function requestNotify(values: SystemFormValues): Partial<SystemRequest> {
+  const url = values.notifyUrl.trim();
+  return {
+    ...(url ? { notifyUrl: url } : {}),
+    ...(values.clearNotifyUrl && !url ? { clearNotifyUrl: true } : {}),
     notifyFormat: values.notifyFormat,
     notifyMinScoreDrop: values.notifyMinScoreDrop,
     notifyMinSeverity: values.notifyMinSeverity,
     notifyPublicUrl: values.notifyPublicUrl.trim(),
-    ...(values.clearWebhookSecret && !values.webhookSecret.trim() ? { clearWebhookSecret: true } : {}),
   };
 }
 

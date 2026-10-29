@@ -103,30 +103,13 @@ public class IngestionService {
 
         Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
         Path targetPath = basePath.resolve(UUID.randomUUID().toString()).normalize();
+        CloneJob job = new CloneJob(uri, branch, historyDepth, effectiveToken, sendToken, targetPath);
         Path logFile = null;
 
         try {
             Files.createDirectories(basePath);
             logFile = Files.createTempFile(basePath, "git-clone-", ".log");
-
-            List<String> command = buildCloneCommand(uri.toString(), branch, targetPath, historyDepth);
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectErrorStream(true);
-            pb.redirectOutput(logFile.toFile());
-            configureEnvironment(pb.environment(), sendToken ? effectiveToken : null);
-
-            LOG.infof("Clonando repositório %s (branch: %s)", uri, branch == null || branch.isBlank() ? "padrão" : branch);
-
-            Process process = pb.start();
-            boolean finished = process.waitFor(cloneTimeoutSeconds, TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroyForcibly();
-                throw new IllegalStateException("git clone excedeu o tempo limite de " + cloneTimeoutSeconds + "s");
-            }
-            if (process.exitValue() != 0) {
-                throw new IllegalStateException("git clone falhou (exit " + process.exitValue() + "): "
-                        + readTail(logFile, effectiveToken));
-            }
+            runClone(job, logFile);
             return targetPath;
 
         } catch (IOException e) {
@@ -141,6 +124,30 @@ public class IngestionService {
             throw e;
         } finally {
             deleteQuietly(logFile);
+        }
+    }
+
+    /** O que clonar e para onde; {@code sendToken} diz se a credencial pode ser enviada a este host. */
+    private record CloneJob(URI uri, String branch, Integer historyDepth, String token, boolean sendToken, Path target) { }
+
+    private void runClone(CloneJob job, Path logFile) throws IOException, InterruptedException {
+        List<String> command = buildCloneCommand(job.uri().toString(), job.branch(), job.target(), job.historyDepth());
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(logFile.toFile());
+        configureEnvironment(pb.environment(), job.sendToken() ? job.token() : null);
+
+        LOG.infof("Clonando repositório %s (branch: %s)", job.uri(), job.branch() == null || job.branch().isBlank() ? "padrão" : job.branch());
+
+        Process process = pb.start();
+        boolean finished = process.waitFor(cloneTimeoutSeconds, TimeUnit.SECONDS);
+        if (!finished) {
+            process.destroyForcibly();
+            throw new IllegalStateException("git clone excedeu o tempo limite de " + cloneTimeoutSeconds + "s");
+        }
+        if (process.exitValue() != 0) {
+            throw new IllegalStateException("git clone falhou (exit " + process.exitValue() + "): "
+                    + readTail(logFile, job.token()));
         }
     }
 

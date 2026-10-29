@@ -43,79 +43,103 @@ interface FiltersProps {
   onRestore: () => void;
 }
 
+const fieldBox = { display: 'flex', flexDirection: 'column', gap: 6 } as const;
+
+function SelectField({ id, text, strong, value, onChange, children }: {
+  id: string;
+  text: string;
+  strong?: boolean;
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={fieldBox}>
+      <label htmlFor={id} style={strong ? { ...label, fontWeight: 600 } : label}>{text}</label>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={strong ? { ...select, borderBottom: '2px solid var(--s-link)' } : select}
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
+
+function SystemField({ systems, value, onPick }: { systems: SystemSummaryResponse[] | undefined; value: string; onPick: (id: number | undefined) => void }) {
+  return (
+    <SelectField id="f-sis" text="Sistema" strong value={value} onChange={(v) => onPick(v === '' ? undefined : Number(v))}>
+      <option value="">Todos os sistemas{systems ? ` (${systems.length})` : ''}</option>
+      {(systems ?? []).map((s) => (
+        <option key={s.id} value={s.id}>{s.name}</option>
+      ))}
+    </SelectField>
+  );
+}
+
+function LowConfidenceToggle({ lowHidden, showLow, onShowLow }: { lowHidden: number; showLow: boolean; onShowLow: (v: boolean) => void }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+      <input type="checkbox" checked={showLow} onChange={(e) => onShowLow(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#0f62fe' }} />
+      Mostrar achados de baixa confiança
+      {!showLow && <span style={{ color: 'var(--s-text-3)' }}>({lowHidden} ocultos: em testes, exemplos ou de regras com muitos falsos positivos)</span>}
+    </label>
+  );
+}
+
+function ActiveChips({ chips, isDefault, onRestore }: { chips: FilterChip[]; isDefault: boolean; onRestore: () => void }) {
+  return (
+    <div aria-label="Filtros ativos" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 13, color: 'var(--s-text-3)' }}>
+      Filtros ativos:
+      {chips.map((c) => {
+        const blue = c.tone === 'blue';
+        return (
+          <span key={c.key} style={{ background: blue ? '#d0e2ff' : 'var(--s-border)', color: blue ? '#0043ce' : 'var(--s-text)', padding: '3px 10px', borderRadius: 12 }}>
+            {c.label}
+          </span>
+        );
+      })}
+      {!isDefault && (
+        <button type="button" onClick={onRestore} style={{ background: 'none', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>
+          Restaurar padrão
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** Filtros da tela de achados: sistema, severidade, categoria, situação, baixa confiança e os filtros ativos. */
-export function FindingsFilters({
-  auditMode, systems, currentSystemValue, onPickSystem, severity, onSeverity, category, onCategory, situation, onSituation,
-  grouped, onGrouped, lowTotal, lowHidden, showLow, onShowLow, chips, isDefault, onRestore,
-}: FiltersProps) {
+export function FindingsFilters(p: FiltersProps) {
   return (
     <section aria-label="Filtros" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(190px, 100%), 1fr))', gap: 14, alignItems: 'end' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="f-sis" style={{ ...label, fontWeight: 600 }}>Sistema</label>
-          <select
-            id="f-sis"
-            value={currentSystemValue}
-            onChange={(e) => onPickSystem(e.target.value === '' ? undefined : Number(e.target.value))}
-            style={{ ...select, borderBottom: '2px solid var(--s-link)' }}
-          >
-            <option value="">Todos os sistemas{systems ? ` (${systems.length})` : ''}</option>
-            {(systems ?? []).map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="f-sev" style={label}>Severidade</label>
-          <select id="f-sev" value={severity} onChange={(e) => onSeverity(e.target.value as SeverityChoice)} style={select}>
-            {severityChoices.map((c) => (
-              <option key={c.id} value={c.id}>{c.label}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="f-cat" style={label}>Categoria</label>
-          <select id="f-cat" value={category ?? ''} onChange={(e) => onCategory((e.target.value || undefined) as Category | undefined)} style={select}>
-            {categoryOptions.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="f-st" style={label}>Situação</label>
-          <select id="f-st" value={situation} onChange={(e) => onSituation(e.target.value as SituationChoice)} style={select}>
-            {situationChoices.map((c) => (
-              <option key={c.id} value={c.id}>{c.label}</option>
-            ))}
-          </select>
-        </div>
-        {!auditMode && (
+        <SystemField systems={p.systems} value={p.currentSystemValue} onPick={p.onPickSystem} />
+        <SelectField id="f-sev" text="Severidade" value={p.severity} onChange={(v) => p.onSeverity(v as SeverityChoice)}>
+          {severityChoices.map((c) => (
+            <option key={c.id} value={c.id}>{c.label}</option>
+          ))}
+        </SelectField>
+        <SelectField id="f-cat" text="Categoria" value={p.category ?? ''} onChange={(v) => p.onCategory((v || undefined) as Category | undefined)}>
+          {categoryOptions.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </SelectField>
+        <SelectField id="f-st" text="Situação" value={p.situation} onChange={(v) => p.onSituation(v as SituationChoice)}>
+          {situationChoices.map((c) => (
+            <option key={c.id} value={c.id}>{c.label}</option>
+          ))}
+        </SelectField>
+        {!p.auditMode && (
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40 }}>
-            <input type="checkbox" checked={grouped} onChange={(e) => onGrouped(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#0f62fe' }} />
+            <input type="checkbox" checked={p.grouped} onChange={(e) => p.onGrouped(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#0f62fe' }} />
             Agrupar por sistema
           </label>
         )}
       </div>
-      {auditMode && lowTotal > 0 && (
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-          <input type="checkbox" checked={showLow} onChange={(e) => onShowLow(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#0f62fe' }} />
-          Mostrar achados de baixa confiança
-          {!showLow && <span style={{ color: 'var(--s-text-3)' }}>({lowHidden} ocultos: em testes, exemplos ou de regras com muitos falsos positivos)</span>}
-        </label>
-      )}
-      <div aria-label="Filtros ativos" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 13, color: 'var(--s-text-3)' }}>
-        Filtros ativos:
-        {chips.map((c) => (
-          <span key={c.key} style={{ background: c.tone === 'blue' ? '#d0e2ff' : 'var(--s-border)', color: c.tone === 'blue' ? '#0043ce' : 'var(--s-text)', padding: '3px 10px', borderRadius: 12 }}>
-            {c.label}
-          </span>
-        ))}
-        {!isDefault && (
-          <button type="button" onClick={onRestore} style={{ background: 'none', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>
-            Restaurar padrão
-          </button>
-        )}
-      </div>
+      {p.auditMode && p.lowTotal > 0 && <LowConfidenceToggle lowHidden={p.lowHidden} showLow={p.showLow} onShowLow={p.onShowLow} />}
+      <ActiveChips chips={p.chips} isDefault={p.isDefault} onRestore={p.onRestore} />
     </section>
   );
 }

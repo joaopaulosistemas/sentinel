@@ -16,22 +16,6 @@ public class RiskScoreDto {
     public RiskScoreDto() {
     }
 
-    public RiskScoreDto(Double overall, Double security, Double quality,
-                        Double architecture, Double dependencies, Double observability) {
-        this(overall, security, quality, architecture, dependencies, observability, null);
-    }
-
-    public RiskScoreDto(Double overall, Double security, Double quality,
-                        Double architecture, Double dependencies, Double observability, Double performance) {
-        this.performance = performance;
-        this.overall = overall;
-        this.security = security;
-        this.quality = quality;
-        this.architecture = architecture;
-        this.dependencies = dependencies;
-        this.observability = observability;
-    }
-
     public Double getOverall() {
         return overall;
     }

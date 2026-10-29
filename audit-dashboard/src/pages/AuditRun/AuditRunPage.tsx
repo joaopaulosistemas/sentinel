@@ -311,61 +311,76 @@ function mcpViewOf(mcp: McpActivity, run: AuditRunResponse, progressEvents: Audi
   };
 }
 
-/** Painel de acompanhamento: o que a auditoria está fazendo agora e, ao terminar, o resumo do resultado. */
-export function AuditRunPage() {
-  const { auditId } = useParams<{ auditId: string }>();
-  const navigate = useNavigate();
-  const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
-  const id = Number(auditId);
-  const { data: run, isLoading, error } = useAudit(id);
-  const finished = run !== undefined && FINISHED.includes(run.status);
-  const [confirmCancel, setConfirmCancel] = useState(false);
-  const [rerun, setRerun] = useState(false);
-  const lastProgress = useRef<AuditProgress | null>(null);
-  // Histórico do mesmo sistema: base da estimativa de tempo.
-  const { data: history } = useAuditRuns(run?.systemId ?? 0);
-  // O que o Claude (MCP) fez com este sistema desde que a auditoria começou. Só informação: não entra na nota.
-  const mcp = useMcpActivity(run?.systemId, run !== undefined && !finished);
-  const cancel = useCancelAudit(id, () => setConfirmCancel(false));
-
-  if (run?.progress) lastProgress.current = run.progress;
-
-  useRefreshListsWhenFinished(finished);
-
-  if (isLoading) return <RunSkeleton />;
-  if (error || !run) return <RunNotFound error={error} />;
-
-  // O servidor só devolve o andamento enquanto a auditoria roda; ao concluir, guarda-se o último visto.
-  const progress = run.progress ?? lastProgress.current;
-  const analyzers = progress?.analyzers ?? [];
-  const mcpView = mcpViewOf(mcp, run, progress?.events ?? []);
-  const counts = analyzerCounts(analyzers);
-  const seconds = elapsedSeconds(run);
-  const done = run.status === 'COMPLETED';
-  const active = !FINISHED.includes(run.status);
-  const etaLabel = active ? etaLabelFor(run, history ?? [], seconds) : null;
-
-  const rerunModal = (
+function RerunModal({ run, open, onClose }: { run: AuditRunResponse; open: boolean; onClose: () => void }) {
+  return (
     <StartAuditModal
-      system={rerun ? { id: run.systemId ?? 0, name: run.systemName, scheduledBranch: run.branch } : null}
-      onClose={() => setRerun(false)}
+      system={open ? { id: run.systemId ?? 0, name: run.systemName, scheduledBranch: run.branch } : null}
+      onClose={onClose}
     />
   );
+}
 
+/** Auditoria concluída: cabeçalho, os passos do resultado e a reexecução. */
+function CompletedView({ run, seconds }: { run: AuditRunResponse; seconds: number | null }) {
+  const navigate = useNavigate();
+  const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
+  const [rerun, setRerun] = useState(false);
   const openFindings = () => {
     setSelectedAudit(run.id);
     navigate(`/findings?auditId=${run.id}`);
   };
+  return (
+    <PageShell crumbs={runCrumbsFor(run)}>
+      <CompletedHeader run={run} seconds={seconds} onRerun={() => setRerun(true)} />
+      <ResultSteps run={run} onOpenFindings={openFindings} />
+      <RerunModal run={run} open={rerun} onClose={() => setRerun(false)} />
+    </PageShell>
+  );
+}
 
-  if (done) {
-    return (
-      <PageShell crumbs={runCrumbsFor(run)}>
-        <CompletedHeader run={run} seconds={seconds} onRerun={() => setRerun(true)} />
-        <ResultSteps run={run} onOpenFindings={openFindings} />
-        {rerunModal}
-      </PageShell>
-    );
-  }
+type McpView = ReturnType<typeof mcpViewOf>;
+type AnalyzerList = NonNullable<AuditProgress['analyzers']>;
+
+interface ActivePanelsProps {
+  run: AuditRunResponse;
+  progress: AuditProgress | null;
+  analyzers: AnalyzerList;
+  counts: ReturnType<typeof analyzerCounts>;
+  events: McpView['events'];
+}
+
+/** Enquanto roda: as ferramentas de análise, o resultado parcial e o registro de eventos. */
+function ActivePanels({ run, progress, analyzers, counts, events }: ActivePanelsProps) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
+      <AnalyzersSection analyzers={analyzers} counts={counts} />
+
+      <aside aria-label="Resultado e eventos" style={{ flex: '1 1 340px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <PartialResult run={run} progress={progress} />
+        <EventLog startedAt={run.startedAt} events={events} />
+      </aside>
+    </div>
+  );
+}
+
+interface RunningViewProps {
+  run: AuditRunResponse;
+  progress: AuditProgress | null;
+  history: AuditRunResponse[] | undefined;
+  mcp: McpActivity;
+  seconds: number | null;
+}
+
+/** Auditoria na fila, rodando, falha ou cancelada. */
+function RunningView({ run, progress, history, mcp, seconds }: RunningViewProps) {
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [rerun, setRerun] = useState(false);
+  const cancel = useCancelAudit(run.id, () => setConfirmCancel(false));
+  const analyzers = progress?.analyzers ?? [];
+  const mcpView = mcpViewOf(mcp, run, progress?.events ?? []);
+  const counts = analyzerCounts(analyzers);
+  const active = !FINISHED.includes(run.status);
+  const etaLabel = active ? etaLabelFor(run, history ?? [], seconds) : null;
 
   return (
     <PageShell crumbs={runCrumbsFor(run)}>
@@ -393,16 +408,7 @@ export function AuditRunPage() {
 
       <RunNotices run={run} />
 
-      {active && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
-          <AnalyzersSection analyzers={analyzers} counts={counts} />
-
-          <aside aria-label="Resultado e eventos" style={{ flex: '1 1 340px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <PartialResult run={run} progress={progress} />
-            <EventLog startedAt={run.startedAt} events={mcpView.events} />
-          </aside>
-        </div>
-      )}
+      {active && <ActivePanels run={run} progress={progress} analyzers={analyzers} counts={counts} events={mcpView.events} />}
 
       <CancelModal
         open={confirmCancel}
@@ -412,7 +418,33 @@ export function AuditRunPage() {
         onClose={() => setConfirmCancel(false)}
         onConfirm={() => cancel.mutate()}
       />
-      {rerunModal}
+      <RerunModal run={run} open={rerun} onClose={() => setRerun(false)} />
     </PageShell>
   );
+}
+
+/** Painel de acompanhamento: o que a auditoria está fazendo agora e, ao terminar, o resumo do resultado. */
+export function AuditRunPage() {
+  const { auditId } = useParams<{ auditId: string }>();
+  const id = Number(auditId);
+  const { data: run, isLoading, error } = useAudit(id);
+  const finished = run !== undefined && FINISHED.includes(run.status);
+  const lastProgress = useRef<AuditProgress | null>(null);
+  // Histórico do mesmo sistema: base da estimativa de tempo.
+  const { data: history } = useAuditRuns(run?.systemId ?? 0);
+  // O que o Claude (MCP) fez com este sistema desde que a auditoria começou. Só informação: não entra na nota.
+  const mcp = useMcpActivity(run?.systemId, run !== undefined && !finished);
+
+  if (run?.progress) lastProgress.current = run.progress;
+
+  useRefreshListsWhenFinished(finished);
+
+  if (isLoading) return <RunSkeleton />;
+  if (error || !run) return <RunNotFound error={error} />;
+
+  const seconds = elapsedSeconds(run);
+  if (run.status === 'COMPLETED') return <CompletedView run={run} seconds={seconds} />;
+  // O servidor só devolve o andamento enquanto a auditoria roda; ao concluir, guarda-se o último visto.
+  const progress = run.progress ?? lastProgress.current;
+  return <RunningView run={run} progress={progress} history={history} mcp={mcp} seconds={seconds} />;
 }

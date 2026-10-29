@@ -96,18 +96,28 @@ public final class AreaClassifier {
     private AreaClassifier() {
     }
 
+    /** A área do primeiro prefixo conhecido do id da regra; nulo se o id for nulo ou não casar. */
+    private static AuditArea byPrefix(String ruleId) {
+        if (ruleId == null) {
+            return null;
+        }
+        String id = ruleId.toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, AuditArea> e : PREFIXES.entrySet()) {
+            if (id.startsWith(e.getKey())) {
+                return e.getValue();
+            }
+        }
+        return null;
+    }
+
     public static AuditArea classify(Finding f) {
         return classify(f.getRuleId(), f.getCategory());
     }
 
     public static AuditArea classify(String ruleId, Category category) {
-        if (ruleId != null) {
-            String id = ruleId.toLowerCase(Locale.ROOT);
-            for (Map.Entry<String, AuditArea> e : PREFIXES.entrySet()) {
-                if (id.startsWith(e.getKey())) {
-                    return e.getValue();
-                }
-            }
+        AuditArea byRule = byPrefix(ruleId);
+        if (byRule != null) {
+            return byRule;
         }
         if (category == null) {
             return AuditArea.MAINTAINABILITY;

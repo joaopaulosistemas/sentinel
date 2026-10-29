@@ -7,7 +7,6 @@ import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.FindingResponse;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditStatus;
-import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.repository.AuditRunRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -112,16 +111,24 @@ public class NotificationService {
         if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || uri.getUserInfo() != null) {
             throw new IllegalArgumentException("A URL de notificação deve ser https://, sem usuário e senha");
         }
+        requirePublicAddress(uri);
+    }
+
+    private static void requirePublicAddress(URI uri) {
         try {
             for (java.net.InetAddress a : java.net.InetAddress.getAllByName(uri.getHost())) {
-                if (a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress() || a.isSiteLocalAddress()
-                        || a.isMulticastAddress() || isUniqueLocalV6(a)) {
+                if (isInternal(a)) {
                     throw new IllegalArgumentException("A URL de notificação não pode apontar para rede interna ou local");
                 }
             }
         } catch (java.net.UnknownHostException e) {
             throw new IllegalArgumentException("Não foi possível resolver o endereço da notificação: " + uri.getHost(), e);
         }
+    }
+
+    private static boolean isInternal(java.net.InetAddress a) {
+        return a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress() || a.isSiteLocalAddress()
+                || a.isMulticastAddress() || isUniqueLocalV6(a);
     }
 
     private static boolean isUniqueLocalV6(java.net.InetAddress a) {
@@ -177,41 +184,45 @@ public class NotificationService {
                 : publicUrl.replaceAll("/+$", "") + "/systems/" + n.systemId();
         ObjectNode root = MAPPER.createObjectNode();
         switch (format.toLowerCase(Locale.ROOT)) {
-            case "teams" -> {
-                // Formato aceito pelo conector "Workflows" do Teams (Adaptive Card em attachments).
-                root.put("type", "message");
-                ObjectNode attachment = ((ArrayNode) root.putArray("attachments")).addObject();
-                attachment.put("contentType", "application/vnd.microsoft.card.adaptive");
-                ObjectNode card = attachment.putObject("content");
-                card.put("$schema", "http://adaptivecards.io/schemas/adaptive-card.json");
-                card.put("type", "AdaptiveCard");
-                card.put("version", "1.4");
-                ArrayNode body = card.putArray("body");
-                body.addObject().put("type", "TextBlock").put("text", title(n)).put("weight", "Bolder").put("size", "Medium").put("wrap", true);
-                body.addObject().put("type", "TextBlock").put("text", text).put("wrap", true);
-                if (link != null) {
-                    ObjectNode action = card.putArray("actions").addObject();
-                    action.put("type", "Action.OpenUrl").put("title", "Abrir no dashboard").put("url", link);
-                }
-            }
-            case "generic" -> {
-                root.put("event", n.status() == AuditStatus.FAILED ? "audit.failed" : "audit.completed");
-                root.put("auditId", n.auditId());
-                root.put("systemId", n.systemId());
-                root.put("system", n.systemName());
-                root.put("branch", n.branch());
-                root.put("status", n.status().name());
-                if (n.score() != null) root.put("score", n.score());
-                if (n.scoreDelta() != null) root.put("scoreDelta", n.scoreDelta());
-                root.put("newFindings", n.newTotal());
-                root.put("resolvedFindings", n.resolved());
-                if (n.errorMessage() != null) root.put("error", n.errorMessage());
-                if (link != null) root.put("url", link);
-                root.put("text", text);
-            }
+            case "teams" -> teamsPayload(root, n, text, link);
+            case "generic" -> genericPayload(root, n, text, link);
             default -> root.put("text", "*" + title(n) + "*\n" + text + (link != null ? "\n<" + link + "|Abrir no dashboard>" : ""));
         }
         return MAPPER.writeValueAsString(root);
+    }
+
+    /** Formato aceito pelo conector "Workflows" do Teams (Adaptive Card em attachments). */
+    private static void teamsPayload(ObjectNode root, Notice n, String text, String link) {
+        root.put("type", "message");
+        ObjectNode attachment = ((ArrayNode) root.putArray("attachments")).addObject();
+        attachment.put("contentType", "application/vnd.microsoft.card.adaptive");
+        ObjectNode card = attachment.putObject("content");
+        card.put("$schema", "http://adaptivecards.io/schemas/adaptive-card.json");
+        card.put("type", "AdaptiveCard");
+        card.put("version", "1.4");
+        ArrayNode body = card.putArray("body");
+        body.addObject().put("type", "TextBlock").put("text", title(n)).put("weight", "Bolder").put("size", "Medium").put("wrap", true);
+        body.addObject().put("type", "TextBlock").put("text", text).put("wrap", true);
+        if (link != null) {
+            ObjectNode action = card.putArray("actions").addObject();
+            action.put("type", "Action.OpenUrl").put("title", "Abrir no dashboard").put("url", link);
+        }
+    }
+
+    private static void genericPayload(ObjectNode root, Notice n, String text, String link) {
+        root.put("event", n.status() == AuditStatus.FAILED ? "audit.failed" : "audit.completed");
+        root.put("auditId", n.auditId());
+        root.put("systemId", n.systemId());
+        root.put("system", n.systemName());
+        root.put("branch", n.branch());
+        root.put("status", n.status().name());
+        if (n.score() != null) root.put("score", n.score());
+        if (n.scoreDelta() != null) root.put("scoreDelta", n.scoreDelta());
+        root.put("newFindings", n.newTotal());
+        root.put("resolvedFindings", n.resolved());
+        if (n.errorMessage() != null) root.put("error", n.errorMessage());
+        if (link != null) root.put("url", link);
+        root.put("text", text);
     }
 
     static String title(Notice n) {

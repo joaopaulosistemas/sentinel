@@ -29,7 +29,7 @@ class AuditProgressTrackerTest {
                 new AnalyzerProgress("Dependências", "ESPERANDO", 0, 0, null),
                 new AnalyzerProgress("Semgrep", "ESPERANDO", 0, 0, null),
                 new AnalyzerProgress("PMD", "INDISPONIVEL", 0, 0, "ferramenta ausente")));
-        t.analyzerFinished(7L, "Semgrep", "OK", 12, 900, null);
+        t.analyzerFinished(7L, "Semgrep", AuditProgressTracker.Done.of("OK", 12, 900, null));
 
         AuditProgressDto s = t.snapshot(7L).orElseThrow();
         assertEquals("ANALISE", s.phase());
@@ -44,7 +44,7 @@ class AuditProgressTrackerTest {
     void falhaDeAnalisadorApareceNosEventos() {
         AuditProgressTracker t = new AuditProgressTracker();
         t.queued(3L);
-        t.analyzerFinished(3L, "Trivy", "FALHOU", 0, 0, "timeout");
+        t.analyzerFinished(3L, "Trivy", AuditProgressTracker.Done.of("FALHOU", 0, 0, "timeout"));
         assertTrue(t.snapshot(3L).orElseThrow().events().stream().anyMatch(e -> e.message().equals("Trivy falhou: timeout")));
     }
 

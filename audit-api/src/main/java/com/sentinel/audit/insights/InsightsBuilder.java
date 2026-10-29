@@ -105,19 +105,7 @@ public final class InsightsBuilder {
         ProjectMap map = ctx == null ? null : ctx.projectMap();
         List<AnalyzerRunInfo> runs = ctx == null || ctx.analyzerRuns() == null ? List.of() : ctx.analyzerRuns();
 
-        // ---- agrupa por problema
-        Map<String, List<Finding>> groups = new LinkedHashMap<>();
-        for (Finding f : active) {
-            String key = f.getRuleId() != null && !f.getRuleId().isBlank() ? f.getRuleId() : "t:" + f.getTitle();
-            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(f);
-        }
-        List<DebtItem> debt = new ArrayList<>();
-        for (Map.Entry<String, List<Finding>> e : groups.entrySet()) {
-            debt.add(toItem(e.getKey(), e.getValue()));
-        }
-        debt.sort(Comparator.comparing(DebtItem::priority).thenComparing(Comparator.comparingInt(DebtItem::occurrences).reversed())
-                .thenComparing(DebtItem::problem));
-
+        List<DebtItem> debt = debtItems(active);
         Map<String, Integer> bySev = countBySeverity(active);
         List<AreaReport> areas = new ArrayList<>();
         for (AuditArea a : AuditArea.values()) {
@@ -134,9 +122,26 @@ public final class InsightsBuilder {
 
         List<String> unverified = unverified(areas, runs, map);
         String verdict = verdict(debt);
-        return new AuditInsights(summary(systemName, bySev, active.size(), areas, debt, verdict, unverified.size()), verdict,
+        Headline headline = new Headline(systemName, active.size(), verdict, unverified.size());
+        return new AuditInsights(summary(headline, bySev, areas, debt), verdict,
                 bySev, active.size(), areas, debt, topProblems, topImprovements, quickWins, critical, roadmap(debt),
                 unverified, runs, map);
+    }
+
+    /** Um item de dívida por problema (regra, ou título quando não há regra), do mais urgente ao menos. */
+    private static List<DebtItem> debtItems(List<Finding> active) {
+        Map<String, List<Finding>> groups = new LinkedHashMap<>();
+        for (Finding f : active) {
+            String key = f.getRuleId() != null && !f.getRuleId().isBlank() ? f.getRuleId() : "t:" + f.getTitle();
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(f);
+        }
+        List<DebtItem> debt = new ArrayList<>();
+        for (Map.Entry<String, List<Finding>> e : groups.entrySet()) {
+            debt.add(toItem(e.getKey(), e.getValue()));
+        }
+        debt.sort(Comparator.comparing(DebtItem::priority).thenComparing(Comparator.comparingInt(DebtItem::occurrences).reversed())
+                .thenComparing(DebtItem::problem));
+        return debt;
     }
 
     // ------------------------------------------------------------------ itens
@@ -149,15 +154,26 @@ public final class InsightsBuilder {
         String effort = rem != null && rem.effort() != null ? rem.effort() : "M";
         boolean estimated = rem == null || rem.effort() == null;
         String risk = rem != null && rem.regressionRisk() != null ? rem.regressionRisk() : null;
-        String recommendation = rem != null && rem.summary() != null ? rem.summary()
-                : first.getAiRecommendation() != null && !first.getAiRecommendation().isBlank() ? first.getAiRecommendation()
-                : "Revisar o trecho indicado e corrigir conforme a descrição do achado.";
-        String example = first.getFilePath() == null ? null
-                : first.getLineNumber() == null ? first.getFilePath() : first.getFilePath() + ":" + first.getLineNumber();
         String id = key.startsWith("t:") ? key.substring(2) : key;
         String title = first.getTitle() == null ? id : first.getTitle();
         return new DebtItem(id, title, area.name(), area.label(), sev, priorityOf(sev), priorityLabel(priorityOf(sev)),
-                list.size(), impact(area, sev), effort, estimated, risk, recommendation, example);
+                list.size(), impact(area, sev), effort, estimated, risk, recommendationOf(rem, first), exampleOf(first));
+    }
+
+    private static String recommendationOf(RemediationDto rem, Finding first) {
+        if (rem != null && rem.summary() != null) {
+            return rem.summary();
+        }
+        String ai = first.getAiRecommendation();
+        return ai != null && !ai.isBlank() ? ai : "Revisar o trecho indicado e corrigir conforme a descrição do achado.";
+    }
+
+    /** {@code arquivo:linha} do achado, só o arquivo sem linha, ou nulo sem arquivo. */
+    private static String exampleOf(Finding f) {
+        if (f.getFilePath() == null) {
+            return null;
+        }
+        return f.getLineNumber() == null ? f.getFilePath() : f.getFilePath() + ":" + f.getLineNumber();
     }
 
     static String priorityOf(Severity s) {
@@ -222,6 +238,25 @@ public final class InsightsBuilder {
         return m;
     }
 
+    /** Estado da área e a frase que o explica. */
+    private record AreaState(String state, String current) { }
+
+    private static AreaState areaState(boolean verified, int total, Map<String, Integer> sev) {
+        if (!verified && total == 0) {
+            return new AreaState("NAO_VERIFICADO", "Não foi possível verificar: nenhum analisador que cobre esta área executou.");
+        }
+        if (sev.get("CRITICAL") > 0 || sev.get("HIGH") >= CRITICAL_HIGH_COUNT) {
+            return new AreaState("CRITICO", total + " achado(s), incluindo " + sev.get("CRITICAL") + " crítico(s) e " + sev.get("HIGH") + " alto(s).");
+        }
+        if (sev.get("HIGH") > 0 || sev.get("MEDIUM") > 0) {
+            return new AreaState("ATENCAO", total + " achado(s): " + sev.get("HIGH") + " alto(s), " + sev.get("MEDIUM") + " médio(s).");
+        }
+        if (total > 0) {
+            return new AreaState("ATENCAO", total + " achado(s) de baixa gravidade.");
+        }
+        return new AreaState("SEM_ACHADOS", "Nenhum achado nas verificações automáticas desta área.");
+    }
+
     private static AreaReport areaReport(AuditArea area, List<DebtItem> allDebt, List<AnalyzerRunInfo> runs) {
         List<DebtItem> items = allDebt.stream().filter(d -> d.area().equals(area.name())).toList();
         Map<String, Integer> sev = new LinkedHashMap<>();
@@ -234,24 +269,9 @@ public final class InsightsBuilder {
             total += d.occurrences();
         }
         boolean verified = runs.isEmpty() || runs.stream().anyMatch(r -> r.ok() && COVERAGE.get(area).contains(r.name()));
-        String state;
-        String current;
-        if (!verified && total == 0) {
-            state = "NAO_VERIFICADO";
-            current = "Não foi possível verificar: nenhum analisador que cobre esta área executou.";
-        } else if (sev.get("CRITICAL") > 0 || sev.get("HIGH") >= CRITICAL_HIGH_COUNT) {
-            state = "CRITICO";
-            current = total + " achado(s), incluindo " + sev.get("CRITICAL") + " crítico(s) e " + sev.get("HIGH") + " alto(s).";
-        } else if (sev.get("HIGH") > 0 || sev.get("MEDIUM") > 0) {
-            state = "ATENCAO";
-            current = total + " achado(s): " + sev.get("HIGH") + " alto(s), " + sev.get("MEDIUM") + " médio(s).";
-        } else if (total > 0) {
-            state = "ATENCAO";
-            current = total + " achado(s) de baixa gravidade.";
-        } else {
-            state = "SEM_ACHADOS";
-            current = "Nenhum achado nas verificações automáticas desta área.";
-        }
+        AreaState st = areaState(verified, total, sev);
+        String state = st.state();
+        String current = st.current();
         List<String> problems = items.stream().limit(PROBLEMS_SHOWN)
                 .map(d -> d.problem() + " (" + d.occurrences() + "×, " + d.priority() + ")").toList();
         List<String> risks = items.stream().filter(d -> d.priority().equals("P0") || d.priority().equals("P1")).limit(RISKS_SHOWN)
@@ -321,41 +341,32 @@ public final class InsightsBuilder {
         return "APROVADO: sem pendências relevantes nas verificações automáticas";
     }
 
-    private static String summary(String system, Map<String, Integer> sev, int total, List<AreaReport> areas,
-                                  List<DebtItem> debt, String verdict, int unverified) {
+    /** Dados do cabeçalho do parecer: sistema, total de achados, veredito e pontos não verificados. */
+    private record Headline(String system, int total, String verdict, int unverified) { }
+
+    private static String summary(Headline h, Map<String, Integer> sev, List<AreaReport> areas, List<DebtItem> debt) {
         long p0 = debt.stream().filter(d -> d.priority().equals("P0")).count();
         long p1 = debt.stream().filter(d -> d.priority().equals("P1")).count();
         List<String> worst = areas.stream().filter(a -> a.total() > 0)
                 .sorted(Comparator.comparingInt((AreaReport a) -> -(a.bySeverity().get("CRITICAL") * 100 + a.bySeverity().get("HIGH") * 10 + a.bySeverity().get("MEDIUM"))))
                 .limit(WORST_AREAS_SHOWN).map(AreaReport::label).toList();
         StringBuilder sb = new StringBuilder();
-        sb.append(system == null ? "Auditoria" : "Auditoria de " + system).append(": ").append(total).append(" achado(s) ativo(s) (")
+        sb.append(h.system() == null ? "Auditoria" : "Auditoria de " + h.system()).append(": ").append(h.total()).append(" achado(s) ativo(s) (")
                 .append(sev.get("CRITICAL")).append(" críticos, ").append(sev.get("HIGH")).append(" altos, ")
                 .append(sev.get("MEDIUM")).append(" médios, ").append(sev.get("LOW") + sev.get("INFO")).append(" baixos/informativos). ");
-        sb.append("Parecer: ").append(verdict).append(". ");
+        sb.append("Parecer: ").append(h.verdict()).append(". ");
         if (!worst.isEmpty()) {
             sb.append("Áreas mais afetadas: ").append(String.join(", ", worst)).append(". ");
         }
         if (p0 + p1 > 0) {
             sb.append("Comece pela Fase 1 (").append(p0).append(" bloqueador(es)) e siga para os ").append(p1).append(" item(ns) de prioridade alta. ");
         }
-        sb.append(unverified).append(" ponto(s) não puderam ser verificados por análise estática (veja a lista).");
+        sb.append(h.unverified()).append(" ponto(s) não puderam ser verificados por análise estática (veja a lista).");
         return sb.toString();
     }
 
     private static List<String> unverified(List<AreaReport> areas, List<AnalyzerRunInfo> runs, ProjectMap map) {
-        List<String> out = new ArrayList<>();
-        for (AnalyzerRunInfo r : runs) {
-            if (!r.ok() && !"NAO_SUPORTADO".equals(r.status()) && !"SUBSTITUIDO".equals(r.status())) {
-                if (r.partial()) {
-                    out.add("Analisador " + r.name() + " terminou de forma parcial" + (r.note() == null ? "" : " (" + r.note() + ")")
-                            + ": o resultado pode estar incompleto — \"nenhum achado\" dele não prova ausência de problema");
-                    continue;
-                }
-                out.add("Analisador " + r.name() + " não executou (" + r.status().toLowerCase(Locale.ROOT) + (r.note() == null ? "" : ": " + r.note())
-                        + "): o que ele cobriria não foi verificado");
-            }
-        }
+        List<String> out = new ArrayList<>(analyzerGaps(runs));
         if (map != null && map.truncated()) {
             out.add("Repositório muito grande: o mapa do projeto foi truncado em " + ProjectProfiler.MAX_FILES + " arquivos");
         }
@@ -365,6 +376,24 @@ public final class InsightsBuilder {
             }
             for (String n : a.notVerified()) {
                 out.add(a.label() + ": " + n);
+            }
+        }
+        return out;
+    }
+
+    /** Uma frase por analisador que não rodou por inteiro (os não suportados e substituídos não contam). */
+    private static List<String> analyzerGaps(List<AnalyzerRunInfo> runs) {
+        List<String> out = new ArrayList<>();
+        for (AnalyzerRunInfo r : runs) {
+            if (r.ok() || "NAO_SUPORTADO".equals(r.status()) || "SUBSTITUIDO".equals(r.status())) {
+                continue;
+            }
+            if (r.partial()) {
+                out.add("Analisador " + r.name() + " terminou de forma parcial" + (r.note() == null ? "" : " (" + r.note() + ")")
+                        + ": o resultado pode estar incompleto — \"nenhum achado\" dele não prova ausência de problema");
+            } else {
+                out.add("Analisador " + r.name() + " não executou (" + r.status().toLowerCase(Locale.ROOT) + (r.note() == null ? "" : ": " + r.note())
+                        + "): o que ele cobriria não foi verificado");
             }
         }
         return out;

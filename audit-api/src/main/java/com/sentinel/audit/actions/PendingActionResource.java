@@ -1,5 +1,6 @@
 package com.sentinel.audit.actions;
 
+import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
@@ -17,6 +18,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /** Pedidos do Claude esperando uma pessoa: lista, aprova (e só então executa) ou recusa. */
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/pending-actions/{id}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

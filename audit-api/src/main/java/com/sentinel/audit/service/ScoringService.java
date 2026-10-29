@@ -118,15 +118,15 @@ public class ScoringService {
                        + (observability * DIMENSION_WEIGHT.get(Category.OBSERVABILITY))
                        + (performance   * DIMENSION_WEIGHT.get(Category.PERFORMANCE));
 
-        return new RiskScore(
-                round(overall),
-                round(security),
-                round(quality),
-                round(architecture),
-                round(dependencies),
-                round(observability),
-                round(performance)
-        );
+        RiskScore score = new RiskScore();
+        score.setOverall(round(overall));
+        score.setSecurity(round(security));
+        score.setQuality(round(quality));
+        score.setArchitecture(round(architecture));
+        score.setDependencies(round(dependencies));
+        score.setObservability(round(observability));
+        score.setPerformance(round(performance));
+        return score;
     }
 
     /** Fator (0,2 a 1,0) aplicado às penalidades que não são CRITICAL, conforme o tamanho do projeto. */
@@ -249,20 +249,10 @@ public class ScoringService {
     }
 
     private ScoreExplanationDto.Dimension explainDimension(List<Finding> findings, Category category, double factor) {
-        Map<String, Acc> accs = new LinkedHashMap<>();
-        for (Finding f : findings) {
-            if (f.getCategory() != category) {
-                continue;
-            }
-            String rule = f.getRuleId() == null ? "(sem regra)" : f.getRuleId();
-            Acc acc = accs.computeIfAbsent(rule + "|" + f.getSeverity(), k -> new Acc(rule, f.getSeverity()));
-            acc.count++;
-            acc.raw += findingPenalty(f);
-        }
         List<ScoreExplanationDto.Group> groups = new ArrayList<>();
         double critical = 0.0;
         double others = 0.0;
-        for (Acc a : accs.values()) {
+        for (Acc a : groupByRule(findings, category).values()) {
             boolean capCandidate = a.severity != Severity.CRITICAL && !"(sem regra)".equals(a.ruleId) && isLowSeverity(a.severity);
             double counted = capCandidate ? Math.min(a.raw, MAX_LOW_SEVERITY_PENALTY_PER_RULE) : a.raw;
             if (a.severity == Severity.CRITICAL) {
@@ -280,6 +270,21 @@ public class ScoringService {
         return new ScoreExplanationDto.Dimension(category, DIMENSION_WEIGHT.get(category),
                 round(calculateDimensionScore(findings, category, factor)), round(critical + others * factor), hidden,
                 List.copyOf(shown));
+    }
+
+    /** Agrupa os achados da categoria por regra e severidade, somando a penalidade de cada grupo. */
+    private Map<String, Acc> groupByRule(List<Finding> findings, Category category) {
+        Map<String, Acc> accs = new LinkedHashMap<>();
+        for (Finding f : findings) {
+            if (f.getCategory() != category) {
+                continue;
+            }
+            String rule = f.getRuleId() == null ? "(sem regra)" : f.getRuleId();
+            Acc acc = accs.computeIfAbsent(rule + "|" + f.getSeverity(), k -> new Acc(rule, f.getSeverity()));
+            acc.count++;
+            acc.raw += findingPenalty(f);
+        }
+        return accs;
     }
 
     /** Converte a penalidade total em nota (0 a 100) conforme a curva configurada. */

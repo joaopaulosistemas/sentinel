@@ -37,34 +37,13 @@ final class RemoteProbe {
             return new IngestionService.RepoCheck(false, null, null, e.getMessage());
         }
         String token = ingestion.resolveToken(tokenOverride);
-        boolean sendToken = !token.isBlank() && ingestion.isTokenHost(uri.getHost(), hosts);
+        Probe probe = new Probe(uri, branch, token, !token.isBlank() && ingestion.isTokenHost(uri.getHost(), hosts));
         Path logFile = null;
         try {
             Path basePath = Paths.get(ingestion.cloneBaseDir).toAbsolutePath().normalize();
             Files.createDirectories(basePath);
             logFile = Files.createTempFile(basePath, "git-check-", ".log");
-            List<String> command = new ArrayList<>(List.of("git", "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
-                    "ls-remote", "--symref", "--", uri.toString(), "HEAD"));
-            if (branch != null && !branch.isBlank()) {
-                command.add("refs/heads/" + branch);
-            }
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectErrorStream(true);
-            pb.redirectOutput(logFile.toFile());
-            ingestion.configureEnvironment(pb.environment(), sendToken ? token : null);
-            Process process = pb.start();
-            if (!process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                process.destroyForcibly();
-                return new IngestionService.RepoCheck(false, null, null, "O repositório não respondeu em " + CHECK_TIMEOUT_SECONDS + "s");
-            }
-            String output = Files.readString(logFile, StandardCharsets.UTF_8);
-            if (process.exitValue() != 0) {
-                return new IngestionService.RepoCheck(false, null, null, friendlyGitError(ingestion.readTail(logFile, token)));
-            }
-            String defaultBranch = parseDefaultBranch(output);
-            Boolean branchFound = branch == null || branch.isBlank() ? null : branchListed(output, branch);
-            String target = branch != null && !branch.isBlank() && Boolean.TRUE.equals(branchFound) ? branch : defaultBranch;
-            return new IngestionService.RepoCheck(true, defaultBranch, branchFound, null, countFiles(uri.toString(), target, sendToken ? token : null));
+            return lsRemote(probe, logFile);
         } catch (IOException e) {
             return new IngestionService.RepoCheck(false, null, null, "Não foi possível executar o git neste servidor");
         } catch (InterruptedException e) {
@@ -73,6 +52,43 @@ final class RemoteProbe {
         } finally {
             ingestion.deleteQuietly(logFile);
         }
+    }
+
+    /** O que se confere: repositório, branch pedida e a credencial (só enviada a hosts permitidos). */
+    private record Probe(URI uri, String branch, String token, boolean sendToken) {
+        boolean hasBranch() {
+            return branch != null && !branch.isBlank();
+        }
+
+        String tokenToSend() {
+            return sendToken ? token : null;
+        }
+    }
+
+    private IngestionService.RepoCheck lsRemote(Probe probe, Path logFile) throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>(List.of("git", "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
+                "ls-remote", "--symref", "--", probe.uri().toString(), "HEAD"));
+        if (probe.hasBranch()) {
+            command.add("refs/heads/" + probe.branch());
+        }
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(logFile.toFile());
+        ingestion.configureEnvironment(pb.environment(), probe.tokenToSend());
+        Process process = pb.start();
+        if (!process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+            process.destroyForcibly();
+            return new IngestionService.RepoCheck(false, null, null, "O repositório não respondeu em " + CHECK_TIMEOUT_SECONDS + "s");
+        }
+        String output = Files.readString(logFile, StandardCharsets.UTF_8);
+        if (process.exitValue() != 0) {
+            return new IngestionService.RepoCheck(false, null, null, friendlyGitError(ingestion.readTail(logFile, probe.token())));
+        }
+        String defaultBranch = parseDefaultBranch(output);
+        Boolean branchFound = probe.hasBranch() ? branchListed(output, probe.branch()) : null;
+        String target = probe.hasBranch() && Boolean.TRUE.equals(branchFound) ? probe.branch() : defaultBranch;
+        return new IngestionService.RepoCheck(true, defaultBranch, branchFound, null,
+                countFiles(probe.uri().toString(), target, probe.tokenToSend()));
     }
 
     /**

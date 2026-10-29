@@ -163,13 +163,14 @@ public class SecretsAnalyzer implements CodeAnalyzer {
     private List<Finding> scanFile(Path root, Path file, AuditRun auditRun) {
         List<Finding> findings = new ArrayList<>();
         List<String> lines = readLines(file);
+        Path relative = root.relativize(file);
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
             if (line.length() > MAX_LINE_LENGTH) {
                 continue;
             }
             for (SecretMatch match : findSecrets(line)) {
-                findings.add(buildFinding(root, file, i + 1, line, match.value(), match.pattern(), auditRun));
+                findings.add(buildFinding(relative, i + 1, line, match, auditRun));
             }
         }
         return findings;
@@ -226,15 +227,16 @@ public class SecretsAnalyzer implements CodeAnalyzer {
         return value == null || value.isBlank() || PLACEHOLDER.matcher(value).find();
     }
 
-    private Finding buildFinding(Path root, Path file, int lineNumber, String line, String value,
-                                 SecretPattern pattern, AuditRun auditRun) {
-        String relativePath = root.relativize(file).toString();
+    private Finding buildFinding(Path relative, int lineNumber, String line, SecretMatch match, AuditRun auditRun) {
+        SecretPattern pattern = match.pattern();
+        String value = match.value();
+        String relativePath = relative.toString();
         Finding f = new Finding();
         f.setAuditRun(auditRun);
         f.setCategory(Category.SECURITY);
         f.setSeverity(pattern.severity());
         f.setTitle(pattern.description());
-        f.setDescription("Segredo potencial encontrado no arquivo " + file.getFileName() +
+        f.setDescription("Segredo potencial encontrado no arquivo " + relative.getFileName() +
                 " (linha " + lineNumber + "). Mova credenciais para variáveis de ambiente ou cofre de segredos, " +
                 "e revogue/rotacione o segredo caso ele seja real.");
         f.setFilePath(relativePath);

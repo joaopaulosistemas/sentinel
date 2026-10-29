@@ -38,6 +38,28 @@ import type {
 // VITE_API_URL só é necessário se a API estiver em outro host (e então exige CORS).
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
+/** A API devolve mensagens úteis (validação, regra de negócio); mostra em vez de só o código HTTP. */
+async function readErrorDetail(res: Response): Promise<string> {
+  let raw = '';
+  try {
+    raw = await res.text();
+    return detailFromJson(JSON.parse(raw));
+  } catch {
+    // Corpo que não é JSON: se for um texto curto, é a própria mensagem do servidor.
+    return isShortPlainText(raw) ? raw.trim() : '';
+  }
+}
+
+function detailFromJson(body: { message?: string; title?: string; detail?: string; violations?: unknown } | null): string {
+  const detail = body?.message || body?.title || body?.detail || '';
+  if (detail || !Array.isArray(body?.violations)) return detail;
+  return body.violations.map((v: { message?: string }) => v.message).filter(Boolean).join('; ');
+}
+
+function isShortPlainText(raw: string): boolean {
+  return raw !== '' && raw.length <= 300 && !raw.trimStart().startsWith('<');
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -46,20 +68,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     signal: options?.signal ?? AbortSignal.timeout(30_000),
   });
   if (!res.ok) {
-    // A API devolve mensagens úteis (validação, regra de negócio); mostra em vez de só o código HTTP.
-    let detail = '';
-    let raw = '';
-    try {
-      raw = await res.text();
-      const body = JSON.parse(raw);
-      detail = body?.message || body?.title || body?.detail || '';
-      if (!detail && Array.isArray(body?.violations)) {
-        detail = body.violations.map((v: { message?: string }) => v.message).filter(Boolean).join('; ');
-      }
-    } catch {
-      // Corpo que não é JSON: se for um texto curto, é a própria mensagem do servidor.
-      if (raw && raw.length <= 300 && !raw.trimStart().startsWith('<')) detail = raw.trim();
-    }
+    const detail = await readErrorDetail(res);
     throw new Error(detail || `HTTP ${res.status}: ${res.statusText}`);
   }
   // 204 e respostas aceitas sem corpo (ex.: 202 do reinício da API) não têm JSON para ler.

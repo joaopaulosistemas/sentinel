@@ -1,0 +1,3 @@
+# Carregado (source) pelo entrypoint do nginx antes do envsubst: garante que API_KEY exista (vazia)
+# sem gravar nenhum valor padrão de segredo na imagem.
+export API_KEY="${API_KEY-}"

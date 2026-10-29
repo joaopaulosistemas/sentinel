@@ -12,20 +12,18 @@ interface Props {
   onStarted?: (run: AuditRunResponse) => void;
 }
 
-/** Pede o branch, dispara a auditoria e leva para o acompanhamento. */
-export function StartAuditModal({ system, onClose, onStarted }: Props) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [branch, setBranch] = useState('main');
+type AuditTarget = NonNullable<Props['system']>;
 
+/** Branch inicial: a agendada (ou main); em pasta local, cai na branch atual da pasta se "main" não existir lá. */
+function useInitialBranch(system: Props['system'], setBranch: (b: string) => void): void {
   useEffect(() => {
     if (!system) return;
     setBranch(system.scheduledBranch || 'main');
-    if (system.sourceType !== 'LOCAL_PATH' || !system.localPath) return;
+    if (!isLocalWithPath(system)) return;
     // Pasta local: a branch padrão ("main") pode nem existir lá. Se não existir, usa a branch atual da pasta.
     let ativo = true;
     api
-      .checkPath(system.localPath, system.scheduledBranch || 'main')
+      .checkPath(system.localPath as string, system.scheduledBranch || 'main')
       .then((c) => {
         if (ativo && c.ok && c.branchFound === false && c.defaultBranch) setBranch(c.defaultBranch);
       })
@@ -33,7 +31,20 @@ export function StartAuditModal({ system, onClose, onStarted }: Props) {
     return () => {
       ativo = false;
     };
-  }, [system]);
+  }, [system, setBranch]);
+}
+
+function isLocalWithPath(system: AuditTarget): boolean {
+  return system.sourceType === 'LOCAL_PATH' && !!system.localPath;
+}
+
+/** Pede o branch, dispara a auditoria e leva para o acompanhamento. */
+export function StartAuditModal({ system, onClose, onStarted }: Props) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [branch, setBranch] = useState('main');
+
+  useInitialBranch(system, setBranch);
 
   const mutation = useMutation({
     mutationFn: (vars: { systemId: number; branch: string }) =>

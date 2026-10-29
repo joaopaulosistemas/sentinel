@@ -34,16 +34,29 @@ export interface RuleSources {
 /** Junta catálogo dos pacotes, regras vistas na última auditoria, ajustes e plano de correção numa lista só. */
 export function buildRuleRows({ catalog = [], known, profileRules, adjusted, plan }: RuleSources): RuleRow[] {
   const rows = new Map<string, RuleRow>();
-  const ensure = (id: string): RuleRow => {
-    const key = shortRuleId(id);
-    let row = rows.get(key);
-    if (!row) {
-      row = { id: key, title: null, pack: null, declared: null, category: null, count: 0, gain: null, inProfile: false };
-      rows.set(key, row);
-    }
-    return row;
-  };
+  const ensure = (id: string): RuleRow => ensureRow(rows, id);
 
+  applyCatalog(catalog, ensure);
+  for (const k of known) {
+    ensure(k.id).count += k.count;
+  }
+  applyPlan(plan, ensure);
+  for (const p of profileRules) ensure(p.id).inProfile = true;
+  for (const a of adjusted) ensure(a.id);
+  return [...rows.values()];
+}
+
+function ensureRow(rows: Map<string, RuleRow>, id: string): RuleRow {
+  const key = shortRuleId(id);
+  let row = rows.get(key);
+  if (!row) {
+    row = { id: key, title: null, pack: null, declared: null, category: null, count: 0, gain: null, inProfile: false };
+    rows.set(key, row);
+  }
+  return row;
+}
+
+function applyCatalog(catalog: NonNullable<RuleSources['catalog']>, ensure: (id: string) => RuleRow): void {
   for (const c of catalog) {
     const row = ensure(c.id);
     row.title = c.message ?? row.title;
@@ -51,18 +64,15 @@ export function buildRuleRows({ catalog = [], known, profileRules, adjusted, pla
     row.declared = c.severity ?? null;
     row.category = c.category ?? null;
   }
-  for (const k of known) {
-    ensure(k.id).count += k.count;
-  }
+}
+
+function applyPlan(plan: FixPlanItem[], ensure: (id: string) => RuleRow): void {
   for (const item of plan) {
     if (!item.ruleId) continue;
     const row = ensure(item.ruleId);
     row.title = row.title ?? item.title;
     row.gain = (row.gain ?? 0) + item.scoreGain;
   }
-  for (const p of profileRules) ensure(p.id).inProfile = true;
-  for (const a of adjusted) ensure(a.id);
-  return [...rows.values()];
 }
 
 export type RuleScope = 'all' | 'seen' | 'adjusted';

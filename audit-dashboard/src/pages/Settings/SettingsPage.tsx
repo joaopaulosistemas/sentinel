@@ -120,8 +120,11 @@ function SettingRow({ s, value, onChange, onReset, showSection }: RowProps) {
   );
 }
 
-/** Tela de Configurações: as variáveis de ambiente da instalação, explicadas e editáveis (quando é seguro). */
-export function SettingsPage() {
+type SettingsQuery = ReturnType<typeof useSettings>;
+type SetNotice = (n: Notice | null) => void;
+
+/** Reinício da API: pedido, espera pela volta (consultando a cada POLL_MS) e o aviso de tela cheia. */
+function useRestartFlow(setNotice: SetNotice) {
   const [restarting, setRestarting] = useState(false);
   // O pedido de reinício está a caminho. Estado próprio (e não restart.isPending) para o aviso não piscar entre o pedido e a espera.
   const [requesting, setRequesting] = useState(false);
@@ -129,20 +132,9 @@ export function SettingsPage() {
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   // Muda a cada "Continuar esperando" para o aviso recomeçar o cronômetro.
   const [waitRound, setWaitRound] = useState(0);
+  const [confirm, setConfirm] = useState(false);
   const query = useSettings(restarting ? POLL_MS : false);
-  const save = useSaveSettings();
-  const reset = useResetSetting();
   const restart = useRestartApi();
-  const [section, setSection] = useState(SETTINGS_SECTIONS[0].id);
-  const [search, setSearch] = useState('');
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const [confirmRestart, setConfirmRestart] = useState(false);
-
-  const settings = useMemo(() => query.data?.settings ?? [], [query.data]);
-  const changes = pendingChanges(settings, drafts);
-  const changedCount = Object.keys(changes).length;
-  const invalid = hasInvalidChange(settings, changes);
   const restartRequired = query.data?.restartRequired ?? false;
 
   // A API voltou depois do reinício: a resposta nova não pede mais reinício.
@@ -151,11 +143,46 @@ export function SettingsPage() {
       setRestarting(false);
       setNotice({ kind: 'success', title: 'API reiniciada', text: 'As configurações salvas já estão em uso.' });
     }
-  }, [restarting, query.isSuccess, query.isFetching, restartRequired]);
+  }, [restarting, query.isSuccess, query.isFetching, restartRequired, setNotice]);
 
-  const list = filterSettings(settings, section, search);
-  const groups = groupSettings(list);
-  const searching = search.trim() !== '';
+  const onRestart = () => {
+    setConfirm(false);
+    setOverlayDismissed(false);
+    setWaitRound(0);
+    setRequesting(true);
+    restart.mutate(undefined, {
+      onSuccess: () => {
+        setNotice({ kind: 'info', title: 'Reiniciando a API', text: 'A tela volta a responder em instantes.' });
+        setRequesting(false);
+        setRestarting(true);
+      },
+      onError: (e: Error) => {
+        setRequesting(false);
+        setNotice({ kind: 'error', title: 'Não foi possível reiniciar', text: e.message });
+      },
+    });
+  };
+
+  return {
+    query,
+    restarting,
+    restartRequired,
+    confirm,
+    setConfirm,
+    onRestart,
+    showOverlay: (requesting || restarting) && !overlayDismissed,
+    waitRound,
+    keepWaiting: () => setWaitRound((r) => r + 1),
+    dismissOverlay: () => setOverlayDismissed(true),
+  };
+}
+
+/** Rascunhos da tela: o que foi digitado, salvar, descartar e voltar ao valor do ambiente. */
+function useSettingsEditor(settings: SettingView[], setNotice: SetNotice) {
+  const save = useSaveSettings();
+  const reset = useResetSetting();
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const changes = pendingChanges(settings, drafts);
 
   const onChange = (key: string, value: string) => {
     setNotice(null);
@@ -180,33 +207,31 @@ export function SettingsPage() {
       onError: (e: Error) => setNotice({ kind: 'error', title: 'Não foi possível restaurar', text: e.message }),
     });
   };
-  const showRestartOverlay = (requesting || restarting) && !overlayDismissed;
-  const onRestart = () => {
-    setConfirmRestart(false);
-    setOverlayDismissed(false);
-    setWaitRound(0);
-    setRequesting(true);
-    restart.mutate(undefined, {
-      onSuccess: () => {
-        setNotice({ kind: 'info', title: 'Reiniciando a API', text: 'A tela volta a responder em instantes.' });
-        setRequesting(false);
-        setRestarting(true);
-      },
-      onError: (e: Error) => {
-        setRequesting(false);
-        setNotice({ kind: 'error', title: 'Não foi possível reiniciar', text: e.message });
-      },
-    });
+
+  return {
+    drafts,
+    changedCount: Object.keys(changes).length,
+    invalid: hasInvalidChange(settings, changes),
+    saving: save.isPending,
+    onChange,
+    onSave,
+    onReset,
+    discard: () => setDrafts({}),
   };
+}
 
+interface BannersProps {
+  query: SettingsQuery;
+  restarting: boolean;
+  restartRequired: boolean;
+  notice: Notice | null;
+  onAskRestart: () => void;
+  onCloseNotice: () => void;
+}
+
+function SettingsBanners({ query, restarting, restartRequired, notice, onAskRestart, onCloseNotice }: BannersProps) {
   return (
-    <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Configurações' }]}>
-      <h1 style={{ margin: '8px 0 4px', fontSize: 28, fontWeight: 400 }}>Configurações</h1>
-      <p style={{ margin: '0 0 24px', color: 'var(--s-text-2)', maxWidth: 760 }}>
-        Tudo que antes ficava em <code>.env</code> e em <code>application.properties</code>, com a explicação ao lado.
-        O que muda o acesso ao servidor (banco, chaves, caminhos e execução de programas) aparece só para leitura.
-      </p>
-
+    <>
       {query.isError && !restarting && (
         <InlineNotification kind="error" lowContrast hideCloseButton title="Não foi possível carregar as configurações" subtitle={(query.error as Error).message} />
       )}
@@ -220,90 +245,166 @@ export function SettingsPage() {
           title="Há configurações salvas aguardando reinício"
           subtitle="A API só lê as configurações ao subir."
           actionButtonLabel="Reiniciar a API"
-          onActionButtonClick={() => setConfirmRestart(true)}
+          onActionButtonClick={onAskRestart}
         />
       )}
       {notice && !restarting && (
-        <InlineNotification kind={notice.kind} lowContrast title={notice.title} subtitle={notice.text} onCloseButtonClick={() => setNotice(null)} />
+        <InlineNotification kind={notice.kind} lowContrast title={notice.title} subtitle={notice.text} onCloseButtonClick={onCloseNotice} />
       )}
+    </>
+  );
+}
+
+function SectionNav({ settings, section, searching, onPick }: { settings: SettingView[]; section: string; searching: boolean; onPick: (id: string) => void }) {
+  return (
+    <nav aria-label="Seções de configuração" style={{ flex: '0 0 230px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {SETTINGS_SECTIONS.map((sec) => {
+        const active = !searching && section === sec.id;
+        return (
+          <button
+            key={sec.id}
+            type="button"
+            aria-current={active ? 'true' : undefined}
+            onClick={() => onPick(sec.id)}
+            style={{
+              all: 'unset', boxSizing: 'border-box', cursor: 'pointer', minHeight: 40, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', gap: 8,
+              borderLeft: `3px solid ${active ? '#0f62fe' : 'transparent'}`, background: active ? 'var(--s-selected)' : 'transparent', fontWeight: active ? 600 : 400,
+            }}
+          >
+            <span>{sec.label}</span>
+            <span style={{ color: 'var(--s-text-3)', fontSize: 12 }}>{sectionCount(settings, sec.id)}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SectionHeader({ searching, section, found }: { searching: boolean; section: string; found: number }) {
+  const title = searching ? 'Resultados da busca' : sectionLabel(section);
+  const hint = searching ? `${found} configuração(ões) encontrada(s)` : SETTINGS_SECTIONS.find((x) => x.id === section)?.hint;
+  return (
+    <>
+      <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 400 }}>{title}</h2>
+      <p style={{ margin: '0 0 8px', color: 'var(--s-text-3)', fontSize: 13 }}>{hint}</p>
+    </>
+  );
+}
+
+const groupTitleStyle = { fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--s-text-3)', margin: '8px 0 0' } as const;
+
+interface SectionBodyProps {
+  loading: boolean;
+  list: SettingView[];
+  searching: boolean;
+  drafts: Record<string, string>;
+  onChange: RowProps['onChange'];
+  onReset: RowProps['onReset'];
+}
+
+function SectionBody({ loading, list, searching, drafts, onChange, onReset }: SectionBodyProps) {
+  if (loading) return <p>Carregando…</p>;
+  if (list.length === 0) return <p style={{ padding: '16px 0' }}>Nenhuma configuração encontrada.</p>;
+  return (
+    <>
+      {groupSettings(list).map((g) => (
+        <div key={g.group} style={{ marginBottom: 16 }}>
+          {!searching && <div style={groupTitleStyle}>{g.group}</div>}
+          {g.items.map((s) => (
+            <SettingRow key={s.key} s={s} value={currentValue(s, drafts)} onChange={onChange} onReset={onReset} showSection={searching} />
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function SaveBar({ changedCount, disableSave, onDiscard, onSave }: { changedCount: number; disableSave: boolean; onDiscard: () => void; onSave: () => void }) {
+  return (
+    <div style={{ position: 'sticky', bottom: 0, background: 'var(--s-surface)', borderTop: '1px solid var(--s-border)', padding: '12px 0', marginTop: 16, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <span role="status" style={{ fontSize: 14 }}>
+        {changedCount === 0 ? 'Nenhuma alteração pendente.' : `${changedCount} alteração(ões) não salva(s).`}
+      </span>
+      <span style={{ display: 'flex', gap: 8 }}>
+        <Button kind="secondary" disabled={changedCount === 0} onClick={onDiscard}>Descartar</Button>
+        <Button kind="primary" disabled={changedCount === 0 || disableSave} onClick={onSave}>Salvar alterações</Button>
+      </span>
+    </div>
+  );
+}
+
+function RestartConfirm({ open, onClose, onConfirm }: { open: boolean; onClose: () => void; onConfirm: () => void }) {
+  return (
+    <Modal
+      open={open}
+      danger
+      modalHeading="Reiniciar a API?"
+      modalLabel="Configurações"
+      primaryButtonText="Reiniciar"
+      secondaryButtonText="Cancelar"
+      onRequestClose={onClose}
+      onRequestSubmit={onConfirm}
+      size="sm"
+    >
+      <p>A API fica fora do ar por alguns segundos. Auditorias em andamento são interrompidas.</p>
+    </Modal>
+  );
+}
+
+/** Tela de Configurações: as variáveis de ambiente da instalação, explicadas e editáveis (quando é seguro). */
+export function SettingsPage() {
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const flow = useRestartFlow(setNotice);
+  const { query } = flow;
+  const [section, setSection] = useState(SETTINGS_SECTIONS[0].id);
+  const [search, setSearch] = useState('');
+
+  const settings = useMemo(() => query.data?.settings ?? [], [query.data]);
+  const editor = useSettingsEditor(settings, setNotice);
+
+  const list = filterSettings(settings, section, search);
+  const searching = search.trim() !== '';
+
+  return (
+    <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Configurações' }]}>
+      <h1 style={{ margin: '8px 0 4px', fontSize: 28, fontWeight: 400 }}>Configurações</h1>
+      <p style={{ margin: '0 0 24px', color: 'var(--s-text-2)', maxWidth: 760 }}>
+        Tudo que antes ficava em <code>.env</code> e em <code>application.properties</code>, com a explicação ao lado.
+        O que muda o acesso ao servidor (banco, chaves, caminhos e execução de programas) aparece só para leitura.
+      </p>
+
+      <SettingsBanners
+        query={query}
+        restarting={flow.restarting}
+        restartRequired={flow.restartRequired}
+        notice={notice}
+        onAskRestart={() => flow.setConfirm(true)}
+        onCloseNotice={() => setNotice(null)}
+      />
 
       <div style={{ margin: '16px 0' }}>
         <Search id="settings-search" labelText="Buscar configuração" placeholder="Buscar por nome, variável ou descrição (ex.: trivy, timeout)" value={search} onChange={(e) => setSearch(e.target.value)} size="lg" />
       </div>
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <nav aria-label="Seções de configuração" style={{ flex: '0 0 230px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {SETTINGS_SECTIONS.map((sec) => {
-            const active = !searching && section === sec.id;
-            return (
-              <button
-                key={sec.id}
-                type="button"
-                aria-current={active ? 'true' : undefined}
-                onClick={() => { setSearch(''); setSection(sec.id); }}
-                style={{
-                  all: 'unset', boxSizing: 'border-box', cursor: 'pointer', minHeight: 40, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', gap: 8,
-                  borderLeft: `3px solid ${active ? '#0f62fe' : 'transparent'}`, background: active ? 'var(--s-selected)' : 'transparent', fontWeight: active ? 600 : 400,
-                }}
-              >
-                <span>{sec.label}</span>
-                <span style={{ color: 'var(--s-text-3)', fontSize: 12 }}>{sectionCount(settings, sec.id)}</span>
-              </button>
-            );
-          })}
-        </nav>
-
+        <SectionNav settings={settings} section={section} searching={searching} onPick={(id) => { setSearch(''); setSection(id); }} />
         <section aria-label={searching ? 'Resultados da busca' : sectionLabel(section)} style={{ flex: '1 1 560px', minWidth: 0 }}>
-          <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 400 }}>{searching ? 'Resultados da busca' : sectionLabel(section)}</h2>
-          <p style={{ margin: '0 0 8px', color: 'var(--s-text-3)', fontSize: 13 }}>
-            {searching ? `${list.length} configuração(ões) encontrada(s)` : SETTINGS_SECTIONS.find((x) => x.id === section)?.hint}
-          </p>
-          {query.isLoading && <p>Carregando…</p>}
-          {!query.isLoading && list.length === 0 && <p style={{ padding: '16px 0' }}>Nenhuma configuração encontrada.</p>}
-          {groups.map((g) => (
-            <div key={g.group} style={{ marginBottom: 16 }}>
-              {!searching && <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--s-text-3)', margin: '8px 0 0' }}>{g.group}</div>}
-              {g.items.map((s) => (
-                <SettingRow key={s.key} s={s} value={currentValue(s, drafts)} onChange={onChange} onReset={onReset} showSection={searching} />
-              ))}
-            </div>
-          ))}
+          <SectionHeader searching={searching} section={section} found={list.length} />
+          <SectionBody loading={query.isLoading} list={list} searching={searching} drafts={editor.drafts} onChange={editor.onChange} onReset={editor.onReset} />
         </section>
       </div>
 
-      <div style={{ position: 'sticky', bottom: 0, background: 'var(--s-surface)', borderTop: '1px solid var(--s-border)', padding: '12px 0', marginTop: 16, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        <span role="status" style={{ fontSize: 14 }}>
-          {changedCount === 0 ? 'Nenhuma alteração pendente.' : `${changedCount} alteração(ões) não salva(s).`}
-        </span>
-        <span style={{ display: 'flex', gap: 8 }}>
-          <Button kind="secondary" disabled={changedCount === 0} onClick={() => setDrafts({})}>Descartar</Button>
-          <Button kind="primary" disabled={changedCount === 0 || invalid || save.isPending} onClick={onSave}>Salvar alterações</Button>
-        </span>
-      </div>
+      <SaveBar changedCount={editor.changedCount} disableSave={editor.invalid || editor.saving} onDiscard={editor.discard} onSave={editor.onSave} />
+      <RestartConfirm open={flow.confirm} onClose={() => flow.setConfirm(false)} onConfirm={flow.onRestart} />
 
-      <Modal
-        open={confirmRestart}
-        danger
-        modalHeading="Reiniciar a API?"
-        modalLabel="Configurações"
-        primaryButtonText="Reiniciar"
-        secondaryButtonText="Cancelar"
-        onRequestClose={() => setConfirmRestart(false)}
-        onRequestSubmit={onRestart}
-        size="sm"
-      >
-        <p>A API fica fora do ar por alguns segundos. Auditorias em andamento são interrompidas.</p>
-      </Modal>
-
-      {showRestartOverlay && (
+      {flow.showOverlay && (
         <RestartOverlay
-          key={waitRound}
-          phase={restarting ? 'waiting' : 'requesting'}
-          onKeepWaiting={() => setWaitRound((r) => r + 1)}
-          onClose={() => setOverlayDismissed(true)}
+          key={flow.waitRound}
+          phase={flow.restarting ? 'waiting' : 'requesting'}
+          onKeepWaiting={flow.keepWaiting}
+          onClose={flow.dismissOverlay}
         />
       )}
     </PageShell>
   );
 }
-

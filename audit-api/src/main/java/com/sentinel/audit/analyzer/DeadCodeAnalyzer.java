@@ -71,19 +71,11 @@ public class DeadCodeAnalyzer implements CodeAnalyzer {
         for (Unused u : unused) {
             String snippet = "export " + u.kind() + " " + u.name();
             if (u.usedInside()) {
-                out.add(StructuralFindings.make(run, ANALYZER_NAME, "sentinel-morto-export-interno", Severity.INFO,
-                        Category.QUALITY, u.file(), u.line(),
-                        "Export desnecessário: " + u.name(),
-                        u.name() + " é exportado, mas nenhum outro arquivo o usa. Tire o `export` para deixar claro o que é "
-                                + "interface do módulo e o que é detalhe.",
-                        snippet));
+                out.add(StructuralFindings.make(run, new StructuralFindings.Kind(ANALYZER_NAME, "sentinel-morto-export-interno", Severity.INFO, Category.QUALITY), new StructuralFindings.Spot(u.file(), u.line(), snippet), "Export desnecessário: " + u.name(), u.name() + " é exportado, mas nenhum outro arquivo o usa. Tire o `export` para deixar claro o que é "
+                                + "interface do módulo e o que é detalhe."));
             } else {
-                out.add(StructuralFindings.make(run, ANALYZER_NAME, "sentinel-morto-export", Severity.LOW,
-                        Category.QUALITY, u.file(), u.line(),
-                        "Código morto: " + u.name() + " não é usado em lugar nenhum",
-                        u.name() + " é exportado e nenhum arquivo do projeto, nem de teste, o menciona. Remova, ou confirme "
-                                + "que ele é chamado de fora (por nome, por framework ou por outro repositório) antes de apagar.",
-                        snippet));
+                out.add(StructuralFindings.make(run, new StructuralFindings.Kind(ANALYZER_NAME, "sentinel-morto-export", Severity.LOW, Category.QUALITY), new StructuralFindings.Spot(u.file(), u.line(), snippet), "Código morto: " + u.name() + " não é usado em lugar nenhum", u.name() + " é exportado e nenhum arquivo do projeto, nem de teste, o menciona. Remova, ou confirme "
+                                + "que ele é chamado de fora (por nome, por framework ou por outro repositório) antes de apagar."));
             }
         }
         return out;

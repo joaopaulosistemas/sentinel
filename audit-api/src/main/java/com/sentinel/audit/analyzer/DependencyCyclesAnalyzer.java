@@ -65,14 +65,10 @@ public class DependencyCyclesAnalyzer implements CodeAnalyzer {
             if (out.size() >= max) {
                 break;
             }
-            out.add(StructuralFindings.make(run, ANALYZER_NAME, "sentinel-arq-ciclo-pacotes", severity(cycle.size()),
-                    Category.ARCHITECTURE, fileOf.getOrDefault(cycle.get(0), "."), 1,
-                    "Ciclo de dependência entre " + cycle.size() + " pacotes",
-                    "Estes pacotes se importam em círculo, então não dá para entender, testar nem trocar um sem os outros: "
+            out.add(StructuralFindings.make(run, new StructuralFindings.Kind(ANALYZER_NAME, "sentinel-arq-ciclo-pacotes", severity(cycle.size()), Category.ARCHITECTURE), new StructuralFindings.Spot(fileOf.getOrDefault(cycle.get(0), "."), 1, String.join(",", cycle)), "Ciclo de dependência entre " + cycle.size() + " pacotes", "Estes pacotes se importam em círculo, então não dá para entender, testar nem trocar um sem os outros: "
                             + StructuralFindings.summarize(cycle, SUMMARY_MEMBERS) + ". Escolha o sentido da dependência (quem conhece quem) "
                             + "e quebre a volta: extraia a interface para o pacote de quem é dependido ou mova o que é "
-                            + "compartilhado para um pacote que ninguém do ciclo importe de volta.",
-                    String.join(",", cycle)));
+                            + "compartilhado para um pacote que ninguém do ciclo importe de volta."));
         }
         return out;
     }
@@ -83,13 +79,9 @@ public class DependencyCyclesAnalyzer implements CodeAnalyzer {
             if (out.size() >= max) {
                 break;
             }
-            out.add(StructuralFindings.make(run, ANALYZER_NAME, "sentinel-arq-ciclo-arquivos", severity(cycle.size()),
-                    Category.ARCHITECTURE, cycle.get(0), 1,
-                    "Ciclo de importação entre " + cycle.size() + " arquivos",
-                    "Estes arquivos se importam em círculo: " + StructuralFindings.summarize(cycle, SUMMARY_MEMBERS) + ". Um ciclo pode "
+            out.add(StructuralFindings.make(run, new StructuralFindings.Kind(ANALYZER_NAME, "sentinel-arq-ciclo-arquivos", severity(cycle.size()), Category.ARCHITECTURE), new StructuralFindings.Spot(cycle.get(0), 1, String.join(",", cycle)), "Ciclo de importação entre " + cycle.size() + " arquivos", "Estes arquivos se importam em círculo: " + StructuralFindings.summarize(cycle, SUMMARY_MEMBERS) + ". Um ciclo pode "
                             + "carregar o módulo pela metade (valor indefinido em tempo de execução) e atrapalha testes e "
-                            + "divisão do código. Mova o que é compartilhado para um arquivo que nenhum dos dois importe de volta.",
-                    String.join(",", cycle)));
+                            + "divisão do código. Mova o que é compartilhado para um arquivo que nenhum dos dois importe de volta."));
         }
         return out;
     }

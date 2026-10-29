@@ -68,27 +68,31 @@ public final class PathGlobs {
         while (i < p.length()) {
             char c = p.charAt(i);
             if (c == '*') {
-                if (i + 1 < p.length() && p.charAt(i + 1) == '*') {
-                    i++;
-                    // "**/" também casa "nada" (a/**/b casa a/b)
-                    if (i + 1 < p.length() && p.charAt(i + 1) == '/') {
-                        i++;
-                        re.append("(?:.*/)?");
-                    } else {
-                        re.append(".*");
-                    }
-                } else {
-                    re.append("[^/]*");
-                }
-            } else if (c == '?') {
-                re.append("[^/]");
+                i = appendStar(p, i, re);
             } else {
-                re.append(Pattern.quote(String.valueOf(c)));
+                re.append(c == '?' ? "[^/]" : Pattern.quote(String.valueOf(c)));
             }
             i++;
         }
         // casou uma pasta: vale também para tudo dentro dela (como no .gitignore)
         re.append("(?:/.*)?");
         return re.toString();
+    }
+
+    /** Traduz o {@code *} (ou {@code **}) em {@code i}; devolve o índice do último caractere consumido. */
+    private static int appendStar(String p, int i, StringBuilder re) {
+        if (i + 1 >= p.length() || p.charAt(i + 1) != '*') {
+            re.append("[^/]*");
+            return i;
+        }
+        int next = i + 1;
+        // "**/" também casa "nada" (a/**/b casa a/b)
+        if (next + 1 < p.length() && p.charAt(next + 1) == '/') {
+            next++;
+            re.append("(?:.*/)?");
+        } else {
+            re.append(".*");
+        }
+        return next;
     }
 }

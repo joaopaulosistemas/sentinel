@@ -24,11 +24,6 @@ import java.util.Map;
 public record ToolSpec(String id, String name, List<String> command, String input, Category category,
                        Map<String, Severity> levelSeverity, int timeoutSeconds, boolean stdout, List<String> appliesTo) {
 
-    public ToolSpec(String id, String name, List<String> command, String input, Category category,
-                    Map<String, Severity> levelSeverity, int timeoutSeconds) {
-        this(id, name, command, input, category, levelSeverity, timeoutSeconds, false, List.of());
-    }
-
     public boolean executes() {
         return command != null && !command.isEmpty();
     }

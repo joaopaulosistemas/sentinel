@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -132,42 +133,60 @@ public class SarifAnalyzer implements CodeAnalyzer {
             LOG.infof("Fonte SARIF '%s': executável '%s' não encontrado; ignorada", spec.id(), spec.command().get(0));
             return List.of();
         }
-        List<String> files = List.of();
-        if (!spec.appliesTo().isEmpty()) {
-            files = matchingFiles(projectPath, spec.appliesTo());
-            if (files.isEmpty()) {
-                LOG.debugf("Fonte SARIF '%s': nenhum arquivo do tipo esperado no projeto; ignorada", spec.id());
-                return List.of();
-            }
+        Optional<List<String>> files = inputFiles(spec, projectPath);
+        if (files.isEmpty()) {
+            LOG.debugf("Fonte SARIF '%s': nenhum arquivo do tipo esperado no projeto; ignorada", spec.id());
+            return List.of();
         }
         Path output = Files.createTempFile("sarif-", ".json");
         try {
-            List<String> cmd = new ArrayList<>();
-            cmd.add(exe.toString());
-            for (String arg : spec.command().subList(1, spec.command().size())) {
-                if (arg.equals("{files}")) {
-                    cmd.addAll(files);
-                } else {
-                    cmd.add(arg.replace("{project}", projectPath.toString()).replace("{output}", output.toString()));
-                }
-            }
+            List<String> cmd = buildCommand(exe, spec, files.get(), projectPath, output);
             int code = ExternalTools.run(cmd, projectPath, Map.of(), spec.timeoutSeconds(), spec.stdout() ? output : null);
-            if (code == -1) {
-                LOG.warnf("Fonte SARIF '%s' excedeu %ds e foi encerrada", spec.id(), spec.timeoutSeconds());
-                return List.of();
-            }
-            if (Files.size(output) == 0) {
-                LOG.warnf("Fonte SARIF '%s' terminou (código %d) sem gerar o arquivo SARIF", spec.id(), code);
-                return List.of();
-            }
-            if (Files.size(output) > MAX_SARIF_BYTES) {
-                LOG.warnf("SARIF de '%s' ignorado: maior que %d MB", spec.id(), MAX_SARIF_BYTES / BYTES_PER_MB);
-                return List.of();
-            }
-            return parse(Files.readString(output, StandardCharsets.UTF_8), spec, projectPath, run);
+            String sarif = readUsableOutput(spec, output, code);
+            return sarif == null ? List.of() : parse(sarif, spec, projectPath, run);
         } finally {
             Files.deleteIfExists(output);
         }
+    }
+
+    /** Arquivos que a ferramenta recebe em {@code {files}}; vazio (Optional) se a fonte exige certos tipos e não há nenhum. */
+    private static Optional<List<String>> inputFiles(ToolSpec spec, Path projectPath) throws IOException {
+        if (spec.appliesTo().isEmpty()) {
+            return Optional.of(List.of());
+        }
+        List<String> files = matchingFiles(projectPath, spec.appliesTo());
+        return files.isEmpty() ? Optional.empty() : Optional.of(files);
+    }
+
+    private static List<String> buildCommand(Path exe, ToolSpec spec, List<String> files, Path projectPath, Path output) {
+        List<String> cmd = new ArrayList<>();
+        cmd.add(exe.toString());
+        for (String arg : spec.command().subList(1, spec.command().size())) {
+            if (arg.equals("{files}")) {
+                cmd.addAll(files);
+            } else {
+                cmd.add(arg.replace("{project}", projectPath.toString()).replace("{output}", output.toString()));
+            }
+        }
+        return cmd;
+    }
+
+    /** O SARIF gerado, ou nulo (com aviso no log) se a ferramenta estourou o tempo, não gerou nada ou gerou demais. */
+    private static String readUsableOutput(ToolSpec spec, Path output, int code) throws IOException {
+        if (code == -1) {
+            LOG.warnf("Fonte SARIF '%s' excedeu %ds e foi encerrada", spec.id(), spec.timeoutSeconds());
+            return null;
+        }
+        long size = Files.size(output);
+        if (size == 0) {
+            LOG.warnf("Fonte SARIF '%s' terminou (código %d) sem gerar o arquivo SARIF", spec.id(), code);
+            return null;
+        }
+        if (size > MAX_SARIF_BYTES) {
+            LOG.warnf("SARIF de '%s' ignorado: maior que %d MB", spec.id(), MAX_SARIF_BYTES / BYTES_PER_MB);
+            return null;
+        }
+        return Files.readString(output, StandardCharsets.UTF_8);
     }
 
     static final int MAX_MATCHED_FILES = 500;
@@ -217,22 +236,8 @@ public class SarifAnalyzer implements CodeAnalyzer {
         try {
             JsonNode runs = MAPPER.readTree(sarif).path("runs");
             for (JsonNode r : runs) {
-                Map<String, JsonNode> rules = new HashMap<>();
-                for (JsonNode rule : r.path("tool").path("driver").path("rules")) {
-                    rules.put(rule.path("id").asText(""), rule);
-                }
-                for (JsonNode result : r.path("results")) {
-                    if (out.size() >= MAX_FINDINGS_PER_TOOL) {
-                        LOG.warnf("SARIF de '%s': mais de %d resultados, o restante foi ignorado", spec.id(), MAX_FINDINGS_PER_TOOL);
-                        return out;
-                    }
-                    if (result.path("suppressions").isArray() && !result.path("suppressions").isEmpty()) {
-                        continue;                                  // já suprimido na própria ferramenta
-                    }
-                    Finding f = toFinding(result, rules, spec, projectPath, run);
-                    if (f != null) {
-                        out.add(f);
-                    }
+                if (!collectRun(r, spec, projectPath, run, out)) {
+                    return out;
                 }
             }
         } catch (Exception e) {
@@ -240,6 +245,28 @@ public class SarifAnalyzer implements CodeAnalyzer {
             return new ArrayList<>();
         }
         return out;
+    }
+
+    /** Lê os resultados de uma execução do SARIF; devolve falso quando o limite por ferramenta foi atingido. */
+    private boolean collectRun(JsonNode r, ToolSpec spec, Path projectPath, AuditRun run, List<Finding> out) {
+        Map<String, JsonNode> rules = new HashMap<>();
+        for (JsonNode rule : r.path("tool").path("driver").path("rules")) {
+            rules.put(rule.path("id").asText(""), rule);
+        }
+        for (JsonNode result : r.path("results")) {
+            if (out.size() >= MAX_FINDINGS_PER_TOOL) {
+                LOG.warnf("SARIF de '%s': mais de %d resultados, o restante foi ignorado", spec.id(), MAX_FINDINGS_PER_TOOL);
+                return false;
+            }
+            if (result.path("suppressions").isArray() && !result.path("suppressions").isEmpty()) {
+                continue;                                  // já suprimido na própria ferramenta
+            }
+            Finding f = toFinding(result, rules, spec, projectPath, run);
+            if (f != null) {
+                out.add(f);
+            }
+        }
+        return true;
     }
 
     private Finding toFinding(JsonNode result, Map<String, JsonNode> rules, ToolSpec spec, Path projectPath, AuditRun run) {
@@ -278,24 +305,9 @@ public class SarifAnalyzer implements CodeAnalyzer {
         if (mapped != null) {
             return mapped;
         }
-        JsonNode sec = result.path("properties").path("security-severity");
-        if (sec.isMissingNode() && rule != null) {
-            sec = rule.path("properties").path("security-severity");
-        }
-        if (!sec.isMissingNode()) {
-            double score = sec.isNumber() ? sec.asDouble() : parseDouble(sec.asText(""));
-            if (score >= CVSS_CRITICAL_FROM) {
-                return Severity.CRITICAL;
-            }
-            if (score >= CVSS_HIGH_FROM) {
-                return Severity.HIGH;
-            }
-            if (score >= CVSS_MEDIUM_FROM) {
-                return Severity.MEDIUM;
-            }
-            if (score > 0.0) {
-                return Severity.LOW;
-            }
+        Severity byScore = fromSecurityScore(result, rule);
+        if (byScore != null) {
+            return byScore;
         }
         return switch (level) {
             case "error" -> Severity.HIGH;
@@ -303,6 +315,28 @@ public class SarifAnalyzer implements CodeAnalyzer {
             case "note" -> Severity.LOW;
             default -> Severity.INFO;
         };
+    }
+
+    /** Severidade pela nota {@code security-severity} (0-10), no resultado ou na regra; nulo se não houver nota útil. */
+    private static Severity fromSecurityScore(JsonNode result, JsonNode rule) {
+        JsonNode sec = result.path("properties").path("security-severity");
+        if (sec.isMissingNode() && rule != null) {
+            sec = rule.path("properties").path("security-severity");
+        }
+        if (sec.isMissingNode()) {
+            return null;
+        }
+        double score = sec.isNumber() ? sec.asDouble() : parseDouble(sec.asText(""));
+        if (score >= CVSS_CRITICAL_FROM) {
+            return Severity.CRITICAL;
+        }
+        if (score >= CVSS_HIGH_FROM) {
+            return Severity.HIGH;
+        }
+        if (score >= CVSS_MEDIUM_FROM) {
+            return Severity.MEDIUM;
+        }
+        return score > 0.0 ? Severity.LOW : null;
     }
 
     private static double parseDouble(String s) {

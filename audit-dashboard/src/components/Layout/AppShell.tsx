@@ -72,6 +72,25 @@ function useMenuFixo(): boolean {
 }
 
 
+/** Para onde a tecla leva a largura do menu; `null` = a tecla não é do separador. */
+export function larguraPorTecla(key: string, shift: boolean, atual: number, max: number): number | null {
+  const passo = shift ? 48 : 16;
+  switch (key) {
+    case 'ArrowRight':
+      return atual === MENU_TRILHO ? MENU_MIN : Math.min(max, atual + passo);
+    case 'ArrowLeft':
+      return atual - passo < MENU_MIN ? 0 : atual - passo;
+    case 'Home':
+      return 0;
+    case 'End':
+      return max;
+    case 'Enter':
+      return atual === MENU_TRILHO ? MENU_PADRAO : MENU_TRILHO;
+    default:
+      return null;
+  }
+}
+
 /** Largura do menu (arrastável e salva no navegador) e o gesto de arrastar. */
 function useMenuLargura() {
   const [largura, setLargura] = useState(() => readMenuWidth(window.innerWidth));
@@ -97,132 +116,169 @@ function useMenuLargura() {
     saveMenuWidth(ref.current);
   };
   const teclado = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const passo = e.shiftKey ? 48 : 16;
-    const max = menuMaxFor(window.innerWidth);
-    if (e.key === 'ArrowRight') aplicar(ref.current === MENU_TRILHO ? MENU_MIN : Math.min(max, ref.current + passo));
-    else if (e.key === 'ArrowLeft') aplicar(ref.current - passo < MENU_MIN ? 0 : ref.current - passo);
-    else if (e.key === 'Home') aplicar(0);
-    else if (e.key === 'End') aplicar(max);
-    else if (e.key === 'Enter') aplicar(ref.current === MENU_TRILHO ? MENU_PADRAO : MENU_TRILHO);
-    else return;
+    const alvo = larguraPorTecla(e.key, e.shiftKey, ref.current, menuMaxFor(window.innerWidth));
+    if (alvo === null) return;
+    aplicar(alvo);
     e.preventDefault();
   };
   return { largura, arrastando, props: { onPointerDown: iniciar, onPointerMove: mover, onPointerUp: soltar, onPointerCancel: soltar, onKeyDown: teclado, onDoubleClick: () => aplicar(MENU_PADRAO) } };
 }
 
-/** Cabeçalho escuro no topo e a navegação principal fixa na lateral esquerda. */
-export function AppShell({ children }: AppShellProps) {
+const headerSelectStyle = { marginRight: '0.5rem', height: 32, background: 'transparent', color: '#c6c6c6', border: '1px solid #525252', fontSize: 12, padding: '0 8px' } as const;
+
+function HeaderSelect<T extends string>({ label, title, value, options, onChange }: {
+  label: string;
+  title: string;
+  value: T;
+  options: ReadonlyArray<{ id: T; label: string }>;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <select aria-label={label} className="sentinel-hide-narrow" title={title} value={value} onChange={(e) => onChange(e.target.value as T)} style={headerSelectStyle}>
+      {options.map((o) => (
+        <option key={o.id} value={o.id} style={{ color: '#161616' }}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
+function ShellHeader({ fixo, aberto, onToggleMenu }: { fixo: boolean; aberto: boolean; onToggleMenu: () => void }) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const mode = useThemeStore((st) => st.mode);
+  const dark = useThemeStore((st) => st.mode) === 'dark';
   const toggleTheme = useThemeStore((st) => st.toggle);
-  const dark = mode === 'dark';
-  const pending = usePendingClaude().total;
   const palette = useThemeStore((st) => st.palette);
   const setPalette = useThemeStore((st) => st.setPalette);
+  const textSize = useThemeStore((st) => st.textSize);
+  const setTextSize = useThemeStore((st) => st.setTextSize);
+  return (
+    <Header aria-label="Sentinel Audit Tool">
+      <SkipToContent />
+      {!fixo && (
+        <HeaderMenuButton aria-label={aberto ? 'Fechar o menu' : 'Abrir o menu'} isActive={aberto} onClick={onToggleMenu} isCollapsible />
+      )}
+      <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem' }}>
+        <SentinelLogo />
+      </span>
+      <HeaderName href="#" prefix="Sentinel" style={{ paddingLeft: '0.5rem' }} onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
+        Audit Tool
+      </HeaderName>
+      <span className="sentinel-hide-narrow" style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
+        v{__APP_VERSION__}
+      </span>
+      <HeaderSelect<TextSize> label="Tamanho do texto" title="Tamanho do texto da área de conteúdo" value={textSize} options={TEXT_SIZES} onChange={setTextSize} />
+      <HeaderSelect<Palette>
+        label="Paleta de cores"
+        title="Paleta de cores: Suave e Alternativo reduzem o contraste para cansar menos a vista"
+        value={palette}
+        options={PALETTES}
+        onChange={setPalette}
+      />
+      <HeaderGlobalBar style={{ flex: '0 0 auto' }}>
+        <HeaderGlobalAction
+          aria-label={dark ? 'Trocar para o tema normal' : 'Trocar para o tema escuro'}
+          tooltipAlignment="end"
+          onClick={toggleTheme}
+        >
+          <ThemeIcon dark={dark} />
+        </HeaderGlobalAction>
+      </HeaderGlobalBar>
+    </Header>
+  );
+}
+
+type MenuItem = (typeof ITENS)[number];
+
+function pendingLabel(pending: number): string {
+  return `${pending} ${pending === 1 ? 'pedido do Claude espera' : 'pedidos do Claude esperam'} sua decisão`;
+}
+
+function MenuLink({ item, active, trilho, pending }: { item: MenuItem; active: boolean; trilho: boolean; pending: number }) {
+  const navigate = useNavigate();
+  return (
+    <SideNavLink
+      href={item.rota}
+      renderIcon={item.icone}
+      isActive={active}
+      onClick={(e: React.MouseEvent) => {
+        e.preventDefault();
+        navigate(item.rota);
+      }}
+    >
+      <span className="sentinel-menu-rotulo" title={trilho ? item.nome : undefined}>{item.nome}</span>
+      {item.rota === '/findings' && pending > 0 && (
+        <span aria-label={pendingLabel(pending)} className="sentinel-menu-selo">
+          {pending}
+        </span>
+      )}
+    </SideNavLink>
+  );
+}
+
+function isActiveRoute(item: MenuItem, pathname: string): boolean {
+  return item.exata ? pathname === item.rota : pathname.startsWith(item.rota);
+}
+
+interface ShellMenuProps {
+  fixo: boolean;
+  aberto: boolean;
+  largura: number;
+  trilho: boolean;
+  onClose: () => void;
+}
+
+function ShellMenu({ fixo, aberto, largura, trilho, onClose }: ShellMenuProps) {
+  const location = useLocation();
+  const pending = usePendingClaude().total;
+  const className = fixo ? `sentinel-menu-redim${trilho ? ' sentinel-menu-trilho' : ''}` : undefined;
+  const style = fixo ? ({ '--s-menu-w': `${largura}px` } as React.CSSProperties) : undefined;
+  return (
+    <SideNav isFixedNav expanded={fixo || aberto} className={className} style={style} isChildOfHeader={!fixo} onOverlayClick={onClose} aria-label="Navegação principal">
+      <SideNavItems>
+        {ITENS.map((i) => (
+          <MenuLink key={i.rota} item={i} active={isActiveRoute(i, location.pathname)} trilho={trilho} pending={pending} />
+        ))}
+      </SideNavItems>
+    </SideNav>
+  );
+}
+
+/** Separador focável = "window splitter" do WAI-ARIA: o teclado também ajusta a largura. */
+function MenuSeparator({ menu }: { menu: ReturnType<typeof useMenuLargura> }) {
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Largura do menu"
+      aria-valuenow={menu.largura}
+      aria-valuemin={MENU_TRILHO}
+      aria-valuemax={menuMaxFor(window.innerWidth)}
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
+      className={`sentinel-menu-divisor${menu.arrastando ? ' sentinel-menu-divisor--ativo' : ''}`}
+      style={{ left: menu.largura - 3 }}
+      title="Arraste para ajustar a largura do menu; duplo clique restaura"
+      {...menu.props}
+    />
+  );
+}
+
+/** Cabeçalho escuro no topo e a navegação principal fixa na lateral esquerda. */
+export function AppShell({ children }: AppShellProps) {
+  const location = useLocation();
+  const dark = useThemeStore((st) => st.mode) === 'dark';
   const fixo = useMenuFixo();
   const menu = useMenuLargura();
   const trilho = fixo && menu.largura === MENU_TRILHO;
   const [aberto, setAberto] = useState(false);
   // Ao trocar de tela ou ao voltar para a tela larga, o menu sobreposto fecha.
   useEffect(() => setAberto(false), [location.pathname, fixo]);
-  const textSize = useThemeStore((st) => st.textSize);
-  const setTextSize = useThemeStore((st) => st.setTextSize);
 
   return (
     <>
       <Theme theme="g100">
-      <Header aria-label="Sentinel Audit Tool">
-        <SkipToContent />
-        {!fixo && (
-          <HeaderMenuButton aria-label={aberto ? 'Fechar o menu' : 'Abrir o menu'} isActive={aberto} onClick={() => setAberto((a) => !a)} isCollapsible />
-        )}
-        <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem' }}>
-          <SentinelLogo />
-        </span>
-        <HeaderName href="#" prefix="Sentinel" style={{ paddingLeft: '0.5rem' }} onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
-          Audit Tool
-        </HeaderName>
-        <span className="sentinel-hide-narrow" style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
-          v{__APP_VERSION__}
-        </span>
-        <select
-          aria-label="Tamanho do texto"
-          className="sentinel-hide-narrow"
-          title="Tamanho do texto da área de conteúdo"
-          value={textSize}
-          onChange={(e) => setTextSize(e.target.value as TextSize)}
-          style={{ marginRight: '0.5rem', height: 32, background: 'transparent', color: '#c6c6c6', border: '1px solid #525252', fontSize: 12, padding: '0 8px' }}
-        >
-          {TEXT_SIZES.map((t) => (
-            <option key={t.id} value={t.id} style={{ color: '#161616' }}>{t.label}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Paleta de cores"
-          className="sentinel-hide-narrow"
-          title="Paleta de cores: Suave e Alternativo reduzem o contraste para cansar menos a vista"
-          value={palette}
-          onChange={(e) => setPalette(e.target.value as Palette)}
-          style={{ marginRight: '0.5rem', height: 32, background: 'transparent', color: '#c6c6c6', border: '1px solid #525252', fontSize: 12, padding: '0 8px' }}
-        >
-          {PALETTES.map((p) => (
-            <option key={p.id} value={p.id} style={{ color: '#161616' }}>{p.label}</option>
-          ))}
-        </select>
-        <HeaderGlobalBar style={{ flex: '0 0 auto' }}>
-          <HeaderGlobalAction
-            aria-label={dark ? 'Trocar para o tema normal' : 'Trocar para o tema escuro'}
-            tooltipAlignment="end"
-            onClick={toggleTheme}
-          >
-            <ThemeIcon dark={dark} />
-          </HeaderGlobalAction>
-        </HeaderGlobalBar>
-      </Header>
-      <SideNav isFixedNav expanded={fixo || aberto} className={fixo ? `sentinel-menu-redim${trilho ? ' sentinel-menu-trilho' : ''}` : undefined} style={fixo ? ({ '--s-menu-w': `${menu.largura}px` } as React.CSSProperties) : undefined} isChildOfHeader={!fixo} onOverlayClick={() => setAberto(false)} aria-label="Navegação principal">
-        <SideNavItems>
-          {ITENS.map((i) => (
-            <SideNavLink
-              key={i.rota}
-              href={i.rota}
-              renderIcon={i.icone}
-              isActive={i.exata ? location.pathname === i.rota : location.pathname.startsWith(i.rota)}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                navigate(i.rota);
-              }}
-            >
-              <span className="sentinel-menu-rotulo" title={trilho ? i.nome : undefined}>{i.nome}</span>
-              {i.rota === '/findings' && pending > 0 && (
-                <span
-                  aria-label={`${pending} ${pending === 1 ? 'pedido do Claude espera' : 'pedidos do Claude esperam'} sua decisão`}
-                  className="sentinel-menu-selo"
-                >
-                  {pending}
-                </span>
-              )}
-            </SideNavLink>
-          ))}
-        </SideNavItems>
-      </SideNav>
-      {fixo && (
-        // Separador focável = "window splitter" do WAI-ARIA: o teclado também ajusta a largura.
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Largura do menu"
-          aria-valuenow={menu.largura}
-          aria-valuemin={MENU_TRILHO}
-          aria-valuemax={menuMaxFor(window.innerWidth)}
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-          tabIndex={0}
-          className={`sentinel-menu-divisor${menu.arrastando ? ' sentinel-menu-divisor--ativo' : ''}`}
-          style={{ left: menu.largura - 3 }}
-          title="Arraste para ajustar a largura do menu; duplo clique restaura"
-          {...menu.props}
-        />
-      )}
+        <ShellHeader fixo={fixo} aberto={aberto} onToggleMenu={() => setAberto((a) => !a)} />
+        <ShellMenu fixo={fixo} aberto={aberto} largura={menu.largura} trilho={trilho} onClose={() => setAberto(false)} />
+        {fixo && <MenuSeparator menu={menu} />}
       </Theme>
 
       {/* Os componentes do Carbon (campos, abas, modais) seguem o mesmo tema do restante da página. */}

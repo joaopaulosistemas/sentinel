@@ -59,15 +59,20 @@ final class ExternalTools {
     /** Como o anterior, mas grava a saída padrão em {@code stdoutFile} (ferramentas que só imprimem o SARIF). */
     static int run(List<String> command, Path workingDir, Map<String, String> env, long timeoutSeconds, Path stdoutFile)
             throws IOException, InterruptedException {
-        return run(command, workingDir, env, timeoutSeconds, stdoutFile, null);
+        return runTo(command, workingDir, env, timeoutSeconds, new ExternalTools.Output(stdoutFile, null));
     }
+
+    /** Para onde vão a saída padrão e a de erro do processo (nulo descarta). */
+    record Output(Path stdout, Path stderr) { }
 
     /**
      * Como o anterior, mas grava a saída de erro em {@code stderrFile} (quando não nulo), para que uma falha da
      * ferramenta possa ser explicada ao usuário em vez de ficar só no log.
      */
-    static int run(List<String> command, Path workingDir, Map<String, String> env, long timeoutSeconds, Path stdoutFile,
-                   Path stderrFile) throws IOException, InterruptedException {
+    static int runTo(List<String> command, Path workingDir, Map<String, String> env, long timeoutSeconds, Output output)
+            throws IOException, InterruptedException {
+        Path stdoutFile = output.stdout();
+        Path stderrFile = output.stderr();
         ProcessBuilder pb = new ProcessBuilder(command);
         if (workingDir != null) {
             pb.directory(workingDir.toFile());

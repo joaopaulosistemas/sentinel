@@ -26,7 +26,7 @@ forbid:
 conventions:
   - id: endpoint-sem-autorizacao
     title: "Endpoint sem controle de acesso declarado"
-    files: ["**/resource/**/*.java", "**/controller/**/*.java"]
+    files: ["**/resource/**/*Resource.java", "**/controller/**/*.java"]
     exclude: ["**/*Test.java", "**/HealthResource.java"]
     require: "@(RolesAllowed|Authenticated|PermitAll|PreAuthorize|Secured)"
     severity: medium

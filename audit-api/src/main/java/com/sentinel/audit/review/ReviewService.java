@@ -49,9 +49,12 @@ public class ReviewService {
 
     // ---- sugestões ----
 
+    /** O que o cliente sugeriu: título, detalhe, regra e local relacionados. */
+    public record Suggestion(String title, String detail, String ruleRef, String file, Integer line) { }
+
     @Transactional
-    public ReviewSuggestion addSuggestion(Long systemId, String title, String detail, String ruleRef, String file, Integer line) {
-        if (title == null || title.isBlank()) {
+    public ReviewSuggestion addSuggestion(Long systemId, Suggestion in) {
+        if (in.title() == null || in.title().isBlank()) {
             throw new IllegalArgumentException("Informe o título da sugestão.");
         }
         if (suggestions.openCount(systemId) >= MAX_OPEN_SUGGESTIONS) {
@@ -59,13 +62,17 @@ public class ReviewService {
         }
         ReviewSuggestion s = new ReviewSuggestion();
         s.setSystemId(systemId);
-        s.setTitle(cut(title.strip(), TITLE_MAX_CHARS));
-        s.setDetail(detail == null ? null : cut(detail.strip(), TEXT_MAX_CHARS));
-        s.setRuleRef(ruleRef == null || ruleRef.isBlank() ? null : cut(ruleRef.strip(), RULE_REF_MAX_CHARS));
-        s.setFilePath(file == null || file.isBlank() ? null : cut(file.strip(), FILE_PATH_MAX_CHARS));
-        s.setLineNumber(line != null && line > 0 ? line : null);
+        s.setTitle(cut(in.title().strip(), TITLE_MAX_CHARS));
+        s.setDetail(in.detail() == null ? null : cut(in.detail().strip(), TEXT_MAX_CHARS));
+        s.setRuleRef(cutOrNull(in.ruleRef(), RULE_REF_MAX_CHARS));
+        s.setFilePath(cutOrNull(in.file(), FILE_PATH_MAX_CHARS));
+        s.setLineNumber(in.line() != null && in.line() > 0 ? in.line() : null);
         suggestions.persist(s);
         return s;
+    }
+
+    private static String cutOrNull(String value, int max) {
+        return value == null || value.isBlank() ? null : cut(value.strip(), max);
     }
 
     public List<ReviewSuggestion> suggestions(Long systemId) {

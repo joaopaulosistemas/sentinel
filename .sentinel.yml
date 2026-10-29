@@ -82,3 +82,7 @@ suppress:
   - rule: "sentinel-java-retorna-null-colecao"
     path: "audit-api/src/main/java/com/sentinel/audit/pack/ProfileLoader.java"
     reason: "null sinaliza arquivo/mapa inválido, com o erro já registrado; o chamador trata (mesma decisão de Versions/Yamls)"
+  # AnalyzerSet é só o registro dos analisadores: injeta todos de propósito e não tem lógica própria.
+  - rule: "sentinel-too-many-injections"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/AnalyzerSet.java"
+    reason: "fachada que agrupa os analisadores (registro), sem regra de negócio; dividir só espalharia a lista"

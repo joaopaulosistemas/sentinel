@@ -54,7 +54,23 @@ public final class Duplication {
                 norms.add(n);
             }
         }
-        // hash da janela -> posições (arquivo << 32 | índice da linha significativa)
+        Map<String, TreeSet<Integer>> matches = matchingWindows(norms, indexWindows(norms, window), window);
+        List<Clone> clones = new ArrayList<>();
+        for (Map.Entry<String, TreeSet<Integer>> e : matches.entrySet()) {
+            collectRuns(clones, norms, e, new Cfg(window, minLines));
+        }
+        clones.sort(Comparator.comparingInt(Clone::lines).reversed().thenComparing(Clone::fileB).thenComparingInt(Clone::lineB));
+        return clones.size() > maxClones ? new ArrayList<>(clones.subList(0, maxClones)) : clones;
+    }
+
+    /** Tamanho da janela e mínimo de linhas de um clone. */
+    private record Cfg(int window, int minLines) { }
+
+    /** Os dois arquivos comparados e o deslocamento entre eles. */
+    private record Pair(Norm a, Norm b, int delta) { }
+
+    /** hash da janela -> posições (arquivo << 32 | índice da linha significativa). */
+    private static Map<Long, List<Long>> indexWindows(List<Norm> norms, int window) {
         Map<Long, List<Long>> windows = new HashMap<>();
         int total = 0;
         for (int fi = 0; fi < norms.size() && total < MAX_WINDOWS; fi++) {
@@ -71,7 +87,11 @@ public final class Duplication {
                 total++;
             }
         }
-        // (arquivo A, arquivo B, deslocamento) -> índices de A em que a janela coincide
+        return windows;
+    }
+
+    /** (arquivo A, arquivo B, deslocamento) -> índices de A em que a janela coincide. */
+    private static Map<String, TreeSet<Integer>> matchingWindows(List<Norm> norms, Map<Long, List<Long>> windows, int window) {
         Map<String, TreeSet<Integer>> matches = new HashMap<>();
         for (List<Long> pos : windows.values()) {
             if (pos.size() < 2) {
@@ -90,40 +110,39 @@ public final class Duplication {
                 matches.computeIfAbsent(fa + "|" + fb + "|" + (ib - ia), x -> new TreeSet<>()).add(ia);
             }
         }
-        List<Clone> clones = new ArrayList<>();
-        for (Map.Entry<String, TreeSet<Integer>> e : matches.entrySet()) {
-            String[] key = e.getKey().split("\\|");
-            Norm a = norms.get(Integer.parseInt(key[0]));
-            Norm b = norms.get(Integer.parseInt(key[1]));
-            int delta = Integer.parseInt(key[2]);
-            int runStart = -1;
-            int prev = -1;
-            for (int idx : e.getValue()) {
-                if (runStart < 0) {
-                    runStart = idx;
-                } else if (idx != prev + 1) {
-                    addRun(clones, a, b, delta, runStart, prev, window, minLines);
-                    runStart = idx;
-                }
-                prev = idx;
-            }
-            if (runStart >= 0) {
-                addRun(clones, a, b, delta, runStart, prev, window, minLines);
-            }
-        }
-        clones.sort(Comparator.comparingInt(Clone::lines).reversed().thenComparing(Clone::fileB).thenComparingInt(Clone::lineB));
-        return clones.size() > maxClones ? new ArrayList<>(clones.subList(0, maxClones)) : clones;
+        return matches;
     }
 
-    private static void addRun(List<Clone> out, Norm a, Norm b, int delta, int start, int end, int window, int minLines) {
-        int lines = end - start + window;
-        if (lines < minLines) {
+    private static void collectRuns(List<Clone> clones, List<Norm> norms, Map.Entry<String, TreeSet<Integer>> e, Cfg cfg) {
+        String[] key = e.getKey().split("\\|");
+        Pair pair = new Pair(norms.get(Integer.parseInt(key[0])), norms.get(Integer.parseInt(key[1])), Integer.parseInt(key[2]));
+        int runStart = -1;
+        int prev = -1;
+        for (int idx : e.getValue()) {
+            if (runStart < 0) {
+                runStart = idx;
+            } else if (idx != prev + 1) {
+                addRun(clones, pair, runStart, prev, cfg);
+                runStart = idx;
+            }
+            prev = idx;
+        }
+        if (runStart >= 0) {
+            addRun(clones, pair, runStart, prev, cfg);
+        }
+    }
+
+    private static void addRun(List<Clone> out, Pair pair, int start, int end, Cfg cfg) {
+        Norm a = pair.a();
+        Norm b = pair.b();
+        int lines = end - start + cfg.window();
+        if (lines < cfg.minLines()) {
             return;
         }
-        if (a == b && delta < lines) {
+        if (a == b && pair.delta() < lines) {
             return;                                             // trechos que se sobrepõem no mesmo arquivo (código periódico)
         }
-        out.add(new Clone(a.file, a.origLine[start], b.file, b.origLine[start + delta], lines, a.lines[start]));
+        out.add(new Clone(a.file, a.origLine[start], b.file, b.origLine[start + pair.delta()], lines, a.lines[start]));
     }
 
     private static boolean sameWindow(Norm a, int ia, Norm b, int ib, int window) {
@@ -152,34 +171,34 @@ public final class Duplication {
         for (int i = 0; i < raw.length; i++) {
             String line = raw[i].strip().replaceAll("\\s+", " ");
             if (inBlockComment) {
-                if (line.contains("*/")) {
-                    inBlockComment = false;
-                }
-                continue;
-            }
-            if (line.startsWith("/*")) {
                 inBlockComment = !line.contains("*/");
-                continue;
+            } else if (line.startsWith("/*")) {
+                inBlockComment = !line.contains("*/");
+            } else if (!isNoise(line)) {
+                kept.add(line);
+                orig.add(i + 1);
             }
-            if (line.isEmpty() || line.startsWith("//") || line.startsWith("*") || line.length() <= TRIVIAL_LINE_MAX_CHARS
-                    || line.startsWith("import ") || line.startsWith("package ") || line.startsWith("@Override")) {
-                continue;
-            }
-            if (ACCESSOR.matcher(line).matches()) {
-                continue;                                       // getters, setters e atribuições simples: boilerplate, não lógica
-            }
-            kept.add(line);
-            orig.add(i + 1);
         }
         String[] lines = kept.toArray(new String[0]);
         long[] hash = new long[lines.length];
         for (int i = 0; i < lines.length; i++) {
-            long h = FNV_OFFSET_BASIS;
-            for (int c = 0; c < lines[i].length(); c++) {
-                h = (h ^ lines[i].charAt(c)) * FNV_PRIME;
-            }
-            hash[i] = h;
+            hash[i] = fnv(lines[i]);
         }
         return new Norm(f.rel(), lines, orig.stream().mapToInt(Integer::intValue).toArray(), hash);
+    }
+
+    /** Linha que não conta como código: vazia, comentário, import, trivial ou boilerplate (getter/setter/atribuição). */
+    private static boolean isNoise(String line) {
+        return line.isEmpty() || line.startsWith("//") || line.startsWith("*") || line.length() <= TRIVIAL_LINE_MAX_CHARS
+                || line.startsWith("import ") || line.startsWith("package ") || line.startsWith("@Override")
+                || ACCESSOR.matcher(line).matches();
+    }
+
+    private static long fnv(String line) {
+        long h = FNV_OFFSET_BASIS;
+        for (int c = 0; c < line.length(); c++) {
+            h = (h ^ line.charAt(c)) * FNV_PRIME;
+        }
+        return h;
     }
 }

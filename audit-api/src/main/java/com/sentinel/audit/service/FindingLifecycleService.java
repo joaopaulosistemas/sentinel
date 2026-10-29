@@ -206,7 +206,7 @@ public class FindingLifecycleService {
         if (run == null) {
             throw new NotFoundException("Auditoria não encontrada: " + auditId);
         }
-        Double overall = run.getRiskScore() == null ? null : run.getRiskScore().getOverall();
+        Double overall = overallOf(run);
         AuditRun base = previousFor(run, auditId);
         if (base == null) {
             return new AuditDiffResponse(auditId, null, false, overall, null, null, List.of(), List.of(), 0);
@@ -216,24 +216,27 @@ public class FindingLifecycleService {
         Set<String> currentFps = fingerprintsOf(current);
         Set<String> previousFps = fingerprintsOf(previous);
 
-        List<FindingResponse> added = new ArrayList<>();
-        int persisting = 0;
-        for (Finding f : current) {
-            if (previousFps.contains(fingerprintOf(f))) {
-                persisting++;
-            } else {
-                added.add(FindingMapper.toResponse(f));
-            }
-        }
-        List<FindingResponse> resolved = new ArrayList<>();
-        for (Finding f : previous) {
-            if (!currentFps.contains(fingerprintOf(f))) {
-                resolved.add(FindingMapper.toResponse(f));
-            }
-        }
-        Double baseOverall = base.getRiskScore() == null ? null : base.getRiskScore().getOverall();
+        List<FindingResponse> added = responsesNotIn(current, previousFps);
+        List<FindingResponse> resolved = responsesNotIn(previous, currentFps);
+        int persisting = current.size() - added.size();
+        Double baseOverall = overallOf(base);
         Double delta = overall == null || baseOverall == null ? null : Math.round((overall - baseOverall) * 100.0) / 100.0;
         return new AuditDiffResponse(auditId, base.getId(), true, overall, baseOverall, delta, added, resolved, persisting);
+    }
+
+    private static Double overallOf(AuditRun run) {
+        return run.getRiskScore() == null ? null : run.getRiskScore().getOverall();
+    }
+
+    /** Os achados de {@code findings} cuja impressão digital não está em {@code fingerprints}, já como resposta. */
+    private static List<FindingResponse> responsesNotIn(List<Finding> findings, Set<String> fingerprints) {
+        List<FindingResponse> out = new ArrayList<>();
+        for (Finding f : findings) {
+            if (!fingerprints.contains(fingerprintOf(f))) {
+                out.add(FindingMapper.toResponse(f));
+            }
+        }
+        return out;
     }
 
     @Transactional

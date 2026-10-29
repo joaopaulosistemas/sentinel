@@ -36,8 +36,13 @@ public final class SbomWriter {
         root.put("specVersion", "1.5");
         root.put("serialNumber", "urn:uuid:" + serial);
         root.put("version", 1);
+        addMetadata(root.putObject("metadata"), systemName, version, now);
+        ArrayNode components = root.putArray("components");
+        componentsByPurl(deps).values().forEach(components::add);
+        return root.toPrettyString();
+    }
 
-        ObjectNode metadata = root.putObject("metadata");
+    private static void addMetadata(ObjectNode metadata, String systemName, String version, Instant now) {
         metadata.put("timestamp", now.toString());
         ObjectNode tool = metadata.putArray("tools").addObject();
         tool.put("vendor", "Sentinel");
@@ -48,70 +53,83 @@ public final class SbomWriter {
         if (version != null && !version.isBlank()) {
             main.put("version", version);
         }
+    }
 
-        // Um componente por pacote@versão; guarda todos os arquivos onde apareceu.
+    /** Um componente por pacote@versão; guarda todos os arquivos onde apareceu. */
+    private static Map<String, ObjectNode> componentsByPurl(List<Dependency> deps) {
         Map<String, ObjectNode> byPurl = new LinkedHashMap<>();
-        if (deps != null) {
-            for (Dependency d : deps) {
-                String purl = purl(d);
-                if (purl == null) {
-                    continue;
-                }
-                ObjectNode c = byPurl.get(purl);
-                if (c == null) {
-                    c = MAPPER.createObjectNode();
-                    c.put("type", "library");
-                    c.put("bom-ref", purl);
-                    if ("Maven".equals(d.ecosystem()) && d.name().contains(":")) {
-                        c.put("group", d.name().substring(0, d.name().indexOf(':')));
-                        c.put("name", d.shortName());
-                    } else {
-                        c.put("name", d.name());
-                    }
-                    c.put("version", d.version());
-                    c.put("purl", purl);
-                    c.putArray("properties");
-                    byPurl.put(purl, c);
-                }
-                ArrayNode props = (ArrayNode) c.get("properties");
-                if (d.filePath() != null && !contains(props, d.filePath())) {
-                    ObjectNode p = props.addObject();
-                    p.put("name", "sentinel:source-file");
-                    p.put("value", d.filePath());
-                }
-            }
+        if (deps == null) {
+            return byPurl;
         }
-        ArrayNode components = root.putArray("components");
-        byPurl.values().forEach(components::add);
-        return root.toPrettyString();
+        for (Dependency d : deps) {
+            String purl = purl(d);
+            if (purl == null) {
+                continue;
+            }
+            ObjectNode c = byPurl.computeIfAbsent(purl, k -> newComponent(d, k));
+            addSourceFile((ArrayNode) c.get("properties"), d.filePath());
+        }
+        return byPurl;
+    }
+
+    private static ObjectNode newComponent(Dependency d, String purl) {
+        ObjectNode c = MAPPER.createObjectNode();
+        c.put("type", "library");
+        c.put("bom-ref", purl);
+        if ("Maven".equals(d.ecosystem()) && d.name().contains(":")) {
+            c.put("group", d.name().substring(0, d.name().indexOf(':')));
+            c.put("name", d.shortName());
+        } else {
+            c.put("name", d.name());
+        }
+        c.put("version", d.version());
+        c.put("purl", purl);
+        c.putArray("properties");
+        return c;
+    }
+
+    private static void addSourceFile(ArrayNode props, String filePath) {
+        if (filePath != null && !contains(props, filePath)) {
+            ObjectNode p = props.addObject();
+            p.put("name", "sentinel:source-file");
+            p.put("value", filePath);
+        }
     }
 
     /** Package URL (purl) do pacote; {@code null} se o ecossistema/nome/versão não permitem montar um. */
     public static String purl(Dependency d) {
-        if (d == null || d.name() == null || d.name().isBlank() || d.version() == null || d.version().isBlank()) {
+        if (!hasCoordinates(d)) {
             return null;
         }
         String version = enc(d.version());
-        switch (d.ecosystem() == null ? "" : d.ecosystem()) {
-            case "Maven": {
-                int i = d.name().indexOf(':');
-                if (i <= 0 || i == d.name().length() - 1) {
-                    return null;
-                }
-                return "pkg:maven/" + enc(d.name().substring(0, i)) + "/" + enc(d.name().substring(i + 1)) + "@" + version;
-            }
-            case "npm": {
-                String n = d.name();
-                String name = n.startsWith("@") ? "%40" + encPath(n.substring(1)) : encPath(n);
-                return "pkg:npm/" + name + "@" + version;
-            }
-            case "PyPI":
-                return "pkg:pypi/" + enc(d.name().toLowerCase(Locale.ROOT).replace('_', '-')) + "@" + version;
-            case "NuGet":
-                return "pkg:nuget/" + enc(d.name()) + "@" + version;
-            default:
-                return null;
+        return switch (d.ecosystem() == null ? "" : d.ecosystem()) {
+            case "Maven" -> mavenPurl(d.name(), version);
+            case "npm" -> npmPurl(d.name(), version);
+            case "PyPI" -> "pkg:pypi/" + enc(d.name().toLowerCase(Locale.ROOT).replace('_', '-')) + "@" + version;
+            case "NuGet" -> "pkg:nuget/" + enc(d.name()) + "@" + version;
+            default -> null;
+        };
+    }
+
+    private static boolean hasCoordinates(Dependency d) {
+        return d != null && isFilled(d.name()) && isFilled(d.version());
+    }
+
+    private static boolean isFilled(String s) {
+        return s != null && !s.isBlank();
+    }
+
+    private static String mavenPurl(String name, String version) {
+        int i = name.indexOf(':');
+        if (i <= 0 || i == name.length() - 1) {
+            return null;
         }
+        return "pkg:maven/" + enc(name.substring(0, i)) + "/" + enc(name.substring(i + 1)) + "@" + version;
+    }
+
+    private static String npmPurl(String n, String version) {
+        String name = n.startsWith("@") ? "%40" + encPath(n.substring(1)) : encPath(n);
+        return "pkg:npm/" + name + "@" + version;
     }
 
     private static boolean contains(ArrayNode props, String file) {

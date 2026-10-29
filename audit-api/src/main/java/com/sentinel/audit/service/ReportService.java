@@ -61,6 +61,17 @@ public class ReportService {
                 .append(meta("Conclusão", run.getCompletedAt() != null ? run.getCompletedAt().format(DATE_FMT) : "—"))
                 .append("</dl>");
 
+        appendSummary(h, run, active, suppressed);
+        appendInsights(h, run, FindingLifecycleService.active(findings).stream().filter(f -> !isLowConfidence(f)).toList());
+        appendFindingLists(h, active, suppressed);
+
+        h.append("<p class=\"foot\">Gerado pelo Sentinel Audit Tool. Ferramentas automáticas geram falsos positivos e não ")
+                .append("substituem a revisão humana.</p></body></html>");
+        return h.toString();
+    }
+
+    /** Resumo executivo: notas por dimensão, contagem por severidade e quantos achados são novos ou suprimidos. */
+    private void appendSummary(StringBuilder h, AuditRun run, List<Finding> active, List<Finding> suppressed) {
         h.append("<h2>Resumo executivo</h2><div class=\"summary\">");
         if (run.getRiskScore() != null) {
             var s = run.getRiskScore();
@@ -72,13 +83,8 @@ public class ReportService {
                     .append(s.getObservability()).append("</td><td>").append(s.getPerformance() == null ? "—" : s.getPerformance())
                     .append("</td></tr></table>");
         }
-        Map<Severity, Long> bySeverity = active.stream()
-                .collect(Collectors.groupingBy(Finding::getSeverity, Collectors.counting()));
         h.append("<p class=\"badges\">");
-        for (Severity sev : Severity.values()) {
-            h.append("<span class=\"badge ").append(sev).append("\">").append(sev).append(": ")
-                    .append(bySeverity.getOrDefault(sev, 0L)).append("</span> ");
-        }
+        appendSeverityBadges(h, active);
         long novos = active.stream().filter(f -> Boolean.TRUE.equals(f.getIsNew())).count();
         h.append("</p><p>").append(active.size()).append(" findings ativos");
         if (novos > 0) {
@@ -88,41 +94,49 @@ public class ReportService {
             h.append("; ").append(suppressed.size()).append(" suprimidos (fora do score)");
         }
         h.append(".</p></div>");
+    }
 
-        appendInsights(h, run, FindingLifecycleService.active(findings).stream().filter(f -> !isLowConfidence(f)).toList());
+    /** Um selo por severidade com a quantidade de achados ativos. */
+    private static void appendSeverityBadges(StringBuilder h, List<Finding> active) {
+        Map<Severity, Long> bySeverity = active.stream()
+                .collect(Collectors.groupingBy(Finding::getSeverity, Collectors.counting()));
+        for (Severity sev : Severity.values()) {
+            h.append("<span class=\"badge ").append(sev).append("\">").append(sev).append(": ")
+                    .append(bySeverity.getOrDefault(sev, 0L)).append("</span> ");
+        }
+    }
 
+    /** Achados confiáveis, de baixa confiança e suprimidos, nesta ordem. */
+    private void appendFindingLists(StringBuilder h, List<Finding> active, List<Finding> suppressed) {
         List<Finding> reliable = active.stream().filter(f -> !isLowConfidence(f)).toList();
         List<Finding> lowConfidence = active.stream().filter(ReportService::isLowConfidence).toList();
         h.append("<h2>Findings (").append(reliable.size()).append(")</h2>");
         if (active.isEmpty()) {
             h.append("<p>Nenhum finding ativo.</p>");
         }
-        int i = 1;
-        for (Finding f : reliable.stream().sorted(Comparator.comparing(Finding::getSeverity)).toList()) {
-            appendFinding(h, i++, f, true);
-        }
+        appendNumbered(h, bySeverity(reliable), true);
         if (!lowConfidence.isEmpty()) {
             h.append("<h2>Baixa confiança (").append(lowConfidence.size()).append(")</h2>")
                     .append("<p>Provavelmente não são problemas: estão em testes, exemplos ou documentação, ")
                     .append("têm valor de exemplo ou vêm de regras com muitos falsos positivos. Revise por amostragem.</p>");
-            int k = 1;
-            for (Finding f : lowConfidence.stream().sorted(Comparator.comparing(Finding::getSeverity)).toList()) {
-                appendFinding(h, k++, f, false);
-            }
+            appendNumbered(h, bySeverity(lowConfidence), false);
         }
-
         if (!suppressed.isEmpty()) {
             h.append("<h2>Findings suprimidos (").append(suppressed.size()).append(")</h2>")
                     .append("<p>Decisões registradas de falso positivo / risco aceito. Não entram no score.</p>");
-            int j = 1;
-            for (Finding f : suppressed) {
-                appendFinding(h, j++, f, false);
-            }
+            appendNumbered(h, suppressed, false);
         }
+    }
 
-        h.append("<p class=\"foot\">Gerado pelo Sentinel Audit Tool. Ferramentas automáticas geram falsos positivos e não ")
-                .append("substituem a revisão humana.</p></body></html>");
-        return h.toString();
+    private static List<Finding> bySeverity(List<Finding> findings) {
+        return findings.stream().sorted(Comparator.comparing(Finding::getSeverity)).toList();
+    }
+
+    private void appendNumbered(StringBuilder h, List<Finding> findings, boolean withRemediation) {
+        int n = 1;
+        for (Finding f : findings) {
+            appendFinding(h, n++, f, withRemediation);
+        }
     }
 
 
@@ -157,8 +171,26 @@ public class ReportService {
                 .append(meta("Auditoria", "#" + run.getId() + " · " + esc(run.getBranch())))
                 .append(meta("Concluída em", run.getCompletedAt() != null ? run.getCompletedAt().format(DATE_FMT) : "—"))
                 .append("</dl>");
+        appendExecutiveScore(h, executiveScore(run, plan), scoreDelta, target);
+
+        h.append("<h2>Riscos em aberto</h2><p class=\"badges\">");
+        appendSeverityBadges(h, active);
+        h.append("</p>");
+        if (plan.criticalCount() > 0) {
+            h.append("<p>Corrigir os ").append(plan.criticalCount()).append(" crítico(s) leva a nota de ")
+                    .append(fmt(plan.scoreNow())).append(" para cerca de <strong>").append(fmt(plan.scoreIfCriticalFixed())).append("</strong>.</p>");
+        }
+        appendFixFirst(h, plan);
+        return pageEnd(h);
+    }
+
+    private static double executiveScore(AuditRun run, FixPlanDto plan) {
+        boolean hasOverall = run.getRiskScore() != null && run.getRiskScore().getOverall() != null;
+        return hasOverall ? run.getRiskScore().getOverall() : plan.scoreNow();
+    }
+
+    private static void appendExecutiveScore(StringBuilder h, double score, Double scoreDelta, double target) {
         h.append("<div class=\"summary\">");
-        double score = run.getRiskScore() != null && run.getRiskScore().getOverall() != null ? run.getRiskScore().getOverall() : plan.scoreNow();
         h.append("<div class=\"score\">").append(fmt(score)).append("</div><p>Nota geral (0–100, maior = melhor). Meta: ")
                 .append(fmt(target)).append(score >= target ? " — <strong>meta atingida</strong>." : " — faltam <strong>"
                         + fmt(target - score) + " pontos</strong>.").append("</p>");
@@ -167,33 +199,22 @@ public class ReportService {
                     .append(" ponto(s)</strong>.</p>");
         }
         h.append("</div>");
+    }
 
-        Map<Severity, Long> bySeverity = active.stream().collect(Collectors.groupingBy(Finding::getSeverity, Collectors.counting()));
-        h.append("<h2>Riscos em aberto</h2><p class=\"badges\">");
-        for (Severity sev : Severity.values()) {
-            h.append("<span class=\"badge ").append(sev).append("\">").append(sev).append(": ")
-                    .append(bySeverity.getOrDefault(sev, 0L)).append("</span> ");
-        }
-        h.append("</p>");
-        if (plan.criticalCount() > 0) {
-            h.append("<p>Corrigir os ").append(plan.criticalCount()).append(" crítico(s) leva a nota de ")
-                    .append(fmt(plan.scoreNow())).append(" para cerca de <strong>").append(fmt(plan.scoreIfCriticalFixed())).append("</strong>.</p>");
-        }
-
+    private static void appendFixFirst(StringBuilder h, FixPlanDto plan) {
         h.append("<h2>O que corrigir primeiro</h2>");
         if (plan.items().isEmpty()) {
             h.append("<p>Nenhum problema ativo.</p>");
-        } else {
-            h.append("<table><tr><th>#</th><th>Problema</th><th>Severidade</th><th>Ocorrências</th><th>Ganho na nota</th></tr>");
-            int n = 1;
-            for (FixPlanDto.Item it : plan.items().stream().limit(FIX_PLAN_ITEMS).toList()) {
-                h.append("<tr><td>").append(n++).append("</td><td>").append(esc(it.title())).append("</td><td><span class=\"badge ")
-                        .append(it.severity()).append("\">").append(it.severity()).append("</span></td><td>").append(it.occurrences())
-                        .append("</td><td>+").append(fmt(it.scoreGain())).append("</td></tr>");
-            }
-            h.append("</table>");
+            return;
         }
-        return pageEnd(h);
+        h.append("<table><tr><th>#</th><th>Problema</th><th>Severidade</th><th>Ocorrências</th><th>Ganho na nota</th></tr>");
+        int n = 1;
+        for (FixPlanDto.Item it : plan.items().stream().limit(FIX_PLAN_ITEMS).toList()) {
+            h.append("<tr><td>").append(n++).append("</td><td>").append(esc(it.title())).append("</td><td><span class=\"badge ")
+                    .append(it.severity()).append("\">").append(it.severity()).append("</span></td><td>").append(it.occurrences())
+                    .append("</td><td>+").append(fmt(it.scoreGain())).append("</td></tr>");
+        }
+        h.append("</table>");
     }
 
     /** Evolução da nota e dos achados entre as auditorias concluídas do sistema no período (mais antiga primeiro). */
@@ -215,6 +236,11 @@ public class ReportService {
         h.append("<div class=\"summary\"><div class=\"score\">").append(fmt(last.overall())).append("</div><p>Nota atual. Variação no período: <strong>")
                 .append(delta > 0 ? "+" : "").append(fmt(delta)).append(" ponto(s)</strong> (de ").append(fmt(first.overall()))
                 .append(" para ").append(fmt(last.overall())).append(").</p></div>");
+        appendTrendTable(h, points);
+        return pageEnd(h);
+    }
+
+    private static void appendTrendTable(StringBuilder h, List<TrendPoint> points) {
         h.append("<h2>Auditoria a auditoria</h2><table><tr><th>Auditoria</th><th>Branch</th><th>Concluída em</th><th>Nota</th><th>Variação</th>")
                 .append("<th>Críticos</th><th>Altos</th><th>Médios</th></tr>");
         Double previous = null;
@@ -229,7 +255,6 @@ public class ReportService {
             previous = p.overall();
         }
         h.append("</table>");
-        return pageEnd(h);
     }
 
     /** Todos os achados ativos em CSV (separador vírgula, UTF-8, campos protegidos contra injeção em planilha). */
@@ -285,42 +310,58 @@ public class ReportService {
         if (Boolean.TRUE.equals(f.getIsNew())) {
             h.append(" <span class=\"new\">NOVO</span>");
         }
-        h.append("</h3><p class=\"where\">").append(f.getCategory()).append(" · ")
-                .append(f.getFilePath() != null ? "<code>" + esc(f.getFilePath())
-                        + (f.getLineNumber() != null ? ":" + f.getLineNumber() : "") + "</code>" : "—");
-        if (f.getCveId() != null && !f.getCveId().isBlank()) {
+        h.append("</h3><p class=\"where\">").append(f.getCategory()).append(" · ").append(location(f));
+        if (hasText(f.getCveId())) {
             h.append(" · ").append(esc(f.getCveId()));
         }
         h.append("</p>");
-        if (f.getConfidenceReason() != null && !f.getConfidenceReason().isBlank()) {
+        if (hasText(f.getConfidenceReason())) {
             h.append("<p class=\"where\">Confiança ").append(f.getConfidence()).append(": ")
                     .append(esc(f.getConfidenceReason())).append("</p>");
         }
-        if (f.getDescription() != null && !f.getDescription().isBlank()) {
+        if (hasText(f.getDescription())) {
             h.append("<p>").append(esc(f.getDescription())).append("</p>");
         }
-        if (f.getCodeSnippet() != null && !f.getCodeSnippet().isBlank()) {
+        if (hasText(f.getCodeSnippet())) {
             h.append("<pre>").append(esc(f.getCodeSnippet())).append("</pre>");
         }
         if (withRemediation) {
-            RemediationDto r = RemediationCatalog.forFinding(f);
-            if (r != null) {
-                h.append("<div class=\"fix\"><strong>Como corrigir:</strong> ").append(esc(r.summary()));
-                if (r.before() != null && !r.before().isBlank()) {
-                    h.append("<pre class=\"bad\">").append(esc(r.before())).append("</pre>");
-                }
-                if (r.after() != null && !r.after().isBlank()) {
-                    h.append("<pre class=\"good\">").append(esc(r.after())).append("</pre>");
-                }
-                if (r.references() != null) {
-                    for (String ref : r.references()) {
-                        h.append("<div class=\"ref\">").append(esc(ref)).append("</div>");
-                    }
-                }
-                h.append("</div>");
-            }
+            appendRemediation(h, f);
         }
         h.append("</section>");
+    }
+
+    private static boolean hasText(String s) {
+        return s != null && !s.isBlank();
+    }
+
+    private static String location(Finding f) {
+        if (f.getFilePath() == null) {
+            return "—";
+        }
+        return "<code>" + esc(f.getFilePath()) + (f.getLineNumber() != null ? ":" + f.getLineNumber() : "") + "</code>";
+    }
+
+    private static void appendRemediation(StringBuilder h, Finding f) {
+        RemediationDto r = RemediationCatalog.forFinding(f);
+        if (r == null) {
+            return;
+        }
+        h.append("<div class=\"fix\"><strong>Como corrigir:</strong> ").append(esc(r.summary()));
+        appendCode(h, "bad", r.before());
+        appendCode(h, "good", r.after());
+        if (r.references() != null) {
+            for (String ref : r.references()) {
+                h.append("<div class=\"ref\">").append(esc(ref)).append("</div>");
+            }
+        }
+        h.append("</div>");
+    }
+
+    private static void appendCode(StringBuilder h, String css, String code) {
+        if (hasText(code)) {
+            h.append("<pre class=\"").append(css).append("\">").append(esc(code)).append("</pre>");
+        }
     }
 
     /** Auditoria completa: parecer, áreas, dívida técnica priorizada, quick wins, plano em fases e limites. */

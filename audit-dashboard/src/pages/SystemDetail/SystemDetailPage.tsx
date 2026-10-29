@@ -222,11 +222,55 @@ function RunsSection({ loading, runs, live }: { loading: boolean; runs: AuditRun
   );
 }
 
+function scoreCaption(shown: number | null): string {
+  if (shown === null) return 'Sem auditoria concluída';
+  const missing = Math.max(0, TARGET_SCORE - shown);
+  if (missing === 0) return `Dentro da meta de ${TARGET_SCORE}`;
+  return `Meta ${TARGET_SCORE} · faltam ${missing} ${missing === 1 ? 'ponto' : 'pontos'}`;
+}
+
+function ScoreHeadline({ shown }: { shown: number | null }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 88, fontWeight: 300, lineHeight: 1, color: bandColor(shown) }}>{shown ?? '—'}</span>
+        {shown !== null && <span style={{ color: 'var(--s-text-3)' }}>de 100</span>}
+      </div>
+      <div style={{ color: 'var(--s-text-2)', marginTop: 4 }}>{scoreCaption(shown)}</div>
+    </div>
+  );
+}
+
+function DimensionBar({ label, n }: { label: string; n: number | null }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+        <span>{label}</span>
+        <strong style={{ color: bandColor(n) }}>{n ?? '—'}</strong>
+      </div>
+      <div style={{ position: 'relative', height: 8, borderRadius: 4, background: 'var(--s-border)', marginTop: 4 }}>
+        <span style={{ position: 'absolute', inset: '0 auto 0 0', width: `${Math.max(0, Math.min(100, n ?? 0))}%`, borderRadius: 4, background: bandColor(n) }} />
+        <span aria-hidden="true" title={`Meta ${TARGET_SCORE}`} style={{ position: 'absolute', left: `${TARGET_SCORE}%`, top: -3, bottom: -3, width: 2, background: 'var(--s-text)' }} />
+      </div>
+    </div>
+  );
+}
+
+function DimensionBars({ riskScore }: { riskScore: AuditRunResponse['riskScore'] | undefined }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '14px 40px' }}>
+      {dimensionLabels.map(({ key, label }) => {
+        const value = riskScore?.[key];
+        return <DimensionBar key={key} label={label} n={typeof value === 'number' ? Math.round(value) : null} />;
+      })}
+    </div>
+  );
+}
+
 /** Nota geral, as seis dimensões (com a meta marcada) e os achados por gravidade da última auditoria concluída. */
 function ScoreOverview({ latest, fallbackScore }: { latest: AuditRunResponse | undefined; fallbackScore: number | null }) {
   const overall = latest?.riskScore?.overall ?? fallbackScore;
   const shown = overall === null || overall === undefined ? null : Math.round(overall);
-  const missing = shown === null ? null : Math.max(0, TARGET_SCORE - shown);
   const total = severityOrder.reduce((acc, sev) => acc + (latest?.findingsSummary[sev] ?? 0), 0);
   return (
     <PageSection
@@ -236,33 +280,8 @@ function ScoreOverview({ latest, fallbackScore }: { latest: AuditRunResponse | u
       aside={latest && <span style={{ fontSize: 14, color: 'var(--s-text-3)' }}>última concluída: #{latest.id}, {startLabel(latest.startedAt)}</span>}
     >
       <div aria-label="Última auditoria concluída" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '24px 48px', alignItems: 'center' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 88, fontWeight: 300, lineHeight: 1, color: bandColor(shown) }}>{shown ?? '—'}</span>
-            {shown !== null && <span style={{ color: 'var(--s-text-3)' }}>de 100</span>}
-          </div>
-          <div style={{ color: 'var(--s-text-2)', marginTop: 4 }}>
-            {shown === null ? 'Sem auditoria concluída' : missing === 0 ? `Dentro da meta de ${TARGET_SCORE}` : `Meta ${TARGET_SCORE} · faltam ${missing} ${missing === 1 ? 'ponto' : 'pontos'}`}
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '14px 40px' }}>
-          {dimensionLabels.map(({ key, label }) => {
-            const value = latest?.riskScore?.[key];
-            const n = typeof value === 'number' ? Math.round(value) : null;
-            return (
-              <div key={key}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                  <span>{label}</span>
-                  <strong style={{ color: bandColor(n) }}>{n ?? '—'}</strong>
-                </div>
-                <div style={{ position: 'relative', height: 8, borderRadius: 4, background: 'var(--s-border)', marginTop: 4 }}>
-                  <span style={{ position: 'absolute', inset: '0 auto 0 0', width: `${Math.max(0, Math.min(100, n ?? 0))}%`, borderRadius: 4, background: bandColor(n) }} />
-                  <span aria-hidden="true" title={`Meta ${TARGET_SCORE}`} style={{ position: 'absolute', left: `${TARGET_SCORE}%`, top: -3, bottom: -3, width: 2, background: 'var(--s-text)' }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <ScoreHeadline shown={shown} />
+        <DimensionBars riskScore={latest?.riskScore} />
       </div>
       {latest && <SeverityBar run={latest} total={total} />}
     </PageSection>
@@ -298,6 +317,53 @@ function newestCompleted(runs: AuditRunResponse[] | undefined): AuditRunResponse
   return runs?.filter((r) => r.status === 'COMPLETED').sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())[0];
 }
 
+function buildIndex(runCount: number, hasCompleted: boolean, debtCount?: number, suppressedCount = 0): IndexItem[] {
+  const hasInsights = debtCount !== undefined;
+  return [
+    { id: 'visao', label: 'Visão geral' },
+    { id: 'auditorias', label: 'Auditorias', badge: String(runCount) },
+    ...(hasCompleted ? [{ id: 'mudou', label: 'O que mudou' }, { id: 'parecer', label: 'Parecer' }] : []),
+    ...(hasInsights ? [{ id: 'plano', label: 'O que corrigir', badge: String(debtCount) }] : []),
+    { id: 'tendencia', label: 'Evolução da nota' },
+    ...(hasInsights ? [{ id: 'limites', label: 'Limites e mapa' }] : []),
+    ...(suppressedCount > 0 ? [{ id: 'suprimidos', label: 'Suprimidos', badge: String(suppressedCount) }] : []),
+  ];
+}
+
+function SystemNotFound({ error }: { error: unknown }) {
+  return (
+    <InlineNotification
+      kind="error"
+      title="Sistema não encontrado"
+      subtitle={error instanceof Error ? error.message : 'ID inválido'}
+      style={{ margin: '2rem' }}
+    />
+  );
+}
+
+interface DetailSectionsProps {
+  systemId: number;
+  latest: AuditRunResponse | undefined;
+  fallbackScore: number | null;
+  loadingRuns: boolean;
+  runs: AuditRunResponse[];
+  live: boolean;
+}
+
+function DetailSections({ systemId, latest, fallbackScore, loadingRuns, runs, live }: DetailSectionsProps) {
+  return (
+    <div className="sentinel-secoes">
+      <ScoreOverview latest={latest} fallbackScore={fallbackScore} />
+      <RunsSection loading={loadingRuns} runs={runs} live={live} />
+      {latest && <DiffSummary auditId={latest.id} />}
+      <InsightsPanel auditId={latest?.id} />
+      <TrendChart systemId={systemId} />
+      <InsightsLimits auditId={latest?.id} />
+      <SuppressionsList systemId={systemId} />
+    </div>
+  );
+}
+
 export function SystemDetailPage() {
   const { systemId } = useParams<{ systemId: string }>();
   const navigate = useNavigate();
@@ -317,29 +383,10 @@ export function SystemDetailPage() {
       <SkeletonText paragraph lineCount={8} />
     </div>
   );
+  if (systemError || !system) return <SystemNotFound error={systemError} />;
 
-  if (systemError || !system) {
-    return (
-      <InlineNotification
-        kind="error"
-        title="Sistema não encontrado"
-        subtitle={systemError instanceof Error ? systemError.message : 'ID inválido'}
-        style={{ margin: '2rem' }}
-      />
-    );
-  }
-
-  const live = (auditRuns ?? []).some(isActive);
   const runs = auditRuns?.slice(0, 8) ?? [];
-  const index: IndexItem[] = [
-    { id: 'visao', label: 'Visão geral' },
-    { id: 'auditorias', label: 'Auditorias', badge: String(runs.length) },
-    ...(latestCompleted ? [{ id: 'mudou', label: 'O que mudou' }, { id: 'parecer', label: 'Parecer' }] : []),
-    ...(insights.data ? [{ id: 'plano', label: 'O que corrigir', badge: String(insights.data.debtTable.length) }] : []),
-    { id: 'tendencia', label: 'Evolução da nota' },
-    ...(insights.data ? [{ id: 'limites', label: 'Limites e mapa' }] : []),
-    ...(suppressions.data && suppressions.data.length > 0 ? [{ id: 'suprimidos', label: 'Suprimidos', badge: String(suppressions.data.length) }] : []),
-  ];
+  const index = buildIndex(runs.length, !!latestCompleted, insights.data?.debtTable.length, suppressions.data?.length);
 
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, { label: system.name }]}>
@@ -348,15 +395,14 @@ export function SystemDetailPage() {
       <StartAuditModal system={starting ? system : null} onClose={() => setStarting(false)} onStarted={setStarted} />
       <div className="sentinel-com-indice">
         <SectionIndex items={index} />
-        <div className="sentinel-secoes">
-          <ScoreOverview latest={latestCompleted} fallbackScore={system.lastAuditScore ?? null} />
-          <RunsSection loading={loadingRuns} runs={runs} live={live} />
-          {latestCompleted && <DiffSummary auditId={latestCompleted.id} />}
-          <InsightsPanel auditId={latestCompleted?.id} />
-          <TrendChart systemId={id} />
-          <InsightsLimits auditId={latestCompleted?.id} />
-          <SuppressionsList systemId={id} />
-        </div>
+        <DetailSections
+          systemId={id}
+          latest={latestCompleted}
+          fallbackScore={system.lastAuditScore ?? null}
+          loadingRuns={loadingRuns}
+          runs={runs}
+          live={auditRuns?.some(isActive) === true}
+        />
       </div>
     </PageShell>
   );

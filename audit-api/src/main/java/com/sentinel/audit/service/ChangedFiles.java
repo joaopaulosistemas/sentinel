@@ -47,51 +47,69 @@ public final class ChangedFiles {
      * @param env       variáveis de ambiente do git (credenciais por cabeçalho, sem prompt)
      */
     public static Result compute(Path repo, String baseRef, List<String> gitPrefix, Map<String, String> env, long timeoutSeconds) {
-        if (baseRef == null || !REF.matcher(baseRef).matches() || baseRef.contains("..") || baseRef.endsWith("/")
-                || baseRef.endsWith(".lock")) {
+        if (!isValidRef(baseRef)) {
             return Result.unavailable("referência base inválida");
         }
+        Git git = new Git(repo, gitPrefix, env, timeoutSeconds);
         try {
             // Traz o branch base (raso). Se já existir localmente ou o remoto estiver indisponível, segue com o que houver.
-            git(repo, gitPrefix, env, timeoutSeconds, "fetch", "--no-tags", "--depth=" + FETCH_DEPTH, "origin",
+            git.run("fetch", "--no-tags", "--depth=" + FETCH_DEPTH, "origin",
                     "+refs/heads/" + baseRef + ":refs/remotes/origin/" + baseRef);
-
-            String ref = null;
-            for (String candidate : List.of("refs/remotes/origin/" + baseRef, "refs/heads/" + baseRef)) {
-                if (git(repo, gitPrefix, env, timeoutSeconds, "rev-parse", "--verify", "--quiet", candidate + "^{commit}").exit() == 0) {
-                    ref = candidate;
-                    break;
-                }
-            }
+            String ref = resolveBase(git, baseRef);
             if (ref == null) {
                 return Result.unavailable("branch base não encontrado no repositório");
             }
-            GitOut diff = git(repo, gitPrefix, env, timeoutSeconds, "diff", "--name-only", "-z", "--diff-filter=ACMR", ref + "...HEAD", "--");
-            boolean approximate = false;
-            if (diff.exit() != 0) {                                    // clone raso: aprofunda o histórico da própria branch
-                git(repo, gitPrefix, env, timeoutSeconds, "fetch", "--no-tags", "--deepen=" + FETCH_DEPTH, "origin");
-                diff = git(repo, gitPrefix, env, timeoutSeconds, "diff", "--name-only", "-z", "--diff-filter=ACMR", ref + "...HEAD", "--");
-            }
-            if (diff.exit() != 0) {                                    // ainda sem ancestral comum
-                diff = git(repo, gitPrefix, env, timeoutSeconds, "diff", "--name-only", "-z", "--diff-filter=ACMR", ref, "HEAD", "--");
-                approximate = true;
-            }
-            if (diff.exit() != 0) {
-                return Result.unavailable("git diff falhou");
-            }
-            Set<String> files = new HashSet<>();
-            for (String p : diff.out().split("\0")) {
-                if (!p.isBlank()) {
-                    files.add(normalize(p));
-                }
-            }
-            return new Result(files, approximate, null);
+            return diffAgainst(git, ref);
         } catch (IOException e) {
             return Result.unavailable(e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return Result.unavailable("interrompido");
         }
+    }
+
+    private static boolean isValidRef(String baseRef) {
+        return baseRef != null && REF.matcher(baseRef).matches() && !baseRef.contains("..") && !baseRef.endsWith("/")
+                && !baseRef.endsWith(".lock");
+    }
+
+    /** Repositório e opções comuns a todas as chamadas do git. */
+    private record Git(Path repo, List<String> prefix, Map<String, String> env, long timeoutSeconds) {
+        GitOut run(String... args) throws IOException, InterruptedException {
+            return git(repo, prefix, env, timeoutSeconds, args);
+        }
+    }
+
+    private static String resolveBase(Git git, String baseRef) throws IOException, InterruptedException {
+        for (String candidate : List.of("refs/remotes/origin/" + baseRef, "refs/heads/" + baseRef)) {
+            if (git.run("rev-parse", "--verify", "--quiet", candidate + "^{commit}").exit() == 0) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static Result diffAgainst(Git git, String ref) throws IOException, InterruptedException {
+        GitOut diff = git.run("diff", "--name-only", "-z", "--diff-filter=ACMR", ref + "...HEAD", "--");
+        boolean approximate = false;
+        if (diff.exit() != 0) {                                    // clone raso: aprofunda o histórico da própria branch
+            git.run("fetch", "--no-tags", "--deepen=" + FETCH_DEPTH, "origin");
+            diff = git.run("diff", "--name-only", "-z", "--diff-filter=ACMR", ref + "...HEAD", "--");
+        }
+        if (diff.exit() != 0) {                                    // ainda sem ancestral comum
+            diff = git.run("diff", "--name-only", "-z", "--diff-filter=ACMR", ref, "HEAD", "--");
+            approximate = true;
+        }
+        if (diff.exit() != 0) {
+            return Result.unavailable("git diff falhou");
+        }
+        Set<String> files = new HashSet<>();
+        for (String p : diff.out().split("\0")) {
+            if (!p.isBlank()) {
+                files.add(normalize(p));
+            }
+        }
+        return new Result(files, approximate, null);
     }
 
     /** Mantém só achados cujo arquivo foi alterado. Achados sem arquivo (ex.: "dependência ausente") não pertencem a um PR. */

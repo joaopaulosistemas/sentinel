@@ -1,7 +1,7 @@
 import { DataTableSkeleton, InlineNotification, Modal } from '@carbon/react';
 import { PageShell } from '../../components/PageShell';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { EngineAnalyzersPanel, EngineRulesPanel } from '../../components/EnginePanel';
@@ -9,7 +9,7 @@ import { McpPanel } from '../../components/McpPanel';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { usePacks } from '../../hooks/useLifecycle';
 import { useSystems } from '../../hooks/useSystems';
-import type { SystemSummaryResponse } from '../../types';
+import type { ProfileInfo, SystemSummaryResponse } from '../../types';
 import {
   emptyForm,
   formFrom,
@@ -240,10 +240,44 @@ interface EditDialogProps {
   cadastro: ReactNode;
 }
 
+function DialogHeader({ editing, onClose }: { editing: SystemSummaryResponse | 'new'; onClose: () => void }) {
+  const isNew = editing === 'new';
+  return (
+    <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+      <div>
+        <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{isNew ? 'Cadastrando' : 'Editando'}</div>
+        <h2 style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 400 }}>{isNew ? 'Novo sistema' : editing.name}</h2>
+      </div>
+      <button type="button" aria-label="Fechar" onClick={onClose} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--s-text)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </div>
+  );
+}
+
+/** As abas do motor ficam montadas (só escondidas) depois da primeira visita; "Claude (MCP)" e "Cadastro" montam só quando ativas. */
+function DialogPanels(p: EditDialogProps & { editing: SystemSummaryResponse }) {
+  const { editing, tab, visited } = p;
+  return (
+    <>
+      {visited.includes('motor') && (
+        <div hidden={tab !== 'motor'}>
+          <EngineRulesPanel key={`motor-${editing.id}`} system={editing} onDirtyChange={p.onMotorDirty} />
+        </div>
+      )}
+      {visited.includes('analisadores') && (
+        <div hidden={tab !== 'analisadores'}>
+          <EngineAnalyzersPanel key={`an-${editing.id}`} system={editing} onDirtyChange={p.onAnalyzersDirty} />
+        </div>
+      )}
+      {tab === 'mcp' && <McpPanel system={editing} />}
+    </>
+  );
+}
+
 /** Pop-up de cadastro e edição: abas, aviso de alteração sem salvar e o painel da aba ativa. */
 function EditDialog(p: EditDialogProps) {
-  const { editing, tab, visited } = p;
-  const isNew = editing === 'new';
+  const { editing, tab } = p;
   return (
     <div
       role="presentation"
@@ -258,36 +292,15 @@ function EditDialog(p: EditDialogProps) {
         aria-label="Editar sistema"
         style={{ width: '70vw', minWidth: 'min(560px, 100%)', maxWidth: '100%', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: 'var(--s-surface)', borderTop: '3px solid var(--s-link)', display: 'flex', flexDirection: 'column' }}
       >
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{isNew ? 'Cadastrando' : 'Editando'}</div>
-            <h2 style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 400 }}>{isNew ? 'Novo sistema' : editing.name}</h2>
-          </div>
-          <button type="button" aria-label="Fechar" onClick={p.onRequestClose} style={{ width: 40, height: 40, background: 'transparent', border: 0, cursor: 'pointer' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--s-text)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </button>
-        </div>
-
+        <DialogHeader editing={editing} onClose={p.onRequestClose} />
         <SystemTabs
           tab={tab}
           onSelect={p.onTab}
-          isNew={isNew}
+          isNew={editing === 'new'}
           dirty={{ cadastro: p.cadastroDirty, motor: p.engineDirty.motor, analisadores: p.engineDirty.analisadores }}
         />
-
         {p.confirmClose && <ConfirmCloseBar tabs={p.dirtyTabs} onKeep={p.onKeepOpen} onDiscard={p.onDiscard} />}
-
-        {!isNew && visited.includes('motor') && (
-          <div hidden={tab !== 'motor'}>
-            <EngineRulesPanel key={`motor-${editing.id}`} system={editing} onDirtyChange={p.onMotorDirty} />
-          </div>
-        )}
-        {!isNew && visited.includes('analisadores') && (
-          <div hidden={tab !== 'analisadores'}>
-            <EngineAnalyzersPanel key={`an-${editing.id}`} system={editing} onDirtyChange={p.onAnalyzersDirty} />
-          </div>
-        )}
-        {tab === 'mcp' && !isNew && <McpPanel system={editing} />}
+        {editing !== 'new' && <DialogPanels {...p} editing={editing} />}
         {tab === 'cadastro' && p.cadastro}
       </div>
     </div>
@@ -379,68 +392,53 @@ function useSourceChecks(values: SystemFormValues, editing: SystemSummaryRespons
   return { check, checkPath };
 }
 
-/** Cadastro e edição de sistemas: lista com busca e um formulário único para criar ou editar. */
-export function SystemsPage() {
-  const queryClient = useQueryClient();
-  const { data: systems, isLoading, error } = useSystems();
-  const { data: packs } = usePacks();
-  const [params, setParams] = useSearchParams();
-
-  const [query, setQuery] = useState('');
-  const [editing, setEditing] = useState<SystemSummaryResponse | 'new' | null>(null);
-  const [values, setValues] = useState<SystemFormValues>(emptyForm);
-  const [touched, setTouched] = useState(false);
-  const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<SystemSummaryResponse | null>(null);
+/** Abas do pop-up. As do motor ficam montadas depois da primeira visita: trocar de aba não descarta o que foi digitado. */
+function useEditorTabs() {
   const [tab, setTabState] = useState<Tab>('cadastro');
-  // As abas de ajuste do motor ficam montadas depois da primeira visita: trocar de aba não descarta o que foi digitado.
   const [visited, setVisited] = useState<Tab[]>(['cadastro']);
   const setTab = (next: Tab) => {
     setTabState(next);
     setVisited((v) => (v.includes(next) ? v : [...v, next]));
   };
-  const [snapshot, setSnapshot] = useState('');
-  const [engineDirty, setEngineDirty] = useState<{ motor: boolean; analisadores: boolean }>({ motor: false, analisadores: false });
-  const [confirmClose, setConfirmClose] = useState(false);
+  const resetTabs = () => {
+    setTabState('cadastro');
+    setVisited(['cadastro']);
+  };
+  return { tab, visited, setTab, resetTabs };
+}
+
+type EngineDirty = { motor: boolean; analisadores: boolean };
+const CLEAN: EngineDirty = { motor: false, analisadores: false };
+
+/** O que cada aba do motor avisou que mudou sem salvar. */
+function useEngineDirty() {
+  const [engineDirty, setEngineDirty] = useState<EngineDirty>(CLEAN);
   const onMotorDirty = useCallback((d: boolean) => setEngineDirty((p) => withFlag(p, 'motor', d)), []);
   const onAnalyzersDirty = useCallback((d: boolean) => setEngineDirty((p) => withFlag(p, 'analisadores', d)), []);
+  return { engineDirty, onMotorDirty, onAnalyzersDirty, resetEngineDirty: () => setEngineDirty(CLEAN) };
+}
 
-  const errors = validate(values);
-  const invalid = Object.keys(errors).length > 0;
-
-  const { check, checkPath } = useSourceChecks(values, editing);
-  const localEnabled = useLocalSourceEnabled();
-  const remove = useRemoveSystem(() => setDeleteTarget(null));
-
-  const save = useMutation({
+/** Grava o cadastro (e o agendamento, se mudou); `onSaved` decide o que fazer depois. */
+function useSaveSystem(values: SystemFormValues, editing: SystemSummaryResponse | 'new' | null, onSaved: (system: SystemSummaryResponse, auditNow: boolean) => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: async (vars: { auditNow: boolean }) => ({
       system: await saveSystem(values, savedSystem(editing)),
       auditNow: vars.auditNow,
     }),
     onSuccess: ({ system, auditNow }) => {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
-      setEditing(null);
-      if (auditNow) setAuditTarget(system);
+      onSaved(system, auditNow);
     },
   });
+}
 
-  const open = (target: SystemSummaryResponse | 'new') => {
-    const initial = target === 'new' ? emptyForm : formFrom(target);
-    setEditing(target);
-    setTabState('cadastro');
-    setVisited(['cadastro']);
-    setValues(initial);
-    setSnapshot(JSON.stringify(initial));
-    setEngineDirty({ motor: false, analisadores: false });
-    setConfirmClose(false);
-    setTouched(false);
-    save.reset();
-    check.reset();
-    checkPath.reset();
-  };
-
-  // "Editar sistema" na tela do sistema chega aqui com ?edit=ID: abre o painel desse sistema.
-  // Com &tab=mcp (faixa do Claude na execução da auditoria), já abre na aba Claude (MCP).
+/**
+ * "Editar sistema" na tela do sistema chega aqui com ?edit=ID: abre o painel desse sistema.
+ * Com &tab=mcp (faixa do Claude na execução da auditoria), já abre na aba Claude (MCP).
+ */
+function useOpenFromUrl(systems: SystemSummaryResponse[] | undefined, open: (s: SystemSummaryResponse) => void, setTab: (t: Tab) => void) {
+  const [params, setParams] = useSearchParams();
   const editId = params.get('edit');
   const editTab = params.get('tab');
   useEffect(() => {
@@ -453,84 +451,186 @@ export function SystemsPage() {
     setParams({}, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, systems]);
+}
 
-  // Esc fecha o pop-up de cadastro, mas pergunta antes se houver alteração sem salvar.
-  const modalOpen = editing !== null;
-  const cadastroDirty = JSON.stringify(values) !== snapshot;
-  const dirtyTabs = dirtyLabels(cadastroDirty, engineDirty);
-  const anyDirty = modalOpen && dirtyTabs.length > 0;
-  const requestClose = () => {
-    if (anyDirty) setConfirmClose(true);
-    else setEditing(null);
-  };
-  useEscapeToClose(modalOpen, anyDirty, confirmClose, setConfirmClose, () => setEditing(null));
+type FormFieldsProps = ComponentProps<typeof SystemFormFields>;
 
-  if (isLoading) return <DataTableSkeleton columnCount={6} rowCount={5} />;
-  if (error) return <LoadError error={error} />;
+interface CadastroTabProps extends Pick<FormFieldsProps, 'values' | 'setValues' | 'errors' | 'touched' | 'check' | 'checkPath' | 'localEnabled' | 'save'> {
+  pending: boolean;
+  profiles: ProfileInfo[];
+  current: SystemSummaryResponse | null;
+  onCancel: () => void;
+  onSave: (auditNow: boolean) => void;
+}
 
-  const list = filterSystems(systems ?? [], query);
-  const profiles = packs?.profiles ?? [];
-  const current = savedSystem(editing);
-
-  const cadastro = (
+/** Aba "Cadastro e Git": os campos e o rodapé com salvar. */
+function CadastroTab({ pending, profiles, current, onCancel, onSave, ...fields }: CadastroTabProps) {
+  return (
     <>
       <SystemFormFields
-        values={values}
-        setValues={setValues}
-        errors={errors}
-        touched={touched}
-        check={check}
-        checkPath={checkPath}
-        localEnabled={localEnabled}
-        save={save}
+        {...fields}
         profiles={profiles}
-        profileInfo={profiles.find((p) => p.id === values.profile)}
+        profileInfo={profiles.find((p) => p.id === fields.values.profile)}
         tokenSaved={!!current?.gitTokenSet}
         notifySaved={!!current?.notifyUrlSet}
         webhookSaved={!!current?.webhookSecretSet}
         mono="'IBM Plex Mono', ui-monospace, monospace"
       />
-      <FormFooter
-        pending={save.isPending}
-        onCancel={requestClose}
-        onSave={(auditNow) => {
-          setTouched(true);
-          if (!invalid) save.mutate({ auditNow });
-        }}
-      />
+      <FormFooter pending={pending} onCancel={onCancel} onSave={onSave} />
     </>
   );
+}
+
+interface ListSectionProps {
+  systems: SystemSummaryResponse[];
+  selectedId: number | null;
+  onAudit: (s: SystemSummaryResponse) => void;
+  onEdit: (s: SystemSummaryResponse) => void;
+  onDelete: (s: SystemSummaryResponse) => void;
+}
+
+/** Busca e a tabela de sistemas (ou o aviso de lista vazia). */
+function SystemsListSection({ systems, selectedId, onAudit, onEdit, onDelete }: ListSectionProps) {
+  const [query, setQuery] = useState('');
+  const list = filterSystems(systems, query);
+  return (
+    <section aria-label="Lista de sistemas" style={{ flex: '999 1 640px', minWidth: 0, background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+      <SearchBar query={query} onQuery={setQuery} />
+      {list.length === 0 ? (
+        <EmptyList hasSystems={systems.length > 0} />
+      ) : (
+        <SystemsTable systems={list} selectedId={selectedId} onAudit={onAudit} onEdit={onEdit} onDelete={onDelete} />
+      )}
+    </section>
+  );
+}
+
+/** Marca o formulário como tocado (para mostrar os erros) e só envia se estiver válido. */
+function submitForm(errors: object, setTouched: (v: boolean) => void, send: () => void) {
+  setTouched(true);
+  if (Object.keys(errors).length === 0) send();
+}
+
+/** Esc e o X fecham o pop-up, mas perguntam antes se houver alteração sem salvar. */
+function useCloseGuard(g: {
+  modalOpen: boolean;
+  cadastroDirty: boolean;
+  engineDirty: EngineDirty;
+  confirmClose: boolean;
+  setConfirmClose: (v: boolean) => void;
+  close: () => void;
+}) {
+  const { modalOpen, cadastroDirty, engineDirty, confirmClose, setConfirmClose, close } = g;
+  const dirtyTabs = dirtyLabels(cadastroDirty, engineDirty);
+  const anyDirty = modalOpen && dirtyTabs.length > 0;
+  const requestClose = () => {
+    if (anyDirty) setConfirmClose(true);
+    else close();
+  };
+  useEscapeToClose(modalOpen, anyDirty, confirmClose, setConfirmClose, close);
+  return { cadastroDirty, dirtyTabs, requestClose };
+}
+
+/** Cadastro e edição de sistemas: lista com busca e um formulário único para criar ou editar. */
+export function SystemsPage() {
+  const { data: systems, isLoading, error } = useSystems();
+  const { data: packs } = usePacks();
+
+  const [editing, setEditing] = useState<SystemSummaryResponse | 'new' | null>(null);
+  const [values, setValues] = useState<SystemFormValues>(emptyForm);
+  const [touched, setTouched] = useState(false);
+  const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SystemSummaryResponse | null>(null);
+  const [snapshot, setSnapshot] = useState('');
+  const [confirmClose, setConfirmClose] = useState(false);
+  const { tab, visited, setTab, resetTabs } = useEditorTabs();
+  const { engineDirty, onMotorDirty, onAnalyzersDirty, resetEngineDirty } = useEngineDirty();
+
+  const errors = validate(values);
+  const { check, checkPath } = useSourceChecks(values, editing);
+  const localEnabled = useLocalSourceEnabled();
+  const remove = useRemoveSystem(() => setDeleteTarget(null));
+  const save = useSaveSystem(values, editing, (system, auditNow) => {
+    setEditing(null);
+    if (auditNow) setAuditTarget(system);
+  });
+
+  const open = (target: SystemSummaryResponse | 'new') => {
+    const initial = target === 'new' ? emptyForm : formFrom(target);
+    setEditing(target);
+    resetTabs();
+    setValues(initial);
+    setSnapshot(JSON.stringify(initial));
+    resetEngineDirty();
+    setConfirmClose(false);
+    setTouched(false);
+    save.reset();
+    check.reset();
+    checkPath.reset();
+  };
+  useOpenFromUrl(systems, open, setTab);
+
+  const guard = useCloseGuard({
+    modalOpen: editing !== null,
+    cadastroDirty: JSON.stringify(values) !== snapshot,
+    engineDirty,
+    confirmClose,
+    setConfirmClose,
+    close: () => setEditing(null),
+  });
+
+  if (isLoading) return <DataTableSkeleton columnCount={6} rowCount={5} />;
+  if (error) return <LoadError error={error} />;
+
+  const current = savedSystem(editing);
+  const onSave = (auditNow: boolean) => submitForm(errors, setTouched, () => save.mutate({ auditNow }));
+  const list = systems ?? [];
 
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas' }]}>
-      <PageHeading count={systems?.length ?? 0} onNew={() => open('new')} />
+      <PageHeading count={list.length} onNew={() => open('new')} />
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
-        <section aria-label="Lista de sistemas" style={{ flex: '999 1 640px', minWidth: 0, background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
-          <SearchBar query={query} onQuery={setQuery} />
-          {list.length === 0 ? (
-            <EmptyList hasSystems={!!systems?.length} />
-          ) : (
-            <SystemsTable systems={list} selectedId={current?.id ?? null} onAudit={setAuditTarget} onEdit={open} onDelete={(s) => { remove.reset(); setDeleteTarget(s); }} />
-          )}
-        </section>
+        <SystemsListSection
+          systems={list}
+          selectedId={current?.id ?? null}
+          onAudit={setAuditTarget}
+          onEdit={open}
+          onDelete={(s) => { remove.reset(); setDeleteTarget(s); }}
+        />
 
         {editing !== null && (
           <EditDialog
             editing={editing}
             tab={tab}
             visited={visited}
-            cadastroDirty={cadastroDirty}
+            cadastroDirty={guard.cadastroDirty}
             engineDirty={engineDirty}
-            dirtyTabs={dirtyTabs}
+            dirtyTabs={guard.dirtyTabs}
             confirmClose={confirmClose}
             onTab={setTab}
             onMotorDirty={onMotorDirty}
             onAnalyzersDirty={onAnalyzersDirty}
             onKeepOpen={() => setConfirmClose(false)}
             onDiscard={() => { setConfirmClose(false); setEditing(null); }}
-            onRequestClose={requestClose}
-            cadastro={cadastro}
+            onRequestClose={guard.requestClose}
+            cadastro={
+              <CadastroTab
+                values={values}
+                setValues={setValues}
+                errors={errors}
+                touched={touched}
+                check={check}
+                checkPath={checkPath}
+                localEnabled={localEnabled}
+                save={save}
+                pending={save.isPending}
+                profiles={packs?.profiles ?? []}
+                current={current}
+                onCancel={guard.requestClose}
+                onSave={onSave}
+              />
+            }
           />
         )}
       </div>

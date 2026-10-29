@@ -72,11 +72,19 @@ public final class FindingsOverview {
 
     /** O resumo por sistema ignora o filtro de sistema (senão todos os outros apareceriam com zero). */
     private static boolean matches(Finding f, Filter filter) {
-        if (filter.severities() != null && !filter.severities().isEmpty() && !filter.severities().contains(f.getSeverity())) return false;
-        if (filter.category() != null && f.getCategory() != filter.category()) return false;
-        if (filter.status() != null && f.getStatus() != filter.status()) return false;
-        if (!filter.includeSuppressed() && filter.status() != FindingStatus.SUPPRESSED
-                && f.getStatus() == FindingStatus.SUPPRESSED) return false;
-        return !filter.onlyNew() || Boolean.TRUE.equals(f.getIsNew());
+        return severityMatches(f, filter)
+                && (filter.category() == null || f.getCategory() == filter.category())
+                && (filter.status() == null || f.getStatus() == filter.status())
+                && suppressedMatches(f, filter)
+                && (!filter.onlyNew() || Boolean.TRUE.equals(f.getIsNew()));
+    }
+
+    private static boolean severityMatches(Finding f, Filter filter) {
+        return filter.severities() == null || filter.severities().isEmpty() || filter.severities().contains(f.getSeverity());
+    }
+
+    private static boolean suppressedMatches(Finding f, Filter filter) {
+        return filter.includeSuppressed() || filter.status() == FindingStatus.SUPPRESSED
+                || f.getStatus() != FindingStatus.SUPPRESSED;
     }
 }

@@ -113,38 +113,61 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
         }
     }
 
+    /** Onde a leitura do diff está: commit, arquivo e linha atuais, e se o arquivo vale ser examinado. */
+    private static final class DiffState {
+        String commit;
+        String path;
+        boolean scan;
+        int line;
+
+        /** Atualiza o estado se a linha for um cabeçalho do diff; devolve se foi. */
+        boolean readHeader(String l) {
+            if (l.startsWith(COMMIT_MARKER)) {
+                commit = l.substring(COMMIT_MARKER.length()).trim();
+            } else if (l.startsWith("+++ ")) {
+                path = diffPath(l);
+                scan = path != null && SecretsAnalyzer.isScannablePath(path);
+            } else if (l.startsWith("@@ ")) {
+                line = hunkStart(l);
+            } else {
+                return false;
+            }
+            return true;
+        }
+
+        boolean isAddedLine(String l) {
+            return scan && l.startsWith("+") && !l.startsWith("+++");
+        }
+    }
+
     /** Lê a saída de {@code git log -p} e devolve segredos adicionados que não existem mais na versão atual. */
     List<Finding> parse(Path logFile, Path repo, AuditRun auditRun) throws IOException {
         List<Finding> findings = new ArrayList<>();
         Set<String> seen = new HashSet<>();
-        String commit = null;
-        String path = null;
-        boolean scan = false;
-        int line = 0;
+        DiffState st = new DiffState();
         try (BufferedReader reader = Files.newBufferedReader(logFile, StandardCharsets.ISO_8859_1)) {
             String l = reader.readLine();
             while (l != null && findings.size() < MAX_FINDINGS) {
-                if (l.startsWith(COMMIT_MARKER)) {
-                    commit = l.substring(COMMIT_MARKER.length()).trim();
-                } else if (l.startsWith("+++ ")) {
-                    path = diffPath(l);
-                    scan = path != null && SecretsAnalyzer.isScannablePath(path);
-                } else if (l.startsWith("@@ ")) {
-                    line = hunkStart(l);
-                } else if (scan && l.startsWith("+") && !l.startsWith("+++")) {
-                    String added = l.substring(1);
-                    for (SecretsAnalyzer.SecretMatch m : SecretsAnalyzer.findSecrets(added)) {
-                        String key = path + "|" + m.value();
-                        if (seen.add(key) && !stillPresent(repo, path, m.value())) {
-                            findings.add(build(path, line, commit, added, m, auditRun));
-                        }
-                    }
-                    line++;
+                if (!st.readHeader(l) && st.isAddedLine(l)) {
+                    findings.addAll(secretsIn(st, l.substring(1), repo, auditRun, seen));
+                    st.line++;
                 }
                 l = reader.readLine();
             }
         }
         return findings;
+    }
+
+    /** Segredos novos na linha adicionada (um por arquivo e valor) que já não estão no arquivo atual. */
+    private List<Finding> secretsIn(DiffState st, String added, Path repo, AuditRun auditRun, Set<String> seen) {
+        List<Finding> found = new ArrayList<>();
+        for (SecretsAnalyzer.SecretMatch m : SecretsAnalyzer.findSecrets(added)) {
+            String key = st.path + "|" + m.value();
+            if (seen.add(key) && !stillPresent(repo, st.path, m.value())) {
+                found.add(build(st, added, m, auditRun));
+            }
+        }
+        return found;
     }
 
     /** Caminho do arquivo novo no cabeçalho {@code +++ b/...} do diff; nulo para {@code /dev/null}. */
@@ -182,8 +205,9 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
         }
     }
 
-    private Finding build(String path, int line, String commit, String added, SecretsAnalyzer.SecretMatch m,
-                          AuditRun auditRun) {
+    private Finding build(DiffState st, String added, SecretsAnalyzer.SecretMatch m, AuditRun auditRun) {
+        String path = st.path;
+        String commit = st.commit;
         String shortSha = commit == null ? "?" : commit.substring(0, Math.min(SHORT_SHA_LENGTH, commit.length()));
         Finding f = new Finding();
         f.setAuditRun(auditRun);
@@ -195,7 +219,7 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
                 + "continua acessível no histórico. Revogue/rotacione a credencial; apagar o commit não basta se "
                 + "o repositório já foi clonado por alguém.");
         f.setFilePath(path);
-        f.setLineNumber(line);
+        f.setLineNumber(st.line);
         f.setCodeSnippet(SecretsAnalyzer.redactSecret(added.strip(), m.value()));
         f.setRuleId("secrets-history-" + m.pattern().name());
         f.setToolSource(ANALYZER_NAME);

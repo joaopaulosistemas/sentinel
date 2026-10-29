@@ -114,29 +114,42 @@ public class AuditProgressTracker {
     }
 
     public void analyzerStarted(Long auditId, String name) {
-        update(auditId, name, "EXECUTANDO", 0, 0, null, null);
+        update(auditId, name, new Update("EXECUTANDO", 0, 0, null, null));
     }
 
-    public void analyzerFinished(Long auditId, String name, String status, int findings, long durationMs, String note) {
-        analyzerFinished(auditId, name, status, findings, durationMs, note, Map.of());
+    /**
+     * Como o analisador terminou.
+     *
+     * @param bySeverity achados por severidade (resultado parcial); pode ser vazio
+     */
+    public record Done(String status, int findings, long durationMs, String note, Map<String, Integer> bySeverity) {
+        public static Done of(String status, int findings, long durationMs, String note) {
+            return new Done(status, findings, durationMs, note, Map.of());
+        }
     }
 
-    /** Como acima, guardando também os achados do analisador por severidade (resultado parcial). */
-    public void analyzerFinished(Long auditId, String name, String status, int findings, long durationMs, String note,
-                                 Map<String, Integer> bySeverity) {
+    /** Guarda o resultado do analisador, inclusive os achados por severidade, e registra no log do andamento. */
+    public void analyzerFinished(Long auditId, String name, Done done) {
         State st = state(auditId);
-        if (st != null && bySeverity != null) {
+        if (st != null && done.bySeverity() != null) {
             synchronized (st) {
-                st.severities.put(name, Map.copyOf(bySeverity));
+                st.severities.put(name, Map.copyOf(done.bySeverity()));
             }
         }
-        String msg = "FALHOU".equals(status)
-                ? name + " falhou" + (note == null ? "" : ": " + note)
-                : "PARCIAL".equals(status)
-                ? name + " terminou de forma parcial (" + findings + (findings == 1 ? " achado" : " achados") + ")"
-                        + (note == null ? "" : ": " + note)
-                : name + " concluído: " + findings + (findings == 1 ? " achado" : " achados");
-        update(auditId, name, status, findings, durationMs, note, msg);
+        update(auditId, name, new Update(done.status(), done.findings(), done.durationMs(), done.note(),
+                finishMessage(name, done)));
+    }
+
+    private static String finishMessage(String name, Done done) {
+        String found = done.findings() + (done.findings() == 1 ? " achado" : " achados");
+        String note = done.note() == null ? "" : ": " + done.note();
+        if ("FALHOU".equals(done.status())) {
+            return name + " falhou" + note;
+        }
+        if ("PARCIAL".equals(done.status())) {
+            return name + " terminou de forma parcial (" + found + ")" + note;
+        }
+        return name + " concluído: " + found;
     }
 
     /** A auditoria terminou (com sucesso, falha ou cancelamento): o andamento deixa de existir. */
@@ -244,15 +257,18 @@ public class AuditProgressTracker {
         }
     }
 
-    private void update(Long auditId, String name, String status, int findings, long durationMs, String note, String message) {
+    /** Novo estado de um analisador e, se houver, a mensagem para o log. */
+    private record Update(String status, int findings, long durationMs, String note, String message) { }
+
+    private void update(Long auditId, String name, Update u) {
         State s = state(auditId);
         if (s == null) return;
         synchronized (s) {
             AnalyzerProgress before = s.analyzers.get(name);
             String description = before != null && before.description() != null && !before.description().isBlank()
                     ? before.description() : AnalyzerCatalog.describe(name);
-            s.analyzers.put(name, new AnalyzerProgress(name, status, findings, durationMs, note, description));
-            if (message != null) log(s, message);
+            s.analyzers.put(name, new AnalyzerProgress(name, u.status(), u.findings(), u.durationMs(), u.note(), description));
+            if (u.message() != null) log(s, u.message());
         }
         mirror(auditId, s);
     }

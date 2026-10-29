@@ -12,6 +12,7 @@ import {
   filterRuleRows,
   isNoopAdjustment,
   type BulkAction,
+  type RuleRow,
   type RuleScope,
 } from '../utils/ruleCatalog';
 import {
@@ -100,6 +101,106 @@ interface PanelProps {
   onDirtyChange?: (dirty: boolean) => void;
 }
 
+function hasUnsavedRules(
+  cfg: EngineConfig | undefined,
+  packs: Record<string, boolean>,
+  limits: Record<string, string>,
+  rules: RuleAdjustment[],
+): boolean {
+  if (!cfg || Object.keys(packs).length === 0) return false;
+  const saved = { enablePacks: cfg.tuning.enablePacks, disablePacks: cfg.tuning.disablePacks, thresholds: cfg.tuning.thresholds, rules: cfg.tuning.rules };
+  return signature(sliceOf(cfg, packs, limits, rules)) !== signature(saved);
+}
+
+/** Avisa quem abriu o painel quando há (ou deixa de haver) alteração sem salvar. */
+function useDirtyReport(dirty: boolean, onDirtyChange?: (dirty: boolean) => void): void {
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+}
+
+/** Efeito de cada regra na nota: vem do plano de correção da última auditoria concluída. */
+function useFixPlanItems(systemId: number) {
+  const runs = useAuditRuns(systemId);
+  const latest = latestCompleted(runs.data);
+  const fixPlan = useFixPlan(latest?.id ?? 0, latest !== undefined);
+  const items = Array.isArray(fixPlan.data?.items) ? fixPlan.data.items : [];
+  return { items, data: fixPlan.data };
+}
+
+interface RulesSectionProps {
+  allRows: RuleRow[];
+  filtered: RuleRow[];
+  shown: RuleRow[];
+  filters: { text: string; scope: RuleScope; packFilter: string; packNames: string[] };
+  onFilters: { text: (v: string) => void; scope: (v: RuleScope) => void; pack: (v: string) => void };
+  catalogMissing: boolean;
+  picked: Set<string>;
+  gainPicked: number;
+  bulk: (action: BulkAction) => void;
+  table: {
+    current: (id: string) => RuleAdjustment;
+    inProfile: (id: string) => boolean;
+    onPickAll: (on: boolean) => void;
+    onSelect: (id: string, on: boolean) => void;
+    onChange: (id: string, patch: Partial<RuleAdjustment>) => void;
+  };
+  onMore: () => void;
+  newRule: { value: string; onChange: (v: string) => void; onAdd: () => void };
+}
+
+function RulesSection(p: RulesSectionProps) {
+  const { filtered, shown, allRows, filters } = p;
+  const allShownPicked = shown.length > 0 && shown.every((r) => p.picked.has(r.id));
+  return (
+    <section aria-label="Regras" style={{ display: 'grid', gap: 10 }}>
+      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Regras</h3>
+      <p style={{ margin: 0, fontSize: 12, color: 'var(--s-text-3)' }}>
+        {p.catalogMissing
+          ? 'Lista o que apareceu na última auditoria deste sistema. '
+          : 'Todas as regras dos pacotes, com o que cada uma faz. '}
+        “Só observar” mostra o achado sem pesar na nota. Aceita curinga: <code style={{ fontFamily: mono }}>sentinel-*</code>.
+        O ganho na nota é uma estimativa da última auditoria: quanto a nota sobe se a regra deixar de pesar.
+      </p>
+      <RuleFilters
+        text={filters.text}
+        scope={filters.scope}
+        packFilter={filters.packFilter}
+        packNames={filters.packNames}
+        count={filtered.length}
+        onText={p.onFilters.text}
+        onScope={p.onFilters.scope}
+        onPack={p.onFilters.pack}
+      />
+      <BulkBar count={p.picked.size} gain={p.gainPicked} bulk={p.bulk} />
+      {filtered.length === 0 ? (
+        <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>
+          {allRows.length === 0 ? 'Ainda não há auditoria concluída: adicione uma regra pelo id.' : 'Nenhuma regra com esse filtro.'}
+        </span>
+      ) : (
+        <RulesTable
+          rows={shown}
+          allShownPicked={allShownPicked}
+          isPicked={(id) => p.picked.has(id)}
+          current={p.table.current}
+          inProfile={p.table.inProfile}
+          onPickAll={p.table.onPickAll}
+          onSelect={p.table.onSelect}
+          onChange={p.table.onChange}
+        />
+      )}
+      {filtered.length > shown.length && (
+        <div>
+          <Button kind="ghost" size="sm" onClick={p.onMore}>
+            Mostrar mais {Math.min(PAGE, filtered.length - shown.length)} (faltam {filtered.length - shown.length})
+          </Button>
+        </div>
+      )}
+      <AddRuleRow value={p.newRule.value} onChange={p.newRule.onChange} onAdd={p.newRule.onAdd} />
+    </section>
+  );
+}
+
 /** Aba "Motor de regras": pacotes, limites e regras deste sistema, por cima do perfil. A nota continua sendo do motor. */
 export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   const { query, save } = useEngine(system.id);
@@ -113,12 +214,7 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   const [packFilter, setPackFilter] = useState('');
   const [visible, setVisible] = useState(PAGE);
   const [picked, setPicked] = useState<Set<string>>(new Set());
-
-  // Efeito de cada regra na nota: vem do plano de correção da última auditoria concluída.
-  const runs = useAuditRuns(system.id);
-  const latest = latestCompleted(runs.data);
-  const fixPlan = useFixPlan(latest?.id ?? 0, latest !== undefined);
-  const planItems = Array.isArray(fixPlan.data?.items) ? fixPlan.data.items : [];
+  const plan = useFixPlanItems(system.id);
 
   const syncFrom = (data: EngineConfig) => {
     setPacks(Object.fromEntries(data.packs.map((p) => [p.id, p.active])));
@@ -127,17 +223,11 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
     setPicked(new Set());
   };
 
-  const dirty = useMemo(() => {
-    if (!cfg || Object.keys(packs).length === 0) return false;
-    const saved = { enablePacks: cfg.tuning.enablePacks, disablePacks: cfg.tuning.disablePacks, thresholds: cfg.tuning.thresholds, rules: cfg.tuning.rules };
-    return signature(sliceOf(cfg, packs, limits, rules)) !== signature(saved);
-  }, [cfg, packs, limits, rules]);
+  const dirty = useMemo(() => hasUnsavedRules(cfg, packs, limits, rules), [cfg, packs, limits, rules]);
 
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
-  useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+  useDirtyReport(dirty, onDirtyChange);
 
   // Só recarrega a tela com o que veio do servidor se não houver edição em andamento.
   useEffect(() => {
@@ -148,43 +238,25 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   const allRows = useMemo(
     () =>
       cfg
-        ? buildRuleRows({ catalog: cfg.catalog, known: cfg.knownRules, profileRules: cfg.profileRules, adjusted: rules, plan: planItems })
+        ? buildRuleRows({ catalog: cfg.catalog, known: cfg.knownRules, profileRules: cfg.profileRules, adjusted: rules, plan: plan.items })
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cfg, rules, fixPlan.data],
+    [cfg, rules, plan.data],
   );
 
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;
 
-  const server = cfg.tuning;
-  const profileRule = (id: string) => cfg.profileRules.find((r) => r.id === id);
   const adjustedIds = new Set(rules.filter((r) => !isNoopAdjustment(r)).map((r) => r.id));
-  const current = (id: string) => currentAdjustment(rules, id);
-  const setRule = (id: string, patch: Partial<RuleAdjustment>) => setRules(patchAdjustment(rules, id, patch));
-
   const packNames = Array.from(new Set(allRows.map((r) => r.pack).filter((p): p is string => !!p))).sort();
   const filtered = filterRuleRows(allRows, { query: text, scope, pack: packFilter }, adjustedIds);
   const shown = filtered.slice(0, visible);
   const pickedIds = [...picked];
-  const gainPicked = estimatedGain(allRows, pickedIds);
-  const catalogMissing = (cfg.catalog ?? []).length === 0;
 
-  const limitError = (k: string) => limitInvalid(limits[k]);
-  const invalid = Object.keys(limits).some(limitError);
-  const addRule = () => {
-    setRules(withNewRule(rules, newRule));
-    setNewRule('');
-  };
-  const bulk = (action: BulkAction) => setRules(applyBulk(rules, pickedIds, action));
-  const toggle = (id: string, on: boolean) => setPicked(toggledSet(picked, id, on));
-  const allShownPicked = shown.length > 0 && shown.every((r) => picked.has(r.id));
-
-  const submit = () =>
-    save.mutate(mergeTuning(server, sliceOf(cfg, packs, limits, rules)), { onSuccess: (data) => syncFrom(data) });
-
+  const invalid = Object.keys(limits).some((k) => limitInvalid(limits[k]));
   const resetPage = () => setVisible(PAGE);
-  const pickAllShown = (on: boolean) => setPicked(pickShown(picked, shown.map((r) => r.id), on));
+  const submit = () =>
+    save.mutate(mergeTuning(cfg.tuning, sliceOf(cfg, packs, limits, rules)), { onSuccess: (data) => syncFrom(data) });
 
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -194,54 +266,38 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
       <SaveNotices save={save} dirty={dirty} />
       <Header cfg={cfg} busy={save.isPending} onReset={() => save.mutate(empty, { onSuccess: (data) => syncFrom(data) })} />
       <PacksFieldset cfg={cfg} packs={packs} setPacks={setPacks} />
-      <LimitsFieldset cfg={cfg} limits={limits} setLimits={setLimits} limitError={limitError} />
-
-      <section aria-label="Regras" style={{ display: 'grid', gap: 10 }}>
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Regras</h3>
-        <p style={{ margin: 0, fontSize: 12, color: 'var(--s-text-3)' }}>
-          {catalogMissing
-            ? 'Lista o que apareceu na última auditoria deste sistema. '
-            : 'Todas as regras dos pacotes, com o que cada uma faz. '}
-          “Só observar” mostra o achado sem pesar na nota. Aceita curinga: <code style={{ fontFamily: mono }}>sentinel-*</code>.
-          O ganho na nota é uma estimativa da última auditoria: quanto a nota sobe se a regra deixar de pesar.
-        </p>
-        <RuleFilters
-          text={text}
-          scope={scope}
-          packFilter={packFilter}
-          packNames={packNames}
-          count={filtered.length}
-          onText={(v) => { setText(v); resetPage(); }}
-          onScope={(v) => { setScope(v); resetPage(); }}
-          onPack={(v) => { setPackFilter(v); resetPage(); }}
-        />
-        <BulkBar count={picked.size} gain={gainPicked} bulk={bulk} />
-        {filtered.length === 0 ? (
-          <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>
-            {allRows.length === 0 ? 'Ainda não há auditoria concluída: adicione uma regra pelo id.' : 'Nenhuma regra com esse filtro.'}
-          </span>
-        ) : (
-          <RulesTable
-            rows={shown}
-            allShownPicked={allShownPicked}
-            isPicked={(id) => picked.has(id)}
-            current={current}
-            inProfile={(id) => !!profileRule(id)}
-            onPickAll={pickAllShown}
-            onSelect={toggle}
-            onChange={setRule}
-          />
-        )}
-        {filtered.length > shown.length && (
-          <div>
-            <Button kind="ghost" size="sm" onClick={() => setVisible(visible + PAGE)}>
-              Mostrar mais {Math.min(PAGE, filtered.length - shown.length)} (faltam {filtered.length - shown.length})
-            </Button>
-          </div>
-        )}
-        <AddRuleRow value={newRule} onChange={setNewRule} onAdd={addRule} />
-      </section>
-
+      <LimitsFieldset cfg={cfg} limits={limits} setLimits={setLimits} limitError={(k) => limitInvalid(limits[k])} />
+      <RulesSection
+        allRows={allRows}
+        filtered={filtered}
+        shown={shown}
+        filters={{ text, scope, packFilter, packNames }}
+        onFilters={{
+          text: (v) => { setText(v); resetPage(); },
+          scope: (v) => { setScope(v); resetPage(); },
+          pack: (v) => { setPackFilter(v); resetPage(); },
+        }}
+        catalogMissing={(cfg.catalog ?? []).length === 0}
+        picked={picked}
+        gainPicked={estimatedGain(allRows, pickedIds)}
+        bulk={(action) => setRules(applyBulk(rules, pickedIds, action))}
+        table={{
+          current: (id) => currentAdjustment(rules, id),
+          inProfile: (id) => cfg.profileRules.some((r) => r.id === id),
+          onPickAll: (on) => setPicked(pickShown(picked, shown.map((r) => r.id), on)),
+          onSelect: (id, on) => setPicked(toggledSet(picked, id, on)),
+          onChange: (id, patch) => setRules(patchAdjustment(rules, id, patch)),
+        }}
+        onMore={() => setVisible(visible + PAGE)}
+        newRule={{
+          value: newRule,
+          onChange: setNewRule,
+          onAdd: () => {
+            setRules(withNewRule(rules, newRule));
+            setNewRule('');
+          },
+        }}
+      />
       <SaveBar pending={save.isPending} disabled={save.isPending || invalid} dirty={dirty} onSave={submit} />
     </div>
   );
@@ -252,6 +308,14 @@ export function pathLines(text: string): string[] {
   return [...new Set(text.split('\n').map((l) => l.trim()).filter((l) => l !== ''))];
 }
 
+function analyzersDirty(cfg: EngineConfig | undefined, off: string[], paths: string[]): boolean {
+  if (!cfg) return false;
+  const offChanged = JSON.stringify([...off].sort()) !== JSON.stringify([...cfg.tuning.disableAnalyzers].sort());
+  return offChanged || JSON.stringify(paths) !== JSON.stringify(cfg.tuning.ignorePaths ?? []);
+}
+
+const MAX_IGNORED_PATHS = 50;
+
 /** Aba "Analisadores": quais ferramentas rodam neste sistema e quais caminhos ficam fora da auditoria. */
 export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
   const { query, save } = useEngine(system.id);
@@ -259,10 +323,7 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
   const [off, setOff] = useState<string[]>([]);
   const [pathsText, setPathsText] = useState('');
   const paths = pathLines(pathsText);
-  const dirty =
-    !!cfg &&
-    (JSON.stringify([...off].sort()) !== JSON.stringify([...cfg.tuning.disableAnalyzers].sort()) ||
-      JSON.stringify(paths) !== JSON.stringify(cfg.tuning.ignorePaths ?? []));
+  const dirty = analyzersDirty(cfg, off, paths);
   const syncSaved = (data: EngineConfig) => {
     setOff(data.tuning.disableAnalyzers);
     setPathsText((data.tuning.ignorePaths ?? []).join('\n'));
@@ -271,21 +332,19 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
   const loadedRef = useRef(false);
   dirtyRef.current = dirty;
 
-  useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+  useDirtyReport(dirty, onDirtyChange);
   useEffect(() => {
     // Na primeira carga os campos ainda estão vazios (parecem "alterados"), então ela sempre preenche.
     if (cfg && (!loadedRef.current || !dirtyRef.current)) {
       loadedRef.current = true;
-      setOff(cfg.tuning.disableAnalyzers);
-      setPathsText((cfg.tuning.ignorePaths ?? []).join('\n'));
+      syncSaved(cfg);
     }
   }, [cfg]);
 
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;
   const toggle = (name: string, runs: boolean) => setOff(runs ? off.filter((n) => n !== name) : [...off, name]);
+  const tooManyPaths = paths.length > MAX_IGNORED_PATHS;
 
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -314,13 +373,13 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
         placeholder={'docs/\n**/test/**\n*.md'}
         rows={4}
         value={pathsText}
-        invalid={paths.length > 50}
+        invalid={tooManyPaths}
         invalidText="No máximo 50 caminhos."
         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPathsText(e.target.value)}
       />
       <SaveBar
         pending={save.isPending}
-        disabled={save.isPending || paths.length > 50}
+        disabled={save.isPending || tooManyPaths}
         dirty={dirty}
         onSave={() => save.mutate(mergeTuning(cfg.tuning, { disableAnalyzers: off, ignorePaths: paths }), { onSuccess: syncSaved })}
       />

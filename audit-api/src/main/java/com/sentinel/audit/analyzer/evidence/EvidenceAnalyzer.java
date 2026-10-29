@@ -75,33 +75,12 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
         if (!Files.isDirectory(dir)) {
             return new AnalyzerResult(findings, NAME, Duration.between(start, Instant.now()));
         }
-        Set<String> appPackages = null;
+        LazyPackages packages = new LazyPackages(projectPath);
         try (Stream<Path> files = Files.list(dir)) {
             for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
                 String rel = DIR + "/" + file.getFileName();
                 try {
-                    if (Files.size(file) > MAX_FILE_BYTES) {
-                        LOG.warnf("Evidência %s ignorada: maior que %d MB", rel, MAX_FILE_BYTES / BYTES_PER_MB);
-                        continue;
-                    }
-                    String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
-                    String text = Files.readString(file, StandardCharsets.UTF_8);
-                    if (name.endsWith(".sql")) {
-                        findings.addAll(SchemaChecks.run(text, rel, auditRun));
-                    } else if (name.endsWith(".csv")) {
-                        findings.addAll(csv(text, rel, auditRun));
-                    } else if (name.endsWith(".json")) {
-                        findings.addAll(PlanChecks.run(text, rel, auditRun));
-                    } else if (name.endsWith(".xml")) {
-                        findings.addAll(CoverageChecks.run(CoverageChecks.jacocoXml(text), rel, minLineCoverage, auditRun));
-                    } else if (name.endsWith(".info") || name.startsWith("lcov")) {
-                        findings.addAll(CoverageChecks.run(CoverageChecks.lcov(text), rel, minLineCoverage, auditRun));
-                    } else if (name.endsWith(".txt") || name.endsWith(".histo")) {
-                        if (appPackages == null) {
-                            appPackages = applicationPackages(projectPath);
-                        }
-                        findings.addAll(HeapChecks.run(HeapChecks.parse(text), appPackages, rel, auditRun));
-                    }
+                    findings.addAll(checkEvidence(file, rel, auditRun, packages));
                 } catch (IOException | RuntimeException e) {
                     LOG.warnf("Não foi possível analisar a evidência %s: %s", rel, e.getMessage());
                 }
@@ -111,6 +90,52 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
         }
         LOG.infof("Evidências: %d findings", findings.size());
         return new AnalyzerResult(findings, NAME, Duration.between(start, Instant.now()));
+    }
+
+    /** Escolhe a verificação pelo tipo do arquivo de evidência (SQL, CSV, plano JSON, cobertura, histograma de heap). */
+    private List<Finding> checkEvidence(Path file, String rel, AuditRun auditRun, LazyPackages packages) throws IOException {
+        if (Files.size(file) > MAX_FILE_BYTES) {
+            LOG.warnf("Evidência %s ignorada: maior que %d MB", rel, MAX_FILE_BYTES / BYTES_PER_MB);
+            return List.of();
+        }
+        String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
+        String text = Files.readString(file, StandardCharsets.UTF_8);
+        if (name.endsWith(".sql")) {
+            return SchemaChecks.run(text, rel, auditRun);
+        }
+        if (name.endsWith(".csv")) {
+            return csv(text, rel, auditRun);
+        }
+        if (name.endsWith(".json")) {
+            return PlanChecks.run(text, rel, auditRun);
+        }
+        if (name.endsWith(".xml")) {
+            return CoverageChecks.run(CoverageChecks.jacocoXml(text), rel, minLineCoverage, auditRun);
+        }
+        if (name.endsWith(".info") || name.startsWith("lcov")) {
+            return CoverageChecks.run(CoverageChecks.lcov(text), rel, minLineCoverage, auditRun);
+        }
+        if (name.endsWith(".txt") || name.endsWith(".histo")) {
+            return HeapChecks.run(HeapChecks.parse(text), packages.get(), rel, auditRun);
+        }
+        return List.of();
+    }
+
+    /** Os pacotes da aplicação só são levantados (varrendo o projeto) se algum histograma de heap aparecer. */
+    private static final class LazyPackages {
+        private final Path projectPath;
+        private Set<String> value;
+
+        LazyPackages(Path projectPath) {
+            this.projectPath = projectPath;
+        }
+
+        Set<String> get() {
+            if (value == null) {
+                value = applicationPackages(projectPath);
+            }
+            return value;
+        }
     }
 
     private List<Finding> csv(String text, String rel, AuditRun run) {

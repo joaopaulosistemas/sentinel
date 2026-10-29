@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -39,50 +38,61 @@ public final class SourceSizer {
     }
 
     public static Stats stats(Path root) {
-        long[] total = {0};
-        int[] files = {0};
+        Counter counter = new Counter(root);
         try {
-            Files.walkFileTree(root, new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    if (!dir.equals(root) && IGNORED_DIRS.contains(dir.getFileName().toString())) {
-                        return FileVisitResult.SKIP_SUBTREE;
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (!attrs.isRegularFile() || Files.isSymbolicLink(file) || attrs.size() > MAX_FILE_BYTES) {
-                        return FileVisitResult.CONTINUE;
-                    }
-                    String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
-                    int dot = name.lastIndexOf('.');
-                    if (dot < 0 || !EXTENSIONS.contains(name.substring(dot))
-                            || name.contains(".min.") || name.endsWith(".d.ts")
-                            || name.endsWith(".spec.ts") || name.contains(".test.")) {
-                        return FileVisitResult.CONTINUE;
-                    }
-                    files[0]++;
-                    if (files[0] > MAX_FILES) {
-                        return FileVisitResult.TERMINATE;
-                    }
-                    try (var lines = Files.lines(file, StandardCharsets.UTF_8)) {
-                        total[0] += lines.filter(l -> !l.isBlank()).count();
-                    } catch (IOException | RuntimeException ignored) {
-                        // arquivo binário ou com codificação inválida: fica fora da contagem
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            Files.walkFileTree(root, counter);
         } catch (IOException | RuntimeException ignored) {
             // devolve o que contou até aqui
         }
-        return new Stats(files[0], total[0]);
+        return new Stats(counter.files, counter.total);
+    }
+
+    /** Percorre a árvore contando arquivos de código e suas linhas não vazias. */
+    private static final class Counter extends SimpleFileVisitor<Path> {
+        private final Path root;
+        long total;
+        int files;
+
+        Counter(Path root) {
+            this.root = root;
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+            if (!dir.equals(root) && IGNORED_DIRS.contains(dir.getFileName().toString())) {
+                return FileVisitResult.SKIP_SUBTREE;
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            if (!attrs.isRegularFile() || Files.isSymbolicLink(file) || attrs.size() > MAX_FILE_BYTES
+                    || !isCountable(file.getFileName().toString().toLowerCase(Locale.ROOT))) {
+                return FileVisitResult.CONTINUE;
+            }
+            files++;
+            if (files > MAX_FILES) {
+                return FileVisitResult.TERMINATE;
+            }
+            try (var lines = Files.lines(file, StandardCharsets.UTF_8)) {
+                total += lines.filter(l -> !l.isBlank()).count();
+            } catch (IOException | RuntimeException ignored) {
+                // arquivo binário ou com codificação inválida: fica fora da contagem
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        private static boolean isCountable(String name) {
+            int dot = name.lastIndexOf('.');
+            return dot >= 0 && EXTENSIONS.contains(name.substring(dot))
+                    && !name.contains(".min.") && !name.endsWith(".d.ts")
+                    && !name.endsWith(".spec.ts") && !name.contains(".test.");
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
+            return FileVisitResult.CONTINUE;
+        }
     }
 }

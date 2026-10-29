@@ -55,27 +55,17 @@ final class HeapChecks {
         StringBuilder top = new StringBuilder();
         entries.stream().sorted(Comparator.comparingLong(Entry::bytes).reversed()).limit(TOP_CLASSES).forEach(e ->
                 top.append("\n").append(Ev.bytes(e.bytes())).append("  ").append(Ev.fmt(e.instances())).append("×  ").append(e.clazz()));
-        out.add(Ev.finding(run, Category.PERFORMANCE, Severity.INFO, "evidencia-memoria-maiores-consumidores",
-                "Heap de " + Ev.bytes(total) + ": maiores consumidores",
-                "Quem mais ocupa memória no histograma " + file + " (de " + Ev.bytes(total) + " no total):" + top,
-                file, 1, null));
+        out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.INFO, "evidencia-memoria-maiores-consumidores"), new Ev.Where(file, 1, null), "Heap de " + Ev.bytes(total) + ": maiores consumidores", "Quem mais ocupa memória no histograma " + file + " (de " + Ev.bytes(total) + " no total):" + top));
         for (Entry e : entries) {
             if (isApp(e.clazz(), appPackages) && (e.instances() >= APP_INSTANCES || e.bytes() >= APP_BYTES)) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, e.bytes() >= HIGH_BYTES_MULTIPLIER * APP_BYTES ? Severity.HIGH : Severity.MEDIUM,
-                        "evidencia-memoria-classe-acumulada",
-                        Ev.fmt(e.instances()) + " instâncias de " + shortName(e.clazz()) + " (" + Ev.bytes(e.bytes()) + ")",
-                        "A classe do projeto " + e.clazz() + " tem " + Ev.fmt(e.instances()) + " instâncias vivas, ocupando "
+                out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, e.bytes() >= HIGH_BYTES_MULTIPLIER * APP_BYTES ? Severity.HIGH : Severity.MEDIUM, "evidencia-memoria-classe-acumulada"), new Ev.Where(file, 1, e.clazz()), Ev.fmt(e.instances()) + " instâncias de " + shortName(e.clazz()) + " (" + Ev.bytes(e.bytes()) + ")", "A classe do projeto " + e.clazz() + " tem " + Ev.fmt(e.instances()) + " instâncias vivas, ocupando "
                                 + Ev.bytes(e.bytes()) + ". Se o número cresce a cada captura, há acúmulo: coleção estática, "
                                 + "cache sem limite, listener nunca removido ou sessão guardada. Compare duas capturas "
-                                + "separadas por minutos de carga.",
-                        file, 1, e.clazz()));
+                                + "separadas por minutos de carga."));
             } else if (MAP_CLASSES.contains(e.clazz()) && e.instances() >= MAP_NODES) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, Severity.MEDIUM, "evidencia-memoria-colecao-gigante",
-                        Ev.fmt(e.instances()) + " entradas de mapa em memória (" + Ev.bytes(e.bytes()) + ")",
-                        "Há " + Ev.fmt(e.instances()) + " objetos " + shortName(e.clazz()) + ". É sinal de cache ou índice em "
+                out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.MEDIUM, "evidencia-memoria-colecao-gigante"), new Ev.Where(file, 1, e.clazz()), Ev.fmt(e.instances()) + " entradas de mapa em memória (" + Ev.bytes(e.bytes()) + ")", "Há " + Ev.fmt(e.instances()) + " objetos " + shortName(e.clazz()) + ". É sinal de cache ou índice em "
                                 + "memória sem limite. Use um cache com tamanho máximo e expiração (Caffeine) ou mova o dado "
-                                + "para o banco.",
-                        file, 1, e.clazz()));
+                                + "para o banco."));
             }
         }
         return out;

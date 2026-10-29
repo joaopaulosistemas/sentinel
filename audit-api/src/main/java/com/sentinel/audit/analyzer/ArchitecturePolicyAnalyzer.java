@@ -131,8 +131,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
 
     private void checkLayers(String rel, String content, Compiled c, AuditRun run, List<Finding> out) {
         boolean java = rel.endsWith(".java");
-        boolean ts = rel.matches(".*\\.(ts|tsx|js|jsx|mjs)$");
-        if (!(java || ts) || c.layers.isEmpty() || (c.pol.forbid().isEmpty() && c.pol.allow().isEmpty())) {
+        if (!layersApply(rel, java, c)) {
             return;
         }
         String own = layerOfFile(rel, java ? declaredPackage(content) : null, c);
@@ -141,38 +140,58 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
         }
         String[] lines = content.split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            String stripped = line.strip();
-            if (stripped.startsWith("//") || stripped.startsWith("*") || stripped.startsWith("/*")) {
+            String stripped = lines[i].strip();
+            if (isCommentLine(stripped)) {
                 continue;
             }
-            List<String> targets = new ArrayList<>();
-            if (java) {
-                Matcher m = JAVA_IMPORT.matcher(line);
-                if (m.find()) {
-                    targets.add(layerOfJavaImport(m.group(1), c));
-                }
-            } else {
-                Matcher m = TS_IMPORT.matcher(line);
-                while (m.find()) {
-                    targets.add(layerOfTsImport(rel, m.group(1), c));
-                }
-            }
-            for (String to : targets) {
+            for (String to : importTargets(lines[i], java, rel, c)) {
                 if (to != null && !to.equals(own)) {
-                    judge(own, to, rel, i + 1, stripped, c, run, out);
+                    judge(new Edge(own, to), new ArchPlace(rel, i + 1, stripped), c, run, out);
                 }
             }
         }
     }
 
-    private void judge(String from, String to, String rel, int line, String snippet, Compiled c, AuditRun run, List<Finding> out) {
+    /** Só Java e TS/JS têm imports que as camadas conseguem ler, e só há o que julgar com camadas e regras definidas. */
+    private static boolean layersApply(String rel, boolean java, Compiled c) {
+        boolean ts = rel.matches(".*\\.(ts|tsx|js|jsx|mjs)$");
+        return (java || ts) && !c.layers.isEmpty() && !(c.pol.forbid().isEmpty() && c.pol.allow().isEmpty());
+    }
+
+    private static boolean isCommentLine(String stripped) {
+        return stripped.startsWith("//") || stripped.startsWith("*") || stripped.startsWith("/*");
+    }
+
+    /** Camadas dos módulos importados na linha (nulo quando o import não cai em nenhuma camada). */
+    private List<String> importTargets(String line, boolean java, String rel, Compiled c) {
+        List<String> targets = new ArrayList<>();
+        if (java) {
+            Matcher m = JAVA_IMPORT.matcher(line);
+            if (m.find()) {
+                targets.add(layerOfJavaImport(m.group(1), c));
+            }
+        } else {
+            Matcher m = TS_IMPORT.matcher(line);
+            while (m.find()) {
+                targets.add(layerOfTsImport(rel, m.group(1), c));
+            }
+        }
+        return targets;
+    }
+
+    /** Dependência de uma camada em outra. */
+    private record Edge(String from, String to) { }
+
+    private void judge(Edge edge, ArchPlace place, Compiled c, AuditRun run, List<Finding> out) {
+        String from = edge.from();
+        String to = edge.to();
+        String ruleId = "sentinel-arch-layer-" + from + "-" + to;
         for (LayerRule r : c.pol.forbid()) {
             if (r.from().equals(from) && r.to().equals(to)) {
-                out.add(archFinding(run, rel, line, snippet, "sentinel-arch-layer-" + from + "-" + to,
+                out.add(archFinding(run, place, new ArchRule(ruleId,
                         r.severity() == null ? Severity.HIGH : r.severity(), Category.ARCHITECTURE,
                         "Camada '" + from + "' não deve depender de '" + to + "'",
-                        r.message() == null ? "A política de arquitetura proíbe a dependência " + from + " -> " + to + "." : r.message()));
+                        r.message() == null ? "A política de arquitetura proíbe a dependência " + from + " -> " + to + "." : r.message())));
                 return;
             }
         }
@@ -182,9 +201,9 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
                     return;
                 }
             }
-            out.add(archFinding(run, rel, line, snippet, "sentinel-arch-layer-" + from + "-" + to, Severity.MEDIUM, Category.ARCHITECTURE,
+            out.add(archFinding(run, place, new ArchRule(ruleId, Severity.MEDIUM, Category.ARCHITECTURE,
                     "Dependência não permitida: '" + from + "' -> '" + to + "'",
-                    "A política é estrita e não lista a dependência " + from + " -> " + to + " em 'allow'."));
+                    "A política é estrita e não lista a dependência " + from + " -> " + to + " em 'allow'.")));
         }
     }
 
@@ -256,29 +275,49 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
             if (!matchesAny(c.convFiles.get(cv.id()), rel) || matchesAny(c.convExclude.get(cv.id()), rel)) {
                 continue;
             }
-            Severity sev = cv.severity() == null ? Severity.MEDIUM : cv.severity();
-            Category cat = cv.category() == null ? Category.ARCHITECTURE : cv.category();
-            String title = cv.title() != null ? cv.title() : cv.id();
-            String ruleId = "sentinel-arch-conv-" + cv.id();
+            ConvCtx ctx = new ConvCtx(cv, rel, run);
             try {
-                if (cv.require() != null && !Pattern.compile(cv.require(), Pattern.MULTILINE).matcher(limited(content)).find()) {
-                    out.add(archFinding(run, rel, 1, "", ruleId, sev, cat, title,
-                            cv.message() == null ? "O arquivo deveria conter /" + cv.require() + "/." : cv.message()));
-                }
-                if (cv.forbid() != null) {
-                    Matcher m = Pattern.compile(cv.forbid(), Pattern.MULTILINE).matcher(limited(content));
-                    int n = 0;
-                    while (m.find() && n < MAX_MATCHES_PER_CONVENTION_FILE) {
-                        n++;
-                        int line = lineOf(content, m.start());
-                        String text = m.group().strip();
-                        out.add(archFinding(run, rel, line, text.length() > SNIPPET_MAX_CHARS ? text.substring(0, SNIPPET_MAX_CHARS) : text, ruleId, sev, cat, title,
-                                cv.message() == null ? "Trecho proibido pela convenção: /" + cv.forbid() + "/." : cv.message()));
-                    }
-                }
+                requireCheck(ctx, content, out);
+                forbidCheck(ctx, content, out);
             } catch (RegexBudgetExceeded e) {
                 LOG.warnf("Convenção '%s' abortada em %s: expressão regular muito lenta", cv.id(), rel);
             }
+        }
+    }
+
+    /** Uma convenção aplicada a um arquivo: de onde vêm o id, a gravidade, a categoria e o título dos findings. */
+    private record ConvCtx(Convention cv, String rel, AuditRun run) {
+        ArchRule rule(String message) {
+            return new ArchRule("sentinel-arch-conv-" + cv.id(),
+                    cv.severity() == null ? Severity.MEDIUM : cv.severity(),
+                    cv.category() == null ? Category.ARCHITECTURE : cv.category(),
+                    cv.title() != null ? cv.title() : cv.id(), message);
+        }
+    }
+
+    /** `require`: o arquivo precisa conter o padrão. */
+    private void requireCheck(ConvCtx x, String content, List<Finding> out) {
+        Convention cv = x.cv();
+        if (cv.require() != null && !Pattern.compile(cv.require(), Pattern.MULTILINE).matcher(limited(content)).find()) {
+            out.add(archFinding(x.run(), new ArchPlace(x.rel(), 1, ""),
+                    x.rule(cv.message() == null ? "O arquivo deveria conter /" + cv.require() + "/." : cv.message())));
+        }
+    }
+
+    /** `forbid`: cada trecho que casa com o padrão vira um finding (até o limite por arquivo). */
+    private void forbidCheck(ConvCtx x, String content, List<Finding> out) {
+        Convention cv = x.cv();
+        if (cv.forbid() == null) {
+            return;
+        }
+        Matcher m = Pattern.compile(cv.forbid(), Pattern.MULTILINE).matcher(limited(content));
+        int n = 0;
+        while (m.find() && n < MAX_MATCHES_PER_CONVENTION_FILE) {
+            n++;
+            String text = m.group().strip();
+            String snippet = text.length() > SNIPPET_MAX_CHARS ? text.substring(0, SNIPPET_MAX_CHARS) : text;
+            out.add(archFinding(x.run(), new ArchPlace(x.rel(), lineOf(content, m.start()), snippet),
+                    x.rule(cv.message() == null ? "Trecho proibido pela convenção: /" + cv.forbid() + "/." : cv.message())));
         }
     }
 
@@ -314,30 +353,36 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
                 exists = relPaths.contains(rf.path()) || Files.exists(root.resolve(rf.path()), LinkOption.NOFOLLOW_LINKS);
             }
             if (!exists) {
-                out.add(archFinding(run, rf.path(), 0, "", "sentinel-arch-required-file",
+                out.add(archFinding(run, new ArchPlace(rf.path(), 0, ""), new ArchRule("sentinel-arch-required-file",
                         rf.severity() == null ? Severity.LOW : rf.severity(), Category.ARCHITECTURE,
                         "Arquivo obrigatório ausente: " + rf.path(),
-                        rf.message() == null ? "A política exige o arquivo " + rf.path() + "." : rf.message()));
+                        rf.message() == null ? "A política exige o arquivo " + rf.path() + "." : rf.message())));
             }
         }
     }
 
     // ------------------------------------------------------------------ utilidades
 
-    static Finding archFinding(AuditRun run, String file, int line, String snippet, String ruleId, Severity sev,
-                                       Category cat, String title, String description) {
+    /** Onde o problema está. */
+    record ArchPlace(String file, int line, String snippet) { }
+
+    /** Qual regra foi violada e como descrevê-la. */
+    record ArchRule(String ruleId, Severity severity, Category category, String title, String description) { }
+
+    static Finding archFinding(AuditRun run, ArchPlace place, ArchRule rule) {
+        String title = rule.title();
         Finding f = new Finding();
         f.setAuditRun(run);
         f.setToolSource(ANALYZER_NAME);
-        f.setCategory(cat);
-        f.setSeverity(sev);
-        f.setRuleId(ruleId);
+        f.setCategory(rule.category());
+        f.setSeverity(rule.severity());
+        f.setRuleId(rule.ruleId());
         f.setTitle(title.length() > TITLE_MAX_CHARS ? title.substring(0, TITLE_MAX_CHARS - ELLIPSIS.length()) + ELLIPSIS : title);
-        f.setDescription(description);
-        f.setFilePath(file);
-        f.setLineNumber(line);
-        if (snippet != null && !snippet.isBlank()) {
-            f.setCodeSnippet(snippet);
+        f.setDescription(rule.description());
+        f.setFilePath(place.file());
+        f.setLineNumber(place.line());
+        if (place.snippet() != null && !place.snippet().isBlank()) {
+            f.setCodeSnippet(place.snippet());
         }
         return f;
     }

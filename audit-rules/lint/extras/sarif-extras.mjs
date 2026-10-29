@@ -24,7 +24,7 @@ function rodar(cmd, args) {
 
 const regras = new Map();
 const resultados = [];
-function achado(ruleId, nivel, texto, ajuda, arquivo, linha, coluna, descricao) {
+function achado({ ruleId, nivel, texto, ajuda, arquivo, linha, coluna, descricao }) {
   if (!regras.has(ruleId)) {
     regras.set(ruleId, { id: ruleId, shortDescription: { text: descricao || ruleId }, ...(ajuda ? { help: { text: ajuda } } : {}) });
   }
@@ -56,7 +56,7 @@ if (modo === "squawk") {
     let itens = [];
     try { itens = JSON.parse(saida); } catch { itens = []; }
     for (const v of itens) {
-      achado(v.rule_name, /error/i.test(v.level) ? "error" : "warning", v.message, v.help || "", v.file, v.line, v.column, `Squawk: ${v.rule_name}`);
+      achado({ ruleId: v.rule_name, nivel: /error/i.test(v.level) ? "error" : "warning", texto: v.message, ajuda: v.help || "", arquivo: v.file, linha: v.line, coluna: v.column, descricao: `Squawk: ${v.rule_name}` });
     }
   }
 } else if (modo === "sqlfluff") {
@@ -74,7 +74,7 @@ if (modo === "squawk") {
         const chave = `${v.code}|${v.start_line_no}`;
         if (vistos.has(chave)) continue;   // a mesma regra costuma repetir várias vezes na mesma linha
         vistos.add(chave);
-        achado(v.code, "note", v.description, "", f.filepath, v.start_line_no, v.start_line_pos, `SQLFluff ${v.code}: ${v.name || ""}`.trim());
+        achado({ ruleId: v.code, nivel: "note", texto: v.description, ajuda: "", arquivo: f.filepath, linha: v.start_line_no, coluna: v.start_line_pos, descricao: `SQLFluff ${v.code}: ${v.name || ""}`.trim() });
       }
     }
   }
@@ -104,7 +104,7 @@ if (modo === "squawk") {
     const chave = `${nome}|${v.from}|${v.to}`;
     if (vistos.has(chave)) continue;
     vistos.add(chave);
-    achado(nome, nivel, texto, "", v.from, 1, 1, `Dependency-Cruiser: ${nome}`);
+    achado({ ruleId: nome, nivel, texto, ajuda: "", arquivo: v.from, linha: 1, coluna: 1, descricao: `Dependency-Cruiser: ${nome}` });
   }
 } else {
   process.stderr.write("modo desconhecido: " + modo + "\n");

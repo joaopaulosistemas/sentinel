@@ -1,5 +1,6 @@
 package com.sentinel.audit.mcp;
 
+import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
@@ -27,6 +28,8 @@ import java.util.List;
  * Fica sob a API key global, como o resto de {@code /api/v1}; o que a chave do sistema abre é só {@code /mcp/<sistema>}.
  * O caminho é próprio (e não filho de {@code /api/v1/systems}) para não disputar rota com o SystemResource.
  */
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+@PermitAll
 @Path("/api/v1/mcp-access/{id}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

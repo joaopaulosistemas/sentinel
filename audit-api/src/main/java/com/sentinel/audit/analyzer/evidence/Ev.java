@@ -18,17 +18,23 @@ final class Ev {
     private Ev() {
     }
 
-    static Finding finding(AuditRun run, Category category, Severity severity, String ruleId, String title,
-                           String description, String file, Integer line, String snippet) {
+    /** Que regra: categoria, gravidade e id. */
+    record Kind(Category category, Severity severity, String ruleId) { }
+
+    /** Onde: arquivo, linha e trecho (todos opcionais). */
+    record Where(String file, Integer line, String snippet) { }
+
+    static Finding finding(AuditRun run, Kind kind, Where where, String title, String description) {
+        String snippet = where.snippet();
         Finding f = new Finding();
         f.setAuditRun(run);
-        f.setCategory(category);
-        f.setSeverity(severity);
-        f.setRuleId(ruleId);
+        f.setCategory(kind.category());
+        f.setSeverity(kind.severity());
+        f.setRuleId(kind.ruleId());
         f.setTitle(limit(title, TITLE_MAX_CHARS));
         f.setDescription(limit(description, TEXT_MAX_CHARS));
-        f.setFilePath(file);
-        f.setLineNumber(line);
+        f.setFilePath(where.file());
+        f.setLineNumber(where.line());
         f.setCodeSnippet(snippet == null ? null : limit(snippet.strip(), TEXT_MAX_CHARS));
         f.setToolSource(TOOL);
         return f;

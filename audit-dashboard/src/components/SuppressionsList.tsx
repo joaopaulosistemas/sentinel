@@ -9,6 +9,43 @@ const reasonLabels: Record<SuppressionReason, string> = {
   WONT_FIX: 'Não será corrigido',
 };
 
+type Suppression = NonNullable<ReturnType<typeof useSuppressions>['data']>[number];
+
+function dateLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
+
+function validityLabel(s: Suppression): string {
+  return s.expiresAt ? ` · válido até ${dateLabel(s.expiresAt)}` : ' · sem prazo';
+}
+
+function SuppressionRow({ s, disabled, onReopen }: { s: Suppression; disabled: boolean; onReopen: () => void }) {
+  return (
+    <div
+      className="sentinel-linha-hover"
+      style={{ display: 'flex', gap: 16, alignItems: 'center', padding: '14px 0', borderTop: '1px solid var(--s-border)' }}
+    >
+      <Tag type={s.active ? 'purple' : 'warm-gray'} size="sm">
+        {s.active ? reasonLabels[s.reason] : 'Vencida'}
+      </Tag>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '0.875rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {s.title ?? s.ruleId}
+        </div>
+        <div style={{ fontSize: '0.8125rem', color: 'var(--s-text-3)' }}>{s.justification}</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>
+          {s.createdBy ? `${s.createdBy} · ` : ''}
+          {dateLabel(s.createdAt)}
+          {validityLabel(s)}
+        </div>
+      </div>
+      <Button kind="ghost" size="sm" disabled={disabled} onClick={onReopen}>
+        Reabrir
+      </Button>
+    </div>
+  );
+}
+
 /** Decisões de falso positivo / risco aceito do sistema, com quem decidiu e até quando. */
 export function SuppressionsList({ systemId }: { systemId: number }) {
   const { data, isLoading } = useSuppressions(systemId);
@@ -29,34 +66,12 @@ export function SuppressionsList({ systemId }: { systemId: number }) {
       )}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {data.map((s) => (
-          <div
+          <SuppressionRow
             key={s.id}
-            className="sentinel-linha-hover"
-            style={{ display: 'flex', gap: 16, alignItems: 'center', padding: '14px 0', borderTop: '1px solid var(--s-border)' }}
-          >
-            <Tag type={s.active ? 'purple' : 'warm-gray'} size="sm">
-              {s.active ? reasonLabels[s.reason] : 'Vencida'}
-            </Tag>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {s.title ?? s.ruleId}
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--s-text-3)' }}>{s.justification}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--s-text-4)' }}>
-                {s.createdBy ? `${s.createdBy} · ` : ''}
-                {new Date(s.createdAt).toLocaleDateString('pt-BR')}
-                {s.expiresAt ? ` · válido até ${new Date(s.expiresAt).toLocaleDateString('pt-BR')}` : ' · sem prazo'}
-              </div>
-            </div>
-            <Button
-              kind="ghost"
-              size="sm"
-              disabled={remove.isPending}
-              onClick={() => remove.mutate({ systemId, suppressionId: s.id })}
-            >
-              Reabrir
-            </Button>
-          </div>
+            s={s}
+            disabled={remove.isPending}
+            onReopen={() => remove.mutate({ systemId, suppressionId: s.id })}
+          />
         ))}
       </div>
     </PageSection>

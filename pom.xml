@@ -24,22 +24,26 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <quarkus.platform.version>3.15.1</quarkus.platform.version>
-        <jackson.version>2.17.2</jackson.version>
+        <!-- 2.22.4: corrige as CVEs do jackson-databind apontadas pela auditoria #73 (2.17.2 não tem correção) -->
+        <jackson.version>2.22.4</jackson.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Primeiro import vence: alinha todos os módulos do Jackson (core, annotations, databind, módulos) -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-bom</artifactId>
                 <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

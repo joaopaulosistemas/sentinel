@@ -198,6 +198,32 @@ function GitAccessFieldset({ values, setValues, errors, touched, check, tokenSav
   );
 }
 
+type PathData = NonNullable<Props['checkPath']['data']>;
+
+/** Resultado positivo da conferência da pasta, com a branch detectada e a opção de usá-la. */
+function LocalFound({ data, values, setValues, mono }: { data: PathData } & Pick<Props, 'values' | 'setValues' | 'mono'>) {
+  return (
+    <>
+      <span role="status" style={statusOk}>
+        <CheckIcon size={14} />
+        Pasta encontrada · repositório Git
+        {data.defaultBranch && (
+          <>
+            {' · branch atual: '}
+            <span style={{ fontFamily: mono }}>{data.defaultBranch}</span>
+          </>
+        )}
+        {data.fileCount != null && ` · ${num.format(data.fileCount)} arquivos`}
+        {!!data.uncommittedFiles && ` · ${num.format(data.uncommittedFiles)} com alterações não commitadas`}
+        <BranchNotFound found={data.branchFound} branch={values.scheduledBranch} />
+      </span>
+      <div>
+        <UseDetectedBranch detected={data.defaultBranch} current={values.scheduledBranch} onUse={(b) => setValues({ ...values, scheduledBranch: b })} />
+      </div>
+    </>
+  );
+}
+
 function LocalStatus({ checkPath, values, setValues, mono }: Pick<Props, 'checkPath' | 'values' | 'setValues' | 'mono'>) {
   const data = checkPath.data;
   return (
@@ -213,26 +239,7 @@ function LocalStatus({ checkPath, values, setValues, mono }: Pick<Props, 'checkP
           Não foi possível verificar agora: {errorText(checkPath.error)}
         </span>
       )}
-      {data?.ok && (
-        <span role="status" style={statusOk}>
-          <CheckIcon size={14} />
-          Pasta encontrada · repositório Git
-          {data.defaultBranch && (
-            <>
-              {' · branch atual: '}
-              <span style={{ fontFamily: mono }}>{data.defaultBranch}</span>
-            </>
-          )}
-          {data.fileCount != null && ` · ${num.format(data.fileCount)} arquivos`}
-          {!!data.uncommittedFiles && ` · ${num.format(data.uncommittedFiles)} com alterações não commitadas`}
-          <BranchNotFound found={data.branchFound} branch={values.scheduledBranch} />
-        </span>
-      )}
-      {data?.ok && (
-        <div>
-          <UseDetectedBranch detected={data.defaultBranch} current={values.scheduledBranch} onUse={(b) => setValues({ ...values, scheduledBranch: b })} />
-        </div>
-      )}
+      {data?.ok && <LocalFound data={data} values={values} setValues={setValues} mono={mono} />}
       {data && !data.ok && (
         <span role="status" style={statusBad}>
           <CrossIcon size={14} />

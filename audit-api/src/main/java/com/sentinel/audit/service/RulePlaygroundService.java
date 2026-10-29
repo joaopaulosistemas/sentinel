@@ -83,6 +83,32 @@ public class RulePlaygroundService {
         if (!enabled) {
             throw new UnavailableException("O laboratório de regras está desligado (sentinel.audit.playground.enabled)");
         }
+        String fileName = validateInput(ruleYaml, code, extension);
+        Path semgrep = ExternalToolsAccess.find("semgrep", pathEnv);
+        if (semgrep == null) {
+            throw new UnavailableException("Semgrep não está instalado neste servidor");
+        }
+        if (!slots.tryAcquire()) {
+            throw new BusyException();
+        }
+        Path dir = null;
+        long t0 = System.nanoTime();
+        try {
+            dir = Files.createTempDirectory("pg-");
+            return runIn(dir, new Job(ruleYaml, code, fileName, semgrep), t0);
+        } catch (IOException e) {
+            throw new IllegalStateException("Falha ao preparar a execução: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Execução interrompida", e);
+        } finally {
+            slots.release();
+            deleteQuietly(dir);
+        }
+    }
+
+    /** Valida a regra, o código e a extensão; devolve o nome do arquivo de código a criar. */
+    private static String validateInput(String ruleYaml, String code, String extension) {
         if (ruleYaml == null || ruleYaml.isBlank()) {
             throw new IllegalArgumentException("Informe a regra");
         }
@@ -99,42 +125,29 @@ public class RulePlaygroundService {
         if (fileName == null) {
             throw new IllegalArgumentException("Extensão não suportada: " + extension + " (use " + String.join(", ", new java.util.TreeSet<>(FILES.keySet())) + ")");
         }
-        Path semgrep = ExternalToolsAccess.find("semgrep", pathEnv);
-        if (semgrep == null) {
-            throw new UnavailableException("Semgrep não está instalado neste servidor");
-        }
-        if (!slots.tryAcquire()) {
-            throw new BusyException();
-        }
-        Path dir = null;
-        long t0 = System.nanoTime();
-        try {
-            dir = Files.createTempDirectory("pg-");
-            Path pack = dir.resolve("pack");
-            Files.createDirectories(pack.resolve("rules"));
-            Files.writeString(pack.resolve("pack.yml"), "id: playground\nname: Playground\nversion: 1.0.0\n", StandardCharsets.UTF_8);
-            Files.writeString(pack.resolve("rules/rule.yml"), ruleYaml, StandardCharsets.UTF_8);
+        return fileName;
+    }
 
-            PackLoader.Report report = PackLoader.inspect(pack);
-            List<String> warnings = report.warnings().stream().filter(w -> !w.contains("sem caso de teste")).toList();
-            if (!report.errors().isEmpty()) {
-                return new Result(false, report.errors(), warnings, List.of(), List.of(), millis(t0));
-            }
+    /** O que executar: regra, código, nome do arquivo de código e o executável do Semgrep. */
+    private record Job(String ruleYaml, String code, String fileName, Path semgrep) { }
 
-            Path target = dir.resolve("src");
-            Files.createDirectories(target);
-            Files.writeString(target.resolve(fileName), code, StandardCharsets.UTF_8);
-            JsonNode out = execute(semgrep, pack.resolve("rules/rule.yml"), target.resolve(fileName), dir);
-            return parse(out, code, warnings, millis(t0));
-        } catch (IOException e) {
-            throw new IllegalStateException("Falha ao preparar a execução: " + e.getMessage(), e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Execução interrompida", e);
-        } finally {
-            slots.release();
-            deleteQuietly(dir);
+    private Result runIn(Path dir, Job job, long t0) throws IOException, InterruptedException {
+        Path pack = dir.resolve("pack");
+        Files.createDirectories(pack.resolve("rules"));
+        Files.writeString(pack.resolve("pack.yml"), "id: playground\nname: Playground\nversion: 1.0.0\n", StandardCharsets.UTF_8);
+        Files.writeString(pack.resolve("rules/rule.yml"), job.ruleYaml(), StandardCharsets.UTF_8);
+
+        PackLoader.Report report = PackLoader.inspect(pack);
+        List<String> warnings = report.warnings().stream().filter(w -> !w.contains("sem caso de teste")).toList();
+        if (!report.errors().isEmpty()) {
+            return new Result(false, report.errors(), warnings, List.of(), List.of(), millis(t0));
         }
+
+        Path target = dir.resolve("src");
+        Files.createDirectories(target);
+        Files.writeString(target.resolve(job.fileName()), job.code(), StandardCharsets.UTF_8);
+        JsonNode out = execute(job.semgrep(), pack.resolve("rules/rule.yml"), target.resolve(job.fileName()), dir);
+        return parse(out, job.code(), warnings, millis(t0));
     }
 
     private JsonNode execute(Path semgrep, Path rule, Path file, Path work) throws IOException, InterruptedException {

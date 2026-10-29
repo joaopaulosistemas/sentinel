@@ -131,45 +131,51 @@ function Padded({ children }: { children: React.ReactNode }) {
   return <div style={{ padding: 16 }}>{children}</div>;
 }
 
+function ListError({ error }: { error: unknown }) {
+  return (
+    <Padded>
+      <InlineNotification kind="error" title="Erro ao carregar findings" subtitle={error instanceof Error ? error.message : 'Erro desconhecido'} />
+    </Padded>
+  );
+}
+
+function EmptyList({ auditMode }: { auditMode: boolean }) {
+  return (
+    <Padded>
+      <InlineNotification
+        kind="info"
+        title="Nenhum achado com esses filtros"
+        subtitle={auditMode ? 'Tente remover algum filtro.' : 'Pode ser que nenhum sistema tenha auditoria concluída ainda, ou que os filtros sejam restritivos.'}
+        hideCloseButton
+      />
+    </Padded>
+  );
+}
+
+function GroupedTables({ items, systemOf, claudeNoteOf }: Pick<ListBodyProps, 'items' | 'systemOf' | 'claudeNoteOf'>) {
+  return (
+    <div style={{ display: 'grid', gap: 24, padding: '16px 0 0' }}>
+      {groupBySystem(items).map((g) => (
+        <section key={g.systemId} aria-label={`Achados de ${g.systemName}`}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 16px 8px' }}>
+            {g.systemName}
+            <span style={{ fontWeight: 400, color: 'var(--s-text-3)', marginLeft: 8 }}>
+              {g.findings.length} {g.findings.length === 1 ? 'achado nesta página' : 'achados nesta página'}
+            </span>
+          </h2>
+          <FindingsTable findings={g.findings} systemOf={systemOf} claudeNoteOf={claudeNoteOf} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /** Corpo da lista: carregando, erro, vazio, agrupado por sistema ou tabela única. */
 export function FindingsListBody(p: ListBodyProps) {
   if (p.loading) return <Padded><DataTableSkeleton columnCount={6} rowCount={8} /></Padded>;
-  if (p.error) {
-    return (
-      <Padded>
-        <InlineNotification kind="error" title="Erro ao carregar findings" subtitle={p.error instanceof Error ? p.error.message : 'Erro desconhecido'} />
-      </Padded>
-    );
-  }
-  if (p.total === 0) {
-    return (
-      <Padded>
-        <InlineNotification
-          kind="info"
-          title="Nenhum achado com esses filtros"
-          subtitle={p.auditMode ? 'Tente remover algum filtro.' : 'Pode ser que nenhum sistema tenha auditoria concluída ainda, ou que os filtros sejam restritivos.'}
-          hideCloseButton
-        />
-      </Padded>
-    );
-  }
-  if (p.grouped && !p.auditMode) {
-    return (
-      <div style={{ display: 'grid', gap: 24, padding: '16px 0 0' }}>
-        {groupBySystem(p.items).map((g) => (
-          <section key={g.systemId} aria-label={`Achados de ${g.systemName}`}>
-            <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 16px 8px' }}>
-              {g.systemName}
-              <span style={{ fontWeight: 400, color: 'var(--s-text-3)', marginLeft: 8 }}>
-                {g.findings.length} {g.findings.length === 1 ? 'achado nesta página' : 'achados nesta página'}
-              </span>
-            </h2>
-            <FindingsTable findings={g.findings} systemOf={p.systemOf} claudeNoteOf={p.claudeNoteOf} />
-          </section>
-        ))}
-      </div>
-    );
-  }
+  if (p.error) return <ListError error={p.error} />;
+  if (p.total === 0) return <EmptyList auditMode={p.auditMode} />;
+  if (p.grouped && !p.auditMode) return <GroupedTables items={p.items} systemOf={p.systemOf} claudeNoteOf={p.claudeNoteOf} />;
   return (
     <FindingsTable
       findings={p.rows}

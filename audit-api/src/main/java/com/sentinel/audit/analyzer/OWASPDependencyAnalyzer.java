@@ -19,7 +19,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -142,42 +141,60 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
     List<Finding> toFindings(Map<Dependency, List<OsvVulnerability>> found, AuditRun auditRun) {
         List<Finding> findings = new ArrayList<>();
         for (Map.Entry<Dependency, List<OsvVulnerability>> e : found.entrySet()) {
-            Dependency dep = e.getKey();
             List<OsvVulnerability> vulns = new ArrayList<>(e.getValue());
-            vulns.sort((x, y) -> severityRank(x.severity()) != severityRank(y.severity())
-                    ? Integer.compare(severityRank(y.severity()), severityRank(x.severity()))
-                    : x.id().compareTo(y.id()));
-            OsvVulnerability top = vulns.get(0);
-
-            String bestFix = null;
-            for (OsvVulnerability v : vulns) {
-                if (v.fixedVersion() != null && (bestFix == null
-                        || compare(parseVersion(v.fixedVersion()), parseVersion(bestFix)) > 0)) {
-                    bestFix = v.fixedVersion();
-                }
-            }
-            StringBuilder ids = new StringBuilder();
-            for (int i = 0; i < Math.min(vulns.size(), MAX_LISTED_IDS); i++) {
-                ids.append(i == 0 ? "" : ", ").append(vulns.get(i).cve() != null ? vulns.get(i).cve() : vulns.get(i).id());
-            }
-            if (vulns.size() > MAX_LISTED_IDS) {
-                ids.append(" e mais ").append(vulns.size() - MAX_LISTED_IDS);
-            }
-            Finding f = new Finding();
-            f.setAuditRun(auditRun);
-            f.setCategory(Category.DEPENDENCY);
-            f.setSeverity(top.severity());
-            f.setTitle("Dependência vulnerável: " + dep.name() + " " + dep.version()
-                    + (vulns.size() > 1 ? " (" + vulns.size() + " vulnerabilidades)" : ""));
-            f.setDescription(top.summary() + ". Vulnerabilidades: " + ids + "."
-                    + (bestFix != null ? " Atualize para " + bestFix + " ou superior." : " Ainda sem versão corrigida informada."));
-            f.setFilePath(dep.filePath());
-            f.setCveId(top.cve() != null ? top.cve() : top.id());
-            f.setRuleId("osv-" + dep.name());
-            f.setToolSource(ANALYZER_NAME);
-            findings.add(f);
+            vulns.sort(OWASPDependencyAnalyzer::bySeverityThenId);
+            findings.add(toFinding(e.getKey(), vulns, auditRun));
         }
         return findings;
+    }
+
+    /** Mais grave primeiro; no empate, pelo id. */
+    private static int bySeverityThenId(OsvVulnerability x, OsvVulnerability y) {
+        int rx = severityRank(x.severity());
+        int ry = severityRank(y.severity());
+        return rx != ry ? Integer.compare(ry, rx) : x.id().compareTo(y.id());
+    }
+
+    private static Finding toFinding(Dependency dep, List<OsvVulnerability> vulns, AuditRun auditRun) {
+        OsvVulnerability top = vulns.get(0);
+        String bestFix = bestFix(vulns);
+        Finding f = new Finding();
+        f.setAuditRun(auditRun);
+        f.setCategory(Category.DEPENDENCY);
+        f.setSeverity(top.severity());
+        f.setTitle("Dependência vulnerável: " + dep.name() + " " + dep.version()
+                + (vulns.size() > 1 ? " (" + vulns.size() + " vulnerabilidades)" : ""));
+        f.setDescription(top.summary() + ". Vulnerabilidades: " + listIds(vulns) + "."
+                + (bestFix != null ? " Atualize para " + bestFix + " ou superior." : " Ainda sem versão corrigida informada."));
+        f.setFilePath(dep.filePath());
+        f.setCveId(top.cve() != null ? top.cve() : top.id());
+        f.setRuleId("osv-" + dep.name());
+        f.setToolSource(ANALYZER_NAME);
+        return f;
+    }
+
+    /** A maior versão corrigida entre as vulnerabilidades (a que resolve todas); nulo se nenhuma informa. */
+    private static String bestFix(List<OsvVulnerability> vulns) {
+        String bestFix = null;
+        for (OsvVulnerability v : vulns) {
+            if (v.fixedVersion() != null && (bestFix == null
+                    || compare(parseVersion(v.fixedVersion()), parseVersion(bestFix)) > 0)) {
+                bestFix = v.fixedVersion();
+            }
+        }
+        return bestFix;
+    }
+
+    /** Os primeiros ids (CVE quando houver), separados por vírgula, com a contagem do que ficou de fora. */
+    private static String listIds(List<OsvVulnerability> vulns) {
+        StringBuilder ids = new StringBuilder();
+        for (int i = 0; i < Math.min(vulns.size(), MAX_LISTED_IDS); i++) {
+            ids.append(i == 0 ? "" : ", ").append(vulns.get(i).cve() != null ? vulns.get(i).cve() : vulns.get(i).id());
+        }
+        if (vulns.size() > MAX_LISTED_IDS) {
+            ids.append(" e mais ").append(vulns.size() - MAX_LISTED_IDS);
+        }
+        return ids.toString();
     }
 
     private static int severityRank(Severity s) {
@@ -240,23 +257,27 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
         if (v.length == 0) {
             return false;
         }
-        int[] highestFix = null;
-        int[] highestFixSameMajor = null;
-        for (String fixed : fixedVersions) {
-            int[] f = parseVersion(fixed);
+        List<int[]> fixes = fixedVersions.stream().map(OWASPDependencyAnalyzer::parseVersion).toList();
+        for (int[] f : fixes) {
             if (f.length >= 2 && v.length >= 2 && f[0] == v[0] && f[1] == v[1]) {
                 return compare(v, f) < 0;
             }
-            if (highestFix == null || compare(f, highestFix) > 0) {
-                highestFix = f;
-            }
-            if (f.length >= 1 && f[0] == v[0]
-                    && (highestFixSameMajor == null || compare(f, highestFixSameMajor) > 0)) {
-                highestFixSameMajor = f;
+        }
+        int[] reference = highest(fixes, f -> f.length >= 1 && f[0] == v[0]);
+        if (reference == null) {
+            reference = highest(fixes, f -> true);
+        }
+        return reference != null && compare(v, reference) < 0;
+    }
+
+    private static int[] highest(List<int[]> versions, java.util.function.Predicate<int[]> accept) {
+        int[] best = null;
+        for (int[] f : versions) {
+            if (accept.test(f) && (best == null || compare(f, best) > 0)) {
+                best = f;
             }
         }
-        int[] reference = highestFixSameMajor != null ? highestFixSameMajor : highestFix;
-        return reference != null && compare(v, reference) < 0;
+        return best;
     }
 
     /** Extrai os componentes numéricos iniciais ("5.3.18.RELEASE" → [5,3,18]; "2.13.4.2" → [2,13,4,2]). */

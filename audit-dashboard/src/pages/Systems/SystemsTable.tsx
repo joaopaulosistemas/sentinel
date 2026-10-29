@@ -16,9 +16,79 @@ interface Props {
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 const actionButton = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: 'transparent', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 14 } as const;
 
+interface RowProps {
+  system: SystemSummaryResponse;
+  selected: boolean;
+  onAudit: (s: SystemSummaryResponse) => void;
+  onEdit: (s: SystemSummaryResponse) => void;
+  onDelete: (s: SystemSummaryResponse) => void;
+}
+
+/** Sem o contador (API antiga), a data da última auditoria concluída é o melhor sinal. */
+function hasAudits(s: SystemSummaryResponse): boolean {
+  return (s.auditCount ?? (s.lastAuditDate ? 1 : 0)) > 0;
+}
+
+function RowActions({ system: s, onAudit, onEdit, onDelete }: Omit<RowProps, 'selected'>) {
+  const navigate = useNavigate();
+  const audits = hasAudits(s);
+  return (
+    <td style={{ padding: '8px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+      <button
+        type="button"
+        disabled={!audits}
+        title={audits ? 'Ver as auditorias deste sistema' : 'Este sistema ainda não tem auditorias'}
+        aria-label={`Auditorias de ${s.name}`}
+        onClick={() => navigate(`/systems/${s.id}`)}
+        style={{ ...actionButton, color: audits ? 'var(--s-link)' : 'var(--s-disabled)', cursor: audits ? 'pointer' : 'not-allowed' }}
+      >
+        <ListIcon />
+        Auditorias
+      </button>
+      <button type="button" onClick={() => onAudit(s)} style={actionButton}>
+        <PlayIcon />
+        Auditar
+      </button>
+      <button type="button" onClick={() => onEdit(s)} style={actionButton}>
+        <EditIcon />
+        Editar
+      </button>
+      <button type="button" aria-label={`Excluir ${s.name}`} onClick={() => onDelete(s)} style={{ ...actionButton, color: 'var(--s-danger-text)' }}>
+        <TrashIcon />
+        Excluir
+      </button>
+    </td>
+  );
+}
+
+function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: RowProps) {
+  const navigate = useNavigate();
+  const score = s.lastAuditScore === null ? null : Math.round(s.lastAuditScore);
+  return (
+    <tr style={{ borderBottom: '1px solid var(--s-border)', background: selected ? 'var(--s-selected)' : 'var(--s-surface)' }}>
+      <td style={{ padding: '12px 16px', minWidth: 0 }}>
+        <button
+          type="button"
+          onClick={() => navigate(`/systems/${s.id}`)}
+          style={{ background: 'none', border: 0, padding: 0, color: 'var(--s-text)', cursor: 'pointer', fontWeight: 500, fontSize: 'inherit', textAlign: 'left' }}
+        >
+          {s.name}
+        </button>
+        <div style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono }}>{sourceText(s)}</div>
+      </td>
+      <td style={{ padding: '12px 8px' }}>
+        <span style={{ background: 'var(--s-border)', padding: '2px 8px', borderRadius: 10, fontSize: 12 }}>{stackShort[s.stack] ?? s.stack}</span>
+      </td>
+      <td style={{ padding: '12px 8px', color: 'var(--s-text-2)' }}>{s.team || '—'}</td>
+      <td style={{ padding: '12px 8px', color: 'var(--s-text-2)', fontSize: 13 }}>{scheduleText(s)}</td>
+      <td style={{ padding: '12px 8px', fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
+      <RowActions system={s} onAudit={onAudit} onEdit={onEdit} onDelete={onDelete} />
+    </tr>
+  );
+}
+
 /** Tabela dos sistemas cadastrados, com as ações de cada linha. */
 export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }: Props) {
-  const navigate = useNavigate();
   return (
     <div className="sys-table-wrap" style={{ overflowX: 'auto' }}>
       <table className="sys-table" aria-label="Sistemas cadastrados" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 920 }}>
@@ -33,62 +103,9 @@ export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }:
           </tr>
         </thead>
         <tbody>
-          {systems.map((s) => {
-            const score = s.lastAuditScore === null ? null : Math.round(s.lastAuditScore);
-            const selected = selectedId === s.id;
-            // Sem o contador (API antiga), a data da última auditoria concluída é o melhor sinal.
-            const hasAudits = (s.auditCount ?? (s.lastAuditDate ? 1 : 0)) > 0;
-            return (
-              <tr key={s.id} style={{ borderBottom: '1px solid var(--s-border)', background: selected ? 'var(--s-selected)' : 'var(--s-surface)' }}>
-                <td style={{ padding: '12px 16px', minWidth: 0 }}>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/systems/${s.id}`)}
-                    style={{ background: 'none', border: 0, padding: 0, color: 'var(--s-text)', cursor: 'pointer', fontWeight: 500, fontSize: 'inherit', textAlign: 'left' }}
-                  >
-                    {s.name}
-                  </button>
-                  <div style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono }}>{sourceText(s)}</div>
-                </td>
-                <td style={{ padding: '12px 8px' }}>
-                  <span style={{ background: 'var(--s-border)', padding: '2px 8px', borderRadius: 10, fontSize: 12 }}>{stackShort[s.stack] ?? s.stack}</span>
-                </td>
-                <td style={{ padding: '12px 8px', color: 'var(--s-text-2)' }}>{s.team || '—'}</td>
-                <td style={{ padding: '12px 8px', color: 'var(--s-text-2)', fontSize: 13 }}>{scheduleText(s)}</td>
-                <td style={{ padding: '12px 8px', fontWeight: 600, color: scoreColor(score) }}>{score ?? '-'}</td>
-                <td style={{ padding: '8px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <button
-                    type="button"
-                    disabled={!hasAudits}
-                    title={hasAudits ? 'Ver as auditorias deste sistema' : 'Este sistema ainda não tem auditorias'}
-                    aria-label={`Auditorias de ${s.name}`}
-                    onClick={() => navigate(`/systems/${s.id}`)}
-                    style={{ ...actionButton, color: hasAudits ? 'var(--s-link)' : 'var(--s-disabled)', cursor: hasAudits ? 'pointer' : 'not-allowed' }}
-                  >
-                    <ListIcon />
-                    Auditorias
-                  </button>
-                  <button type="button" onClick={() => onAudit(s)} style={actionButton}>
-                    <PlayIcon />
-                    Auditar
-                  </button>
-                  <button type="button" onClick={() => onEdit(s)} style={actionButton}>
-                    <EditIcon />
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Excluir ${s.name}`}
-                    onClick={() => onDelete(s)}
-                    style={{ ...actionButton, color: 'var(--s-danger-text)' }}
-                  >
-                    <TrashIcon />
-                    Excluir
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
+          {systems.map((s) => (
+            <SystemRow key={s.id} system={s} selected={selectedId === s.id} onAudit={onAudit} onEdit={onEdit} onDelete={onDelete} />
+          ))}
         </tbody>
       </table>
     </div>

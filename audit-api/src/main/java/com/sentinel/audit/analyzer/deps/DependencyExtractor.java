@@ -59,45 +59,68 @@ public final class DependencyExtractor {
     private DependencyExtractor() {}
 
     public static List<Dependency> extract(Path root) {
+        List<Path> files;
+        try {
+            files = manifestCandidates(root);
+        } catch (IOException e) {
+            LOG.warnf("Erro ao procurar manifestos de dependências: %s", e.getMessage());
+            return List.of();
+        }
         Set<Dependency> result = new LinkedHashSet<>();
+        for (Path file : files) {
+            try {
+                result.addAll(dependenciesOf(root, file));
+            } catch (Exception e) {
+                LOG.warnf("Não foi possível ler %s: %s", file.getFileName(), e.getMessage());
+            }
+        }
+        return new ArrayList<>(result);
+    }
+
+    /** Arquivos regulares do projeto fora das pastas ignoradas e sem seguir links simbólicos. */
+    private static List<Path> manifestCandidates(Path root) throws IOException {
         List<Path> files = new ArrayList<>();
         try (Stream<Path> stream = Files.walk(root)) {
             stream.filter(Files::isRegularFile)
                   .filter(p -> !Files.isSymbolicLink(p))
                   .filter(p -> !inIgnoredDir(root, p))
                   .forEach(files::add);
-        } catch (IOException e) {
-            LOG.warnf("Erro ao procurar manifestos de dependências: %s", e.getMessage());
+        }
+        return files;
+    }
+
+    private static boolean isGradleBuild(String lowerName) {
+        return lowerName.equals("build.gradle") || lowerName.equals("build.gradle.kts");
+    }
+
+    private static boolean isRequirements(String lowerName) {
+        return lowerName.startsWith("requirements") && lowerName.endsWith(".txt");
+    }
+
+    /** Dependências declaradas no arquivo, se ele for um manifesto conhecido e de tamanho razoável. */
+    private static List<Dependency> dependenciesOf(Path root, Path file) throws Exception {
+        if (Files.size(file) > MAX_FILE_BYTES) {
             return List.of();
         }
-        for (Path file : files) {
-            String name = file.getFileName().toString();
-            String lower = name.toLowerCase(Locale.ROOT);
-            try {
-                if (Files.size(file) > MAX_FILE_BYTES) {
-                    continue;
-                }
-                String rel = root.relativize(file).toString();
-                if (name.equals("pom.xml")) {
-                    result.addAll(fromPom(file, rel));
-                } else if (name.equals("package-lock.json")) {
-                    result.addAll(fromPackageLock(file, rel));
-                } else if (name.equals("package.json")) {
-                    if (!Files.exists(file.resolveSibling("package-lock.json"))) {
-                        result.addAll(fromPackageJson(file, rel));
-                    }
-                } else if (lower.equals("build.gradle") || lower.equals("build.gradle.kts")) {
-                    result.addAll(fromGradle(file, rel));
-                } else if (lower.startsWith("requirements") && lower.endsWith(".txt")) {
-                    result.addAll(fromRequirements(file, rel));
-                } else if (lower.endsWith(".csproj")) {
-                    result.addAll(fromCsproj(file, rel));
-                }
-            } catch (Exception e) {
-                LOG.warnf("Não foi possível ler %s: %s", name, e.getMessage());
-            }
+        String name = file.getFileName().toString();
+        String lower = name.toLowerCase(Locale.ROOT);
+        String rel = root.relativize(file).toString();
+        if (name.equals("pom.xml")) {
+            return fromPom(file, rel);
         }
-        return new ArrayList<>(result);
+        if (name.equals("package-lock.json")) {
+            return fromPackageLock(file, rel);
+        }
+        if (name.equals("package.json")) {
+            return Files.exists(file.resolveSibling("package-lock.json")) ? List.of() : fromPackageJson(file, rel);
+        }
+        if (isGradleBuild(lower)) {
+            return fromGradle(file, rel);
+        }
+        if (isRequirements(lower)) {
+            return fromRequirements(file, rel);
+        }
+        return lower.endsWith(".csproj") ? fromCsproj(file, rel) : List.of();
     }
 
     private static boolean inIgnoredDir(Path root, Path file) {

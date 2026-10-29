@@ -82,7 +82,7 @@ class AnalyzerHonestStatusTest {
     @Test
     void ferramentaQueSaiComErroViraParcialNoStderrCapturado() throws Exception {
         Path err = Files.createTempFile(tmp, "err", ".txt");
-        int code = ExternalTools.run(List.of("sh", "-c", "echo falha-de-teste >&2; exit 3"), null, java.util.Map.of(), 10, null, err);
+        int code = ExternalTools.runTo(List.of("sh", "-c", "echo falha-de-teste >&2; exit 3"), null, java.util.Map.of(), 10, new ExternalTools.Output(null, err));
         assertEquals(3, code);
         assertTrue(ExternalTools.falha(code, 10, err).contains("falha-de-teste"));
     }

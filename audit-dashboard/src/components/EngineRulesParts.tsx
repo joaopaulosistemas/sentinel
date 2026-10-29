@@ -188,38 +188,50 @@ interface RowProps {
   onChange: (id: string, patch: Partial<RuleAdjustment>) => void;
 }
 
+function RuleIdentityCell({ row, inProfile }: { row: RuleRow; inProfile: boolean }) {
+  const origin = [row.pack, row.category, row.declared ? `declara ${row.declared}` : null].filter(Boolean);
+  return (
+    <td style={{ padding: '6px 8px', maxWidth: 520 }}>
+      <div style={{ fontFamily: mono, wordBreak: 'break-all' }}>
+        {row.id}
+        {row.count > 0 && <span style={{ color: 'var(--s-text-3)' }}> · {row.count}</span>}
+      </div>
+      {row.title && <div style={{ color: 'var(--s-text-2)', marginTop: 2 }}>{row.title}</div>}
+      <div style={{ color: 'var(--s-text-3)', marginTop: 2 }}>
+        {origin.join(' · ')}
+        {inProfile && <span>{origin.length > 0 ? ' · ' : ''}perfil já ajusta esta regra</span>}
+      </div>
+    </td>
+  );
+}
+
+function SeverityCell({ id, value, onChange }: { id: string; value: RuleAdjustment['severity']; onChange: RowProps['onChange'] }) {
+  return (
+    <td style={cellStyle}>
+      <select
+        aria-label={`Severidade de ${id}`}
+        value={value ?? ''}
+        onChange={(e) => onChange(id, { severity: (e.target.value || null) as RuleAdjustment['severity'] })}
+      >
+        <option value="">do perfil</option>
+        {SEVERITIES.map((sv) => (
+          <option key={sv} value={sv}>{sv}</option>
+        ))}
+      </select>
+    </td>
+  );
+}
+
 function RuleTableRow({ row, adjustment: r, inProfile, selected, onSelect, onChange }: RowProps) {
   const id = row.id;
-  const origin = [row.pack, row.category, row.declared ? `declara ${row.declared}` : null].filter(Boolean);
   return (
     <tr style={{ borderTop: '1px solid var(--s-border)', background: isNoopAdjustment(r) ? undefined : 'var(--s-selected)' }}>
       <td style={cellStyle}>
         <input type="checkbox" aria-label={`Selecionar ${id}`} checked={selected} onChange={(e) => onSelect(id, e.target.checked)} />
       </td>
-      <td style={{ padding: '6px 8px', maxWidth: 520 }}>
-        <div style={{ fontFamily: mono, wordBreak: 'break-all' }}>
-          {id}
-          {row.count > 0 && <span style={{ color: 'var(--s-text-3)' }}> · {row.count}</span>}
-        </div>
-        {row.title && <div style={{ color: 'var(--s-text-2)', marginTop: 2 }}>{row.title}</div>}
-        <div style={{ color: 'var(--s-text-3)', marginTop: 2 }}>
-          {origin.join(' · ')}
-          {inProfile && <span>{origin.length > 0 ? ' · ' : ''}perfil já ajusta esta regra</span>}
-        </div>
-      </td>
+      <RuleIdentityCell row={row} inProfile={inProfile} />
       <td style={{ ...cellStyle, color: row.gain ? 'var(--s-success-text)' : 'var(--s-text-3)' }}>{gainText(row)}</td>
-      <td style={cellStyle}>
-        <select
-          aria-label={`Severidade de ${id}`}
-          value={r.severity ?? ''}
-          onChange={(e) => onChange(id, { severity: (e.target.value || null) as RuleAdjustment['severity'] })}
-        >
-          <option value="">do perfil</option>
-          {SEVERITIES.map((sv) => (
-            <option key={sv} value={sv}>{sv}</option>
-          ))}
-        </select>
-      </td>
+      <SeverityCell id={id} value={r.severity} onChange={onChange} />
       <td style={cellStyle}>
         <input type="checkbox" aria-label={`Desligar ${id}`} checked={r.disabled} onChange={(e) => onChange(id, { disabled: e.target.checked })} />
       </td>
