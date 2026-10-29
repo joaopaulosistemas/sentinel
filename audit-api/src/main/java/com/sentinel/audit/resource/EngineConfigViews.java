@@ -1,0 +1,120 @@
+package com.sentinel.audit.resource;
+
+import com.sentinel.audit.model.AuditRun;
+import com.sentinel.audit.model.AuditedSystem;
+import com.sentinel.audit.pack.AuditPolicy;
+import com.sentinel.audit.pack.PackRegistry;
+import com.sentinel.audit.pack.ProfileLoader;
+import com.sentinel.audit.pack.RuleCatalog;
+import com.sentinel.audit.pack.RuleOverride;
+import com.sentinel.audit.pack.SystemTuning;
+import com.sentinel.audit.service.AnalyzerCatalog;
+import com.sentinel.audit.service.FindingCatalog;
+import com.sentinel.audit.service.RunCatalog;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/** Monta a visão dos ajustes do motor de um sistema (o que vem do perfil, o que foi ajustado, o catálogo) e valida ajustes novos. */
+@ApplicationScoped
+public class EngineConfigViews {
+
+    public record RuleAdjustment(String id, String severity, boolean disabled, Boolean shadow) {}
+
+    public record PackState(String id, String name, String description, boolean inProfile, boolean active) {}
+
+    public record AnalyzerState(String name, String description, boolean disabled) {}
+
+    public record ThresholdState(String key, Integer profileValue, Integer override) {}
+
+    public record KnownRule(String id, long count) {}
+
+    /** Regra declarada num pacote: o que ela faz, de que pacote vem e a severidade que o Semgrep declara. */
+    public record CatalogRule(String id, String pack, String message, String severity, String category) {}
+
+    public record Tuning(List<RuleAdjustment> rules, Map<String, Integer> thresholds, List<String> enablePacks,
+                         List<String> disablePacks, List<String> disableAnalyzers, List<String> ignorePaths) {}
+
+    public record EngineConfigResponse(String profile, String profileDescription, int adjustments, Tuning tuning,
+                                       List<RuleAdjustment> profileRules, List<PackState> packs,
+                                       List<AnalyzerState> analyzers, List<ThresholdState> thresholds,
+                                       List<KnownRule> knownRules, List<CatalogRule> catalog) {}
+
+    @Inject
+    PackRegistry packRegistry;
+    @Inject
+    RunCatalog runCatalog;
+    @Inject
+    FindingCatalog findingCatalog;
+
+    void validateAgainstRegistry(SystemTuning t) {
+        List<String> known = packRegistry.snapshot().packs().stream().map(p -> p.id()).toList();
+        for (String p : t.enablePacks()) {
+            if (!known.contains(p)) {
+                throw new IllegalArgumentException("Pacote desconhecido: " + p);
+            }
+        }
+        for (String p : t.disablePacks()) {
+            if (!known.contains(p)) {
+                throw new IllegalArgumentException("Pacote desconhecido: " + p);
+            }
+        }
+        for (String a : t.disableAnalyzers()) {
+            if (!AnalyzerCatalog.names().contains(a)) {
+                throw new IllegalArgumentException("Analisador desconhecido: " + a);
+            }
+        }
+    }
+
+    EngineConfigResponse view(AuditedSystem system, SystemTuning tuning) {
+        String profileId = system.effectiveProfile();
+        AuditPolicy resolved;
+        try {
+            resolved = packRegistry.policyFor(profileId);
+        } catch (IllegalArgumentException e) {
+            resolved = packRegistry.policyFor(null);
+        }
+        final AuditPolicy base = resolved;
+        AuditPolicy effective = base.withTuning(tuning, packRegistry.snapshot().packs());
+        List<String> inProfile = base.packs().stream().map(p -> p.id()).toList();
+        List<String> active = effective.packs().stream().map(p -> p.id()).toList();
+        List<PackState> packs = packRegistry.snapshot().packs().stream()
+                .map(p -> new PackState(p.id(), p.manifest().name(), p.manifest().description(),
+                        inProfile.contains(p.id()), active.contains(p.id())))
+                .toList();
+        List<AnalyzerState> analyzers = AnalyzerCatalog.names().stream()
+                .map(n -> new AnalyzerState(n, AnalyzerCatalog.describe(n), tuning.analyzerDisabled(n)))
+                .toList();
+        List<ThresholdState> thresholds = ProfileLoader.KNOWN_THRESHOLDS.stream().sorted()
+                .map(k -> new ThresholdState(k, base.thresholds().get(k), tuning.thresholds().get(k)))
+                .toList();
+        List<KnownRule> known = new ArrayList<>();
+        List<AuditRun> last = runCatalog.latestCompleted(system.getId(), 1);
+        if (!last.isEmpty()) {
+            for (Object[] row : findingCatalog.ruleCounts(last.get(0).getId())) {
+                known.add(new KnownRule(String.valueOf(row[0]), (Long) row[1]));
+            }
+        }
+        Tuning dto = new Tuning(rules(tuning.rules()), tuning.thresholds(), tuning.enablePacks().stream().sorted().toList(),
+                tuning.disablePacks().stream().sorted().toList(), tuning.disableAnalyzers().stream().sorted().toList(),
+                List.copyOf(tuning.ignorePaths()));
+        String description = packRegistry.snapshot().profiles().containsKey(profileId == null ? "" : profileId.toLowerCase(Locale.ROOT))
+                ? packRegistry.snapshot().profiles().get(profileId.toLowerCase(Locale.ROOT)).description() : null;
+        List<CatalogRule> catalog = RuleCatalog.of(packRegistry.snapshot().packs()).stream()
+                .map(e -> new CatalogRule(e.id(), e.pack(), e.message(), e.severity(), e.category()))
+                .toList();
+        return new EngineConfigResponse(profileId, description, tuning.adjustments(), dto, rules(base.baseOverrides()),
+                packs, analyzers, thresholds, known, catalog);
+    }
+
+    private static List<RuleAdjustment> rules(Map<String, RuleOverride> in) {
+        return in.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(e -> new RuleAdjustment(e.getKey(), e.getValue().severity() == null ? null : e.getValue().severity().name(),
+                        e.getValue().disabled(), e.getValue().shadow()))
+                .toList();
+    }
+}

@@ -36,11 +36,6 @@ import java.util.List;
 @Tag(name = "MCP", description = "Acesso do Claude (MCP) aos resultados de um sistema")
 public class McpAdminResource {
 
-    public record ToolState(String name, String description, boolean writes, boolean enabled) {}
-
-    public record McpConfigResponse(boolean enabled, boolean hasKey, String keyPrefix, String keyCreatedAt,
-                                    DataLevel dataLevel, List<ToolState> tools) {}
-
     public record McpConfigRequest(Boolean enabled, String dataLevel, List<String> tools) {}
 
     /** A chave aparece aqui uma única vez; depois só o começo dela. */
@@ -54,16 +49,19 @@ public class McpAdminResource {
     @Inject
     McpGateService gate;
 
+    @Inject
+    McpConfigViews views;
+
     @GET
     @Operation(summary = "Configuração do acesso MCP do sistema")
-    public McpConfigResponse get(@PathParam("id") Long id) {
+    public McpConfigViews.McpConfigResponse get(@PathParam("id") Long id) {
         requireSystem(id);
-        return view(gate.find(id));
+        return views.view(gate.find(id));
     }
 
     @PUT
     @Operation(summary = "Ligar ou desligar o acesso, escolher o nível de dados e as ferramentas")
-    public McpConfigResponse update(@PathParam("id") Long id, McpConfigRequest request) {
+    public McpConfigViews.McpConfigResponse update(@PathParam("id") Long id, McpConfigRequest request) {
         requireSystem(id);
         if (request == null) {
             throw new BadRequestException("Corpo ausente");
@@ -77,7 +75,7 @@ public class McpAdminResource {
             }
         }
         try {
-            return view(gate.update(id, request.enabled(), level, request.tools()));
+            return views.view(gate.update(id, request.enabled(), level, request.tools()));
         } catch (IllegalArgumentException e) {
             throw new BadRequestException(e.getMessage(), e);
         }
@@ -113,18 +111,5 @@ public class McpAdminResource {
 
     private AuditedSystem requireSystem(Long id) {
         return systemCatalog.require(id);
-    }
-
-    private McpConfigResponse view(McpAccess access) {
-        List<McpTool> enabled = gate.enabledTools(access);
-        List<ToolState> tools = Arrays.stream(McpTool.values())
-                .map(t -> new ToolState(t.wire(), t.description(), t.writes(), enabled.contains(t)))
-                .toList();
-        if (access == null) {
-            return new McpConfigResponse(false, false, null, null, DataLevel.TITLES, tools);
-        }
-        return new McpConfigResponse(access.isEnabled(), access.getKeyHash() != null, access.getKeyPrefix(),
-                access.getKeyCreatedAt() == null ? null : access.getKeyCreatedAt().toString(),
-                access.getDataLevel() == null ? DataLevel.TITLES : access.getDataLevel(), tools);
     }
 }
