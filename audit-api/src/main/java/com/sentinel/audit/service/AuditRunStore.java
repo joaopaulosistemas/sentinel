@@ -183,9 +183,8 @@ public class AuditRunStore {
         for (Finding finding : findings) {
             RunText.fitColumns(finding);
             finding.setAuditRun(run);
+            findingRepository.persist(finding);
         }
-        // Uma chamada só: o Hibernate agrupa os INSERTs em lotes (quarkus.hibernate-orm.jdbc.statement-batch-size).
-        findingRepository.persist(findings);
 
         run.setRiskScore(riskScore);
         run.setLinesOfCode(linesOfCode);
