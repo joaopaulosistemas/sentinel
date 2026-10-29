@@ -2,6 +2,33 @@
 # As regras do Sentinel de cada tecnologia vêm dos pacotes: aqui só ficam os critérios de quais regras entram (own/also/languages)
 # e o texto que as regras não trazem (práticas, lacunas, comandos).
 # review.*: marque true quando o passo for feito de fato (conferido na documentação oficial, revisado pela equipe, testado com a IA).
+# Processo: vale para todas as tecnologias. Fontes: Google Engineering Practices (revisão de código) e AWS Well-Architected DL.CR.1.
+process:
+  - title: "Primeira linha que diz o que mudou"
+    do: "tipo(escopo): descrição no imperativo, até 72 caracteres (feat, fix, docs, refactor, test, chore...). O corpo explica o porquê, o problema e a limitação da solução."
+    avoid: "\"fix bug\", \"wip\", \"ajustes\": o histórico vira inútil para quem procura uma mudança daqui a um ano."
+  - title: "Mudança pequena"
+    do: "Um assunto por PR, que o revisor entende de uma vez. Refatoração e mudança de comportamento em PRs separados."
+    avoid: "PR gigante que mistura funcionalidade, refatoração e formatação: a revisão fica superficial."
+  - title: "Aprovar quando a saúde do código melhora"
+    do: "Aprove a mudança que deixa o código melhor do que estava, mesmo que não seja como você faria. Pergunte: está correto, simples, testado e legível?"
+    avoid: "Bloquear por preferência pessoal ou exigir perfeição. Ponto de estilo sem regra no guia é opinião, não bloqueio."
+  - title: "Comentário sobre o código, com severidade"
+    do: "Comente o código, nunca a pessoa; explique o porquê. Marque Nit: (detalhe), Opcional: (boa ideia, não obrigatória) ou FYI: (informativo)."
+    avoid: "Comentário seco que parece ordem, ou que mistura o que é obrigatório com o que é sugestão."
+  - title: "Explique no código, não só na revisão"
+    do: "Se o revisor não entendeu, deixe o código mais claro; se não der, comente no código. Quem lê daqui a meses não vê a conversa do PR."
+    avoid: "Responder só na ferramenta de revisão e deixar o código igual."
+  - title: "Limpeza agora, não depois"
+    do: "Complexidade nova se resolve antes do merge. O que não couber vira issue com responsável e, se ajudar, um TODO que cita a issue."
+    avoid: "\"Depois eu arrumo\" sem issue: quanto mais tempo passa, menor a chance de acontecer."
+  - title: "Revisão rápida"
+    do: "Responda a um pedido de revisão em até um dia útil. Revisão lenta faz o autor juntar mudanças em PRs maiores."
+    avoid: "Deixar o PR parado esperando o momento perfeito para revisar."
+  - title: "Padrão na ferramenta, não na memória"
+    do: "Regra que dá para checar vai para linter, formatador ou Sentinel, com exceções em .sentinel.yml com motivo e prazo."
+    avoid: "Regra que só existe num documento ou na cabeça de quem revisa."
+
 stacks:
   - id: java
     name: "Java"

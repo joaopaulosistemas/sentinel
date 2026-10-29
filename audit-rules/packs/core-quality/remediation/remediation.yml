@@ -493,6 +493,16 @@
   effort: L
   regression-risk: MEDIUM
 
+- key: "sentinel-commit-fora-do-padrao"
+  summary: "Escreva a primeira linha como tipo(escopo): descrição no imperativo (idealmente até 72 caracteres; o limite do Sentinel é 100), e explique o porquê no corpo. Ajuste o limite com commit-max-bad-percent no perfil."
+  before: "ajustes"
+  after: "fix(api): corrige o filtro de severidade no guia"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://www.conventionalcommits.org/en/v1.0.0/"
+    - "https://google.github.io/eng-practices/review/developer/cl-descriptions.html"
+
 - key: "sentinel-morto-export"
   summary: "Remova o código que ninguém usa. Se for chamado de fora por nome (framework, outro repositório), mantenha e documente."
   before: "export function calcularLegado() { ... }   // nenhum arquivo importa"

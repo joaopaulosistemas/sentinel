@@ -16,6 +16,7 @@ declare module 'vitest' {
 }
 
 const GUIDE: GuideResponse = {
+  process: [{ title: 'Primeira linha que diz o que mudou', doIt: 'tipo(escopo): descrição.', avoid: 'wip.' }],
   stacks: [
     {
       id: 'quarkus', name: 'Quarkus', kind: 'backend', summary: 'Java para nuvem', tools: ['Checkstyle'], gaps: ['Sem regra de Mutiny'],
@@ -64,6 +65,15 @@ describe('GuidePage', () => {
     const lista = screen.getByRole('heading', { name: /Regras \(2 de 2\)/ }).closest('section') as HTMLElement;
     const titulos = within(lista).getAllByRole('button', { expanded: false }).map((b) => b.textContent);
     expect(titulos[0]).toContain('Algoritmo de hash fraco');
+  });
+
+  it('mostra commits e revisão, iguais em qualquer tecnologia', async () => {
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'Commits e revisão' })).toBeInTheDocument();
+    expect(screen.getByText('Primeira linha que diz o que mudou')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Vue/ }));
+    expect(await screen.findByRole('heading', { name: 'Boas práticas de Vue' })).toBeInTheDocument();
+    expect(screen.getByText('Primeira linha que diz o que mudou')).toBeInTheDocument();
   });
 
   it('filtra por severidade e busca, e abre o antes e depois da regra', async () => {

@@ -23,7 +23,8 @@ public final class AnalyzerCatalog {
             Map.entry("Ciclos de dependência", "Pacotes Java e arquivos TypeScript que se importam em círculo"),
             Map.entry("Duplicação", "Blocos de código repetidos"),
             Map.entry("Pontos quentes", "Arquivos que mudam muito e são complexos (histórico do Git)"),
-            Map.entry("Código morto", "Exportações TypeScript que ninguém usa"));
+            Map.entry("Código morto", "Exportações TypeScript que ninguém usa"),
+            Map.entry("Mensagens de commit", "Primeira linha dos commits no padrão Conventional Commits"));
 
     private AnalyzerCatalog() {
     }
@@ -32,7 +33,7 @@ public final class AnalyzerCatalog {
     public static java.util.List<String> names() {
         return java.util.List.of("Semgrep", "Secrets", "Secrets-History", "Gitleaks", "Trivy", "OWASP-Dependency",
                 "Architecture", "Arquitetura (pacotes)", "CleanCode", "PMD", "ESLint", "Higiene do projeto", "SARIF", "Evidências",
-                "Ciclos de dependência", "Duplicação", "Pontos quentes", "Código morto");
+                "Ciclos de dependência", "Duplicação", "Pontos quentes", "Código morto", "Mensagens de commit");
     }
 
     /** Descrição do analisador, ou vazio quando não há. */

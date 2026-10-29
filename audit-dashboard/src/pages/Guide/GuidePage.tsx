@@ -5,7 +5,7 @@ import { useGuide } from '../../hooks/useGuide';
 import type { GuideResponse, GuideStack } from '../../types';
 import { rulesOfStack } from '../../utils/guide';
 import { AiPanel } from './AiPanel';
-import { AudienceSwitch, GapsNotice, GradePanel, PracticeGrid, RulesList, StackPicker, SummaryCards } from './GuideParts';
+import { AudienceSwitch, GapsNotice, GradePanel, PracticeGrid, ProcessSection, RulesList, StackPicker, SummaryCards } from './GuideParts';
 
 const DEFAULT_STACK = 'quarkus';
 
@@ -14,6 +14,7 @@ function PeopleView({ stack, guide }: { stack: GuideStack; guide: GuideResponse 
     <>
       <PracticeGrid stack={stack} />
       <GapsNotice stack={stack} />
+      <ProcessSection process={guide.process} />
       <RulesList key={stack.id} rules={rulesOfStack(stack, guide.rules)} />
       <section aria-labelledby="guia-comandos" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '1rem 1.25rem' }}>
         <h2 id="guia-comandos" style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: 600 }}>Comandos de {stack.name}</h2>
