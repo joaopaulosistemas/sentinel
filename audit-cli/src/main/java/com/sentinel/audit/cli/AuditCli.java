@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * CLI para disparar e acompanhar auditorias do Sentinel Audit Tool.
@@ -445,7 +446,11 @@ public class AuditCli {
             }
             applyFlag(result, flag, args[i + 1]);
         }
+        return validated(result);
+    }
 
+    /** Completa o token pela variável de ambiente e confere o id do sistema. */
+    private static CliArgs validated(CliArgs result) {
         if (result.token == null || result.token.isBlank()) {
             result.token = System.getenv("AUDIT_API_KEY");
         }
@@ -460,24 +465,30 @@ public class AuditCli {
         return result;
     }
 
+    /** Como cada opção grava seu valor nos argumentos. */
+    private static final Map<String, BiConsumer<CliArgs, String>> FLAGS = Map.ofEntries(
+            Map.entry("--repo", (a, v) -> a.repo = v),
+            Map.entry("--branch", (a, v) -> a.branch = v),
+            Map.entry("--system-id", (a, v) -> a.systemId = v),
+            Map.entry("--api-url", (a, v) -> a.apiUrl = v.endsWith("/") ? v.substring(0, v.length() - 1) : v),
+            Map.entry("--token", (a, v) -> a.token = v),
+            Map.entry("--api-key", (a, v) -> a.token = v),
+            Map.entry("--fail-below", (a, v) -> a.failBelow = parseNumber("--fail-below", v)),
+            Map.entry("--fail-on", (a, v) -> a.failOn = parseSeverity("--fail-on", v)),
+            Map.entry("--fail-on-new", (a, v) -> a.failOnNew = parseSeverity("--fail-on-new", v)),
+            Map.entry("--fail-on-score-drop", (a, v) -> a.failOnScoreDrop = parseNumber("--fail-on-score-drop", v)),
+            Map.entry("--sarif", (a, v) -> a.sarifFile = v),
+            Map.entry("--junit", (a, v) -> a.junitFile = v),
+            Map.entry("--json", (a, v) -> a.jsonFile = v),
+            Map.entry("--base-ref", (a, v) -> a.baseRef = v),
+            Map.entry("--pr-comment", (a, v) -> a.prCommentFile = v));
+
     private static void applyFlag(CliArgs result, String flag, String value) {
-        switch (flag) {
-            case "--repo"        -> result.repo       = value;
-            case "--branch"      -> result.branch     = value;
-            case "--system-id"   -> result.systemId   = value;
-            case "--api-url"     -> result.apiUrl     = value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
-            case "--token", "--api-key" -> result.token = value;
-            case "--fail-below"  -> result.failBelow  = parseNumber(flag, value);
-            case "--fail-on"     -> result.failOn     = parseSeverity(flag, value);
-            case "--fail-on-new" -> result.failOnNew  = parseSeverity(flag, value);
-            case "--fail-on-score-drop" -> result.failOnScoreDrop = parseNumber(flag, value);
-            case "--sarif"       -> result.sarifFile  = value;
-            case "--junit"       -> result.junitFile  = value;
-            case "--json"        -> result.jsonFile   = value;
-            case "--base-ref"    -> result.baseRef    = value;
-            case "--pr-comment"  -> result.prCommentFile = value;
-            default -> throw new IllegalArgumentException("Parâmetro desconhecido: " + flag);
+        BiConsumer<CliArgs, String> setter = FLAGS.get(flag);
+        if (setter == null) {
+            throw new IllegalArgumentException("Parâmetro desconhecido: " + flag);
         }
+        setter.accept(result, value);
     }
 
     private static double parseNumber(String flag, String value) {

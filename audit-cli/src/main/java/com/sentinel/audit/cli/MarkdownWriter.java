@@ -40,32 +40,32 @@ final class MarkdownWriter {
             md.append("Nenhum problema encontrado");
             md.append(baseRef == null ? "" : " nos arquivos alterados").append(". ✅\n");
         } else {
-            long crit = active.stream().filter(f -> AuditCli.severityRank(f.path("severity").asText("")) >= AuditCli.RANK_CRITICAL).count();
-            long high = active.stream().filter(f -> AuditCli.severityRank(f.path("severity").asText("")) == AuditCli.RANK_HIGH).count();
-            md.append("**").append(active.size()).append(" problema(s)**");
-            md.append(" — ").append(crit).append(" crítico(s), ").append(high).append(" alto(s)\n\n");
-            md.append("| Severidade | Regra | Local | Problema |\n|---|---|---|---|\n");
-            int shown = 0;
-            for (JsonNode f : active) {
-                if (shown >= MAX_ROWS) {
-                    break;
-                }
-                shown++;
-                String file = f.path("filePath").asText("");
-                int line = f.path("lineNumber").asInt(0);
-                md.append("| ").append(cell(f.path("severity").asText("")))
-                  .append(" | `").append(escCode(f.path("ruleId").asText(""))).append("` | ")
-                  .append(file.isEmpty() ? "—" : "`" + escCode(file + (line > 0 ? ":" + line : "")) + "`")
-                  .append(" | ").append(cell(f.path("title").asText(""))).append(" |\n");
-            }
-            if (active.size() > MAX_ROWS) {
-                md.append("\n… e mais ").append(active.size() - MAX_ROWS).append(" no relatório completo.\n");
-            }
+            appendTable(md, active);
         }
         if (shadow > 0) {
             md.append("\n_").append(shadow).append(" achado(s) em modo sombra (não contam para o resultado)._\n");
         }
         return md.toString();
+    }
+
+    /** Contagem de críticos e altos e a tabela dos primeiros achados. */
+    private static void appendTable(StringBuilder md, List<JsonNode> active) {
+        long crit = active.stream().filter(f -> AuditCli.severityRank(f.path("severity").asText("")) >= AuditCli.RANK_CRITICAL).count();
+        long high = active.stream().filter(f -> AuditCli.severityRank(f.path("severity").asText("")) == AuditCli.RANK_HIGH).count();
+        md.append("**").append(active.size()).append(" problema(s)**");
+        md.append(" — ").append(crit).append(" crítico(s), ").append(high).append(" alto(s)\n\n");
+        md.append("| Severidade | Regra | Local | Problema |\n|---|---|---|---|\n");
+        for (JsonNode f : active.subList(0, Math.min(active.size(), MAX_ROWS))) {
+            String file = f.path("filePath").asText("");
+            int line = f.path("lineNumber").asInt(0);
+            md.append("| ").append(cell(f.path("severity").asText("")))
+              .append(" | `").append(escCode(f.path("ruleId").asText(""))).append("` | ")
+              .append(file.isEmpty() ? "—" : "`" + escCode(file + (line > 0 ? ":" + line : "")) + "`")
+              .append(" | ").append(cell(f.path("title").asText(""))).append(" |\n");
+        }
+        if (active.size() > MAX_ROWS) {
+            md.append("\n… e mais ").append(active.size() - MAX_ROWS).append(" no relatório completo.\n");
+        }
     }
 
     /** Texto vindo do repositório auditado não pode virar Markdown/HTML ativo no comentário. */

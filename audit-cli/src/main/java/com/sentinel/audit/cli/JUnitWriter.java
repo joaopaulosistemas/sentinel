@@ -55,12 +55,16 @@ final class JUnitWriter {
                 case '"' -> sb.append("&quot;");
                 case '\'' -> sb.append("&apos;");
                 default -> {
-                    if (c == '\n' || c == '\r' || c == '\t' || c >= FIRST_VALID_XML_CHAR) {
+                    if (isValidXmlChar(c)) {
                         sb.append(c);
                     }
                 }
             }
         }
         return sb.toString();
+    }
+
+    private static boolean isValidXmlChar(char c) {
+        return c == '\n' || c == '\r' || c == '\t' || c >= FIRST_VALID_XML_CHAR;
     }
 }

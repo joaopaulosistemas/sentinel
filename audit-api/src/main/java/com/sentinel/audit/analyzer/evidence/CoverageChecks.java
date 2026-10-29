@@ -137,22 +137,14 @@ final class CoverageChecks {
         }
         double pct = 100.0 * covered / total;
         if (pct < minLineCoverage) {
-            out.add(Ev.finding(run, Category.QUALITY, pct < minLineCoverage / 2 ? Severity.HIGH : Severity.MEDIUM,
-                    "evidencia-cobertura-baixa",
-                    "Cobertura de testes de " + Ev.fmt(Math.round(pct * 10) / 10.0) + "% (mínimo " + Ev.fmt(minLineCoverage) + "%)",
-                    "O relatório " + reportFile + " mostra " + Ev.fmt(covered) + " de " + Ev.fmt(total) + " linhas cobertas por teste. "
+            out.add(Ev.finding(run, new Ev.Kind(Category.QUALITY, pct < minLineCoverage / 2 ? Severity.HIGH : Severity.MEDIUM, "evidencia-cobertura-baixa"), new Ev.Where(reportFile, 1, null), "Cobertura de testes de " + Ev.fmt(Math.round(pct * 10) / 10.0) + "% (mínimo " + Ev.fmt(minLineCoverage) + "%)", "O relatório " + reportFile + " mostra " + Ev.fmt(covered) + " de " + Ev.fmt(total) + " linhas cobertas por teste. "
                             + "Abaixo do mínimo combinado, refatorar e corrigir bugs fica arriscado. Comece pelas classes "
-                            + "maiores sem teste, listadas nos achados seguintes.",
-                    reportFile, 1, null));
+                            + "maiores sem teste, listadas nos achados seguintes."));
         }
         units.stream().filter(u -> u.linesCovered() == 0 && u.lines() >= MIN_UNTESTED_LINES)
                 .sorted(Comparator.comparingLong(Unit::lines).reversed()).limit(MAX_CLASS_FINDINGS).forEach(u ->
-                        out.add(Ev.finding(run, Category.QUALITY, u.lines() >= MEDIUM_UNCOVERED_LINES ? Severity.MEDIUM : Severity.LOW,
-                                "evidencia-cobertura-classe-sem-teste",
-                                "Nenhum teste exercita " + shortName(u.name()) + " (" + u.lines() + " linhas)",
-                                u.name() + " tem " + u.lines() + " linhas e 0% de cobertura no relatório. Quanto maior a "
-                                        + "classe sem teste, maior o risco de uma mudança quebrar algo sem aviso.",
-                                u.path(), 1, null)));
+                        out.add(Ev.finding(run, new Ev.Kind(Category.QUALITY, u.lines() >= MEDIUM_UNCOVERED_LINES ? Severity.MEDIUM : Severity.LOW, "evidencia-cobertura-classe-sem-teste"), new Ev.Where(u.path(), 1, null), "Nenhum teste exercita " + shortName(u.name()) + " (" + u.lines() + " linhas)", u.name() + " tem " + u.lines() + " linhas e 0% de cobertura no relatório. Quanto maior a "
+                                        + "classe sem teste, maior o risco de uma mudança quebrar algo sem aviso.")));
         return out;
     }
 

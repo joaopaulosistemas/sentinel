@@ -19,6 +19,7 @@ import com.sentinel.audit.service.RunCatalog;
 import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -63,15 +64,7 @@ public class FindingResource {
     @GET
     @Operation(summary = "Findings de todos os sistemas",
             description = "Última auditoria concluída de cada sistema, com filtros, resumo por sistema e paginação")
-    public FindingsOverviewDto overview(
-            @QueryParam("systemId") Long systemId,
-            @QueryParam("severity") List<Severity> severity,
-            @QueryParam("category") Category category,
-            @QueryParam("status") FindingStatus status,
-            @QueryParam("onlyNew") @DefaultValue("false") boolean onlyNew,
-            @QueryParam("includeSuppressed") @DefaultValue("false") boolean includeSuppressed,
-            @QueryParam("limit") @DefaultValue("20") int limit,
-            @QueryParam("offset") @DefaultValue("0") int offset) {
+    public FindingsOverviewDto overview(@BeanParam OverviewQuery q) {
         List<FindingsOverview.Source> sources = new ArrayList<>();
         // Última auditoria de cada sistema e os achados delas em duas consultas (antes eram duas por sistema).
         Map<Long, AuditRun> latestBySystem = runCatalog.latestCompletedBySystem();
@@ -87,7 +80,32 @@ public class FindingResource {
                     system.getStack() == null ? null : system.getStack().name(), run.getCompletedAt()));
         }
         return FindingsOverview.build(sources,
-                new FindingsOverview.Filter(systemId, severity == null ? java.util.Set.of() : java.util.Set.copyOf(severity), category, status, onlyNew, includeSuppressed), limit, offset);
+                new FindingsOverview.Filter(q.systemId, q.severity == null ? java.util.Set.of() : java.util.Set.copyOf(q.severity),
+                        q.category, q.status, q.onlyNew, q.includeSuppressed), q.limit, q.offset);
+    }
+
+    /** Filtros e paginação de {@link #overview}. */
+    public static class OverviewQuery {
+        @QueryParam("systemId")
+        public Long systemId;
+        @QueryParam("severity")
+        public List<Severity> severity;
+        @QueryParam("category")
+        public Category category;
+        @QueryParam("status")
+        public FindingStatus status;
+        @QueryParam("onlyNew")
+        @DefaultValue("false")
+        public boolean onlyNew;
+        @QueryParam("includeSuppressed")
+        @DefaultValue("false")
+        public boolean includeSuppressed;
+        @QueryParam("limit")
+        @DefaultValue("20")
+        public int limit;
+        @QueryParam("offset")
+        @DefaultValue("0")
+        public int offset;
     }
 
     /**

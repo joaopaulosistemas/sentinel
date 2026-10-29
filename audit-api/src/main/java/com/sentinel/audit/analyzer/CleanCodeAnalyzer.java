@@ -151,72 +151,96 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
         } catch (IOException e) {
             return List.of();                                        // binário ou codificação inesperada
         }
-        return analyzeSource(root.relativize(file).toString(), source, ts, jsx, run, lim);
+        return analyzeSource(new Src(root.relativize(file).toString(), source, ts, jsx), run, lim);
     }
 
     List<Finding> analyzeSource(String relPath, String source, boolean ts, boolean jsx, AuditRun run) {
-        return analyzeSource(relPath, source, ts, jsx, run, limits(null));
+        return analyzeSource(new Src(relPath, source, ts, jsx), run, limits(null));
     }
 
-    List<Finding> analyzeSource(String relPath, String source, boolean ts, boolean jsx, AuditRun run, Limits lim) {
-        String clean = SourceSanitizer.strip(source);
-        String[] originalLines = source.split("\n", -1);
-        int lineLimit = jsx ? lim.linesJsx() : lim.lines();
+    /** Um arquivo de código a analisar. */
+    record Src(String relPath, String source, boolean ts, boolean jsx) { }
+
+    /** Uma função do arquivo, com a linha da assinatura (que identifica o finding de forma estável). */
+    private record Hit(AuditRun run, String file, Fn fn, String signature) { }
+
+    List<Finding> analyzeSource(Src src, AuditRun run, Limits lim) {
+        String clean = SourceSanitizer.strip(src.source());
+        String[] originalLines = src.source().split("\n", -1);
+        int lineLimit = src.jsx() ? lim.linesJsx() : lim.lines();
 
         List<Finding> out = new ArrayList<>();
-        for (Fn fn : FunctionScanner.scan(clean, ts)) {
-            String signature = signatureLine(originalLines, fn.startLine());
-
-            if (fn.codeLines() > lineLimit) {
-                Severity sev = fn.codeLines() > lineLimit * 2 ? Severity.MEDIUM : Severity.LOW;
-                out.add(finding(run, relPath, fn, signature, "sentinel-cc-funcao-longa", sev,
-                        String.format("Função longa: %s tem %d linhas", fn.name(), fn.codeLines()),
-                        String.format("%s tem %d linhas de código (limite recomendado: %d). Funções longas fazem várias "
-                                + "coisas, são difíceis de testar e de ler. Extraia trechos coesos em funções com nome "
-                                + "que diga o que fazem.", fn.name(), fn.codeLines(), lineLimit)));
-            }
-            if (fn.paramCount() > lim.params()) {
-                Severity sev = fn.paramCount() > lim.params() + PARAMS_MARGIN_FOR_MEDIUM ? Severity.MEDIUM : Severity.LOW;
-                out.add(finding(run, relPath, fn, signature, "sentinel-cc-muitos-parametros", sev,
-                        String.format("Muitos parâmetros: %s recebe %d", fn.name(), fn.paramCount()),
-                        String.format("%s recebe %d parâmetros (limite recomendado: %d). Chamadas ficam difíceis de ler e "
-                                + "é fácil trocar a ordem. Agrupe os que andam juntos em um objeto/record ou use um builder.",
-                                fn.name(), fn.paramCount(), lim.params())));
-            }
-            if (fn.complexity() > lim.complexity()) {
-                Severity sev = fn.complexity() > lim.complexity() * 2 ? Severity.HIGH : Severity.MEDIUM;
-                out.add(finding(run, relPath, fn, signature, "sentinel-cc-complexidade", sev,
-                        String.format("Complexidade alta: %s tem complexidade ciclomática %d", fn.name(), fn.complexity()),
-                        String.format("Complexidade ciclomática %d em %s (limite recomendado: %d). Cada decisão (if, laço, "
-                                + "case, &&, ||, ?:) multiplica os caminhos a testar. Simplifique com retornos antecipados, "
-                                + "extraia condições com nome e substitua cadeias de if/switch por polimorfismo ou mapa.",
-                                fn.complexity(), fn.name(), lim.complexity())));
-            }
-            if (fn.nesting() > lim.nesting()) {
-                Severity sev = fn.nesting() > lim.nesting() + 2 ? Severity.MEDIUM : Severity.LOW;
-                out.add(finding(run, relPath, fn, signature, "sentinel-cc-aninhamento", sev,
-                        String.format("Aninhamento profundo: %s chega a %d níveis", fn.name(), fn.nesting()),
-                        String.format("%s aninha blocos em %d níveis (limite recomendado: %d). Use cláusulas de guarda "
-                                + "(retorne cedo) e extraia o miolo dos laços para funções próprias.",
-                                fn.name(), fn.nesting(), lim.nesting())));
-            }
+        for (Fn fn : FunctionScanner.scan(clean, src.ts())) {
+            Hit hit = new Hit(run, src.relPath(), fn, signatureLine(originalLines, fn.startLine()));
+            checkLength(hit, lineLimit, out);
+            checkParams(hit, lim, out);
+            checkComplexity(hit, lim, out);
+            checkNesting(hit, lim, out);
         }
         return out;
     }
 
-    private Finding finding(AuditRun run, String file, Fn fn, String signature, String ruleId, Severity severity,
-                            String title, String description) {
+    private void checkLength(Hit hit, int lineLimit, List<Finding> out) {
+        Fn fn = hit.fn();
+        if (fn.codeLines() > lineLimit) {
+            Severity sev = fn.codeLines() > lineLimit * 2 ? Severity.MEDIUM : Severity.LOW;
+            out.add(finding(hit, "sentinel-cc-funcao-longa", sev,
+                    String.format("Função longa: %s tem %d linhas", fn.name(), fn.codeLines()),
+                    String.format("%s tem %d linhas de código (limite recomendado: %d). Funções longas fazem várias "
+                            + "coisas, são difíceis de testar e de ler. Extraia trechos coesos em funções com nome "
+                            + "que diga o que fazem.", fn.name(), fn.codeLines(), lineLimit)));
+        }
+    }
+
+    private void checkParams(Hit hit, Limits lim, List<Finding> out) {
+        Fn fn = hit.fn();
+        if (fn.paramCount() > lim.params()) {
+            Severity sev = fn.paramCount() > lim.params() + PARAMS_MARGIN_FOR_MEDIUM ? Severity.MEDIUM : Severity.LOW;
+            out.add(finding(hit, "sentinel-cc-muitos-parametros", sev,
+                    String.format("Muitos parâmetros: %s recebe %d", fn.name(), fn.paramCount()),
+                    String.format("%s recebe %d parâmetros (limite recomendado: %d). Chamadas ficam difíceis de ler e "
+                            + "é fácil trocar a ordem. Agrupe os que andam juntos em um objeto/record ou use um builder.",
+                            fn.name(), fn.paramCount(), lim.params())));
+        }
+    }
+
+    private void checkComplexity(Hit hit, Limits lim, List<Finding> out) {
+        Fn fn = hit.fn();
+        if (fn.complexity() > lim.complexity()) {
+            Severity sev = fn.complexity() > lim.complexity() * 2 ? Severity.HIGH : Severity.MEDIUM;
+            out.add(finding(hit, "sentinel-cc-complexidade", sev,
+                    String.format("Complexidade alta: %s tem complexidade ciclomática %d", fn.name(), fn.complexity()),
+                    String.format("Complexidade ciclomática %d em %s (limite recomendado: %d). Cada decisão (if, laço, "
+                            + "case, &&, ||, ?:) multiplica os caminhos a testar. Simplifique com retornos antecipados, "
+                            + "extraia condições com nome e substitua cadeias de if/switch por polimorfismo ou mapa.",
+                            fn.complexity(), fn.name(), lim.complexity())));
+        }
+    }
+
+    private void checkNesting(Hit hit, Limits lim, List<Finding> out) {
+        Fn fn = hit.fn();
+        if (fn.nesting() > lim.nesting()) {
+            Severity sev = fn.nesting() > lim.nesting() + 2 ? Severity.MEDIUM : Severity.LOW;
+            out.add(finding(hit, "sentinel-cc-aninhamento", sev,
+                    String.format("Aninhamento profundo: %s chega a %d níveis", fn.name(), fn.nesting()),
+                    String.format("%s aninha blocos em %d níveis (limite recomendado: %d). Use cláusulas de guarda "
+                            + "(retorne cedo) e extraia o miolo dos laços para funções próprias.",
+                            fn.name(), fn.nesting(), lim.nesting())));
+        }
+    }
+
+    private Finding finding(Hit hit, String ruleId, Severity severity, String title, String description) {
         Finding f = new Finding();
-        f.setAuditRun(run);
+        f.setAuditRun(hit.run());
         f.setToolSource(ANALYZER_NAME);
         f.setCategory(Category.QUALITY);
         f.setSeverity(severity);
         f.setRuleId(ruleId);
         f.setTitle(title);
         f.setDescription(description);
-        f.setFilePath(file);
-        f.setLineNumber(fn.startLine());
-        f.setCodeSnippet(signature);        // identidade estável: não muda quando o corpo cresce ou a função se move
+        f.setFilePath(hit.file());
+        f.setLineNumber(hit.fn().startLine());
+        f.setCodeSnippet(hit.signature());        // identidade estável: não muda quando o corpo cresce ou a função se move
         return f;
     }
 

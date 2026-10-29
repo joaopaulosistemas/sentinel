@@ -45,22 +45,10 @@ public class ApiKeyFilter implements ContainerRequestFilter {
         if ("OPTIONS".equalsIgnoreCase(ctx.getMethod())) {
             return; // preflight de CORS
         }
-        String path = ctx.getUriInfo().getPath();
-        if (path != null) {
-            String normalized = path.replaceAll("^/+", "");
-            if (normalized.startsWith(HEALTH_PATH) || normalized.startsWith(WEBHOOK_PATH) || normalized.startsWith(MCP_PATH)) {
-                return;
-            }
+        if (isOpenPath(ctx.getUriInfo().getPath())) {
+            return;
         }
-
-        String provided = ctx.getHeaderString("X-API-Key");
-        if (provided == null) {
-            String auth = ctx.getHeaderString("Authorization");
-            if (auth != null && auth.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
-                provided = auth.substring(BEARER_PREFIX.length()).trim();
-            }
-        }
-
+        String provided = providedKey(ctx);
         if (provided == null || !constantTimeEquals(provided, apiKey.get())) {
             ctx.abortWith(Response.status(Response.Status.UNAUTHORIZED)
                     .header("WWW-Authenticate", "Bearer")
@@ -68,6 +56,28 @@ public class ApiKeyFilter implements ContainerRequestFilter {
                     .type("application/json")
                     .build());
         }
+    }
+
+    /** Saúde, webhooks e MCP não usam a API key global. */
+    private static boolean isOpenPath(String path) {
+        if (path == null) {
+            return false;
+        }
+        String normalized = path.replaceAll("^/+", "");
+        return normalized.startsWith(HEALTH_PATH) || normalized.startsWith(WEBHOOK_PATH) || normalized.startsWith(MCP_PATH);
+    }
+
+    /** A chave enviada: cabeçalho {@code X-API-Key} ou {@code Authorization: Bearer}; nulo se não veio. */
+    private static String providedKey(ContainerRequestContext ctx) {
+        String provided = ctx.getHeaderString("X-API-Key");
+        if (provided != null) {
+            return provided;
+        }
+        String auth = ctx.getHeaderString("Authorization");
+        if (auth != null && auth.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
+            return auth.substring(BEARER_PREFIX.length()).trim();
+        }
+        return null;
     }
 
     private static boolean constantTimeEquals(String a, String b) {

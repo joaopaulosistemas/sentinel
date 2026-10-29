@@ -121,10 +121,77 @@ function VerdictBlock({ data }: { data: NonNullable<ReturnType<typeof useInsight
   );
 }
 
+type Insights = NonNullable<ReturnType<typeof useInsights>['data']>;
+
+const DEBT_PREVIEW = 15;
+
+function DebtSection({ data }: { data: Insights }) {
+  const [showAll, setShowAll] = useState(false);
+  return (
+    <>
+      <SubTitle title="Dívida técnica" />
+      <DebtTable items={data.debtTable} limit={showAll ? undefined : DEBT_PREVIEW} />
+      {data.debtTable.length > DEBT_PREVIEW && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: 'var(--s-link)', cursor: 'pointer', padding: 0 }}
+        >
+          {showAll ? 'Mostrar menos' : 'Mostrar todos'}
+        </button>
+      )}
+    </>
+  );
+}
+
+function Roadmap({ phases }: { phases: Insights['roadmap'] }) {
+  return (
+    <>
+      <SubTitle title="Plano de ação em fases" />
+      <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 24 }}>
+        {phases.map((p) => (
+          <li key={p.number} style={{ borderTop: '4px solid var(--s-link)', paddingTop: 10 }}>
+            <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
+              Fase {p.number} · {p.total} {p.total === 1 ? 'item' : 'itens'}
+            </div>
+            <strong style={{ fontWeight: 600 }}>{p.name}</strong>
+            <div style={{ fontSize: 13, color: 'var(--s-text-2)' }}>{p.goal}</div>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
+function FixPlan({ data }: { data: Insights }) {
+  return (
+    <PageSection id="plano" title="O que corrigir" hint="Quick wins primeiro; depois a dívida técnica, um problema por linha, agrupado por regra.">
+      {data.quickWins.length > 0 && (
+        <>
+          <SubTitle title="Quick wins" hint="Esforço pequeno e prioridade até P2: comece por aqui." />
+          <DebtTable items={data.quickWins} />
+        </>
+      )}
+      <DebtSection data={data} />
+      <Roadmap phases={data.roadmap} />
+    </PageSection>
+  );
+}
+
+function LoadErrorNotice({ error }: { error: unknown }) {
+  return (
+    <InlineNotification
+      kind="error"
+      title="Não foi possível carregar a auditoria completa"
+      subtitle={error instanceof Error ? error.message : 'Erro desconhecido'}
+      hideCloseButton
+    />
+  );
+}
+
 /** Parecer da auditoria e, em seguida, o que corrigir: quick wins, dívida técnica P0–P3 e plano em fases. */
 export function InsightsPanel({ auditId }: { auditId: number | undefined }) {
   const { data, isLoading, error } = useInsights(auditId);
-  const [showAll, setShowAll] = useState(false);
 
   if (auditId === undefined) return null;
 
@@ -132,52 +199,10 @@ export function InsightsPanel({ auditId }: { auditId: number | undefined }) {
     <>
       <PageSection id="parecer" title="Parecer da auditoria">
         {isLoading && <SkeletonText paragraph lineCount={4} />}
-        {error && (
-          <InlineNotification
-            kind="error"
-            title="Não foi possível carregar a auditoria completa"
-            subtitle={error instanceof Error ? error.message : 'Erro desconhecido'}
-            hideCloseButton
-          />
-        )}
+        {error && <LoadErrorNotice error={error} />}
         {data && <VerdictBlock data={data} />}
       </PageSection>
-
-      {data && (
-        <PageSection id="plano" title="O que corrigir" hint="Quick wins primeiro; depois a dívida técnica, um problema por linha, agrupado por regra.">
-          {data.quickWins.length > 0 && (
-            <>
-              <SubTitle title="Quick wins" hint="Esforço pequeno e prioridade até P2: comece por aqui." />
-              <DebtTable items={data.quickWins} />
-            </>
-          )}
-
-          <SubTitle title="Dívida técnica" />
-          <DebtTable items={data.debtTable} limit={showAll ? undefined : 15} />
-          {data.debtTable.length > 15 && (
-            <button
-              type="button"
-              onClick={() => setShowAll((v) => !v)}
-              style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: 'var(--s-link)', cursor: 'pointer', padding: 0 }}
-            >
-              {showAll ? 'Mostrar menos' : 'Mostrar todos'}
-            </button>
-          )}
-
-          <SubTitle title="Plano de ação em fases" />
-          <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 24 }}>
-            {data.roadmap.map((p) => (
-              <li key={p.number} style={{ borderTop: '4px solid var(--s-link)', paddingTop: 10 }}>
-                <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
-                  Fase {p.number} · {p.total} {p.total === 1 ? 'item' : 'itens'}
-                </div>
-                <strong style={{ fontWeight: 600 }}>{p.name}</strong>
-                <div style={{ fontSize: 13, color: 'var(--s-text-2)' }}>{p.goal}</div>
-              </li>
-            ))}
-          </ol>
-        </PageSection>
-      )}
+      {data && <FixPlan data={data} />}
     </>
   );
 }

@@ -134,21 +134,29 @@ public final class PackLoader {
                 if (++count[0] > MAX_FILES && count[0] == MAX_FILES + 1) {
                     errors.add("pacote com arquivos demais (limite " + MAX_FILES + ")");
                 }
-                if (Files.isSymbolicLink(p)) {
-                    errors.add("link simbólico não é permitido: " + dir.relativize(p));
-                } else if (Files.isRegularFile(p)) {
-                    try {
-                        String n = p.getFileName().toString();
-                        if ((n.endsWith(".yml") || n.endsWith(".yaml")) && Files.size(p) > MAX_FILE_BYTES) {
-                            errors.add(dir.relativize(p) + ": arquivo YAML maior que 1 MB");
-                        }
-                    } catch (IOException e) {
-                        errors.add(dir.relativize(p) + ": ilegível (" + e.getMessage() + ")");
-                    }
-                }
+                checkEntry(dir, p, errors);
             });
         } catch (IOException e) {
             errors.add("não foi possível percorrer o pacote: " + e.getMessage());
+        }
+    }
+
+    /** Recusa link simbólico e YAML grande demais. */
+    private static void checkEntry(Path dir, Path p, List<String> errors) {
+        if (Files.isSymbolicLink(p)) {
+            errors.add("link simbólico não é permitido: " + dir.relativize(p));
+            return;
+        }
+        if (!Files.isRegularFile(p)) {
+            return;
+        }
+        try {
+            String n = p.getFileName().toString();
+            if ((n.endsWith(".yml") || n.endsWith(".yaml")) && Files.size(p) > MAX_FILE_BYTES) {
+                errors.add(dir.relativize(p) + ": arquivo YAML maior que 1 MB");
+            }
+        } catch (IOException e) {
+            errors.add(dir.relativize(p) + ": ilegível (" + e.getMessage() + ")");
         }
     }
 
@@ -215,6 +223,22 @@ public final class PackLoader {
 
     // ------------------------------------------------------------------ pack.yml
 
+    private static void checkManifestFields(String id, String name, String version, List<String> errors) {
+        if (id == null) {
+            errors.add("pack.yml: 'id' é obrigatório");
+        } else if (!PackManifest.ID.matcher(id).matches()) {
+            errors.add("pack.yml: id '" + id + "' inválido (minúsculas, números e hífen; 2 a 63 caracteres)");
+        }
+        if (name == null) {
+            errors.add("pack.yml: 'name' é obrigatório");
+        }
+        if (version == null) {
+            errors.add("pack.yml: 'version' é obrigatório");
+        } else if (!PackManifest.VERSION.matcher(version).matches()) {
+            errors.add("pack.yml: version '" + version + "' inválida (use x.y.z, ex.: 1.0.0)");
+        }
+    }
+
     private static PackManifest parseManifest(Path file, List<String> errors) {
         Object root = read(file, file.getParent(), errors);
         Map<String, Object> m = Yamls.map(root);
@@ -229,19 +253,7 @@ public final class PackLoader {
         String id = Yamls.str(m, "id");
         String name = Yamls.str(m, "name");
         String version = Yamls.str(m, "version");
-        if (id == null) {
-            errors.add("pack.yml: 'id' é obrigatório");
-        } else if (!PackManifest.ID.matcher(id).matches()) {
-            errors.add("pack.yml: id '" + id + "' inválido (minúsculas, números e hífen; 2 a 63 caracteres)");
-        }
-        if (name == null) {
-            errors.add("pack.yml: 'name' é obrigatório");
-        }
-        if (version == null) {
-            errors.add("pack.yml: 'version' é obrigatório");
-        } else if (!PackManifest.VERSION.matcher(version).matches()) {
-            errors.add("pack.yml: version '" + version + "' inválida (use x.y.z, ex.: 1.0.0)");
-        }
+        checkManifestFields(id, name, version, errors);
         List<String> languages = Yamls.strings(m, "languages", errors, "pack.yml");
         if (id == null || name == null || version == null) {
             return null;
@@ -267,46 +279,91 @@ public final class PackLoader {
                 errors.add(name + ": esperava a chave 'rules' com uma lista de regras");
                 continue;
             }
-            for (int i = 0; i < rules.size(); i++) {
-                Map<String, Object> r = Yamls.map(rules.get(i));
-                String where = name + " regra #" + (i + 1);
-                if (r == null) {
-                    errors.add(where + ": esperava um mapa");
-                    continue;
-                }
-                String id = Yamls.str(r, "id");
-                if (id == null || !SEMGREP_ID.matcher(id).matches()) {
-                    errors.add(where + ": 'id' ausente ou inválido");
-                } else {
-                    where = name + " regra '" + id + "'";
-                    if (!ids.add(id)) {
-                        errors.add(where + ": id repetido no pacote");
-                    }
-                }
-                if (Yamls.str(r, "message") == null) {
-                    errors.add(where + ": 'message' é obrigatório");
-                }
-                String sev = Yamls.str(r, "severity");
-                if (sev == null || !SEMGREP_SEVERITY.contains(sev.toUpperCase(Locale.ROOT))) {
-                    errors.add(where + ": 'severity' deve ser ERROR, WARNING ou INFO");
-                }
-                List<String> langs = Yamls.strings(r, "languages", errors, where);
-                if (langs == null || langs.isEmpty()) {
-                    errors.add(where + ": 'languages' é obrigatório");
-                }
-                boolean hasMatcher = r.keySet().stream().anyMatch(k -> k.startsWith("pattern")) || r.containsKey("mode");
-                if (!hasMatcher) {
-                    errors.add(where + ": nenhuma condição de busca (pattern, patterns, pattern-either, pattern-regex...)");
-                }
-                Map<String, Object> meta = Yamls.map(r.get("metadata"));
-                if (meta != null && meta.get("status") != null
-                        && !RULE_STATUS.contains(String.valueOf(meta.get("status")).toLowerCase(Locale.ROOT))) {
-                    errors.add(where + ": metadata.status deve ser draft, experimental, stable ou deprecated");
-                }
-                count++;
-            }
+            count += checkRules(rules, name, ids, errors);
         }
         return count;
+    }
+
+    /** Confere cada regra do arquivo {@code name}; devolve quantas eram mapas (as que valem como regra). */
+    private static int checkRules(List<Object> rules, String name, Set<String> ids, List<String> errors) {
+        int count = 0;
+        for (int i = 0; i < rules.size(); i++) {
+            Map<String, Object> r = Yamls.map(rules.get(i));
+            if (r == null) {
+                errors.add(name + " regra #" + (i + 1) + ": esperava um mapa");
+                continue;
+            }
+            String where = checkRuleId(r, name + " regra #" + (i + 1), name, ids, errors);
+            checkRuleBody(r, where, errors);
+            count++;
+        }
+        return count;
+    }
+
+    /** Confere o id da regra; devolve como citá-la nas mensagens seguintes (pelo id, se for válido). */
+    private static String checkRuleId(Map<String, Object> r, String position, String name, Set<String> ids, List<String> errors) {
+        String id = Yamls.str(r, "id");
+        if (id == null || !SEMGREP_ID.matcher(id).matches()) {
+            errors.add(position + ": 'id' ausente ou inválido");
+            return position;
+        }
+        String where = name + " regra '" + id + "'";
+        if (!ids.add(id)) {
+            errors.add(where + ": id repetido no pacote");
+        }
+        return where;
+    }
+
+    private static void checkRuleBody(Map<String, Object> r, String where, List<String> errors) {
+        if (Yamls.str(r, "message") == null) {
+            errors.add(where + ": 'message' é obrigatório");
+        }
+        String sev = Yamls.str(r, "severity");
+        if (sev == null || !SEMGREP_SEVERITY.contains(sev.toUpperCase(Locale.ROOT))) {
+            errors.add(where + ": 'severity' deve ser ERROR, WARNING ou INFO");
+        }
+        List<String> langs = Yamls.strings(r, "languages", errors, where);
+        if (langs == null || langs.isEmpty()) {
+            errors.add(where + ": 'languages' é obrigatório");
+        }
+        boolean hasMatcher = r.keySet().stream().anyMatch(k -> k.startsWith("pattern")) || r.containsKey("mode");
+        if (!hasMatcher) {
+            errors.add(where + ": nenhuma condição de busca (pattern, patterns, pattern-either, pattern-regex...)");
+        }
+        checkRuleStatus(r, where, errors);
+    }
+
+    private static void checkRuleStatus(Map<String, Object> r, String where, List<String> errors) {
+        Map<String, Object> meta = Yamls.map(r.get("metadata"));
+        if (meta != null && meta.get("status") != null
+                && !RULE_STATUS.contains(String.valueOf(meta.get("status")).toLowerCase(Locale.ROOT))) {
+            errors.add(where + ": metadata.status deve ser draft, experimental, stable ou deprecated");
+        }
+    }
+
+    /** O texto de todos os arquivos de teste (os pequenos e legíveis) da pasta; vazio se não houver. */
+    private static String readTests(Path tests) {
+        StringBuilder all = new StringBuilder();
+        if (Files.isDirectory(tests)) {
+            try (Stream<Path> s = Files.walk(tests)) {
+                for (Path p : s.filter(Files::isRegularFile).toList()) {
+                    appendTest(all, p);
+                }
+            } catch (IOException ignored) {
+                // sem testes legíveis: todas as regras avisam abaixo
+            }
+        }
+        return all.toString();
+    }
+
+    private static void appendTest(StringBuilder all, Path p) {
+        try {
+            if (Files.size(p) <= MAX_FILE_BYTES) {
+                all.append(Files.readString(p, StandardCharsets.UTF_8)).append('\n');
+            }
+        } catch (IOException | RuntimeException ignored) {
+            // arquivo binário/ilegível não conta como teste
+        }
     }
 
     /** Regra sem caso de teste "ruleid:" é aviso (não impede o uso, mas o CLI em modo estrito reprova). */
@@ -314,24 +371,7 @@ public final class PackLoader {
         if (ruleIds.isEmpty()) {
             return;
         }
-        Path tests = dir.resolve("tests");
-        StringBuilder all = new StringBuilder();
-        if (Files.isDirectory(tests)) {
-            try (Stream<Path> s = Files.walk(tests)) {
-                for (Path p : s.filter(Files::isRegularFile).toList()) {
-                    try {
-                        if (Files.size(p) <= MAX_FILE_BYTES) {
-                            all.append(Files.readString(p, StandardCharsets.UTF_8)).append('\n');
-                        }
-                    } catch (IOException | RuntimeException ignored) {
-                        // arquivo binário/ilegível não conta como teste
-                    }
-                }
-            } catch (IOException ignored) {
-                // sem testes legíveis: todas as regras avisam abaixo
-            }
-        }
-        String text = all.toString();
+        String text = readTests(dir.resolve("tests"));
         for (String id : ruleIds.stream().sorted().toList()) {
             if (!Pattern.compile("ruleid:\\s*" + Pattern.quote(id) + "(\\s|$)").matcher(text).find()) {
                 warnings.add("regra '" + id + "' sem caso de teste (// ruleid: " + id + ")");

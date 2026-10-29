@@ -158,59 +158,84 @@ public final class DependencyCycles {
 
     /** Componentes fortemente conexas com mais de um nó (algoritmo de Tarjan, sem recursão). */
     static List<List<String>> components(Map<String, Set<String>> graph) {
-        Map<String, Integer> index = new HashMap<>();
-        Map<String, Integer> low = new HashMap<>();
-        Deque<String> stack = new ArrayDeque<>();
-        Set<String> onStack = new HashSet<>();
-        List<List<String>> out = new ArrayList<>();
-        int counter = 0;
+        Tarjan t = new Tarjan(graph);
         for (String start : new TreeSet<>(graph.keySet())) {
-            if (index.containsKey(start)) {
-                continue;
+            if (!t.index.containsKey(start)) {
+                t.run(start);
             }
-            Deque<Frame> work = new ArrayDeque<>();
-            index.put(start, counter);
-            low.put(start, counter++);
-            stack.push(start);
-            onStack.add(start);
-            work.push(new Frame(start, graph.getOrDefault(start, Set.of()).iterator()));
+        }
+        List<List<String>> out = t.out;
+        out.sort(Comparator.<List<String>>comparingInt(c -> -c.size()).thenComparing(c -> c.get(0)));
+        return out;
+    }
+
+    /** Estado do algoritmo de Tarjan, iterativo. */
+    private static final class Tarjan {
+        final Map<String, Set<String>> graph;
+        final Map<String, Integer> index = new HashMap<>();
+        final Map<String, Integer> low = new HashMap<>();
+        final Deque<String> stack = new ArrayDeque<>();
+        final Set<String> onStack = new HashSet<>();
+        final Deque<Frame> work = new ArrayDeque<>();
+        final List<List<String>> out = new ArrayList<>();
+        int counter = 0;
+
+        Tarjan(Map<String, Set<String>> graph) {
+            this.graph = graph;
+        }
+
+        void run(String start) {
+            enter(start);
             while (!work.isEmpty()) {
                 Frame top = work.peek();
                 if (top.next.hasNext()) {
-                    String w = top.next.next();
-                    if (!index.containsKey(w)) {
-                        index.put(w, counter);
-                        low.put(w, counter++);
-                        stack.push(w);
-                        onStack.add(w);
-                        work.push(new Frame(w, graph.getOrDefault(w, Set.of()).iterator()));
-                    } else if (onStack.contains(w)) {
-                        low.put(top.node, Math.min(low.get(top.node), index.get(w)));
-                    }
+                    follow(top, top.next.next());
                 } else {
-                    work.pop();
-                    if (!work.isEmpty()) {
-                        String parent = work.peek().node;
-                        low.put(parent, Math.min(low.get(parent), low.get(top.node)));
-                    }
-                    if (low.get(top.node).equals(index.get(top.node))) {
-                        List<String> comp = new ArrayList<>();
-                        String w;
-                        do {
-                            w = stack.pop();
-                            onStack.remove(w);
-                            comp.add(w);
-                        } while (!w.equals(top.node));
-                        if (comp.size() > 1) {
-                            Collections.sort(comp);
-                            out.add(comp);
-                        }
-                    }
+                    finish(top);
                 }
             }
         }
-        out.sort(Comparator.<List<String>>comparingInt(c -> -c.size()).thenComparing(c -> c.get(0)));
-        return out;
+
+        private void enter(String node) {
+            index.put(node, counter);
+            low.put(node, counter++);
+            stack.push(node);
+            onStack.add(node);
+            work.push(new Frame(node, graph.getOrDefault(node, Set.of()).iterator()));
+        }
+
+        private void follow(Frame top, String w) {
+            if (!index.containsKey(w)) {
+                enter(w);
+            } else if (onStack.contains(w)) {
+                low.put(top.node, Math.min(low.get(top.node), index.get(w)));
+            }
+        }
+
+        private void finish(Frame top) {
+            work.pop();
+            if (!work.isEmpty()) {
+                String parent = work.peek().node;
+                low.put(parent, Math.min(low.get(parent), low.get(top.node)));
+            }
+            if (low.get(top.node).equals(index.get(top.node))) {
+                popComponent(top.node);
+            }
+        }
+
+        private void popComponent(String root) {
+            List<String> comp = new ArrayList<>();
+            String w;
+            do {
+                w = stack.pop();
+                onStack.remove(w);
+                comp.add(w);
+            } while (!w.equals(root));
+            if (comp.size() > 1) {
+                Collections.sort(comp);
+                out.add(comp);
+            }
+        }
     }
 
     private record Frame(String node, Iterator<String> next) {}

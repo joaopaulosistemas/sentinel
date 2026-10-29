@@ -118,22 +118,7 @@ public class SecretBox {
             try {
                 Path path = Path.of(keyFile);
                 if (!Files.isRegularFile(path)) {
-                    byte[] raw = new byte[KEY_BYTES];
-                    RANDOM.nextBytes(raw);
-                    String generated = Base64.getEncoder().encodeToString(raw);
-                    if (path.getParent() != null) {
-                        Files.createDirectories(path.getParent());
-                    }
-                    try {
-                        Files.writeString(path, generated, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-                        try {
-                            Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
-                        } catch (UnsupportedOperationException | IOException ignored) {
-                            // sistema de arquivos sem permissões POSIX
-                        }
-                    } catch (java.nio.file.FileAlreadyExistsException ignored) {
-                        // outra instância criou primeiro: usa a dela
-                    }
+                    createKeyFile(path);
                 }
                 String read = Files.readString(path).strip();
                 fileKey = read;
@@ -141,6 +126,30 @@ public class SecretBox {
             } catch (IOException | RuntimeException e) {
                 return "";
             }
+        }
+    }
+
+    /** Cria o arquivo de chave com uma chave aleatória, legível só pelo dono. */
+    private static void createKeyFile(Path path) throws IOException {
+        byte[] raw = new byte[KEY_BYTES];
+        RANDOM.nextBytes(raw);
+        String generated = Base64.getEncoder().encodeToString(raw);
+        if (path.getParent() != null) {
+            Files.createDirectories(path.getParent());
+        }
+        try {
+            Files.writeString(path, generated, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            restrictToOwner(path);
+        } catch (java.nio.file.FileAlreadyExistsException ignored) {
+            // outra instância criou primeiro: usa a dela
+        }
+    }
+
+    private static void restrictToOwner(Path path) {
+        try {
+            Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
+        } catch (UnsupportedOperationException | IOException ignored) {
+            // sistema de arquivos sem permissões POSIX
         }
     }
 

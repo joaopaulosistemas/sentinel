@@ -29,85 +29,124 @@ function StaleAuditNotice({ auditedCommit, currentCommit }: { auditedCommit?: st
   );
 }
 
-/** Aba "Achados e nota": filtros, resumo por sistema, lista paginada e os achados resolvidos desde a auditoria anterior. */
-export function FindingsTab({ auditMode, auditId, audit, systems, filters, auditSystemId, activeSystemId }: Props) {
-  const navigate = useNavigate();
-  const [, setSearchParams] = useSearchParams();
-  const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
-  // Os resolvidos não estão na lista da auditoria (já não existem nela): vêm da comparação com a anterior.
+type FindingsData = ReturnType<typeof useFindingsData>;
+
+/** Os resolvidos não estão na lista da auditoria (já não existem nela): vêm da comparação com a anterior. */
+function useResolvedFindings(auditMode: boolean, auditId: number) {
   const { data: diff } = useDiff(auditMode ? auditId : undefined);
   const { data: freshness } = useFreshness(auditMode ? auditId : undefined);
   const resolved = (diff?.resolvedFindings ?? []).map((f) => ({ ...f, status: 'FIXED' as const }));
+  return { resolved, stale: freshness?.stale === true ? freshness : null };
+}
 
-  const data = useFindingsData(auditMode, auditId, filters);
-  const claudeNoteOf = useClaudeNotes(auditMode, auditSystemId, filters.systemId, data);
-  const systemOf = auditMode
-    ? undefined
-    : originFinder(data.itemByFinding, data.stackBySystem, (hit) => {
-        setSelectedAudit(hit.auditId);
-        navigate(`/systems/${hit.systemId}`);
-      });
+/** Clicar na origem de um achado abre o sistema dele (só na visão de todos os sistemas). */
+function useSystemOrigin(auditMode: boolean, data: FindingsData) {
+  const navigate = useNavigate();
+  const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
+  if (auditMode) return undefined;
+  return originFinder(data.itemByFinding, data.stackBySystem, (hit) => {
+    setSelectedAudit(hit.auditId);
+    navigate(`/systems/${hit.systemId}`);
+  });
+}
 
+interface ConnectedFiltersProps {
+  auditMode: boolean;
+  systems: SystemSummaryResponse[] | undefined;
+  activeSystemId: number | undefined;
+  filters: FindingFilters;
+  data: FindingsData;
+}
+
+function ConnectedFilters({ auditMode, systems, activeSystemId, filters, data }: ConnectedFiltersProps) {
+  const [, setSearchParams] = useSearchParams();
   const systemName = data.summary.find((b) => b.systemId === filters.systemId)?.systemName ?? '';
   const chips = activeFilterChips({ systemName, showSystem: !auditMode, severity: filters.severity, category: filters.category, situation: filters.situation });
+  return (
+    <FindingsFilters
+      auditMode={auditMode}
+      systems={systems}
+      currentSystemValue={String(activeSystemId ?? '')}
+      onPickSystem={(value) => {
+        // Escolher um sistema sai do modo "uma auditoria" e volta a olhar a última de cada sistema.
+        if (auditMode) setSearchParams({});
+        filters.setSystemId(value);
+      }}
+      severity={filters.severity}
+      onSeverity={filters.setSeverity}
+      category={filters.category}
+      onCategory={filters.setCategory}
+      situation={filters.situation}
+      onSituation={filters.setSituation}
+      grouped={filters.grouped}
+      onGrouped={filters.setGrouped}
+      lowTotal={data.lowTotal}
+      lowHidden={data.lowHidden}
+      showLow={filters.showLow}
+      onShowLow={filters.setShowLow}
+      chips={chips}
+      isDefault={isDefaultFilters(filters)}
+      onRestore={filters.restoreDefaults}
+    />
+  );
+}
+
+interface ListSectionProps {
+  auditMode: boolean;
+  auditId: number;
+  auditSystemName: string | undefined;
+  filters: FindingFilters;
+  data: FindingsData;
+  systemOf: ReturnType<typeof useSystemOrigin>;
+  claudeNoteOf: ReturnType<typeof useClaudeNotes>;
+}
+
+function ListSection({ auditMode, auditId, auditSystemName, filters, data, systemOf, claudeNoteOf }: ListSectionProps) {
   const showFooter = !data.loading && !data.error && data.total > 0;
+  return (
+    <section aria-label="Lista de findings" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+      <FindingsListBody
+        loading={data.loading}
+        error={data.error}
+        total={data.total}
+        auditMode={auditMode}
+        auditId={auditId}
+        auditSystemName={auditSystemName}
+        grouped={filters.grouped}
+        rows={data.rows}
+        items={data.items}
+        systemOf={systemOf}
+        claudeNoteOf={claudeNoteOf}
+      />
+      {showFooter && (
+        <PaginationFooter
+          text={footerText(data.rows.length, data.total, filters.situation, filters.severity, auditMode ? 1 : data.summary.length)}
+          page={filters.page}
+          pages={data.pages}
+          pageSize={filters.pageSize}
+          onPage={filters.setPage}
+          onPageSize={filters.setPageSize}
+        />
+      )}
+    </section>
+  );
+}
+
+/** Aba "Achados e nota": filtros, resumo por sistema, lista paginada e os achados resolvidos desde a auditoria anterior. */
+export function FindingsTab({ auditMode, auditId, audit, systems, filters, auditSystemId, activeSystemId }: Props) {
+  const { resolved, stale } = useResolvedFindings(auditMode, auditId);
+  const data = useFindingsData(auditMode, auditId, filters);
+  const claudeNoteOf = useClaudeNotes(auditMode, auditSystemId, filters.systemId, data);
+  const systemOf = useSystemOrigin(auditMode, data);
 
   return (
     <>
-      {auditMode && freshness?.stale === true && <StaleAuditNotice auditedCommit={freshness.auditedCommit} currentCommit={freshness.currentCommit} />}
-      <FindingsFilters
-        auditMode={auditMode}
-        systems={systems}
-        currentSystemValue={String(activeSystemId ?? '')}
-        onPickSystem={(value) => {
-          // Escolher um sistema sai do modo "uma auditoria" e volta a olhar a última de cada sistema.
-          if (auditMode) setSearchParams({});
-          filters.setSystemId(value);
-        }}
-        severity={filters.severity}
-        onSeverity={filters.setSeverity}
-        category={filters.category}
-        onCategory={filters.setCategory}
-        situation={filters.situation}
-        onSituation={filters.setSituation}
-        grouped={filters.grouped}
-        onGrouped={filters.setGrouped}
-        lowTotal={data.lowTotal}
-        lowHidden={data.lowHidden}
-        showLow={filters.showLow}
-        onShowLow={filters.setShowLow}
-        chips={chips}
-        isDefault={isDefaultFilters(filters)}
-        onRestore={filters.restoreDefaults}
-      />
+      {auditMode && stale && <StaleAuditNotice auditedCommit={stale.auditedCommit} currentCommit={stale.currentCommit} />}
+      <ConnectedFilters auditMode={auditMode} systems={systems} activeSystemId={activeSystemId} filters={filters} data={data} />
 
       {!auditMode && data.summary.length > 0 && <SystemSummaryCards summary={data.summary} />}
 
-      <section aria-label="Lista de findings" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
-        <FindingsListBody
-          loading={data.loading}
-          error={data.error}
-          total={data.total}
-          auditMode={auditMode}
-          auditId={auditId}
-          auditSystemName={audit?.systemName}
-          grouped={filters.grouped}
-          rows={data.rows}
-          items={data.items}
-          systemOf={systemOf}
-          claudeNoteOf={claudeNoteOf}
-        />
-        {showFooter && (
-          <PaginationFooter
-            text={footerText(data.rows.length, data.total, filters.situation, filters.severity, auditMode ? 1 : data.summary.length)}
-            page={filters.page}
-            pages={data.pages}
-            pageSize={filters.pageSize}
-            onPage={filters.setPage}
-            onPageSize={filters.setPageSize}
-          />
-        )}
-      </section>
+      <ListSection auditMode={auditMode} auditId={auditId} auditSystemName={audit?.systemName} filters={filters} data={data} systemOf={systemOf} claudeNoteOf={claudeNoteOf} />
 
       {auditMode && resolved.length > 0 && (
         <ResolvedSection

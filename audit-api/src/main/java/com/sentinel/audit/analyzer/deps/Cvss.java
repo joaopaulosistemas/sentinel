@@ -39,6 +39,14 @@ final class Cvss {
         if (vector == null || !vector.startsWith("CVSS:3")) {
             return -1;
         }
+        try {
+            return score(metrics(vector));
+        } catch (RuntimeException e) {
+            return -1;                                   // métrica ausente (nula) ou ilegível
+        }
+    }
+
+    private static Map<String, String> metrics(String vector) {
         Map<String, String> m = new HashMap<>();
         for (String part : vector.split("/")) {
             int i = part.indexOf(':');
@@ -46,32 +54,47 @@ final class Cvss {
                 m.put(part.substring(0, i), part.substring(i + 1));
             }
         }
-        try {
-            boolean changed = "C".equals(m.get("S"));
-            double av = switch (m.get("AV")) { case "N" -> AV_NETWORK; case "A" -> AV_ADJACENT; case "L" -> AV_LOCAL; default -> AV_PHYSICAL; };
-            double ac = "L".equals(m.get("AC")) ? AC_LOW : AC_HIGH;
-            String pr = m.get("PR");
-            double prv = switch (pr) {
-                case "N" -> PR_NONE;
-                case "L" -> changed ? PR_LOW_CHANGED : PR_LOW_UNCHANGED;
-                default -> changed ? PR_HIGH_CHANGED : PR_HIGH_UNCHANGED;
-            };
-            double ui = "N".equals(m.get("UI")) ? UI_NONE : UI_REQUIRED;
-            double c = cia(m.get("C")), i = cia(m.get("I")), a = cia(m.get("A"));
-            double iss = 1 - (1 - c) * (1 - i) * (1 - a);
-            double impact = changed
-                    ? IMPACT_CHANGED_FACTOR * (iss - IMPACT_CHANGED_OFFSET)
-                            - IMPACT_CHANGED_SUBTRACT * Math.pow(iss - IMPACT_CHANGED_BASE, IMPACT_CHANGED_EXPONENT)
-                    : IMPACT_UNCHANGED_FACTOR * iss;
-            double exploit = EXPLOITABILITY_FACTOR * av * ac * prv * ui;
-            if (impact <= 0) {
-                return 0;
-            }
-            double raw = changed ? Math.min(SCOPE_CHANGED_FACTOR * (impact + exploit), 10) : Math.min(impact + exploit, 10);
-            return Math.ceil(raw * 10) / 10.0;
-        } catch (RuntimeException e) {
-            return -1;
+        return m;
+    }
+
+    private static double score(Map<String, String> m) {
+        boolean changed = "C".equals(m.get("S"));
+        double exploit = exploitability(m, changed);
+        double impact = impact(m, changed);
+        if (impact <= 0) {
+            return 0;
         }
+        double raw = changed ? Math.min(SCOPE_CHANGED_FACTOR * (impact + exploit), 10) : Math.min(impact + exploit, 10);
+        return Math.ceil(raw * 10) / 10.0;
+    }
+
+    private static double exploitability(Map<String, String> m, boolean changed) {
+        double ac = "L".equals(m.get("AC")) ? AC_LOW : AC_HIGH;
+        double ui = "N".equals(m.get("UI")) ? UI_NONE : UI_REQUIRED;
+        return EXPLOITABILITY_FACTOR * attackVector(m.get("AV")) * ac * privileges(m.get("PR"), changed) * ui;
+    }
+
+    private static double impact(Map<String, String> m, boolean changed) {
+        double c = cia(m.get("C"));
+        double i = cia(m.get("I"));
+        double a = cia(m.get("A"));
+        double iss = 1 - (1 - c) * (1 - i) * (1 - a);
+        return changed
+                ? IMPACT_CHANGED_FACTOR * (iss - IMPACT_CHANGED_OFFSET)
+                        - IMPACT_CHANGED_SUBTRACT * Math.pow(iss - IMPACT_CHANGED_BASE, IMPACT_CHANGED_EXPONENT)
+                : IMPACT_UNCHANGED_FACTOR * iss;
+    }
+
+    private static double attackVector(String av) {
+        return switch (av) { case "N" -> AV_NETWORK; case "A" -> AV_ADJACENT; case "L" -> AV_LOCAL; default -> AV_PHYSICAL; };
+    }
+
+    private static double privileges(String pr, boolean changed) {
+        return switch (pr) {
+            case "N" -> PR_NONE;
+            case "L" -> changed ? PR_LOW_CHANGED : PR_LOW_UNCHANGED;
+            default -> changed ? PR_HIGH_CHANGED : PR_HIGH_UNCHANGED;
+        };
     }
 
     private static double cia(String v) {

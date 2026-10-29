@@ -36,34 +36,61 @@ public final class RuleDraft {
     /** @return lista de problemas; vazia quando a regra pode ser guardada */
     public static List<String> validate(String slug, String yaml) {
         List<String> problems = new ArrayList<>();
-        if (slug == null || !SLUG.matcher(slug).matches()) {
-            problems.add("Id inválido: use letras minúsculas, números e hífen (3 a 60 caracteres).");
+        String early = inputProblem(slug, yaml);
+        if (early != null) {
+            problems.add(early);
             return problems;
+        }
+        Object root = parse(yaml);
+        if (root == UNREADABLE) {
+            problems.add("YAML ilegível.");
+            return problems;
+        }
+        Map<?, ?> rule = singleRule(root);
+        if (rule == null) {
+            problems.add("Esperava exatamente uma regra dentro de 'rules:'.");
+            return problems;
+        }
+        checkFields(slug, rule, problems);
+        checkRegexes(rule, problems);
+        return problems;
+    }
+
+    private static final Object UNREADABLE = new Object();
+
+    /** O problema mais básico (id, vazio, tamanho), ou nulo se a entrada tem forma para ser lida. */
+    private static String inputProblem(String slug, String yaml) {
+        if (slug == null || !SLUG.matcher(slug).matches()) {
+            return "Id inválido: use letras minúsculas, números e hífen (3 a 60 caracteres).";
         }
         if (yaml == null || yaml.isBlank()) {
-            problems.add("A regra Semgrep está vazia.");
-            return problems;
+            return "A regra Semgrep está vazia.";
         }
-        if (yaml.length() > MAX_YAML) {
-            problems.add("A regra passa de " + MAX_YAML + " caracteres.");
-            return problems;
-        }
-        Object root;
+        return yaml.length() > MAX_YAML ? "A regra passa de " + MAX_YAML + " caracteres." : null;
+    }
+
+    private static Object parse(String yaml) {
         try {
             LoaderOptions options = new LoaderOptions();
             options.setAllowDuplicateKeys(false);
             options.setMaxAliasesForCollections(0);
             options.setCodePointLimit(MAX_YAML * 2);
-            root = new Yaml(new SafeConstructor(options)).load(yaml);
+            return new Yaml(new SafeConstructor(options)).load(yaml);
         } catch (RuntimeException e) {
-            problems.add("YAML ilegível.");
-            return problems;
+            return UNREADABLE;
         }
-        if (!(root instanceof Map<?, ?> top) || !(top.get("rules") instanceof List<?> rules) || rules.size() != 1
-                || !(rules.get(0) instanceof Map<?, ?> rule)) {
-            problems.add("Esperava exatamente uma regra dentro de 'rules:'.");
-            return problems;
+    }
+
+    /** A única regra dentro de {@code rules:}, ou nulo se o documento não tem esse formato. */
+    private static Map<?, ?> singleRule(Object root) {
+        if (root instanceof Map<?, ?> top && top.get("rules") instanceof List<?> rules && rules.size() == 1
+                && rules.get(0) instanceof Map<?, ?> rule) {
+            return rule;
         }
+        return null;
+    }
+
+    private static void checkFields(String slug, Map<?, ?> rule, List<String> problems) {
         if (!semgrepId(slug).equals(String.valueOf(rule.get("id")))) {
             problems.add("O id dentro da regra deve ser '" + semgrepId(slug) + "'.");
         }
@@ -85,31 +112,33 @@ public final class RuleDraft {
                 problems.add("O campo '" + k + "' não é permitido em regra proposta.");
             }
         }
-        checkRegexes(rule, problems);
-        return problems;
     }
 
     private static void checkRegexes(Object node, List<String> problems) {
         if (node instanceof Map<?, ?> m) {
             for (Map.Entry<?, ?> e : m.entrySet()) {
-                if ("pattern-regex".equals(String.valueOf(e.getKey())) || "regex".equals(String.valueOf(e.getKey()))) {
-                    String rx = String.valueOf(e.getValue());
-                    if (rx.length() > MAX_REGEX) {
-                        problems.add("Expressão regular com mais de " + MAX_REGEX + " caracteres.");
-                    } else if (NESTED_QUANTIFIER.matcher(rx).find()) {
-                        problems.add("Expressão regular com repetição dentro de repetição (risco de travar a análise).");
-                    } else {
-                        try {
-                            Pattern.compile(rx);
-                        } catch (RuntimeException ex) {
-                            problems.add("Expressão regular inválida.");
-                        }
-                    }
+                String key = String.valueOf(e.getKey());
+                if ("pattern-regex".equals(key) || "regex".equals(key)) {
+                    checkRegex(String.valueOf(e.getValue()), problems);
                 }
                 checkRegexes(e.getValue(), problems);
             }
         } else if (node instanceof List<?> l) {
             l.forEach(x -> checkRegexes(x, problems));
+        }
+    }
+
+    private static void checkRegex(String rx, List<String> problems) {
+        if (rx.length() > MAX_REGEX) {
+            problems.add("Expressão regular com mais de " + MAX_REGEX + " caracteres.");
+        } else if (NESTED_QUANTIFIER.matcher(rx).find()) {
+            problems.add("Expressão regular com repetição dentro de repetição (risco de travar a análise).");
+        } else {
+            try {
+                Pattern.compile(rx);
+            } catch (RuntimeException ex) {
+                problems.add("Expressão regular inválida.");
+            }
         }
     }
 }

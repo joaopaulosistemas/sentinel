@@ -84,39 +84,54 @@ public final class FindingConfidence {
 
     static void assess(Finding f, Map<String, RuleQuality> ruleQuality, List<Finding> sameFile, String globalAuth,
                        boolean generatedByHeader) {
+        Verdict v = lowConfidence(f, ruleQuality, globalAuth, generatedByHeader);
+        if (v == null) {
+            v = otherwise(f, sameFile);
+        }
+        set(f, v.level(), v.note());
+    }
+
+    /** Nível de confiança e a explicação mostrada ao usuário. */
+    private record Verdict(Confidence level, String note) { }
+
+    /** Os motivos para desconfiar do achado; nulo se nenhum se aplica. */
+    private static Verdict lowConfidence(Finding f, Map<String, RuleQuality> ruleQuality, String globalAuth,
+                                         boolean generatedByHeader) {
         PathRole role = generatedByHeader ? PathRole.GENERATED : PathRole.of(f.getFilePath());
         if (role.isNonProduction() && f.getCategory() != Category.DEPENDENCY) {
-            set(f, Confidence.LOW, "Em " + role.describe() + ": provavelmente não afeta o sistema em produção.");
-            return;
+            return new Verdict(Confidence.LOW, "Em " + role.describe() + ": provavelmente não afeta o sistema em produção.");
         }
         if (globalAuth != null && isEndpointAuthorizationRule(f)) {
-            set(f, Confidence.LOW, "O projeto autentica as rotas num ponto só (" + globalAuth + "), que esta regra não enxerga. "
+            return new Verdict(Confidence.LOW, "O projeto autentica as rotas num ponto só (" + globalAuth + "), que esta regra não enxerga. "
                     + "Confirme se há rota pública fora dessa barreira.");
-            return;
         }
         if (f.getCategory() == Category.SECURITY && looksLikeExample(f.getCodeSnippet())) {
-            set(f, Confidence.LOW, "O valor parece de exemplo (texto como 'example', 'changeme' ou 'xxxx').");
-            return;
+            return new Verdict(Confidence.LOW, "O valor parece de exemplo (texto como 'example', 'changeme' ou 'xxxx').");
         }
+        return lowByHistory(f, ruleQuality);
+    }
+
+    private static Verdict lowByHistory(Finding f, Map<String, RuleQuality> ruleQuality) {
         RuleQuality quality = ruleQuality == null ? null : ruleQuality.get(ruleKey(f));
         if (quality != null && quality.total() >= RuleQualityService.MIN_SAMPLE && quality.falsePositiveRate() >= RULE_LOW_RATE) {
-            set(f, Confidence.LOW, "O time marcou " + Math.round(quality.falsePositiveRate() * 100) + "% dos achados desta regra como falso positivo.");
-            return;
+            return new Verdict(Confidence.LOW, "O time marcou " + Math.round(quality.falsePositiveRate() * 100) + "% dos achados desta regra como falso positivo.");
         }
+        return null;
+    }
+
+    /** Sem motivo para desconfiar: sombra, CVE conhecido e confirmação por outra ferramenta decidem o nível. */
+    private static Verdict otherwise(Finding f, List<Finding> sameFile) {
         if (Boolean.TRUE.equals(f.getShadow())) {
-            set(f, Confidence.MEDIUM, "Regra em modo sombra: ainda está sendo medida.");
-            return;
+            return new Verdict(Confidence.MEDIUM, "Regra em modo sombra: ainda está sendo medida.");
         }
         if (f.getCveId() != null && !f.getCveId().isBlank()) {
-            set(f, Confidence.HIGH, "Vulnerabilidade conhecida (" + f.getCveId() + ").");
-            return;
+            return new Verdict(Confidence.HIGH, "Vulnerabilidade conhecida (" + f.getCveId() + ").");
         }
         String other = corroboratedBy(f, sameFile);
         if (other != null) {
-            set(f, Confidence.HIGH, "Confirmado também por " + other + " no mesmo lugar.");
-            return;
+            return new Verdict(Confidence.HIGH, "Confirmado também por " + other + " no mesmo lugar.");
         }
-        set(f, Confidence.MEDIUM, null);
+        return new Verdict(Confidence.MEDIUM, null);
     }
 
     /** Chave usada em {@link RuleQualityService#byRule()}: mesma normalização do cálculo de qualidade. */

@@ -68,21 +68,30 @@ public class McpToolService {
             result = new LinkedHashMap<>();
             result.put("mensagem", "Este sistema ainda não tem auditoria concluída.");
         } else {
-            result = switch (tool) {
-                case STATUS_AUDITORIA -> status(run, level);
-                case BUSCAR_ACHADOS -> achados(run, level, args);
-                case DIFF_AUDITORIA -> McpShaper.diff(lifecycleService.diff(run.getId()), level);
-                case O_QUE_CORRIGIR_PRIMEIRO -> McpShaper.fixPlan(
-                        FixPlanner.plan(active(run), run.getLinesOfCode(), scoringService), level);
-                case STATUS_PEDIDOS -> pendingStatus(systemId);
-                case REGISTRAR_SUGESTAO, PROPOR_REGRA, INICIAR_AUDITORIA, SUPRIMIR_ACHADO -> throw new IllegalStateException("ferramenta de escrita fora do caminho de escrita");
-            };
+            result = readTool(tool, new ReadScope(run, systemId, level), args);
         }
         try {
             return mapper.writeValueAsString(result);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Não foi possível montar a resposta", e);
         }
+    }
+
+    /** A auditoria consultada, o sistema e o nível de dados liberado. */
+    private record ReadScope(AuditRun run, Long systemId, DataLevel level) { }
+
+    private Map<String, Object> readTool(McpTool tool, ReadScope scope, JsonNode args) {
+        AuditRun run = scope.run();
+        DataLevel level = scope.level();
+        return switch (tool) {
+            case STATUS_AUDITORIA -> status(run, level);
+            case BUSCAR_ACHADOS -> achados(run, level, args);
+            case DIFF_AUDITORIA -> McpShaper.diff(lifecycleService.diff(run.getId()), level);
+            case O_QUE_CORRIGIR_PRIMEIRO -> McpShaper.fixPlan(
+                    FixPlanner.plan(active(run), run.getLinesOfCode(), scoringService), level);
+            case STATUS_PEDIDOS -> pendingStatus(scope.systemId());
+            case REGISTRAR_SUGESTAO, PROPOR_REGRA, INICIAR_AUDITORIA, SUPRIMIR_ACHADO -> throw new IllegalStateException("ferramenta de escrita fora do caminho de escrita");
+        };
     }
 
     /** Ferramentas que gravam, só na área Revisão do Claude. Nunca tocam em achado, regra do motor ou nota. */
@@ -101,8 +110,8 @@ public class McpToolService {
             return json(result);
         }
         if (tool == McpTool.REGISTRAR_SUGESTAO) {
-            var s = review.addSuggestion(systemId, text(args, "titulo"), text(args, "detalhe"), text(args, "regra"),
-                    text(args, "arquivo"), args.path("linha").isInt() ? args.path("linha").asInt() : null);
+            var s = review.addSuggestion(systemId, new com.sentinel.audit.review.ReviewService.Suggestion(text(args, "titulo"), text(args, "detalhe"),
+                    text(args, "regra"), text(args, "arquivo"), args.path("linha").isInt() ? args.path("linha").asInt() : null));
             result.put("registrada", true);
             result.put("id", s.getId());
             result.put("mensagem", "Sugestão registrada em Revisão do Claude. Ela não entra na nota; uma pessoa vai avaliá-la.");

@@ -66,22 +66,17 @@ public final class Versions {
         String op = m.group(1) == null ? "=" : m.group(1);
         String target = m.group(2).strip();
         if (target.endsWith(".*")) {
-            List<Integer> prefix = parse(target.substring(0, target.length() - 2));
-            if (prefix == null || !"=".equals(op)) {
-                return null;
-            }
-            for (int i = 0; i < prefix.size(); i++) {
-                if (i >= v.size() || !v.get(i).equals(prefix.get(i))) {
-                    return false;
-                }
-            }
-            return true;
+            return matchesPrefix(v, target.substring(0, target.length() - 2), op);
         }
         List<Integer> t = parse(target);
         if (t == null) {
             return null;
         }
-        int c = compare(v, t);
+        return holds(op, compare(v, t));
+    }
+
+    /** O operador vale para o resultado da comparação (negativo, zero ou positivo)? */
+    private static boolean holds(String op, int c) {
         return switch (op) {
             case ">=" -> c >= 0;
             case ">" -> c > 0;
@@ -89,5 +84,19 @@ public final class Versions {
             case "<" -> c < 0;
             default -> c == 0;
         };
+    }
+
+    /** {@code 1.*}: a versão começa pelos mesmos componentes; só vale com o operador igual. */
+    private static Boolean matchesPrefix(List<Integer> v, String prefixText, String op) {
+        List<Integer> prefix = parse(prefixText);
+        if (prefix == null || !"=".equals(op)) {
+            return null;
+        }
+        for (int i = 0; i < prefix.size(); i++) {
+            if (i >= v.size() || !v.get(i).equals(prefix.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

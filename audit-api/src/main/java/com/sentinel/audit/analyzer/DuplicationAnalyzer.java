@@ -67,13 +67,9 @@ public class DuplicationAnalyzer implements CodeAnalyzer {
         List<Finding> out = new ArrayList<>();
         for (Clone c : clones) {
             Severity sev = c.lines() >= MEDIUM_MIN_LINES ? Severity.MEDIUM : Severity.LOW;
-            out.add(StructuralFindings.make(run, ANALYZER_NAME, "sentinel-dup-bloco", sev, Category.QUALITY,
-                    c.fileB(), c.lineB(),
-                    "Código duplicado: " + c.lines() + " linhas iguais a " + c.fileA() + ":" + c.lineA(),
-                    "Este bloco de " + c.lines() + " linhas significativas é igual ao de " + c.fileA() + " (linha " + c.lineA()
+            out.add(StructuralFindings.make(run, new StructuralFindings.Kind(ANALYZER_NAME, "sentinel-dup-bloco", sev, Category.QUALITY), new StructuralFindings.Spot(c.fileB(), c.lineB(), c.firstLine()), "Código duplicado: " + c.lines() + " linhas iguais a " + c.fileA() + ":" + c.lineA(), "Este bloco de " + c.lines() + " linhas significativas é igual ao de " + c.fileA() + " (linha " + c.lineA()
                             + "). Cópias divergem com o tempo: um conserto vai para um lado só. Extraia o trecho comum para "
-                            + "um método ou classe usado pelos dois lugares.",
-                    c.firstLine()));
+                            + "um método ou classe usado pelos dois lugares."));
         }
         return out;
     }

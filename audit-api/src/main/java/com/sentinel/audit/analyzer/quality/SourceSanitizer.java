@@ -47,13 +47,21 @@ public final class SourceSanitizer {
                 lineComment();
             } else if (c == '/' && next == '*') {
                 blockComment();
-            } else if (c == '"' && next == '"' && at(i + 2) == '"') {
+            } else if (startsTextBlock(c, next)) {
                 textBlock();
-            } else if (c == '"' || c == '\'' || c == '`') {
+            } else if (isQuote(c)) {
                 quoted(c);
             } else {
                 i++;
             }
+        }
+
+        private boolean startsTextBlock(char c, char next) {
+            return c == '"' && next == '"' && at(i + 2) == '"';
+        }
+
+        private static boolean isQuote(char c) {
+            return c == '"' || c == '\'' || c == '`';
         }
 
         private void lineComment() {

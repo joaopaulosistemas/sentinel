@@ -80,7 +80,22 @@ final class PgStatChecks {
     private record Stmt(Csv.Row row, String query, double calls, double total, double mean, double rows,
                         double read, double hit, double temp) {}
 
+    /** Consultas já lidas do CSV (sem as de ruído) e o tempo total de execução de todas, ruído incluído. */
+    private record Parsed(List<Stmt> stmts, double grand) {}
+
     static List<Finding> statements(List<Csv.Row> rows, String file, AuditRun run) {
+        Parsed parsed = parseStatements(rows);
+        List<Finding> out = new ArrayList<>();
+        topShareFindings(parsed, file, run, out);
+        slowFindings(parsed.stmts(), file, run, out);
+        tempDiskFindings(parsed.stmts(), file, run, out);
+        diskReadFindings(parsed.stmts(), file, run, out);
+        wideResultFindings(parsed.stmts(), file, run, out);
+        chattyFindings(parsed.stmts(), file, run, out);
+        return out;
+    }
+
+    private static Parsed parseStatements(List<Csv.Row> rows) {
         List<Stmt> stmts = new ArrayList<>();
         double grand = 0;
         for (Csv.Row r : rows) {
@@ -101,8 +116,12 @@ final class PgStatChecks {
             stmts.add(new Stmt(r, q, calls, total, mean, r.number("rows"), r.number("shared_blks_read"),
                     r.number("shared_blks_hit"), r.number("temp_blks_written")));
         }
-        List<Finding> out = new ArrayList<>();
-        final double totalTime = grand;
+        return new Parsed(stmts, grand);
+    }
+
+    private static void topShareFindings(Parsed parsed, String file, AuditRun run, List<Finding> out) {
+        List<Stmt> stmts = parsed.stmts();
+        final double totalTime = parsed.grand();
 
         stmts.stream().sorted(Comparator.comparingDouble(Stmt::total).reversed()).limit(MAX_PER_RULE).forEach(s -> {
             double share = totalTime <= 0 ? 0 : s.total() / totalTime;
@@ -110,56 +129,46 @@ final class PgStatChecks {
                 return;
             }
             Severity sev = share >= TOP_SHARE_HIGH ? Severity.HIGH : share >= TOP_SHARE_MEDIUM ? Severity.MEDIUM : Severity.LOW;
-            out.add(Ev.finding(run, Category.PERFORMANCE, sev, "evidencia-consulta-mais-cara",
-                    "Consulta responde por " + Math.round(share * 100) + "% do tempo do banco: " + Ev.oneLine(s.query(), TITLE_QUERY_CHARS),
-                    "Esta consulta somou " + Ev.fmt(s.total() / 1000) + " s em " + Ev.fmt(s.calls()) + " chamadas (média "
+            out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, sev, "evidencia-consulta-mais-cara"), new Ev.Where(file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS)), "Consulta responde por " + Math.round(share * 100) + "% do tempo do banco: " + Ev.oneLine(s.query(), TITLE_QUERY_CHARS), "Esta consulta somou " + Ev.fmt(s.total() / 1000) + " s em " + Ev.fmt(s.calls()) + " chamadas (média "
                             + Ev.fmt(s.mean()) + " ms), " + Math.round(share * 100) + "% do tempo total de execução registrado. "
-                            + "Otimizá-la (índice, menos colunas, paginação, cache) rende mais que qualquer outra mudança no banco.",
-                    file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS)));
+                            + "Otimizá-la (índice, menos colunas, paginação, cache) rende mais que qualquer outra mudança no banco."));
         });
+    }
 
+    private static void slowFindings(List<Stmt> stmts, String file, AuditRun run, List<Finding> out) {
         stmts.stream().filter(s -> s.mean() >= SLOW_MEAN_MS && s.calls() >= MIN_CALLS_FOR_SLOW)
                 .sorted(Comparator.comparingDouble(Stmt::mean).reversed()).limit(MAX_PER_RULE).forEach(s ->
-                        out.add(Ev.finding(run, Category.PERFORMANCE,
-                                s.mean() >= VERY_SLOW_MEAN_MS ? Severity.HIGH : Severity.MEDIUM, "evidencia-consulta-lenta",
-                                "Consulta lenta (média " + Ev.fmt(s.mean()) + " ms): " + Ev.oneLine(s.query(), TITLE_QUERY_CHARS),
-                                "Em média esta consulta leva " + Ev.fmt(s.mean()) + " ms por chamada (" + Ev.fmt(s.calls())
+                        out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, s.mean() >= VERY_SLOW_MEAN_MS ? Severity.HIGH : Severity.MEDIUM, "evidencia-consulta-lenta"), new Ev.Where(file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS)), "Consulta lenta (média " + Ev.fmt(s.mean()) + " ms): " + Ev.oneLine(s.query(), TITLE_QUERY_CHARS), "Em média esta consulta leva " + Ev.fmt(s.mean()) + " ms por chamada (" + Ev.fmt(s.calls())
                                         + " chamadas). Veja o plano com EXPLAIN (ANALYZE, BUFFERS) e procure varredura "
-                                        + "sequencial, ordenação em disco e junções sem índice.",
-                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
+                                        + "sequencial, ordenação em disco e junções sem índice.")));
+    }
 
+    private static void tempDiskFindings(List<Stmt> stmts, String file, AuditRun run, List<Finding> out) {
         stmts.stream().filter(s -> s.temp() >= MIN_TEMP_BLOCKS)
                 .sorted(Comparator.comparingDouble(Stmt::temp).reversed()).limit(MAX_PER_RULE).forEach(s ->
-                        out.add(Ev.finding(run, Category.PERFORMANCE, Severity.MEDIUM, "evidencia-consulta-usa-disco-temporario",
-                                "Consulta grava arquivos temporários (" + Ev.bytes(s.temp() * PG_BLOCK_BYTES) + "): " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS),
-                                "Ordenações ou junções por hash não couberam em work_mem e foram para o disco. Reduza o volume "
-                                        + "(filtro, colunas, índice que entregue já ordenado) ou aumente work_mem para esta carga.",
-                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
+                        out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.MEDIUM, "evidencia-consulta-usa-disco-temporario"), new Ev.Where(file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS)), "Consulta grava arquivos temporários (" + Ev.bytes(s.temp() * PG_BLOCK_BYTES) + "): " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS), "Ordenações ou junções por hash não couberam em work_mem e foram para o disco. Reduza o volume "
+                                        + "(filtro, colunas, índice que entregue já ordenado) ou aumente work_mem para esta carga.")));
+    }
 
+    private static void diskReadFindings(List<Stmt> stmts, String file, AuditRun run, List<Finding> out) {
         stmts.stream().filter(s -> s.read() >= MIN_READ_BLOCKS && s.read() / Math.max(1, s.read() + s.hit()) > MIN_MISS_RATIO)
                 .sorted(Comparator.comparingDouble(Stmt::read).reversed()).limit(MAX_PER_RULE).forEach(s ->
-                        out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-le-muito-disco",
-                                "Consulta lê muito do disco (" + Ev.bytes(s.read() * PG_BLOCK_BYTES) + "): " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS),
-                                "Mais de 10% dos blocos lidos não estavam na memória do banco. Confira índices, o tamanho do "
-                                        + "shared_buffers e se a consulta lê colunas e linhas a mais.",
-                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
+                        out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-le-muito-disco"), new Ev.Where(file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS)), "Consulta lê muito do disco (" + Ev.bytes(s.read() * PG_BLOCK_BYTES) + "): " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS), "Mais de 10% dos blocos lidos não estavam na memória do banco. Confira índices, o tamanho do "
+                                        + "shared_buffers e se a consulta lê colunas e linhas a mais.")));
+    }
 
+    private static void wideResultFindings(List<Stmt> stmts, String file, AuditRun run, List<Finding> out) {
         stmts.stream().filter(s -> s.calls() > 0 && s.rows() / s.calls() >= MIN_ROWS_PER_CALL)
                 .sorted(Comparator.comparingDouble((Stmt s) -> s.rows() / s.calls()).reversed()).limit(MAX_PER_RULE).forEach(s ->
-                        out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-retorna-muitas-linhas",
-                                "Consulta devolve ~" + Ev.fmt(s.rows() / s.calls()) + " linhas por chamada: " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS),
-                                "Devolver dezenas de milhares de linhas por chamada pressiona rede, memória da aplicação e do banco. "
-                                        + "Pagine, filtre no banco ou agregue na própria consulta.",
-                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
+                        out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-retorna-muitas-linhas"), new Ev.Where(file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS)), "Consulta devolve ~" + Ev.fmt(s.rows() / s.calls()) + " linhas por chamada: " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS), "Devolver dezenas de milhares de linhas por chamada pressiona rede, memória da aplicação e do banco. "
+                                        + "Pagine, filtre no banco ou agregue na própria consulta.")));
+    }
 
+    private static void chattyFindings(List<Stmt> stmts, String file, AuditRun run, List<Finding> out) {
         stmts.stream().filter(s -> s.calls() >= MIN_CALLS_CHATTY && s.mean() < CHATTY_MEAN_MS)
                 .sorted(Comparator.comparingDouble(Stmt::calls).reversed()).limit(MAX_PER_RULE).forEach(s ->
-                        out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-chamada-em-excesso",
-                                "Consulta chamada " + Ev.fmt(s.calls()) + " vezes: " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS),
-                                "Milhões de chamadas rápidas indicam o problema N+1 (uma consulta por item) ou falta de cache. "
-                                        + "Busque os dados em lote (IN, JOIN FETCH, @EntityGraph) ou guarde o resultado.",
-                                file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS))));
-        return out;
+                        out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.LOW, "evidencia-consulta-chamada-em-excesso"), new Ev.Where(file, s.row().line(), Ev.oneLine(s.query(), SNIPPET_CHARS)), "Consulta chamada " + Ev.fmt(s.calls()) + " vezes: " + Ev.oneLine(s.query(), SHORT_TITLE_QUERY_CHARS), "Milhões de chamadas rápidas indicam o problema N+1 (uma consulta por item) ou falta de cache. "
+                                        + "Busque os dados em lote (IN, JOIN FETCH, @EntityGraph) ou guarde o resultado.")));
     }
 
     // ------------------------------------------------------------------ pg_stat_user_tables
@@ -174,22 +183,15 @@ final class PgStatChecks {
             double seqRead = r.number("seq_tup_read");
             double idx = r.number("idx_scan");
             if (seq >= MIN_SEQ_SCANS && live >= MIN_LIVE_ROWS && seq > idx) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, seqRead >= HIGH_SEQ_TUPLES_READ ? Severity.HIGH : Severity.MEDIUM,
-                        "evidencia-tabela-varredura-sequencial",
-                        "Tabela lida por varredura sequencial: " + name,
-                        name + " tem " + Ev.fmt(live) + " linhas e sofreu " + Ev.fmt(seq) + " varreduras sequenciais ("
+                out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, seqRead >= HIGH_SEQ_TUPLES_READ ? Severity.HIGH : Severity.MEDIUM, "evidencia-tabela-varredura-sequencial"), new Ev.Where(file, r.line(), name), "Tabela lida por varredura sequencial: " + name, name + " tem " + Ev.fmt(live) + " linhas e sofreu " + Ev.fmt(seq) + " varreduras sequenciais ("
                                 + Ev.fmt(seqRead) + " linhas lidas) contra " + Ev.fmt(idx) + " por índice. Falta índice para o "
-                                + "filtro mais comum, ou o filtro não consegue usá-lo (função na coluna ou busca com curinga no início do texto).",
-                        file, r.line(), name));
+                                + "filtro mais comum, ou o filtro não consegue usá-lo (função na coluna ou busca com curinga no início do texto)."));
             }
             if (dead >= MIN_DEAD_ROWS && live + dead > 0 && dead / (live + dead) >= MIN_DEAD_RATIO) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, Severity.MEDIUM, "evidencia-tabela-inchada",
-                        "Tabela com muitas linhas mortas: " + name,
-                        name + " tem " + Ev.fmt(dead) + " linhas mortas (" + Math.round(100 * dead / (live + dead))
+                out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.MEDIUM, "evidencia-tabela-inchada"), new Ev.Where(file, r.line(), name), "Tabela com muitas linhas mortas: " + name, name + " tem " + Ev.fmt(dead) + " linhas mortas (" + Math.round(100 * dead / (live + dead))
                                 + "% do total). O autovacuum não está dando conta: a tabela ocupa mais espaço e as consultas "
                                 + "ficam mais lentas. Ajuste autovacuum_vacuum_scale_factor para esta tabela e evite "
-                                + "transações longas.",
-                        file, r.line(), name));
+                                + "transações longas."));
             }
         }
         return out;
@@ -207,13 +209,9 @@ final class PgStatChecks {
             String def = r.get("indexdef").toLowerCase(Locale.ROOT);
             boolean unique = def.contains("create unique") || index.endsWith("_pkey");
             if (scans == 0 && !unique && size >= UNUSED_INDEX_MIN_BYTES) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, size >= UNUSED_INDEX_MEDIUM_BYTES ? Severity.MEDIUM : Severity.LOW,
-                        "evidencia-indice-nao-usado",
-                        "Índice nunca usado (" + Ev.bytes(size) + "): " + index,
-                        "O índice " + index + " em " + table + " ocupa " + Ev.bytes(size) + " e não foi usado em nenhuma consulta "
+                out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, size >= UNUSED_INDEX_MEDIUM_BYTES ? Severity.MEDIUM : Severity.LOW, "evidencia-indice-nao-usado"), new Ev.Where(file, r.line(), index), "Índice nunca usado (" + Ev.bytes(size) + "): " + index, "O índice " + index + " em " + table + " ocupa " + Ev.bytes(size) + " e não foi usado em nenhuma consulta "
                                 + "desde o último reset das estatísticas. Custa escrita e espaço. Confirme que as estatísticas "
-                                + "cobrem um período completo (fechamentos mensais, relatórios) e então remova.",
-                        file, r.line(), index));
+                                + "cobrem um período completo (fechamentos mensais, relatórios) e então remova."));
             }
         }
         return out;

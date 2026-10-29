@@ -44,6 +44,18 @@ public final class UnusedExports {
      * @param everything todos os arquivos, testes inclusive (onde se procura o uso)
      */
     public static List<Unused> find(List<Src> production, List<Src> everything, int max) {
+        Map<String, Set<String>> filesUsing = usageIndex(everything);
+        List<Unused> out = new ArrayList<>();
+        for (Src f : production) {
+            if (!skipFile(f.rel())) {
+                collectUnused(f, filesUsing, max, out);
+            }
+        }
+        return out;
+    }
+
+    /** Para cada identificador, os arquivos em que ele aparece. */
+    private static Map<String, Set<String>> usageIndex(List<Src> everything) {
         Map<String, Set<String>> filesUsing = new HashMap<>();
         for (Src f : everything) {
             Matcher m = IDENT.matcher(SourceSanitizer.strip(f.text()));
@@ -54,28 +66,25 @@ public final class UnusedExports {
                 }
             }
         }
-        List<Unused> out = new ArrayList<>();
-        for (Src f : production) {
-            if (skipFile(f.rel())) {
+        return filesUsing;
+    }
+
+    private static void collectUnused(Src f, Map<String, Set<String>> filesUsing, int max, List<Unused> out) {
+        String text = f.text();
+        String stripped = SourceSanitizer.strip(text);
+        Matcher m = DECL.matcher(text);
+        while (m.find() && out.size() < max) {
+            String kind = m.group(1).replaceAll("\\s+", " ");
+            String name = m.group(2);
+            if (CONVENTION_NAMES.contains(name) || (kind.equals("class") && hasFrameworkDecorator(text, m.start()))) {
                 continue;
             }
-            String text = f.text();
-            String stripped = SourceSanitizer.strip(text);
-            Matcher m = DECL.matcher(text);
-            while (m.find() && out.size() < max) {
-                String kind = m.group(1).replaceAll("\\s+", " ");
-                String name = m.group(2);
-                if (CONVENTION_NAMES.contains(name) || (kind.equals("class") && hasFrameworkDecorator(text, m.start()))) {
-                    continue;
-                }
-                Set<String> users = filesUsing.getOrDefault(name, Set.of());
-                if (users.stream().allMatch(f.rel()::equals)) {
-                    boolean inside = Pattern.compile("(?<![\\w$])" + Pattern.quote(name) + "(?![\\w$])").matcher(stripped).results().count() > 1;
-                    out.add(new Unused(f.rel(), lineOf(text, m.start()), name, kind, inside));
-                }
+            Set<String> users = filesUsing.getOrDefault(name, Set.of());
+            if (users.stream().allMatch(f.rel()::equals)) {
+                boolean inside = Pattern.compile("(?<![\\w$])" + Pattern.quote(name) + "(?![\\w$])").matcher(stripped).results().count() > 1;
+                out.add(new Unused(f.rel(), lineOf(text, m.start()), name, kind, inside));
             }
         }
-        return out;
     }
 
     static boolean skipFile(String rel) {

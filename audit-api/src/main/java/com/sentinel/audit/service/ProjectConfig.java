@@ -261,6 +261,17 @@ public final class ProjectConfig {
             g = g + "**";
         }
         StringBuilder re = new StringBuilder(anywhere ? "^(?:.*/)?" : "^");
+        translateGlob(g, re);
+        re.append(anywhere ? "(?:/.*)?$" : "$");
+        try {
+            return Pattern.compile(re.toString());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** Converte o glob {@code g} em regex, acrescentando a {@code re}. */
+    private static void translateGlob(String g, StringBuilder re) {
         int i = 0;
         while (i < g.length()) {
             char c = g.charAt(i);
@@ -268,21 +279,18 @@ public final class ProjectConfig {
                 boolean slashAfter = i + 2 < g.length() && g.charAt(i + 2) == '/';
                 re.append(slashAfter ? "(?:.*/)?" : ".*");
                 i += slashAfter ? 2 : 1;
-            } else if (c == '*') {
-                re.append("[^/]*");
-            } else if (c == '?') {
-                re.append("[^/]");
             } else {
-                re.append(Pattern.quote(String.valueOf(c)));
+                re.append(globChar(c));
             }
             i++;
         }
-        re.append(anywhere ? "(?:/.*)?$" : "$");
-        try {
-            return Pattern.compile(re.toString());
-        } catch (RuntimeException e) {
-            return null;
+    }
+
+    private static String globChar(char c) {
+        if (c == '*') {
+            return "[^/]*";
         }
+        return c == '?' ? "[^/]" : Pattern.quote(String.valueOf(c));
     }
 
     public boolean isEmpty() {

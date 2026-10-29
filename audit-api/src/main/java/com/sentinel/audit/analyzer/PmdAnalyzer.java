@@ -123,16 +123,13 @@ public class PmdAnalyzer implements CodeAnalyzer {
             stderr = Files.createTempFile("pmd-err-", ".txt");
             report = Files.createTempFile("pmd-", ".json");
             String ruleset = rulesetPath.orElse(null);
-            if (ruleset == null || ruleset.isBlank() || !Files.isRegularFile(Path.of(ruleset))) {
+            if (!isUsableFile(ruleset)) {
                 tempRuleset = Files.createTempFile("pmd-ruleset-", ".xml");
                 Files.writeString(tempRuleset, DEFAULT_RULESET, StandardCharsets.UTF_8);
                 ruleset = tempRuleset.toString();
             }
-            List<String> cmd = List.of(exe.toString(), "check",
-                    "--dir", projectPath.toString(), "--rulesets", ruleset,
-                    "--format", "json", "--report-file", report.toString(),
-                    "--no-cache", "--no-progress", "--no-fail-on-violation");
-            int code = ExternalTools.run(cmd, null, Map.of(), timeoutSeconds, null, stderr);
+            List<String> cmd = command(exe, projectPath, ruleset, report);
+            int code = ExternalTools.runTo(cmd, null, Map.of(), timeoutSeconds, new ExternalTools.Output(null, stderr));
             if (code != 0 && code != EXIT_RECOVERABLE_ERRORS) {
                 partial = ExternalTools.falha(code, timeoutSeconds, stderr);
                 LOG.warnf("PMD %s", partial);
@@ -143,9 +140,7 @@ public class PmdAnalyzer implements CodeAnalyzer {
                 if (code == EXIT_RECOVERABLE_ERRORS) {
                     // Código 5: o PMD não conseguiu ler/analisar alguns arquivos (sintaxe nova, arquivo gerado etc.),
                     // mas o relatório com o resto está completo. Aproveita os achados e avisa em vez de descartar tudo.
-                    int n = processingErrors(json);
-                    partial = "o PMD não conseguiu analisar " + (n > 0 ? n + " arquivo(s)" : "alguns arquivos")
-                            + "; os demais foram analisados";
+                    partial = recoverableNote(json);
                     LOG.warnf("PMD %s", partial);
                 }
             }
@@ -161,6 +156,23 @@ public class PmdAnalyzer implements CodeAnalyzer {
             deleteQuietly(tempRuleset);
         }
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+    }
+
+    private static boolean isUsableFile(String path) {
+        return path != null && !path.isBlank() && Files.isRegularFile(Path.of(path));
+    }
+
+    private static List<String> command(Path exe, Path projectPath, String ruleset, Path report) {
+        return List.of(exe.toString(), "check",
+                "--dir", projectPath.toString(), "--rulesets", ruleset,
+                "--format", "json", "--report-file", report.toString(),
+                "--no-cache", "--no-progress", "--no-fail-on-violation");
+    }
+
+    private static String recoverableNote(String json) {
+        int n = processingErrors(json);
+        return "o PMD não conseguiu analisar " + (n > 0 ? n + " arquivo(s)" : "alguns arquivos")
+                + "; os demais foram analisados";
     }
 
     /** Código de saída 5 do PMD 7: houve erros recuperáveis (arquivo não analisável), mas o relatório foi gravado. */
@@ -193,30 +205,7 @@ public class PmdAnalyzer implements CodeAnalyzer {
         try {
             JsonNode files = MAPPER.readTree(json).path("files");
             for (JsonNode file : files) {
-                String rel = ExternalTools.relativize(projectPath, file.path("filename").asText(""));
-                if (ExternalTools.inIgnoredDir(rel)) {
-                    continue;
-                }
-                for (JsonNode v : file.path("violations")) {
-                    String rule = v.path("rule").asText("");
-                    if (rule.isBlank()) {
-                        continue;
-                    }
-                    String ruleset = v.path("ruleset").asText("");
-                    String text = v.path("description").asText(rule);
-                    Finding f = new Finding();
-                    f.setAuditRun(auditRun);
-                    f.setToolSource(ANALYZER_NAME);
-                    f.setCategory(category(ruleset));
-                    f.setSeverity(severity(v.path("priority").asInt(DEFAULT_PRIORITY), ruleset));
-                    f.setRuleId("pmd-" + rule);
-                    f.setFilePath(rel);
-                    f.setLineNumber(v.path("beginline").asInt(0));
-                    f.setTitle("PMD " + rule + ": " + text);
-                    String url = v.path("externalInfoUrl").asText("");
-                    f.setDescription(text + (url.isBlank() ? "" : " Detalhes: " + url));
-                    out.add(f);
-                }
+                collectFile(file, projectPath, auditRun, out);
             }
         } catch (Exception e) {
             LOG.warnf("Não foi possível interpretar o relatório do PMD: %s", e.getMessage());
@@ -227,6 +216,41 @@ public class PmdAnalyzer implements CodeAnalyzer {
             return new ArrayList<>(out.subList(0, maxFindings));
         }
         return out;
+    }
+
+    private static void collectFile(JsonNode file, Path projectPath, AuditRun auditRun, List<Finding> out) {
+        String rel = ExternalTools.relativize(projectPath, file.path("filename").asText(""));
+        if (ExternalTools.inIgnoredDir(rel)) {
+            return;
+        }
+        for (JsonNode v : file.path("violations")) {
+            Finding f = toFinding(v, rel, auditRun);
+            if (f != null) {
+                out.add(f);
+            }
+        }
+    }
+
+    /** Nulo para violação sem nome de regra. */
+    private static Finding toFinding(JsonNode v, String rel, AuditRun auditRun) {
+        String rule = v.path("rule").asText("");
+        if (rule.isBlank()) {
+            return null;
+        }
+        String ruleset = v.path("ruleset").asText("");
+        String text = v.path("description").asText(rule);
+        Finding f = new Finding();
+        f.setAuditRun(auditRun);
+        f.setToolSource(ANALYZER_NAME);
+        f.setCategory(category(ruleset));
+        f.setSeverity(severity(v.path("priority").asInt(DEFAULT_PRIORITY), ruleset));
+        f.setRuleId("pmd-" + rule);
+        f.setFilePath(rel);
+        f.setLineNumber(v.path("beginline").asInt(0));
+        f.setTitle("PMD " + rule + ": " + text);
+        String url = v.path("externalInfoUrl").asText("");
+        f.setDescription(text + (url.isBlank() ? "" : " Detalhes: " + url));
+        return f;
     }
 
     /** Prioridade do PMD (1 = mais grave); regras de propensão a erro e de segurança sobem um nível. */

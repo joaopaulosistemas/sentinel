@@ -87,7 +87,7 @@ public class GitleaksAnalyzer implements CodeAnalyzer {
             if (!Files.isDirectory(projectPath.resolve(".git"))) {
                 cmd.add("--no-git");
             }
-            int code = ExternalTools.run(cmd, null, Map.of(), timeoutSeconds, null, stderr);
+            int code = ExternalTools.runTo(cmd, null, Map.of(), timeoutSeconds, new ExternalTools.Output(null, stderr));
             if (code != 0) {
                 partial = ExternalTools.falha(code, timeoutSeconds, stderr);
                 LOG.warnf("Gitleaks %s", partial);

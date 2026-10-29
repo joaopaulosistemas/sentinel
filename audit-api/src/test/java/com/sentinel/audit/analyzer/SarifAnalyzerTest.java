@@ -39,7 +39,7 @@ class SarifAnalyzerTest {
     }
 
     private static ToolSpec spec(String id, String input, List<String> cmd, Map<String, Severity> map) {
-        return new ToolSpec(id, id, cmd, input, Category.QUALITY, map, 30);
+        return new ToolSpec(id, id, cmd, input, Category.QUALITY, map, 30, false, List.of());
     }
 
     @Test

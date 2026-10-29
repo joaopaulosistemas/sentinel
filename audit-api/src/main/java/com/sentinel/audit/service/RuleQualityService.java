@@ -90,18 +90,8 @@ public class RuleQualityService {
         Map<String, String> tools = new HashMap<>();
         for (Snapshot snap : snapshots) {
             for (Finding f : snap.findings()) {
-                if (f.getCategory() == Category.DEPENDENCY || f.getRuleId() == null || f.getRuleId().isBlank()) {
-                    continue;
-                }
-                String rule = normalize(f);
-                long[] c = counts.computeIfAbsent(rule, k -> new long[COUNTERS_PER_RULE]);
-                tools.putIfAbsent(rule, f.getToolSource());
-                c[0]++;
-                SuppressionReason reason = f.getFingerprint() == null ? null : snap.reasonByFingerprint().get(f.getFingerprint());
-                if (reason == SuppressionReason.FALSE_POSITIVE) {
-                    c[1]++;
-                } else if (reason == SuppressionReason.ACCEPTED_RISK) {
-                    c[2]++;
+                if (isCounted(f)) {
+                    tally(f, snap, counts, tools);
                 }
             }
         }
@@ -115,6 +105,23 @@ public class RuleQualityService {
                 .thenComparing(Comparator.comparingLong(RuleQuality::total).reversed())
                 .thenComparing(RuleQuality::ruleId));
         return out;
+    }
+
+    private static boolean isCounted(Finding f) {
+        return f.getCategory() != Category.DEPENDENCY && f.getRuleId() != null && !f.getRuleId().isBlank();
+    }
+
+    private static void tally(Finding f, Snapshot snap, Map<String, long[]> counts, Map<String, String> tools) {
+        String rule = normalize(f);
+        long[] c = counts.computeIfAbsent(rule, k -> new long[COUNTERS_PER_RULE]);
+        tools.putIfAbsent(rule, f.getToolSource());
+        c[0]++;
+        SuppressionReason reason = f.getFingerprint() == null ? null : snap.reasonByFingerprint().get(f.getFingerprint());
+        if (reason == SuppressionReason.FALSE_POSITIVE) {
+            c[1]++;
+        } else if (reason == SuppressionReason.ACCEPTED_RISK) {
+            c[2]++;
+        }
     }
 
     /** O Semgrep prefixa o id com o caminho do arquivo de regras, que muda entre ambientes: fica só o nome da regra. */

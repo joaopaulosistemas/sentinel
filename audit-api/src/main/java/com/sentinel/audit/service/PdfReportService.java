@@ -163,20 +163,25 @@ public class PdfReportService {
             doc.add(new Paragraph("Nota atual: " + fmt(last.overall()) + ". Variação no período: " + (delta > 0 ? "+" : "")
                     + fmt(delta) + " ponto(s) (de " + fmt(first.overall()) + " para " + fmt(last.overall()) + ").", BOLD));
             doc.add(h2("Auditoria a auditoria"));
-            List<List<String>> rows = new java.util.ArrayList<>();
-            Double previous = null;
-            for (TrendPoint p : points) {
-                Double change = previous == null || p.overall() == null ? null : p.overall() - previous;
-                rows.add(List.of("#" + p.auditId(), nz(p.branch()),
-                        p.completedAt() == null ? "-" : p.completedAt().format(DATE_FMT), fmt(p.overall()),
-                        change == null ? "-" : (change > 0 ? "+" : "") + fmt(change),
-                        String.valueOf(p.findings().getOrDefault(Severity.CRITICAL, 0L)),
-                        String.valueOf(p.findings().getOrDefault(Severity.HIGH, 0L)),
-                        String.valueOf(p.findings().getOrDefault(Severity.MEDIUM, 0L))));
-                previous = p.overall();
-            }
-            table(doc, List.of("Auditoria", "Branch", "Concluída em", "Nota", "Variação", "Críticos", "Altos", "Médios"), rows);
+            table(doc, List.of("Auditoria", "Branch", "Concluída em", "Nota", "Variação", "Críticos", "Altos", "Médios"),
+                    trendRows(points));
         });
+    }
+
+    private static List<List<String>> trendRows(List<TrendPoint> points) {
+        List<List<String>> rows = new java.util.ArrayList<>();
+        Double previous = null;
+        for (TrendPoint p : points) {
+            Double change = previous == null || p.overall() == null ? null : p.overall() - previous;
+            rows.add(List.of("#" + p.auditId(), nz(p.branch()),
+                    p.completedAt() == null ? "-" : p.completedAt().format(DATE_FMT), fmt(p.overall()),
+                    change == null ? "-" : (change > 0 ? "+" : "") + fmt(change),
+                    String.valueOf(p.findings().getOrDefault(Severity.CRITICAL, 0L)),
+                    String.valueOf(p.findings().getOrDefault(Severity.HIGH, 0L)),
+                    String.valueOf(p.findings().getOrDefault(Severity.MEDIUM, 0L))));
+            previous = p.overall();
+        }
+        return rows;
     }
 
     /** Seção genérica de tabela, usada pelos relatórios consolidados (todos os sistemas). */

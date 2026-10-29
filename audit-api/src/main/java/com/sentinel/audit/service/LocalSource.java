@@ -116,27 +116,35 @@ public final class LocalSource {
         if (typed.length() > MAX_PATH_CHARS || typed.indexOf('\0') >= 0) {
             throw new IllegalArgumentException("Caminho de pasta inválido");
         }
-        Path wanted;
-        try {
-            wanted = Paths.get(typed);
-            if (wanted.isAbsolute()) {
-                // Aceita o caminho como o servidor o enxerga (ex.: /projects/app), desde que esteja na raiz.
-                Path abs = wanted.normalize();
-                if (!abs.startsWith(root)) {
-                    throw new IllegalArgumentException("Use um caminho relativo à raiz de projetos do servidor");
-                }
-                wanted = root.relativize(abs);
-            }
-        } catch (InvalidPathException e) {
-            throw new IllegalArgumentException("Caminho de pasta inválido", e);
-        }
-        Path candidate = root.resolve(wanted).normalize();
+        Path candidate = root.resolve(relativeToRoot(typed)).normalize();
         if (!candidate.startsWith(root) || candidate.equals(root)) {
             throw new IllegalArgumentException("A pasta precisa ficar dentro da raiz de projetos");
         }
         if (!Files.exists(candidate)) {
             throw new IllegalArgumentException("Pasta não encontrada dentro da raiz de projetos");
         }
+        return realDirectory(candidate);
+    }
+
+    /** O caminho digitado relativo à raiz; um caminho absoluto só é aceito se já estiver dentro dela. */
+    private Path relativeToRoot(String typed) {
+        try {
+            Path wanted = Paths.get(typed);
+            if (!wanted.isAbsolute()) {
+                return wanted;
+            }
+            // Aceita o caminho como o servidor o enxerga (ex.: /projects/app), desde que esteja na raiz.
+            Path abs = wanted.normalize();
+            if (!abs.startsWith(root)) {
+                throw new IllegalArgumentException("Use um caminho relativo à raiz de projetos do servidor");
+            }
+            return root.relativize(abs);
+        } catch (InvalidPathException e) {
+            throw new IllegalArgumentException("Caminho de pasta inválido", e);
+        }
+    }
+
+    private Path realDirectory(Path candidate) {
         Path real;
         try {
             real = candidate.toRealPath();
@@ -164,25 +172,7 @@ public final class LocalSource {
             return PathCheck.fail(e.getMessage());
         }
         try {
-            String notRepo = notARepositoryRoot(dir);
-            if (notRepo != null) {
-                return PathCheck.fail(notRepo);
-            }
-            Out head = git(dir, CHECK_TIMEOUT_SECONDS, "symbolic-ref", "--short", "-q", "HEAD");
-            String current = head.exit() == 0 ? head.text().strip() : null;
-            Boolean branchFound = null;
-            if (branch != null && !branch.isBlank()) {
-                branchFound = branchExists(dir, branch);
-            }
-            // Contagens são só informativas e ficam lentas em repositório grande ou em disco de rede (/mnt/c no WSL):
-            // com tempo curto, a pasta continua válida e as contagens saem em branco em vez de a verificação inteira falhar.
-            Long fileCount = optionalCount(dir, '\0', "ls-files", "-z");
-            Long uncommitted = optionalCount(dir, '\n', "status", "--porcelain");
-            if (current == null && (branch == null || branch.isBlank())) {
-                return new PathCheck(true, "O repositório está sem branch ativa (HEAD solto); informe a branch a auditar",
-                        null, null, fileCount, uncommitted);
-            }
-            return new PathCheck(true, null, current, branchFound, fileCount, uncommitted);
+            return inspectRepository(dir, branch);
         } catch (IllegalStateException e) {
             return PathCheck.fail("A verificação demorou mais de " + CHECK_TIMEOUT_SECONDS + "s; tente de novo ou use uma pasta menor");
         } catch (IOException e) {
@@ -191,6 +181,26 @@ public final class LocalSource {
             Thread.currentThread().interrupt();
             return PathCheck.fail("Verificação interrompida");
         }
+    }
+
+    private PathCheck inspectRepository(Path dir, String branch) throws IOException, InterruptedException {
+        String notRepo = notARepositoryRoot(dir);
+        if (notRepo != null) {
+            return PathCheck.fail(notRepo);
+        }
+        Out head = git(dir, CHECK_TIMEOUT_SECONDS, "symbolic-ref", "--short", "-q", "HEAD");
+        String current = head.exit() == 0 ? head.text().strip() : null;
+        boolean named = branch != null && !branch.isBlank();
+        Boolean branchFound = named ? branchExists(dir, branch) : null;
+        // Contagens são só informativas e ficam lentas em repositório grande ou em disco de rede (/mnt/c no WSL):
+        // com tempo curto, a pasta continua válida e as contagens saem em branco em vez de a verificação inteira falhar.
+        Long fileCount = optionalCount(dir, '\0', "ls-files", "-z");
+        Long uncommitted = optionalCount(dir, '\n', "status", "--porcelain");
+        if (current == null && !named) {
+            return new PathCheck(true, "O repositório está sem branch ativa (HEAD solto); informe a branch a auditar",
+                    null, null, fileCount, uncommitted);
+        }
+        return new PathCheck(true, null, current, branchFound, fileCount, uncommitted);
     }
 
     /** Mensagem de erro se a pasta não for a raiz de um repositório Git; nulo se estiver tudo certo. */

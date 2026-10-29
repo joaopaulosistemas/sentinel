@@ -132,6 +132,39 @@ public class AuditOrchestrationService {
                 });
     }
 
+    /** Clona o repositório (ou copia a pasta local) e devolve onde ficou. */
+    private Path fetchSource(Long auditRunId, AuditContext context) {
+        progress.phase(auditRunId, AuditProgressTracker.CLONE,
+                (context.local() ? "Copiando a " : "Clonando ") + context.sourceLabel() + " (" + context.branch() + ")");
+        return context.local()
+                ? ingestionService.snapshotLocal(context.localPath(), context.branch(), context.localSnapshot(), context.gitHistoryDepth())
+                : ingestionService.cloneRepository(context.repoUrl(), context.branch(), context.gitToken(), context.gitTokenHosts(), context.gitHistoryDepth());
+    }
+
+    private ProjectConfig.Result applyProjectConfig(Long auditRunId, Path clonedPath, List<Finding> findings) {
+        ProjectConfig.Result result = ProjectConfig.load(clonedPath).apply(findings, LocalDate.now());
+        result.problems().forEach(problem -> LOG.warnf("Auditoria %d: %s", auditRunId, problem));
+        return result;
+    }
+
+    /** Deduplica, aplica a política e o .sentinel.yml, marca o que é novo e avalia a confiança de cada achado. */
+    private List<Finding> refineFindings(Long auditRunId, AuditContext context, Path clonedPath,
+                                         AnalyzerRunner.Analysis analysis, AuditPolicy policy) {
+        List<Finding> allFindings = policy.apply(FindingDeduplicator.apply(analysis.findings()));
+        allFindings = onlyChangedFiles(allFindings, context, clonedPath);
+        // O projeto pode declarar em .sentinel.yml o que não entra na nota (exclude) e o que aceitou (suppress).
+        ProjectConfig.Result projectConfig = applyProjectConfig(auditRunId, clonedPath, allFindings);
+        allFindings = projectConfig.findings();
+
+        // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
+        progress.phase(auditRunId, AuditProgressTracker.PONTUACAO,
+                "Análise concluída: " + allFindings.size() + " achados" + projectConfig.summary() + "; calculando a nota");
+        FindingLifecycleService.apply(allFindings, store.loadBaselineSafely(auditRunId));
+        FindingConfidence.assessAll(allFindings, store.loadRuleQualitySafely(), globalAuthOf(clonedPath),
+                GeneratedFiles.detect(clonedPath, allFindings));
+        return allFindings;
+    }
+
     private void executeAudit(Long auditRunId) {
         Path clonedPath = null;
         AuditPolicy policy = null;
@@ -139,12 +172,7 @@ public class AuditOrchestrationService {
             AuditContext context = store.markRunning(auditRunId);
             progress.queued(auditRunId);
             checkNotCancelled(auditRunId);
-            progress.phase(auditRunId, AuditProgressTracker.CLONE,
-                    (context.local() ? "Copiando a " : "Clonando ") + context.sourceLabel() + " (" + context.branch() + ")");
-
-            clonedPath = context.local()
-                    ? ingestionService.snapshotLocal(context.localPath(), context.branch(), context.localSnapshot(), context.gitHistoryDepth())
-                    : ingestionService.cloneRepository(context.repoUrl(), context.branch(), context.gitToken(), context.gitTokenHosts(), context.gitHistoryDepth());
+            clonedPath = fetchSource(auditRunId, context);
             checkNotCancelled(auditRunId);
             SourceSizer.Stats sizing = SourceSizer.stats(clonedPath);
             String commitSha = ingestionService.headCommit(clonedPath);
@@ -161,19 +189,7 @@ public class AuditOrchestrationService {
             AnalyzerRunner.Analysis analysis = new AnalyzerRunner(analyzerSet, progress, executor)
                     .run(clonedPath, runRef, context.stack(), policy);
             checkNotCancelled(auditRunId);
-            List<Finding> allFindings = policy.apply(FindingDeduplicator.apply(analysis.findings()));
-            allFindings = onlyChangedFiles(allFindings, context, clonedPath);
-            // O projeto pode declarar em .sentinel.yml o que não entra na nota (exclude) e o que aceitou (suppress).
-            ProjectConfig.Result projectConfig = ProjectConfig.load(clonedPath).apply(allFindings, LocalDate.now());
-            allFindings = projectConfig.findings();
-            projectConfig.problems().forEach(problem -> LOG.warnf("Auditoria %d: %s", auditRunId, problem));
-
-            // Marca o que é novo desde a auditoria anterior e retira do score o que foi suprimido.
-            progress.phase(auditRunId, AuditProgressTracker.PONTUACAO,
-                    "Análise concluída: " + allFindings.size() + " achados" + projectConfig.summary() + "; calculando a nota");
-            FindingLifecycleService.apply(allFindings, store.loadBaselineSafely(auditRunId));
-            FindingConfidence.assessAll(allFindings, store.loadRuleQualitySafely(), globalAuthOf(clonedPath),
-                    GeneratedFiles.detect(clonedPath, allFindings));
+            List<Finding> allFindings = refineFindings(auditRunId, context, clonedPath, analysis, policy);
             long linesOfCode = sizing.lines();
             RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
             progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");

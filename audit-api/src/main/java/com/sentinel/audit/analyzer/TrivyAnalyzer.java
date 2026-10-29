@@ -82,21 +82,11 @@ public class TrivyAnalyzer implements CodeAnalyzer {
         try {
             report = Files.createTempFile("trivy-", ".json");
             stderr = Files.createTempFile("trivy-err-", ".txt");
-            int code = executar(exe, projectPath, report, stderr, false);
-            if (code != 0 && code != -1 && limiteDoMaven(stderr)) {
-                // O Maven Central bloqueou o IP (429) ao baixar POMs pai: o Trivy aborta a varredura inteira.
-                // Refaz sem consultar repositórios remotos; o que já estiver no ~/.m2 continua sendo usado.
-                LOG.warn("Trivy: repositório Maven limitou as requisições; repetindo com --offline-scan");
-                code = executar(exe, projectPath, report, stderr, true);
-                if (code == 0) {
-                    partial = "dependências Maven resolvidas só pelo cache local (o Maven Central limitou as requisições); "
-                            + "para cobertura completa rode `mvn dependency:resolve` antes ou monte um volume em ~/.m2";
-                }
-            }
+            Scan scan = scan(exe, projectPath, report, stderr);
+            int code = scan.code();
+            partial = scan.note();
             if (code != 0) {
-                partial = ExternalTools.falha(code, timeoutSeconds, stderr)
-                        + (code == -1 ? "" : " (base de vulnerabilidades indisponível?)")
-                        + dicaCertificado(code, stderr);
+                partial = failureNote(code, stderr);
                 LOG.warnf("Trivy %s", partial);
             } else {
                 findings = parse(Files.readString(report, StandardCharsets.UTF_8), projectPath, auditRun);
@@ -109,16 +99,35 @@ public class TrivyAnalyzer implements CodeAnalyzer {
             LOG.errorf("Erro ao executar o Trivy: %s", e.getMessage());
             partial = "erro ao executar: " + e.getMessage();
         } finally {
-            if (report != null) {
-                try {
-                    Files.deleteIfExists(report);
-                } catch (Exception ignored) {
-                    // arquivo temporário sem segredos; não vale falhar por isso
-                }
-            }
+            ExternalTools.deleteQuietly(report);      // arquivo temporário sem segredos; não vale falhar por isso
         }
         ExternalTools.deleteQuietly(stderr);
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+    }
+
+    /** Código de saída da varredura e, se foi preciso repetir sem rede, a nota de cobertura parcial. */
+    private record Scan(int code, String note) { }
+
+    private Scan scan(Path exe, Path projectPath, Path report, Path stderr) throws IOException, InterruptedException {
+        int code = executar(exe, projectPath, report, stderr, false);
+        String note = null;
+        if (code != 0 && code != -1 && limiteDoMaven(stderr)) {
+            // O Maven Central bloqueou o IP (429) ao baixar POMs pai: o Trivy aborta a varredura inteira.
+            // Refaz sem consultar repositórios remotos; o que já estiver no ~/.m2 continua sendo usado.
+            LOG.warn("Trivy: repositório Maven limitou as requisições; repetindo com --offline-scan");
+            code = executar(exe, projectPath, report, stderr, true);
+            if (code == 0) {
+                note = "dependências Maven resolvidas só pelo cache local (o Maven Central limitou as requisições); "
+                        + "para cobertura completa rode `mvn dependency:resolve` antes ou monte um volume em ~/.m2";
+            }
+        }
+        return new Scan(code, note);
+    }
+
+    private String failureNote(int code, Path stderr) {
+        return ExternalTools.falha(code, timeoutSeconds, stderr)
+                + (code == -1 ? "" : " (base de vulnerabilidades indisponível?)")
+                + dicaCertificado(code, stderr);
     }
 
     private int executar(Path exe, Path projectPath, Path report, Path stderr, boolean offline)
@@ -132,7 +141,7 @@ public class TrivyAnalyzer implements CodeAnalyzer {
             cmd.add("--offline-scan");
         }
         cmd.add(projectPath.toString());
-        return ExternalTools.run(cmd, null, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds, null, stderr);
+        return ExternalTools.runTo(cmd, null, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds, new ExternalTools.Output(null, stderr));
     }
 
     /** O stderr do Trivy indica bloqueio/limite de taxa do Maven Central (HTTP 429, Retry-After). */

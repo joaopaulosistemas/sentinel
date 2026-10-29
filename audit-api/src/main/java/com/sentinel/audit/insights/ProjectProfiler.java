@@ -47,6 +47,13 @@ public final class ProjectProfiler {
             "(?i)(SECRET|PASSWORD|PASSWD|TOKEN|PRIVATE_?KEY|API_?KEY|ACCESS_?KEY|CREDENTIAL|ENCRYPTION_?KEY|SIGNING_?KEY)");
     private static final Pattern ENV_URL_CREDENTIALS = Pattern.compile("[a-z][a-z0-9+.-]*://[^\\s/:@]+:[^\\s/@]+@");
     private static final Set<String> PY_LOCKS =Set.of("poetry.lock", "Pipfile.lock", "uv.lock");
+    private static final Set<String> PROJECT_DOCS = Set.of("changelog.md", "contributing.md", "architecture.md", "security.md");
+    private static final Set<String> ENTRY_POINTS = Set.of("main.java", "application.java", "main.py", "app.py", "main.ts",
+            "main.tsx", "index.tsx", "server.js", "program.cs");
+    /** Valores de .env que são marcador, não segredo (inteiros). */
+    private static final Set<String> PLACEHOLDER_VALUES = Set.of("", "true", "false", "null", "secret", "password", "token");
+    /** Valores de .env que começam como marcador ({@code ${VAR}}, {@code <valor>}, {@code your-...}). */
+    private static final java.util.List<String> PLACEHOLDER_PREFIXES = java.util.List.of("${", "<", "your", "change", "xxx", "todo");
 
     private ProjectProfiler() {
     }
@@ -171,13 +178,16 @@ public final class ProjectProfiler {
                 docs.add(rel);
             } else if (lower.startsWith("license") || lower.startsWith("licence") || lower.equals("copying")) {
                 license |= atRoot;
-            } else if (lower.equals("changelog.md") || lower.equals("contributing.md") || lower.equals("architecture.md")
-                    || lower.equals("security.md") || rel.startsWith("docs/") && lower.endsWith(".md")) {
+            } else if (isProjectDoc(lower, rel)) {
                 docs.add(rel);
             }
             if (lower.equals(".gitignore") && atRoot) {
                 gitignore = true;
             }
+        }
+
+        private static boolean isProjectDoc(String lower, String rel) {
+            return PROJECT_DOCS.contains(lower) || rel.startsWith("docs/") && lower.endsWith(".md");
         }
 
         /** Terraform e manifestos de Kubernetes/Helm; fixtures de teste não contam como infraestrutura. */
@@ -289,49 +299,65 @@ public final class ProjectProfiler {
             if (LOCKS.contains(lower) || PY_LOCKS.contains(lower) || lower.equals("pom.xml.lock") || lower.equals("gradle.lockfile")) {
                 lockfiles.add(rel);
             }
-            if (lower.equals("package.json")) {
-                // monorepo: o lock fica na pasta do pacote ou em qualquer pasta acima dela, até a raiz do repositório
-                // (workspace em subpasta, como "frontend/pnpm-lock.yaml", cobre "frontend/packages/ui/package.json")
-                boolean hasLock = false;
-                for (Path d = dir; d != null && d.startsWith(root) && !hasLock; d = d.getParent()) {
-                    for (String l : LOCKS) {
-                        hasLock |= Files.exists(d.resolve(l));
-                    }
-                }
-                if (!hasLock) {
-                    pkgNoLock.add(rel);
+            if (lower.equals("package.json") && !hasLockUpTree(dir)) {
+                pkgNoLock.add(rel);
+            }
+        }
+
+        /**
+         * Monorepo: o lock fica na pasta do pacote ou em qualquer pasta acima dela, até a raiz do repositório
+         * (workspace em subpasta, como "frontend/pnpm-lock.yaml", cobre "frontend/packages/ui/package.json").
+         */
+        private boolean hasLockUpTree(Path dir) {
+            boolean hasLock = false;
+            for (Path d = dir; d != null && d.startsWith(root) && !hasLock; d = d.getParent()) {
+                for (String l : LOCKS) {
+                    hasLock |= Files.exists(d.resolve(l));
                 }
             }
+            return hasLock;
         }
 
         void secrets(String name, String lower, String rel, BasicFileAttributes attrs) {
-            boolean envFile = lower.equals(".env") || lower.startsWith(".env.") && !(lower.endsWith(".example")
-                    || lower.endsWith(".sample") || lower.endsWith(".template") || lower.endsWith(".dist"));
-            if (envFile && attrs.size() > 0 && envHasSecret(read(root.resolve(rel)))) {
+            if (isEnvFileName(lower) && attrs.size() > 0 && envHasSecret(read(root.resolve(rel)))) {
                 envFiles.add(rel);
             }
-            boolean keyName = lower.equals("id_rsa") || lower.equals("id_ed25519") || lower.endsWith(".pem")
-                    || lower.endsWith(".key");
-            if (keyName && attrs.size() < MAX_FILES_FOR_KEY_SCAN && read(root.resolve(rel)).contains("PRIVATE KEY-----")) {
+            if (isPrivateKeyName(lower) && attrs.size() < MAX_FILES_FOR_KEY_SCAN && read(root.resolve(rel)).contains("PRIVATE KEY-----")) {
                 keyFiles.add(rel);
-            } else if (lower.endsWith(".p12") || lower.endsWith(".pfx") || lower.endsWith(".jks") || lower.endsWith(".keystore")) {
+            } else if (isKeystoreName(lower)) {
                 keyFiles.add(rel);
             }
         }
 
+        /** {@code .env} e {@code .env.*}, menos os modelos ({@code .example}, {@code .sample}, {@code .template}, {@code .dist}). */
+        private static boolean isEnvFileName(String lower) {
+            return lower.equals(".env") || lower.startsWith(".env.") && !(lower.endsWith(".example")
+                    || lower.endsWith(".sample") || lower.endsWith(".template") || lower.endsWith(".dist"));
+        }
+
+        private static boolean isPrivateKeyName(String lower) {
+            return lower.equals("id_rsa") || lower.equals("id_ed25519") || lower.endsWith(".pem") || lower.endsWith(".key");
+        }
+
+        private static boolean isKeystoreName(String lower) {
+            return lower.endsWith(".p12") || lower.endsWith(".pfx") || lower.endsWith(".jks") || lower.endsWith(".keystore");
+        }
+
         void docker(String name, String lower, String rel, Path dir) {
-            if (lower.equals("dockerfile") || lower.startsWith("dockerfile.") || lower.endsWith(".dockerfile")) {
+            if (isDockerfileName(lower)) {
                 dockerfiles.add(rel);
                 // o contexto de build costuma ser a pasta do Dockerfile ou a raiz
                 if (!Files.exists(dir.resolve(".dockerignore")) && !Files.exists(root.resolve(".dockerignore"))) {
                     dockerNoIgnore.add(rel);
                 }
             }
-            if (lower.equals("main.java") || lower.equals("application.java") || lower.equals("main.py") || lower.equals("app.py")
-                    || lower.equals("main.ts") || lower.equals("main.tsx") || lower.equals("index.tsx") || lower.equals("server.js")
-                    || lower.equals("program.cs")) {
+            if (ENTRY_POINTS.contains(lower)) {
                 addEntry(rel);
             }
+        }
+
+        private static boolean isDockerfileName(String lower) {
+            return lower.equals("dockerfile") || lower.startsWith("dockerfile.") || lower.endsWith(".dockerfile");
         }
 
         void addEntry(String rel) {
@@ -375,9 +401,7 @@ public final class ProjectProfiler {
 
         private static boolean isEnvPlaceholder(String v) {
             String s = v.toLowerCase(Locale.ROOT);
-            return s.isEmpty() || s.equals("true") || s.equals("false") || s.equals("null") || s.startsWith("${")
-                    || s.startsWith("<") || s.startsWith("your") || s.startsWith("change") || s.startsWith("xxx")
-                    || s.startsWith("todo") || s.equals("secret") || s.equals("password") || s.equals("token");
+            return PLACEHOLDER_VALUES.contains(s) || PLACEHOLDER_PREFIXES.stream().anyMatch(s::startsWith);
         }
 
         static String read(Path p) {

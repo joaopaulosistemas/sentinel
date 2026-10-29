@@ -147,27 +147,37 @@ public class AuditResource {
     @GET
     @Path("/{id}/findings")
     @Operation(summary = "Listar findings", description = "Retorna os findings de uma auditoria com filtros opcionais")
-    public List<FindingResponse> getFindings(
-            @PathParam("id") Long id,
-            @QueryParam("severity") Severity severity,
-            @QueryParam("category") Category category,
-            @QueryParam("status") FindingStatus status,
-            @QueryParam("includeSuppressed") @DefaultValue("false") boolean includeSuppressed,
-            @QueryParam("onlyNew") @DefaultValue("false") boolean onlyNew) {
+    public List<FindingResponse> getFindings(@PathParam("id") Long id, @BeanParam FindingsQuery q) {
 
         runCatalog.require(id);
 
         List<Finding> findings = findingCatalog.byRun(id);
 
         return findings.stream()
-                .filter(f -> severity == null || f.getSeverity() == severity)
-                .filter(f -> category == null || f.getCategory() == category)
-                .filter(f -> status == null || f.getStatus() == status)
+                .filter(f -> q.severity == null || f.getSeverity() == q.severity)
+                .filter(f -> q.category == null || f.getCategory() == q.category)
+                .filter(f -> q.status == null || f.getStatus() == q.status)
                 // suprimidos só aparecem se pedidos (includeSuppressed ou status=SUPPRESSED)
-                .filter(f -> includeSuppressed || status == FindingStatus.SUPPRESSED || f.getStatus() != FindingStatus.SUPPRESSED)
-                .filter(f -> !onlyNew || Boolean.TRUE.equals(f.getIsNew()))
+                .filter(f -> q.includeSuppressed || q.status == FindingStatus.SUPPRESSED || f.getStatus() != FindingStatus.SUPPRESSED)
+                .filter(f -> !q.onlyNew || Boolean.TRUE.equals(f.getIsNew()))
                 .map(FindingMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /** Filtros opcionais de {@link #getFindings}. */
+    public static class FindingsQuery {
+        @QueryParam("severity")
+        public Severity severity;
+        @QueryParam("category")
+        public Category category;
+        @QueryParam("status")
+        public FindingStatus status;
+        @QueryParam("includeSuppressed")
+        @DefaultValue("false")
+        public boolean includeSuppressed;
+        @QueryParam("onlyNew")
+        @DefaultValue("false")
+        public boolean onlyNew;
     }
 
     /**

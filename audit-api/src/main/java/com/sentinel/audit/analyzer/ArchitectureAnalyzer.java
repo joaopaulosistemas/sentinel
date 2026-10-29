@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -110,11 +111,8 @@ public class ArchitectureAnalyzer implements CodeAnalyzer {
         boolean importsRepository = REPOSITORY_IMPORT.matcher(content).find();
 
         if (isController && importsRepository) {
-            findings.add(newFinding(auditRun, Category.ARCHITECTURE, Severity.HIGH,
-                    "Controller acessando repositório diretamente",
-                    "A classe Controller importa ou injeta um Repository diretamente, " +
-                            "violando a separação entre camadas. Controllers devem acessar apenas Services.",
-                    file, null, null, "arch-controller-bypass-service"));
+            findings.add(newFinding(auditRun, new Issue(Category.ARCHITECTURE, Severity.HIGH, "arch-controller-bypass-service", "Controller acessando repositório diretamente", "A classe Controller importa ou injeta um Repository diretamente, " +
+                            "violando a separação entre camadas. Controllers devem acessar apenas Services."), new Spot(file, null, null)));
         }
         return findings;
     }
@@ -131,14 +129,11 @@ public class ArchitectureAnalyzer implements CodeAnalyzer {
         }
 
         if (lineCount > GOD_OBJECT_LINE_THRESHOLD || publicMethodCount > GOD_OBJECT_METHOD_THRESHOLD) {
-            findings.add(newFinding(auditRun, Category.ARCHITECTURE, Severity.MEDIUM,
-                    "God Object detectado",
-                    String.format(
+            findings.add(newFinding(auditRun, new Issue(Category.ARCHITECTURE, Severity.MEDIUM, "arch-god-object", "God Object detectado", String.format(
                             "Classe com %d linhas e %d métodos públicos (sem contar getters/setters). " +
                                     "Limite recomendado: %d linhas / %d métodos. " +
                                     "Considere dividir em classes menores com responsabilidades únicas (SRP).",
-                            lineCount, publicMethodCount, GOD_OBJECT_LINE_THRESHOLD, GOD_OBJECT_METHOD_THRESHOLD),
-                    file, null, null, "arch-god-object"));
+                            lineCount, publicMethodCount, GOD_OBJECT_LINE_THRESHOLD, GOD_OBJECT_METHOD_THRESHOLD)), new Spot(file, null, null)));
         }
         return findings;
     }
@@ -150,25 +145,13 @@ public class ArchitectureAnalyzer implements CodeAnalyzer {
 
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
-            String stripped = line.strip();
-            if (stripped.startsWith("//") || stripped.startsWith("*") || stripped.startsWith("/*")
-                    || stripped.startsWith("@") || CONSTANT_DECLARATION.matcher(line).find()) {
+            if (isMagicNumberExempt(line)) {
                 continue;
             }
-            String code = stripCommentAndStrings(line);
-            Matcher m = MAGIC_NUMBER.matcher(code);
-            while (m.find()) {
-                int value;
-                try {
-                    value = Integer.parseInt(m.group(1));
-                } catch (NumberFormatException e) {
-                    continue; // literal grande demais para int: ignora
-                }
-                if (value > MAGIC_NUMBER_THRESHOLD && !COMMON_NUMBERS.contains(value)) {
-                    hitLines.add(i + 1);
-                    hitValues.add(value);
-                    break; // uma ocorrência por linha basta
-                }
+            OptionalInt value = firstMagicValue(line);
+            if (value.isPresent()) {
+                hitLines.add(i + 1);
+                hitValues.add(value.getAsInt());
             }
         }
 
@@ -176,11 +159,36 @@ public class ArchitectureAnalyzer implements CodeAnalyzer {
             return List.of();
         }
         int first = hitLines.get(0);
-        return List.of(newFinding(auditRun, Category.ARCHITECTURE, Severity.LOW,
-                "Magic numbers (" + hitLines.size() + ")",
-                "Literais numéricos fora de constantes: " + describeHits(hitLines, hitValues) +
-                        ". Extraia para constantes nomeadas para melhorar a legibilidade.",
-                file, first, lines.get(first - 1).strip(), "arch-magic-number"));
+        return List.of(newFinding(auditRun, new Issue(Category.ARCHITECTURE, Severity.LOW, "arch-magic-number", "Magic numbers (" + hitLines.size() + ")", "Literais numéricos fora de constantes: " + describeHits(hitLines, hitValues) +
+                        ". Extraia para constantes nomeadas para melhorar a legibilidade."), new Spot(file, first, lines.get(first - 1).strip())));
+    }
+
+    /** Comentários, anotações e declarações de constante não contam como número mágico. */
+    private static boolean isMagicNumberExempt(String line) {
+        String stripped = line.strip();
+        return stripped.startsWith("//") || stripped.startsWith("*") || stripped.startsWith("/*")
+                || stripped.startsWith("@") || CONSTANT_DECLARATION.matcher(line).find();
+    }
+
+    /** Primeiro literal da linha acima do limite e fora dos números comuns; vazio se não houver. */
+    private static OptionalInt firstMagicValue(String line) {
+        Matcher m = MAGIC_NUMBER.matcher(stripCommentAndStrings(line));
+        while (m.find()) {
+            OptionalInt value = parseInt(m.group(1));
+            if (value.isPresent() && value.getAsInt() > MAGIC_NUMBER_THRESHOLD && !COMMON_NUMBERS.contains(value.getAsInt())) {
+                return value;
+            }
+        }
+        return OptionalInt.empty();
+    }
+
+    /** Literal grande demais para int: ignora. */
+    private static OptionalInt parseInt(String text) {
+        try {
+            return OptionalInt.of(Integer.parseInt(text));
+        } catch (NumberFormatException e) {
+            return OptionalInt.empty();
+        }
     }
 
     private List<Finding> detectObservabilityIssues(String file, List<String> lines, AuditRun auditRun) {
@@ -203,19 +211,13 @@ public class ArchitectureAnalyzer implements CodeAnalyzer {
 
         if (!printLines.isEmpty()) {
             int first = printLines.get(0);
-            findings.add(newFinding(auditRun, Category.OBSERVABILITY, Severity.LOW,
-                    "System.out/err no lugar de logger (" + printLines.size() + ")",
-                    "Saída direta no console não tem nível, formato nem destino configuráveis. " +
-                            "Use um logger (ex.: SLF4J/JBoss Logging). Linhas: " + listLines(printLines) + ".",
-                    file, first, lines.get(first - 1).strip(), "obs-system-out"));
+            findings.add(newFinding(auditRun, new Issue(Category.OBSERVABILITY, Severity.LOW, "obs-system-out", "System.out/err no lugar de logger (" + printLines.size() + ")", "Saída direta no console não tem nível, formato nem destino configuráveis. " +
+                            "Use um logger (ex.: SLF4J/JBoss Logging). Linhas: " + listLines(printLines) + "."), new Spot(file, first, lines.get(first - 1).strip())));
         }
         if (!stackTraceLines.isEmpty()) {
             int first = stackTraceLines.get(0);
-            findings.add(newFinding(auditRun, Category.OBSERVABILITY, Severity.MEDIUM,
-                    "printStackTrace() em vez de log estruturado (" + stackTraceLines.size() + ")",
-                    "printStackTrace() escreve no stderr sem contexto e pode vazar detalhes internos. " +
-                            "Registre a exceção com um logger. Linhas: " + listLines(stackTraceLines) + ".",
-                    file, first, lines.get(first - 1).strip(), "obs-print-stack-trace"));
+            findings.add(newFinding(auditRun, new Issue(Category.OBSERVABILITY, Severity.MEDIUM, "obs-print-stack-trace", "printStackTrace() em vez de log estruturado (" + stackTraceLines.size() + ")", "printStackTrace() escreve no stderr sem contexto e pode vazar detalhes internos. " +
+                            "Registre a exceção com um logger. Linhas: " + listLines(stackTraceLines) + "."), new Spot(file, first, lines.get(first - 1).strip())));
         }
         return findings;
     }
@@ -242,18 +244,23 @@ public class ArchitectureAnalyzer implements CodeAnalyzer {
         return lines.size() > MAX_LINES_LISTED ? text + " e mais " + (lines.size() - MAX_LINES_LISTED) : text;
     }
 
-    private Finding newFinding(AuditRun auditRun, Category category, Severity severity, String title,
-                               String description, String file, Integer line, String snippet, String ruleId) {
+    /** O que foi encontrado. */
+    private record Issue(Category category, Severity severity, String ruleId, String title, String description) { }
+
+    /** Onde foi encontrado. */
+    private record Spot(String file, Integer line, String snippet) { }
+
+    private Finding newFinding(AuditRun auditRun, Issue issue, Spot spot) {
         Finding f = new Finding();
         f.setAuditRun(auditRun);
-        f.setCategory(category);
-        f.setSeverity(severity);
-        f.setTitle(title);
-        f.setDescription(description);
-        f.setFilePath(file);
-        f.setLineNumber(line);
-        f.setCodeSnippet(snippet);
-        f.setRuleId(ruleId);
+        f.setCategory(issue.category());
+        f.setSeverity(issue.severity());
+        f.setTitle(issue.title());
+        f.setDescription(issue.description());
+        f.setFilePath(spot.file());
+        f.setLineNumber(spot.line());
+        f.setCodeSnippet(spot.snippet());
+        f.setRuleId(issue.ruleId());
         f.setToolSource(ANALYZER_NAME);
         return f;
     }

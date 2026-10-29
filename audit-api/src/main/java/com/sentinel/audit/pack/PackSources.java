@@ -32,13 +32,7 @@ public final class PackSources {
     /** @param allowFile só para testes: aceita {@code file://} */
     public static Path sync(String url, String ref, Path cacheRoot, long timeoutSeconds, boolean allowFile)
             throws IOException, InterruptedException {
-        boolean fileUrl = allowFile && url != null && url.startsWith("file://");
-        if (url == null || url.startsWith("-") || (!fileUrl && !URL.matcher(url).matches())) {
-            throw new IOException("URL de pacotes inválida (use https://, ssh:// ou git@host:caminho)");
-        }
-        if (ref == null || !REF.matcher(ref).matches() || ref.contains("..")) {
-            throw new IOException("ref de pacotes inválida: " + ref);
-        }
+        requireValid(url, ref, allowFile);
         Path dir = cacheRoot.resolve(sha(url + "#" + ref).substring(0, CACHE_DIR_NAME_CHARS));
         Files.createDirectories(cacheRoot);
         if (Files.isDirectory(dir.resolve(".git"))) {
@@ -48,6 +42,16 @@ public final class PackSources {
             run(List.of("git", "clone", "--depth", "1", "--branch", ref, "--", url, dir.toString()), timeoutSeconds);
         }
         return dir;
+    }
+
+    private static void requireValid(String url, String ref, boolean allowFile) throws IOException {
+        boolean fileUrl = allowFile && url != null && url.startsWith("file://");
+        if (url == null || url.startsWith("-") || (!fileUrl && !URL.matcher(url).matches())) {
+            throw new IOException("URL de pacotes inválida (use https://, ssh:// ou git@host:caminho)");
+        }
+        if (ref == null || !REF.matcher(ref).matches() || ref.contains("..")) {
+            throw new IOException("ref de pacotes inválida: " + ref);
+        }
     }
 
     private static void run(List<String> cmd, long timeoutSeconds) throws IOException, InterruptedException {

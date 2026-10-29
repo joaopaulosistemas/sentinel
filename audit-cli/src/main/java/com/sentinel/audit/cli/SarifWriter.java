@@ -35,51 +35,55 @@ final class SarifWriter {
         for (JsonNode f : findings) {
             String ruleId = text(f, "ruleId", "sentinel-audit-" + text(f, "category", "finding").toLowerCase(java.util.Locale.ROOT));
             String severity = text(f, "severity", "MEDIUM");
-
-            rules.computeIfAbsent(ruleId, id -> {
-                ObjectNode rule = MAPPER.createObjectNode();
-                rule.put("id", id);
-                rule.putObject("shortDescription").put("text", text(f, "title", id));
-                String ref = firstReference(f);
-                if (ref != null) {
-                    rule.put("helpUri", ref);
-                }
-                rule.putObject("properties").put("security-severity", securitySeverity(severity));
-                return rule;
-            });
-
-            ObjectNode result = results.addObject();
-            result.put("ruleId", ruleId);
-            result.put("level", level(severity));
-            String message = text(f, "title", ruleId);
-            String description = text(f, "description", "");
-            result.putObject("message").put("text", description.isBlank() ? message : message + " — " + description);
-
-            String path = normalizePath(text(f, "filePath", ""));
-            if (!path.isEmpty()) {
-                ObjectNode physical = result.putArray("locations").addObject().putObject("physicalLocation");
-                physical.putObject("artifactLocation").put("uri", path);
-                int line = f.path("lineNumber").asInt(0);
-                if (line > 0) {
-                    physical.putObject("region").put("startLine", line);
-                }
-            }
-            String fingerprint = text(f, "fingerprint", "");
-            if (!fingerprint.isEmpty()) {
-                result.putObject("partialFingerprints").put("sentinelFingerprint/v1", fingerprint);
-            }
-            ObjectNode props = result.putObject("properties");
-            props.put("severity", severity);
-            props.put("category", text(f, "category", ""));
-            props.put("tool", text(f, "toolSource", ""));
-            if (f.path("isNew").asBoolean(false)) {
-                props.put("new", true);
-            }
+            rules.computeIfAbsent(ruleId, id -> ruleOf(f, id, severity));
+            addResult(results, f, ruleId, severity);
         }
 
         ArrayNode ruleArray = driver.putArray("rules");
         rules.values().forEach(ruleArray::add);
         return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+    }
+
+    private static ObjectNode ruleOf(JsonNode f, String id, String severity) {
+        ObjectNode rule = MAPPER.createObjectNode();
+        rule.put("id", id);
+        rule.putObject("shortDescription").put("text", text(f, "title", id));
+        String ref = firstReference(f);
+        if (ref != null) {
+            rule.put("helpUri", ref);
+        }
+        rule.putObject("properties").put("security-severity", securitySeverity(severity));
+        return rule;
+    }
+
+    private static void addResult(ArrayNode results, JsonNode f, String ruleId, String severity) {
+        ObjectNode result = results.addObject();
+        result.put("ruleId", ruleId);
+        result.put("level", level(severity));
+        String message = text(f, "title", ruleId);
+        String description = text(f, "description", "");
+        result.putObject("message").put("text", description.isBlank() ? message : message + " — " + description);
+
+        String path = normalizePath(text(f, "filePath", ""));
+        if (!path.isEmpty()) {
+            ObjectNode physical = result.putArray("locations").addObject().putObject("physicalLocation");
+            physical.putObject("artifactLocation").put("uri", path);
+            int line = f.path("lineNumber").asInt(0);
+            if (line > 0) {
+                physical.putObject("region").put("startLine", line);
+            }
+        }
+        String fingerprint = text(f, "fingerprint", "");
+        if (!fingerprint.isEmpty()) {
+            result.putObject("partialFingerprints").put("sentinelFingerprint/v1", fingerprint);
+        }
+        ObjectNode props = result.putObject("properties");
+        props.put("severity", severity);
+        props.put("category", text(f, "category", ""));
+        props.put("tool", text(f, "toolSource", ""));
+        if (f.path("isNew").asBoolean(false)) {
+            props.put("new", true);
+        }
     }
 
     static String level(String severity) {

@@ -105,48 +105,60 @@ public class McpResource {
 
         Long systemId = system.get().getId();
         DataLevel level = access.getDataLevel() == null ? DataLevel.TITLES : access.getDataLevel();
-        List<McpTool> enabled = gate.enabledTools(access);
-
-        McpBackend backend = new McpBackend() {
-            @Override
-            public List<McpTool> enabledTools() {
-                return enabled;
-            }
-
-            @Override
-            public ToolResult call(McpTool tool, JsonNode arguments) {
-                long start = System.nanoTime();
-                ToolResult result;
-                String detail = null;
-                if (!enabled.contains(tool)) {
-                    result = ToolResult.error("Esta ferramenta está desligada para este sistema.");
-                    detail = "ferramenta desligada";
-                } else {
-                    try {
-                        result = ToolResult.ok(toolService.run(tool, systemId, level, arguments));
-                    } catch (IllegalArgumentException e) {
-                        result = ToolResult.error(e.getMessage());
-                        detail = e.getMessage();
-                    } catch (RuntimeException e) {
-                        LOG.errorf(e, "Falha na ferramenta MCP %s do sistema %d", tool.wire(), systemId);
-                        result = ToolResult.error("Erro interno ao executar a ferramenta.");
-                        detail = "erro interno";
-                    }
-                }
-                long ms = (System.nanoTime() - start) / NANOS_PER_MILLI;
-                try {
-                    gate.log(systemId, tool.wire(), result.ok(), ms, McpCallSummary.of(detail, arguments));
-                } catch (RuntimeException e) {
-                    LOG.warnf("Não foi possível registrar a chamada MCP (%s)", e.getMessage());
-                }
-                return result;
-            }
-        };
+        McpBackend backend = new SystemBackend(gate.enabledTools(access), systemId, level);
 
         Optional<String> reply = protocol.handle(body, backend);
         return reply.map(r -> Response.ok(r, MediaType.APPLICATION_JSON).build())
                 .orElseGet(() -> Response.accepted().build());
     }
+
+    /** As ferramentas de um sistema: só as ligadas para ele, cada chamada registrada no log de uso. */
+    private final class SystemBackend implements McpBackend {
+        private final List<McpTool> enabled;
+        private final Long systemId;
+        private final DataLevel level;
+
+        SystemBackend(List<McpTool> enabled, Long systemId, DataLevel level) {
+            this.enabled = enabled;
+            this.systemId = systemId;
+            this.level = level;
+        }
+
+        @Override
+        public List<McpTool> enabledTools() {
+            return enabled;
+        }
+
+        @Override
+        public ToolResult call(McpTool tool, JsonNode arguments) {
+            long start = System.nanoTime();
+            Outcome outcome = execute(tool, arguments);
+            long ms = (System.nanoTime() - start) / NANOS_PER_MILLI;
+            try {
+                gate.log(systemId, tool.wire(), outcome.result().ok(), ms, McpCallSummary.of(outcome.detail(), arguments));
+            } catch (RuntimeException e) {
+                LOG.warnf("Não foi possível registrar a chamada MCP (%s)", e.getMessage());
+            }
+            return outcome.result();
+        }
+
+        private Outcome execute(McpTool tool, JsonNode arguments) {
+            if (!enabled.contains(tool)) {
+                return new Outcome(ToolResult.error("Esta ferramenta está desligada para este sistema."), "ferramenta desligada");
+            }
+            try {
+                return new Outcome(ToolResult.ok(toolService.run(tool, systemId, level, arguments)), null);
+            } catch (IllegalArgumentException e) {
+                return new Outcome(ToolResult.error(e.getMessage()), e.getMessage());
+            } catch (RuntimeException e) {
+                LOG.errorf(e, "Falha na ferramenta MCP %s do sistema %d", tool.wire(), systemId);
+                return new Outcome(ToolResult.error("Erro interno ao executar a ferramenta."), "erro interno");
+            }
+        }
+    }
+
+    /** Resultado da chamada e o motivo (se houve falha) que vai para o log. */
+    private record Outcome(McpBackend.ToolResult result, String detail) { }
 
     private static Response tooMany(int seconds) {
         return Response.status(HTTP_TOO_MANY_REQUESTS)

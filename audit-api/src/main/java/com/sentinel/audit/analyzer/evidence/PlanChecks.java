@@ -43,46 +43,80 @@ final class PlanChecks {
         }
         double time = first.path("Execution Time").asDouble(0);
         if (time >= SLOW_MS) {
-            out.add(Ev.finding(run, Category.PERFORMANCE, time >= HIGH_TIME_MS ? Severity.HIGH : Severity.MEDIUM, "evidencia-plano-lento",
-                    "Consulta do plano levou " + Ev.fmt(time) + " ms (" + file + ")",
-                    "O plano salvo em " + file + " executou em " + Ev.fmt(time) + " ms. Os pontos que mais custam estão "
-                            + "listados nos outros achados deste arquivo; comece pelo nó de maior tempo.",
-                    file, 1, null));
+            out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, time >= HIGH_TIME_MS ? Severity.HIGH : Severity.MEDIUM, "evidencia-plano-lento"), new Ev.Where(file, 1, null), "Consulta do plano levou " + Ev.fmt(time) + " ms (" + file + ")", "O plano salvo em " + file + " executou em " + Ev.fmt(time) + " ms. Os pontos que mais custam estão "
+                            + "listados nos outros achados deste arquivo; comece pelo nó de maior tempo."));
         }
         walk(plan, file, run, out);
         return out;
     }
 
+    /** O nó do plano com o que quase toda verificação precisa dele. */
+    private record Node(JsonNode json, String type, String relation, double loops) { }
+
+    /** Onde os achados vão: arquivo do plano, execução e lista de saída. */
+    private record Sink(String file, AuditRun run, List<Finding> out) { }
+
     private static void walk(JsonNode node, String file, AuditRun run, List<Finding> out) {
-        String type = node.path("Node Type").asText("");
-        String relation = node.path("Relation Name").asText("");
-        double loops = Math.max(1, node.path("Actual Loops").asDouble(1));
-        double removed = node.path("Rows Removed by Filter").asDouble(0) * loops;
+        Node n = new Node(node, node.path("Node Type").asText(""), node.path("Relation Name").asText(""),
+                Math.max(1, node.path("Actual Loops").asDouble(1)));
+        Sink sink = new Sink(file, run, out);
+        sequentialScan(n, sink);
+        diskSort(n, sink);
+        diskHash(n, sink);
+        badEstimate(n, sink);
+        for (JsonNode child : node.path("Plans")) {
+            walk(child, file, run, out);
+        }
+    }
+
+    private static void sequentialScan(Node n, Sink sink) {
+        JsonNode node = n.json();
+        String type = n.type();
+        String relation = n.relation();
+        String file = sink.file();
+        AuditRun run = sink.run();
+        List<Finding> out = sink.out();
+        double removed = node.path("Rows Removed by Filter").asDouble(0) * n.loops();
         String filter = node.path("Filter").asText("");
 
         if (type.equals("Seq Scan") && removed >= REMOVED_ROWS) {
-            out.add(Ev.finding(run, Category.PERFORMANCE, removed >= HIGH_REMOVED_ROWS ? Severity.HIGH : Severity.MEDIUM,
-                    "evidencia-plano-varredura-sequencial",
-                    "Varredura sequencial em " + relation + " descartou " + Ev.fmt(removed) + " linhas",
-                    "O plano lê a tabela " + relation + " inteira e joga fora " + Ev.fmt(removed) + " linhas pelo filtro ("
-                            + filter + "). Um índice nas colunas do filtro evita ler tudo.",
-                    file, 1, filter));
+            out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, removed >= HIGH_REMOVED_ROWS ? Severity.HIGH : Severity.MEDIUM, "evidencia-plano-varredura-sequencial"), new Ev.Where(file, 1, filter), "Varredura sequencial em " + relation + " descartou " + Ev.fmt(removed) + " linhas", "O plano lê a tabela " + relation + " inteira e joga fora " + Ev.fmt(removed) + " linhas pelo filtro ("
+                            + filter + "). Um índice nas colunas do filtro evita ler tudo."));
         }
+    }
+
+    private static void diskSort(Node n, Sink sink) {
+        JsonNode node = n.json();
+        String type = n.type();
+        String file = sink.file();
+        AuditRun run = sink.run();
+        List<Finding> out = sink.out();
         String sortMethod = node.path("Sort Method").asText("");
         if (type.equals("Sort") && sortMethod.toLowerCase(java.util.Locale.ROOT).contains("external")) {
-            out.add(Ev.finding(run, Category.PERFORMANCE, Severity.MEDIUM, "evidencia-plano-ordenacao-em-disco",
-                    "Ordenação em disco (" + node.path("Sort Space Used").asLong(0) + " kB)",
-                    "A ordenação não coube em work_mem e usou disco (" + sortMethod + "). Um índice na ordem pedida, um "
-                            + "LIMIT, ou mais work_mem para esta consulta evitam isso.",
-                    file, 1, node.path("Sort Key").toString()));
+            out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.MEDIUM, "evidencia-plano-ordenacao-em-disco"), new Ev.Where(file, 1, node.path("Sort Key").toString()), "Ordenação em disco (" + node.path("Sort Space Used").asLong(0) + " kB)", "A ordenação não coube em work_mem e usou disco (" + sortMethod + "). Um índice na ordem pedida, um "
+                            + "LIMIT, ou mais work_mem para esta consulta evitam isso."));
         }
+    }
+
+    private static void diskHash(Node n, Sink sink) {
+        JsonNode node = n.json();
+        String file = sink.file();
+        AuditRun run = sink.run();
+        List<Finding> out = sink.out();
         if (node.path("Hash Batches").asInt(1) > 1) {
-            out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-plano-hash-em-disco",
-                    "Junção por hash dividida em " + node.path("Hash Batches").asInt() + " lotes",
-                    "A tabela hash não coube em work_mem e foi dividida em lotes, gravando em disco. Reduza as linhas "
-                            + "que entram na junção ou aumente work_mem.",
-                    file, 1, null));
+            out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.LOW, "evidencia-plano-hash-em-disco"), new Ev.Where(file, 1, null), "Junção por hash dividida em " + node.path("Hash Batches").asInt() + " lotes", "A tabela hash não coube em work_mem e foi dividida em lotes, gravando em disco. Reduza as linhas "
+                            + "que entram na junção ou aumente work_mem."));
         }
+    }
+
+    private static void badEstimate(Node n, Sink sink) {
+        JsonNode node = n.json();
+        String type = n.type();
+        String relation = n.relation();
+        double loops = n.loops();
+        String file = sink.file();
+        AuditRun run = sink.run();
+        List<Finding> out = sink.out();
         double planned = node.path("Plan Rows").asDouble(0);
         double actual = node.path("Actual Rows").asDouble(-1);
         if (actual >= 0 && type.length() > 0 && !type.equals("Limit")) {
@@ -90,16 +124,10 @@ final class PlanChecks {
             double hi = Math.max(planned, a);
             double lo = Math.max(1, Math.min(planned, a));
             if (hi >= MIN_ESTIMATE_ROWS && hi / lo >= ESTIMATE_FACTOR) {
-                out.add(Ev.finding(run, Category.PERFORMANCE, Severity.LOW, "evidencia-plano-estimativa-errada",
-                        "Estimativa de linhas errada em " + type + (relation.isEmpty() ? "" : " (" + relation + ")"),
-                        "O planejador previu " + Ev.fmt(planned) + " linhas e vieram " + Ev.fmt(a) + ". Estatísticas "
+                out.add(Ev.finding(run, new Ev.Kind(Category.PERFORMANCE, Severity.LOW, "evidencia-plano-estimativa-errada"), new Ev.Where(file, 1, null), "Estimativa de linhas errada em " + type + (relation.isEmpty() ? "" : " (" + relation + ")"), "O planejador previu " + Ev.fmt(planned) + " linhas e vieram " + Ev.fmt(a) + ". Estatísticas "
                                 + "desatualizadas levam a planos ruins: rode ANALYZE, aumente o alvo de estatísticas da "
-                                + "coluna ou crie estatísticas estendidas.",
-                        file, 1, null));
+                                + "coluna ou crie estatísticas estendidas."));
             }
-        }
-        for (JsonNode child : node.path("Plans")) {
-            walk(child, file, run, out);
         }
     }
 }

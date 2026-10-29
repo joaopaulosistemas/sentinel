@@ -34,21 +34,17 @@ function Step({ state, label, detail }: { state: StepState; label: string; detai
   );
 }
 
-/**
- * Trava a tela inteira enquanto a API reinicia e explica o que está acontecendo.
- * Sem isso, quem usa a tela continua clicando numa API que está fora do ar e vê erros sem sentido.
- */
-export function RestartOverlay({ phase, onKeepWaiting, onClose }: Props) {
+function useElapsedSeconds(): number {
   const [elapsed, setElapsed] = useState(0);
-  const box = useRef<HTMLDivElement>(null);
-  const timedOut = phase === 'waiting' && elapsed >= RESTART_TIMEOUT_SECONDS;
-
   useEffect(() => {
     const id = window.setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => window.clearInterval(id);
   }, []);
+  return elapsed;
+}
 
-  // Trava a rolagem da página por trás enquanto o aviso está aberto.
+/** Trava a rolagem da página por trás enquanto o aviso está aberto. */
+function useBodyScrollLock(): void {
   useEffect(() => {
     const anterior = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -56,36 +52,101 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: Props) {
       document.body.style.overflow = anterior;
     };
   }, []);
+}
 
-  // O foco entra no aviso e não sai dele: nada do que está por trás pode ser acionado pelo teclado.
+/** O foco entra no aviso e, ao fechar, volta para quem o tinha. */
+function useFocusOnMount(box: React.RefObject<HTMLDivElement>): void {
   useEffect(() => {
     const anterior = document.activeElement as HTMLElement | null;
     box.current?.focus();
     return () => anterior?.focus?.();
-  }, []);
+  }, [box]);
+}
+
+/** Mantém o Tab dentro do aviso: nada do que está por trás pode ser acionado pelo teclado. */
+function trapTab(e: React.KeyboardEvent<HTMLDivElement>, box: HTMLDivElement | null): void {
+  const focaveis = Array.from(box?.querySelectorAll<HTMLElement>('button:not([disabled])') ?? []);
+  if (focaveis.length === 0) {
+    e.preventDefault();
+    box?.focus();
+    return;
+  }
+  const primeiro = focaveis[0];
+  const ultimo = focaveis[focaveis.length - 1];
+  const ativo = document.activeElement;
+  if (e.shiftKey && (ativo === primeiro || ativo === box)) {
+    e.preventDefault();
+    ultimo.focus();
+  } else if (!e.shiftKey && ativo === ultimo) {
+    e.preventDefault();
+    primeiro.focus();
+  }
+}
+
+function TimedOutText() {
+  return (
+    <>
+      <p style={{ margin: '0 0 8px' }}>
+        Já se passaram mais de {RESTART_TIMEOUT_SECONDS} segundos e a API ainda não respondeu. O normal são alguns segundos.
+      </p>
+      <p style={{ margin: '0 0 8px' }}>Causas mais comuns:</p>
+      <ul style={{ margin: '0 0 8px', paddingLeft: 20 }}>
+        <li>O contêiner da API não tem reinício automático. No Docker Compose, confira <code>restart: unless-stopped</code> no serviço <code>audit-api</code>.</li>
+        <li>Um valor salvo impede a API de subir. Veja os logs com <code>docker compose logs audit-api</code>.</li>
+      </ul>
+      <p style={{ margin: 0 }}>Os valores continuam salvos. A tela segue conferindo e libera sozinha assim que a API responder.</p>
+    </>
+  );
+}
+
+function RestartingText() {
+  return (
+    <>
+      <p style={{ margin: '0 0 8px' }}>
+        As configurações que você salvou só são lidas quando a API sobe. Por isso ela está sendo encerrada e iniciada de novo, e fica fora do ar por alguns segundos.
+      </p>
+      <p style={{ margin: 0 }}>
+        A tela está travada de propósito: qualquer ação agora cairia numa API desligada. Auditorias em andamento são interrompidas. Ela libera sozinha quando a API voltar.
+      </p>
+    </>
+  );
+}
+
+function RestartSteps({ phase, elapsed }: { phase: RestartPhase; elapsed: number }) {
+  const requesting = phase === 'requesting';
+  return (
+    <ol aria-label="Etapas do reinício" style={{ listStyle: 'none', margin: '20px 0 0', padding: '12px 0 0', borderTop: '1px solid var(--s-border)' }}>
+      <Step state={requesting ? 'active' : 'done'} label={requesting ? 'Enviando o pedido de reinício' : 'Pedido de reinício enviado'} />
+      <Step
+        state={requesting ? 'pending' : 'active'}
+        label="API encerrando e subindo de novo"
+        detail={requesting ? undefined : `Aguardando há ${elapsed} s`}
+      />
+      <Step state="pending" label="Conferindo se as novas configurações entraram em uso" />
+    </ol>
+  );
+}
+
+function statusMessage(phase: RestartPhase, timedOut: boolean): string {
+  if (timedOut) return 'A API está demorando para voltar.';
+  return phase === 'requesting' ? 'Enviando o pedido de reinício.' : 'Aguardando a API voltar.';
+}
+
+/**
+ * Trava a tela inteira enquanto a API reinicia e explica o que está acontecendo.
+ * Sem isso, quem usa a tela continua clicando numa API que está fora do ar e vê erros sem sentido.
+ */
+export function RestartOverlay({ phase, onKeepWaiting, onClose }: Props) {
+  const elapsed = useElapsedSeconds();
+  const box = useRef<HTMLDivElement>(null);
+  const timedOut = phase === 'waiting' && elapsed >= RESTART_TIMEOUT_SECONDS;
+
+  useBodyScrollLock();
+  useFocusOnMount(box);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape' && timedOut) {
-      onClose();
-      return;
-    }
-    if (e.key !== 'Tab') return;
-    const focaveis = Array.from(box.current?.querySelectorAll<HTMLElement>('button:not([disabled])') ?? []);
-    if (focaveis.length === 0) {
-      e.preventDefault();
-      box.current?.focus();
-      return;
-    }
-    const primeiro = focaveis[0];
-    const ultimo = focaveis[focaveis.length - 1];
-    const ativo = document.activeElement;
-    if (e.shiftKey && (ativo === primeiro || ativo === box.current)) {
-      e.preventDefault();
-      ultimo.focus();
-    } else if (!e.shiftKey && ativo === ultimo) {
-      e.preventDefault();
-      primeiro.focus();
-    }
+    if (e.key === 'Escape' && timedOut) onClose();
+    else if (e.key === 'Tab') trapTab(e, box.current);
   };
 
   const titulo = timedOut ? 'A API está demorando para voltar' : 'Reiniciando a API';
@@ -111,42 +172,13 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: Props) {
         </div>
 
         <div id="restart-overlay-desc" style={{ fontSize: 14, lineHeight: 1.5 }}>
-          {timedOut ? (
-            <>
-              <p style={{ margin: '0 0 8px' }}>
-                Já se passaram mais de {RESTART_TIMEOUT_SECONDS} segundos e a API ainda não respondeu. O normal são alguns segundos.
-              </p>
-              <p style={{ margin: '0 0 8px' }}>Causas mais comuns:</p>
-              <ul style={{ margin: '0 0 8px', paddingLeft: 20 }}>
-                <li>O contêiner da API não tem reinício automático. No Docker Compose, confira <code>restart: unless-stopped</code> no serviço <code>audit-api</code>.</li>
-                <li>Um valor salvo impede a API de subir. Veja os logs com <code>docker compose logs audit-api</code>.</li>
-              </ul>
-              <p style={{ margin: 0 }}>Os valores continuam salvos. A tela segue conferindo e libera sozinha assim que a API responder.</p>
-            </>
-          ) : (
-            <>
-              <p style={{ margin: '0 0 8px' }}>
-                As configurações que você salvou só são lidas quando a API sobe. Por isso ela está sendo encerrada e iniciada de novo, e fica fora do ar por alguns segundos.
-              </p>
-              <p style={{ margin: 0 }}>
-                A tela está travada de propósito: qualquer ação agora cairia numa API desligada. Auditorias em andamento são interrompidas. Ela libera sozinha quando a API voltar.
-              </p>
-            </>
-          )}
+          {timedOut ? <TimedOutText /> : <RestartingText />}
         </div>
 
-        <ol aria-label="Etapas do reinício" style={{ listStyle: 'none', margin: '20px 0 0', padding: '12px 0 0', borderTop: '1px solid var(--s-border)' }}>
-          <Step state={phase === 'requesting' ? 'active' : 'done'} label={phase === 'requesting' ? 'Enviando o pedido de reinício' : 'Pedido de reinício enviado'} />
-          <Step
-            state={phase === 'requesting' ? 'pending' : 'active'}
-            label="API encerrando e subindo de novo"
-            detail={phase === 'waiting' ? `Aguardando há ${elapsed} s` : undefined}
-          />
-          <Step state="pending" label="Conferindo se as novas configurações entraram em uso" />
-        </ol>
+        <RestartSteps phase={phase} elapsed={elapsed} />
 
         <div role="status" aria-live="polite" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
-          {timedOut ? 'A API está demorando para voltar.' : phase === 'requesting' ? 'Enviando o pedido de reinício.' : 'Aguardando a API voltar.'}
+          {statusMessage(phase, timedOut)}
         </div>
 
         {timedOut && (

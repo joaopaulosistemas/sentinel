@@ -16,6 +16,14 @@ function findAuditSystemId(audit: AuditRunResponse | undefined, systems: SystemS
   return audit?.systemId ?? systems.find((s) => s.name === audit?.systemName)?.id;
 }
 
+/** Sistema em foco: o da auditoria aberta (vindo de "Ver todos os achados") ou o escolhido no filtro. */
+function useFocusedSystem(auditMode: boolean, audit: AuditRunResponse | undefined, systems: SystemSummaryResponse[] | undefined, filterSystemId: number | undefined) {
+  const auditSystemId = auditMode ? findAuditSystemId(audit, systems ?? []) : undefined;
+  return { auditSystemId, activeSystemId: auditMode ? auditSystemId : filterSystemId };
+}
+
+const initialAba = (params: URLSearchParams): AbaId => (params.get('aba') === 'reauditoria' ? 'reauditoria' : 'achados');
+
 /**
  * Achados. Sem auditoria na URL, mostra os de todos os sistemas (última auditoria concluída de cada um) e deixa
  * filtrar por sistema; com `?auditId=`, mostra os daquela auditoria.
@@ -25,14 +33,12 @@ export function FindingsPage() {
   const auditId = Number(searchParams.get('auditId') ?? '0');
   const auditMode = auditId > 0;
   const filters = useFindingFilters(searchParams);
-  const [aba, setAba] = useState<AbaId>(searchParams.get('aba') === 'reauditoria' ? 'reauditoria' : 'achados');
+  const [aba, setAba] = useState<AbaId>(() => initialAba(searchParams));
   const { data: systems } = useSystems();
   const { data: audit } = useAudit(auditId);
 
-  // Sistema em foco: o da auditoria aberta (vindo de "Ver todos os achados") ou o escolhido no filtro.
-  // As três abas partem dele, então quem escolheu o sistema não precisa escolher de novo.
-  const auditSystemId = auditMode ? findAuditSystemId(audit, systems ?? []) : undefined;
-  const activeSystemId = auditMode ? auditSystemId : filters.systemId;
+  // As três abas partem do sistema em foco, então quem escolheu o sistema não precisa escolher de novo.
+  const { auditSystemId, activeSystemId } = useFocusedSystem(auditMode, audit, systems, filters.systemId);
   const panelProps = { systems: systems ?? [], initialSystemId: activeSystemId };
   const panelKey = activeSystemId ?? 'sem-sistema';
 

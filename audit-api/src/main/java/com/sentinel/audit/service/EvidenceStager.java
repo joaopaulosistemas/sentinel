@@ -44,45 +44,54 @@ public class EvidenceStager {
         }
         try {
             Path root = Paths.get(evidenceDir.get()).toRealPath();
-            Path source = null;
-            for (String candidate : List.of(slug(systemName), slug(repoName(repoUrl)))) {
-                if (candidate.isEmpty()) {
-                    continue;
-                }
-                Path dir = root.resolve(candidate).normalize();
-                if (dir.startsWith(root) && Files.isDirectory(dir) && !Files.isSymbolicLink(dir)) {
-                    source = dir;
-                    break;
-                }
-            }
+            Path source = findSource(root, systemName, repoUrl);
             if (source == null) {
                 return 0;
             }
             Path target = projectPath.resolve(EvidenceAnalyzer.DIR);
             Files.createDirectories(target);
-            int copied = 0;
-            long total = 0;
-            try (Stream<Path> files = Files.list(source)) {
-                for (Path f : files.sorted().toList()) {
-                    if (!Files.isRegularFile(f, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
-                        continue;
-                    }
-                    long size = Files.size(f);
-                    if (size > MAX_FILE_BYTES || total + size > MAX_TOTAL_BYTES || copied >= MAX_FILES) {
-                        LOG.warnf("Evidência %s ignorada (limite de tamanho ou de quantidade)", f.getFileName());
-                        continue;
-                    }
-                    Files.copy(f, target.resolve(f.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
-                    copied++;
-                    total += size;
-                }
-            }
+            int copied = copyFiles(source, target);
             LOG.infof("Evidências de '%s': %d arquivo(s) copiados de %s", systemName, copied, source);
             return copied;
         } catch (IOException | RuntimeException e) {
             LOG.warnf("Não foi possível preparar as evidências de '%s': %s", systemName, e.getMessage());
             return 0;
         }
+    }
+
+    /** A pasta de evidências do sistema (pelo nome ou pelo nome do repositório), sem sair da raiz. */
+    private static Path findSource(Path root, String systemName, String repoUrl) {
+        for (String candidate : List.of(slug(systemName), slug(repoName(repoUrl)))) {
+            if (candidate.isEmpty()) {
+                continue;
+            }
+            Path dir = root.resolve(candidate).normalize();
+            if (dir.startsWith(root) && Files.isDirectory(dir) && !Files.isSymbolicLink(dir)) {
+                return dir;
+            }
+        }
+        return null;
+    }
+
+    private static int copyFiles(Path source, Path target) throws IOException {
+        int copied = 0;
+        long total = 0;
+        try (Stream<Path> files = Files.list(source)) {
+            for (Path f : files.sorted().toList()) {
+                if (!Files.isRegularFile(f, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                    continue;
+                }
+                long size = Files.size(f);
+                if (size > MAX_FILE_BYTES || total + size > MAX_TOTAL_BYTES || copied >= MAX_FILES) {
+                    LOG.warnf("Evidência %s ignorada (limite de tamanho ou de quantidade)", f.getFileName());
+                    continue;
+                }
+                Files.copy(f, target.resolve(f.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
+                copied++;
+                total += size;
+            }
+        }
+        return copied;
     }
 
     static String repoName(String repoUrl) {

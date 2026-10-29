@@ -119,13 +119,14 @@ public class PackRegistry {
         Map<String, RulePack> byId = new LinkedHashMap<>();
         Map<String, Profile> profiles = new LinkedHashMap<>();
         Set<String> off = disabledIds();
+        Loaded loaded = new Loaded(byId, integrity, rejected, warnings);
 
         for (Path root : roots) {
             PackLoader.Discovery d = PackLoader.discover(root);
             d.rejected().forEach((dir, errs) -> rejected.put(root.getFileName() + "/" + dir, errs));
             warnings.addAll(d.warnings());
             for (RulePack p : d.packs()) {
-                acceptPack(p, root, key, byId, integrity, rejected, warnings);
+                acceptPack(p, root, key, loaded);
             }
             profiles.putAll(ProfileLoader.loadAll(root, rejected));
         }
@@ -237,9 +238,15 @@ public class PackRegistry {
         return off;
     }
 
+    /** O que a recarga vai acumulando: pacotes aceitos, o estado de integridade de cada um, rejeitados e avisos. */
+    private record Loaded(Map<String, RulePack> byId, Map<String, String> integrity,
+                          Map<String, List<String>> rejected, List<String> warnings) { }
+
     /** Confere integridade e assinatura e fica com a versão mais nova quando o mesmo pacote aparece em mais de uma pasta. */
-    private void acceptPack(RulePack p, Path root, java.security.PublicKey key, Map<String, RulePack> byId,
-                            Map<String, String> integrity, Map<String, List<String>> rejected, List<String> warnings) {
+    private void acceptPack(RulePack p, Path root, java.security.PublicKey key, Loaded loaded) {
+        Map<String, RulePack> byId = loaded.byId();
+        Map<String, List<String>> rejected = loaded.rejected();
+        List<String> warnings = loaded.warnings();
         PackIntegrity.Result integ = PackIntegrity.verify(p.dir(), key);
         String where = root.getFileName() + "/" + p.dir().getFileName();
         if (integ.state() == PackIntegrity.State.INVALID) {
@@ -263,7 +270,7 @@ public class PackRegistry {
                     + prev.manifest().version());
         }
         byId.put(p.id(), p);
-        integrity.put(p.id(), integ.state().name().toLowerCase(Locale.ROOT).replace('_', '-'));
+        loaded.integrity().put(p.id(), integ.state().name().toLowerCase(Locale.ROOT).replace('_', '-'));
     }
 
     /** Perfil de que {@code p} herda, ou nulo se não herda de ninguém (ou o pai não existe). */
@@ -275,35 +282,44 @@ public class PackRegistry {
     private static void validateProfiles(Map<String, Profile> profiles, Map<String, RulePack> packs,
                                          Map<String, List<String>> rejected, List<String> warnings) {
         for (Profile p : new ArrayList<>(profiles.values())) {
-            Set<String> chain = new LinkedHashSet<>();
-            Profile cur = p;
-            while (cur != null && cur.extendsId() != null) {
-                if (!chain.add(cur.id())) {
-                    break;
-                }
-                Profile parent = profiles.get(cur.extendsId().toLowerCase(Locale.ROOT));
-                if (parent == null) {
-                    rejected.put("profiles/" + p.id(), List.of("estende o perfil '" + cur.extendsId() + "', que não existe"));
-                    profiles.remove(p.id());
-                    break;
-                }
-                if (chain.contains(parent.id())) {
-                    rejected.put("profiles/" + p.id(), List.of("herança circular: " + String.join(" -> ", chain) + " -> " + parent.id()));
-                    profiles.remove(p.id());
-                    break;
-                }
-                cur = parent;
-            }
+            checkInheritance(p, profiles, rejected);
             if (profiles.containsKey(p.id())) {
-                List<String> mentioned = new ArrayList<>(p.disablePacks());
-                if (p.packs() != null) {
-                    mentioned.addAll(p.packs());
-                }
-                for (String id : mentioned) {
-                    if (!packs.containsKey(id)) {
-                        warnings.add("perfil '" + p.id() + "' cita o pacote '" + id + "', que não está carregado");
-                    }
-                }
+                warnMissingPacks(p, packs, warnings);
+            }
+        }
+    }
+
+    /** Tira {@code p} de {@code profiles} se a herança dele aponta para um perfil inexistente ou volta a si mesma. */
+    private static void checkInheritance(Profile p, Map<String, Profile> profiles, Map<String, List<String>> rejected) {
+        Set<String> chain = new LinkedHashSet<>();
+        Profile cur = p;
+        while (cur != null && cur.extendsId() != null) {
+            if (!chain.add(cur.id())) {
+                break;
+            }
+            Profile parent = profiles.get(cur.extendsId().toLowerCase(Locale.ROOT));
+            if (parent == null) {
+                rejected.put("profiles/" + p.id(), List.of("estende o perfil '" + cur.extendsId() + "', que não existe"));
+                profiles.remove(p.id());
+                break;
+            }
+            if (chain.contains(parent.id())) {
+                rejected.put("profiles/" + p.id(), List.of("herança circular: " + String.join(" -> ", chain) + " -> " + parent.id()));
+                profiles.remove(p.id());
+                break;
+            }
+            cur = parent;
+        }
+    }
+
+    private static void warnMissingPacks(Profile p, Map<String, RulePack> packs, List<String> warnings) {
+        List<String> mentioned = new ArrayList<>(p.disablePacks());
+        if (p.packs() != null) {
+            mentioned.addAll(p.packs());
+        }
+        for (String id : mentioned) {
+            if (!packs.containsKey(id)) {
+                warnings.add("perfil '" + p.id() + "' cita o pacote '" + id + "', que não está carregado");
             }
         }
     }
@@ -371,23 +387,30 @@ public class PackRegistry {
         Map<String, RuleOverride> overrides = new LinkedHashMap<>();
         Map<String, Integer> thresholds = new LinkedHashMap<>();
         for (Profile p : chain) {
-            if (p.packs() != null) {
-                selected = new LinkedHashSet<>(p.packs());
-            } else if (selected == null) {
-                selected = new LinkedHashSet<>();
-                for (RulePack x : s.packs()) {
-                    if (x.manifest().enabledByDefault()) {
-                        selected.add(x.id());
-                    }
-                }
-            }
-            selected.removeAll(p.disablePacks());
+            selected = nextSelection(selected, p, s);
             overrides.putAll(p.rules());
             thresholds.putAll(p.thresholds());
         }
         final Set<String> active = selected;
         List<RulePack> packs = s.packs().stream().filter(p -> active.contains(p.id())).toList();
         return new AuditPolicy(profile.id(), packs, overrides, thresholds);
+    }
+
+    /** Pacotes ativos depois de aplicar o perfil {@code p} sobre a seleção herdada (nula = ainda não escolhida). */
+    private static Set<String> nextSelection(Set<String> inherited, Profile p, Snapshot s) {
+        Set<String> selected = inherited;
+        if (p.packs() != null) {
+            selected = new LinkedHashSet<>(p.packs());
+        } else if (selected == null) {
+            selected = new LinkedHashSet<>();
+            for (RulePack x : s.packs()) {
+                if (x.manifest().enabledByDefault()) {
+                    selected.add(x.id());
+                }
+            }
+        }
+        selected.removeAll(p.disablePacks());
+        return selected;
     }
 
     public boolean profileExists(String id) {

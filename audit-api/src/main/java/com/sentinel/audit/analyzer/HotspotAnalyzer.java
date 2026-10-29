@@ -82,14 +82,10 @@ public class HotspotAnalyzer implements CodeAnalyzer {
         List<Finding> out = new ArrayList<>();
         for (Hotspot h : hotspots) {
             Severity sev = h.churn() >= 10 && h.cx().complexity() >= HIGH_COMPLEXITY ? Severity.HIGH : Severity.MEDIUM;
-            out.add(StructuralFindings.make(run, ANALYZER_NAME, "sentinel-hotspot", sev, Category.QUALITY,
-                    h.file(), h.cx().line(),
-                    "Ponto quente: " + h.file().substring(h.file().lastIndexOf('/') + 1) + " mudou " + h.churn()
-                            + " vezes e tem função de complexidade " + h.cx().complexity(),
-                    "Nos últimos " + commits + " commits este arquivo foi alterado " + h.churn() + " vezes e a função "
+            out.add(StructuralFindings.make(run, new StructuralFindings.Kind(ANALYZER_NAME, "sentinel-hotspot", sev, Category.QUALITY), new StructuralFindings.Spot(h.file(), h.cx().line(), h.cx().function()), "Ponto quente: " + h.file().substring(h.file().lastIndexOf('/') + 1) + " mudou " + h.churn()
+                            + " vezes e tem função de complexidade " + h.cx().complexity(), "Nos últimos " + commits + " commits este arquivo foi alterado " + h.churn() + " vezes e a função "
                             + h.cx().function() + " tem complexidade ciclomática " + h.cx().complexity() + ". Complexidade num "
-                            + "arquivo que muda sempre custa a cada mudança: é onde o investimento em refatorar e testar rende mais.",
-                    h.cx().function()));
+                            + "arquivo que muda sempre custa a cada mudança: é onde o investimento em refatorar e testar rende mais."));
         }
         return out;
     }
@@ -99,32 +95,36 @@ public class HotspotAnalyzer implements CodeAnalyzer {
         for (Map.Entry<String, Integer> e : churn.entrySet()) {
             String rel = e.getKey();
             String lower = rel.toLowerCase(Locale.ROOT);
-            boolean java = lower.endsWith(".java");
             boolean ts = lower.endsWith(".ts") || lower.endsWith(".tsx") || lower.endsWith(".js") || lower.endsWith(".jsx");
-            if (e.getValue() < minChurn || !(java || ts) || PathRole.of(rel).isNonProduction()) {
+            if (e.getValue() < minChurn || !(lower.endsWith(".java") || ts) || PathRole.of(rel).isNonProduction()) {
                 continue;
             }
-            Path file = root.resolve(rel).normalize();
-            try {
-                if (!file.startsWith(root) || !Files.isRegularFile(file) || Files.isSymbolicLink(file)
-                        || Files.size(file) > MAX_FILE_BYTES) {
-                    continue;                                   // apagado depois, link ou grande demais
-                }
-                String clean = SourceSanitizer.strip(Files.readString(file, StandardCharsets.UTF_8));
-                Fn worst = null;
-                for (Fn fn : FunctionScanner.scan(clean, ts)) {
-                    if (worst == null || fn.complexity() > worst.complexity()) {
-                        worst = fn;
-                    }
-                }
-                if (worst != null) {
-                    out.put(rel, new Cx(worst.complexity(), worst.name(), worst.startLine()));
-                }
-            } catch (IOException ignored) {
-                // binário ou codificação inesperada: ignora o arquivo
+            Cx worst = worstComplexity(root, root.resolve(rel).normalize(), ts);
+            if (worst != null) {
+                out.put(rel, worst);
             }
         }
         return out;
+    }
+
+    /** A função mais complexa do arquivo; nulo se ele sumiu, é link, é grande demais, não é texto ou não tem função. */
+    private static Cx worstComplexity(Path root, Path file, boolean ts) {
+        try {
+            if (!file.startsWith(root) || !Files.isRegularFile(file) || Files.isSymbolicLink(file)
+                    || Files.size(file) > MAX_FILE_BYTES) {
+                return null;                                    // apagado depois, link ou grande demais
+            }
+            String clean = SourceSanitizer.strip(Files.readString(file, StandardCharsets.UTF_8));
+            Fn worst = null;
+            for (Fn fn : FunctionScanner.scan(clean, ts)) {
+                if (worst == null || fn.complexity() > worst.complexity()) {
+                    worst = fn;
+                }
+            }
+            return worst == null ? null : new Cx(worst.complexity(), worst.name(), worst.startLine());
+        } catch (IOException ignored) {
+            return null;                                        // binário ou codificação inesperada: ignora o arquivo
+        }
     }
 
     /** Saída de {@code git log} do clone, ou texto vazio se não houver Git ou histórico. */

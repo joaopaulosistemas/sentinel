@@ -117,15 +117,7 @@ final class SchemaParser {
 
         /** Meta-comando, quebra de linha, comentário, texto entre aspas, $$...$$ ou ';'. */
         private boolean consumeSpecial(char c) {
-            if (atLineStart && c == '\\' && cur.toString().isBlank()) {       // meta-comando do psql (\connect, \restrict)
-                skipToEndOfLine();
-                return true;
-            }
-            if (c == '\n') {
-                line++;
-                atLineStart = true;
-                cur.append(c);
-                i++;
+            if (consumeLineStructure(c)) {
                 return true;
             }
             if (!Character.isWhitespace(c)) {
@@ -139,6 +131,22 @@ final class SchemaParser {
                 startLine = line;
             }
             return consumeQuoted(c) || consumeDollarQuoted(c) || consumeSemicolon(c);
+        }
+
+        /** Meta-comando do psql (\connect, \restrict) no começo da linha ou quebra de linha. */
+        private boolean consumeLineStructure(char c) {
+            if (atLineStart && c == '\\' && cur.toString().isBlank()) {
+                skipToEndOfLine();
+                return true;
+            }
+            if (c == '\n') {
+                line++;
+                atLineStart = true;
+                cur.append(c);
+                i++;
+                return true;
+            }
+            return false;
         }
 
         private boolean isCommentStart(char c) {

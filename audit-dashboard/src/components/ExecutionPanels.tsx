@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { AnalyzerProgress, AuditProgress, AuditRunResponse, Severity } from '../types';
 import { PHASES, clock, secondsBetween, type PhaseView } from '../utils/auditProgress';
 import { scoreColor } from '../utils/scoreBand';
@@ -35,31 +36,38 @@ export function PhaseStrip({ phases }: { phases: PhaseView[] }) {
   );
 }
 
-const state = (a: AnalyzerProgress) => {
-  switch (a.status) {
-    case 'OK':
-      return { icon: <CheckIcon label="Concluído" />, accent: '#198038', bar: '#198038', width: 100,
-        text: a.durationMs > 0 ? `concluído em ${Math.max(1, Math.round(a.durationMs / 1000))} s` : 'concluído' };
-    case 'PARCIAL':
-      return { icon: <DashIcon label="Parcial" color="#b28600" />, accent: '#f1c21b', bar: '#f1c21b', width: 100, text: 'parcial — resultado pode estar incompleto' };
-    case 'EXECUTANDO':
-      return { icon: <SpinnerIcon label="Executando" />, accent: '#0f62fe', bar: '#0f62fe', width: 45, text: 'executando', pulse: true };
-    case 'FALHOU':
-      return { icon: <CrossIcon label="Falhou" />, accent: '#da1e28', bar: '#da1e28', width: 100, text: 'falhou' };
-    case 'ESPERANDO':
-      return { icon: <ClockIcon label="Na fila" />, accent: '#c6c6c6', bar: '#0f62fe', width: 0, text: 'na fila' };
-    case 'INDISPONIVEL':
-      return { icon: <DashIcon label="Ferramenta ausente" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'ferramenta ausente' };
-    case 'NAO_SUPORTADO':
-      return { icon: <DashIcon label="Não se aplica" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'não se aplica' };
-    case 'DESLIGADO':
-      return { icon: <DashIcon label="Desligado neste sistema" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'desligado neste sistema' };
-    case 'SUBSTITUIDO':
-      return { icon: <DashIcon label="Coberto por outro" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'coberto por outro' };
-    default:
-      return { icon: <DashIcon label="Sem evidência" />, accent: '#c6c6c6', bar: '#8d8d8d', width: 0, text: 'sem evidência' };
-  }
+interface StateView {
+  icon: ReactNode;
+  accent: string;
+  bar: string;
+  width: number;
+  text: string;
+  pulse?: boolean;
+}
+
+const MUTED = { accent: '#c6c6c6', bar: '#8d8d8d', width: 0 };
+
+const mutedState = (label: string, text: string): StateView => ({ icon: <DashIcon label={label} />, ...MUTED, text });
+
+const STATES: Record<string, StateView> = {
+  PARCIAL: { icon: <DashIcon label="Parcial" color="#b28600" />, accent: '#f1c21b', bar: '#f1c21b', width: 100, text: 'parcial — resultado pode estar incompleto' },
+  EXECUTANDO: { icon: <SpinnerIcon label="Executando" />, accent: '#0f62fe', bar: '#0f62fe', width: 45, text: 'executando', pulse: true },
+  FALHOU: { icon: <CrossIcon label="Falhou" />, accent: '#da1e28', bar: '#da1e28', width: 100, text: 'falhou' },
+  ESPERANDO: { icon: <ClockIcon label="Na fila" />, accent: '#c6c6c6', bar: '#0f62fe', width: 0, text: 'na fila' },
+  INDISPONIVEL: mutedState('Ferramenta ausente', 'ferramenta ausente'),
+  NAO_SUPORTADO: mutedState('Não se aplica', 'não se aplica'),
+  DESLIGADO: mutedState('Desligado neste sistema', 'desligado neste sistema'),
+  SUBSTITUIDO: mutedState('Coberto por outro', 'coberto por outro'),
 };
+
+const NO_EVIDENCE = mutedState('Sem evidência', 'sem evidência');
+
+function doneState(a: AnalyzerProgress): StateView {
+  const text = a.durationMs > 0 ? `concluído em ${Math.max(1, Math.round(a.durationMs / 1000))} s` : 'concluído';
+  return { icon: <CheckIcon label="Concluído" />, accent: '#198038', bar: '#198038', width: 100, text };
+}
+
+const state = (a: AnalyzerProgress): StateView => (a.status === 'OK' ? doneState(a) : STATES[a.status] ?? NO_EVIDENCE);
 
 /** Cartão de um analisador: nome, o que ele verifica, barra, achados e situação. */
 export function AnalyzerCard({ a }: { a: AnalyzerProgress }) {
@@ -130,11 +138,17 @@ function PendingScore() {
   );
 }
 
+/** Números do resultado: o final vem da auditoria concluída; antes disso, do progresso. */
+function resultNumbers(run: AuditRunResponse, progress: AuditProgress | null, finished: boolean) {
+  const counts = (id: Severity) => (finished ? run.findingsSummary?.[id] : progress?.severities?.[id]) ?? 0;
+  const lines = (finished ? run.linesOfCode ?? progress?.linesOfCode : progress?.linesOfCode) ?? 0;
+  return { counts, lines };
+}
+
 /** Contagem por severidade, arquivos e linhas; durante a execução os números crescem. */
 export function PartialResult({ run, progress }: { run: AuditRunResponse; progress: AuditProgress | null }) {
   const finished = run.status === 'COMPLETED';
-  const counts = (id: Severity) => (finished ? run.findingsSummary?.[id] : progress?.severities?.[id]) ?? 0;
-  const lines = (finished ? run.linesOfCode ?? progress?.linesOfCode : progress?.linesOfCode) ?? 0;
+  const { counts, lines } = resultNumbers(run, progress, finished);
   const title = finished ? 'Resultado final' : 'Resultado parcial';
   return (
     <section aria-label={title}
@@ -149,8 +163,7 @@ export function PartialResult({ run, progress }: { run: AuditRunResponse; progre
         ))}
       </div>
       <Totals files={progress?.filesRead ?? 0} lines={lines} />
-      {!finished && <PendingScore />}
-      {finished && run.riskScore && <FinalScore run={run} overall={run.riskScore.overall} />}
+      {finished ? run.riskScore && <FinalScore run={run} overall={run.riskScore.overall} /> : <PendingScore />}
     </section>
   );
 }

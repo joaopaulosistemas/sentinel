@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -90,15 +91,9 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             }
             SemgrepRun run = configs.isEmpty() ? null : runSemgrep(projectPath, configs);
             if (run != null) {
-                partial = run.partial();
-                if (run.json() != null) {
-                    String jsonProblem = problemasNoJson(run.json());
-                    if (jsonProblem != null) {
-                        partial = partial == null ? jsonProblem : partial + "; " + jsonProblem;
-                    }
-                    findings = parseSemgrepOutput(run.json(), projectPath, auditRun);
-                    LOG.infof("Semgrep encontrou %d findings", findings.size());
-                }
+                Outcome outcome = collect(run, projectPath, auditRun);
+                findings = outcome.findings();
+                partial = outcome.partial();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -110,6 +105,23 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         }
 
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+    }
+
+    /** Resultado de uma execução: os findings e a nota de resultado parcial (nula se a saída parece completa). */
+    private record Outcome(List<Finding> findings, String partial) { }
+
+    private Outcome collect(SemgrepRun run, Path projectPath, AuditRun auditRun) {
+        String partial = run.partial();
+        List<Finding> findings = new ArrayList<>();
+        if (run.json() != null) {
+            String jsonProblem = problemasNoJson(run.json());
+            if (jsonProblem != null) {
+                partial = partial == null ? jsonProblem : partial + "; " + jsonProblem;
+            }
+            findings = parseSemgrepOutput(run.json(), projectPath, auditRun);
+            LOG.infof("Semgrep encontrou %d findings", findings.size());
+        }
+        return new Outcome(findings, partial);
     }
 
     @Override
@@ -173,32 +185,47 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             int timeouts = 0;
             String primeiro = null;
             for (JsonNode e : errors) {
-                String type = e.path("type").asText("");
-                boolean timeout = type.toLowerCase(java.util.Locale.ROOT).contains("timeout");
-                if (timeout) {
-                    timeouts++;
-                } else if ("error".equalsIgnoreCase(e.path("level").asText(""))) {
-                    graves++;
-                } else {
+                ErrorKind kind = kindOf(e);
+                if (kind == ErrorKind.IGNORED) {
                     continue;
                 }
+                if (kind == ErrorKind.TIMEOUT) {
+                    timeouts++;
+                } else {
+                    graves++;
+                }
                 if (primeiro == null) {
-                    primeiro = e.path("message").asText(type).replaceAll("\\s+", " ");
-                    if (primeiro.length() > FIRST_LINE_MAX_CHARS) {
-                        primeiro = primeiro.substring(0, FIRST_LINE_MAX_CHARS) + "…";
-                    }
+                    primeiro = firstMessage(e);
                 }
             }
             if (graves == 0 && timeouts == 0) {
                 return null;
             }
-            return (graves > 0 ? graves + " erro(s) do Semgrep" : "")
-                    + (graves > 0 && timeouts > 0 ? " e " : "")
-                    + (timeouts > 0 ? timeouts + " timeout(s) por arquivo/regra" : "")
-                    + " — ex.: " + primeiro;
+            return describe(graves, timeouts) + " — ex.: " + primeiro;
         } catch (Exception e) {
             return "saída JSON do Semgrep ilegível";
         }
+    }
+
+    private static String describe(int graves, int timeouts) {
+        return (graves > 0 ? graves + " erro(s) do Semgrep" : "")
+                + (graves > 0 && timeouts > 0 ? " e " : "")
+                + (timeouts > 0 ? timeouts + " timeout(s) por arquivo/regra" : "");
+    }
+
+    private enum ErrorKind { TIMEOUT, SEVERE, IGNORED }
+
+    private static ErrorKind kindOf(JsonNode e) {
+        String type = e.path("type").asText("");
+        if (type.toLowerCase(java.util.Locale.ROOT).contains("timeout")) {
+            return ErrorKind.TIMEOUT;
+        }
+        return "error".equalsIgnoreCase(e.path("level").asText("")) ? ErrorKind.SEVERE : ErrorKind.IGNORED;
+    }
+
+    private static String firstMessage(JsonNode e) {
+        String message = e.path("message").asText(e.path("type").asText("")).replaceAll("\\s+", " ");
+        return message.length() > FIRST_LINE_MAX_CHARS ? message.substring(0, FIRST_LINE_MAX_CHARS) + "…" : message;
     }
 
     /**
@@ -262,16 +289,9 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
      * ativos da política. Lista vazia = nada a rodar (ex.: perfil só com pacotes de arquitetura).
      */
     List<String> resolveConfigs(AuditPolicy policy) {
-        if (configuredRules.isPresent() && !configuredRules.get().isBlank()) {
-            List<String> configs = new ArrayList<>();
-            for (String c : configuredRules.get().split(",")) {
-                if (!c.isBlank()) {
-                    configs.add(c.trim());
-                }
-            }
-            if (!configs.isEmpty()) {
-                return configs;
-            }
+        List<String> manual = manualConfigs();
+        if (!manual.isEmpty()) {
+            return manual;
         }
         if (policy == null) {
             LOG.warnf("Sem política de pacotes; usando o conjunto público '%s'", DEFAULT_REGISTRY_CONFIG);
@@ -293,6 +313,20 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             LOG.infof("Semgrep com %d pacote(s) de regras do perfil '%s'", dirs.size(), policy.profileId());
         }
         return dirs;
+    }
+
+    /** Configs informadas à mão (separadas por vírgula); vazio se não houver nenhuma. */
+    private List<String> manualConfigs() {
+        if (configuredRules.isEmpty() || configuredRules.get().isBlank()) {
+            return List.of();
+        }
+        List<String> configs = new ArrayList<>();
+        for (String c : configuredRules.get().split(",")) {
+            if (!c.isBlank()) {
+                configs.add(c.trim());
+            }
+        }
+        return configs;
     }
 
     List<Finding> parseSemgrepOutput(String jsonOutput, Path projectPath, AuditRun auditRun) {
@@ -380,25 +414,23 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         };
     }
 
+    private static final Map<String, Category> METADATA_CATEGORIES = Map.of(
+            "security", Category.SECURITY,
+            "architecture", Category.ARCHITECTURE,
+            "observability", Category.OBSERVABILITY,
+            "performance", Category.PERFORMANCE);
+
+    /** Trechos do id da regra que indicam segurança quando a regra não declara a categoria. */
+    private static final List<String> SECURITY_HINTS = List.of(
+            "security", "sql", "injection", "xss", "csrf", "ssrf", "secret", "owasp");
+
     private Category mapCategory(String checkId, String metadataCategory) {
-        if ("security".equalsIgnoreCase(metadataCategory)) {
-            return Category.SECURITY;
-        }
-        if ("architecture".equalsIgnoreCase(metadataCategory)) {
-            return Category.ARCHITECTURE;
-        }
-        if ("observability".equalsIgnoreCase(metadataCategory)) {
-            return Category.OBSERVABILITY;
-        }
-        if ("performance".equalsIgnoreCase(metadataCategory)) {
-            return Category.PERFORMANCE;
+        for (Map.Entry<String, Category> e : METADATA_CATEGORIES.entrySet()) {
+            if (e.getKey().equalsIgnoreCase(metadataCategory)) {
+                return e.getValue();
+            }
         }
         String lower = checkId.toLowerCase(java.util.Locale.ROOT);
-        if (lower.contains("security") || lower.contains("sql") || lower.contains("injection")
-                || lower.contains("xss") || lower.contains("csrf") || lower.contains("ssrf")
-                || lower.contains("secret") || lower.contains("owasp")) {
-            return Category.SECURITY;
-        }
-        return Category.QUALITY;
+        return SECURITY_HINTS.stream().anyMatch(lower::contains) ? Category.SECURITY : Category.QUALITY;
     }
 }

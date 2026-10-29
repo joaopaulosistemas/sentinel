@@ -77,20 +77,16 @@ public class OsvClient {
             LOG.warnf("%d dependências; consultando apenas as primeiras %d", list.size(), MAX_DEPENDENCIES);
             list = list.subList(0, MAX_DEPENDENCIES);
         }
-        // 1) ids por dependência (querybatch)
+        Map<Dependency, List<String>> idsByDep = queryIds(list);
+        return normalize(idsByDep, fetchDetails(idsByDep));
+    }
+
+    /** 1) ids de vulnerabilidade por dependência (querybatch, em lotes). */
+    private Map<Dependency, List<String>> queryIds(List<Dependency> list) throws IOException, InterruptedException {
         Map<Dependency, List<String>> idsByDep = new LinkedHashMap<>();
         for (int from = 0; from < list.size(); from += BATCH_SIZE) {
             List<Dependency> chunk = list.subList(from, Math.min(from + BATCH_SIZE, list.size()));
-            ObjectNode body = MAPPER.createObjectNode();
-            ArrayNode queries = body.putArray("queries");
-            for (Dependency d : chunk) {
-                ObjectNode q = queries.addObject();
-                ObjectNode pkg = q.putObject("package");
-                pkg.put("name", d.name());
-                pkg.put("ecosystem", d.ecosystem());
-                q.put("version", d.version());
-            }
-            JsonNode response = MAPPER.readTree(post("/v1/querybatch", MAPPER.writeValueAsString(body)));
+            JsonNode response = MAPPER.readTree(post("/v1/querybatch", MAPPER.writeValueAsString(batchBody(chunk))));
             JsonNode results = response.path("results");
             if (!results.isArray() || results.size() != chunk.size()) {
                 throw new IOException("Resposta inesperada do OSV (querybatch)");
@@ -105,7 +101,24 @@ public class OsvClient {
                 }
             }
         }
-        // 2) detalhes de cada vulnerabilidade distinta
+        return idsByDep;
+    }
+
+    private static ObjectNode batchBody(List<Dependency> chunk) {
+        ObjectNode body = MAPPER.createObjectNode();
+        ArrayNode queries = body.putArray("queries");
+        for (Dependency d : chunk) {
+            ObjectNode q = queries.addObject();
+            ObjectNode pkg = q.putObject("package");
+            pkg.put("name", d.name());
+            pkg.put("ecosystem", d.ecosystem());
+            q.put("version", d.version());
+        }
+        return body;
+    }
+
+    /** 2) detalhes de cada vulnerabilidade distinta (até o limite). */
+    private Map<String, JsonNode> fetchDetails(Map<Dependency, List<String>> idsByDep) throws IOException, InterruptedException {
         Set<String> distinct = new LinkedHashSet<>();
         idsByDep.values().forEach(distinct::addAll);
         if (distinct.size() > MAX_VULN_DETAILS) {
@@ -121,7 +134,11 @@ public class OsvClient {
             details.put(id, MAPPER.readTree(get("/v1/vulns/" + java.net.URLEncoder.encode(id,
                     java.nio.charset.StandardCharsets.UTF_8))));
         }
-        // 3) resultado normalizado
+        return details;
+    }
+
+    /** 3) resultado normalizado; sem detalhe (acima do limite), vale o que o id já diz. */
+    private static Map<Dependency, List<OsvVulnerability>> normalize(Map<Dependency, List<String>> idsByDep, Map<String, JsonNode> details) {
         Map<Dependency, List<OsvVulnerability>> out = new LinkedHashMap<>();
         for (Map.Entry<Dependency, List<String>> e : idsByDep.entrySet()) {
             List<OsvVulnerability> vulns = new ArrayList<>();

@@ -50,14 +50,15 @@ public final class McpProtocol {
         if (msg == null || !msg.isObject()) {
             return Optional.of(error(null, INVALID_REQUEST, "Envie uma mensagem JSON-RPC por vez"));
         }
+        return dispatch(msg, backend);
+    }
+
+    private Optional<String> dispatch(JsonNode msg, McpBackend backend) {
         JsonNode id = msg.get("id");
         boolean expectsReply = id != null && !id.isNull();
         String method = msg.path("method").asText("");
         if (method.isEmpty()) {
-            // resposta de um cliente (sem método) ou lixo: não há o que responder
-            return expectsReply && !msg.has("result") && !msg.has("error")
-                    ? Optional.of(error(id, INVALID_REQUEST, "Requisição sem método"))
-                    : Optional.empty();
+            return withoutMethod(id, msg, expectsReply);
         }
         if (!expectsReply) {
             return Optional.empty(); // notificação, como notifications/initialized
@@ -70,6 +71,13 @@ public final class McpProtocol {
             case "tools/call" -> callTool(id, params, backend);
             default -> error(id, METHOD_NOT_FOUND, "Método não suportado: " + method);
         });
+    }
+
+    /** Resposta de um cliente (sem método) ou lixo: só há o que responder se pediu uma resposta sem ser uma. */
+    private Optional<String> withoutMethod(JsonNode id, JsonNode msg, boolean expectsReply) {
+        return expectsReply && !msg.has("result") && !msg.has("error")
+                ? Optional.of(error(id, INVALID_REQUEST, "Requisição sem método"))
+                : Optional.empty();
     }
 
     private ObjectNode initialize(JsonNode params) {

@@ -13,18 +13,24 @@ final class StructuralFindings {
 
     private StructuralFindings() {}
 
-    static Finding make(AuditRun run, String tool, String ruleId, Severity severity, Category category,
-                        String file, int line, String title, String description, String snippet) {
+    /** Quem achou e que regra: ferramenta, id, gravidade e categoria. */
+    record Kind(String tool, String ruleId, Severity severity, Category category) { }
+
+    /** Onde: arquivo, linha (mínimo 1) e, opcionalmente, o trecho de código. */
+    record Spot(String file, int line, String snippet) { }
+
+    static Finding make(AuditRun run, Kind kind, Spot spot, String title, String description) {
+        String snippet = spot.snippet();
         Finding f = new Finding();
         f.setAuditRun(run);
-        f.setToolSource(tool);
-        f.setCategory(category);
-        f.setSeverity(severity);
-        f.setRuleId(ruleId);
+        f.setToolSource(kind.tool());
+        f.setCategory(kind.category());
+        f.setSeverity(kind.severity());
+        f.setRuleId(kind.ruleId());
         f.setTitle(title);
         f.setDescription(description);
-        f.setFilePath(file);
-        f.setLineNumber(Math.max(1, line));
+        f.setFilePath(spot.file());
+        f.setLineNumber(Math.max(1, spot.line()));
         f.setCodeSnippet(snippet == null ? null : (snippet.length() > SNIPPET_MAX_CHARS ? snippet.substring(0, SNIPPET_MAX_CHARS) : snippet));
         return f;
     }

@@ -84,24 +84,30 @@ final class ArchitectureYaml {
             if (!convIds.add(id)) {
                 errors.add(where + " repetida");
             }
-            if (files == null || files.isEmpty()) {
-                errors.add(where + ": 'files' (glob) é obrigatório");
-            }
-            String require = Yamls.str(c, "require");
-            String forb = Yamls.str(c, "forbid");
-            if (require == null && forb == null) {
-                errors.add(where + ": informe 'require' e/ou 'forbid' (regex)");
-            }
-            checkRegex(require, where + ".require", errors);
-            checkRegex(forb, where + ".forbid", errors);
-            List<String> exclude = Yamls.strings(c, "exclude", errors, where);
-            String title = Yamls.str(c, "title");
-            conventions.add(new ArchitecturePolicy.Convention(id, title == null ? id : title,
-                    files == null ? List.of() : files, exclude == null ? List.of() : exclude, require, forb,
-                    Yamls.str(c, "message"), PackLoader.severity(c, "severity", Severity.MEDIUM, where, errors),
-                    PackLoader.category(c, "category", Category.ARCHITECTURE, where, errors)));
+            conventions.add(buildConvention(c, id, files, where, errors));
         }
         return conventions;
+    }
+
+    /** Monta a convenção {@code id}, registrando o que faltar (arquivos, require/forbid, regex inválida). */
+    private static ArchitecturePolicy.Convention buildConvention(Map<String, Object> c, String id, List<String> files,
+                                                                 String where, List<String> errors) {
+        if (files == null || files.isEmpty()) {
+            errors.add(where + ": 'files' (glob) é obrigatório");
+        }
+        String require = Yamls.str(c, "require");
+        String forb = Yamls.str(c, "forbid");
+        if (require == null && forb == null) {
+            errors.add(where + ": informe 'require' e/ou 'forbid' (regex)");
+        }
+        checkRegex(require, where + ".require", errors);
+        checkRegex(forb, where + ".forbid", errors);
+        List<String> exclude = Yamls.strings(c, "exclude", errors, where);
+        String title = Yamls.str(c, "title");
+        return new ArchitecturePolicy.Convention(id, title == null ? id : title,
+                files == null ? List.of() : files, exclude == null ? List.of() : exclude, require, forb,
+                Yamls.str(c, "message"), PackLoader.severity(c, "severity", Severity.MEDIUM, where, errors),
+                PackLoader.category(c, "category", Category.ARCHITECTURE, where, errors));
     }
 
     private static List<ArchitecturePolicy.RequiredFile> parseRequiredFiles(Object raw, String f, List<String> errors) {
@@ -147,14 +153,19 @@ final class ArchitectureYaml {
         }
         PackLoader.checkKeys(m, Set.of("forbidden", "min-version", "required", "approved-only"), f + " components", errors);
         return new ArchitecturePolicy.Components(
-                depRules(m.get("forbidden"), "forbidden", false, Severity.HIGH, f, errors),
-                depRules(m.get("min-version"), "min-version", true, Severity.HIGH, f, errors),
-                depRules(m.get("required"), "required", false, Severity.MEDIUM, f, errors),
-                depRules(m.get("approved-only"), "approved-only", false, Severity.LOW, f, errors));
+                depRules(m.get("forbidden"), new DepKind("forbidden", false, Severity.HIGH), f, errors),
+                depRules(m.get("min-version"), new DepKind("min-version", true, Severity.HIGH), f, errors),
+                depRules(m.get("required"), new DepKind("required", false, Severity.MEDIUM), f, errors),
+                depRules(m.get("approved-only"), new DepKind("approved-only", false, Severity.LOW), f, errors));
     }
 
-    private static List<ArchitecturePolicy.DepRule> depRules(Object raw, String kind, boolean needsVersion,
-                                                           Severity fallback, String f, List<String> errors) {
+    /** O tipo de regra de componente: nome no YAML, se exige versão e a severidade quando não informada. */
+    private record DepKind(String kind, boolean needsVersion, Severity fallback) { }
+
+    private static List<ArchitecturePolicy.DepRule> depRules(Object raw, DepKind depKind, String f, List<String> errors) {
+        String kind = depKind.kind();
+        boolean needsVersion = depKind.needsVersion();
+        Severity fallback = depKind.fallback();
         List<ArchitecturePolicy.DepRule> out = new ArrayList<>();
         for (Map<String, Object> d : PackLoader.items(raw, f + " components." + kind, errors)) {
             PackLoader.checkKeys(d, Set.of("dep", "version", "reason", "severity"), f + " components." + kind, errors);

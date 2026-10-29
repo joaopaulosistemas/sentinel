@@ -30,25 +30,34 @@ public final class ProfileLoader {
             return out;
         }
         try (Stream<Path> s = Files.list(dir)) {
-            for (Path f : s.filter(p -> Files.isRegularFile(p) && !Files.isSymbolicLink(p)
-                    && (p.toString().endsWith(".yml") || p.toString().endsWith(".yaml"))).sorted().toList()) {
-                List<String> errors = new ArrayList<>();
-                Profile p = parse(f, errors);
-                if (p != null && errors.isEmpty()) {
-                    if (out.containsKey(p.id())) {
-                        errors.add("perfil '" + p.id() + "' repetido");
-                    } else {
-                        out.put(p.id(), p);
-                    }
-                }
-                if (!errors.isEmpty()) {
-                    rejected.put("profiles/" + f.getFileName(), errors);
-                }
+            for (Path f : s.filter(ProfileLoader::isProfileFile).sorted().toList()) {
+                loadOne(f, out, rejected);
             }
         } catch (IOException e) {
             rejected.put("profiles", List.of("não foi possível listar: " + e.getMessage()));
         }
         return out;
+    }
+
+    private static boolean isProfileFile(Path p) {
+        return Files.isRegularFile(p) && !Files.isSymbolicLink(p)
+                && (p.toString().endsWith(".yml") || p.toString().endsWith(".yaml"));
+    }
+
+    /** Lê um perfil: aceita-o em {@code out} ou registra os erros em {@code rejected}. */
+    private static void loadOne(Path f, Map<String, Profile> out, Map<String, List<String>> rejected) {
+        List<String> errors = new ArrayList<>();
+        Profile p = parse(f, errors);
+        if (p != null && errors.isEmpty()) {
+            if (out.containsKey(p.id())) {
+                errors.add("perfil '" + p.id() + "' repetido");
+            } else {
+                out.put(p.id(), p);
+            }
+        }
+        if (!errors.isEmpty()) {
+            rejected.put("profiles/" + f.getFileName(), errors);
+        }
     }
 
     private static final Set<String> PROFILE_KEYS = Set.of("id", "name", "description", "extends", "packs", "disable-packs", "rules", "thresholds");

@@ -228,6 +228,39 @@ function HistorySection({ history, justAdded, onClear }: { history: ReportHistor
   );
 }
 
+/** A lista de relatórios gerados fica neste navegador (no máximo 50). */
+function useReportHistory() {
+  const [history, setHistory] = useState<ReportHistoryEntry[]>(loadHistory);
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+  const add = (entry: ReportHistoryEntry) => {
+    const updated = [entry, ...history].slice(0, 50);
+    setHistory(updated);
+    saveHistory(updated);
+    setJustAdded(entry.id);
+  };
+  const clear = () => {
+    setHistory([]);
+    saveHistory([]);
+    setJustAdded(null);
+  };
+  return { history, justAdded, add, clear };
+}
+
+/** O SBOM some quando deixa de valer (tipo ou escopo mudaram): o formato volta para PDF. */
+function useFormatFallback(formats: ReturnType<typeof formatsFor>, format: ReportFormat, setFormat: (f: ReportFormat) => void) {
+  useEffect(() => {
+    if (!formats.some((f) => f.id === format)) setFormat('pdf');
+  }, [formats, format, setFormat]);
+}
+
+/** O sistema escolhido (ou todos) e a última auditoria concluída dele. */
+function useReportTarget(scope: string) {
+  const systemId = scope === ALL ? null : Number(scope);
+  const { data: runs, isLoading: loadingRuns } = useAuditRuns(systemId ?? 0);
+  const latest = systemId === null ? undefined : (runs ?? []).find((r) => r.status === 'COMPLETED');
+  return { systemId, latest, loadingRuns };
+}
+
 /** Relatórios em três passos: tipo, sistema (ou todos) e formato. A lista de gerados fica neste navegador. */
 export function ReportsPage() {
   const { data: systems } = useSystems();
@@ -235,48 +268,29 @@ export function ReportsPage() {
   const [scope, setScope] = useState<string>(ALL);
   const [days, setDays] = useState<ReportPeriod>(30);
   const [format, setFormat] = useState<ReportFormat>('pdf');
-  const [history, setHistory] = useState<ReportHistoryEntry[]>(loadHistory);
-  const [justAdded, setJustAdded] = useState<string | null>(null);
+  const reports = useReportHistory();
 
-  const systemId = scope === ALL ? null : Number(scope);
-  const { data: runs, isLoading: loadingRuns } = useAuditRuns(systemId ?? 0);
-  const latest = systemId === null ? undefined : (runs ?? []).find((r) => r.status === 'COMPLETED');
-  const noAudit = systemId !== null && !loadingRuns && !latest;
+  const { systemId, latest, loadingRuns } = useReportTarget(scope);
+  const auditId = latest?.id ?? null;
   const formats = formatsFor(type, systemId !== null);
+  useFormatFallback(formats, format, setFormat);
 
-  // O SBOM some quando deixa de valer (tipo ou escopo mudaram): volta para PDF.
-  useEffect(() => {
-    if (!formats.some((f) => f.id === format)) setFormat('pdf');
-  }, [formats, format]);
-
-  const url = chosenReportUrl(BASE_URL, { systemId, auditId: latest?.id ?? null, type, format, days });
-  const waiting = systemId !== null && loadingRuns;
+  const url = chosenReportUrl(BASE_URL, { systemId, auditId, type, format, days });
 
   function generate() {
     if (!url) return;
     window.open(url, '_blank', 'noreferrer');
-    const system = systems?.find((s) => s.id === systemId);
-    const entry: ReportHistoryEntry = {
+    reports.add({
       id: `${scope}-${type}-${format}-${Date.now()}`,
-      title: reportTitle(type, days, latest?.id ?? null),
-      systemName: system?.name ?? 'Todos os sistemas',
+      title: reportTitle(type, days, auditId),
+      systemName: systems?.find((s) => s.id === systemId)?.name ?? 'Todos os sistemas',
       auditId: latest?.id,
       format,
       type,
       days,
       generatedAt: new Date().toISOString(),
       url,
-    };
-    const updated = [entry, ...history].slice(0, 50);
-    setHistory(updated);
-    saveHistory(updated);
-    setJustAdded(entry.id);
-  }
-
-  function clearHistory() {
-    setHistory([]);
-    saveHistory([]);
-    setJustAdded(null);
+    });
   }
 
   return (
@@ -289,12 +303,12 @@ export function ReportsPage() {
       <section aria-label="Novo relatório" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '20px 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 24 }}>
           <TypeStep type={type} onPick={setType} />
-          <SystemStep systems={systems ?? []} scope={scope} days={days} latest={latest} noAudit={noAudit} onScope={setScope} onDays={setDays} />
-          <FormatStep formats={formats} format={format} url={url} waiting={waiting} onFormat={setFormat} onGenerate={generate} />
+          <SystemStep systems={systems ?? []} scope={scope} days={days} latest={latest} noAudit={systemId !== null && !loadingRuns && !latest} onScope={setScope} onDays={setDays} />
+          <FormatStep formats={formats} format={format} url={url} waiting={systemId !== null && loadingRuns} onFormat={setFormat} onGenerate={generate} />
         </div>
       </section>
 
-      <HistorySection history={history} justAdded={justAdded} onClear={clearHistory} />
+      <HistorySection history={reports.history} justAdded={reports.justAdded} onClear={reports.clear} />
     </PageShell>
   );
 }

@@ -25,81 +25,56 @@ export function similarTo(selected: FindingResponse[], candidates: FindingRespon
   return candidates.filter((c) => !ids.has(c.id) && c.status !== 'SUPPRESSED' && c.ruleId && keys.has(`${c.toolSource}|${c.ruleId}`));
 }
 
-export function SuppressModal({ findings, candidates = [], onClose }: Props) {
-  const single = useSuppressFinding();
-  const batch = useSuppressFindings();
-  const [withSimilar, setWithSimilar] = useState(false);
-  const similar = similarTo(findings, candidates);
-  const targets = withSimilar ? [...findings, ...similar] : findings;
-  const bulk = targets.length > 1;
-  const mutation = bulk ? batch : single;
-  const failures = batch.data?.failures ?? [];
-  const [reason, setReason] = useState<SuppressionReason>('FALSE_POSITIVE');
-  const [justification, setJustification] = useState('');
-  const [createdBy, setCreatedBy] = useState('');
-  const [expires, setExpires] = useState('');
+type Mutation = { isPending: boolean; isError: boolean; error: unknown };
 
-  if (findings.length === 0) return null;
-  const finding = findings[0];
-
-  const tooShort = justification.trim().length < 10;
-
-  const close = () => {
-    single.reset();
-    batch.reset();
-    setJustification('');
-    setExpires('');
-    setWithSimilar(false);
-    onClose();
+function commonBody(reason: SuppressionReason, justification: string, createdBy: string, expires: string) {
+  return {
+    reason,
+    justification: justification.trim(),
+    createdBy: createdBy.trim() || undefined,
+    // <input type="date"> devolve AAAA-MM-DD; vale até o fim desse dia
+    expiresAt: expires ? `${expires}T23:59:59` : null,
   };
+}
 
-  const submit = () => {
-    const common = {
-      reason,
-      justification: justification.trim(),
-      createdBy: createdBy.trim() || undefined,
-      // <input type="date"> devolve AAAA-MM-DD; vale até o fim desse dia
-      expiresAt: expires ? `${expires}T23:59:59` : null,
-    };
-    if (bulk) {
-      batch.mutate(
-        { ...common, findingIds: targets.map((f) => f.id) },
-        { onSuccess: (r) => (r.failures.length === 0 ? close() : undefined) },
-      );
-      return;
-    }
-    single.mutate(
-      { findingId: finding.id, body: common },
-      { onSuccess: close },
-    );
-  };
+function primaryLabel(pending: boolean, bulk: boolean, total: number): string {
+  if (pending) return 'Salvando…';
+  return bulk ? `Suprimir ${total}` : 'Suprimir';
+}
 
+interface FieldsProps {
+  similarCount: number;
+  withSimilar: boolean;
+  onWithSimilar: (v: boolean) => void;
+  reason: SuppressionReason;
+  onReason: (v: SuppressionReason) => void;
+  justification: string;
+  onJustification: (v: string) => void;
+  createdBy: string;
+  onCreatedBy: (v: string) => void;
+  expires: string;
+  onExpires: (v: string) => void;
+}
+
+function SuppressFields(p: FieldsProps) {
+  const tooShort = p.justification.trim().length < 10;
   return (
-    <Modal
-      open
-      modalHeading="Retirar do score"
-      modalLabel={bulk ? `${targets.length} findings selecionados` : finding.title}
-      primaryButtonText={mutation.isPending ? 'Salvando…' : bulk ? `Suprimir ${targets.length}` : 'Suprimir'}
-      secondaryButtonText="Cancelar"
-      primaryButtonDisabled={tooShort || mutation.isPending}
-      onRequestClose={close}
-      onRequestSubmit={submit}
-    >
+    <>
       <p style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>
         A decisão vale para este sistema: auditorias futuras com o mesmo problema já nascem suprimidas
         até a data de validade (se houver). Fica registrado quem decidiu e por quê.
       </p>
-      {similar.length > 0 && (
+      {p.similarCount > 0 && (
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem', fontSize: '0.875rem' }}>
-          <input type="checkbox" checked={withSimilar} onChange={(e) => setWithSimilar(e.target.checked)} />
-          Suprimir também os {similar.length} parecidos (mesma regra) desta lista
+          <input type="checkbox" checked={p.withSimilar} onChange={(e) => p.onWithSimilar(e.target.checked)} />
+          Suprimir também os {p.similarCount} parecidos (mesma regra) desta lista
         </label>
       )}
       <Select
         id="suppress-reason"
         labelText="Motivo"
-        value={reason}
-        onChange={(e) => setReason(e.target.value as SuppressionReason)}
+        value={p.reason}
+        onChange={(e) => p.onReason(e.target.value as SuppressionReason)}
         style={{ marginBottom: '1rem' }}
       >
         {(Object.keys(reasonLabels) as SuppressionReason[]).map((r) => (
@@ -109,28 +84,35 @@ export function SuppressModal({ findings, candidates = [], onClose }: Props) {
       <TextArea
         id="suppress-justification"
         labelText="Justificativa (mínimo 10 caracteres)"
-        value={justification}
+        value={p.justification}
         maxCount={1000}
         enableCounter
-        onChange={(e) => setJustification(e.target.value)}
-        invalid={justification.length > 0 && tooShort}
+        onChange={(e) => p.onJustification(e.target.value)}
+        invalid={p.justification.length > 0 && tooShort}
         invalidText="Explique o motivo com pelo menos 10 caracteres"
         style={{ marginBottom: '1rem' }}
       />
       <TextInput
         id="suppress-by"
         labelText="Quem está decidindo (opcional)"
-        value={createdBy}
-        onChange={(e) => setCreatedBy(e.target.value)}
+        value={p.createdBy}
+        onChange={(e) => p.onCreatedBy(e.target.value)}
         style={{ marginBottom: '1rem' }}
       />
       <TextInput
         id="suppress-expires"
         type="date"
         labelText="Válido até (opcional — recomendado para risco aceito)"
-        value={expires}
-        onChange={(e) => setExpires(e.target.value)}
+        value={p.expires}
+        onChange={(e) => p.onExpires(e.target.value)}
       />
+    </>
+  );
+}
+
+function SuppressFeedback({ failures, mutation }: { failures: Array<{ findingId: number; message: string }>; mutation: Mutation }) {
+  return (
+    <>
       {failures.length > 0 && (
         <InlineNotification
           kind="warning"
@@ -149,6 +131,72 @@ export function SuppressModal({ findings, candidates = [], onClose }: Props) {
           hideCloseButton
         />
       )}
+    </>
+  );
+}
+
+export function SuppressModal({ findings, candidates = [], onClose }: Props) {
+  const single = useSuppressFinding();
+  const batch = useSuppressFindings();
+  const [withSimilar, setWithSimilar] = useState(false);
+  const similar = similarTo(findings, candidates);
+  const targets = withSimilar ? [...findings, ...similar] : findings;
+  const bulk = targets.length > 1;
+  const mutation = bulk ? batch : single;
+  const [reason, setReason] = useState<SuppressionReason>('FALSE_POSITIVE');
+  const [justification, setJustification] = useState('');
+  const [createdBy, setCreatedBy] = useState('');
+  const [expires, setExpires] = useState('');
+
+  if (findings.length === 0) return null;
+  const finding = findings[0];
+
+  const close = () => {
+    single.reset();
+    batch.reset();
+    setJustification('');
+    setExpires('');
+    setWithSimilar(false);
+    onClose();
+  };
+
+  const submit = () => {
+    const common = commonBody(reason, justification, createdBy, expires);
+    if (bulk) {
+      batch.mutate(
+        { ...common, findingIds: targets.map((f) => f.id) },
+        { onSuccess: (r) => (r.failures.length === 0 ? close() : undefined) },
+      );
+      return;
+    }
+    single.mutate({ findingId: finding.id, body: common }, { onSuccess: close });
+  };
+
+  return (
+    <Modal
+      open
+      modalHeading="Retirar do score"
+      modalLabel={bulk ? `${targets.length} findings selecionados` : finding.title}
+      primaryButtonText={primaryLabel(mutation.isPending, bulk, targets.length)}
+      secondaryButtonText="Cancelar"
+      primaryButtonDisabled={justification.trim().length < 10 || mutation.isPending}
+      onRequestClose={close}
+      onRequestSubmit={submit}
+    >
+      <SuppressFields
+        similarCount={similar.length}
+        withSimilar={withSimilar}
+        onWithSimilar={setWithSimilar}
+        reason={reason}
+        onReason={setReason}
+        justification={justification}
+        onJustification={setJustification}
+        createdBy={createdBy}
+        onCreatedBy={setCreatedBy}
+        expires={expires}
+        onExpires={setExpires}
+      />
+      <SuppressFeedback failures={batch.data?.failures ?? []} mutation={mutation} />
     </Modal>
   );
 }

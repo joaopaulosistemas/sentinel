@@ -43,19 +43,7 @@ public final class PackTool {
             return args.length == 0 ? 2 : 0;
         }
         try {
-            return switch (args[0]) {
-                case "new" -> newPack(args, out, err);
-                case "validate" -> validate(args, out, err);
-                case "test" -> test(args, out, err);
-                case "keygen" -> keygen(args, out, err);
-                case "pack" -> pack(args, out, err);
-                case "verify" -> verify(args, out, err);
-                default -> {
-                    err.println("Comando desconhecido: " + args[0]);
-                    usage(err);
-                    yield 2;
-                }
-            };
+            return dispatch(args, out, err);
         } catch (IllegalArgumentException e) {
             err.println(e.getMessage());
             return 2;
@@ -63,6 +51,22 @@ public final class PackTool {
             err.println("Erro: " + e.getMessage());
             return 2;
         }
+    }
+
+    private static int dispatch(String[] args, PrintStream out, PrintStream err) throws Exception {
+        return switch (args[0]) {
+            case "new" -> newPack(args, out, err);
+            case "validate" -> validate(args, out, err);
+            case "test" -> test(args, out, err);
+            case "keygen" -> keygen(args, out, err);
+            case "pack" -> pack(args, out, err);
+            case "verify" -> verify(args, out, err);
+            default -> {
+                err.println("Comando desconhecido: " + args[0]);
+                usage(err);
+                yield 2;
+            }
+        };
     }
 
     private static void usage(PrintStream out) {
@@ -85,6 +89,21 @@ public final class PackTool {
         if (!Files.isDirectory(target)) {
             throw new IllegalArgumentException("Pasta não encontrada: " + target);
         }
+        List<Path> dirs = packDirs(target);
+        int bad = 0;
+        for (Path d : dirs) {
+            bad += reportPack(d, strict, out, err);
+        }
+        bad += reportRejectedProfiles(target, err);
+        if (dirs.isEmpty()) {
+            err.println("Nenhum pacote encontrado em " + target);
+            return 1;
+        }
+        return bad == 0 ? 0 : 1;
+    }
+
+    /** O próprio pacote, ou cada pasta de pacote dentro de {@code target} (menos {@code profiles}). */
+    private static List<Path> packDirs(Path target) {
         List<Path> dirs = new ArrayList<>();
         if (Files.isRegularFile(target.resolve("pack.yml"))) {
             dirs.add(target);
@@ -95,25 +114,34 @@ public final class PackTool {
                 throw new IllegalArgumentException("Não foi possível listar " + target, e);
             }
         }
+        return dirs;
+    }
+
+    /** Valida um pacote e mostra o resultado; devolve 1 se contou como erro, 0 se não. */
+    private static int reportPack(Path d, boolean strict, PrintStream out, PrintStream err) {
         int bad = 0;
-        for (Path d : dirs) {
-            PackLoader.Report r = PackLoader.inspect(d);
-            if (r.ok()) {
-                out.printf("OK     %s v%s — %d regra(s) Semgrep, %d remediação(ões)%n", r.pack().id(),
-                        r.pack().manifest().version(), r.pack().semgrepRuleCount(), r.pack().remediation().size());
-            } else {
-                bad++;
-                out.printf("ERRO   %s%n", d.getFileName());
-                r.errors().forEach(e -> err.println("  - " + e));
-            }
-            if (strict && r.ok() && !r.warnings().isEmpty()) {
-                bad++;
-                err.printf("ERRO   %s (--strict: avisos viram erros)%n", r.pack().id());
-                r.warnings().forEach(w -> err.println("  - " + w));
-            } else {
-                r.warnings().forEach(w -> out.println("  aviso: " + w));
-            }
+        PackLoader.Report r = PackLoader.inspect(d);
+        if (r.ok()) {
+            out.printf("OK     %s v%s — %d regra(s) Semgrep, %d remediação(ões)%n", r.pack().id(),
+                    r.pack().manifest().version(), r.pack().semgrepRuleCount(), r.pack().remediation().size());
+        } else {
+            bad++;
+            out.printf("ERRO   %s%n", d.getFileName());
+            r.errors().forEach(e -> err.println("  - " + e));
         }
+        if (strict && r.ok() && !r.warnings().isEmpty()) {
+            bad++;
+            err.printf("ERRO   %s (--strict: avisos viram erros)%n", r.pack().id());
+            r.warnings().forEach(w -> err.println("  - " + w));
+        } else {
+            r.warnings().forEach(w -> out.println("  aviso: " + w));
+        }
+        return bad;
+    }
+
+    /** Mostra os perfis recusados; devolve quantos são. */
+    private static int reportRejectedProfiles(Path target, PrintStream err) {
+        int bad = 0;
         if (Files.isDirectory(target.resolve("profiles"))) {
             java.util.Map<String, List<String>> rejected = new java.util.LinkedHashMap<>();
             ProfileLoader.loadAll(target, rejected);
@@ -123,11 +151,7 @@ public final class PackTool {
                 e.getValue().forEach(m -> err.println("  - " + m));
             }
         }
-        if (dirs.isEmpty()) {
-            err.println("Nenhum pacote encontrado em " + target);
-            return 1;
-        }
-        return bad == 0 ? 0 : 1;
+        return bad;
     }
 
     // ------------------------------------------------------------------ test

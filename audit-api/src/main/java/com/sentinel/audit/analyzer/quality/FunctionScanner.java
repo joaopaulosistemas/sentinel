@@ -40,23 +40,30 @@ public final class FunctionScanner {
     private static final Pattern NULLISH = Pattern.compile("\\?\\?");
     private static final Pattern TERNARY = Pattern.compile("(?<![?<])\\?(?![?.:>,])(?!\\s*(?:extends|super)\\b)");
 
+    /** Contexto de uma varredura: texto limpo, linhas, sintaxe e onde acumular as funções. */
+    private record Ctx(String clean, int[] lineStarts, boolean ts, List<Fn> out, java.util.Set<Integer> seen) { }
+
+    /** Parâmetros e abertura do corpo de uma arrow function. */
+    private record Arrow(String params, int bodyOpen) { }
+
     /** Encontra as funções de um arquivo. {@code ts} escolhe a sintaxe (false = Java). */
     public static List<Fn> scan(String clean, boolean ts) {
-        int[] lineStarts = lineStarts(clean);
         List<Fn> result = new ArrayList<>();
-        java.util.Set<Integer> seenBodies = new java.util.HashSet<>();
+        Ctx c = new Ctx(clean, lineStarts(clean), ts, result, new java.util.HashSet<>());
+        scanNamed(c);
+        if (ts) {
+            scanArrows(c);
+        }
+        result.sort(java.util.Comparator.comparingInt(Fn::startIdx));
+        return result;
+    }
 
+    private static void scanNamed(Ctx c) {
+        String clean = c.clean();
         Matcher m = IDENT_PAREN.matcher(clean);
         while (m.find()) {
             String name = m.group(1);
-            if (NOT_FUNCTIONS.contains(name)) {
-                continue;
-            }
-            String before = clean.substring(Math.max(0, m.start(1) - LOOKBEHIND_CHARS), m.start(1));
-            Matcher prev = PREV_TOKEN.matcher(before);
-            if (prev.find() && ("new".equals(prev.group(1)) || "record".equals(prev.group(1))
-                    || "class".equals(prev.group(1)) || "interface".equals(prev.group(1))
-                    || "extends".equals(prev.group(1)) || "implements".equals(prev.group(1)))) {
+            if (NOT_FUNCTIONS.contains(name) || followsTypeKeyword(clean, m.start(1))) {
                 continue;                                            // classe anônima, record, declaração de tipo, "extends Base(...)"
             }
             int open = m.end() - 1;
@@ -64,66 +71,66 @@ public final class FunctionScanner {
             if (close < 0) {
                 continue;
             }
-            Matcher tail = (ts ? TS_TAIL : JAVA_TAIL).matcher(clean);
+            Matcher tail = (c.ts() ? TS_TAIL : JAVA_TAIL).matcher(clean);
             tail.region(close + 1, clean.length());
             if (!tail.lookingAt()) {
                 continue;
             }
-            add(result, seenBodies, clean, lineStarts, name, m.start(1), tail.end() - 1,
-                    clean.substring(open + 1, close), ts);
+            add(c, name, m.start(1), tail.end() - 1, clean.substring(open + 1, close));
         }
-
-        if (ts) {
-            Matcher a = ARROW_DECL.matcher(clean);
-            while (a.find()) {
-                String name = a.group(1);
-                int idx;
-                String params;
-                int bodyOpen;
-                if ("(".equals(a.group(2))) {
-                    int open = a.end() - 1;
-                    int close = matchClosing(clean, open, '(', ')');
-                    if (close < 0) {
-                        continue;
-                    }
-                    Matcher tail = ARROW_TAIL.matcher(clean);
-                    tail.region(close + 1, clean.length());
-                    if (!tail.lookingAt()) {
-                        continue;
-                    }
-                    params = clean.substring(open + 1, close);
-                    bodyOpen = tail.end() - 1;
-                } else {                                             // x => { ... }
-                    Matcher tail = Pattern.compile("\\G\\s*\\{").matcher(clean);
-                    tail.region(a.end(), clean.length());
-                    if (!tail.lookingAt()) {
-                        continue;
-                    }
-                    params = "x";
-                    bodyOpen = tail.end() - 1;
-                }
-                idx = a.start(1);
-                add(result, seenBodies, clean, lineStarts, name, idx, bodyOpen, params, true);
-            }
-        }
-        result.sort(java.util.Comparator.comparingInt(Fn::startIdx));
-        return result;
     }
 
-    private static void add(List<Fn> out, java.util.Set<Integer> seen, String clean, int[] lineStarts, String name,
-                            int startIdx, int openBrace, String params, boolean ts) {
-        if (!seen.add(openBrace)) {
+    private static boolean followsTypeKeyword(String clean, int nameStart) {
+        String before = clean.substring(Math.max(0, nameStart - LOOKBEHIND_CHARS), nameStart);
+        Matcher prev = PREV_TOKEN.matcher(before);
+        if (!prev.find()) {
+            return false;
+        }
+        String token = prev.group(1);
+        return "new".equals(token) || "record".equals(token) || "class".equals(token) || "interface".equals(token)
+                || "extends".equals(token) || "implements".equals(token);
+    }
+
+    private static void scanArrows(Ctx c) {
+        Matcher a = ARROW_DECL.matcher(c.clean());
+        while (a.find()) {
+            Arrow arrow = arrowOf(c.clean(), a);
+            if (arrow != null) {
+                add(c, a.group(1), a.start(1), arrow.bodyOpen(), arrow.params());
+            }
+        }
+    }
+
+    /** Parâmetros e chave de abertura da arrow function em {@code a}; nulo se não for uma com corpo em bloco. */
+    private static Arrow arrowOf(String clean, Matcher a) {
+        if ("(".equals(a.group(2))) {
+            int open = a.end() - 1;
+            int close = matchClosing(clean, open, '(', ')');
+            if (close < 0) {
+                return null;
+            }
+            Matcher tail = ARROW_TAIL.matcher(clean);
+            tail.region(close + 1, clean.length());
+            return tail.lookingAt() ? new Arrow(clean.substring(open + 1, close), tail.end() - 1) : null;
+        }
+        Matcher tail = Pattern.compile("\\G\\s*\\{").matcher(clean);        // x => { ... }
+        tail.region(a.end(), clean.length());
+        return tail.lookingAt() ? new Arrow("x", tail.end() - 1) : null;
+    }
+
+    private static void add(Ctx c, String name, int startIdx, int openBrace, String params) {
+        if (!c.seen().add(openBrace)) {
             return;
         }
-        int closeBrace = matchClosing(clean, openBrace, '{', '}');
+        int closeBrace = matchClosing(c.clean(), openBrace, '{', '}');
         if (closeBrace < 0) {
             return;
         }
-        String body = clean.substring(openBrace + 1, closeBrace);
-        int startLine = lineOf(lineStarts, startIdx);
-        int endLine = lineOf(lineStarts, closeBrace);
-        out.add(new Fn(name, startIdx, openBrace, closeBrace, startLine, endLine,
-                countParams(params), codeLines(clean, lineStarts, startLine, endLine), complexity(body), nesting(body)));
+        String body = c.clean().substring(openBrace + 1, closeBrace);
+        int startLine = lineOf(c.lineStarts(), startIdx);
+        int endLine = lineOf(c.lineStarts(), closeBrace);
+        c.out().add(new Fn(name, startIdx, openBrace, closeBrace, startLine, endLine,
+                countParams(params), codeLines(c.clean(), c.lineStarts(), startLine, endLine), complexity(body), nesting(body)));
     }
 
     // ------------------------------------------------------------------ métricas
@@ -160,6 +167,8 @@ public final class FunctionScanner {
         return max;
     }
 
+    private static final String LITERAL_PREV = "(,=:[?&|!+*%";
+
     /** A chave em {@code idx} abre um objeto literal/tipo (e não um bloco)? Olha o caractere significativo anterior. */
     private static boolean abreLiteral(String s, int idx) {
         int j = idx - 1;
@@ -170,21 +179,23 @@ public final class FunctionScanner {
             return false;
         }
         char p = s.charAt(j);
-        if ("(,=:[?&|!+*%".indexOf(p) >= 0) {
+        if (LITERAL_PREV.indexOf(p) >= 0) {
             return true;
         }
         if (p == '-') {
             return !(j > 0 && s.charAt(j - 1) == '-');
         }
-        if (Character.isLetter(p)) {
-            int k = j;
-            while (k >= 0 && (Character.isLetterOrDigit(s.charAt(k)) || s.charAt(k) == '_' || s.charAt(k) == '$')) {
-                k--;
-            }
-            String palavra = s.substring(k + 1, j + 1);
-            return "return".equals(palavra) || "yield".equals(palavra) || "await".equals(palavra) || "typeof".equals(palavra);
+        return Character.isLetter(p) && isValueKeyword(s, j);
+    }
+
+    /** A palavra que termina em {@code j} é uma das que introduzem um valor ({@code return {...}})? */
+    private static boolean isValueKeyword(String s, int j) {
+        int k = j;
+        while (k >= 0 && (Character.isLetterOrDigit(s.charAt(k)) || s.charAt(k) == '_' || s.charAt(k) == '$')) {
+            k--;
         }
-        return false;
+        String palavra = s.substring(k + 1, j + 1);
+        return "return".equals(palavra) || "yield".equals(palavra) || "await".equals(palavra) || "typeof".equals(palavra);
     }
 
     /** Conta parâmetros no nível de topo (vírgulas dentro de <>, (), [], {} não separam parâmetros). */
@@ -194,22 +205,25 @@ public final class FunctionScanner {
         }
         int depth = 0;
         int count = 1;
-        int i = 0;
-        while (i < params.length()) {
+        for (int i = 0; i < params.length(); i++) {
             char c = params.charAt(i);
             if (c == '=' && i + 1 < params.length() && params.charAt(i + 1) == '>') {
                 i++;                                                 // "=>" não é um '>' de genérico
-            } else if (c == '<' || c == '(' || c == '[' || c == '{') {
-                depth++;
-            } else if (c == '>' || c == ')' || c == ']' || c == '}') {
-                depth = Math.max(0, depth - 1);
             } else if (c == ',' && depth == 0) {
                 count++;
+            } else {
+                depth = Math.max(0, depth + depthDelta(c));
             }
-            i++;
         }
         // vírgula final ("a, b,") não cria um parâmetro a mais
         return params.stripTrailing().endsWith(",") ? count - 1 : count;
+    }
+
+    private static int depthDelta(char c) {
+        if (c == '<' || c == '(' || c == '[' || c == '{') {
+            return 1;
+        }
+        return c == '>' || c == ')' || c == ']' || c == '}' ? -1 : 0;
     }
 
     private static int codeLines(String clean, int[] lineStarts, int startLine, int endLine) {

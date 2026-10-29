@@ -52,8 +52,15 @@ public class AuditRunMapper {
 
         if (run.getRiskScore() != null) {
             var s = run.getRiskScore();
-            dto.setRiskScore(new RiskScoreDto(s.getOverall(), s.getSecurity(), s.getQuality(), s.getArchitecture(),
-                    s.getDependencies(), s.getObservability(), s.getPerformance()));
+            RiskScoreDto score = new RiskScoreDto();
+            score.setOverall(s.getOverall());
+            score.setSecurity(s.getSecurity());
+            score.setQuality(s.getQuality());
+            score.setArchitecture(s.getArchitecture());
+            score.setDependencies(s.getDependencies());
+            score.setObservability(s.getObservability());
+            score.setPerformance(s.getPerformance());
+            dto.setRiskScore(score);
         }
 
         Map<Severity, Long> summary = findingRepository.countBySeverityForRun(run.getId());

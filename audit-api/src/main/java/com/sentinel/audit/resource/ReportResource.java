@@ -69,32 +69,7 @@ public class ReportResource {
         }
         Integer period = days == null || days <= 0 ? null : days;
         LocalDateTime since = period == null ? null : LocalDateTime.now().minusDays(period);
-        List<SystemSnapshot> systems = new ArrayList<>();
-        // Última auditoria, contagens e (no relatório técnico) achados de todos os sistemas em poucas consultas.
-        Map<Long, AuditRun> latestBySystem = runCatalog.latestCompletedBySystem();
-        List<Long> runIds = latestBySystem.values().stream().map(AuditRun::getId).toList();
-        Map<Long, Map<com.sentinel.audit.model.Severity, Long>> countsByRun = findingCatalog.countBySeverityForRuns(runIds);
-        Map<Long, List<com.sentinel.audit.model.Finding>> findingsByRun =
-                kind == ReportService.Type.TECNICO ? findingCatalog.byRuns(runIds) : Map.of();
-        for (AuditedSystem system : systemCatalog.all()) {
-            if (systemId != null && !systemId.equals(system.getId())) {
-                continue;
-            }
-            AuditRun run = latestBySystem.get(system.getId());
-            if (run == null) {
-                continue;
-            }
-            var counts = countsByRun.get(run.getId());
-            List<TrendPoint> points = lifecycleService.trend(system.getId(), 100).stream()
-                    .filter(p -> since == null || (p.completedAt() != null && p.completedAt().isAfter(since)))
-                    .toList();
-            systems.add(new SystemSnapshot(system.getName(), system.getStack() == null ? null : system.getStack().name(),
-                    run.getId(), run.getCompletedAt(), run.getRiskScore() == null ? null : run.getRiskScore().getOverall(),
-                    counts.getOrDefault(com.sentinel.audit.model.Severity.CRITICAL, 0L),
-                    counts.getOrDefault(com.sentinel.audit.model.Severity.HIGH, 0L),
-                    kind == ReportService.Type.TECNICO ? findingsByRun.getOrDefault(run.getId(), List.of()) : List.of(),
-                    points));
-        }
+        List<SystemSnapshot> systems = collectSnapshots(new Scope(systemId, kind, since));
         if (systems.isEmpty()) {
             throw new NotFoundException("Nenhum sistema tem auditoria concluída para compor o relatório.");
         }
@@ -105,5 +80,43 @@ public class ReportResource {
             case CSV -> Response.ok(body, "text/csv; charset=UTF-8").header("Content-Disposition", "attachment; filename=\"" + name + ".csv\"").build();
             case HTML -> Response.ok(body, MediaType.TEXT_HTML + "; charset=UTF-8").build();
         };
+    }
+
+    /** O que entra no relatório: um sistema (ou todos), o tipo e o início do período (nulo = tudo). */
+    private record Scope(Long systemId, ReportService.Type kind, LocalDateTime since) { }
+
+    private List<SystemSnapshot> collectSnapshots(Scope scope) {
+        List<SystemSnapshot> systems = new ArrayList<>();
+        // Última auditoria, contagens e (no relatório técnico) achados de todos os sistemas em poucas consultas.
+        Map<Long, AuditRun> latestBySystem = runCatalog.latestCompletedBySystem();
+        List<Long> runIds = latestBySystem.values().stream().map(AuditRun::getId).toList();
+        Map<Long, Map<com.sentinel.audit.model.Severity, Long>> countsByRun = findingCatalog.countBySeverityForRuns(runIds);
+        Map<Long, List<com.sentinel.audit.model.Finding>> findingsByRun =
+                scope.kind() == ReportService.Type.TECNICO ? findingCatalog.byRuns(runIds) : Map.of();
+        for (AuditedSystem system : systemCatalog.all()) {
+            if (scope.systemId() != null && !scope.systemId().equals(system.getId())) {
+                continue;
+            }
+            AuditRun run = latestBySystem.get(system.getId());
+            if (run != null) {
+                systems.add(snapshot(scope, system, run, countsByRun.get(run.getId()), findingsByRun));
+            }
+        }
+        return systems;
+    }
+
+    private SystemSnapshot snapshot(Scope scope, AuditedSystem system, AuditRun run,
+                                    Map<com.sentinel.audit.model.Severity, Long> counts,
+                                    Map<Long, List<com.sentinel.audit.model.Finding>> findingsByRun) {
+        LocalDateTime since = scope.since();
+        List<TrendPoint> points = lifecycleService.trend(system.getId(), 100).stream()
+                .filter(p -> since == null || (p.completedAt() != null && p.completedAt().isAfter(since)))
+                .toList();
+        return new SystemSnapshot(system.getName(), system.getStack() == null ? null : system.getStack().name(),
+                run.getId(), run.getCompletedAt(), run.getRiskScore() == null ? null : run.getRiskScore().getOverall(),
+                counts.getOrDefault(com.sentinel.audit.model.Severity.CRITICAL, 0L),
+                counts.getOrDefault(com.sentinel.audit.model.Severity.HIGH, 0L),
+                scope.kind() == ReportService.Type.TECNICO ? findingsByRun.getOrDefault(run.getId(), List.of()) : List.of(),
+                points);
     }
 }
