@@ -11,11 +11,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -108,54 +107,46 @@ public class PmdAnalyzer implements CodeAnalyzer {
 
     @Override
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun) {
-        Instant start = Instant.now();
-        List<Finding> findings = new ArrayList<>();
         Path exe = enabled ? ExternalTools.find("pmd", pathEnv) : null;
         if (exe == null) {
-            LOG.warn("PMD indisponível; lint Java por esta ferramenta ignorado");
-            return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+            return ToolRun.unavailable(ANALYZER_NAME, "PMD indisponível; lint Java por esta ferramenta ignorado", LOG);
         }
-        Path report = null;
-        Path tempRuleset = null;
-        Path stderr = null;
-        String partial = null;
-        try {
-            stderr = Files.createTempFile("pmd-err-", ".txt");
-            report = Files.createTempFile("pmd-", ".json");
-            String ruleset = rulesetPath.orElse(null);
-            if (!isUsableFile(ruleset)) {
-                tempRuleset = Files.createTempFile("pmd-ruleset-", ".xml");
-                Files.writeString(tempRuleset, DEFAULT_RULESET, StandardCharsets.UTF_8);
-                ruleset = tempRuleset.toString();
-            }
-            List<String> cmd = command(exe, projectPath, ruleset, report);
-            int code = ExternalTools.runTo(cmd, null, Map.of(), timeoutSeconds, new ExternalTools.Output(null, stderr));
-            if (code != 0 && code != EXIT_RECOVERABLE_ERRORS) {
-                partial = ExternalTools.falha(code, timeoutSeconds, stderr);
-                LOG.warnf("PMD %s", partial);
-            } else {
-                String json = Files.readString(report, StandardCharsets.UTF_8);
-                findings = parse(json, projectPath, auditRun);
-                LOG.infof("PMD encontrou %d problemas", findings.size());
-                if (code == EXIT_RECOVERABLE_ERRORS) {
-                    // Código 5: o PMD não conseguiu ler/analisar alguns arquivos (sintaxe nova, arquivo gerado etc.),
-                    // mas o relatório com o resto está completo. Aproveita os achados e avisa em vez de descartar tudo.
-                    partial = recoverableNote(json);
-                    LOG.warnf("PMD %s", partial);
+        return ToolRun.run(ANALYZER_NAME, "pmd", LOG, (report, stderr) -> {
+            Path tempRuleset = null;
+            try {
+                String ruleset = rulesetPath.orElse(null);
+                if (!isUsableFile(ruleset)) {
+                    tempRuleset = Files.createTempFile("pmd-ruleset-", ".xml");
+                    Files.writeString(tempRuleset, DEFAULT_RULESET, StandardCharsets.UTF_8);
+                    ruleset = tempRuleset.toString();
                 }
+                return execute(exe, projectPath, auditRun, ruleset, report, stderr);
+            } finally {
+                deleteQuietly(tempRuleset);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            partial = "execução interrompida";
-        } catch (Exception e) {
-            LOG.errorf("Erro ao executar o PMD: %s", e.getMessage());
-            partial = "erro ao executar: " + e.getMessage();
-        } finally {
-            ExternalTools.deleteQuietly(stderr);
-            deleteQuietly(report);
-            deleteQuietly(tempRuleset);
+        });
+    }
+
+    private ToolRun.Outcome execute(Path exe, Path projectPath, AuditRun auditRun, String ruleset, Path report,
+                                    Path stderr) throws IOException, InterruptedException {
+        int code = ExternalTools.runTo(command(exe, projectPath, ruleset, report), null, Map.of(), timeoutSeconds,
+                new ExternalTools.Output(null, stderr));
+        if (code != 0 && code != EXIT_RECOVERABLE_ERRORS) {
+            String partial = ExternalTools.falha(code, timeoutSeconds, stderr);
+            LOG.warnf("PMD %s", partial);
+            return new ToolRun.Outcome(new ArrayList<>(), partial);
         }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), partial);
+        String json = Files.readString(report, StandardCharsets.UTF_8);
+        List<Finding> found = parse(json, projectPath, auditRun);
+        LOG.infof("PMD encontrou %d problemas", found.size());
+        String partial = null;
+        if (code == EXIT_RECOVERABLE_ERRORS) {
+            // Código 5: o PMD não conseguiu ler/analisar alguns arquivos (sintaxe nova, arquivo gerado etc.),
+            // mas o relatório com o resto está completo. Aproveita os achados e avisa em vez de descartar tudo.
+            partial = recoverableNote(json);
+            LOG.warnf("PMD %s", partial);
+        }
+        return new ToolRun.Outcome(found, partial);
     }
 
     private static boolean isUsableFile(String path) {
