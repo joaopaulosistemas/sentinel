@@ -84,7 +84,7 @@ public final class GuideBook {
                 Yamls.bool(m, "commandsVerified", false),
                 new Review(review != null && Yamls.bool(review, "docs", false), review != null && Yamls.bool(review, "team", false),
                         review != null && Yamls.bool(review, "ai", false)),
-                practices(m));
+                practices(m, "practices"));
     }
 
     private static List<String> strings(Map<String, Object> m, String key, List<String> problems) {
