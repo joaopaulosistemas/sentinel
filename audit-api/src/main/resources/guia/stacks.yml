@@ -1,0 +1,285 @@
+# Guia de código: boas práticas por tecnologia, lidas pela tela "Guia de código" e pelo gerador de CLAUDE.md.
+# As regras do Sentinel de cada tecnologia vêm dos pacotes: aqui só ficam os critérios de quais regras entram (own/also/languages)
+# e o texto que as regras não trazem (práticas, lacunas, comandos).
+# review.*: marque true quando o passo for feito de fato (conferido na documentação oficial, revisado pela equipe, testado com a IA).
+stacks:
+  - id: java
+    name: "Java"
+    kind: backend
+    summary: "Linguagem base do backend. Vale para Spring, Quarkus e Java EE."
+    languages: [java]
+    own: []
+    also: []
+    tools:
+      - "Checkstyle"
+      - "PMD"
+      - "Semgrep (regras próprias)"
+      - "Trivy"
+      - "Gitleaks"
+    gaps:
+      - "Sem verificação de módulos (JPMS) nem de nulidade (NullAway/Checker)."
+    commands:
+      - "mvn -B -ntp verify"
+      - "mvn -Dtest=NomeTest test"
+    commandsVerified: true
+    review: {docs: false, team: false, ai: false}
+    practices:
+      - title: "Exceção com causa"
+        do: "Relance a exceção original como causa: throw new NegocioException(\"falha ao salvar\", e)."
+        avoid: "catch vazio, ou relançar só com getMessage(): a pilha original se perde."
+      - title: "Dinheiro em BigDecimal"
+        do: "Use BigDecimal (com escala e arredondamento explícitos) para valores monetários."
+        avoid: "double/float: 0,1 + 0,2 != 0,3."
+      - title: "Recursos com try-with-resources"
+        do: "Abra Connection, Stream e HttpClient em try-with-resources."
+        avoid: "close() manual em finally: esquece-se em um dos caminhos."
+      - title: "Imutável por padrão"
+        do: "Use records e campos final; copie coleções recebidas (List.copyOf)."
+        avoid: "Expor listas internas ou setters que não precisam existir."
+      - title: "Tipos de erro por intenção"
+        do: "Crie exceções de negócio específicas; quem chama trata por tipo."
+        avoid: "throw new Exception()/RuntimeException() genéricas."
+      - title: "Aleatório de segurança"
+        do: "SecureRandom para token, senha e OTP; SHA-256+ para hash, bcrypt/Argon2 para senha."
+        avoid: "Random, Math.random(), MD5 e SHA-1."
+      - title: "Tamanho que cabe na cabeça"
+        do: "Método até 60 linhas, complexidade 12, aninhamento 4, até 5 parâmetros."
+        avoid: "Classe-deus: mais de 500 linhas, 20 métodos públicos ou 7 dependências injetadas."
+  - id: spring
+    name: "Spring Boot"
+    kind: backend
+    summary: "Spring Boot e JPA: configuração insegura e armadilhas de mapeamento."
+    languages: [java]
+    own: ["sentinel-spring-*", "sentinel-camadas-controller-*", "sentinel-boas-spring-*"]
+    also: []
+    tools:
+      - "Regras próprias (pacote core-spring)"
+      - "Checkstyle"
+      - "PMD"
+      - "Trivy"
+    gaps:
+      - "Pouca regra de Spring Security e de Spring Data além das listadas."
+      - "Sem checagem de testes (slices, Testcontainers)."
+    commands:
+      - "mvn -B -ntp verify"
+      - "mvn -Dtest=NomeTest test"
+    commandsVerified: false
+    review: {docs: false, team: false, ai: false}
+    practices:
+      - title: "Injeção por construtor"
+        do: "Dependências como campos final, injetadas pelo construtor."
+        avoid: "@Autowired em campo: esconde dependências e dificulta o teste."
+      - title: "Entrada validada"
+        do: "@Valid em todo @RequestBody e restrições nos DTOs."
+        avoid: "Receber a entidade JPA direto na API (mass assignment)."
+      - title: "Configuração tipada"
+        do: "@ConfigurationProperties com validação; segredos fora do repositório."
+        avoid: "Senha em application.properties e actuator exposto sem proteção."
+      - title: "JPA sem surpresa"
+        do: "Relações LAZY por padrão; busque o que precisa com fetch join ou projeção."
+        avoid: "EAGER, @Data em entidade e ddl-auto=update em produção."
+      - title: "Transação no serviço"
+        do: "@Transactional na camada de serviço, o mais estreita possível."
+        avoid: "Transação aberta no controller ou sobre chamada remota demorada."
+      - title: "Erro padronizado"
+        do: "@RestControllerAdvice com ProblemDetail (RFC 9457)."
+        avoid: "Devolver stack trace ou mensagem interna ao cliente."
+  - id: quarkus
+    name: "Quarkus"
+    kind: backend
+    summary: "Java nativo para nuvem. O Sentinel ainda não tem regra própria para Quarkus."
+    languages: [java]
+    own: ["sentinel-quarkus-*"]
+    also: ["sentinel-owasp-a01-endpoint-sem-autorizacao"]
+    tools:
+      - "Regras de Java"
+      - "Checkstyle"
+      - "PMD"
+      - "Trivy"
+    gaps:
+      - "Nenhuma regra específica de Quarkus (CDI, Panache, RESTEasy Reactive, perfis)."
+      - "Sem checagem de reflexão para imagem nativa."
+    commands:
+      - "mvn -B -ntp verify"
+      - "mvn -pl audit-api -Dtest=NomeTest test"
+    commandsVerified: true
+    review: {docs: false, team: false, ai: false}
+    practices:
+      - title: "Acesso declarado"
+        do: "@RolesAllowed, @Authenticated ou @PermitAll explícito em cada endpoint."
+        avoid: "Endpoint sem anotação, deixando o acesso depender da configuração."
+      - title: "Injeção por construtor no CDI"
+        do: "Construtor com @Inject (ou único construtor) e escopo @ApplicationScoped."
+        avoid: "Campo @Inject privado em pacote: obriga reflexão na imagem nativa."
+      - title: "Config tipada"
+        do: "@ConfigMapping com interface; perfis %dev/%test/%prod."
+        avoid: "@ConfigProperty espalhado e segredo no application.properties."
+      - title: "Reativo só quando compensa"
+        do: "Não bloqueie a thread de I/O; use @Blocking ou virtual threads quando precisar."
+        avoid: "Misturar Mutiny e chamadas bloqueantes sem marcar."
+      - title: "Panache com cuidado"
+        do: "Consultas com parâmetros nomeados e projeções."
+        avoid: "Concatenar HQL e carregar entidades inteiras para listar."
+      - title: "Testes de verdade"
+        do: "@QuarkusTest para fluxo de ponta a ponta e Dev Services para banco."
+        avoid: "Mocks de tudo, que não pegam erro de configuração."
+  - id: ts
+    name: "TypeScript / JavaScript"
+    kind: frontend
+    summary: "Base de qualquer frontend: tipos fortes e código assíncrono sem armadilha."
+    languages: [typescript, javascript]
+    own: []
+    also: ["sentinel-fe-*", "sentinel-html-*", "sentinel-css-*", "sentinel-scss-*"]
+    tools:
+      - "ESLint (config padrão e padrão-ts)"
+      - "njsscan"
+      - "Semgrep"
+      - "jscpd"
+      - "Gitleaks"
+    gaps:
+      - "Sem checagem de tamanho de bundle nem de acessibilidade em tempo de execução."
+    commands:
+      - "npm ci"
+      - "npm test"
+      - "npx tsc --noEmit"
+      - "npm run build"
+    commandsVerified: true
+    review: {docs: false, team: false, ai: false}
+    practices:
+      - title: "strict ligado"
+        do: "\"strict\": true no tsconfig; tipos explícitos nas fronteiras."
+        avoid: "any e asserções (as) para calar o compilador."
+      - title: "await sem laço"
+        do: "Promise.all para trabalho independente; limite a concorrência."
+        avoid: "await dentro de for: serializa o que poderia ser paralelo."
+      - title: "Entrada externa validada"
+        do: "Valide JSON e parâmetros com um esquema (zod, valibot)."
+        avoid: "Confiar no formato que a API devolve."
+      - title: "Sem HTML montado na mão"
+        do: "Deixe o framework escapar; sanitize quando HTML for inevitável."
+        avoid: "innerHTML, eval e new Function com dado do usuário."
+      - title: "Erros tratados"
+        do: "Toda promessa tem tratamento; mostre ao usuário o que ele pode fazer."
+        avoid: "catch que só dá console.log."
+      - title: "Dependências sob controle"
+        do: "package-lock versionado, npm ci no CI, npm audit."
+        avoid: "Bibliotecas abandonadas (moment) e versões soltas (^ em tudo sem revisão)."
+  - id: angular
+    name: "Angular"
+    kind: frontend
+    summary: "Angular: componentes, templates e detecção de mudança."
+    languages: [typescript, javascript]
+    own: ["sentinel-ng-*", "sentinel-camadas-componente-*", "sentinel-tsp-ciclo-de-vida-*", "sentinel-boas-ng-*"]
+    also: ["sentinel-fe-*", "sentinel-html-*", "sentinel-css-*", "sentinel-scss-*"]
+    tools:
+      - "ESLint com angular-eslint"
+      - "Regras próprias de template"
+      - "Semgrep"
+      - "Trivy"
+    gaps:
+      - "Regras de Signals e de control flow (@if/@for) ainda não estão no catálogo."
+    commands:
+      - "npm ci"
+      - "ng test --watch=false"
+      - "ng lint"
+      - "ng build"
+    commandsVerified: false
+    review: {docs: false, team: false, ai: false}
+    practices:
+      - title: "OnPush em tudo novo"
+        do: "changeDetection: ChangeDetectionStrategy.OnPush em componente novo."
+        avoid: "Default em componente de lista grande."
+      - title: "Standalone e Signals"
+        do: "Componentes standalone; signal()/computed() para estado local."
+        avoid: "NgModule novo e subscribe manual para estado simples."
+      - title: "Sem vazamento de subscrição"
+        do: "async pipe, takeUntilDestroyed() ou toSignal()."
+        avoid: "subscribe sem cancelamento em ngOnInit."
+      - title: "Template simples"
+        do: "Lógica em computed ou método do componente; trackBy/track no laço."
+        avoid: "Chamar função pesada no template e [innerHTML] com dado cru."
+      - title: "Serviço com uma tarefa"
+        do: "inject() e serviços pequenos, providedIn: 'root'."
+        avoid: "Serviço que acumula tudo e conhece a tela."
+      - title: "Acessível desde o início"
+        do: "Elementos nativos (button, a), label em campo, foco visível."
+        avoid: "div clicável sem teclado."
+  - id: react
+    name: "React"
+    kind: frontend
+    summary: "React: estado, efeitos e renderização."
+    languages: [typescript, javascript]
+    own: ["sentinel-react-*", "sentinel-ts-react-*", "sentinel-mem-react-*", "sentinel-ts-useeffect-async", "sentinel-boas-react-*"]
+    also: ["sentinel-fe-*", "sentinel-html-*", "sentinel-css-*", "sentinel-scss-*"]
+    tools:
+      - "ESLint com react e react-hooks"
+      - "Semgrep"
+      - "Trivy"
+    gaps:
+      - "Sem regras próprias do Sentinel sobre Server Components e Suspense."
+    commands:
+      - "npm ci"
+      - "npm test"
+      - "npx tsc --noEmit"
+      - "npm run build"
+    commandsVerified: true
+    review: {docs: false, team: false, ai: false}
+    practices:
+      - title: "Derive em vez de sincronizar"
+        do: "Calcule valores durante a renderização a partir de props e estado."
+        avoid: "useEffect para copiar estado em estado."
+      - title: "Efeito só para o mundo externo"
+        do: "useEffect com limpeza para assinatura, timer e requisição."
+        avoid: "Efeito para tratar clique: use o manipulador de evento."
+      - title: "Dados com biblioteca de cache"
+        do: "TanStack Query (ou o loader do framework) para busca e cache."
+        avoid: "fetch dentro de useEffect sem cancelamento."
+      - title: "Chaves estáveis"
+        do: "key com o id do dado."
+        avoid: "key={index} em lista que muda."
+      - title: "HTML seguro"
+        do: "Deixe o JSX escapar; sanitize antes de dangerouslySetInnerHTML."
+        avoid: "dangerouslySetInnerHTML com dado do usuário."
+      - title: "Componentes pequenos"
+        do: "Um componente, uma responsabilidade; tipos nas props."
+        avoid: "Componente de 300 linhas misturando dados e visual."
+  - id: vue
+    name: "Vue"
+    kind: frontend
+    summary: "Vue 3: o Sentinel ainda não cobre Vue de forma específica."
+    languages: [typescript, javascript, vue]
+    own: ["sentinel-vue-*"]
+    also: ["sentinel-fe-*", "sentinel-html-*", "sentinel-css-*", "sentinel-scss-*"]
+    tools:
+      - "Regras de TypeScript/JavaScript"
+      - "Semgrep (genérico)"
+      - "Trivy"
+    gaps:
+      - "Nenhuma regra própria de Vue e nenhum eslint-plugin-vue no pacote."
+      - "Não analisa arquivos .vue em template."
+    commands:
+      - "npm ci"
+      - "npm test"
+      - "npx vue-tsc --noEmit"
+      - "npm run build"
+    commandsVerified: false
+    review: {docs: false, team: false, ai: false}
+    practices:
+      - title: "Composition API com <script setup>"
+        do: "<script setup lang=\"ts\"> e composables para lógica reutilizável."
+        avoid: "Options API em código novo e mixins."
+      - title: "Reatividade correta"
+        do: "ref/reactive e computed para valores derivados."
+        avoid: "Desestruturar reactive (perde a reatividade) e watch para derivar valor."
+      - title: "v-for com key"
+        do: "key única e estável em todo v-for."
+        avoid: "v-if junto de v-for no mesmo elemento."
+      - title: "HTML seguro"
+        do: "Interpolação {{ }} escapa o texto por padrão."
+        avoid: "v-html com dado do usuário."
+      - title: "Props e eventos tipados"
+        do: "defineProps e defineEmits com tipos; dados descem, eventos sobem."
+        avoid: "Alterar a prop dentro do filho."
+      - title: "Estado global enxuto"
+        do: "Pinia só para o que é realmente compartilhado."
+        avoid: "Colocar todo estado de tela na store."

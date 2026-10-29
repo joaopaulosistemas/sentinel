@@ -1,0 +1,44 @@
+# Boas práticas de TypeScript, React e Angular. Casos de teste: tests/sentinel-boas-ts.ts e tests/sentinel-boas-ts.tsx
+rules:
+  - id: sentinel-boas-ts-json-sem-validacao
+    pattern-either:
+      - pattern: JSON.parse(...) as $T
+      - pattern: (await $R.json()) as $T
+      - pattern: $R.json() as $T
+    message: >
+      O resultado de JSON.parse ou de response.json() recebe um tipo por asserção (as), mas nada confere se o dado tem mesmo aquele formato.
+      Dado externo que não bate com o tipo quebra longe da origem. Valide com um esquema (zod, valibot) e use o tipo que ele infere.
+    severity: WARNING
+    languages: [typescript]
+    paths:
+      exclude: ["**/node_modules/**", "**/*.spec.ts", "**/*.test.ts", "**/*.test.tsx", "**/*.d.ts"]
+    metadata:
+      category: quality
+      cwe: "CWE-20: Improper Input Validation"
+
+  - id: sentinel-boas-react-fetch-em-effect
+    patterns:
+      - pattern: fetch(...)
+      - pattern-inside: useEffect(...)
+    message: >
+      fetch dentro de useEffect: sem cancelamento, cache nem repetição, e com corrida entre respostas quando os parâmetros mudam.
+      Use uma biblioteca de dados (TanStack Query) ou o carregador do framework; se mantiver o fetch, cancele com AbortController na limpeza do efeito.
+    severity: INFO
+    languages: [typescript, javascript]
+    paths:
+      exclude: ["**/node_modules/**", "**/*.spec.ts", "**/*.test.ts", "**/*.test.tsx"]
+    metadata:
+      category: quality
+
+  - id: sentinel-boas-ng-componente-nao-standalone
+    pattern-regex: '(?m)\bstandalone\s*:\s*false\b'
+    message: >
+      Componente, diretiva ou pipe declarado com standalone: false. O Angular atual recomenda o modelo standalone, sem NgModule:
+      menos código, carregamento sob demanda mais simples e dependências visíveis no próprio componente.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts"]
+      exclude: ["**/node_modules/**", "**/*.spec.ts"]
+    metadata:
+      category: quality

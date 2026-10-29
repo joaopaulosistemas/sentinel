@@ -1,0 +1,14 @@
+# tsconfig com a checagem estrita desligada. Caso de teste: tests/sentinel-boas-tsconfig.json
+rules:
+  - id: sentinel-boas-ts-strict-desligado
+    pattern-regex: '(?m)"strict"\s*:\s*false'
+    message: >
+      "strict": false desliga a checagem de nulos e de tipos implícitos, que pega a maior parte dos erros de TypeScript.
+      Ligue "strict": true; em projeto legado, ligue as opções uma a uma (strictNullChecks primeiro).
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*tsconfig*.json"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: quality

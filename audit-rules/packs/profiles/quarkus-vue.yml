@@ -1,0 +1,16 @@
+id: quarkus-vue
+name: "Quarkus (Java) + Vue (TypeScript)"
+description: "Pacotes padrão para Java com Quarkus e frontend Vue/TypeScript, sem as regras de Spring e de Angular/EJB, mais os pacotes core-quarkus e core-boas-praticas. Limites: método até 60 linhas, complexidade 12, aninhamento 4."
+packs: [core-security, core-iac, core-persistencia, core-quality, core-architecture, core-frontend, core-quarkus, core-boas-praticas, core-vue, ts-clean-code, market-tools]
+rules:
+  # Em sombra por medida (docs/evolucao/precisao.md): 0 verdadeiros em 6 revisados cada, em scripts/CLI sem entrada externa.
+  "eslint-regexp/no-super-linear-move": {shadow: true}   # precisao.md
+  "eslint-security/detect-non-literal-fs-filename": {shadow: true}   # precisao.md
+  # 1 verdadeiro em 9 revisados (cabeçalho de licença, pom.xml e arquivos gerados); volta a pesar quando a precisão subir.
+  jscpd-codigo-duplicado: {shadow: true}   # precisao.md
+  # 0 verdadeiros em 7 revisados: modelos EJS que geram código TypeScript (a saída não é HTML, então não há XSS)
+  njsscan-ejs_ect_template: {shadow: true}   # precisao.md
+thresholds:
+  max-function-lines: 60
+  max-complexity: 12
+  max-nesting: 4

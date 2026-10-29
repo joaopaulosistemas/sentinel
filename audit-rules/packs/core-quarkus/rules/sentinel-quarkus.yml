@@ -1,0 +1,92 @@
+# Armadilhas de Quarkus. Casos de teste: tests/sentinel-quarkus.java
+rules:
+  - id: sentinel-quarkus-inject-campo-privado
+    pattern: |
+      @Inject
+      private $T $F;
+    message: >
+      Campo @Inject privado: o Quarkus (ArC) precisa de reflexão para injetá-lo, o que atrapalha a imagem nativa e gera aviso no build.
+      Use injeção pelo construtor, ou deixe o campo visível no pacote (sem 'private').
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-quarkus-getenv-direto
+    pattern: System.getenv(...)
+    message: >
+      Leitura direta de variável de ambiente. No Quarkus, use @ConfigProperty ou @ConfigMapping: a configuração fica tipada,
+      com valor padrão e perfis (%dev, %test, %prod), e o ambiente já entra como fonte.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-quarkus-await-indefinido
+    pattern-either:
+      - pattern: $U.await().indefinitely()
+      - pattern: $U.await().atMost(...)
+    message: >
+      await() sobre Uni bloqueia a thread. Em endpoint reativo isso trava o event loop. Devolva o Uni/Multi e deixe o framework assinar,
+      ou marque o método com @Blocking.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: performance
+
+  - id: sentinel-quarkus-sleep-em-reativo
+    patterns:
+      - pattern: Thread.sleep(...)
+      - pattern-inside: |
+          Uni<$T> $M(...) { ... }
+    message: >
+      Thread.sleep dentro de um método que devolve Uni trava o event loop. Use Uni.createFrom().item(...).onItem().delayIt().by(...)
+      para esperar sem bloquear.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: performance
+
+  - id: sentinel-quarkus-panache-consulta-concatenada
+    pattern-either:
+      - pattern: $E.find($A + $B, ...)
+      - pattern: $E.list($A + $B, ...)
+      - pattern: $E.delete($A + $B, ...)
+      - pattern: $E.update($A + $B, ...)
+      - pattern: $E.count($A + $B, ...)
+      - pattern: $E.stream($A + $B, ...)
+    message: >
+      Consulta Panache montada por concatenação: injeção de HQL. Use parâmetros posicionais ou nomeados:
+      find("nome = ?1", nome) ou find("nome = :nome", Parameters.with("nome", nome)).
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-quarkus-reflexao-nativa
+    pattern-either:
+      - pattern: Class.forName(...)
+      - pattern: $C.getDeclaredMethod(...)
+      - pattern: $C.getDeclaredField(...)
+      - pattern: $C.getDeclaredConstructor(...)
+    message: >
+      Reflexão em código que pode virar imagem nativa: o que for acessado por reflexão precisa de @RegisterForReflection
+      (ou de reflect-config), senão falha só em produção. Prefira CDI e injeção de dependência.
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/src/test/**"]
+    metadata:
+      category: quality

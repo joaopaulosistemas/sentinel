@@ -1,0 +1,105 @@
+# Armadilhas de Vue 3. Casos de teste: tests/sentinel-vue.vue
+rules:
+  - id: sentinel-vue-v-html
+    pattern-regex: '(?m)\bv-html\s*='
+    message: >
+      v-html insere HTML sem escapar: com dado do usuário vira XSS. Use a interpolação {{ }}, que escapa o texto,
+      ou sanitize o HTML (DOMPurify) antes de exibir.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.vue"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-vue-v-for-sem-key
+    pattern-regex: '(?s)<(?!template\b)[A-Za-z][\w-]*\b(?=[^>]*\sv-for\s*=)(?![^>]*(?:\s:key\s*=|\sv-bind:key\s*=))[^>]*>'
+    message: >
+      v-for sem :key. Sem uma chave estável o Vue reaproveita elementos pela posição e mistura estado entre linhas ao reordenar ou remover.
+      Use :key com o id do dado (nunca o índice, se a lista muda).
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.vue"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-vue-v-if-com-v-for
+    pattern-regex: '(?s)<[A-Za-z][\w-]*\b(?=[^>]*\sv-for\s*=)(?=[^>]*\sv-if\s*=)[^>]*>'
+    message: >
+      v-if e v-for no mesmo elemento. No Vue 3 o v-if é avaliado primeiro e não enxerga a variável do v-for, o que causa erro difícil de achar.
+      Filtre a lista numa propriedade computed ou mova o v-if para um <template> dentro do laço.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.vue"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-vue-reactive-desestruturado
+    pattern-regex: '(?m)\b(?:const|let)\s*\{[^}]*\}\s*=\s*reactive\s*\('
+    message: >
+      Desestruturar um reactive() copia os valores e perde a reatividade. Use ref() para cada valor, ou toRefs(estado) ao desestruturar.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.vue", "*.ts", "*.js"]
+      exclude: ["**/node_modules/**", "**/*.spec.ts", "**/*.test.ts"]
+    metadata:
+      category: quality
+
+  - id: sentinel-vue-link-javascript
+    pattern-regex: '(?m)(?::|v-bind:)?\bhref\s*=\s*["'']\s*javascript:'
+    message: >
+      Link com javascript: executa código a partir do atributo e burla a política de segurança de conteúdo (CSP). Use um @click no botão ou um router-link.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.vue"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-vue-target-blank-sem-rel
+    pattern-regex: '(?s)<a\b(?![^>]*\srel\s*=)[^>]*\starget\s*=\s*["'']_blank["''][^>]*>'
+    message: >
+      Link com target="_blank" sem rel="noopener noreferrer": a página aberta pode acessar window.opener e redirecionar a sua.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.vue"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: security
+      cwe: "CWE-1022: Use of Web Link to Untrusted Target with window.opener Access"
+
+  - id: sentinel-vue-options-api-mixins
+    pattern-regex: '(?m)^\s*mixins\s*:\s*\['
+    message: >
+      Mixins da Options API escondem de onde vem cada propriedade e colidem nomes. Em código novo use composables (funções use...) com a Composition API.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.vue", "*.ts", "*.js"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-vue-define-props-sem-tipo
+    pattern-regex: '(?m)\bdefineProps\s*\(\s*\['
+    message: >
+      defineProps com lista de nomes não tem tipo nem obrigatoriedade. Use defineProps<{ ... }>() em TypeScript, ou o objeto com type e required.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.vue"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: quality

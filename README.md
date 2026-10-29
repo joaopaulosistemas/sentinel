@@ -476,7 +476,7 @@ sentinel-audit-tool/
 │       └── resource/               ← Endpoints REST
 │
 ├── audit-rules/
-│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, core-corporativo, market-tools, ts-clean-code, core-architecture) e profiles/
+│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, core-corporativo, market-tools, ts-clean-code, core-architecture, e os de adesão opcional core-quarkus, core-vue e core-boas-praticas) e profiles/
 │   ├── optional/                   ← Regras que duplicam os analisadores Java (desativadas)
 │   ├── lint/eslint/                ← Configuração do ESLint usada pelo analisador
 │   └── bin/sentinel-pack           ← Ferramenta de linha de comando para autores de pacotes
@@ -612,6 +612,20 @@ thresholds:                  # clean code: max-function-lines, max-component-lin
 
 **Modo sombra:** regra com `metadata.status: draft|experimental` já nasce em sombra; `shadow: false` no perfil a promove. Serve para
 introduzir uma regra nova sem derrubar a nota de ninguém: observe o volume, ajuste, promova. Exemplos prontos: `profiles/legado.yml`, `profiles/arquitetura-em-camadas.yml`.
+
+**Perfis para Quarkus:** `quarkus-react` e `quarkus-vue` reúnem os pacotes padrão (sem Spring nem Angular) com `core-quarkus`
+(injeção por reflexão, `getenv`, `await()` e `Thread.sleep` em código reativo, HQL do Panache concatenado, segredo em `application.properties`),
+`core-boas-praticas` (recurso sem `try-with-resources`, `@Transactional` no controller, `strict: false`, cast sem validação, `fetch` em `useEffect`) e,
+no Vue, `core-vue` (`v-html`, `v-for` sem `:key`, `v-if` com `v-for`, `reactive` desestruturado). Os três pacotes têm `enabled-by-default: false`:
+só pesam na nota de quem escolhe um desses perfis.
+
+### Guia de código
+
+A tela **Guia de código** (menu, depois do Ranking de Sistemas) mostra, por tecnologia (Java, Spring, Quarkus, TypeScript, Angular, React e Vue),
+as boas práticas ("faça" e "evite"), as regras do Sentinel que valem para ela (com severidade, CWE e antes/depois), o que o Sentinel ainda não verifica
+e um `CLAUDE.md` pronto para a IA seguir. As regras vêm dos pacotes carregados; o texto das boas práticas, os comandos e o estado da revisão ficam em
+`audit-api/src/main/resources/guia/stacks.yml`. A **nota do guia** (0 a 10) só conta o que foi feito: `review.docs` (práticas conferidas na documentação
+oficial), `review.team` (revisão da equipe) e `review.ai` (teste com a IA numa tarefa real) começam em `false` e são marcados à mão.
 
 ### Arquitetura e componentes declarativos (`architecture.yml`)
 
@@ -810,6 +824,7 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 | `GET` | `/api/v1/reports/portfolio` | Relatório de **todos os sistemas** (ou de um, com `systemId=`): `type=executivo\|tecnico\|comparativo`, `format=html\|pdf\|csv`, `days=` limita o período |
 | `GET` | `/api/v1/audits/{id}/sbom` | SBOM CycloneDX 1.5 (JSON) |
 | `GET` | `/api/v1/audits/{id}/insights` | Auditoria completa: parecer, áreas, dívida técnica P0–P3, quick wins, roadmap em 8 fases e o que não foi possível verificar |
+| `GET` | `/api/v1/guide` · `/api/v1/guide/{tecnologia}/claude-md` | Guia de código por tecnologia (boas práticas, regras, nota) · CLAUDE.md gerado para a IA |
 | `GET` | `/api/v1/packs` · `POST /reload` | Pacotes e perfis carregados (rejeitados com motivo, avisos, integridade) · recarrega |
 | `PUT` | `/api/v1/systems/{id}/profile` | Perfil de regras do sistema |
 | `POST` | `/api/v1/rules/playground` | Valida e executa uma regra Semgrep sobre um trecho de código |

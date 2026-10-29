@@ -1,0 +1,16 @@
+# Segredo em application.properties. Caso de teste: tests/sentinel-quarkus-config.properties
+rules:
+  - id: sentinel-quarkus-segredo-em-properties
+    pattern-regex: '(?m)^\s*(?:%\w+\.)?quarkus\.[\w.\-]*(?:password|secret|token|credentials)[\w.\-]*\s*[=:]\s*(?!\$\{)(?!\s*$)[^\s#]+'
+    message: >
+      Segredo escrito direto no application.properties. Leia do ambiente (quarkus.datasource.password=${DB_PASSWORD}),
+      de um Secret do Kubernetes ou de um cofre; o arquivo vai para o Git.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/src/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
