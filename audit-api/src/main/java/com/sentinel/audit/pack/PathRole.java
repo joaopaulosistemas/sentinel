@@ -49,19 +49,17 @@ public enum PathRole {
         }
         String[] parts = path.replace('\\', '/').toLowerCase(Locale.ROOT).split("/");
         String file = parts[parts.length - 1];
+        PathRole role = PRODUCTION;
         if (inDirs(parts, GENERATED_DIRS) || GENERATED_SUFFIXES.stream().anyMatch(file::endsWith)) {
-            return GENERATED;
+            role = GENERATED;
+        } else if (FIXTURE_SUFFIXES.stream().anyMatch(file::endsWith) || inDirs(parts, FIXTURE_DIRS)) {
+            role = FIXTURE;
+        } else if (inDirs(parts, TEST_DIRS) || isTestFile(file)) {
+            role = TEST;
+        } else if (inDirs(parts, DOC_DIRS) || isTopLevelDoc(parts, file)) {
+            role = DOCS;
         }
-        if (FIXTURE_SUFFIXES.stream().anyMatch(file::endsWith) || inDirs(parts, FIXTURE_DIRS)) {
-            return FIXTURE;
-        }
-        if (inDirs(parts, TEST_DIRS) || isTestFile(file)) {
-            return TEST;
-        }
-        if (inDirs(parts, DOC_DIRS) || isTopLevelDoc(parts, file)) {
-            return DOCS;
-        }
-        return PRODUCTION;
+        return role;
     }
 
     /** Algum diretório do caminho (o último elemento é o arquivo e não conta) está no conjunto. */

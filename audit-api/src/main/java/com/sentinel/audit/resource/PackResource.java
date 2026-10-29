@@ -56,7 +56,7 @@ public class PackResource {
 
     static PacksResponse toResponse(PackRegistry.Snapshot s) {
         List<PackInfo> packs = s.packs().stream().map(p -> info(p, s.integrity().getOrDefault(p.id(), "unsigned"))).sorted(Comparator.comparing(PackInfo::id)).toList();
-        List<ProfileInfo> profiles = s.profiles().values().stream().map(PackResource::profileInfo)
+        List<ProfileInfo> profiles = s.profiles().values().stream().map(p -> profileInfo(p))
                 .sorted(Comparator.comparing(ProfileInfo::id)).toList();
         return new PacksResponse(packs, profiles, s.rejected(), s.warnings(), s.loadedAt());
     }

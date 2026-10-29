@@ -156,6 +156,7 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: Props) {
       data-testid="restart-overlay"
       style={{ position: 'fixed', inset: 0, zIndex: 9500, background: 'rgba(22, 22, 22, 0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- prende o Tab dentro do diálogo modal */}
       <div
         ref={box}
         role="alertdialog"
@@ -163,7 +164,6 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: Props) {
         aria-labelledby="restart-overlay-title"
         aria-describedby="restart-overlay-desc"
         tabIndex={-1}
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- prende o Tab dentro do diálogo modal
         onKeyDown={onKeyDown}
         style={{ width: '100%', maxWidth: 560, maxHeight: '100%', overflowY: 'auto', background: 'var(--s-surface)', color: 'var(--s-text-2)', border: '1px solid var(--s-border)', borderTop: `4px solid ${timedOut ? '#f1c21b' : '#0f62fe'}`, padding: 32, outline: 'none' }}
       >

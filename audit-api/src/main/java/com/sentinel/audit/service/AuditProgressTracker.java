@@ -174,9 +174,7 @@ public class AuditProgressTracker {
     }
 
     public boolean isCancelRequested(Long auditId) {
-        if (auditId == null) return false;
-        if (cancelRequested.contains(auditId)) return true;
-        return store != null && cancelledInStore(auditId);
+        return auditId != null && (cancelRequested.contains(auditId) || store != null && cancelledInStore(auditId));
     }
 
     /** O cancelamento pode ter sido pedido em outra réplica: o status CANCELLED no banco é o sinal. */

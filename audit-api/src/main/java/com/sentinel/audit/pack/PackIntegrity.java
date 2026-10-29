@@ -32,7 +32,7 @@ public final class PackIntegrity {
     /** Tamanho de um SHA-256 em hexadecimal. */
     private static final int SHA256_HEX_CHARS = 64;
     private static final int READ_BUFFER_BYTES = 8192;
-
+    private static final int MAX_LOCK_BYTES = 4 * 1024 * 1024;
 
     public static final String LOCK = "pack.lock";
     public static final String SIG = "pack.sig";
@@ -109,7 +109,7 @@ public final class PackIntegrity {
             return Result.of(State.UNSIGNED);
         }
         try {
-            byte[] lockBytes = Files.readAllBytes(lockFile);
+            byte[] lockBytes = readLock(lockFile);
             String problem = compareWithDisk(dir, new String(lockBytes, StandardCharsets.UTF_8));
             if (problem != null) {
                 return new Result(State.INVALID, problem);
@@ -119,6 +119,17 @@ public final class PackIntegrity {
             return new Result(State.INVALID, "pack.sig ilegível");
         } catch (IOException | GeneralSecurityException e) {
             return new Result(State.INVALID, "não foi possível verificar: " + e.getMessage());
+        }
+    }
+
+    /** O pack.lock é pequeno (uma linha por arquivo); acima do limite o pacote é recusado em vez de ocupar memória. */
+    private static byte[] readLock(Path lockFile) throws IOException {
+        try (InputStream in = Files.newInputStream(lockFile, LinkOption.NOFOLLOW_LINKS)) {
+            byte[] data = in.readNBytes(MAX_LOCK_BYTES + 1);
+            if (data.length > MAX_LOCK_BYTES) {
+                throw new IOException("pack.lock grande demais");
+            }
+            return data;
         }
     }
 

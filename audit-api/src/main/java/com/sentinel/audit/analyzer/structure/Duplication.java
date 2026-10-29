@@ -190,9 +190,13 @@ public final class Duplication {
 
     /** Linha que não conta como código: vazia, comentário, import, trivial ou boilerplate (getter/setter/atribuição). */
     private static boolean isNoise(String line) {
-        return line.isEmpty() || line.startsWith("//") || line.startsWith("*") || line.length() <= TRIVIAL_LINE_MAX_CHARS
-                || line.startsWith("import ") || line.startsWith("package ") || line.startsWith("@Override")
-                || ACCESSOR.matcher(line).matches();
+        return line.length() <= TRIVIAL_LINE_MAX_CHARS || startsWithAny(line, NOISE_PREFIXES) || ACCESSOR.matcher(line).matches();
+    }
+
+    private static final List<String> NOISE_PREFIXES = List.of("//", "*", "import ", "package ", "@Override");
+
+    private static boolean startsWithAny(String line, List<String> prefixes) {
+        return prefixes.stream().anyMatch(line::startsWith);
     }
 
     private static long fnv(String line) {

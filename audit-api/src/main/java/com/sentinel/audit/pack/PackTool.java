@@ -29,6 +29,8 @@ public final class PackTool {
     private static final long MAX_INSPECTED_FILE_BYTES = 10_000;
 
 
+    private static final int READ_BUFFER_CHARS = 8192;
+
     private PackTool() {}
 
     public static void main(String[] args) {
@@ -181,7 +183,7 @@ public final class PackTool {
             return 2;
         }
         try (java.io.Reader in = p.inputReader(StandardCharsets.UTF_8)) {
-            char[] buffer = new char[8192];
+            char[] buffer = new char[READ_BUFFER_CHARS];
             for (int n = in.read(buffer); n >= 0; n = in.read(buffer)) {
                 out.print(new String(buffer, 0, n));
             }
