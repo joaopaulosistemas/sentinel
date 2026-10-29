@@ -11,6 +11,9 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 # API_KEY é injetada em tempo de execução (compose/Helm); o script só garante que a variável exista, vazia.
 COPY docker-entrypoint-api-key.envsh /docker-entrypoint.d/05-api-key.envsh
+# CRLF (checkout no Windows) deixaria um \r colado no valor de API_KEY e a API responderia 400 a tudo.
+USER root
+RUN sed -i 's/\r$//' /docker-entrypoint.d/05-api-key.envsh /etc/nginx/templates/default.conf.template
 USER 101
 ENV API_UPSTREAM=http://audit-api:8080
 EXPOSE 8080
