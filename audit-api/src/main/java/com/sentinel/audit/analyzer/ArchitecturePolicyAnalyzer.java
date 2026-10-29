@@ -214,13 +214,13 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
 
     private String layerOfFile(String rel, String pkg, Compiled c) {
         for (Layer l : c.pol.layers()) {
-            if (matchesAny(c.pathMatchers.get(l.name()), rel)) {
+            if (ArchGlobs.matchesAny(c.pathMatchers.get(l.name()), rel)) {
                 return l.name();
             }
         }
         if (pkg != null) {
             for (Layer l : c.pol.layers()) {
-                if (matchesAnyPackage(c.packagePatterns.get(l.name()), pkg + ".X") || matchesAnyPackage(c.packagePatterns.get(l.name()), pkg)) {
+                if (ArchGlobs.matchesAnyPackage(c.packagePatterns.get(l.name()), pkg + ".X") || ArchGlobs.matchesAnyPackage(c.packagePatterns.get(l.name()), pkg)) {
                     return l.name();
                 }
             }
@@ -230,13 +230,13 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
 
     private String layerOfJavaImport(String fqn, Compiled c) {
         for (Layer l : c.pol.layers()) {
-            if (matchesAnyPackage(c.packagePatterns.get(l.name()), fqn)) {
+            if (ArchGlobs.matchesAnyPackage(c.packagePatterns.get(l.name()), fqn)) {
                 return l.name();
             }
         }
         String asPath = fqn.replace('.', '/') + ".java";
         for (Layer l : c.pol.layers()) {
-            if (matchesAny(c.pathMatchers.get(l.name()), asPath)) {
+            if (ArchGlobs.matchesAny(c.pathMatchers.get(l.name()), asPath)) {
                 return l.name();
             }
         }
@@ -253,7 +253,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
             }
             for (Layer l : c.pol.layers()) {
                 for (String suf : TS_SUFFIXES) {
-                    if (matchesAny(c.pathMatchers.get(l.name()), r + suf)) {
+                    if (ArchGlobs.matchesAny(c.pathMatchers.get(l.name()), r + suf)) {
                         return l.name();
                     }
                 }
@@ -261,7 +261,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
             return null;
         }
         for (Layer l : c.pol.layers()) {
-            if (matchesAnyPackage(c.packagePatterns.get(l.name()), spec)) {
+            if (ArchGlobs.matchesAnyPackage(c.packagePatterns.get(l.name()), spec)) {
                 return l.name();
             }
         }
@@ -272,7 +272,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
 
     private void checkConventions(String rel, String content, Compiled c, AuditRun run, List<Finding> out) {
         for (Convention cv : c.pol.conventions()) {
-            if (!matchesAny(c.convFiles.get(cv.id()), rel) || matchesAny(c.convExclude.get(cv.id()), rel)) {
+            if (!ArchGlobs.matchesAny(c.convFiles.get(cv.id()), rel) || ArchGlobs.matchesAny(c.convExclude.get(cv.id()), rel)) {
                 continue;
             }
             ConvCtx ctx = new ConvCtx(cv, rel, run);
@@ -401,49 +401,6 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
         return root.relativize(file).toString().replace('\\', '/');
     }
 
-    private static boolean matchesAny(List<PathMatcher> ms, String rel) {
-        if (ms == null) {
-            return false;
-        }
-        Path p = Path.of(rel);
-        Path prefixed = Path.of("_", rel);          // faz "**/x/**" casar também com "x/..." na raiz
-        for (PathMatcher m : ms) {
-            if (m.matches(p) || m.matches(prefixed)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean matchesAnyPackage(List<Pattern> ps, String name) {
-        if (ps == null) {
-            return false;
-        }
-        for (Pattern p : ps) {
-            if (p.matcher(name).matches()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** Glob simples ({@code *} = qualquer coisa), sem diferenciar maiúsculas. */
-    static boolean globMatches(String glob, String value) {
-        return toPattern(glob, true).matcher(value).matches();
-    }
-
-    private static Pattern toPattern(String glob, boolean ignoreCase) {
-        String[] parts = glob.split("\\*", -1);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < parts.length; i++) {
-            sb.append(Pattern.quote(parts[i]));
-            if (i < parts.length - 1) {
-                sb.append(".*");
-            }
-        }
-        return Pattern.compile(sb.toString(), ignoreCase ? Pattern.CASE_INSENSITIVE : 0);
-    }
-
     private List<Path> collect(Path root) throws IOException {
         List<Path> files = new ArrayList<>();
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
@@ -488,7 +445,7 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
                 pathMatchers.put(l.name(), matchers(l.paths()));
                 List<Pattern> ps = new ArrayList<>();
                 for (String p : l.packages() == null ? List.<String>of() : l.packages()) {
-                    ps.add(toPattern(p, false));
+                    ps.add(ArchGlobs.toPattern(p, false));
                 }
                 packagePatterns.put(l.name(), ps);
             }
