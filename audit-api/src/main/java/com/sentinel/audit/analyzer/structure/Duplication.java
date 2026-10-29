@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -54,9 +55,9 @@ public final class Duplication {
                 norms.add(n);
             }
         }
-        Map<String, TreeSet<Integer>> matches = matchingWindows(norms, indexWindows(norms, window), window);
+        Map<String, NavigableSet<Integer>> matches = matchingWindows(norms, indexWindows(norms, window), window);
         List<Clone> clones = new ArrayList<>();
-        for (Map.Entry<String, TreeSet<Integer>> e : matches.entrySet()) {
+        for (Map.Entry<String, NavigableSet<Integer>> e : matches.entrySet()) {
             collectRuns(clones, norms, e, new Cfg(window, minLines));
         }
         clones.sort(Comparator.comparingInt(Clone::lines).reversed().thenComparing(Clone::fileB).thenComparingInt(Clone::lineB));
@@ -91,8 +92,8 @@ public final class Duplication {
     }
 
     /** (arquivo A, arquivo B, deslocamento) -> índices de A em que a janela coincide. */
-    private static Map<String, TreeSet<Integer>> matchingWindows(List<Norm> norms, Map<Long, List<Long>> windows, int window) {
-        Map<String, TreeSet<Integer>> matches = new HashMap<>();
+    private static Map<String, NavigableSet<Integer>> matchingWindows(List<Norm> norms, Map<Long, List<Long>> windows, int window) {
+        Map<String, NavigableSet<Integer>> matches = new HashMap<>();
         for (List<Long> pos : windows.values()) {
             if (pos.size() < 2) {
                 continue;
@@ -107,13 +108,13 @@ public final class Duplication {
                 if (!sameWindow(norms.get(fa), ia, norms.get(fb), ib, window)) {
                     continue;                                   // colisão de hash
                 }
-                matches.computeIfAbsent(fa + "|" + fb + "|" + (ib - ia), x -> new TreeSet<>()).add(ia);
+                matches.computeIfAbsent(fa + "|" + fb + "|" + (ib - ia), x -> new TreeSet<Integer>()).add(ia);
             }
         }
         return matches;
     }
 
-    private static void collectRuns(List<Clone> clones, List<Norm> norms, Map.Entry<String, TreeSet<Integer>> e, Cfg cfg) {
+    private static void collectRuns(List<Clone> clones, List<Norm> norms, Map.Entry<String, NavigableSet<Integer>> e, Cfg cfg) {
         String[] key = e.getKey().split("\\|");
         Pair pair = new Pair(norms.get(Integer.parseInt(key[0])), norms.get(Integer.parseInt(key[1])), Integer.parseInt(key[2]));
         int runStart = -1;
@@ -139,7 +140,7 @@ public final class Duplication {
         if (lines < cfg.minLines()) {
             return;
         }
-        if (a == b && pair.delta() < lines) {
+        if (a.equals(b) && pair.delta() < lines) {
             return;                                             // trechos que se sobrepõem no mesmo arquivo (código periódico)
         }
         out.add(new Clone(a.file, a.origLine[start], b.file, b.origLine[start + pair.delta()], lines, a.lines[start]));

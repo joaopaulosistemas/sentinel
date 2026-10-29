@@ -59,11 +59,17 @@ public class WebhookResource {
                 s -> WebhookService.validGitlabToken(webhookService.secretOf(s), token));
     }
 
-    private Response process(byte[] body, String source, String event, Predicate<AuditedSystem> authentic) {
-        JsonNode payload;
+    private static JsonNode parseJson(byte[] body) {
         try {
-            payload = MAPPER.readTree(new String(body, StandardCharsets.UTF_8));
+            return MAPPER.readTree(new String(body, StandardCharsets.UTF_8));
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Response process(byte[] body, String source, String event, Predicate<AuditedSystem> authentic) {
+        JsonNode payload = parseJson(body);
+        if (payload == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", "JSON inválido")).build();
         }
         // Só quem tem o segredo de um sistema com este repositório é aceito; os demais recebem 401, sem pistas.
@@ -72,6 +78,10 @@ public class WebhookResource {
         if (valid.isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED).entity(Map.of("error", "Assinatura inválida ou sistema sem segredo de webhook")).build();
         }
+        return handle(payload, valid, source, event);
+    }
+
+    private Response handle(JsonNode payload, List<AuditedSystem> valid, String source, String event) {
         if ("ping".equals(event)) {
             return Response.ok(Map.of("message", "pong")).build();
         }

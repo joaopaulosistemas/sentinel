@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -71,9 +72,7 @@ public class SecretBox {
             System.arraycopy(iv, 0, all, 0, iv.length);
             System.arraycopy(ct, 0, all, iv.length, ct.length);
             return PREFIX + Base64.getEncoder().encodeToString(all);
-        } catch (IllegalStateException e) {
-            throw e;
-        } catch (Exception e) {
+        } catch (GeneralSecurityException e) {
             throw new IllegalStateException("Não foi possível cifrar o segredo", e);
         }
     }
@@ -153,7 +152,7 @@ public class SecretBox {
         }
     }
 
-    private SecretKeySpec key() throws Exception {
+    private SecretKeySpec key() throws GeneralSecurityException {
         String seed = seed();
         if (seed.isBlank()) {
             throw new IllegalStateException("Não há chave para cifrar os segredos: defina SECRETS_KEY (ou API_KEY) ou deixe a API gravar o arquivo de chave.");

@@ -85,9 +85,11 @@ public final class SourceSizer {
 
         private static boolean isCountable(String name) {
             int dot = name.lastIndexOf('.');
-            return dot >= 0 && EXTENSIONS.contains(name.substring(dot))
-                    && !name.contains(".min.") && !name.endsWith(".d.ts")
-                    && !name.endsWith(".spec.ts") && !name.contains(".test.");
+            return dot >= 0 && EXTENSIONS.contains(name.substring(dot)) && !isGeneratedOrTest(name);
+        }
+
+        private static boolean isGeneratedOrTest(String name) {
+            return name.contains(".min.") || name.contains(".test.") || name.endsWith(".d.ts") || name.endsWith(".spec.ts");
         }
 
         @Override

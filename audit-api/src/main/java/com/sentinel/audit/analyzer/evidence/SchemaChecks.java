@@ -105,9 +105,10 @@ final class SchemaChecks {
         }
     }
 
+    private static final Set<String> SMALL_INTEGER_TYPES = Set.of("integer", "int", "int4", "smallint", "int2", "serial");
+
     private static boolean isSmallIntegerType(String type) {
-        return type.equals("integer") || type.equals("int") || type.equals("int4")
-                || type.equals("smallint") || type.equals("int2") || type.equals("serial");
+        return SMALL_INTEGER_TYPES.contains(type);
     }
 
     /** Problema de tipo na coluna (data sem fuso, money, json, char fixo); nulo se o tipo está bem. */

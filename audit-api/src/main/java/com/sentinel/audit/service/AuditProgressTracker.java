@@ -176,8 +176,11 @@ public class AuditProgressTracker {
     public boolean isCancelRequested(Long auditId) {
         if (auditId == null) return false;
         if (cancelRequested.contains(auditId)) return true;
-        if (store == null) return false;
-        // O cancelamento pode ter sido pedido em outra réplica: o status CANCELLED no banco é o sinal.
+        return store != null && cancelledInStore(auditId);
+    }
+
+    /** O cancelamento pode ter sido pedido em outra réplica: o status CANCELLED no banco é o sinal. */
+    private boolean cancelledInStore(Long auditId) {
         long now = System.currentTimeMillis();
         Long last = lastCancelCheck.get(auditId);
         if (last != null && now - last < CHECK_MILLIS) return false;

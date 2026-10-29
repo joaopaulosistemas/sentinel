@@ -38,10 +38,14 @@ public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, Lis
     public record Components(List<DepRule> forbidden, List<DepRule> minVersion, List<DepRule> required,
                              List<DepRule> approvedOnly) {}
 
+    private boolean noComponentRules() {
+        return components.forbidden().isEmpty() && components.minVersion().isEmpty()
+                && components.required().isEmpty() && components.approvedOnly().isEmpty();
+    }
+
     public boolean isEmpty() {
         return layers.isEmpty() && forbid.isEmpty() && allow.isEmpty() && conventions.isEmpty()
-                && requiredFiles.isEmpty() && components.forbidden().isEmpty() && components.minVersion().isEmpty()
-                && components.required().isEmpty() && components.approvedOnly().isEmpty();
+                && requiredFiles.isEmpty() && noComponentRules();
     }
 
     /** Junta as políticas de vários pacotes; camada com o mesmo nome é substituída pela do pacote mais adiante. */

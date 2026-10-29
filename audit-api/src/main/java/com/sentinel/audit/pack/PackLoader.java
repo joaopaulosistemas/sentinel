@@ -67,7 +67,7 @@ public final class PackLoader {
         return r.pack();
     }
 
-    /** Todo diretório filho de {@code root} que tem {@code pack.yml}; os inválidos são rejeitados com os motivos. */
+    /** Cada diretório filho de {@code root} que tem {@code pack.yml}; os inválidos são rejeitados com os motivos. */
     public static Discovery discover(Path root) {
         List<RulePack> packs = new ArrayList<>();
         Map<String, List<String>> rejected = new LinkedHashMap<>();
@@ -131,7 +131,8 @@ public final class PackLoader {
         try (Stream<Path> all = Files.walk(dir)) {
             int[] count = {0};
             all.forEach(p -> {
-                if (++count[0] > MAX_FILES && count[0] == MAX_FILES + 1) {
+                count[0]++;
+                if (count[0] == MAX_FILES + 1) {
                     errors.add("pacote com arquivos demais (limite " + MAX_FILES + ")");
                 }
                 checkEntry(dir, p, errors);

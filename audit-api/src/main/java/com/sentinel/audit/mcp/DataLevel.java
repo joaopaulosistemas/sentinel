@@ -2,7 +2,7 @@ package com.sentinel.audit.mcp;
 
 /**
  * Quanto do resultado de um sistema o Claude (ou outro cliente MCP) pode ver. É escolhido sistema por sistema;
- * todo sistema começa em {@link #TITLES}.
+ * cada sistema começa em {@link #TITLES}.
  */
 public enum DataLevel {
     /** Só números e títulos: nenhum caminho de arquivo, nenhuma linha, nenhum trecho de código. */

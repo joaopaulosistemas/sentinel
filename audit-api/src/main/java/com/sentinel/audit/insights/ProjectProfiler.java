@@ -194,8 +194,7 @@ public final class ProjectProfiler {
         private void infrastructure(String lower, String rel) {
             if (lower.endsWith(".tf")) {
                 iac.add(rel);
-            } else if ((lower.endsWith(".yaml") || lower.endsWith(".yml")) && (rel.contains("k8s/") || rel.contains("helm/")
-                    || rel.contains("deploy/") || rel.contains("manifests/"))) {
+            } else if ((lower.endsWith(".yaml") || lower.endsWith(".yml")) && IAC_DIRS.stream().anyMatch(rel::contains)) {
                 iac.add(rel);
             }
         }
@@ -287,10 +286,8 @@ public final class ProjectProfiler {
         }
 
         void ci(String lower, String rel) {
-            if (rel.startsWith(".github/workflows/") && (lower.endsWith(".yml") || lower.endsWith(".yaml"))
-                    || lower.equals(".gitlab-ci.yml") || lower.equals("jenkinsfile")
-                    || lower.equals("azure-pipelines.yml") || lower.equals("bitbucket-pipelines.yml")
-                    || lower.equals("cloudbuild.yaml") || lower.equals(".travis.yml")) {
+            boolean workflow = rel.startsWith(".github/workflows/") && (lower.endsWith(".yml") || lower.endsWith(".yaml"));
+            if (workflow || CI_FILES.contains(lower)) {
                 ci.add(rel);
             }
         }
@@ -330,9 +327,16 @@ public final class ProjectProfiler {
         }
 
         /** {@code .env} e {@code .env.*}, menos os modelos ({@code .example}, {@code .sample}, {@code .template}, {@code .dist}). */
+        private static final List<String> IAC_DIRS = List.of("k8s/", "helm/", "deploy/", "manifests/");
+        private static final Set<String> CI_FILES = Set.of(".gitlab-ci.yml", "jenkinsfile", "azure-pipelines.yml",
+                "bitbucket-pipelines.yml", "cloudbuild.yaml", ".travis.yml");
+        private static final List<String> ENV_TEMPLATE_SUFFIXES = List.of(".example", ".sample", ".template", ".dist");
+
         private static boolean isEnvFileName(String lower) {
-            return lower.equals(".env") || lower.startsWith(".env.") && !(lower.endsWith(".example")
-                    || lower.endsWith(".sample") || lower.endsWith(".template") || lower.endsWith(".dist"));
+            if (lower.equals(".env")) {
+                return true;
+            }
+            return lower.startsWith(".env.") && ENV_TEMPLATE_SUFFIXES.stream().noneMatch(lower::endsWith);
         }
 
         private static boolean isPrivateKeyName(String lower) {

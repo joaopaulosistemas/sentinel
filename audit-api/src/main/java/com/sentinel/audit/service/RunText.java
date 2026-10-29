@@ -24,7 +24,7 @@ final class RunText {
     /** Resume a causa raiz da exceção em uma frase curta, sem stack trace nem segredos. */
     static String describe(Throwable error) {
         Throwable root = error;
-        while (root.getCause() != null && root.getCause() != root) {
+        while (root.getCause() != null && !root.equals(root.getCause())) {
             root = root.getCause();
         }
         String message = root.getMessage() != null ? root.getMessage() : root.getClass().getSimpleName();

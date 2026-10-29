@@ -198,10 +198,7 @@ function useSettingsEditor(settings: SettingView[], setNotice: SetNotice) {
     });
   };
   const onReset = (key: string) => {
-    setDrafts((d) => {
-      const { [key]: _removido, ...resto } = d;
-      return resto;
-    });
+    setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([chave]) => chave !== key)));
     reset.mutate(key, {
       onSuccess: () => setNotice({ kind: 'info', title: 'Voltou para o ambiente', text: `${key} usará o valor do ambiente após reiniciar a API.` }),
       onError: (e: Error) => setNotice({ kind: 'error', title: 'Não foi possível restaurar', text: e.message }),

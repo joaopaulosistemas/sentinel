@@ -5,6 +5,8 @@ import com.sentinel.audit.model.SuppressionReason;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -21,7 +23,7 @@ public final class PendingActionRules {
     /** Supressão pedida pelo Claude e aprovada vence sozinha: o achado volta se ninguém renovar. */
     public static final int SUPPRESSION_DAYS = 90;
     /** O Claude só pode pedir falso positivo; aceitar risco ou não corrigir é decisão de uma pessoa. */
-    public static final Set<SuppressionReason> ALLOWED_FOR_CLAUDE = Set.of(SuppressionReason.FALSE_POSITIVE);
+    public static final Set<SuppressionReason> ALLOWED_FOR_CLAUDE = Collections.unmodifiableSet(EnumSet.of(SuppressionReason.FALSE_POSITIVE));
 
     private static final Pattern BRANCH = Pattern.compile("[A-Za-z0-9._/-]{1,200}");
 

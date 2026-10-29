@@ -89,6 +89,7 @@ final class SchemaParser {
         private final String sql;
         private final int n;
         private final List<Statement> out = new ArrayList<>();
+        @SuppressWarnings("PMD.AvoidStringBufferField")   // estado de uma leitura curta, descartado junto com o Splitter
         private final StringBuilder cur = new StringBuilder();
         private int i;
         private int line = 1;
@@ -294,14 +295,17 @@ final class SchemaParser {
         return n.contains(".") ? n : "public." + n;
     }
 
+    private static final List<String> TABLE_CONSTRAINT_STARTS =
+            List.of("CONSTRAINT ", "PRIMARY KEY", "FOREIGN KEY", "UNIQUE", "CHECK", "EXCLUDE", "LIKE ");
+
     static String ident(String raw) {
         String s = raw.strip();
         StringBuilder b = new StringBuilder();
-        for (String part : splitDots(s)) {
+        for (String rawPart : splitDots(s)) {
             if (b.length() > 0) {
                 b.append('.');
             }
-            part = part.strip();
+            String part = rawPart.strip();
             if (part.startsWith("\"") && part.endsWith("\"") && part.length() >= 2) {
                 b.append(part, 1, part.length() - 1);
             } else {
@@ -400,8 +404,7 @@ final class SchemaParser {
         String body = balanced(t, m.end() - 1);
         for (String item : splitTopLevel(body)) {
             String up = item.toUpperCase(Locale.ROOT);
-            if (up.startsWith("CONSTRAINT ") || up.startsWith("PRIMARY KEY") || up.startsWith("FOREIGN KEY")
-                    || up.startsWith("UNIQUE") || up.startsWith("CHECK") || up.startsWith("EXCLUDE") || up.startsWith("LIKE ")) {
+            if (TABLE_CONSTRAINT_STARTS.stream().anyMatch(up::startsWith)) {
                 tableConstraint(table, item, line);
                 continue;
             }

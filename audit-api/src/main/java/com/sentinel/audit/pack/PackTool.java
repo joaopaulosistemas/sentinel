@@ -1,7 +1,6 @@
 package com.sentinel.audit.pack;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -181,8 +180,11 @@ public final class PackTool {
             err.println("Semgrep não encontrado no PATH (instale com: pip install semgrep)");
             return 2;
         }
-        try (InputStream in = p.getInputStream()) {
-            out.print(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+        try (java.io.Reader in = p.inputReader(StandardCharsets.UTF_8)) {
+            char[] buffer = new char[8192];
+            for (int n = in.read(buffer); n >= 0; n = in.read(buffer)) {
+                out.print(new String(buffer, 0, n));
+            }
         }
         if (!p.waitFor(10, TimeUnit.MINUTES)) {
             p.destroyForcibly();
@@ -276,7 +278,6 @@ public final class PackTool {
         Files.createDirectories(dir.resolve("remediation"));
         Files.writeString(dir.resolve("pack.yml"), "id: " + id + "\nname: \"" + id + "\"\nversion: 1.0.0\n"
                 + "description: \"O que este pacote cobre\"\nauthor: \"Seu time\"\nlanguages: [java]\nenabled-by-default: false\n");
-        String rule = id.replace('-', '_');
         Files.writeString(dir.resolve("rules/exemplo.yml"), """
                 rules:
                   - id: %s-sem-system-exit

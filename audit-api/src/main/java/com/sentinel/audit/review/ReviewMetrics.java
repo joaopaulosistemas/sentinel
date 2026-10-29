@@ -15,15 +15,20 @@ public final class ReviewMetrics {
                          int rulesDiscarded, Double rulePromotion) {}
 
     public static Result compute(List<SuggestionStatus> suggestions, List<RuleStage> rules) {
-        int open = 0, addressed = 0, dismissed = 0;
+        int open = 0;
+        int addressed = 0;
+        int dismissed = 0;
         for (SuggestionStatus s : suggestions) {
             switch (s) {
                 case OPEN -> open++;
                 case ADDRESSED -> addressed++;
                 case DISMISSED -> dismissed++;
+                default -> { }
             }
         }
-        int promoted = 0, discarded = 0, progress = 0;
+        int promoted = 0;
+        int discarded = 0;
+        int progress = 0;
         for (RuleStage r : rules) {
             if (r == RuleStage.PROMOTED) {
                 promoted++;

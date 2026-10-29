@@ -72,11 +72,13 @@ public final class FindingsOverview {
 
     /** O resumo por sistema ignora o filtro de sistema (senão todos os outros apareceriam com zero). */
     private static boolean matches(Finding f, Filter filter) {
-        return severityMatches(f, filter)
-                && (filter.category() == null || f.getCategory() == filter.category())
-                && (filter.status() == null || f.getStatus() == filter.status())
-                && suppressedMatches(f, filter)
+        return severityMatches(f, filter) && attributesMatch(f, filter) && suppressedMatches(f, filter)
                 && (!filter.onlyNew() || Boolean.TRUE.equals(f.getIsNew()));
+    }
+
+    private static boolean attributesMatch(Finding f, Filter filter) {
+        return (filter.category() == null || f.getCategory() == filter.category())
+                && (filter.status() == null || f.getStatus() == filter.status());
     }
 
     private static boolean severityMatches(Finding f, Filter filter) {

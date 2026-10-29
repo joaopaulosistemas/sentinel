@@ -55,6 +55,7 @@ final class Csv {
         final List<List<String>> records = new ArrayList<>();
         final List<Integer> startLines = new ArrayList<>();
         List<String> fields = new ArrayList<>();
+        @SuppressWarnings("PMD.AvoidStringBufferField")   // estado de uma leitura curta, descartado junto com o Reader
         final StringBuilder cur = new StringBuilder();
         boolean quoted;
         boolean any;

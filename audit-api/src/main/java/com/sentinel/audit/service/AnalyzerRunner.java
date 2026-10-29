@@ -141,6 +141,7 @@ final class AnalyzerRunner {
     }
 
     /** Espera o analisador, mas acorda a cada meio segundo para atender um pedido de cancelamento. */
+    @SuppressWarnings("PMD.PreserveStackTrace")   // o timeout é só o relógio do polling; o cancelamento não tem causa
     private Outcome awaitOutcome(Long runId, CompletableFuture<Outcome> future, List<CompletableFuture<Outcome>> all) {
         while (true) {
             try {
@@ -155,7 +156,7 @@ final class AnalyzerRunner {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrompido aguardando os analisadores da auditoria " + runId, e);
             } catch (java.util.concurrent.ExecutionException e) {
-                throw new IllegalStateException("Falha inesperada aguardando um analisador", e.getCause());
+                throw new IllegalStateException("Falha inesperada aguardando um analisador", e);
             }
         }
     }

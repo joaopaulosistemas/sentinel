@@ -37,46 +37,49 @@ public enum PathRole {
         };
     }
 
+    private static final java.util.List<String> GENERATED_SUFFIXES = java.util.List.of(".min.js", ".min.css", ".map");
+    private static final java.util.List<String> FIXTURE_SUFFIXES = java.util.List.of(".example", ".sample", ".template");
+    private static final java.util.List<String> TEST_SUFFIXES = java.util.List.of("test.java", "tests.java", "_test.go", "_test.py");
+    private static final java.util.List<String> TEST_PARTS = java.util.List.of(".test.", ".spec.");
+    private static final java.util.List<String> DOC_PREFIXES = java.util.List.of("readme", "changelog");
+
     public static PathRole of(String path) {
         if (path == null || path.isBlank()) {
             return PRODUCTION;
         }
-        String p = path.replace('\\', '/').toLowerCase(Locale.ROOT);
-        String[] parts = p.split("/");
+        String[] parts = path.replace('\\', '/').toLowerCase(Locale.ROOT).split("/");
         String file = parts[parts.length - 1];
-        for (int i = 0; i < parts.length - 1; i++) {
-            if (GENERATED_DIRS.contains(parts[i])) {
-                return GENERATED;
-            }
-        }
-        if (file.endsWith(".min.js") || file.endsWith(".min.css") || file.endsWith(".map")) {
+        if (inDirs(parts, GENERATED_DIRS) || GENERATED_SUFFIXES.stream().anyMatch(file::endsWith)) {
             return GENERATED;
         }
-        if (file.endsWith(".example") || file.endsWith(".sample") || file.endsWith(".template")) {
+        if (FIXTURE_SUFFIXES.stream().anyMatch(file::endsWith) || inDirs(parts, FIXTURE_DIRS)) {
             return FIXTURE;
         }
-        for (int i = 0; i < parts.length - 1; i++) {
-            if (FIXTURE_DIRS.contains(parts[i])) {
-                return FIXTURE;
-            }
-        }
-        for (int i = 0; i < parts.length - 1; i++) {
-            if (TEST_DIRS.contains(parts[i])) {
-                return TEST;
-            }
-        }
-        if (file.endsWith("test.java") || file.endsWith("tests.java") || file.contains(".test.") || file.contains(".spec.")
-                || file.startsWith("test_") || file.endsWith("_test.go") || file.endsWith("_test.py")) {
+        if (inDirs(parts, TEST_DIRS) || isTestFile(file)) {
             return TEST;
         }
-        for (int i = 0; i < parts.length - 1; i++) {
-            if (DOC_DIRS.contains(parts[i])) {
-                return DOCS;
-            }
-        }
-        if (parts.length == 1 && (file.endsWith(".md") || file.startsWith("readme") || file.startsWith("changelog"))) {
+        if (inDirs(parts, DOC_DIRS) || isTopLevelDoc(parts, file)) {
             return DOCS;
         }
         return PRODUCTION;
+    }
+
+    /** Algum diretório do caminho (o último elemento é o arquivo e não conta) está no conjunto. */
+    private static boolean inDirs(String[] parts, java.util.Set<String> dirs) {
+        for (int i = 0; i < parts.length - 1; i++) {
+            if (dirs.contains(parts[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isTestFile(String file) {
+        return TEST_SUFFIXES.stream().anyMatch(file::endsWith) || TEST_PARTS.stream().anyMatch(file::contains)
+                || file.startsWith("test_");
+    }
+
+    private static boolean isTopLevelDoc(String[] parts, String file) {
+        return parts.length == 1 && (file.endsWith(".md") || DOC_PREFIXES.stream().anyMatch(file::startsWith));
     }
 }

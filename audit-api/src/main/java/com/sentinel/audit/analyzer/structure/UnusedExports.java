@@ -89,20 +89,31 @@ public final class UnusedExports {
 
     static boolean skipFile(String rel) {
         String name = rel.substring(rel.lastIndexOf('/') + 1).toLowerCase(Locale.ROOT);
-        return name.startsWith("index.") || name.startsWith("main.") || name.startsWith("setup") || name.contains(".config.")
-                || name.contains(".stories.") || name.startsWith("vite-env") || name.endsWith(".module.ts")
-                || name.startsWith("polyfills") || name.startsWith("environment");
+        return SKIPPED_PREFIXES.stream().anyMatch(name::startsWith)
+                || SKIPPED_PARTS.stream().anyMatch(name::contains)
+                || name.endsWith(".module.ts");
+    }
+
+    private static final List<String> SKIPPED_PREFIXES = List.of("index.", "main.", "setup", "vite-env", "polyfills", "environment");
+    private static final List<String> SKIPPED_PARTS = List.of(".config.", ".stories.");
+
+    /** Linha sem recuo que fecha um comando ({@code }}, {@code };} ou {@code ;}). */
+    private static boolean endsTopLevelStatement(String line) {
+        if (line.isEmpty() || Character.isWhitespace(line.charAt(0))) {
+            return false;
+        }
+        String end = line.stripTrailing();
+        return end.endsWith("}") || end.endsWith(";");
     }
 
     /** Decorador de framework colado à declaração: vale o trecho depois do último comando de nível de arquivo que terminou. */
     static boolean hasFrameworkDecorator(String text, int declStart) {
         String[] above = text.substring(0, declStart).split("\n", -1);
         StringBuilder region = new StringBuilder();
-        for (int i = above.length - 1, seen = 0; i >= 0 && seen < DECORATOR_LOOKBACK_LINES; i--, seen++) {
+        int last = above.length - 1;
+        for (int i = last; i >= 0 && last - i < DECORATOR_LOOKBACK_LINES; i--) {
             String line = above[i];
-            boolean topLevelEnd = !line.isEmpty() && !Character.isWhitespace(line.charAt(0))
-                    && (line.stripTrailing().endsWith("}") || line.stripTrailing().endsWith("};") || line.stripTrailing().endsWith(";"));
-            if (topLevelEnd) {
+            if (endsTopLevelStatement(line)) {
                 break;
             }
             region.insert(0, line + "\n");

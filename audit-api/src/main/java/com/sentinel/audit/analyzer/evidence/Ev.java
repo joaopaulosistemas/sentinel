@@ -59,13 +59,14 @@ final class Ev {
         return String.format(java.util.Locale.ROOT, "%.1f", v);
     }
 
-    static String bytes(double b) {
+    static String bytes(double size) {
         String[] unit = {"B", "KB", "MB", "GB", "TB"};
+        double value = size;
         int i = 0;
-        while (b >= BYTES_PER_UNIT && i < unit.length - 1) {
-            b /= BYTES_PER_UNIT;
+        while (value >= BYTES_PER_UNIT && i < unit.length - 1) {
+            value /= BYTES_PER_UNIT;
             i++;
         }
-        return String.format(java.util.Locale.ROOT, i == 0 ? "%.0f %s" : "%.1f %s", b, unit[i]);
+        return String.format(java.util.Locale.ROOT, i == 0 ? "%.0f %s" : "%.1f %s", value, unit[i]);
     }
 }

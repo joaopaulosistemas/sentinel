@@ -22,7 +22,16 @@ import com.sentinel.audit.service.RunCatalog;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -154,30 +163,70 @@ public class AuditResource {
         List<Finding> findings = findingCatalog.byRun(id);
 
         return findings.stream()
-                .filter(f -> q.severity == null || f.getSeverity() == q.severity)
-                .filter(f -> q.category == null || f.getCategory() == q.category)
-                .filter(f -> q.status == null || f.getStatus() == q.status)
+                .filter(f -> q.getSeverity() == null || f.getSeverity() == q.getSeverity())
+                .filter(f -> q.getCategory() == null || f.getCategory() == q.getCategory())
+                .filter(f -> q.getStatus() == null || f.getStatus() == q.getStatus())
                 // suprimidos só aparecem se pedidos (includeSuppressed ou status=SUPPRESSED)
-                .filter(f -> q.includeSuppressed || q.status == FindingStatus.SUPPRESSED || f.getStatus() != FindingStatus.SUPPRESSED)
-                .filter(f -> !q.onlyNew || Boolean.TRUE.equals(f.getIsNew()))
+                .filter(f -> q.isIncludeSuppressed() || q.getStatus() == FindingStatus.SUPPRESSED || f.getStatus() != FindingStatus.SUPPRESSED)
+                .filter(f -> !q.isOnlyNew() || Boolean.TRUE.equals(f.getIsNew()))
                 .map(FindingMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     /** Filtros opcionais de {@link #getFindings}. */
     public static class FindingsQuery {
+        private Severity severity;
+        private Category category;
+        private FindingStatus status;
+        private boolean includeSuppressed;
+        private boolean onlyNew;
+
         @QueryParam("severity")
-        public Severity severity;
+        public void setSeverity(Severity severity) {
+            this.severity = severity;
+        }
+
+        public Severity getSeverity() {
+            return severity;
+        }
+
         @QueryParam("category")
-        public Category category;
+        public void setCategory(Category category) {
+            this.category = category;
+        }
+
+        public Category getCategory() {
+            return category;
+        }
+
         @QueryParam("status")
-        public FindingStatus status;
+        public void setStatus(FindingStatus status) {
+            this.status = status;
+        }
+
+        public FindingStatus getStatus() {
+            return status;
+        }
+
         @QueryParam("includeSuppressed")
         @DefaultValue("false")
-        public boolean includeSuppressed;
+        public void setIncludeSuppressed(boolean includeSuppressed) {
+            this.includeSuppressed = includeSuppressed;
+        }
+
+        public boolean isIncludeSuppressed() {
+            return includeSuppressed;
+        }
+
         @QueryParam("onlyNew")
         @DefaultValue("false")
-        public boolean onlyNew;
+        public void setOnlyNew(boolean onlyNew) {
+            this.onlyNew = onlyNew;
+        }
+
+        public boolean isOnlyNew() {
+            return onlyNew;
+        }
     }
 
     /**

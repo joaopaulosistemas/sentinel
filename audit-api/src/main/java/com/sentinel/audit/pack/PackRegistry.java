@@ -193,6 +193,13 @@ public class PackRegistry {
         }
     }
 
+    /** Falha de rede não derruba: segue com o que já havia em cache/embutido. */
+    private Path gitUnavailable(Exception e, List<String> warnings) {
+        warnings.add("não foi possível atualizar os pacotes do Git: " + e.getMessage());
+        LOG.warnf("Pacotes do Git indisponíveis: %s", e.getMessage());
+        return null;
+    }
+
     /** Raiz dos pacotes no repositório Git configurado; {@code null} (com aviso) se não deu para obtê-la. */
     private Path gitRoot(List<String> warnings) {
         try {
@@ -203,14 +210,11 @@ public class PackRegistry {
                 return null;
             }
             return root;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return gitUnavailable(e, warnings);
         } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            // falha de rede não derruba: segue com o que já havia em cache/embutido
-            warnings.add("não foi possível atualizar os pacotes do Git: " + e.getMessage());
-            LOG.warnf("Pacotes do Git indisponíveis: %s", e.getMessage());
-            return null;
+            return gitUnavailable(e, warnings);
         }
     }
 

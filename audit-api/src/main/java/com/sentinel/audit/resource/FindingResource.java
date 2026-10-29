@@ -80,32 +80,96 @@ public class FindingResource {
                     system.getStack() == null ? null : system.getStack().name(), run.getCompletedAt()));
         }
         return FindingsOverview.build(sources,
-                new FindingsOverview.Filter(q.systemId, q.severity == null ? java.util.Set.of() : java.util.Set.copyOf(q.severity),
-                        q.category, q.status, q.onlyNew, q.includeSuppressed), q.limit, q.offset);
+                new FindingsOverview.Filter(q.getSystemId(), q.getSeverity() == null ? java.util.Set.of() : java.util.Set.copyOf(q.getSeverity()),
+                        q.getCategory(), q.getStatus(), q.isOnlyNew(), q.isIncludeSuppressed()), q.getLimit(), q.getOffset());
     }
 
     /** Filtros e paginação de {@link #overview}. */
     public static class OverviewQuery {
+        private Long systemId;
+        private List<Severity> severity;
+        private Category category;
+        private FindingStatus status;
+        private boolean onlyNew;
+        private boolean includeSuppressed;
+        private int limit = 20;
+        private int offset;
+
         @QueryParam("systemId")
-        public Long systemId;
+        public void setSystemId(Long systemId) {
+            this.systemId = systemId;
+        }
+
+        public Long getSystemId() {
+            return systemId;
+        }
+
         @QueryParam("severity")
-        public List<Severity> severity;
+        public void setSeverity(List<Severity> severity) {
+            this.severity = severity;
+        }
+
+        public List<Severity> getSeverity() {
+            return severity;
+        }
+
         @QueryParam("category")
-        public Category category;
+        public void setCategory(Category category) {
+            this.category = category;
+        }
+
+        public Category getCategory() {
+            return category;
+        }
+
         @QueryParam("status")
-        public FindingStatus status;
+        public void setStatus(FindingStatus status) {
+            this.status = status;
+        }
+
+        public FindingStatus getStatus() {
+            return status;
+        }
+
         @QueryParam("onlyNew")
         @DefaultValue("false")
-        public boolean onlyNew;
+        public void setOnlyNew(boolean onlyNew) {
+            this.onlyNew = onlyNew;
+        }
+
+        public boolean isOnlyNew() {
+            return onlyNew;
+        }
+
         @QueryParam("includeSuppressed")
         @DefaultValue("false")
-        public boolean includeSuppressed;
+        public void setIncludeSuppressed(boolean includeSuppressed) {
+            this.includeSuppressed = includeSuppressed;
+        }
+
+        public boolean isIncludeSuppressed() {
+            return includeSuppressed;
+        }
+
         @QueryParam("limit")
         @DefaultValue("20")
-        public int limit;
+        public void setLimit(int limit) {
+            this.limit = limit;
+        }
+
+        public int getLimit() {
+            return limit;
+        }
+
         @QueryParam("offset")
         @DefaultValue("0")
-        public int offset;
+        public void setOffset(int offset) {
+            this.offset = offset;
+        }
+
+        public int getOffset() {
+            return offset;
+        }
     }
 
     /**

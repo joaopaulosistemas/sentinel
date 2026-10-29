@@ -127,8 +127,8 @@ public class NotificationService {
     }
 
     private static boolean isInternal(java.net.InetAddress a) {
-        return a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress() || a.isSiteLocalAddress()
-                || a.isMulticastAddress() || isUniqueLocalV6(a);
+        boolean local = a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress();
+        return local || a.isSiteLocalAddress() || a.isMulticastAddress() || isUniqueLocalV6(a);
     }
 
     private static boolean isUniqueLocalV6(java.net.InetAddress a) {
