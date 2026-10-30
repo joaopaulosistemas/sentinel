@@ -1,0 +1,124 @@
+/*
+ * Gráfico das últimas auditorias (tela de resultado) e a linha de cartões que o abriga.
+ * Só usa as variáveis --s-*, então acompanha o tema e a paleta escolhidos.
+ */
+
+/* Linha de cartões: com o gráfico, ele ocupa a primeira posição e é um pouco mais largo. */
+.sentinel-resumo-linha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+}
+.sentinel-resumo-linha:has(> .sentinel-grafico) { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); }
+.sentinel-resumo-linha > * { min-width: 0; }
+@media (max-width: 1180px) {
+  .sentinel-resumo-linha:has(> .sentinel-grafico) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sentinel-resumo-linha > .sentinel-grafico { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .sentinel-resumo-linha:has(> .sentinel-grafico) { grid-template-columns: minmax(0, 1fr); }
+}
+
+.sentinel-grafico { container-type: inline-size; position: relative; }
+.sentinel-grafico__area { display: grid; grid-template-columns: 24px 1fr 72px; }
+.sentinel-grafico__eixo-y, .sentinel-grafico__rotulos-ref { position: relative; height: 170px; font-size: 12px; }
+.sentinel-grafico__eixo-y span { position: absolute; right: 8px; transform: translateY(50%); color: var(--s-text-4); white-space: nowrap; }
+.sentinel-grafico__rotulos-ref span { position: absolute; left: 8px; transform: translateY(-50%); font-weight: 600; font-size: 13px; line-height: 1.2; color: var(--s-text-2); white-space: nowrap; }
+.sentinel-grafico__plano { position: relative; height: 170px; border-bottom: 1px solid var(--s-border-strong); }
+.sentinel-grafico__grade { position: absolute; left: 0; right: 0; border-top: 1px solid var(--s-border); }
+.sentinel-grafico__colunas { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 8px; padding: 0 8px; }
+
+.sentinel-grafico__coluna {
+  position: relative; flex: 1 1 0; min-width: 0; max-width: 64px; height: 100%; margin: 0 auto;
+  display: flex; align-items: flex-end; justify-content: center; border-radius: 4px; text-decoration: none;
+}
+.sentinel-grafico__coluna:hover::before, .sentinel-grafico__coluna:focus-visible::before {
+  content: ''; position: absolute; inset: 0 -4px; background: var(--s-selected); z-index: -1; border-radius: 4px;
+}
+.sentinel-grafico__coluna:focus-visible { outline: 2px solid var(--s-link); outline-offset: 3px; }
+.sentinel-grafico__barra { position: relative; display: block; width: 100%; border-radius: 4px 4px 0 0; }
+.sentinel-grafico__barra--good { background: var(--s-success-text); }
+.sentinel-grafico__barra--warn { background: var(--s-warn-text); }
+.sentinel-grafico__barra--bad { background: var(--s-danger-text); }
+.sentinel-grafico__barra--none { background: var(--s-text-4); }
+@media (prefers-reduced-motion: no-preference) { .sentinel-grafico__barra { transition: filter 0.12s; } }
+.sentinel-grafico__coluna:hover .sentinel-grafico__barra, .sentinel-grafico__coluna:focus-visible .sentinel-grafico__barra { filter: brightness(1.12) saturate(1.1); }
+.sentinel-grafico__coluna[aria-current='page'] .sentinel-grafico__barra { box-shadow: 0 0 0 2px var(--s-surface), 0 0 0 4px var(--s-text); }
+
+/* O valor fica acima das linhas de referência e com o fundo do cartão, para não ser riscado por elas. */
+.sentinel-grafico__valor {
+  position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); z-index: 3;
+  padding: 0 4px; border-radius: 3px; background: var(--s-surface); font-size: 13px; font-weight: 600; line-height: 18px; white-space: nowrap;
+}
+.sentinel-grafico__valor--good { color: var(--s-success-text); }
+.sentinel-grafico__valor--warn { color: var(--s-warn-text); }
+.sentinel-grafico__valor--bad { color: var(--s-danger-text); }
+.sentinel-grafico__valor--none { color: var(--s-text-4); }
+
+/* Sem nota: coluna tracejada e baixa, na cor do que aconteceu. */
+.sentinel-grafico__sem-nota {
+  --cor: var(--s-text-4);
+  position: relative; display: block; width: 100%; height: 44px; border: 1.5px dashed var(--cor); border-bottom: 0; border-radius: 4px 4px 0 0;
+  background: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--cor) 18%, transparent) 5px 6px);
+}
+.sentinel-grafico__sem-nota--failed { --cor: var(--s-danger-text); }
+.sentinel-grafico__sem-nota--active { --cor: var(--s-link); }
+.sentinel-grafico__sem-nota-texto {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: 4px;
+  font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--cor);
+}
+
+.sentinel-grafico__ref { position: absolute; left: 0; right: 0; z-index: 2; pointer-events: none; }
+.sentinel-grafico__ref i { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--s-text-2); }
+.sentinel-grafico__ref--atencao i { border-top: 2px dotted var(--s-text-3); }
+
+.sentinel-grafico__eixo-x { display: grid; grid-template-columns: 24px 1fr 72px; }
+.sentinel-grafico__rotulos { display: flex; gap: 8px; padding: 8px 8px 0; }
+.sentinel-grafico__rotulo {
+  flex: 1 1 0; min-width: 0; max-width: 64px; margin: 0 auto; padding-bottom: 2px; border-radius: 4px;
+  text-align: center; font-size: 12px; color: var(--s-text-3); text-decoration: none;
+}
+.sentinel-grafico__rotulo:hover { background: var(--s-selected); }
+.sentinel-grafico__rotulo b { display: block; font-size: 13px; font-weight: 600; color: var(--s-text); white-space: nowrap; }
+.sentinel-grafico__rotulo span { display: block; }
+.sentinel-grafico__rotulo .sentinel-grafico__aqui { font-weight: 600; color: var(--s-link); white-space: nowrap; }
+
+.sentinel-grafico__legenda {
+  display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--s-border);
+  font-size: 12px; color: var(--s-text-2);
+}
+.sentinel-grafico__legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.sentinel-grafico__amostra { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+.sentinel-grafico__amostra--sem-nota {
+  border: 1.5px dashed var(--s-text-4);
+  background: repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--s-text-4) 25%, transparent) 3px 4px);
+}
+
+/* Dica ao passar o mouse ou focar: sempre escura, como as dicas do Carbon. */
+.sentinel-grafico__dica {
+  position: fixed; z-index: 9000; width: 220px; padding: 10px 12px; border-radius: 8px; pointer-events: none;
+  background: #161616; color: #f4f4f4; font-size: 12px; line-height: 1.4; box-shadow: 0 4px 14px var(--s-shadow);
+}
+.sentinel-grafico__dica h3 { margin: 0 0 2px; font-size: 13px; font-weight: 600; }
+.sentinel-grafico__dica-sub { margin-bottom: 8px; color: #c6c6c6; }
+.sentinel-grafico__dica dl { display: grid; grid-template-columns: auto auto; gap: 3px 16px; margin: 0; }
+.sentinel-grafico__dica dt { color: #c6c6c6; }
+.sentinel-grafico__dica dd { margin: 0; text-align: right; font-weight: 600; }
+.sentinel-grafico__sobe { color: #6fdc8c; }
+.sentinel-grafico__desce { color: #ff8389; }
+.sentinel-grafico__dica-ir { margin-top: 8px; padding-top: 6px; border-top: 1px solid #393939; color: #a6c8ff; }
+
+/* Cartão estreito: some a data do eixo (fica na dica) e o rótulo das colunas sem nota. */
+@container (max-width: 600px) {
+  .sentinel-grafico__colunas, .sentinel-grafico__rotulos { gap: 4px; padding-left: 4px; padding-right: 4px; }
+  .sentinel-grafico__rotulo .sentinel-grafico__rotulo-dia, .sentinel-grafico__sem-nota .sentinel-grafico__sem-nota-texto { display: none; }
+  .sentinel-grafico__valor { padding: 0 2px; font-size: 12px; }
+  .sentinel-grafico__legenda { gap: 6px 14px; }
+}
+@media (max-width: 560px) {
+  .sentinel-grafico__area, .sentinel-grafico__eixo-x { grid-template-columns: 28px 1fr 0; }
+  .sentinel-grafico__rotulos-ref, .sentinel-grafico__eixo-x > :last-child { display: none; }
+  .sentinel-grafico__colunas, .sentinel-grafico__rotulos { gap: 3px; padding: 0 3px; }
+  .sentinel-grafico__rotulo b, .sentinel-grafico__rotulo .sentinel-grafico__aqui { font-size: 11px; }
+}
