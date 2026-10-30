@@ -1,6 +1,7 @@
 import { Button, Checkbox, InlineNotification } from '@carbon/react';
 import type { EngineConfig, RuleAdjustment } from '../types';
 import { isNoopAdjustment, type BulkAction, type RuleRow, type RuleScope } from '../utils/ruleCatalog';
+import { groupPacks, limitSide, type FamilyTab } from '../utils/ruleFamilies';
 
 export const mono = "'IBM Plex Mono', ui-monospace, monospace";
 export const SEVERITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'] as const;
@@ -48,30 +49,32 @@ export function SaveBar({ pending, disabled, dirty, onSave }: { pending: boolean
   );
 }
 
-export function PacksFieldset({ cfg, packs, setPacks }: { cfg: EngineConfig; packs: Record<string, boolean>; setPacks: (p: Record<string, boolean>) => void }) {
-  return (
-    <fieldset style={groupStyle}>
-      <legend style={groupLegend}>Pacotes de regras</legend>
-      {cfg.packs.map((p) => (
-        <Checkbox
-          key={p.id}
-          id={`eng-pack-${p.id}`}
-          labelText={`${p.name || p.id}${p.inProfile ? '' : ' (fora do perfil)'}`}
-          helperText={p.description ?? undefined}
-          checked={!!packs[p.id]}
-          onChange={(_, { checked }) => setPacks({ ...packs, [p.id]: checked })}
-        />
-      ))}
-    </fieldset>
-  );
+interface LimitsProps {
+  cfg: EngineConfig;
+  limits: Record<string, string>;
+  setLimits: (l: Record<string, string>) => void;
+  limitError: (key: string) => boolean;
 }
 
-export function LimitsFieldset({ cfg, limits, setLimits, limitError }: { cfg: EngineConfig; limits: Record<string, string>; setLimits: (l: Record<string, string>) => void; limitError: (key: string) => boolean }) {
+const LIMITS_BOX: Record<'front' | 'both', { title: string; note: string }> = {
+  front: { title: 'Limite de clean code · React', note: 'Vale só para arquivos .tsx e .jsx, que costumam ser mais longos por causa do JSX.' },
+  both: {
+    title: 'Limites de clean code',
+    note: 'Valem para Java e para TypeScript/JavaScript. “Achados por regra de clean code” também limita a duplicação e o código morto.',
+  },
+};
+
+/** Limites de clean code que valem para um lado; some quando o perfil não traz nenhum deles. */
+function LimitsBox({ side, cfg, limits, setLimits, limitError }: LimitsProps & { side: 'front' | 'both' }) {
+  const items = cfg.thresholds.filter((t) => limitSide(t.key) === side);
+  if (items.length === 0) return null;
+  const text = LIMITS_BOX[side];
   return (
-    <fieldset style={groupStyle}>
-      <legend style={groupLegend}>Limites de clean code</legend>
+    <div role="group" aria-label={text.title} style={{ display: 'grid', gap: 8, marginTop: 6, padding: '10px 12px', background: 'var(--s-header-row)' }}>
+      <div style={{ fontSize: 14, fontWeight: 600 }}>{text.title}</div>
+      <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{text.note}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 12 }}>
-        {cfg.thresholds.map((t) => (
+        {items.map((t) => (
           <label key={t.key} style={labelStyle}>
             {THRESHOLD_LABEL[t.key] ?? t.key}
             <input
@@ -86,7 +89,79 @@ export function LimitsFieldset({ cfg, limits, setLimits, limitError }: { cfg: En
           </label>
         ))}
       </div>
+    </div>
+  );
+}
+
+function packLabel(p: EngineConfig['packs'][number], count: number | undefined): string {
+  return `${p.name || p.id}${p.inProfile ? '' : ' (fora do perfil)'}${count ? ` · ${count} ${count === 1 ? 'regra' : 'regras'}` : ''}`;
+}
+
+/** Pacotes por lado (back-end, front-end, transversais); os limites de clean code ficam no grupo a que valem. */
+export function PacksFieldset({ cfg, packs, setPacks, ruleCounts, limits, setLimits, limitError }: LimitsProps & {
+  packs: Record<string, boolean>;
+  setPacks: (p: Record<string, boolean>) => void;
+  ruleCounts: Record<string, number>;
+}) {
+  const groups = groupPacks(cfg.packs);
+  const present = new Set(groups.map((g) => g.side));
+  return (
+    <fieldset style={groupStyle}>
+      <legend style={groupLegend}>Pacotes de regras</legend>
+      {groups.map((g) => (
+        <div key={g.side} role="group" aria-label={g.title} style={{ display: 'grid', gap: 8, paddingTop: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)', paddingBottom: 4 }}>
+            {g.title} <span style={{ fontWeight: 400 }}>· {g.packs.filter((p) => packs[p.id]).length} de {g.packs.length} ligados</span>
+          </div>
+          {g.packs.map((p) => (
+            <Checkbox
+              key={p.id}
+              id={`eng-pack-${p.id}`}
+              labelText={packLabel(p, ruleCounts[p.id])}
+              helperText={p.description ?? undefined}
+              checked={!!packs[p.id]}
+              onChange={(_, { checked }) => setPacks({ ...packs, [p.id]: checked })}
+            />
+          ))}
+          {(g.side === 'front' || g.side === 'both') && <LimitsBox side={g.side} cfg={cfg} limits={limits} setLimits={setLimits} limitError={limitError} />}
+        </div>
+      ))}
+      {/* Se não há pacote do lado a que um limite vale, o limite continua editável aqui. */}
+      {(['front', 'both'] as const).filter((side) => !present.has(side)).map((side) => (
+        <LimitsBox key={`limits-${side}`} side={side} cfg={cfg} limits={limits} setLimits={setLimits} limitError={limitError} />
+      ))}
     </fieldset>
+  );
+}
+
+/** Uma aba por família de regras (a categoria que a regra declara), com quantas regras tem. */
+export function FamilyTabs({ tabs, active, onPick }: { tabs: FamilyTab[]; active: string; onPick: (key: string) => void }) {
+  if (tabs.length < 2) return null;
+  return (
+    <div role="tablist" aria-label="Famílias de regras" style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--s-border)' }}>
+      {tabs.map((t) => {
+        const on = t.key === active;
+        return (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onPick(t.key)}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minHeight: 48, padding: '6px 16px', border: 0,
+              borderBottom: `3px solid ${on ? '#0f62fe' : 'transparent'}`, background: on ? 'var(--s-selected)' : 'transparent',
+              color: 'var(--s-text)', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <span style={{ fontWeight: 600 }}>{t.name}</span>
+            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
+              {t.total} {t.total === 1 ? 'regra' : 'regras'} · {t.seen} na auditoria{t.adjusted > 0 ? ` · ${t.adjusted} ${t.adjusted === 1 ? 'ajustada' : 'ajustadas'}` : ''}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

@@ -28,7 +28,7 @@ import {
 import {
   AddRuleRow,
   BulkBar,
-  LimitsFieldset,
+  FamilyTabs,
   LoadError,
   PacksFieldset,
   PAGE,
@@ -38,6 +38,7 @@ import {
   SaveNotices,
   mono,
 } from './EngineRulesParts';
+import { familyOf, familyTabs, hiddenAdjustedCount, rowsOfActivePacks, ruleCountByPack, type FamilyTab } from '../utils/ruleFamilies';
 
 
 /** Soma o que o sistema mudou aos ajustes que o servidor já tem, sem perder o que a outra aba salvou. */
@@ -135,6 +136,8 @@ interface RulesSectionProps {
   filters: { text: string; scope: RuleScope; packFilter: string; packNames: string[] };
   onFilters: { text: (v: string) => void; scope: (v: RuleScope) => void; pack: (v: string) => void };
   catalogMissing: boolean;
+  family: { tabs: FamilyTab[]; active: string; onPick: (key: string) => void };
+  packsNote: string;
   picked: Set<string>;
   gainPicked: number;
   bulk: (action: BulkAction) => void;
@@ -162,6 +165,8 @@ function RulesSection(p: RulesSectionProps) {
         “Só observar” mostra o achado sem pesar na nota. Aceita curinga: <code style={{ fontFamily: mono }}>sentinel-*</code>.
         O ganho na nota é uma estimativa da última auditoria: quanto a nota sobe se a regra deixar de pesar.
       </p>
+      <div style={{ padding: '8px 12px', background: 'var(--s-header-row)', borderLeft: '3px solid #0f62fe', fontSize: 13 }}>{p.packsNote}</div>
+      <FamilyTabs tabs={p.family.tabs} active={p.family.active} onPick={p.family.onPick} />
       <RuleFilters
         text={filters.text}
         scope={filters.scope}
@@ -175,7 +180,7 @@ function RulesSection(p: RulesSectionProps) {
       <BulkBar count={p.picked.size} gain={p.gainPicked} bulk={p.bulk} />
       {filtered.length === 0 ? (
         <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>
-          {allRows.length === 0 ? 'Ainda não há auditoria concluída: adicione uma regra pelo id.' : 'Nenhuma regra com esse filtro.'}
+          {allRows.length === 0 ? 'Ainda não há regra para mostrar: ligue um pacote acima ou adicione uma regra pelo id.' : 'Nenhuma regra com esse filtro nesta família.'}
         </span>
       ) : (
         <RulesTable
@@ -212,6 +217,7 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   const [text, setText] = useState('');
   const [scope, setScope] = useState<RuleScope>('all');
   const [packFilter, setPackFilter] = useState('');
+  const [family, setFamily] = useState('');
   const [visible, setVisible] = useState(PAGE);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const plan = useFixPlanItems(system.id);
@@ -248,8 +254,17 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   if (query.isError || !cfg) return <LoadError error={query.error} />;
 
   const adjustedIds = new Set(rules.filter((r) => !isNoopAdjustment(r)).map((r) => r.id));
-  const packNames = Array.from(new Set(allRows.map((r) => r.pack).filter((p): p is string => !!p))).sort();
-  const filtered = filterRuleRows(allRows, { query: text, scope, pack: packFilter }, adjustedIds);
+  // Só aparecem as regras dos pacotes ligados acima; a família escolhida filtra o resto.
+  const packRows = rowsOfActivePacks(allRows, packs);
+  const tabs = familyTabs(packRows, adjustedIds);
+  const activeFamily = tabs.some((t) => t.key === family) ? family : (tabs[0]?.key ?? '');
+  const packNames = Array.from(new Set(packRows.map((r) => r.pack).filter((p): p is string => !!p))).sort();
+  const inFamily = tabs.length < 2 ? packRows : packRows.filter((r) => familyOf(r) === activeFamily);
+  const filtered = filterRuleRows(inFamily, { query: text, scope, pack: packFilter }, adjustedIds);
+  const hidden = hiddenAdjustedCount(allRows, packs, adjustedIds);
+  const packsNote =
+    `Mostrando as regras dos ${cfg.packs.filter((p) => packs[p.id]).length} pacotes ligados acima (${packRows.length} ${packRows.length === 1 ? 'regra' : 'regras'}). Ligue um pacote para ver as regras dele aqui.` +
+    (hidden > 0 ? ` ${hidden} ${hidden === 1 ? 'regra ajustada está' : 'regras ajustadas estão'} em pacote desligado e não aparece.` : '');
   const shown = filtered.slice(0, visible);
   const pickedIds = [...picked];
 
@@ -265,10 +280,17 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
       </p>
       <SaveNotices save={save} dirty={dirty} />
       <Header cfg={cfg} busy={save.isPending} onReset={() => save.mutate(empty, { onSuccess: (data) => syncFrom(data) })} />
-      <PacksFieldset cfg={cfg} packs={packs} setPacks={setPacks} />
-      <LimitsFieldset cfg={cfg} limits={limits} setLimits={setLimits} limitError={(k) => limitInvalid(limits[k])} />
+      <PacksFieldset
+        cfg={cfg}
+        packs={packs}
+        setPacks={setPacks}
+        ruleCounts={ruleCountByPack(cfg.catalog)}
+        limits={limits}
+        setLimits={setLimits}
+        limitError={(k) => limitInvalid(limits[k])}
+      />
       <RulesSection
-        allRows={allRows}
+        allRows={packRows}
         filtered={filtered}
         shown={shown}
         filters={{ text, scope, packFilter, packNames }}
@@ -278,6 +300,8 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
           pack: (v) => { setPackFilter(v); resetPage(); },
         }}
         catalogMissing={(cfg.catalog ?? []).length === 0}
+        family={{ tabs, active: activeFamily, onPick: (k) => { setFamily(k); resetPage(); } }}
+        packsNote={packsNote}
         picked={picked}
         gainPicked={estimatedGain(allRows, pickedIds)}
         bulk={(action) => setRules(applyBulk(rules, pickedIds, action))}

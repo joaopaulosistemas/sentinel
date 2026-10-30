@@ -154,8 +154,9 @@ describe('EnginePanel', () => {
   it('mostra o que cada regra faz, inclusive as que não apareceram na última auditoria', async () => {
     setup(catalogConfig());
     expect(await screen.findByText('Hash fraco (MD5/SHA-1).')).toBeInTheDocument();
-    expect(screen.getByText('Classe grande demais.')).toBeInTheDocument();
     expect(screen.getAllByText('não apareceu').length).toBe(2);
+    fireEvent.click(screen.getByRole('tab', { name: /Qualidade/ }));
+    expect(screen.getByText('Classe grande demais.')).toBeInTheDocument();
   });
 
   it('a busca filtra por texto da regra e o filtro de pacote separa os pacotes', async () => {
@@ -166,8 +167,9 @@ describe('EnginePanel', () => {
     expect(screen.queryByText('Hash fraco (MD5/SHA-1).')).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Buscar regra'), { target: { value: '' } });
     fireEvent.change(screen.getByLabelText('Filtrar por pacote'), { target: { value: 'core-quality' } });
-    expect(screen.getByText('Classe grande demais.')).toBeInTheDocument();
     expect(screen.queryByText('Dado pessoal em log.')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /Qualidade/ }));
+    expect(screen.getByText('Classe grande demais.')).toBeInTheDocument();
   });
 
   it('ação em lote coloca várias regras em "só observar" de uma vez', async () => {
@@ -192,7 +194,71 @@ describe('EnginePanel', () => {
       items: [{ ruleId: 'semgrep.rules.sentinel-god-class', title: 'Classe grande', severity: 'HIGH', category: 'QUALITY', occurrences: 4, scoreGain: 3.5, exampleFile: null, exampleLine: null, howToFix: null }],
     };
     setup(catalogConfig(), EngineRulesPanel, audits, undefined, plan);
+    fireEvent.click(await screen.findByRole('tab', { name: /Qualidade/ }));
     expect(await screen.findByText('+3.5')).toBeInTheDocument();
+  });
+
+  const grouped = () =>
+    config({
+      packs: [
+        { id: 'core-quarkus', name: 'Quarkus', description: null, inProfile: true, active: true },
+        { id: 'core-vue', name: 'Vue', description: null, inProfile: false, active: false },
+        { id: 'core-security', name: 'Segurança', description: null, inProfile: true, active: true },
+      ],
+      thresholds: [
+        { key: 'max-function-lines', profileValue: null, override: null },
+        { key: 'max-component-lines', profileValue: null, override: null },
+      ],
+      knownRules: [],
+      catalog: [
+        { id: 'sentinel-quarkus-getenv-direto', pack: 'core-quarkus', message: 'Leitura direta do ambiente.', severity: 'WARNING', category: 'quality' },
+        { id: 'sentinel-vue-v-html', pack: 'core-vue', message: 'v-html sem escapar.', severity: 'ERROR', category: 'security' },
+        { id: 'sentinel-xss-inner-html', pack: 'core-security', message: 'HTML inserido no DOM.', severity: 'WARNING', category: 'security' },
+      ],
+    });
+
+  it('agrupa os pacotes por lado e conta as regras de cada um', async () => {
+    setup(grouped());
+    expect(await screen.findByRole('group', { name: 'Back-end' })).toHaveTextContent('Quarkus · 1 regra');
+    expect(screen.getByRole('group', { name: 'Front-end' })).toHaveTextContent('Vue (fora do perfil) · 1 regra');
+    expect(screen.getByRole('group', { name: 'Transversais' })).toHaveTextContent('Segurança · 1 regra');
+  });
+
+  it('cada limite de clean code fica no grupo a que vale', async () => {
+    setup(grouped());
+    const front = await screen.findByRole('group', { name: 'Limite de clean code · React' });
+    expect(front).toContainElement(screen.getByLabelText('Linhas por componente'));
+    expect(front).not.toContainElement(screen.getByLabelText('Linhas por função'));
+    const both = screen.getByRole('group', { name: 'Limites de clean code' });
+    expect(both).toContainElement(screen.getByLabelText('Linhas por função'));
+    expect(screen.getByRole('group', { name: 'Transversais' })).toContainElement(both);
+    expect(screen.getByRole('group', { name: 'Front-end' })).toContainElement(front);
+  });
+
+  it('só mostra as regras dos pacotes ligados e acompanha o checkbox', async () => {
+    setup(grouped());
+    expect(await screen.findByText('HTML inserido no DOM.')).toBeInTheDocument();
+    expect(screen.queryByText('v-html sem escapar.')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Vue/ }));
+    expect(screen.getByText('v-html sem escapar.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Segurança/ }));
+    expect(screen.queryByText('HTML inserido no DOM.')).not.toBeInTheDocument();
+  });
+
+  it('as abas separam as regras por família', async () => {
+    setup(grouped());
+    expect(await screen.findByRole('tab', { name: /Segurança/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('Leitura direta do ambiente.')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /Qualidade/ }));
+    expect(screen.getByText('Leitura direta do ambiente.')).toBeInTheDocument();
+    expect(screen.queryByText('HTML inserido no DOM.')).not.toBeInTheDocument();
+  });
+
+  it('avisa quando uma regra ajustada está em pacote desligado', async () => {
+    const cfg = grouped();
+    cfg.tuning.rules = [{ id: 'sentinel-vue-v-html', severity: null, disabled: true, shadow: null }];
+    setup(cfg);
+    expect(await screen.findByText(/1 regra ajustada está em pacote desligado/)).toBeInTheDocument();
   });
 
   it('avisa quando há alteração sem salvar e deixa de avisar depois de salvar', async () => {
