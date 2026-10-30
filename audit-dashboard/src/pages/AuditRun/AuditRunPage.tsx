@@ -443,7 +443,7 @@ export function AuditRunPage() {
   if (error || !run) return <RunNotFound error={error} />;
 
   const seconds = elapsedSeconds(run);
-  if (run.status === 'COMPLETED') return <CompletedView run={run} seconds={seconds} />;
+  if (run.status === 'COMPLETED') return <CompletedView key={run.id} run={run} seconds={seconds} />;
   // O servidor só devolve o andamento enquanto a auditoria roda; ao concluir, guarda-se o último visto.
   const progress = run.progress ?? lastProgress.current;
   return <RunningView run={run} progress={progress} history={history} mcp={mcp} seconds={seconds} />;

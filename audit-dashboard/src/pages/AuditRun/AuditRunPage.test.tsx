@@ -139,6 +139,34 @@ describe('AuditRunPage', () => {
     expect(within(changes).getByRole('link', { name: 'Ver só os novos' })).toHaveAttribute('href', '/findings?auditId=215&onlyNew=1');
   });
 
+  it('o medidor da nota fica no veredito e o gráfico das últimas auditorias ocupa o lugar dele', async () => {
+    const score = { security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 };
+    const past = (id: number, day: number, overall: number): Partial<AuditRunResponse> => ({
+      id, systemId: 7, status: 'COMPLETED', riskScore: { overall, ...score }, startedAt: `2026-10-${day}T10:00:00`, completedAt: `2026-10-${day}T10:04:00`,
+    });
+    renderPage(
+      { systemId: 7, status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, ...score }, previousAuditId: 214, scoreDelta: 5 },
+      { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] },
+      [past(213, 20, 50), past(214, 21, 58), past(215, 22, 63)],
+    );
+    const verdict = await screen.findByRole('region', { name: /Etapa 1/ });
+    expect(within(verdict).getByRole('img', { name: 'Nota 63 de 100, meta 75' })).toBeInTheDocument();
+    expect(within(verdict).getByText('Meta 75 · faltam 12 pontos', { exact: false })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Nota geral' })).not.toBeInTheDocument();
+    const chart = await screen.findByRole('region', { name: 'Últimas auditorias' });
+    expect(await within(chart).findByRole('link', { name: /Abrir a auditoria 213/ })).toHaveAttribute('href', '/audits/213');
+    expect(within(chart).getByRole('link', { name: /Abrir a auditoria 215.*Esta é a auditoria aberta/ })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('sem o sistema da auditoria não há como buscar o histórico, então o gráfico não aparece', async () => {
+    renderPage(
+      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 80, security: 80, quality: 80, architecture: 80, dependencies: 80, observability: 80 } },
+      { scoreNow: 80, scoreIfCriticalFixed: 80, criticalCount: 0, items: [] },
+    );
+    expect(await screen.findByRole('region', { name: 'O que mudou' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Últimas auditorias' })).not.toBeInTheDocument();
+  });
+
   it('sem auditoria anterior o cartão "O que mudou" avisa que não há com o que comparar', async () => {
     renderPage(
       { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 80, security: 80, quality: 80, architecture: 80, dependencies: 80, observability: 80 } },

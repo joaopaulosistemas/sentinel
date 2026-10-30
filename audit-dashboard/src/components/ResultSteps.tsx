@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Fragment, useState } from 'react';
 import { useFixPlan } from '../hooks/useAuditRuns';
 import { useInsights } from '../hooks/useLifecycle';
+import { AuditHistoryChart } from './AuditHistoryChart';
 import { ScoreExplanationPanel } from './ScoreExplanationPanel';
 import type { AnalyzerRunInfo, AuditRunResponse, Category, Severity } from '../types';
 import { categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
@@ -49,23 +50,52 @@ function DeltaVsPrevious({ run }: { run: AuditRunResponse }) {
   return (
     <>
       {' · '}
-      <span style={{ color: run.scoreDelta >= 0 ? 'var(--s-success-text)' : 'var(--s-danger-text)', fontWeight: 600 }}>
-        {run.scoreDelta >= 0 ? '+' : ''}{Math.round(run.scoreDelta)}
-      </span>{' '}
-      vs #{run.previousAuditId}
+      <span style={{ whiteSpace: 'nowrap' }}>
+        <span style={{ color: run.scoreDelta >= 0 ? 'var(--s-success-text)' : 'var(--s-danger-text)', fontWeight: 600 }}>
+          {run.scoreDelta >= 0 ? '+' : ''}{Math.round(run.scoreDelta)}
+        </span>{' '}
+        vs #{run.previousAuditId}
+      </span>
     </>
   );
 }
 
-/** Etapa 1: o veredito em uma frase e o atalho para a lista de correções. */
-function VerdictSection({ plan }: { plan: Plan }) {
+/** Nota em medidor circular, com a meta marcada no anel e a distância dela logo abaixo. */
+function ScoreRing({ run, plan }: { run: AuditRunResponse; plan: Plan }) {
+  const score = Math.round(plan.scoreNow);
+  const pct = Math.max(0, Math.min(100, score));
+  const color = scoreColor(score);
+  const missing = Math.max(0, TARGET_SCORE - score);
+  return (
+    <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <div role="img" aria-label={`Nota ${score} de 100, meta ${TARGET_SCORE}`} style={{ position: 'relative', width: 128, height: 128 }}>
+        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: `conic-gradient(${color} 0 ${pct}%, var(--s-border) ${pct}% 100%)` }} />
+        <div style={{ position: 'absolute', inset: 12, borderRadius: '50%', background: 'var(--s-surface)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 40, lineHeight: 1, fontWeight: 300, color }}>{score}</span>
+          <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>de 100</span>
+        </div>
+        <span aria-hidden="true" style={{ position: 'absolute', inset: 0, transform: `rotate(${TARGET_SCORE * 3.6}deg)` }}>
+          <span style={{ position: 'absolute', left: '50%', top: -3, width: 3, height: 14, marginLeft: -1.5, background: 'var(--s-text)' }} />
+        </span>
+      </div>
+      <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--s-text-2)', maxWidth: 230 }}>
+        {missing === 0 ? `Dentro da meta de ${TARGET_SCORE}` : `Meta ${TARGET_SCORE} · faltam ${missing} ${missing === 1 ? 'ponto' : 'pontos'}`}
+        <DeltaVsPrevious run={run} />
+      </div>
+    </div>
+  );
+}
+
+/** Etapa 1: o medidor da nota, o veredito em uma frase e o atalho para a lista de correções. */
+function VerdictSection({ run, plan }: { run: AuditRunResponse; plan: Plan }) {
   const v = verdict(plan);
   return (
     <section
       aria-labelledby="etapa-1"
       style={{ ...box, background: 'var(--s-selected)', borderLeft: `4px solid ${toneColor[v.tone]}`, display: 'flex', gap: '1rem 2rem', alignItems: 'center', flexWrap: 'wrap', padding: '16px 24px' }}
     >
-      <div style={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <ScoreRing run={run} plan={plan} />
+      <div style={{ flex: 1, minWidth: 280, display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span id="etapa-1" style={eyebrow}>Etapa 1 · Veredito</span>
         <span style={{ fontSize: 20 }}><Emphasis text={v.headline} /></span>
         <span style={{ color: 'var(--s-text-2)' }}><Emphasis text={v.detail} /></span>
@@ -75,32 +105,6 @@ function VerdictSection({ plan }: { plan: Plan }) {
           Ver o que corrigir primeiro
         </a>
       )}
-    </section>
-  );
-}
-
-/** Nota em medidor circular, com a meta marcada no anel. */
-function ScoreCard({ run, plan }: { run: AuditRunResponse; plan: Plan }) {
-  const score = Math.round(plan.scoreNow);
-  const pct = Math.max(0, Math.min(100, score));
-  const color = scoreColor(score);
-  const missing = Math.max(0, TARGET_SCORE - score);
-  return (
-    <section aria-label="Nota geral" style={{ ...box, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-      <div role="img" aria-label={`Nota ${score} de 100, meta ${TARGET_SCORE}`} style={{ position: 'relative', width: 168, height: 168 }}>
-        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: `conic-gradient(${color} 0 ${pct}%, var(--s-border) ${pct}% 100%)` }} />
-        <div style={{ position: 'absolute', inset: 16, borderRadius: '50%', background: 'var(--s-surface)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 52, lineHeight: 1, fontWeight: 300, color }}>{score}</span>
-          <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>de 100</span>
-        </div>
-        <span aria-hidden="true" style={{ position: 'absolute', inset: 0, transform: `rotate(${TARGET_SCORE * 3.6}deg)` }}>
-          <span style={{ position: 'absolute', left: '50%', top: -3, width: 3, height: 18, marginLeft: -1.5, background: 'var(--s-text)' }} />
-        </span>
-      </div>
-      <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--s-text-2)' }}>
-        {missing === 0 ? `Dentro da meta de ${TARGET_SCORE}` : `Meta ${TARGET_SCORE} · faltam ${missing} ${missing === 1 ? 'ponto' : 'pontos'}`}
-        <DeltaVsPrevious run={run} />
-      </div>
     </section>
   );
 }
@@ -386,9 +390,9 @@ export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; on
   const items = plan.items.filter((i) => category === null || i.category === category).slice(0, 5);
   return (
     <div style={{ display: 'grid', gap: '1.5rem' }}>
-      <VerdictSection plan={plan} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '1.5rem' }}>
-        <ScoreCard run={run} plan={plan} />
+      <VerdictSection run={run} plan={plan} />
+      <div className="sentinel-resumo-linha">
+        {run.systemId !== undefined && <AuditHistoryChart systemId={run.systemId} systemName={run.systemName} currentId={run.id} />}
         <SeverityCard run={run} />
         <ChangesCard run={run} />
       </div>

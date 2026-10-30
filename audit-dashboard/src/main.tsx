@@ -3,6 +3,7 @@ import './styles/motion.css';
 import './styles/theme.css';
 import './styles/paletas.css';
 import './styles/responsivo.css';
+import './styles/grafico-auditorias.css';
 import './styles/leitura.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
