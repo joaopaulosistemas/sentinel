@@ -27,7 +27,7 @@ class PackLoaderTest {
         PackLoader.Discovery d = PackLoader.discover(TestPacks.builtinRoot());
 
         assertEquals(java.util.Map.of(), d.rejected(), "nenhum pacote embutido pode ser rejeitado");
-        assertEquals(List.of("core-architecture", "core-boas-praticas", "core-corporativo", "core-frontend", "core-iac", "core-persistencia", "core-quality", "core-quarkus", "core-security", "core-spring", "core-vue", "java-cert-sonar", "java-google-style", "market-tools", "ts-clean-code"),
+        assertEquals(List.of("core-architecture", "core-boas-praticas", "core-corporativo", "core-frontend", "core-iac", "core-persistencia", "core-quality", "core-quarkus", "core-security", "core-spring", "core-vue", "java-cert-sonar", "java-google-style", "market-tools", "ts-clean-code", "ts-clean-code-labs42"),
                 d.packs().stream().map(RulePack::id).sorted().collect(Collectors.toList()));
         RulePack quality = d.packs().stream().filter(p -> p.id().equals("core-quality")).findFirst().get();
         assertEquals(41, quality.semgrepRuleCount());
@@ -376,6 +376,15 @@ class PackLoaderTest {
         assertFalse(r.pack().manifest().enabledByDefault());
         assertEquals(7, r.pack().semgrepRuleCount());
         assertTrue(r.warnings().isEmpty(), "toda regra tem caso de teste: " + r.warnings());
+    }
+
+    @Test
+    void pacoteTsCleanCodeLabs42EmbutidoEValidoEEstaDesligadoPorPadrao() {
+        PackLoader.Report r = PackLoader.inspect(TestPacks.builtinRoot().resolve("ts-clean-code-labs42"));
+        assertTrue(r.ok(), r.errors().toString());
+        assertFalse(r.pack().manifest().enabledByDefault());
+        assertEquals(21, r.pack().semgrepRuleCount());
+        assertTrue(r.warnings().isEmpty(), "toda regra tem caso de teste e remediação: " + r.warnings());
     }
 
     @Test

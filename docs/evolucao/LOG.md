@@ -514,3 +514,14 @@ Faltava um jeito de saber se o Joern (e as demais ferramentas de comando do paco
 
 Verificado: os arquivos Java alterados não têm erro de sintaxe; testes novos escritos (`SarifAnalyzerTest`).
 NÃO verificado: Maven e testes Java (só o CI); a aparência da nota na tela de acompanhamento (o painel não mudou; ele já exibe a nota do analisador).
+
+## Dashboard 12.39.0 / API — Pacote TypeScript clean code (guia labs42io)
+
+Novo pacote `ts-clean-code-labs42`, a partir do guia [clean-code-typescript](https://labs42io.github.io/clean-code-typescript/). As regras e as mensagens são do Sentinel (texto do guia não foi copiado).
+
+- 21 regras `sentinel-cct-*`: parâmetros demais, parâmetro booleano, função que altera o argumento, escrita no global, valor padrão com `||`, condição composta, `typeof`/`instanceof` em cadeia, código inalcançável, laço com índice, `throw` sem `Error`, `catch` que só registra, rejeição de promessa ignorada, `then` encadeado, parâmetro `callback`, nome sem significado, número mágico, importação relativa profunda, código comentado, comentário de diário, marcador de posição e teste sem nome descritivo.
+- Desligado por padrão. Perfil novo `clean-code-typescript` liga o pacote com severidade baixa.
+- `docs/padrao-typescript/clean-code-labs42.md` mostra a tabela guia → regra e lista o que o guia pede e não dá para checar por código (SOLID, coesão, TDD, nomes pronunciáveis), que fica para revisão humana.
+
+Verificado: `semgrep --test` passa nas 21 regras (caso positivo e negativo cada); `scripts/paridade-motores.py` mostra os mesmos achados no Opengrep e no Semgrep sobre todos os pacotes; toda regra tem remediação.
+NÃO verificado: Maven e testes Java (só o CI; os testes de contagem de pacotes e o do novo perfil foram atualizados); precisão em repositório real (nenhuma taxa de falso positivo medida: use em sombra antes de pesar na nota).

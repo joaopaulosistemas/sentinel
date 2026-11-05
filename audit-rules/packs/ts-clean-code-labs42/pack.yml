@@ -1,0 +1,7 @@
+id: ts-clean-code-labs42
+name: "Clean code em TypeScript (guia labs42io)"
+version: 1.0.0
+description: "Regras automáticas para o que o guia clean-code-typescript (labs42io) permite checar por código: parâmetros, funções, erros, promessas, comentários e nomes. O resto do guia (SOLID, TDD, coesão) fica para revisão humana. Desligado por padrão."
+author: Sentinel
+languages: [typescript]
+enabled-by-default: false

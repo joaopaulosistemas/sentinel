@@ -218,6 +218,15 @@ class PackRegistryTest {
     }
 
     @Test
+    void perfilCleanCodeTypescriptLigaOPacoteDoGuiaLabs42() {
+        PackRegistry r = TestPacks.registry();
+        assertFalse(ids(r.policyFor("default")).contains("ts-clean-code-labs42"), "regras do guia são opt-in");
+        AuditPolicy cc = r.policyFor("clean-code-typescript");
+        assertTrue(ids(cc).contains("ts-clean-code-labs42"));
+        assertEquals(com.sentinel.audit.model.Severity.LOW, cc.overrideFor("sentinel-cct-numero-magico").severity());
+    }
+
+    @Test
     void perfisGoogleLigamOsPacotesDoPadraoEFicamDesligadosPorPadrao() {
         PackRegistry r = TestPacks.registry();
         assertTrue(r.snapshot().rejected().isEmpty(), r.snapshot().rejected().toString());

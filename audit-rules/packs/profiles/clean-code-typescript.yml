@@ -1,0 +1,6 @@
+id: clean-code-typescript
+name: "TypeScript clean code (guia labs42io)"
+description: "Pacotes padrão para TypeScript/Angular/React mais o ts-clean-code-labs42, com as regras tiradas do guia clean-code-typescript. Todas pesam pouco (severidade baixa): servem para puxar a qualidade do código, não para barrar entrega."
+packs: [core-security, core-iac, core-persistencia, core-quality, core-frontend, market-tools, ts-clean-code-labs42]
+rules:
+  "sentinel-cct-*": {severity: low}

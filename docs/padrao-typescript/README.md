@@ -49,3 +49,7 @@ Não dá para verificar por máquina: método pequeno e coeso, nome que começa 
 A classe "modelo" do próprio documento (seção de exemplo) quebra o padrão: tem `private idInstituicao` sem underscore, `any`, `console.log`, `numContaCorrente` e métodos privados sem `_`. Rodando o pacote `ts-clean-code` nela, saem 11 achados (9 privados sem underscore e 2 abreviações), fora o que o ESLint acrescenta. Vale corrigi-la, já que as pessoas copiam dali.
 
 Atrito conhecido: `explicit-function-return-type` também reclama de callbacks em propriedades de objeto (`next: data => {...}`), como nos exemplos do documento. Se incomodar em `subscribe({ next, error })`, é a regra que precisa de decisão: exigir o retorno ali ou aceitar a inferência.
+
+## Outro conjunto: guia clean-code-typescript
+
+Para um conjunto de regras tiradas do guia labs42io (parâmetros, erros, promessas, comentários, nomes), veja [clean-code-labs42.md](clean-code-labs42.md).
