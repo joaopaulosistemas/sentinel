@@ -44,7 +44,8 @@ services:
       dockerfile: audit-api/Dockerfile
       args:
         WITH_ESLINT: ${WITH_ESLINT:-true}   # Node 20 + ESLint + Stylelint (stack web)
-        WITH_SEMGREP: ${WITH_SEMGREP:-true}
+        WITH_OPENGREP: ${WITH_OPENGREP:-true}
+        WITH_SEMGREP: ${WITH_SEMGREP:-false}
         WITH_TRIVY: ${WITH_TRIVY:-true}
         WITH_GITLEAKS: ${WITH_GITLEAKS:-true}
         WITH_PMD: ${WITH_PMD:-true}

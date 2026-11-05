@@ -115,6 +115,9 @@ jobs:
       - name: Instalar o Semgrep (mesma versão do CI)
         if: steps.chave.outputs.pular == 'false'
         run: pip install semgrep==1.172.0
+      - name: Instalar o Opengrep (motor do Sentinel, mesma versão do CI)
+        if: steps.chave.outputs.pular == 'false'
+        run: bash scripts/instalar-opengrep.sh
       - name: Configurar o autor dos commits
         if: steps.chave.outputs.pular == 'false'
         run: |
@@ -133,7 +136,7 @@ jobs:
           claude_args: >-
             --max-turns 140
             --disallowedTools "Bash(git push origin main:*),Bash(git push --force:*),Bash(git push -f:*),Bash(npm:*),Bash(npx:*),Bash(curl:*),Bash(wget:*)"
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh workflow run:*),Bash(semgrep:*),Bash(python3:*),Bash(mvn:*),Bash(mktemp:*),Bash(mkdir:*),Bash(cp:*),Bash(ls:*),Bash(cat:*),Bash(head:*),Bash(sed:*),Bash(wc:*)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh workflow run:*),Bash(semgrep:*),Bash(opengrep:*),Bash(python3:*),Bash(mvn:*),Bash(mktemp:*),Bash(mkdir:*),Bash(cp:*),Bash(ls:*),Bash(cat:*),Bash(head:*),Bash(sed:*),Bash(wc:*)"
 
       - name: Resumo do agente (anotação)
         if: always() && steps.chave.outputs.pular == 'false'
