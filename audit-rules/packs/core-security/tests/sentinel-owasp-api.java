@@ -3,6 +3,10 @@ import com.auth0.jwt.algorithms.Algorithm;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.io.File;
+import java.nio.file.Files;
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,5 +83,41 @@ class ApiCases {
         Keys.hmacShaKeyFor("chave-fixa-no-codigo".getBytes());
         // ok: sentinel-api-jwt-chave-fixa
         Algorithm.HMAC256(System.getenv("JWT_SECRET"));
+    }
+}
+
+class JwtEPathNoSpring {
+    void parseComChave(String token, String chave) {
+        // ruleid: sentinel-api-jwt-sem-verificacao
+        Jwts.parser().setSigningKey(chave).parse(token);
+        // ok: sentinel-api-jwt-sem-verificacao
+        Jwts.parser().setSigningKey(chave).parseClaimsJws(token);
+    }
+
+    void decodeSemVerify(String token) {
+        // ruleid: sentinel-api-jwt-sem-verificacao
+        JWT.decode(token);
+    }
+
+    void decodeComVerify(String token, Algorithm algoritmo) {
+        var decodificado = JWT.decode(token);
+        JWT.require(algoritmo).build().verify(decodificado);
+    }
+
+    // ruleid: sentinel-api-jwt-chave-fixa
+    public static final String JWT_PASSWORD = TextCodec.BASE64.encode("victory");
+    // ok: sentinel-api-jwt-chave-fixa
+    public static final String NOME_DO_CAMPO = TextCodec.BASE64.encode("abc");
+
+    byte[] baixar(@RequestParam String nome) throws Exception {
+        // ruleid: sentinel-api-path-traversal
+        return Files.readAllBytes(new File("/dados", nome).toPath());
+    }
+
+    void upload(MultipartFile arquivo, File pasta) throws Exception {
+        // ruleid: sentinel-api-path-traversal
+        var destino = new File(pasta, arquivo.getOriginalFilename());
+        // ok: sentinel-api-path-traversal
+        var seguro = new File(pasta, FilenameUtils.getName(arquivo.getOriginalFilename()));
     }
 }

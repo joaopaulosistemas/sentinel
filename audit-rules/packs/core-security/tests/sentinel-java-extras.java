@@ -115,3 +115,49 @@ class Extras {
         resp.addCookie(c);
     }
 }
+
+import java.net.URI;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.ModelAndView;
+
+class RedirectNoSpring {
+    ModelAndView real(String url) {
+        // ruleid: sentinel-open-redirect-spring
+        return new ModelAndView("redirect:" + url);
+    }
+
+    ResponseEntity<Void> semValidar(String url) {
+        // ruleid: sentinel-open-redirect-spring
+        return ResponseEntity.status(302).location(URI.create(url)).build();
+    }
+
+    ModelAndView destinoFixo(java.util.Map<Integer, String> destinos, Integer id) {
+        String dest = destinos.getOrDefault(id, "/inicio");
+        // ok: sentinel-open-redirect-spring
+        return new ModelAndView("redirect:" + dest);
+    }
+
+    ModelAndView literal() {
+        // ok: sentinel-open-redirect-spring
+        return new ModelAndView("redirect:/inicio");
+    }
+}
+
+class SenhaComparadaComLiteral {
+    boolean login(String username, String password, String hashBanco) {
+        // ruleid: sentinel-senha-comparada-com-literal
+        if ("CaptainJack".equals(username) && "BlackPearl".equals(password)) {
+            return true;
+        }
+        // ruleid: sentinel-senha-comparada-com-literal
+        if (password.equals("admin123")) {
+            return true;
+        }
+        // ok: sentinel-senha-comparada-com-literal
+        if ("CaptainJack".equals(username)) {
+            return true;
+        }
+        // ok: sentinel-senha-comparada-com-literal
+        return hashBanco.equals(password);
+    }
+}

@@ -32,16 +32,24 @@ rules:
               $RET $M(..., @$A(...) String $P, ...) { ... }
           - metavariable-regex:
               metavariable: $A
-              regex: ^(QueryParam|PathParam|FormParam|HeaderParam)$
+              regex: ^(QueryParam|PathParam|FormParam|HeaderParam|RequestParam|PathVariable|RequestHeader|CookieValue)$
           - focus-metavariable: $P
+      # nome de arquivo informado pelo cliente num upload (Spring MultipartFile / Servlet Part)
+      - pattern: $F.getOriginalFilename()
+      - pattern: $F.getSubmittedFileName()
     pattern-sinks:
       - pattern: new java.io.File(...)
       - pattern: java.nio.file.Paths.get(...)
       - pattern: java.nio.file.Path.of(...)
       - pattern: new java.io.FileInputStream(...)
+      - pattern: new java.io.FileOutputStream(...)
+      - pattern: (java.nio.file.Path $D).resolve($ARG)
+      - pattern: (Path $D).resolve($ARG)
     pattern-sanitizers:
       - pattern: $X.normalize()
       - pattern: $X.getFileName()
+      - pattern: org.apache.commons.io.FilenameUtils.getName(...)
+      - pattern: FilenameUtils.getName(...)
     message: >
       Possível Path Traversal: um parâmetro da requisição forma um caminho de arquivo. Normalize o caminho,
       confira que continua dentro do diretório permitido (startsWith) ou use apenas o nome do arquivo.
@@ -123,9 +131,25 @@ rules:
       owasp: A07:2021 - Identification and Authentication Failures
 
   - id: sentinel-api-jwt-sem-verificacao
-    pattern-either:
-      - pattern: Jwts.parser().parse(...)
-      - pattern: JWT.decode(...)
+    patterns:
+      - pattern-either:
+          # com ou sem setSigningKey no meio da cadeia: parse(token) aceita token sem assinatura (alg none)
+          - pattern: Jwts.parser(). ... .parse(...)
+          - pattern: Jwts.parserBuilder(). ... .build().parse(...)
+          - pattern: JWT.decode(...)
+      # decode seguido de verify no mesmo método é o fluxo correto da biblioteca java-jwt
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $V.verify(...);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $R = $V.verify(...);
+            ...
+          }
     message: >
       JWT lido sem verificar a assinatura (parse/decode). Use parseClaimsJws / JWT.require(...).build().verify(...)
       para garantir que o token não foi forjado.
@@ -175,6 +199,14 @@ rules:
       - pattern: $P.setSigningKey("...")
       - pattern: Algorithm.HMAC256("...")
       - pattern: Keys.hmacShaKeyFor("...".getBytes(...))
+      # chave guardada em constante a partir de literal codificado (TextCodec.BASE64.encode("victory"))
+      - patterns:
+          - pattern-either:
+              - pattern: String $V = TextCodec.BASE64.encode("...");
+              - pattern: String $V = Base64.getEncoder().encodeToString("...".getBytes(...));
+          - metavariable-regex:
+              metavariable: $V
+              regex: (?i)^.*(secret|password|senha|key|chave|jwt).*$
     message: >
       Chave de assinatura JWT escrita no código. Leia de variável de ambiente ou cofre de segredos e rotacione.
     severity: ERROR

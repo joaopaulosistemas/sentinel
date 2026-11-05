@@ -188,11 +188,26 @@ rules:
   - id: sentinel-command-injection-shell
     patterns:
       - pattern-either:
-          - pattern: new ProcessBuilder($SH, $FLAG, $CMD)
-          - pattern: Runtime.getRuntime().exec(new String[]{$SH, $FLAG, $CMD})
-      - metavariable-regex:
-          metavariable: $FLAG
-          regex: ^"(-c|/c)"$
+          # "-c" / "/c" literal: qualquer interpretador
+          - patterns:
+              - pattern-either:
+                  - pattern: new ProcessBuilder($SH, $FLAG, $CMD)
+                  - pattern: Runtime.getRuntime().exec(new String[]{$SH, $FLAG, $CMD})
+              - metavariable-regex:
+                  metavariable: $FLAG
+                  regex: ^"(-c|/c)"$
+          # interpretador e opção guardados em variáveis (escolha por sistema operacional): as duas precisam
+          # parecer de shell, para não pegar new ProcessBuilder("git", flag, valor)
+          - patterns:
+              - pattern-either:
+                  - pattern: new ProcessBuilder($SH, $FLAG, $CMD)
+                  - pattern: Runtime.getRuntime().exec(new String[]{$SH, $FLAG, $CMD})
+              - metavariable-regex:
+                  metavariable: $FLAG
+                  regex: ^\w*([Ss]witch|[Ss]hellFlag|[Ss]hellArg)\w*$
+              - metavariable-regex:
+                  metavariable: $SH
+                  regex: ^(\w*[Ss]hell\w*|sh|bash|"((/usr)?/bin/)?(ba|z|da|k)?sh"|"(cmd|cmd\.exe|powershell|powershell\.exe|pwsh)")$
       - pattern-not: new ProcessBuilder($SH, $FLAG, "...")
       - pattern-not: Runtime.getRuntime().exec(new String[]{$SH, $FLAG, "..."})
     message: >
@@ -223,9 +238,26 @@ rules:
               $RET $M(..., String $P, ...) { ... }
           - focus-metavariable: $P
     pattern-sinks:
+      # search existe em qualquer serviço de domínio (service.search(usuario, titulo)): só vale em receptor LDAP,
+      # por tipo conhecido ou por nome que o denuncie
+      - patterns:
+          - pattern-either:
+              - pattern: (DirContext $CTX).search($BASE, $FILTER, ...)
+              - pattern: (javax.naming.directory.DirContext $CTX).search($BASE, $FILTER, ...)
+              - pattern: (LdapContext $CTX).search($BASE, $FILTER, ...)
+              - pattern: (javax.naming.ldap.LdapContext $CTX).search($BASE, $FILTER, ...)
+              - pattern: (javax.naming.directory.InitialDirContext $CTX).search($BASE, $FILTER, ...)
+              - pattern: (InitialDirContext $CTX).search($BASE, $FILTER, ...)
+              - pattern: (InitialLdapContext $CTX).search($BASE, $FILTER, ...)
+              - pattern: (LdapTemplate $CTX).search($BASE, $FILTER, ...)
+              - pattern: (LdapOperations $CTX).search($BASE, $FILTER, ...)
+          - focus-metavariable: $FILTER
       - patterns:
           - pattern: $CTX.search($BASE, $FILTER, ...)
           - focus-metavariable: $FILTER
+          - metavariable-regex:
+              metavariable: $CTX
+              regex: (?i)^(.*\.)?(\w*(ldap|dirctx|dircontext|ctx|context|jndi)\w*|idc)$
     message: >
       Possível LDAP Injection (OWASP A03): filtro LDAP montado por concatenação.
       Escape os valores (RFC 4515) ou use filtros parametrizados do JNDI.
@@ -253,9 +285,22 @@ rules:
               $RET $M(..., String $P, ...) { ... }
           - focus-metavariable: $P
     pattern-sinks:
+      # evaluate também existe em serviços de domínio (service.evaluate(configuracao)): só vale em receptor XPath
       - patterns:
-          - pattern: $XPATH.evaluate($EXPR, ...)
+          - pattern-either:
+              - pattern: (XPath $XPATH).evaluate($EXPR, ...)
+              - pattern: (javax.xml.xpath.XPath $XPATH).evaluate($EXPR, ...)
+              - pattern: (XPath $XPATH).compile($EXPR)
+              - pattern: (javax.xml.xpath.XPath $XPATH).compile($EXPR)
           - focus-metavariable: $EXPR
+      - patterns:
+          - pattern-either:
+              - pattern: $XPATH.evaluate($EXPR, ...)
+              - pattern: $XPATH.compile($EXPR)
+          - focus-metavariable: $EXPR
+          - metavariable-regex:
+              metavariable: $XPATH
+              regex: (?i)^(.*\.)?(\w*xpath\w*|xp\w*)$
     message: >
       Possível XPath Injection (OWASP A03): expressão XPath montada por concatenação.
       Use XPathVariableResolver (consultas parametrizadas) em vez de concatenar valores.

@@ -2,17 +2,37 @@
   "_comentario": "Verdades conhecidas para a calibração automática. deve_achar: regra (sufixo do ruleId) que PRECISA aparecer. nao_deve_achar: falso positivo já corrigido, que não pode voltar. max_total: teto de achados (regressão de ruído).",
   "repositorios": {
     "spring-projects/spring-petclinic": {
-      "nao_deve_achar": ["sentinel-sql-select-estrela-arquivo", "sentinel-fe-html-sem-lang", "sentinel-mem-colecao-estatica"],
+      "nao_deve_achar": [
+        "sentinel-sql-select-estrela-arquivo",
+        "sentinel-fe-html-sem-lang",
+        "sentinel-mem-colecao-estatica"
+      ],
       "max_total": 400
     },
     "WebGoat/WebGoat": {
-      "deve_achar": ["sentinel-sql-injection", "sentinel-desserializacao-insegura", "sentinel-senha-fixa-no-codigo"]
+      "deve_achar": [
+        "sentinel-api-jwt-sem-verificacao",
+        "sentinel-command-injection-shell",
+        "sentinel-desserializacao-insegura",
+        "sentinel-log-injection",
+        "sentinel-open-redirect-spring",
+        "sentinel-senha-comparada-com-literal",
+        "sentinel-senha-fixa-no-codigo",
+        "sentinel-sql-injection"
+      ],
+      "nao_deve_achar": [
+        "sentinel-ldap-injection",
+        "sentinel-xpath-injection"
+      ]
     },
     "gothinkster/angular-realworld-example-app": {
       "max_total": 400
     },
     "gothinkster/react-redux-realworld-example-app": {
       "max_total": 100
+    },
+    "appsecco/dvja": {
+      "_comentario": "sem verdades conhecidas: conjunto de validação, só os números do CI"
     }
   }
 }
