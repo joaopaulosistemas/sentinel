@@ -13,6 +13,12 @@ exclude:
   - "audit-rules/calibracao/**"
   # Relatórios e triagens que citam trechos de código auditado.
   - "docs/evolucao/**"
+  # Projetos de exemplo do Joern: código vulnerável de propósito (e o par seguro), usados só pelo testar.py.
+  - "audit-api/joern/testes/**"
+  # Gerado por scripts/gerar-arquitetura-html.py a partir do ARQUITETURA.md (o estilo inline é do gerador).
+  - "docs/arquitetura/ARQUITETURA.html"
+  # Referência do schema para leitura; o schema real é gerado pelo Hibernate.
+  - "docs/schema-referencia.sql"
 
 # Achados aceitos: continuam na lista, marcados como suprimidos, e não pesam na nota.
 suppress:
@@ -95,10 +101,10 @@ suppress:
     path: "audit-cli/src/main/java/com/sentinel/audit/cli/AuditCli.java"
     reason: "ferramenta de linha de comando: a saída no console é a interface com o usuário e o CI"
   # @BeanParam do Quarkus REST só aceita @QueryParam em campos (anotar o setter derruba o build), então os campos ficam públicos.
-  - rule: "checkstyle-*VisibilityModifier*"
+  - rule: "checkstyle-variable.notPrivate"
     path: "audit-api/src/main/java/com/sentinel/audit/resource/AuditFindingsResource.java"
     reason: "classe de parâmetros do @BeanParam: o framework exige a anotação no campo; verificado no build do Quarkus 3.33"
-  - rule: "checkstyle-*VisibilityModifier*"
+  - rule: "checkstyle-variable.notPrivate"
     path: "audit-api/src/main/java/com/sentinel/audit/resource/FindingResource.java"
     reason: "classe de parâmetros do @BeanParam: o framework exige a anotação no campo; verificado no build do Quarkus 3.33"
 
@@ -119,3 +125,12 @@ suppress:
   - rule: "jscpd-*"
     path: "audit-api/src/main/java/com/sentinel/audit/mcp/McpAdminResource.java"
     reason: "o trecho repetido é só o bloco de imports e a anotação de cabeçalho, sem lógica duplicada"
+
+  # Arquivo de configuração do Dependency-Cruiser: quem o importa é o comando (--config), não outro módulo.
+  - rule: "dependency-cruiser-*"
+    path: "audit-rules/lint/extras/dependency-cruiser.cjs"
+    reason: "é a configuração passada ao Dependency-Cruiser por linha de comando; não é importada por nenhum módulo"
+  # `switch` sobre enum fechado, sem default de propósito.
+  - rule: "checkstyle-missing.switch.default"
+    path: "audit-api/src/main/java/com/sentinel/audit/analyzer/SarifAnalyzer.java"
+    reason: "switch exaustivo sobre enum (Java 21): o compilador acusa se surgir uma situação nova, melhor que um default silencioso"

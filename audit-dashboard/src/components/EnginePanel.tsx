@@ -206,6 +206,30 @@ function RulesSection(p: RulesSectionProps) {
   );
 }
 
+interface RulesViewInput {
+  family: string;
+  text: string;
+  scope: RuleScope;
+  packFilter: string;
+}
+
+/** O que a aba mostra: regras dos pacotes ligados, abas por família, filtros aplicados e a nota explicativa. */
+function rulesView(cfg: EngineConfig, allRows: RuleRow[], packs: Record<string, boolean>, rules: RuleAdjustment[], input: RulesViewInput) {
+  const adjustedIds = new Set(rules.filter((r) => !isNoopAdjustment(r)).map((r) => r.id));
+  // Só aparecem as regras dos pacotes ligados acima; a família escolhida filtra o resto.
+  const packRows = rowsOfActivePacks(allRows, packs);
+  const tabs = familyTabs(packRows, adjustedIds);
+  const activeFamily = tabs.some((t) => t.key === input.family) ? input.family : (tabs[0]?.key ?? '');
+  const packNames = Array.from(new Set(packRows.map((r) => r.pack).filter((p): p is string => !!p))).sort();
+  const inFamily = tabs.length < 2 ? packRows : packRows.filter((r) => familyOf(r) === activeFamily);
+  const filtered = filterRuleRows(inFamily, { query: input.text, scope: input.scope, pack: input.packFilter }, adjustedIds);
+  const hidden = hiddenAdjustedCount(allRows, packs, adjustedIds);
+  const packsNote =
+    `Mostrando as regras dos ${cfg.packs.filter((p) => packs[p.id]).length} pacotes ligados acima (${packRows.length} ${packRows.length === 1 ? 'regra' : 'regras'}). Ligue um pacote para ver as regras dele aqui.` +
+    (hidden > 0 ? ` ${hidden} ${hidden === 1 ? 'regra ajustada está' : 'regras ajustadas estão'} em pacote desligado e não aparece.` : '');
+  return { packRows, tabs, activeFamily, packNames, filtered, packsNote };
+}
+
 /** Aba "Motor de regras": pacotes, limites e regras deste sistema, por cima do perfil. A nota continua sendo do motor. */
 export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   const { query, save } = useEngine(system.id);
@@ -253,18 +277,7 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;
 
-  const adjustedIds = new Set(rules.filter((r) => !isNoopAdjustment(r)).map((r) => r.id));
-  // Só aparecem as regras dos pacotes ligados acima; a família escolhida filtra o resto.
-  const packRows = rowsOfActivePacks(allRows, packs);
-  const tabs = familyTabs(packRows, adjustedIds);
-  const activeFamily = tabs.some((t) => t.key === family) ? family : (tabs[0]?.key ?? '');
-  const packNames = Array.from(new Set(packRows.map((r) => r.pack).filter((p): p is string => !!p))).sort();
-  const inFamily = tabs.length < 2 ? packRows : packRows.filter((r) => familyOf(r) === activeFamily);
-  const filtered = filterRuleRows(inFamily, { query: text, scope, pack: packFilter }, adjustedIds);
-  const hidden = hiddenAdjustedCount(allRows, packs, adjustedIds);
-  const packsNote =
-    `Mostrando as regras dos ${cfg.packs.filter((p) => packs[p.id]).length} pacotes ligados acima (${packRows.length} ${packRows.length === 1 ? 'regra' : 'regras'}). Ligue um pacote para ver as regras dele aqui.` +
-    (hidden > 0 ? ` ${hidden} ${hidden === 1 ? 'regra ajustada está' : 'regras ajustadas estão'} em pacote desligado e não aparece.` : '');
+  const { packRows, tabs, activeFamily, packNames, filtered, packsNote } = rulesView(cfg, allRows, packs, rules, { family, text, scope, packFilter });
   const shown = filtered.slice(0, visible);
   const pickedIds = [...picked];
 

@@ -54,7 +54,14 @@ val SANEADORES = "(parseInt|parseLong|parseDouble|parseFloat|parseBoolean|fromSt
         case _ => false
       }
       val cruza = arquivos.size > 1
-      if (!saneado && (cruza || onlyCrossFile.equalsIgnoreCase("false"))) {
+      // O Joern trata o objeto da chamada (this.em, this.repo) como se levasse o dado ao argumento. Quando o argumento
+      // do sink é só texto fixo (literais e operadores, como "select ... " + "where ..."), não há dado do usuário nele.
+      val soTextoFixo = passos.last match {
+        case _: Literal => true
+        case c: Call => c.ast.isIdentifier.isEmpty && c.ast.isFieldIdentifier.isEmpty && c.ast.isCall.filterNot(_.name.startsWith("<operator>")).isEmpty
+        case _ => false
+      }
+      if (!saneado && !soTextoFixo && (cruza || onlyCrossFile.equalsIgnoreCase("false"))) {
         val fim = passos.last
         val chave = classe.id + "|" + arquivoDe(fim) + "|" + fim.lineNumber.getOrElse(0)
         if (vistos.add(chave)) {

@@ -78,29 +78,42 @@ public class SarifAnalyzer implements CodeAnalyzer {
         List<Finding> findings = new ArrayList<>();
         Resumo resumo = new Resumo();
         if (policy != null) {
-            outer:
             for (RulePack pack : policy.packs()) {
                 boolean trusted = policy.isToolPackTrusted(pack.id());
-                for (ToolSpec spec : pack.tools()) {
-                    try {
-                        if (spec.executes()) {
-                            Execucao e = executar(spec, projectPath, auditRun, trusted);
-                            findings.addAll(e.findings());
-                            resumo.registrar(spec, e);
-                        } else {
-                            findings.addAll(readInputs(spec, projectPath, auditRun));
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break outer;
-                    } catch (Exception e) {
-                        LOG.warnf("Fonte SARIF '%s' falhou e foi ignorada: %s", spec.id(), e.getMessage());
-                        resumo.falhou.add(spec.name());
-                    }
+                if (!analisarPacote(pack, trusted, projectPath, auditRun, findings, resumo)) {
+                    break;
                 }
             }
         }
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), null, resumo.texto());
+    }
+
+    /** Roda as fontes SARIF de um pacote. Devolve {@code false} quando a thread foi interrompida e a análise deve parar. */
+    private boolean analisarPacote(RulePack pack, boolean trusted, Path projectPath, AuditRun auditRun,
+                                   List<Finding> findings, Resumo resumo) {
+        for (ToolSpec spec : pack.tools()) {
+            try {
+                analisarFonte(spec, trusted, projectPath, auditRun, findings, resumo);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            } catch (Exception e) {
+                LOG.warnf("Fonte SARIF '%s' falhou e foi ignorada: %s", spec.id(), e.getMessage());
+                resumo.falhou.add(spec.name());
+            }
+        }
+        return true;
+    }
+
+    private void analisarFonte(ToolSpec spec, boolean trusted, Path projectPath, AuditRun auditRun,
+                               List<Finding> findings, Resumo resumo) throws Exception {
+        if (spec.executes()) {
+            Execucao e = executar(spec, projectPath, auditRun, trusted);
+            findings.addAll(e.findings());
+            resumo.registrar(spec, e);
+        } else {
+            findings.addAll(readInputs(spec, projectPath, auditRun));
+        }
     }
 
     /** Como uma ferramenta de comando terminou: o que achou e o que aconteceu com ela. */

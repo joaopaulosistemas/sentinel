@@ -77,13 +77,29 @@ public final class GuideCatalog {
     private static GuideRule toRule(RulePack pack, Map<String, Object> rule, String id) {
         String message = clean(Yamls.str(rule, "message"));
         RemediationEntry rem = remediationFor(pack, id);
+        return new GuideRule(id, pack.id(), title(message.isEmpty() ? id : message), actionOf(rem, message),
+                severity(Yamls.str(rule, "severity")), cweOf(rule), languages(rule),
+                rem == null ? "" : orEmpty(rem.before()), rem == null ? "" : orEmpty(rem.after()).strip());
+    }
+
+    /** O que fazer: o resumo da remediação, ou a segunda frase da mensagem da regra. */
+    private static String actionOf(RemediationEntry rem, String message) {
+        return rem != null && rem.summary() != null ? stripDot(rem.summary()) : secondSentence(message);
+    }
+
+    /** Primeiro identificador CWE do metadado da regra, ou vazio. */
+    private static String cweOf(Map<String, Object> rule) {
         Map<String, Object> metadata = Yamls.map(rule.get("metadata"));
         String cwe = metadata == null ? null : Yamls.str(metadata, "cwe");
-        var matcher = cwe == null ? null : CWE_ID.matcher(cwe);
-        String action = rem != null && rem.summary() != null ? stripDot(rem.summary()) : secondSentence(message);
-        return new GuideRule(id, pack.id(), title(message.isEmpty() ? id : message), action, severity(Yamls.str(rule, "severity")),
-                matcher != null && matcher.find() ? matcher.group() : "", languages(rule),
-                rem == null || rem.before() == null ? "" : rem.before(), rem == null || rem.after() == null ? "" : rem.after().strip());
+        if (cwe == null) {
+            return "";
+        }
+        var matcher = CWE_ID.matcher(cwe);
+        return matcher.find() ? matcher.group() : "";
+    }
+
+    private static String orEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     private static RemediationEntry remediationFor(RulePack pack, String id) {
