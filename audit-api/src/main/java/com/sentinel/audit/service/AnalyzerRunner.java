@@ -101,6 +101,14 @@ final class AnalyzerRunner {
         return null;
     }
 
+    /** Nota mostrada na tela: o motivo do resultado parcial ou, no resultado OK, o resumo do que o analisador fez. */
+    private static String noteOf(AnalyzerResult r) {
+        if (r.partial()) {
+            return RunText.truncate(r.partialNote(), PARTIAL_NOTE_MAX_CHARS);
+        }
+        return r.hasInfo() ? RunText.truncate(r.infoNote(), PARTIAL_NOTE_MAX_CHARS) : null;
+    }
+
     /** Dispara um analisador em paralelo; uma falha dele vira resultado vazio com o erro anotado. */
     private CompletableFuture<Outcome> startAnalyzer(CodeAnalyzer analyzer, Path projectPath, AuditRun runRef, AuditPolicy policy) {
         Long runId = runRef.getId();
@@ -111,7 +119,7 @@ final class AnalyzerRunner {
                     progress.analyzerFinished(runId, analyzer.getName(), new AuditProgressTracker.Done(
                             r.partial() ? "PARCIAL" : "OK", r.findings().size(),
                             r.duration() == null ? 0 : r.duration().toMillis(),
-                            r.partial() ? RunText.truncate(r.partialNote(), PARTIAL_NOTE_MAX_CHARS) : null, severityCounts(r.findings())));
+                            noteOf(r), severityCounts(r.findings())));
                     return new Outcome(r, null);
                 }, executor)
                 .exceptionally(error -> {
@@ -133,7 +141,7 @@ final class AnalyzerRunner {
             allFindings.addAll(result.findings());
             String status = outcome.error() != null ? "FALHOU" : result.partial() ? "PARCIAL" : "OK";
             String note = outcome.error() != null ? RunText.truncate(outcome.error(), ERROR_NOTE_MAX_CHARS)
-                    : result.partial() ? RunText.truncate(result.partialNote(), PARTIAL_NOTE_MAX_CHARS) : null;
+                    : noteOf(result);
             runs.add(new AnalyzerRunInfo(started.get(i).getName(), status,
                     result.findings().size(), result.duration() == null ? 0 : result.duration().toMillis(), note));
         }
