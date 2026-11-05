@@ -34,5 +34,5 @@
 | [evolucao/PLACAR.md](evolucao/PLACAR.md) | Placar de maturidade e backlog |
 | [evolucao/LOG.md](evolucao/LOG.md) | Histórico por versão, com o que foi e não foi verificado |
 | [evolucao/precisao.md](evolucao/precisao.md) · [calibracao.md](evolucao/calibracao.md) · [revisao-humana.md](evolucao/revisao-humana.md) | Precisão medida e calibração |
-| [evolucao/AGENTE.md](evolucao/AGENTE.md) | Agentes Sentinel Evolution e Descoberta |
+| [evolucao/AGENTE.md](evolucao/AGENTE.md) | Agente Sentinel Ciclo (auditoria completa em repositórios vulneráveis) |
 | [historico-de-versoes.md](historico-de-versoes.md) · [historia.md](historia.md) | Resumo antigo por versão e origem do projeto |

@@ -1,0 +1,63 @@
+name: Auditoria completa
+
+# Roda o Sentinel inteiro (API real, Postgres, todos os analisadores) contra um repositório público e publica os
+# resultados como artefato. Serve ao agente Sentinel Ciclo (ver docs/evolucao/AGENTE.md) e a quem quiser auditar
+# sem subir o ambiente local. Só dispara sob demanda.
+
+on:
+  # checkov:skip=CKV_GHA_7: os inputs só dizem qual repositório público auditar; nada é publicado como release
+  workflow_dispatch:
+    inputs:
+      repo_url:
+        description: "URL do repositório público (https://github.com/dono/repo)"
+        required: true
+      branch:
+        description: "Branch a auditar"
+        required: false
+        default: "main"
+      stack:
+        description: "JAVA | JAVASCRIPT | MIXED"
+        required: false
+        default: "MIXED"
+      joern:
+        description: "Ligar o Joern (taint entre arquivos em Java; imagem maior e auditoria mais lenta)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auditoria-completa
+  cancel-in-progress: false
+
+jobs:
+  auditar:
+    name: Auditar ${{ inputs.repo_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Construir a imagem da API
+        env:
+          JOERN: ${{ inputs.joern }}
+        run: |
+          docker buildx build --load -f audit-api/Dockerfile -t sentinel-audit-api:ci \
+            --build-arg WITH_JOERN="$JOERN" . > build-api.log 2>&1 || { tail -30 build-api.log; exit 1; }
+      - name: Auditar
+        env:
+          REPO_URL: ${{ inputs.repo_url }}
+          BRANCH: ${{ inputs.branch }}
+          STACK: ${{ inputs.stack }}
+        run: bash scripts/auditoria-completa.sh "$REPO_URL" "$BRANCH" "$STACK" saida-auditoria
+      - name: Resumo
+        if: always()
+        run: |
+          [ -f saida-auditoria/resumo.md ] && cat saida-auditoria/resumo.md >> "$GITHUB_STEP_SUMMARY" || echo "sem resumo" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: auditoria-completa
+          path: saida-auditoria/
+          retention-days: 14

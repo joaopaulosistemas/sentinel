@@ -63,6 +63,6 @@ Mais um ajuste desta rodada: o ESLint deixa de cobrar `lang`, `title`, `meta`, f
 
 ## Rodadas de descoberta (repositórios públicos novos)
 
-A partir de 2026-10-21 o agente Sentinel Descoberta audita repositórios públicos novos toda segunda-feira. Cada rodada gera um relatório em `docs/evolucao/relatorios/AAAA-MM-DD.md` e atualiza `docs/evolucao/precisao.md`. Os repositórios já auditados ficam em `audit-rules/calibracao/descobertos.txt` e não se repetem.
+De 2026-10-21 a 2026-10-28 o antigo agente Sentinel Descoberta (removido em 2026-11-05; hoje o trabalho é do agente Sentinel Ciclo, ver `AGENTE.md`) auditou repositórios públicos novos. Cada rodada gera um relatório em `docs/evolucao/relatorios/AAAA-MM-DD.md` e atualiza `docs/evolucao/precisao.md`. Os repositórios já auditados ficam em `audit-rules/calibracao/descobertos.txt` e não se repetem.
 Primeira rodada (4 repositórios NestJS/Express): 3 correções propostas e mescladas (`prefer-inject` do Angular só em projeto Angular, `@ts-nocheck` em código gerado, regras de JWT em JS/TS). Ainda sem CI da `main` depois do merge (limite de minutos do Actions).
 

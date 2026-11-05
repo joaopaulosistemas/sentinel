@@ -7,7 +7,7 @@ on:
   pull_request:
   schedule:
     - cron: "41 7 * * 0"   # domingo: roda também a calibração pesada
-  workflow_dispatch:   # o agente Sentinel Evolution dispara o CI na branch evolucao/* que abriu
+  workflow_dispatch:   # roda o CI (e a calibração pesada) sob demanda
 
 permissions:
   contents: read
@@ -258,32 +258,12 @@ jobs:
             echo "::error title=Helm falhou::${r:0:3500}"; exit 1
           fi
 
-  escopo-agente:
-    name: Escopo dos PRs do agente
-    runs-on: ubuntu-latest
-    # só vale para branches evolucao/*: o agente não pode mexer em CI, scripts de e2e nem em segredos
-    if: startsWith(github.head_ref || github.ref_name, 'evolucao/')
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Conferir os arquivos alterados
-        run: |
-          base="origin/main"
-          proibidos="$(git diff --name-only "$base"...HEAD | grep -E '^(\.github/|scripts/(e2e|evolucao-entrada|ci-anotar)\.sh$|\.gitignore$|\.env)' || true)"
-          if [ -n "$proibidos" ]; then
-            r="${proibidos//$'\n'/%0A}"
-            echo "::error title=PR do agente mexeu em arquivo protegido::${r}"
-            exit 1
-          fi
-          echo "ok: nenhum arquivo protegido alterado"
-
   calibracao:
     name: Calibração em vários repositórios
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # pesado (~15 min): só semanalmente, sob demanda e nos PRs do agente (que mexem em regras); não em todo push
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'evolucao/'))
+    # pesado (~15 min): só semanalmente, sob demanda e nos PRs do agente Sentinel Ciclo (que mexem em regras); não em todo push
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'ciclo/'))
     permissions:
       contents: read
       actions: read

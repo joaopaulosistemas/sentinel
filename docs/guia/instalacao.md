@@ -176,9 +176,9 @@ sentinel/
 ├── audit-cli/                      ← CLI Java para integração CI/CD
 │   └── src/main/java/.../AuditCli.java
 │
-├── .github/workflows/              ← ci.yml, evolucao.yml, descoberta.yml, release.yml
-├── .github/agente/                 ← instruções dos agentes Sentinel Evolution e Sentinel Descoberta
-├── scripts/                        ← e2e, calibração, descoberta de repositórios, relatórios, anotações de CI
+├── .github/workflows/              ← ci.yml, auditoria-completa.yml, release.yml
+├── .claude/agents/                 ← agente Sentinel Ciclo (Claude Code)
+├── scripts/                        ← e2e, auditoria completa, calibração, anotações de CI
 └── evidencias/                     ← Uma subpasta por sistema com dumps e exports para a análise offline
 ```
 

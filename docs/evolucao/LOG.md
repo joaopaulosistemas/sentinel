@@ -588,3 +588,12 @@ NÃO verificado: build Maven e testes Java (CI); falsos positivos das regras nov
 
 Verificado: contagens por regra com o Opengrep local.
 NÃO verificado: API e dashboard rodando (sem Maven Central nem Docker no ambiente); precisão nos repositórios de validação; Trivy/OSV sobre o Goof.
+
+## Dashboard 12.45.0 — Agente Sentinel Ciclo no lugar do Evolution e do Descoberta
+
+- **Removido:** os workflows `evolucao.yml` e `descoberta.yml`, as instruções em `.github/agente/` (`sentinel-evolution.md`, `sentinel-descoberta.md`) e os scripts `evolucao-entrada.sh`, `descobrir-repos.sh` e `relatorio-descoberta.py`. Também saiu do `ci.yml` o job `Escopo dos PRs do agente` e do `protecao-main.json` o check obrigatório com esse nome (se a proteção já foi aplicada no GitHub, é preciso tirá-lo de lá também). O histórico dos agentes antigos (LOG, `precisao.md`, `relatorios/`) foi mantido.
+- **Novo:** agente `sentinel-ciclo` (`.claude/agents/sentinel-ciclo.md`), do Claude Code, que roda na máquina de quem o chama e conduz o ciclo de auditoria (auditar, analisar, corrigir o Sentinel, repetir 3 rodadas), com as regras de treino e validação. Documentado em `docs/evolucao/AGENTE.md`, `docs/README.md` e `ARQUITETURA.md`.
+- **Novo:** workflow `auditoria-completa.yml` e `scripts/auditoria-completa.sh`: sobem a API real com Postgres e todos os analisadores contra um repositório público e publicam achados, relatórios em PDF, SBOM e resumo como artefato. A calibração pesada do CI passa a rodar também em PRs `ciclo/*`.
+
+Verificado: sintaxe do script (`bash -n`) e dos YAML.
+NÃO verificado: o workflow `auditoria-completa.yml` e o agente ainda não rodaram; o workflow só pode ser disparado depois de estar na `main`.

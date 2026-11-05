@@ -31,7 +31,7 @@ Escala por eixo: 0 ausente · 1 frágil · 2 funciona e é testado · 3 validado
 - **Revisão humana**: `docs/evolucao/revisao-humana.md`.
 - **Linha de partida honesta**: antes das regras novas a média era 0,00 (equivalente a chute); depois, 0,44. Categorias mais fracas: `cmdi` 0,06, `xpathi` 0,17, `pathtraver` 0,13, `ldapi` 0,29, `trustbound` 0,26.
 
-## Backlog (o Evolution pega **um** item de produto por execução, do eixo de menor nota; empate: o de menor esforço. Marcar `[x]` exige diff de código ou de teste)
+## Backlog (cada rodada do agente Sentinel Ciclo pega itens do eixo de menor nota; empate: o de menor esforço. Marcar `[x]` exige diff de código ou de teste)
 Marque `[x]` no PR que fecha o item, com a evidência.
 - [x] 10/2 Criar `docs/evolucao/precisao.md` e alimentá-lo a cada rodada da Descoberta (regra, revisados, VP, FP) — arquivo existe com 8 regras e 10 achados em 4 repositórios (rodada de 2026-10-21); nota do eixo 10 segue 2 (faltam ≥ 100 achados em ≥ 10 repositórios)
 - [ ] 1/2 OWASP Benchmark: subir `cmdi` (hoje 0,06) tratando `exec` com argumentos de ambiente e `ProcessBuilder.command(...)`; medir antes e depois no CI
