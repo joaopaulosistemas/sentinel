@@ -16,7 +16,8 @@ import org.jboss.logging.Logger;
  * idempotente e, se falhar, só registra um aviso: não impede a aplicação de subir.
  * <p>
  * O mesmo vale para {@code finding.category}: bancos criados antes da categoria PERFORMANCE rejeitam os achados novos
- * ("finding_category_check"). Cada ajuste roda separado, para que a falha de um não impeça o outro.
+ * ("finding_category_check"). Achados antigos do SAST, gravados como "Semgrep", passam a "Opengrep" (o motor foi
+ * trocado e a tela mostra um nome só). Cada ajuste roda separado, para que a falha de um não impeça o outro.
  */
 @ApplicationScoped
 public class SchemaFixups {
@@ -39,6 +40,17 @@ public class SchemaFixups {
             LOG.warnf("Não foi possível ajustar a restrição de categoria de finding (%s); "
                     + "se a auditoria falhar ao gravar achados, execute: ALTER TABLE finding DROP CONSTRAINT finding_category_check", e.getMessage());
         }
+        try {
+            renameSastTool();
+        } catch (RuntimeException e) {
+            LOG.warnf("Não foi possível renomear 'Semgrep' para 'Opengrep' nos achados antigos (%s); "
+                    + "o relatório ainda os mostra com o nome antigo. Para corrigir: UPDATE finding SET tool_source = 'Opengrep' WHERE tool_source = 'Semgrep'", e.getMessage());
+        }
+    }
+
+    @Transactional
+    void renameSastTool() {
+        em.createNativeQuery("UPDATE finding SET tool_source = 'Opengrep' WHERE tool_source = 'Semgrep'").executeUpdate();
     }
 
     @Transactional

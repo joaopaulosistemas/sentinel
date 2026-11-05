@@ -25,6 +25,27 @@ public final class SastEngine {
     /** Variável de ambiente que força o motor ({@code opengrep} ou {@code semgrep}). */
     public static final String ENV_ENGINE = "SENTINEL_SAST_ENGINE";
 
+    /**
+     * Nome do analisador SAST nos achados, no relatório e na tela. O motor é o Opengrep (o Semgrep é só alternativa),
+     * e o nome é sempre este para o histórico e a cobertura por área não se dividirem entre dois nomes.
+     */
+    public static final String TOOL_NAME = "Opengrep";
+
+    private static final String NOME_ANTIGO = "Semgrep";
+
+    /** {@code true} para o nome atual ({@value #TOOL_NAME}) e para o antigo, que bancos antigos ainda podem ter. */
+    public static boolean isSastTool(String name) {
+        return name != null && (TOOL_NAME.equalsIgnoreCase(name) || NOME_ANTIGO.equalsIgnoreCase(name));
+    }
+
+    /** Mesma ferramenta, tratando o nome antigo e o atual do SAST como um só. */
+    public static boolean sameTool(String a, String b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        return a.equalsIgnoreCase(b) || (isSastTool(a) && isSastTool(b));
+    }
+
     private static final List<String> SUFIXOS = List.of("", ".exe", ".cmd", ".bat");
 
     /** O motor encontrado: caminho do executável e se é o Opengrep. */

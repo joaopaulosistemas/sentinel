@@ -53,16 +53,16 @@ public final class InsightsBuilder {
     private static final Map<AuditArea, Set<String>> COVERAGE = new EnumMap<>(AuditArea.class);
 
     static {
-        COVERAGE.put(AuditArea.SECURITY, Set.of("Semgrep", "Secrets", "Gitleaks", "Trivy", "OWASP-Dependency", "Higiene do projeto"));
+        COVERAGE.put(AuditArea.SECURITY, Set.of("Opengrep", "Semgrep", "Secrets", "Gitleaks", "Trivy", "OWASP-Dependency", "Higiene do projeto"));
         COVERAGE.put(AuditArea.ARCHITECTURE, Set.of("Architecture", "Arquitetura (pacotes)"));
-        COVERAGE.put(AuditArea.CODE_QUALITY, Set.of("CleanCode", "Semgrep", "PMD", "ESLint"));
+        COVERAGE.put(AuditArea.CODE_QUALITY, Set.of("CleanCode", "Opengrep", "Semgrep", "PMD", "ESLint"));
         COVERAGE.put(AuditArea.TESTING, Set.of("Higiene do projeto"));
-        COVERAGE.put(AuditArea.PERFORMANCE, Set.of("Semgrep", "Evidências"));
-        COVERAGE.put(AuditArea.FRONTEND, Set.of("Semgrep"));
-        COVERAGE.put(AuditArea.DEVOPS, Set.of("Semgrep", "Higiene do projeto"));
+        COVERAGE.put(AuditArea.PERFORMANCE, Set.of("Opengrep", "Semgrep", "Evidências"));
+        COVERAGE.put(AuditArea.FRONTEND, Set.of("Opengrep", "Semgrep"));
+        COVERAGE.put(AuditArea.DEVOPS, Set.of("Opengrep", "Semgrep", "Higiene do projeto"));
         COVERAGE.put(AuditArea.DOCUMENTATION, Set.of("Higiene do projeto"));
         COVERAGE.put(AuditArea.DEPENDENCIES, Set.of("OWASP-Dependency", "Trivy"));
-        COVERAGE.put(AuditArea.OBSERVABILITY, Set.of("Semgrep", "CleanCode"));
+        COVERAGE.put(AuditArea.OBSERVABILITY, Set.of("Opengrep", "Semgrep", "CleanCode"));
         COVERAGE.put(AuditArea.MAINTAINABILITY, Set.of("CleanCode", "Higiene do projeto"));
     }
 

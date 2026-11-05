@@ -124,10 +124,10 @@ public class RuleQualityService {
         }
     }
 
-    /** O Semgrep prefixa o id com o caminho do arquivo de regras, que muda entre ambientes: fica só o nome da regra. */
+    /** O Opengrep (e o Semgrep) prefixa o id com o caminho do arquivo de regras, que muda entre ambientes: fica só o nome da regra. */
     public static String normalize(Finding f) {
         String id = f.getRuleId();
-        if ("Semgrep".equalsIgnoreCase(f.getToolSource())) {
+        if (com.sentinel.audit.analyzer.SastEngine.isSastTool(f.getToolSource())) {
             int dot = id.lastIndexOf('.');
             if (dot >= 0 && dot < id.length() - 1) {
                 return id.substring(dot + 1);

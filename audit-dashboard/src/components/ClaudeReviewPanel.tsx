@@ -57,7 +57,7 @@ function ProposalHeader({ p }: { p: RuleProposalView }) {
       </div>
       {p.rationale && <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-2)' }}>{p.rationale}</p>}
       <details>
-        <summary style={{ cursor: 'pointer', fontSize: 13 }}>Ver a regra Semgrep</summary>
+        <summary style={{ cursor: 'pointer', fontSize: 13 }}>Ver a regra (Opengrep)</summary>
         <pre style={{ margin: '8px 0 0', padding: 12, background: 'var(--s-layer)', fontFamily: mono, fontSize: 12, overflowX: 'auto' }}>{p.semgrepYaml}</pre>
       </details>
     </>

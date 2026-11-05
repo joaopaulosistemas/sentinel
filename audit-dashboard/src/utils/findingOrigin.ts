@@ -5,7 +5,8 @@
 const KNOWN: Record<string, string> = {
   sentinel: 'Sentinel',
   'sentinel-rules': 'Sentinel',
-  semgrep: 'Semgrep',
+  opengrep: 'Opengrep',
+  semgrep: 'Opengrep',   // nome antigo do mesmo analisador SAST: aparece como Opengrep
   sonarqube: 'SonarQube',
   sonar: 'SonarQube',
   checkstyle: 'Checkstyle',
