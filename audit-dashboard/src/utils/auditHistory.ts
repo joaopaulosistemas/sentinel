@@ -54,24 +54,39 @@ export function buildHistory(runs: AuditRunResponse[], size: number = HISTORY_SI
   const ordered = [...runs].sort((a, b) => startedAt(a) - startedAt(b) || a.id - b.id);
   let previousScore: number | null = null;
   const points = ordered.map((run): HistoryPoint => {
-    const kind = KIND_BY_STATUS[run.status];
-    const score = kind === 'scored' && run.riskScore ? Math.round(run.riskScore.overall) : null;
-    const computed = score !== null && previousScore !== null ? score - previousScore : null;
-    if (score !== null) previousScore = score;
-    const when = new Date(run.completedAt ?? run.startedAt);
-    return {
-      id: run.id,
-      kind,
-      score,
-      band: scoreBand(score),
-      dayLabel: dayLabel(when),
-      timeLabel: timeLabel(when),
-      delta: run.scoreDelta != null ? Math.round(run.scoreDelta) : computed,
-      critical: run.findingsSummary?.CRITICAL ?? 0,
-      high: run.findingsSummary?.HIGH ?? 0,
-    };
+    const point = toPoint(run, previousScore);
+    if (point.score !== null) previousScore = point.score;
+    return point;
   });
   return points.slice(-size);
+}
+
+/** Nota arredondada da auditoria, ou `null` quando ela não gerou nota. */
+function scoreOf(run: AuditRunResponse, kind: HistoryPoint['kind']): number | null {
+  return kind === 'scored' && run.riskScore ? Math.round(run.riskScore.overall) : null;
+}
+
+/** Variação da nota: a do servidor quando existe; senão, a diferença para a última auditoria que gerou nota. */
+function deltaOf(run: AuditRunResponse, score: number | null, previousScore: number | null): number | null {
+  if (run.scoreDelta != null) return Math.round(run.scoreDelta);
+  return score !== null && previousScore !== null ? score - previousScore : null;
+}
+
+function toPoint(run: AuditRunResponse, previousScore: number | null): HistoryPoint {
+  const kind = KIND_BY_STATUS[run.status];
+  const score = scoreOf(run, kind);
+  const when = new Date(run.completedAt ?? run.startedAt);
+  return {
+    id: run.id,
+    kind,
+    score,
+    band: scoreBand(score),
+    dayLabel: dayLabel(when),
+    timeLabel: timeLabel(when),
+    delta: deltaOf(run, score, previousScore),
+    critical: run.findingsSummary?.CRITICAL ?? 0,
+    high: run.findingsSummary?.HIGH ?? 0,
+  };
 }
 
 /** Quantas das auditorias com nota estão na meta (nota boa) e quantas têm nota. */

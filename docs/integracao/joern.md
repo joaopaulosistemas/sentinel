@@ -33,6 +33,8 @@ Quem não quiser essa regra roda o script com `--param onlyCrossFile=false`.
 | `joern-taint-cmdi-entre-arquivos` | 78 | idem | `Runtime.exec`, `ProcessBuilder` |
 | `joern-taint-path-traversal-entre-arquivos` | 22 | idem | `File`, `Files`, `Paths`, `FileInputStream`... |
 
+Fluxos cujo argumento no ponto perigoso é só texto fixo (por exemplo `createQuery("... :id")` com `setParameter`) são descartados: o dado passa pelo objeto (`this.em`), não pela consulta. Caso de teste: `audit-api/joern/testes/seguro-jpql-parametrizado`.
+
 Saneadores: `parseInt`, `parseLong`, `parseDouble`, `parseFloat`, `parseBoolean`, `UUID.fromString`, `encodeForSQL`, `encodeForOS`.
 
 ## Limites conhecidos

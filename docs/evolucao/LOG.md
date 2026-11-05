@@ -537,3 +537,18 @@ Toda a documentação do produto passou a viver em `docs/` (índice em `docs/REA
 
 Verificado: contagens de regras por pacote, versões de Quarkus e das bibliotecas do painel, endpoints (comparados com as classes de recursos), variáveis e build args do Compose e do Dockerfile, links relativos dos arquivos movidos.
 NÃO verificado: cada afirmação dos documentos longos (ARQUITETURA.md, auditoria-e-api.md e pacotes-de-regras.md receberam só os ajustes acima, não uma releitura linha a linha); endpoints fora da tabela original da API (`freshness`, `score-explanation`, `check-path`, `local-source`) foram descritos a partir da documentação do código, sem chamada real.
+
+## Dashboard 12.41.0 / API — Correção dos achados da auditoria #95
+
+Auditoria #95 do próprio Sentinel (nota 63,5; 11 HIGH, 11 MEDIUM, 95 LOW). Corrigido:
+
+- Joern: falso positivo de SQL injection em consulta JPQL parametrizada (fluxo passava pelo objeto `this.em`). Agora fluxos com argumento só de texto fixo são descartados; novo caso seguro `seguro-jpql-parametrizado`.
+- Dependência: `opentelemetry` 1.67.0 (CVE-2026-118259).
+- Código: imports sem uso, números mágicos em `CommitMessages`, métodos longos em `GuideCatalog`, `GuideBook`, `SarifAnalyzer`, `auditHistory.ts`, `AuditHistoryChart.tsx` e `EnginePanel.tsx` divididos em funções menores; fontes do gráfico de auditorias em `rem`.
+- `.sentinel.yml`: exclusão de casos de teste do Joern e documentos gerados; supressões com os ids reais do Checkstyle.
+
+Deixado de fora de propósito: CVE do `minimatch` (a correção exige subir a cadeia do eslint; `overrides` deixou a árvore inconsistente), mensagens de commit antigas (histórico), acoplamento PMD/Fan-Out, 4 pares duplicados do jscpd, `import` com `*` do JPA, regra de 15 px do Stylelint.
+
+Verificado: `tsc` limpo, `vitest` 299 testes verdes, suíte Joern 7/7, repro da auditoria com 0 achados, sintaxe Java com `javac`.
+NÃO verificado: compilação Maven e testes Java (só no CI); nova execução do Stylelint/PMD; se os ids de supressão novos casam com os da auditoria (só vendo a próxima auditoria).
+

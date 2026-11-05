@@ -167,6 +167,27 @@ public final class GuideBook {
 
     // ------------------------------------------------------------------ CLAUDE.md
 
+    /** Parte fixa do CLAUDE.md: limites, modo de trabalho e regras de commit e revisão. */
+    private static final List<String> CLAUDE_MD_FIXO = List.of(
+            "## Limites",
+            "",
+            "- Função: até 60 linhas, complexidade 12, aninhamento 4. Até 5 parâmetros.",
+            "- Classe: até 500 linhas. Sem números mágicos.",
+            "",
+            "## Como trabalhar",
+            "",
+            "- Faça a solução mais simples que resolve o problema de hoje.",
+            "- Todo comportamento novo vem com teste que falha se o código quebrar.",
+            "- Toda chamada remota tem timeout; repita só operação idempotente, com espera exponencial e jitter.",
+            "- Exceção a uma regra: registre no `.sentinel.yml` com motivo e prazo.",
+            "",
+            "## Commits e revisão",
+            "",
+            "- Commit: `tipo(escopo): descrição` no imperativo, até 72 caracteres (feat, fix, docs, refactor, test, chore). O corpo explica o porquê.",
+            "- Um assunto por mudança; refatoração separada de comportamento.",
+            "- Se algo ficou fora do escopo, abra uma issue em vez de deixar \"depois eu arrumo\".",
+            "- Ao revisar, comente o código (não a pessoa) e marque `Nit:`, `Opcional:` ou `FYI:`.");
+
     /** CLAUDE.md enxuto da tecnologia: comandos, convenções, armadilhas, o que não se negocia, limites e modo de trabalho. */
     public static String claudeMd(Stack stack, List<StackRule> rules) {
         List<String> l = new ArrayList<>();
@@ -192,36 +213,25 @@ public final class GuideBook {
         stack.practices().stream().limit(MAX_TRAPS).forEach(p -> l.add("- " + p.avoid()));
         l.add("- Não copie padrões do código legado para código novo.");
         l.add("");
+        semExcecao(l, rules);
+        l.addAll(CLAUDE_MD_FIXO);
+        return String.join("\n", l) + "\n";
+    }
+
+    /** Seção das regras de severidade alta que não admitem exceção; some quando não há nenhuma. */
+    private static void semExcecao(List<String> l, List<StackRule> rules) {
         List<StackRule> high = rules.stream()
                 .filter(s -> "alta".equals(s.rule().severity()) && !s.rule().action().isEmpty())
                 .limit(MAX_NO_EXCEPTION_RULES)
                 .toList();
-        if (!high.isEmpty()) {
-            l.add("## Sem exceção (severidade alta no Sentinel)");
-            l.add("");
-            for (StackRule s : high) {
-                l.add("- " + s.rule().title() + " → " + s.rule().action());
-            }
-            l.add("");
+        if (high.isEmpty()) {
+            return;
         }
-        l.add("## Limites");
+        l.add("## Sem exceção (severidade alta no Sentinel)");
         l.add("");
-        l.add("- Função: até 60 linhas, complexidade 12, aninhamento 4. Até 5 parâmetros.");
-        l.add("- Classe: até 500 linhas. Sem números mágicos.");
+        for (StackRule s : high) {
+            l.add("- " + s.rule().title() + " → " + s.rule().action());
+        }
         l.add("");
-        l.add("## Como trabalhar");
-        l.add("");
-        l.add("- Faça a solução mais simples que resolve o problema de hoje.");
-        l.add("- Todo comportamento novo vem com teste que falha se o código quebrar.");
-        l.add("- Toda chamada remota tem timeout; repita só operação idempotente, com espera exponencial e jitter.");
-        l.add("- Exceção a uma regra: registre no `.sentinel.yml` com motivo e prazo.");
-        l.add("");
-        l.add("## Commits e revisão");
-        l.add("");
-        l.add("- Commit: `tipo(escopo): descrição` no imperativo, até 72 caracteres (feat, fix, docs, refactor, test, chore). O corpo explica o porquê.");
-        l.add("- Um assunto por mudança; refatoração separada de comportamento.");
-        l.add("- Se algo ficou fora do escopo, abra uma issue em vez de deixar \"depois eu arrumo\".");
-        l.add("- Ao revisar, comente o código (não a pessoa) e marque `Nit:`, `Opcional:` ou `FYI:`.");
-        return String.join("\n", l) + "\n";
     }
 }

@@ -47,6 +47,23 @@ function ColumnBody({ point }: { point: HistoryPoint }) {
   );
 }
 
+/** Texto da dica quando a auditoria não tem nota: explica por quê. */
+function noScoreText(point: HistoryPoint): string {
+  if (point.kind === 'scored') return 'A auditoria não trouxe nota.';
+  if (point.kind === 'active') return 'Em andamento: a nota aparece quando terminar.';
+  return `${KIND_TEXT[point.kind]}: não gerou nota.`;
+}
+
+function deltaText(delta: number | null): string {
+  if (delta === null) return 'primeira';
+  return delta === 0 ? 'igual' : signed(delta);
+}
+
+function deltaClass(delta: number | null): string | undefined {
+  if (!delta) return undefined;
+  return delta > 0 ? 'sentinel-grafico__sobe' : 'sentinel-grafico__desce';
+}
+
 function TipBody({ tip, currentId }: { tip: Tip; currentId: number }) {
   const { point } = tip;
   const gap = point.score === null ? null : point.score - TARGET_SCORE;
@@ -54,20 +71,89 @@ function TipBody({ tip, currentId }: { tip: Tip; currentId: number }) {
     <>
       <h3>Auditoria #{point.id}</h3>
       <div className="sentinel-grafico__dica-sub">{point.dayLabel}{point.timeLabel && ` ${point.timeLabel}`}</div>
-      {point.score === null ? (
-        <div>{point.kind === 'scored' ? 'A auditoria não trouxe nota.' : point.kind === 'active' ? 'Em andamento: a nota aparece quando terminar.' : `${KIND_TEXT[point.kind as 'failed' | 'cancelled']}: não gerou nota.`}</div>
+      {point.score === null || gap === null ? (
+        <div>{noScoreText(point)}</div>
       ) : (
         <dl>
           <dt>Nota</dt><dd>{point.score} · {BAND_TEXT[point.band]}</dd>
-          <dt>Meta ({TARGET_SCORE})</dt><dd className={gap! >= 0 ? 'sentinel-grafico__sobe' : 'sentinel-grafico__desce'}>{signed(gap!)}</dd>
+          <dt>Meta ({TARGET_SCORE})</dt><dd className={gap >= 0 ? 'sentinel-grafico__sobe' : 'sentinel-grafico__desce'}>{signed(gap)}</dd>
           <dt>Anterior</dt>
-          <dd className={point.delta ? (point.delta > 0 ? 'sentinel-grafico__sobe' : 'sentinel-grafico__desce') : undefined}>
-            {point.delta === null ? 'primeira' : point.delta === 0 ? 'igual' : signed(point.delta)}
-          </dd>
+          <dd className={deltaClass(point.delta)}>{deltaText(point.delta)}</dd>
           <dt>Críticos / altos</dt><dd>{point.critical} / {point.high}</dd>
         </dl>
       )}
       <div className="sentinel-grafico__dica-ir">{point.id === currentId ? 'Você está nesta auditoria' : 'Clique para abrir o resultado'}</div>
+    </>
+  );
+}
+
+interface ChartBodyProps {
+  points: HistoryPoint[];
+  systemName: string;
+  currentId: number;
+  show: (point: HistoryPoint, el: HTMLElement) => void;
+  hide: () => void;
+  goTop: () => void;
+}
+
+/** Colunas, eixos, rótulos e legenda do gráfico (só existe com 2 ou mais auditorias). */
+function ChartBody({ points, systemName, currentId, show, hide, goTop }: ChartBodyProps) {
+  return (
+    <>
+      <p style={{ margin: '0 0 16px', color: 'var(--s-text-3)', fontSize: 14 }}>Clique numa coluna para abrir aquela auditoria.</p>
+      <div className="sentinel-grafico__area" role="group" aria-label={`Gráfico de colunas com a nota das últimas auditorias de ${systemName}`}>
+        <div className="sentinel-grafico__eixo-y" aria-hidden="true">
+          {TICKS.map((v) => <span key={v} style={{ bottom: `${v}%` }}>{v}</span>)}
+        </div>
+        <div className="sentinel-grafico__plano">
+          <div aria-hidden="true">
+            {[25, 100].map((v) => <div key={v} className="sentinel-grafico__grade" style={{ bottom: `${v}%` }} />)}
+          </div>
+          <div className="sentinel-grafico__colunas">
+            {points.map((p) => (
+              <Link
+                key={p.id}
+                to={`/audits/${p.id}`}
+                className="sentinel-grafico__coluna"
+                aria-current={p.id === currentId ? 'page' : undefined}
+                aria-label={columnLabel(p, currentId)}
+                onClick={goTop}
+                onMouseEnter={(e) => show(p, e.currentTarget)}
+                onMouseLeave={hide}
+                onFocus={(e) => show(p, e.currentTarget)}
+                onBlur={hide}
+              >
+                <ColumnBody point={p} />
+              </Link>
+            ))}
+          </div>
+          <div className="sentinel-grafico__ref" aria-hidden="true" style={{ bottom: `${TARGET_SCORE}%` }}><i /></div>
+          <div className="sentinel-grafico__ref sentinel-grafico__ref--atencao" aria-hidden="true" style={{ bottom: `${WARN_SCORE}%` }}><i /></div>
+        </div>
+        <div className="sentinel-grafico__rotulos-ref" aria-hidden="true">
+          <span style={{ top: `${100 - TARGET_SCORE}%` }}>Meta {TARGET_SCORE}</span>
+          <span style={{ top: `${100 - WARN_SCORE}%` }}>Atenção {WARN_SCORE}</span>
+        </div>
+      </div>
+      <div className="sentinel-grafico__eixo-x" aria-hidden="true">
+        <span />
+        <div className="sentinel-grafico__rotulos">
+          {points.map((p) => (
+            <Link key={p.id} to={`/audits/${p.id}`} tabIndex={-1} className="sentinel-grafico__rotulo" onClick={goTop}>
+              <b>#{p.id}</b>
+              <span className="sentinel-grafico__rotulo-dia">{p.dayLabel}</span>
+              {p.id === currentId && <span className="sentinel-grafico__aqui">esta</span>}
+            </Link>
+          ))}
+        </div>
+        <span />
+      </div>
+      <div className="sentinel-grafico__legenda">
+        <span><i className="sentinel-grafico__amostra sentinel-grafico__barra--good" />Boa: {TARGET_SCORE} ou mais</span>
+        <span><i className="sentinel-grafico__amostra sentinel-grafico__barra--warn" />Atenção: {WARN_SCORE} a {TARGET_SCORE - 1}</span>
+        <span><i className="sentinel-grafico__amostra sentinel-grafico__barra--bad" />Ruim: abaixo de {WARN_SCORE}</span>
+        {points.some((p) => p.kind !== 'scored') && <span><i className="sentinel-grafico__amostra sentinel-grafico__amostra--sem-nota" />Sem nota</span>}
+      </div>
     </>
   );
 }
@@ -100,62 +186,7 @@ export function AuditHistoryChart({ systemId, systemName, currentId }: { systemI
       ) : points.length < 2 ? (
         <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 14 }}>Esta é a primeira auditoria do sistema: rode outra para ver a evolução da nota.</p>
       ) : (
-        <>
-          <p style={{ margin: '0 0 16px', color: 'var(--s-text-3)', fontSize: 14 }}>Clique numa coluna para abrir aquela auditoria.</p>
-          <div className="sentinel-grafico__area" role="group" aria-label={`Gráfico de colunas com a nota das últimas auditorias de ${systemName}`}>
-            <div className="sentinel-grafico__eixo-y" aria-hidden="true">
-              {TICKS.map((v) => <span key={v} style={{ bottom: `${v}%` }}>{v}</span>)}
-            </div>
-            <div className="sentinel-grafico__plano">
-              <div aria-hidden="true">
-                {[25, 100].map((v) => <div key={v} className="sentinel-grafico__grade" style={{ bottom: `${v}%` }} />)}
-              </div>
-              <div className="sentinel-grafico__colunas">
-                {points.map((p) => (
-                  <Link
-                    key={p.id}
-                    to={`/audits/${p.id}`}
-                    className="sentinel-grafico__coluna"
-                    aria-current={p.id === currentId ? 'page' : undefined}
-                    aria-label={columnLabel(p, currentId)}
-                    onClick={goTop}
-                    onMouseEnter={(e) => show(p, e.currentTarget)}
-                    onMouseLeave={hide}
-                    onFocus={(e) => show(p, e.currentTarget)}
-                    onBlur={hide}
-                  >
-                    <ColumnBody point={p} />
-                  </Link>
-                ))}
-              </div>
-              <div className="sentinel-grafico__ref" aria-hidden="true" style={{ bottom: `${TARGET_SCORE}%` }}><i /></div>
-              <div className="sentinel-grafico__ref sentinel-grafico__ref--atencao" aria-hidden="true" style={{ bottom: `${WARN_SCORE}%` }}><i /></div>
-            </div>
-            <div className="sentinel-grafico__rotulos-ref" aria-hidden="true">
-              <span style={{ top: `${100 - TARGET_SCORE}%` }}>Meta {TARGET_SCORE}</span>
-              <span style={{ top: `${100 - WARN_SCORE}%` }}>Atenção {WARN_SCORE}</span>
-            </div>
-          </div>
-          <div className="sentinel-grafico__eixo-x" aria-hidden="true">
-            <span />
-            <div className="sentinel-grafico__rotulos">
-              {points.map((p) => (
-                <Link key={p.id} to={`/audits/${p.id}`} tabIndex={-1} className="sentinel-grafico__rotulo" onClick={goTop}>
-                  <b>#{p.id}</b>
-                  <span className="sentinel-grafico__rotulo-dia">{p.dayLabel}</span>
-                  {p.id === currentId && <span className="sentinel-grafico__aqui">esta</span>}
-                </Link>
-              ))}
-            </div>
-            <span />
-          </div>
-          <div className="sentinel-grafico__legenda">
-            <span><i className="sentinel-grafico__amostra sentinel-grafico__barra--good" />Boa: {TARGET_SCORE} ou mais</span>
-            <span><i className="sentinel-grafico__amostra sentinel-grafico__barra--warn" />Atenção: {WARN_SCORE} a {TARGET_SCORE - 1}</span>
-            <span><i className="sentinel-grafico__amostra sentinel-grafico__barra--bad" />Ruim: abaixo de {WARN_SCORE}</span>
-            {points.some((p) => p.kind !== 'scored') && <span><i className="sentinel-grafico__amostra sentinel-grafico__amostra--sem-nota" />Sem nota</span>}
-          </div>
-        </>
+        <ChartBody points={points} systemName={systemName} currentId={currentId} show={show} hide={hide} goTop={goTop} />
       )}
       {tip && createPortal(
         <div

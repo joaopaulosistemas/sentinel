@@ -16,6 +16,10 @@ public final class CommitMessages {
     private CommitMessages() {}
 
     public static final int MAX_SUBJECT = 100;
+    /** Grupo da expressão convencional que traz a descrição do commit. */
+    private static final int GRUPO_DESCRICAO = 3;
+    /** Tamanho do hash abreviado mostrado nos exemplos. */
+    private static final int TAMANHO_HASH_CURTO = 7;
     private static final char SEP = '\u001f';
     private static final Pattern CONVENTIONAL = Pattern.compile(
             "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([^)\\s]+\\))?!?: (\\S.*)$");
@@ -58,7 +62,7 @@ public final class CommitMessages {
         if (!m.matches()) {
             return "fora do padrão tipo(escopo): descrição";
         }
-        if (VAGUE.contains(m.group(3).strip().toLowerCase(Locale.ROOT))) {
+        if (VAGUE.contains(m.group(GRUPO_DESCRICAO).strip().toLowerCase(Locale.ROOT))) {
             return "descrição sem informação";
         }
         return subject.length() > MAX_SUBJECT ? "mais de " + MAX_SUBJECT + " caracteres" : null;
@@ -78,7 +82,7 @@ public final class CommitMessages {
             if (why != null) {
                 bad++;
                 if (examples.size() < maxExamples) {
-                    examples.add(c.sha().substring(0, Math.min(7, c.sha().length())) + ": " + c.subject() + " — " + why);
+                    examples.add(c.sha().substring(0, Math.min(TAMANHO_HASH_CURTO, c.sha().length())) + ": " + c.subject() + " — " + why);
                 }
             }
         }
