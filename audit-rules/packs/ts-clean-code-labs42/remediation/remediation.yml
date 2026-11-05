@@ -1,0 +1,147 @@
+- key: "sentinel-cct-parametros-demais"
+  summary: "Agrupe os valores em um objeto com tipo e receba um só parâmetro; os chamadores passam as chaves pelo nome."
+  before: "function emitir(nome: string, valor: number, vencimento: Date)"
+  after: "function emitir(boleto: { nome: string; valor: number; vencimento: Date })"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-cct-parametro-booleano"
+  summary: "Separe em duas funções com nomes claros (uma para cada comportamento)."
+  before: "gerarRelatorio(mes, true)"
+  after: "gerarRelatorioResumido(mes)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-altera-parametro"
+  summary: "Devolva uma cópia em vez de mudar o argumento recebido."
+  before: "conta.ativa = true;"
+  after: "return { ...conta, ativa: true };"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-cct-escreve-no-global"
+  summary: "Exporte a função ou o valor do seu módulo, ou injete um serviço, em vez de escrever em window ou estender um tipo nativo."
+  before: "window.usuarioAtual = usuario;"
+  after: "export const usuarioAtual = usuario;"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-cct-valor-padrao-com-ou"
+  summary: "Declare o padrão no parâmetro ou use '??' para trocar só null e undefined."
+  before: "const t = titulo || 'Sr.';"
+  after: "function saudar(nome: string, titulo = 'Sr.')"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-condicao-composta"
+  summary: "Extraia a condição para uma função ou constante com nome que diga o que ela verifica."
+  before: "if (c.ativa && c.saldo > 0 && !c.bloqueada)"
+  after: "const podeMovimentar = c.ativa && c.saldo > 0 && !c.bloqueada;\nif (podeMovimentar)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-verificacao-de-tipo-em-cadeia"
+  summary: "Troque a cadeia por união discriminada (campo 'tipo') com switch, ou por polimorfismo."
+  before: "if (typeof v === 'string') {...} else if (typeof v === 'number') {...}"
+  after: "switch (v.tipo) { case 'texto': ...; case 'numero': ...; }"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-cct-codigo-inalcancavel"
+  summary: "Apague o código que vem depois do return ou do throw."
+  before: "return 1;\nlimpar();"
+  after: "limpar();\nreturn 1;"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-laco-com-indice"
+  summary: "Use for...of, ou map, filter, find e reduce, conforme a intenção."
+  before: "for (let i = 0; i < lista.length; i++) total += lista[i];"
+  after: "for (const item of lista) total += item;"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-throw-sem-error"
+  summary: "Lance um Error (ou classe que estenda Error) com a mensagem."
+  before: "throw 'saldo insuficiente';"
+  after: "throw new Error('saldo insuficiente');"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-catch-so-registra"
+  summary: "Trate o erro (avise o usuário, tente de novo, use valor alternativo) ou relance depois de registrar."
+  before: "} catch (e) { console.log(e); }"
+  after: "} catch (e) { this.avisar(e); throw e; }"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-cct-promessa-rejeicao-ignorada"
+  summary: "Trate a rejeição ou deixe subir para quem sabe o que fazer; nunca engula o erro em silêncio."
+  before: "buscar().catch(() => {});"
+  after: "buscar().catch(erro => this.avisar(erro));"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-cct-then-encadeado"
+  summary: "Reescreva com async/await e try/catch."
+  before: "buscar().then(a => b(a)).then(c => d(c));"
+  after: "const a = await buscar();\nconst c = await b(a);\nawait d(c);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-parametro-callback"
+  summary: "Devolva uma Promise (ou Observable) em vez de receber callback."
+  before: "function carregar(id: number, callback: (x: Conta) => void)"
+  after: "function carregar(id: number): Promise<Conta>"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-cct-nome-sem-significado"
+  summary: "Troque por um nome que diga o que a variável guarda (o editor renomeia com F2)."
+  before: "const d = new Date();"
+  after: "const dataEmissao = new Date();"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-numero-magico"
+  summary: "Guarde o número em uma constante com nome e use a constante na comparação."
+  before: "if (tentativas > 5)"
+  after: "const LIMITE_DE_TENTATIVAS = 5;\nif (tentativas > LIMITE_DE_TENTATIVAS)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-import-relativo-profundo"
+  summary: "Crie um alias no tsconfig.json (paths) e importe por ele."
+  before: "import { Conta } from '../../../shared/models/conta';"
+  after: "import { Conta } from '@app/shared/models/conta';"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-codigo-comentado"
+  summary: "Apague as linhas comentadas; o histórico do Git guarda a versão antiga."
+  before: "// const antigo = calcular(valor);"
+  after: "(linha removida)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-comentario-de-diario"
+  summary: "Apague o comentário; quem mexeu e quando está no git log e no git blame."
+  before: "// Alterado por joao em 2019-03-10"
+  after: "(linha removida)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-marcador-de-posicao"
+  summary: "Apague a linha de enfeite; se o arquivo precisa de divisórias, separe em arquivos ou classes menores."
+  before: "// ===== GETTERS ====="
+  after: "(linha removida)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cct-teste-sem-nome-descritivo"
+  summary: "Descreva o comportamento esperado no nome do teste."
+  before: "it('works', () => {...})"
+  after: "it('recusa saque maior que o saldo', () => {...})"
+  effort: S
+  regression-risk: LOW
+

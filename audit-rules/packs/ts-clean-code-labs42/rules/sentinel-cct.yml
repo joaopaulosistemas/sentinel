@@ -1,0 +1,397 @@
+# Regras inspiradas no guia clean-code-typescript (https://github.com/labs42io/clean-code-typescript).
+# Texto e exemplos são do Sentinel, escritos do zero. Casos de teste: tests/sentinel-cct.ts
+# O que o guia pede e não dá para checar por código (SOLID, coesão, TDD) está em docs/padrao-typescript/README.md.
+rules:
+  # ---------------------------------------------------------------- Funções
+  - id: sentinel-cct-parametros-demais
+    patterns:
+      - pattern-either:
+          - pattern: function $F($A, $B, $C, ...) {...}
+          - pattern: $F = ($A, $B, $C, ...) => {...}
+          - pattern: |
+              class $K {
+                ...
+                $M($A, $B, $C, ...) {...}
+                ...
+              }
+      - metavariable-regex:
+          metavariable: $F
+          regex: '^(?!constructor$).*'
+    message: >
+      Função com mais de dois parâmetros. Quanto mais argumentos, mais combinações para testar e mais fácil trocar
+      a ordem sem querer. Agrupe os valores em um objeto (com tipo ou interface) e receba um só parâmetro.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-parametro-booleano
+    patterns:
+      - pattern-either:
+          - pattern: 'function $F(..., $P: boolean, ...) {...}'
+          - pattern: '$F = (..., $P: boolean, ...) => {...}'
+      - metavariable-regex:
+          metavariable: $F
+          regex: '^(?!constructor$).*'
+    message: >
+      Parâmetro booleano costuma indicar uma função que faz duas coisas conforme o valor recebido. Separe em duas
+      funções com nomes claros, ou passe um objeto de opções com nomes que expliquem cada chave.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-altera-parametro
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              function $F(..., $P, ...) {...}
+          - pattern-inside: |
+              $F = (..., $P, ...) => {...}
+      - pattern-either:
+          - pattern: $P.$ATTR = $V
+          - pattern: $P.push(...)
+          - pattern: $P.splice(...)
+          - pattern: $P.sort(...)
+          - pattern: $P.reverse()
+          - pattern: delete $P.$ATTR
+      - metavariable-regex:
+          metavariable: $P
+          regex: '^(?!this$|req$|res$|ctx$|self$).*'
+    message: >
+      A função altera o objeto ou a lista que recebeu, e quem chamou nem percebe. Devolva uma cópia
+      (spread, map, filter, toSorted) ou deixe claro no nome que a função muda o argumento.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-escreve-no-global
+    pattern-either:
+      - pattern: window.$X = $V
+      - pattern: globalThis.$X = $V
+      - pattern: global.$X = $V
+      - pattern: Array.prototype.$M = $V
+      - pattern: String.prototype.$M = $V
+      - pattern: Object.prototype.$M = $V
+      - pattern: Number.prototype.$M = $V
+      - pattern: Date.prototype.$M = $V
+      - pattern: Promise.prototype.$M = $V
+    message: >
+      Escrever no escopo global (ou estender um tipo nativo) pode quebrar outra biblioteca que use o mesmo nome
+      e cria dependência escondida. Exporte uma função ou classe do seu módulo, ou use um serviço injetado.
+    severity: WARNING
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**", "**/polyfills*.ts", "**/main.ts"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-valor-padrao-com-ou
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              function $F(..., $P, ...) {...}
+          - pattern-inside: |
+              $F = (..., $P, ...) => {...}
+      - pattern-either:
+          - pattern: $P = $P || $D
+          - pattern: const $N = $P || $D
+          - pattern: let $N = $P || $D
+    message: >
+      O valor padrão do parâmetro está sendo dado com '||' dentro da função. Isso também troca 0, '' e false,
+      que muitas vezes são valores válidos. Declare o padrão no parâmetro (nome: string = 'x') ou use '??'.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-condicao-composta
+    pattern-either:
+      - pattern: if ($A && $B && $C) $S
+      - pattern: if ($A || $B || $C) $S
+    message: >
+      Condição com três ou mais partes no mesmo 'if'. Guarde a condição em uma função ou constante com nome que diga
+      o que ela quer saber (ex.: podeEmitirBoleto), e o 'if' passa a ler como uma frase.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-verificacao-de-tipo-em-cadeia
+    pattern-either:
+      - pattern: if (typeof $X === $A) {...} else if (typeof $X === $B) {...}
+      - pattern: if ($X instanceof $A) {...} else if ($X instanceof $B) {...}
+      - pattern: typeof $X === $A || typeof $X === $B
+    message: >
+      Cadeia de 'typeof' ou 'instanceof' para decidir o que fazer. Em TypeScript, o tipo já diz isso: use união
+      discriminada, sobrecarga ou deixe cada classe com o seu comportamento (polimorfismo).
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-codigo-inalcancavel
+    patterns:
+      - pattern-either:
+          - pattern: |
+              return $X;
+              $S
+          - pattern: |
+              throw $X;
+              $S
+      - pattern-not: |
+          return $X;
+          break;
+      - pattern-not: |
+          return $X;
+          function $F(...) {...}
+    message: >
+      Há código depois de 'return' ou 'throw' que nunca vai executar. Código morto confunde quem lê e fica
+      desatualizado: apague (o histórico do Git guarda).
+    severity: WARNING
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-laco-com-indice
+    pattern: for (let $I = 0; $I < $A.length; $I++) {...}
+    message: >
+      Laço com índice só para percorrer uma lista. Prefira 'for...of' ou map, filter, find e reduce: dizem a
+      intenção sem contador para errar (limite, passo, índice fora da lista).
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  # ---------------------------------------------------------------- Erros e promessas
+  - id: sentinel-cct-throw-sem-error
+    pattern-either:
+      - pattern: throw "..."
+      - pattern: throw `...`
+      - pattern: throw {...}
+      - patterns:
+          - pattern: throw $N
+          - metavariable-regex:
+              metavariable: $N
+              regex: '^-?\d+(\.\d+)?$'
+    message: >
+      Lançar texto, número ou objeto solto perde a pilha de chamadas (stack trace), então fica difícil achar de
+      onde veio o erro. Lance sempre 'new Error(...)' ou uma classe que estenda Error.
+    severity: WARNING
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-catch-so-registra
+    pattern: |
+      try {
+        ...
+      } catch ($E) {
+        console.$M(...);
+      }
+    message: >
+      O erro é capturado e só aparece no console. Ninguém é avisado e o programa segue como se nada tivesse
+      acontecido. Trate (mensagem ao usuário, nova tentativa, valor alternativo), relance ou registre em um
+      serviço de log de verdade.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-promessa-rejeicao-ignorada
+    pattern-either:
+      - pattern: $P.catch(() => {})
+      - pattern: $P.catch(() => undefined)
+      - pattern: $P.catch(() => null)
+      - pattern: $P.catch((...) => {})
+    message: >
+      A rejeição da promessa é engolida: se a chamada falhar, nada acontece e ninguém fica sabendo. Trate o erro
+      (mensagem, nova tentativa, valor alternativo) ou deixe subir para quem sabe o que fazer.
+    severity: WARNING
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-then-encadeado
+    pattern-either:
+      - pattern: $P.then(...).then(...)
+      - pattern: $P.then(...).catch(...)
+    message: >
+      Promessa encadeada com then/catch. Com async/await o fluxo lê de cima para baixo, o try/catch trata o erro
+      no lugar certo e a pilha de chamadas fica mais clara.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-parametro-callback
+    patterns:
+      - pattern-either:
+          - pattern: function $F(..., $CB, ...) {...}
+          - pattern: $F = (..., $CB, ...) => {...}
+          - pattern: |
+              class $K {
+                ...
+                $F(..., $CB, ...) {...}
+                ...
+              }
+      - metavariable-regex:
+          metavariable: $CB
+          regex: '^(callback|cb|done|onDone|onSuccess|onError)(\??:.*)?$'
+    message: >
+      Função que recebe 'callback' para avisar quando termina. Devolva uma Promise (e use async/await) ou um
+      Observable: o chamador trata erro e sucesso no mesmo estilo do resto do código.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  # ---------------------------------------------------------------- Nomes, importações e comentários
+  - id: sentinel-cct-nome-sem-significado
+    patterns:
+      - pattern-either:
+          - pattern: const $X = $V
+          - pattern: let $X = $V
+      - metavariable-regex:
+          metavariable: $X
+          regex: '^([a-hl-wz]|temp|tmp|aux|foo|bar|baz|dummy|stuff|thing|obj\d*|var\d+|val\d+)$'
+    message: >
+      O nome da variável não diz o que ela guarda. Nome de uma letra (fora i, j, k, x, y em laços) ou genérico
+      (temp, aux, foo, obj) obriga quem lê a descobrir pelo contexto. Troque por um nome que possa ser dito em voz alta.
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-numero-magico
+    patterns:
+      - pattern-either:
+          - pattern: $X > $N
+          - pattern: $X >= $N
+          - pattern: $X < $N
+          - pattern: $X <= $N
+          - pattern: $X === $N
+          - pattern: $X !== $N
+      - metavariable-regex:
+          metavariable: $N
+          regex: '^(?:[3-9]|[1-9]\d+)(?:\.\d+)?$'
+    message: >
+      Número solto na comparação. Quem lê não sabe o que ele representa e, se o valor mudar, é preciso achar todos
+      os lugares onde ele aparece. Guarde em uma constante com nome (const LIMITE_DE_TENTATIVAS = 3).
+    severity: INFO
+    languages: [typescript]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "*.spec.ts", "*.test.ts", "**/node_modules/**", "**/dist/**", "**/*.constants.ts", "**/*.enum.ts"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-import-relativo-profundo
+    pattern-regex: "(?m)^\\s*(?:import|export)\\b[^;\\n]*?\\bfrom\\s+['\"](?:\\.\\./){3,}"
+    message: >
+      Importação com três ou mais '../' é frágil: mudar o arquivo de pasta quebra o caminho. Configure um alias em
+      tsconfig.json (paths, ex.: '@app/*') e importe por ele.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-codigo-comentado
+    pattern-regex: "(?m)^[ \\t]*//[ \\t]*(?:(?:const|let|var|return|import|export|throw|await)\\b[^\\n]*[;)}]|(?:if|for|while|switch)\\s*\\([^\\n]*[{)]|(?:this\\.)?\\w+(?:\\.\\w+)*\\([^\\n]*\\);)[ \\t]*$"
+    message: >
+      Código comentado. O Git já guarda a versão antiga; deixar no arquivo atrapalha a leitura e ninguém sabe se
+      pode apagar. Remova.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-comentario-de-diario
+    pattern-regex: "(?mi)^[ \\t]*(?://|\\*|/\\*+)[ \\t]*(?:@?(?:autor|author|alterad[oa] por|modificad[oa] (?:por|em)|criad[oa] (?:por|em)|created (?:by|on)|modified (?:by|on)|updated (?:by|on))\\b|\\d{1,4}[-/.]\\d{1,2}[-/.]\\d{1,4}\\b)"
+    message: >
+      Comentário que registra quem mexeu e quando (diário de alterações). Isso é papel do controle de versão
+      (git log e git blame), que não envelhece nem some com um refactor. Remova.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  - id: sentinel-cct-marcador-de-posicao
+    pattern-regex: "(?m)^[ \\t]*//[ \\t]*[=\\-_*#~/+]{4,}"
+    message: >
+      Linha de enfeite usada como marcador de seção. Se o arquivo precisa de divisórias para ser lido, é sinal de
+      que está grande demais: separe em arquivos, classes ou funções com nomes claros.
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.tsx"]
+      exclude: ["*.d.ts", "**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality
+
+  # ---------------------------------------------------------------- Testes
+  - id: sentinel-cct-teste-sem-nome-descritivo
+    pattern-regex: "(?m)\\b(?:it|test)\\(\\s*['\"`](?:test|teste|works?|funciona|ok|should work|deve funcionar|foo|bar)?\\s*\\d*['\"`]\\s*,"
+    message: >
+      O nome do teste não diz o que ele confere. O nome é a primeira coisa que aparece quando o teste falha:
+      descreva o comportamento esperado (ex.: 'recusa saque maior que o saldo').
+    severity: INFO
+    languages: [regex]
+    paths:
+      include: ["*.spec.ts", "*.test.ts", "*.spec.tsx", "*.test.tsx"]
+      exclude: ["**/node_modules/**", "**/dist/**"]
+    metadata:
+      category: quality

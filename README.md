@@ -477,7 +477,7 @@ sentinel-audit-tool/
 │       └── resource/               ← Endpoints REST
 │
 ├── audit-rules/
-│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, core-corporativo, market-tools, ts-clean-code, core-architecture, e os de adesão opcional core-quarkus, core-vue e core-boas-praticas) e profiles/
+│   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, core-corporativo, market-tools, ts-clean-code, ts-clean-code-labs42, core-architecture, e os de adesão opcional core-quarkus, core-vue e core-boas-praticas) e profiles/
 │   ├── optional/                   ← Regras que duplicam os analisadores Java (desativadas)
 │   ├── lint/eslint/                ← Configuração do ESLint usada pelo analisador
 │   └── bin/sentinel-pack           ← Ferramenta de linha de comando para autores de pacotes
@@ -711,6 +711,10 @@ Pacote opt-in (desligado por padrão) que transforma o padrão de clean code da 
 - **Perfil `padrao-typescript-angular`**: liga o pacote e fixa os limites do padrão (método 50 linhas, complexidade 10, aninhamento 3, arquivo 500 linhas).
 - **Lint de estrutura e nomes (ESLint)**: use `ESLINT_CONFIG=/opt/eslint/eslint.padrao-ts.config.mjs`. Cobre tipo de retorno, ordem de membros, nomes, linhas em branco, `any`, `console` e `==`.
 - **Nos seus projetos Angular**: copie `docs/padrao-typescript/eslintrc.json` para `.eslintrc.json` (mesmas regras, no formato do ESLint 8 + Angular + Prettier).
+
+### Clean code em TypeScript (`ts-clean-code-labs42`)
+
+Pacote opt-in com 21 regras `sentinel-cct-*` inspiradas no guia [clean-code-typescript](https://labs42io.github.io/clean-code-typescript/): parâmetros, erros e promessas, comentários, nomes e importações. Perfil `clean-code-typescript` (severidade baixa). A tabela guia → regra e o que fica para revisão humana estão em [`docs/padrao-typescript/clean-code-labs42.md`](docs/padrao-typescript/clean-code-labs42.md).
 
 ### Padrão Google (Java e TypeScript/Angular) + SEI CERT e Sonar
 
