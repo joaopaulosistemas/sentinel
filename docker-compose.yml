@@ -50,6 +50,7 @@ services:
         WITH_GITLEAKS: ${WITH_GITLEAKS:-true}
         WITH_PMD: ${WITH_PMD:-true}
         WITH_MARKET_TOOLS: ${WITH_MARKET_TOOLS:-true}
+        WITH_JOERN: ${WITH_JOERN:-false}
         HTTP_PROXY: ${HTTP_PROXY:-}
         HTTPS_PROXY: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-}

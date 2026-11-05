@@ -1,0 +1,11 @@
+# Taint entre arquivos (Java: Spring MVC, Quarkus/JAX-RS) com o Joern, que lê o código-fonte sem compilar.
+# Precisa da imagem construída com WITH_JOERN=true (instala /opt/joern e /opt/sentinel/joern). Sem isso a ferramenta
+# é ignorada, como as demais. Só relata caminhos que atravessam mais de um arquivo: dentro de um arquivo, o Opengrep cobre.
+# O caminho do dado (arquivo e linha de cada passo) vai na mensagem do achado.
+- id: joern-taint
+  name: "Joern (taint entre arquivos)"
+  category: security
+  applies-to: ["**/*.java"]
+  command: [/opt/sentinel/joern/rodar-joern.sh, "{project}", "{output}"]
+  severity-map: {error: high}
+  timeout-seconds: 1800

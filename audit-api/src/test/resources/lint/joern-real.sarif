@@ -1,0 +1,200 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Joern",
+          "informationUri": "https://joern.io",
+          "rules": [
+            {
+              "id": "sqli-entre-arquivos",
+              "name": "SQL montada com dado do usuário (entre arquivos)",
+              "shortDescription": {
+                "text": "SQL montada com dado do usuário (entre arquivos)"
+              },
+              "help": {
+                "text": "Dado vindo da requisição chega a uma consulta SQL montada por texto, passando por mais de um arquivo. Use parâmetros (?) em vez de concatenar."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-89",
+                  "security"
+                ]
+              }
+            },
+            {
+              "id": "cmdi-entre-arquivos",
+              "name": "Comando do sistema com dado do usuário (entre arquivos)",
+              "shortDescription": {
+                "text": "Comando do sistema com dado do usuário (entre arquivos)"
+              },
+              "help": {
+                "text": "Dado vindo da requisição chega à execução de um comando do sistema, passando por mais de um arquivo. Não monte comandos com texto externo; use lista de argumentos fixa e valide."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-78",
+                  "security"
+                ]
+              }
+            },
+            {
+              "id": "path-traversal-entre-arquivos",
+              "name": "Caminho de arquivo com dado do usuário (entre arquivos)",
+              "shortDescription": {
+                "text": "Caminho de arquivo com dado do usuário (entre arquivos)"
+              },
+              "help": {
+                "text": "Dado vindo da requisição chega a um caminho de arquivo, passando por mais de um arquivo. Normalize o caminho e confira se continua dentro do diretório permitido."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-22",
+                  "security"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "sqli-entre-arquivos",
+          "level": "error",
+          "message": {
+            "text": "Dado vindo da requisição chega a uma consulta SQL montada por texto, passando por mais de um arquivo. Use parâmetros (?) em vez de concatenar. Caminho: src/main/java/demo/UserController.java → src/main/java/demo/UserService.java → src/main/java/demo/UserRepository.java"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/demo/UserRepository.java"
+                },
+                "region": {
+                  "startLine": 11
+                }
+              }
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/main/java/demo/UserController.java"
+                          },
+                          "region": {
+                            "startLine": 12
+                          }
+                        }
+                      },
+                      "message": {
+                        "text": "@RequestParam String name"
+                      }
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/main/java/demo/UserController.java"
+                          },
+                          "region": {
+                            "startLine": 13
+                          }
+                        }
+                      },
+                      "message": {
+                        "text": "name"
+                      }
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/main/java/demo/UserService.java"
+                          },
+                          "region": {
+                            "startLine": 9
+                          }
+                        }
+                      },
+                      "message": {
+                        "text": "String name"
+                      }
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/main/java/demo/UserService.java"
+                          },
+                          "region": {
+                            "startLine": 10
+                          }
+                        }
+                      },
+                      "message": {
+                        "text": "name"
+                      }
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/main/java/demo/UserService.java"
+                          },
+                          "region": {
+                            "startLine": 10
+                          }
+                        }
+                      },
+                      "message": {
+                        "text": "name.trim()"
+                      }
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/main/java/demo/UserRepository.java"
+                          },
+                          "region": {
+                            "startLine": 10
+                          }
+                        }
+                      },
+                      "message": {
+                        "text": "String name"
+                      }
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/main/java/demo/UserRepository.java"
+                          },
+                          "region": {
+                            "startLine": 11
+                          }
+                        }
+                      },
+                      "message": {
+                        "text": "\"select name from users where name = '\" + name + \"'\""
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

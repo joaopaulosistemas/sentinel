@@ -364,9 +364,9 @@ class PackLoaderTest {
     void pacoteMarketToolsEmbutidoEValidoETemAsFerramentas() {
         PackLoader.Report r = PackLoader.inspect(TestPacks.builtinRoot().resolve("market-tools"));
         assertTrue(r.ok(), r.errors().toString());
-        assertEquals(12, r.pack().tools().size());
+        assertEquals(13, r.pack().tools().size());
         assertTrue(r.pack().tools().stream().map(ToolSpec::id).toList()
-                .containsAll(List.of("njsscan", "stylelint", "checkov", "hadolint", "kube-linter", "kube-score", "checkstyle", "jscpd", "squawk", "sqlfluff", "dependency-cruiser")));
+                .containsAll(List.of("njsscan", "stylelint", "checkov", "hadolint", "kube-linter", "kube-score", "checkstyle", "jscpd", "squawk", "sqlfluff", "dependency-cruiser", "joern-taint")));
     }
 
     @Test

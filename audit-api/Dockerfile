@@ -63,6 +63,11 @@ ARG KUBE_LINTER_VERSION=0.7.2
 ARG KUBE_SCORE_VERSION=1.19.0
 ARG CHECKSTYLE_VERSION=10.21.4
 ARG WITH_MARKET_TOOLS=true
+# Taint entre arquivos com o Joern (lê o código-fonte Java, sem compilar): ligado só com --build-arg WITH_JOERN=true, porque
+# pesa cerca de 2 GB e precisa de memória na análise (SENTINEL_JOERN_XMX, padrão 4g). Ver audit-api/joern/.
+ARG WITH_JOERN=false
+ARG JOERN_VERSION=v4.0.583
+ARG JOERN_SHA256=74e072163b7f1fc1a371a265ca6f1a94a54507eb20bb831babb288d40f4d278e
 
 # SSL desligado SOMENTE durante o build (removido mais abaixo, antes de USER audit)
 RUN if [ "$INSECURE_SSL" = "true" ]; then \
@@ -122,6 +127,12 @@ RUN apt-get update \
          && mkdir -p /opt/checkstyle \
          && curl -fsSL -o /opt/checkstyle/checkstyle.jar "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-${CHECKSTYLE_VERSION}/checkstyle-${CHECKSTYLE_VERSION}-all.jar"; \
        fi \
+    && if [ "$WITH_JOERN" = "true" ]; then \
+         apt-get install -y --no-install-recommends unzip \
+         && curl -fsSL -o /tmp/joern-cli.zip "https://github.com/joernio/joern/releases/download/${JOERN_VERSION}/joern-cli.zip" \
+         && echo "${JOERN_SHA256}  /tmp/joern-cli.zip" | sha256sum -c - \
+         && mkdir -p /opt/joern && unzip -q /tmp/joern-cli.zip -d /opt/joern && rm /tmp/joern-cli.zip; \
+       fi \
     && if [ "$WITH_ESLINT" = "true" ]; then \
          curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
          && apt-get install -y --no-install-recommends nodejs; \
@@ -138,6 +149,7 @@ COPY audit-rules/lint/eslint /opt/eslint
 COPY audit-rules/lint/stylelint /opt/stylelint
 COPY audit-rules/lint/jscpd /opt/jscpd
 COPY audit-rules/lint/extras /opt/extras
+COPY audit-api/joern/taint-entre-arquivos.sc audit-api/joern/rodar-joern.sh /opt/sentinel/joern/
 COPY audit-rules/lint/checkstyle/checks.xml /opt/checkstyle/checks.xml
 COPY audit-rules/lint/checkstyle/google-checks.xml /opt/checkstyle/google-checks.xml
 RUN if [ "$WITH_ESLINT" = "true" ]; then \

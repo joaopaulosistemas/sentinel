@@ -59,6 +59,29 @@ class SarifAnalyzerTest {
     }
 
     @Test
+    void leOSarifRealDoJoernComOCaminhoEntreArquivos() throws Exception {
+        String sarif;
+        try (InputStream in = SarifAnalyzerTest.class.getResourceAsStream("/lint/joern-real.sarif")) {
+            assertNotNull(in, "fixture ausente");
+            sarif = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        ToolSpec joern = new ToolSpec("joern-taint", "Joern (taint entre arquivos)", null, "*.sarif", Category.SECURITY,
+                Map.of("error", Severity.HIGH), 30, false, List.of());
+
+        List<Finding> fs = new SarifAnalyzer().parse(sarif, joern, PROJ, run());
+
+        assertEquals(1, fs.size());
+        Finding f = fs.get(0);
+        assertEquals("joern-taint-sqli-entre-arquivos", f.getRuleId());
+        assertEquals(Category.SECURITY, f.getCategory());
+        assertEquals(Severity.HIGH, f.getSeverity());
+        assertEquals("src/main/java/demo/UserRepository.java", f.getFilePath());
+        assertTrue(f.getLineNumber() > 0);
+        assertTrue(f.getDescription().contains("UserController.java"), "o caminho do dado aparece na mensagem");
+        assertTrue(f.getDescription().contains("UserService.java"));
+    }
+
+    @Test
     void severidadeVemDoMapaDoPacoteDepoisDoNivelDaRegra() throws Exception {
         String sarif = fixture();
         List<Finding> padrao = new SarifAnalyzer().parse(sarif, spec("ext", "*", null, Map.of()), PROJ, run());
