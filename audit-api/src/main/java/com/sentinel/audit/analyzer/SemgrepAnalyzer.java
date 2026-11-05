@@ -72,7 +72,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         String partial = null;
 
         if (!isSemgrepAvailable()) {
-            LOG.warnf("Semgrep não está instalado. Análise SAST ignorada para %s", projectPath);
+            LOG.warnf("Nem Opengrep nem Semgrep estão instalados. Análise SAST ignorada para %s", projectPath);
             return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
         }
 
@@ -127,26 +127,11 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
     }
 
     /**
-     * Procura o executável no PATH sem executá-lo: {@code semgrep --version} faz uma checagem de
-     * versão pela rede e, em redes restritas, pode levar minutos.
+     * Procura o motor (Opengrep ou Semgrep) no PATH sem executá-lo: {@code --version} faz uma checagem de
+     * versão pela rede e, em redes restritas, pode levar minutos. Ver {@link SastEngine}.
      */
     private boolean isSemgrepAvailable() {
-        String pathEnv = System.getenv("PATH");
-        if (pathEnv == null || pathEnv.isBlank()) {
-            return false;
-        }
-        for (String dir : pathEnv.split(java.io.File.pathSeparator)) {
-            if (dir.isBlank()) {
-                continue;
-            }
-            for (String name : List.of("semgrep", "semgrep.exe", "semgrep.cmd", "semgrep.bat")) {
-                Path candidate = Paths.get(dir, name);
-                if (Files.isRegularFile(candidate) && Files.isExecutable(candidate)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return SastEngine.find(System.getenv("PATH")).isPresent();
     }
 
     /**
@@ -221,12 +206,14 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
     }
 
     /**
-     * Executa o Semgrep e devolve a saída. Em timeout o JSON é nulo e a nota diz isso; com código de saída anormal
+     * Executa o motor (Opengrep ou Semgrep, ver {@link SastEngine}) e devolve a saída. Em timeout o JSON é nulo e a nota diz isso; com código de saída anormal
      * ainda se aproveita o JSON parcial, mas a nota registra a causa (fim do stderr).
      */
     private SemgrepRun runSemgrep(Path projectPath, List<String> configs) throws IOException, InterruptedException {
+        SastEngine.Engine engine = SastEngine.find(System.getenv("PATH"))
+                .orElseThrow(() -> new IOException("nem Opengrep nem Semgrep estão no PATH"));
         List<String> command = new ArrayList<>();
-        command.add("semgrep");
+        command.add(engine.executable().toString());
         for (String config : configs) {
             command.add("--config");
             command.add(config);
@@ -237,8 +224,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         }
         command.add("--json");
         command.add("--quiet");
-        command.add("--metrics=off");
-        command.add("--disable-version-check");
+        command.addAll(engine.quietFlags());
         command.add("--timeout");
         command.add("60");
         command.add(projectPath.toString());
@@ -247,15 +233,14 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
         Path errFile = Files.createTempFile("semgrep-err-", ".txt");
         try {
             ProcessBuilder pb = new ProcessBuilder(command);
-            pb.environment().put("SEMGREP_SEND_METRICS", "off");
-            pb.environment().put("SEMGREP_ENABLE_VERSION_CHECK", "0");
+            SastEngine.prepare(pb.environment());
             pb.redirectOutput(outputFile.toFile());               // somente stdout (JSON)
             pb.redirectError(errFile.toFile());                   // stderr nunca contamina o JSON; só o fim vira nota
             Process process = pb.start();
 
             if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
                 process.destroyForcibly();
-                LOG.warnf("Semgrep excedeu o tempo limite de %ds e foi encerrado", timeoutSeconds);
+                LOG.warnf("%s excedeu o tempo limite de %ds e foi encerrado", engine.displayName(), timeoutSeconds);
                 return new SemgrepRun(null, ExternalTools.falha(-1, timeoutSeconds, null));
             }
             String output = Files.readString(outputFile, StandardCharsets.UTF_8);

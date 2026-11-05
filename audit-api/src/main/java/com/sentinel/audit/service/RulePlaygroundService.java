@@ -2,6 +2,7 @@ package com.sentinel.audit.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sentinel.audit.analyzer.SastEngine;
 import com.sentinel.audit.pack.PackLoader;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -11,7 +12,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -84,9 +84,9 @@ public class RulePlaygroundService {
             throw new UnavailableException("O laboratório de regras está desligado (sentinel.audit.playground.enabled)");
         }
         String fileName = validateInput(ruleYaml, code, extension);
-        Path semgrep = ExternalToolsAccess.find("semgrep", pathEnv);
+        SastEngine.Engine semgrep = SastEngine.find(pathEnv).orElse(null);
         if (semgrep == null) {
-            throw new UnavailableException("Semgrep não está instalado neste servidor");
+            throw new UnavailableException("Nem Opengrep nem Semgrep estão instalados neste servidor");
         }
         if (!slots.tryAcquire()) {
             throw new BusyException();
@@ -129,7 +129,7 @@ public class RulePlaygroundService {
     }
 
     /** O que executar: regra, código, nome do arquivo de código e o executável do Semgrep. */
-    private record Job(String ruleYaml, String code, String fileName, Path semgrep) { }
+    private record Job(String ruleYaml, String code, String fileName, SastEngine.Engine semgrep) { }
 
     private Result runIn(Path dir, Job job, long t0) throws IOException, InterruptedException {
         Path pack = dir.resolve("pack");
@@ -150,14 +150,14 @@ public class RulePlaygroundService {
         return parse(out, job.code(), warnings, millis(t0));
     }
 
-    private JsonNode execute(Path semgrep, Path rule, Path file, Path work) throws IOException, InterruptedException {
-        List<String> cmd = List.of(semgrep.toString(), "--config", rule.toString(), "--json", "--quiet", "--metrics=off",
-                "--disable-version-check", "--no-git-ignore", "--timeout", "5", "--max-memory", "1000", file.toString());
+    private JsonNode execute(SastEngine.Engine semgrep, Path rule, Path file, Path work) throws IOException, InterruptedException {
+        List<String> cmd = new ArrayList<>(List.of(semgrep.executable().toString(), "--config", rule.toString(), "--json", "--quiet"));
+        cmd.addAll(semgrep.quietFlags());
+        cmd.addAll(List.of("--no-git-ignore", "--timeout", "5", "--max-memory", "1000", file.toString()));
         Path outFile = work.resolve("out.json");
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.directory(work.toFile());
-        pb.environment().put("SEMGREP_SEND_METRICS", "off");
-        pb.environment().put("SEMGREP_ENABLE_VERSION_CHECK", "0");
+        SastEngine.prepare(pb.environment());
         pb.redirectOutput(outFile.toFile());
         pb.redirectError(ProcessBuilder.Redirect.DISCARD);
         Process p = pb.start();
@@ -217,25 +217,6 @@ public class RulePlaygroundService {
             });
         } catch (IOException e) {
             LOG.debugf("Não foi possível limpar %s: %s", dir, e.getMessage());
-        }
-    }
-
-    /** {@code ExternalTools} é interno ao pacote do analisador; este ponto de acesso evita abrir a visibilidade dele. */
-    static final class ExternalToolsAccess {
-        static Path find(String name, String pathEnv) {
-            if (pathEnv == null || pathEnv.isBlank()) {
-                return null;
-            }
-            for (String d : pathEnv.split(java.io.File.pathSeparator)) {
-                if (d.isBlank()) {
-                    continue;
-                }
-                Path c = Paths.get(d, name);
-                if (Files.isRegularFile(c) && Files.isExecutable(c)) {
-                    return c;
-                }
-            }
-            return null;
         }
     }
 }

@@ -34,10 +34,16 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 # git: clonar os repositórios auditados. curl: healthcheck.
-# Semgrep (SAST): instalado por padrão; para uma imagem menor use --build-arg WITH_SEMGREP=false
-# (sem ele o SAST é ignorado com um aviso no log).
-ARG WITH_SEMGREP=true
-# Mesma versão do CI (scripts/requirements-ci.txt) e do benchmark: motor e portão medem o mesmo Semgrep.
+# Opengrep (SAST, motor padrão das regras): instalado por padrão; para uma imagem menor use
+# --build-arg WITH_OPENGREP=false (sem motor nenhum o SAST é ignorado com um aviso no log).
+# Mesma versão e mesmos hashes de scripts/instalar-opengrep.sh (usado no CI): motor e portão medem o mesmo Opengrep.
+ARG WITH_OPENGREP=true
+ARG OPENGREP_VERSION=v1.30.0
+ARG OPENGREP_SHA256_AMD64=35779bdd72e92129c8df2a77f0c55e8c08356801ea92591ef32108d6b28d564c
+ARG OPENGREP_SHA256_ARM64=a5d5a4a58ba5d46ff51e921663da1c2bba38f4b03987f4aeec87f16c6ad3ecae
+# Semgrep é a alternativa (SENTINEL_SAST_ENGINE=semgrep) e fica desligado por padrão: --build-arg WITH_SEMGREP=true.
+# Mesma versão do CI (scripts/requirements-ci.txt), usada nos testes das regras (`semgrep --test`).
+ARG WITH_SEMGREP=false
 ARG SEMGREP_VERSION=1.172.0
 # Trivy (vulnerabilidades e IaC) e Gitleaks (segredos + histórico): quando presentes substituem os analisadores
 # internos equivalentes. Imagem menor/sem rede na build: --build-arg WITH_TRIVY=false --build-arg WITH_GITLEAKS=false
@@ -71,6 +77,13 @@ RUN if [ "$INSECURE_SSL" = "true" ]; then \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git curl ca-certificates gnupg python3 python3-pip \
     && if [ "$INSECURE_SSL" = "true" ]; then git config --system http.sslVerify false; fi \
+    && if [ "$WITH_OPENGREP" = "true" ]; then \
+         arch="$(dpkg --print-architecture)" \
+         && if [ "$arch" = "arm64" ]; then dist=aarch64; sha="$OPENGREP_SHA256_ARM64"; else dist=x86; sha="$OPENGREP_SHA256_AMD64"; fi \
+         && curl -fsSL -o /usr/local/bin/opengrep "https://github.com/opengrep/opengrep/releases/download/${OPENGREP_VERSION}/opengrep_manylinux_${dist}" \
+         && echo "${sha}  /usr/local/bin/opengrep" | sha256sum -c - \
+         && chmod 0755 /usr/local/bin/opengrep; \
+       fi \
     && if [ "$WITH_SEMGREP" = "true" ]; then pip3 install --no-cache-dir "semgrep==${SEMGREP_VERSION}"; fi \
     && if [ "$WITH_TRIVY" = "true" ]; then \
          curl -fsSL -o /tmp/trivy.key https://aquasecurity.github.io/trivy-repo/deb/public.key \
@@ -115,7 +128,7 @@ RUN apt-get update \
        fi \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system audit && useradd --system --gid audit --create-home audit
-ENV SEMGREP_SEND_METRICS=off SEMGREP_ENABLE_VERSION_CHECK=0 TRIVY_CACHE_DIR=/home/audit/.cache/trivy
+ENV SEMGREP_SEND_METRICS=off SEMGREP_ENABLE_VERSION_CHECK=0 LC_ALL=C.UTF-8 TRIVY_CACHE_DIR=/home/audit/.cache/trivy
 WORKDIR /app
 COPY --from=build /build/audit-api/target/quarkus-app/ /app/
 COPY audit-rules/packs /app/audit-rules/packs

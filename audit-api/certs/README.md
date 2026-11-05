@@ -64,7 +64,7 @@ Sem erro de certificado, o Trivy está baixando a base normalmente.
 
 Para destravar o build sem o CA, use uma destas opções (elas só adiam o problema, os outros downloads continuam a falhar):
 
-- `WITH_SEMGREP=false` no `.env` (ou `--build-arg WITH_SEMGREP=false`) pula só o Semgrep.
+- `WITH_OPENGREP=false` no `.env` (ou `--build-arg WITH_OPENGREP=false`) pula só o motor de regras (Opengrep).
 - Rodar o build fora da VPN ou da rede da empresa resolve todos os passos de uma vez.
 
 ## Proxy

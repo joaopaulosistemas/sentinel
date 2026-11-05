@@ -5,9 +5,8 @@ rules:
       - pattern: |
           @RequestMapping(...)
           $RET $M(...) { ... }
-      - pattern-not: |
-          @RequestMapping(..., method = ..., ...)
-          $RET $M(...) { ... }
+      # regex em vez de padrão: `@RequestMapping(..., method = ..., ...)` não é lido pelo Opengrep (erro de parse)
+      - pattern-not-regex: '@RequestMapping\((?:[^()]|\([^()]*\))*\bmethod\s*='
     message: >
       @RequestMapping sem 'method' aceita qualquer verbo HTTP (GET, POST, DELETE...) e abre caminho para CSRF e
       chamadas inesperadas. Use @GetMapping, @PostMapping, @PutMapping ou @DeleteMapping.

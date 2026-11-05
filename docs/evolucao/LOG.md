@@ -462,3 +462,17 @@ Reúne na tela, como último item do menu, as variáveis que ficavam espalhadas 
 - Testes novos: catálogo (inclui conferir propriedades e padrões contra `application.properties`), serviço, fonte de configuração, utilitários e página.
 
 Verificado: `tsc`, `vitest` (233 testes) e `vite build` no dashboard; a API foi compilada com `javac` contra stubs das bibliotecas e a validação do catálogo foi executada. Não verificado: Maven e testes Java (só o CI); o reinício real e a leitura da tabela por JDBC contra um Postgres.
+
+## Dashboard 12.35.0 / API — Motor SAST: Opengrep no lugar do Semgrep
+
+O Sentinel passa a usar o Opengrep (fork LGPL-2.1 do Semgrep CE, v1.30.0 fixada) como motor SAST padrão. O Semgrep continua suportado: a API escolhe `opengrep` e, se não achar, `semgrep` no PATH; `SENTINEL_SAST_ENGINE=semgrep|opengrep` força um. O id e o nome do analisador seguem "Semgrep" para não quebrar dados já gravados.
+
+- API: `SastEngine` (escolha do motor e diferenças de CLI: sem `--metrics`, `LC_ALL=C.UTF-8`); `SemgrepAnalyzer` e `RulePlaygroundService` usam essa classe.
+- Regras: `core-spring` 1.0.1 troca um `pattern-not` de `@RequestMapping(..., method = ..., ...)` (o Opengrep não lê) por `pattern-not-regex`; resultado idêntico nos dois motores.
+- Infra: `scripts/instalar-opengrep.sh` (versão e SHA-256 fixos), Dockerfile (`WITH_OPENGREP=true` padrão, `WITH_SEMGREP=false`), compose, CI e workflows de evolução/descoberta.
+- Paridade: `scripts/paridade-motores.py` roda os dois motores sobre o corpus de testes dos pacotes (menos `*-sql.yml`) e falha se (regra, arquivo, linha) divergir. O CI mantém `semgrep --test` porque o `opengrep test` não lê o layout de testes dos pacotes.
+
+Benchmark OWASP v1.2 (média TPR−FPR): Semgrep 1.172.0 = 0,461 (igual ao `baseline.json`); Opengrep 1.30.0 = 0,513. Treino 0,507 → 0,615; validação 0,422 → 0,422. O ganho está só na metade de treino, então não prova melhor generalização. Opengrep foi mais rápido (53 s contra 66 s). `baseline.json` não foi alterado.
+
+Verificado: execução dos dois motores sobre os pacotes e o Benchmark (números acima); paridade das regras.
+NÃO verificado: Maven e testes Java (`SastEngineTest` etc.; sem acesso ao Maven Central aqui), build da imagem Docker, workflows num GitHub real, taint entre arquivos no Opengrep.
