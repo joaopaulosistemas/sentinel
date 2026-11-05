@@ -652,3 +652,11 @@ Verificado: nenhuma referência ao arquivo restou (busca no repositório).
 - **Não feito:** os achados Java (Checkstyle `magic.number` 569, PMD) não foram mexidos nesta volta.
 
 Verificado: programa `javac` com os caminhos do WebGoat e os casos negativos. NÃO verificado: JUnit/Maven (só no CI); nova auditoria do WebGoat (depois do merge).
+
+## Dashboard 12.52.0 — Ciclo, rodada 2 (continuação): biblioteca reconhecida pelo cabeçalho
+
+- **Medido (WebGoat após 12.51.0):** 3.083 achados; `asciidoctor-default.css` (208) e `animate.css` (134) seguiam no Stylelint porque ficam em `static/css`, sem nada no caminho.
+- **Mudança:** `ExternalTools.hasThirdPartyBanner`: o arquivo JS/CSS começa (depois de `@charset`) com um comentário que cita licença (MIT, Apache, BSD, GPL, `@license`) e um sinal de origem externa (endereço, versão, `/*!`). Aplicado no Stylelint e demais ferramentas por arquivo (`SarifAnalyzer`), no ESLint e no CleanCode.
+- **Limite:** aviso de licença da própria empresa com endereço no topo do arquivo também seria tratado como biblioteca; licença sem endereço/versão não conta.
+
+Verificado: programa `javac` com os cabeçalhos do WebGoat e casos negativos. NÃO verificado: JUnit/Maven (só CI); nova auditoria do WebGoat.

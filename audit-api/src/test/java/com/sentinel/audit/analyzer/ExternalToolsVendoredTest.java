@@ -83,4 +83,22 @@ class ExternalToolsVendoredTest {
         assertFalse(ExternalTools.isVendoredLibrary("src/main/resources/static/js/app/lessons.js"));
         assertFalse(ExternalTools.isVendoredLibrary("src/libs/util.js"));
     }
+
+    @Test
+    void cabecalhoDeLicencaComEnderecoIndicaBibliotecaDeTerceiros() {
+        assertTrue(ExternalTools.hasThirdPartyBanner("@charset \"UTF-8\";\n\n/*!\nAnimate.css - http://daneden.me/animate\nLicensed under the MIT license\n*/\n.a{}"));
+        assertTrue(ExternalTools.hasThirdPartyBanner("/* Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */\nbody{}"));
+        assertTrue(ExternalTools.hasThirdPartyBanner("/*! Plugin v1.10.2 | Released under the MIT license */\n(function(){})();"));
+        assertTrue(ExternalTools.hasThirdPartyBanner("/**\n * @license Lodash\n */\nvar x;"));
+    }
+
+    @Test
+    void cabecalhoSemLicencaOuForaDoInicioNaoIndicaTerceiros() {
+        assertFalse(ExternalTools.hasThirdPartyBanner("/* ====== Base styles ====== */\nbody{}"));
+        assertFalse(ExternalTools.hasThirdPartyBanner("define(['jquery'], function($){});"));
+        assertFalse(ExternalTools.hasThirdPartyBanner("/*\nbody{min-width:800px;}\n*/"));
+        assertFalse(ExternalTools.hasThirdPartyBanner("function f(){}\n/* MIT License https://x.org */"));
+        assertFalse(ExternalTools.hasThirdPartyBanner("/* Copyright Acme. Licensed under MIT. */\nvar a;"));
+        assertFalse(ExternalTools.hasThirdPartyBanner(null));
+    }
 }
