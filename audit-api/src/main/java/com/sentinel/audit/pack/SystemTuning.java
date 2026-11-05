@@ -18,17 +18,25 @@ import java.util.Set;
  * @param disableAnalyzers  analisadores que não rodam neste sistema (nome como aparece na tela de acompanhamento)
  * @param ignorePaths       caminhos cujos achados não entram na auditoria (curinga estilo .gitignore: {@code *}, {@code **}, {@code ?};
  *                          pasta termina em {@code /}; sem {@code /} vale para qualquer pasta)
+ * @param disableSides      lados desligados neste sistema: {@code back} e/ou {@code front} (nunca os dois). Tira as regras e os
+ *                          analisadores do lado; o que é comum aos dois lados continua
  */
 public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer> thresholds,
                            Set<String> enablePacks, Set<String> disablePacks, Set<String> disableAnalyzers,
-                           Set<String> ignorePaths) {
+                           Set<String> ignorePaths, Set<String> disableSides) {
 
-    public static final SystemTuning EMPTY = new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), Set.of());
+    public static final SystemTuning EMPTY = new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), Set.of(), Set.of());
+
+    /** Sem lados desligados (forma que existia antes do campo {@code disableSides}). */
+    public SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer> thresholds, Set<String> enablePacks,
+                        Set<String> disablePacks, Set<String> disableAnalyzers, Set<String> ignorePaths) {
+        this(rules, thresholds, enablePacks, disablePacks, disableAnalyzers, ignorePaths, Set.of());
+    }
 
     /** Sem caminhos ignorados (forma que existia antes do campo {@code ignorePaths}). */
     public SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer> thresholds, Set<String> enablePacks,
                         Set<String> disablePacks, Set<String> disableAnalyzers) {
-        this(rules, thresholds, enablePacks, disablePacks, disableAnalyzers, Set.of());
+        this(rules, thresholds, enablePacks, disablePacks, disableAnalyzers, Set.of(), Set.of());
     }
 
     @SuppressWarnings("PMD.UnusedAssignment")   // normaliza os componentes do record no construtor compacto
@@ -39,6 +47,7 @@ public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer>
         disablePacks = lower(disablePacks);
         disableAnalyzers = disableAnalyzers == null ? Set.of() : Set.copyOf(disableAnalyzers);
         ignorePaths = ignorePaths == null ? Set.of() : Collections.unmodifiableSet(new LinkedHashSet<>(ignorePaths));
+        disableSides = lower(disableSides);
     }
 
     public boolean isEmpty() {
@@ -47,11 +56,16 @@ public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer>
 
     /** Quantos ajustes existem em relação ao perfil (o número que a tela mostra). */
     public int adjustments() {
-        return rules.size() + thresholds.size() + enablePacks.size() + disablePacks.size() + disableAnalyzers.size() + ignorePaths.size();
+        return rules.size() + thresholds.size() + enablePacks.size() + disablePacks.size() + disableAnalyzers.size() + ignorePaths.size() + disableSides.size();
     }
 
     public boolean analyzerDisabled(String name) {
         return name != null && disableAnalyzers.stream().anyMatch(n -> n.equalsIgnoreCase(name));
+    }
+
+    /** O lado ({@code back} ou {@code front}) foi desligado neste sistema? */
+    public boolean sideDisabled(String side) {
+        return side != null && disableSides.contains(side.toLowerCase(Locale.ROOT).trim());
     }
 
     private static Map<String, RuleOverride> copyRules(Map<String, RuleOverride> in) {

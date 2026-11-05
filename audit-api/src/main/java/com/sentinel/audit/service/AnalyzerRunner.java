@@ -78,7 +78,7 @@ final class AnalyzerRunner {
         List<AnalyzerRunInfo> runs = new ArrayList<>();
         for (CodeAnalyzer c : candidates) {
             if (policy.analyzerDisabled(c.getName())) {
-                runs.add(new AnalyzerRunInfo(c.getName(), "DESLIGADO", 0, 0, "desligado nos ajustes deste sistema"));
+                runs.add(new AnalyzerRunInfo(c.getName(), "DESLIGADO", 0, 0, policy.analyzerOffNote(c.getName())));
             } else if (!c.isAvailable()) {
                 runs.add(new AnalyzerRunInfo(c.getName(), "INDISPONIVEL", 0, 0, "ferramenta ausente neste ambiente"));
             } else if (!analyzers.contains(c)) {

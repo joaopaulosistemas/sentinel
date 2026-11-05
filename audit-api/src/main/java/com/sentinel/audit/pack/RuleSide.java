@@ -81,4 +81,15 @@ public enum RuleSide {
         }
         return COMMON;
     }
+
+    /** Lado de um arquivo pela extensão: {@code null} quando não é de código de um lado só (Dockerfile, YAML, Markdown). */
+    public static RuleSide ofPath(String path) {
+        if (path == null) {
+            return null;
+        }
+        String p = path.strip().toLowerCase(Locale.ROOT);
+        boolean front = FRONT_EXTENSIONS.stream().anyMatch(p::endsWith);
+        boolean back = BACK_EXTENSIONS.stream().anyMatch(p::endsWith);
+        return front && !back ? FRONT : (back && !front ? BACK : null);
+    }
 }

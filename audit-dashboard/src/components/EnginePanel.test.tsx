@@ -99,7 +99,7 @@ describe('EnginePanel', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Voltar ao perfil' }));
     await waitFor(() => expect(calls.some((c) => c.method === 'PUT')).toBe(true));
     expect(JSON.parse(calls.find((c) => c.method === 'PUT')?.body ?? '{}')).toEqual({
-      rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: [],
+      rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: [], disableSides: [],
     });
   });
 
@@ -221,7 +221,7 @@ describe('EnginePanel', () => {
     setup(grouped());
     expect(await screen.findByRole('group', { name: 'Back-end' })).toHaveTextContent('Quarkus · 1 regra');
     expect(screen.getByRole('group', { name: 'Front-end' })).toHaveTextContent('Vue (fora do perfil) · 1 regra');
-    expect(screen.getByRole('group', { name: 'Transversais' })).toHaveTextContent('Segurança · 1 regra');
+    expect(screen.getByRole('group', { name: 'Infra e comum' })).toHaveTextContent('Segurança · 1 regra');
   });
 
   it('cada limite de clean code fica no grupo a que vale', async () => {
@@ -231,7 +231,7 @@ describe('EnginePanel', () => {
     expect(front).not.toContainElement(screen.getByLabelText('Linhas por função'));
     const both = screen.getByRole('group', { name: 'Limites de clean code' });
     expect(both).toContainElement(screen.getByLabelText('Linhas por função'));
-    expect(screen.getByRole('group', { name: 'Transversais' })).toContainElement(both);
+    expect(screen.getByRole('group', { name: 'Infra e comum' })).toContainElement(both);
     expect(screen.getByRole('group', { name: 'Front-end' })).toContainElement(front);
   });
 
@@ -269,5 +269,87 @@ describe('EnginePanel', () => {
     expect(screen.getByText('Alterações não salvas')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Salvar ajustes' }));
     await waitFor(() => expect(onDirty).toHaveBeenLastCalledWith(false));
+  });
+
+  describe('escopo por lado', () => {
+    const sided = (over: Partial<EngineConfig> = {}) =>
+      config({
+        packs: [
+          { id: 'core-security', name: 'Segurança', description: null, inProfile: true, active: true },
+          { id: 'core-iac', name: 'Docker', description: null, inProfile: true, active: true },
+        ],
+        analyzers: [
+          { name: 'PMD', description: 'Lint de Java', disabled: false, side: 'back' },
+          { name: 'ESLint', description: 'TypeScript e Angular', disabled: false, side: 'front' },
+          { name: 'Gitleaks', description: 'Segredos', disabled: false, side: 'common' },
+        ],
+        knownRules: [],
+        catalog: [
+          { id: 'sentinel-api-ssrf', pack: 'core-security', message: 'SSRF.', severity: 'ERROR', category: 'security', side: 'back' },
+          { id: 'sentinel-xss-inner-html', pack: 'core-security', message: 'innerHTML dinâmico.', severity: 'WARNING', category: 'security', side: 'front' },
+          { id: 'sentinel-docker-sem-user', pack: 'core-iac', message: 'Dockerfile sem USER.', severity: 'WARNING', category: 'security', side: 'common' },
+        ],
+        ...over,
+      });
+    const withSidesOff = (...off: Array<'back' | 'front'>) => sided({ adjustments: 1, tuning: { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], disableSides: off } });
+
+    it('o atalho "Só back-end" desliga o front e o salvar manda o lado', async () => {
+      const onDirty = vi.fn();
+      const calls = setup(sided(), EngineRulesPanel, [], onDirty);
+      fireEvent.click(await screen.findByRole('button', { name: 'Só back-end' }));
+      await waitFor(() => expect(onDirty).toHaveBeenLastCalledWith(true));
+      expect(screen.getByText(/Front-end desligado: 1 regras/)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar ajustes' }));
+      await waitFor(() => expect(calls.some((c) => c.method === 'PUT')).toBe(true));
+      expect(JSON.parse(calls.find((c) => c.method === 'PUT')?.body ?? '{}').disableSides).toEqual(['front']);
+    });
+
+    it('"Full-stack" volta a ligar os dois lados', async () => {
+      const calls = setup(withSidesOff('back'));
+      fireEvent.click(await screen.findByRole('button', { name: 'Full-stack' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar ajustes' }));
+      await waitFor(() => expect(calls.some((c) => c.method === 'PUT')).toBe(true));
+      expect(JSON.parse(calls.find((c) => c.method === 'PUT')?.body ?? '{}').disableSides).toEqual([]);
+    });
+
+    it('não deixa desligar os dois lados', async () => {
+      setup(withSidesOff('front'));
+      fireEvent.click(await screen.findByRole('switch', { name: 'Auditar o back-end' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('Não dá para desligar os dois lados');
+    });
+
+    it('regra de lado desligado aparece apagada e sem edição; a do outro lado segue editável', async () => {
+      setup(withSidesOff('front'));
+      expect(await screen.findByText('Fora do escopo: não roda')).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: 'Desligar sentinel-xss-inner-html' })).toBeDisabled();
+      expect(screen.getByRole('checkbox', { name: 'Desligar sentinel-api-ssrf' })).toBeEnabled();
+      expect(screen.getByRole('checkbox', { name: 'Desligar sentinel-docker-sem-user' })).toBeEnabled();
+    });
+
+    it('as abas por lado filtram as regras e mostram o lado desligado', async () => {
+      setup(withSidesOff('front'));
+      const front = await screen.findByRole('tab', { name: /Front-end \(desligado\)/ });
+      fireEvent.click(screen.getByRole('tab', { name: /^Back-end/ }));
+      expect(screen.getByText('SSRF.')).toBeInTheDocument();
+      expect(screen.queryByText('innerHTML dinâmico.')).not.toBeInTheDocument();
+      fireEvent.click(front);
+      expect(screen.getByText('innerHTML dinâmico.')).toBeInTheDocument();
+      expect(screen.queryByText('SSRF.')).not.toBeInTheDocument();
+    });
+
+    it('um pacote misto aparece nos dois lados com a contagem de cada um', async () => {
+      setup(sided());
+      expect(await screen.findByRole('group', { name: 'Back-end' })).toHaveTextContent('Segurança · 1 regra · também em Front-end: 1');
+      expect(screen.getByRole('group', { name: 'Front-end' })).toHaveTextContent('Segurança · 1 regra · também em Back-end: 1');
+    });
+
+    it('analisadores do lado desligado ficam desmarcados e travados', async () => {
+      setup(withSidesOff('front'), EngineAnalyzersPanel);
+      const eslint = await screen.findByRole('checkbox', { name: /ESLint/ });
+      expect(eslint).not.toBeChecked();
+      expect(eslint).toBeDisabled();
+      expect(screen.getByRole('checkbox', { name: /PMD/ })).toBeChecked();
+      expect(screen.getByRole('checkbox', { name: /Gitleaks/ })).toBeEnabled();
+    });
   });
 });

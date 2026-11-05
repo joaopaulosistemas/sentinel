@@ -92,6 +92,14 @@ public final class AuditPolicy {
         rules.putAll(t.rules());
         Map<String, Integer> limits = new LinkedHashMap<>(thresholds);
         limits.putAll(t.thresholds());
+        if (!t.disableSides().isEmpty()) {
+            // Lado desligado: as regras dele saem como se estivessem desligadas uma a uma (o ajuste do sistema não as religa).
+            for (RuleCatalog.Entry e : RuleCatalog.of(merged)) {
+                if (t.sideDisabled(e.side())) {
+                    rules.put(e.id().toLowerCase(Locale.ROOT), new RuleOverride(null, true, null));
+                }
+            }
+        }
         AuditPolicy out = new AuditPolicy(profileId, merged, rules, limits).withTrustedToolPacks(trustedToolPacks);
         out.tuning = t;
         return out;
@@ -126,9 +134,21 @@ public final class AuditPolicy {
         return out;
     }
 
-    /** Este analisador foi desligado para o sistema? */
+    /** Este analisador foi desligado para o sistema, na mão ou por ser do lado desligado? */
     public boolean analyzerDisabled(String name) {
-        return tuning.analyzerDisabled(name);
+        return analyzerOffNote(name) != null;
+    }
+
+    /** Por que o analisador não roda neste sistema, ou {@code null} se roda. */
+    public String analyzerOffNote(String name) {
+        if (tuning.analyzerDisabled(name)) {
+            return "desligado nos ajustes deste sistema";
+        }
+        String side = com.sentinel.audit.service.AnalyzerCatalog.sideOf(name);
+        if (tuning.sideDisabled(side)) {
+            return "lado " + ("back".equals(side) ? "back-end" : "front-end") + " desligado no escopo deste sistema";
+        }
+        return null;
     }
 
     public String profileId() {
@@ -173,12 +193,26 @@ public final class AuditPolicy {
         return null;
     }
 
+    /** Analisadores que olham Java e TypeScript juntos: com um lado desligado, perdem só os achados dos arquivos desse lado. */
+    private static final java.util.Set<String> SIDE_BY_FILE_TOOLS = java.util.Set.of("CleanCode", "Duplicação");
+
+    private boolean inDisabledSide(Finding f) {
+        if (tuning.disableSides().isEmpty() || !SIDE_BY_FILE_TOOLS.contains(f.getToolSource())) {
+            return false;
+        }
+        RuleSide side = RuleSide.ofPath(f.getFilePath());
+        return side != null && tuning.sideDisabled(side.id());
+    }
+
     /** Aplica as sobrescritas: tira o que está em caminho ignorado ou desligado, troca severidade e marca/desmarca o modo sombra. */
     public List<Finding> apply(List<Finding> findings) {
         List<Finding> out = new ArrayList<>(findings.size());
         java.util.function.Predicate<String> ignored = PathGlobs.matcher(tuning.ignorePaths());
         for (Finding f : findings) {
             if (f.getFilePath() != null && ignored.test(f.getFilePath())) {
+                continue;
+            }
+            if (inDisabledSide(f)) {
                 continue;
             }
             RuleOverride o = overrideFor(f.getRuleId());

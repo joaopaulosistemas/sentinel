@@ -51,6 +51,9 @@ public final class TuningJson {
         if (!t.ignorePaths().isEmpty()) {
             t.ignorePaths().forEach(n.putArray("ignorePaths")::add);
         }
+        if (!t.disableSides().isEmpty()) {
+            t.disableSides().stream().sorted().forEach(n.putArray("disableSides")::add);
+        }
         return n.toString();
     }
 
@@ -77,7 +80,24 @@ public final class TuningJson {
         if (enable.stream().anyMatch(disable::contains)) {
             throw new IllegalArgumentException("Um pacote não pode ser ligado e desligado ao mesmo tempo");
         }
-        return new SystemTuning(rules, limits, enable, disable, strings(n.path("disableAnalyzers")), paths(n.path("ignorePaths")));
+        return new SystemTuning(rules, limits, enable, disable, strings(n.path("disableAnalyzers")), paths(n.path("ignorePaths")),
+                sides(n.path("disableSides")));
+    }
+
+    /** Só {@code back} e {@code front}; desligar os dois deixaria só o que é comum, então é recusado. */
+    private static Set<String> sides(JsonNode n) {
+        Set<String> out = new LinkedHashSet<>();
+        for (JsonNode s : n) {
+            String side = s.asText("").trim().toLowerCase(Locale.ROOT);
+            if (!side.equals("back") && !side.equals("front")) {
+                throw new IllegalArgumentException("Lado desconhecido: " + side + " (use back ou front)");
+            }
+            out.add(side);
+        }
+        if (out.size() > 1) {
+            throw new IllegalArgumentException("Não dá para desligar os dois lados: deixaria só o que é comum. Desligue um só.");
+        }
+        return out;
     }
 
     private static Map<String, RuleOverride> parseRules(JsonNode rs) {

@@ -526,6 +526,8 @@ export interface EngineTuning {
   disableAnalyzers: string[];
   /** Caminhos (curinga estilo .gitignore) cujos achados ficam fora da auditoria. Ausente em APIs antigas. */
   ignorePaths?: string[];
+  /** Lados desligados neste sistema: 'back' e/ou 'front' (nunca os dois). Ausente em APIs antigas. */
+  disableSides?: Array<'back' | 'front'>;
 }
 
 export interface EnginePackState {

@@ -625,3 +625,14 @@ NÃO verificado: JUnit/Maven e a compilação de `SemgrepAnalyzer`/`CleanCodeAna
 
 Verificado: testes Opengrep de core-security, boas-praticas, persistencia e spring; `RuleSide` com um programa de teste via `javac`; `tsc` do dashboard.
 NÃO verificado: JUnit/Maven (só no CI): `RuleSideTest`, `AnalyzerCatalogSideTest` e a compilação do catálogo e da API.
+
+## Dashboard 12.49.0 — Escopo da auditoria: desligar o back-end ou o front-end de um sistema
+
+- **Por quê:** um projeto só de Java não tem front, e um só de interface não tem back. Segunda de duas PRs (a primeira, 12.48.0, deu um lado a cada regra e analisador).
+- **Ajuste do sistema:** novo campo `disableSides` (`back` e/ou `front`; os dois juntos são recusados). Fica no JSON do ajuste; sistemas antigos continuam iguais.
+- **O que um lado desligado faz:** as regras do lado saem como se estivessem desligadas uma a uma; os analisadores do lado não rodam (PMD, OWASP-Dependency e Evidências no back; ESLint e código morto no front) e aparecem como DESLIGADO com o motivo; CleanCode e Duplicação, que olham Java e TypeScript juntos, perdem só os achados dos arquivos do lado desligado. Docker, Kubernetes, segredos e dependências (comuns) continuam.
+- **Tela (aba Motor de regras):** bloco "Escopo da auditoria" com atalhos Full-stack, Só back-end e Só front-end e cartões com interruptor; pacotes por lado (um pacote misto aparece nos dois com a contagem de cada lado); abas Todas, Back-end, Front-end, Infra e comum; coluna Lado; regra de lado desligado fica apagada e sem edição. Aba Analisadores agrupada por lado, com os do lado desligado travados.
+- **Não feito:** o Opengrep ainda lê as regras dos dois lados e os achados do lado desligado são filtrados depois (corretos, mas sem ganho de tempo); as ferramentas externas dos pacotes (Stylelint, dependency-cruiser, Checkstyle) ainda não têm lado e continuam no "comum".
+
+Verificado: 312 testes do dashboard, `tsc` e `vite build`; programa de teste via `javac` para `SystemTuning` e `RuleSide`.
+NÃO verificado: JUnit/Maven (só no CI): `SystemTuningSidesTest` (política, JSON, analisadores); a tela num navegador real.
