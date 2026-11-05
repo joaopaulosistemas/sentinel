@@ -605,3 +605,12 @@ Primeira execução real do workflow `Auditoria completa` (disparada pelo ambien
 Problema achado: o ambiente de nuvem não baixa o artefato (o armazenamento do GitHub devolve 403). Correção: o resumo e uma linha por achado (`achados-compactos.tsv`) passam a sair também no log do job, que a API do GitHub entrega. O artefato continua publicado para quem baixa na própria máquina.
 
 Verificado: disparo, execução completa e leitura do resumo pelo log. NÃO verificado: a nova etapa de log (será exercida na próxima execução); o Joern (`joern=true`); repositórios grandes.
+
+## Dashboard 12.47.0 — Rodada 1 (Juice Shop): pacotes JS/CSS grandes ficam fora da análise
+
+- **Alvo (treino):** `juice-shop/juice-shop`, auditoria completa: nota 47,65, 4.193 achados. 2.379 (57%) vinham de bibliotecas de terceiros copiadas sem nome reconhecível, como `three.js` (853 KB, 2.117 achados `sentinel-ts-var`).
+- **Mudança geral:** arquivo `.js/.mjs/.cjs/.css` com 400 KB ou mais é tratado como pacote de terceiros: o Opengrep recebe `--exclude` por arquivo e o CleanCode o ignora. Vale pelo tamanho, não pelo nome (`ExternalTools.isOversizedBundle`/`oversizedBundles`). Não há lista de arquivos do Juice Shop.
+- **Risco:** código próprio gerado e muito grande deixa de ser analisado (falso negativo). Limite escolhido por ser raro em código escrito à mão.
+
+Verificado: lógica do helper com um programa de teste via `javac` (7 casos, incluindo pasta ignorada); testes JUnit escritos antes (não compilavam sem os métodos).
+NÃO verificado: JUnit/Maven e a compilação de `SemgrepAnalyzer`/`CleanCodeAnalyzer` (só o CI); o ganho real (reauditar o Juice Shop depois do merge); Gitleaks em testes e ruído em `data/static`, ainda por analisar.

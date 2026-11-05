@@ -221,6 +221,10 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             command.add("--exclude");
             command.add(pattern);
         }
+        for (String bundle : ExternalTools.oversizedBundles(projectPath)) {
+            command.add("--exclude");
+            command.add(bundle);
+        }
         command.add("--json");
         command.add("--quiet");
         command.addAll(engine.quietFlags());

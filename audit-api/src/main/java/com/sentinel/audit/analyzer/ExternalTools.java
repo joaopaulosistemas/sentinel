@@ -178,4 +178,48 @@ final class ExternalTools {
         }
         return false;
     }
+
+    /** JS/CSS acima deste tamanho é pacote de terceiros (three.js, bundles); código escrito à mão não chega perto. */
+    static final long OVERSIZED_BUNDLE_BYTES = 400_000;
+    private static final java.util.regex.Pattern BUNDLE_EXT = java.util.regex.Pattern.compile("(?i)\\.(js|mjs|cjs|css)$");
+
+    /**
+     * Arquivo JS/CSS grande demais para ser código do projeto (ex.: three.js com 850 KB deu 2.117 achados numa só
+     * auditoria). Vale pelo tamanho, não pelo nome, então pega bibliotecas copiadas sem banner nem padrão de nome.
+     */
+    static boolean isOversizedBundle(String relPath, long bytes) {
+        return relPath != null && bytes >= OVERSIZED_BUNDLE_BYTES && BUNDLE_EXT.matcher(relPath).find();
+    }
+
+    /** Caminhos relativos (com "/") dos pacotes grandes sob a raiz, para o motor SAST excluir. Pastas ignoradas são puladas. */
+    static java.util.List<String> oversizedBundles(Path root) {
+        java.util.List<String> found = new java.util.ArrayList<>();
+        try {
+            java.nio.file.Files.walkFileTree(root, new java.nio.file.SimpleFileVisitor<>() {
+                @Override
+                public java.nio.file.FileVisitResult preVisitDirectory(Path dir, java.nio.file.attribute.BasicFileAttributes a) {
+                    boolean skip = !dir.equals(root)
+                            && CleanCodeAnalyzer.IGNORED_DIRS.contains(dir.getFileName().toString().toLowerCase(java.util.Locale.ROOT));
+                    return skip ? java.nio.file.FileVisitResult.SKIP_SUBTREE : java.nio.file.FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public java.nio.file.FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes a) {
+                    String rel = root.relativize(file).toString().replace('\\', '/');
+                    if (a.isRegularFile() && isOversizedBundle(rel, a.size())) {
+                        found.add(rel);
+                    }
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public java.nio.file.FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            // sem a lista o motor apenas analisa mais arquivos
+        }
+        return found;
+    }
 }
