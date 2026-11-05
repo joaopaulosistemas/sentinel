@@ -10,6 +10,14 @@ rules:
               metavariable: $A
               regex: ^(QueryParam|PathParam|FormParam|HeaderParam|RequestParam)$
           - focus-metavariable: $P
+      - patterns:
+          - pattern-inside: |
+              @$M(...)
+              $RET $F(..., String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(Get|Post|Put|Delete|Patch|Request)Mapping$
+          - focus-metavariable: $P
     pattern-sinks:
       - pattern: new java.net.URL(...)
       - pattern: java.net.URI.create(...)
@@ -33,6 +41,14 @@ rules:
           - metavariable-regex:
               metavariable: $A
               regex: ^(QueryParam|PathParam|FormParam|HeaderParam|RequestParam|PathVariable|RequestHeader|CookieValue)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-inside: |
+              @$M(...)
+              $RET $F(..., String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(Get|Post|Put|Delete|Patch|Request)Mapping$
           - focus-metavariable: $P
       # nome de arquivo informado pelo cliente num upload (Spring MultipartFile / Servlet Part)
       - pattern: $F.getOriginalFilename()

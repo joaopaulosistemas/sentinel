@@ -463,3 +463,30 @@
   after: "const token = crypto.randomBytes(32).toString('hex')"
   refs:
     - "https://developer.mozilla.org/docs/Web/API/Crypto/getRandomValues"
+
+- key: "sentinel-xstream-qualquer-tipo"
+  summary: "Libere só os tipos esperados em vez de aceitar qualquer classe."
+  before: "xstream.addPermission(AnyTypePermission.ANY);"
+  after: "xstream.allowTypesByWildcard(new String[] { \"com.exemplo.dto.*\" });"
+  refs:
+    - "https://x-stream.github.io/security.html"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-ssti-modelo-variavel"
+  summary: "Use modelos fixos (arquivo ou texto constante) e envie os dados do usuário só pelo contexto."
+  before: "Velocity.evaluate(ctx, out, \"t\", modeloDoUsuario);"
+  after: "Velocity.evaluate(ctx, out, \"t\", MODELO_FIXO); // dados via ctx.put(...)"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/1336.html"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-fastjson-autotype"
+  summary: "Deixe o AutoType desligado e leia o JSON para uma classe fixa."
+  before: "ParserConfig.getGlobalInstance().setAutoTypeSupport(true);"
+  after: "// mantenha o padrão (AutoType desligado)\nJSON.parseObject(json, Pedido.class);"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/502.html"
+  effort: S
+  regression-risk: LOW

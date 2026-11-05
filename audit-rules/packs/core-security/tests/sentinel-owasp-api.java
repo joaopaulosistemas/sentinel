@@ -120,4 +120,16 @@ class JwtEPathNoSpring {
         // ok: sentinel-api-path-traversal
         var seguro = new File(pasta, FilenameUtils.getName(arquivo.getOriginalFilename()));
     }
+
+    @GetMapping("/fetch")
+    String ssrfParametroSemAnotacao(String url) throws Exception {
+        // ruleid: sentinel-api-ssrf
+        return new URL(url).getHost();
+    }
+
+    @GetMapping("/fetch-ok")
+    String ssrfParametroSemAnotacaoConstante(String id) throws Exception {
+        // ok: sentinel-api-ssrf
+        return new URL("https://api.interna/itens/2").getHost();
+    }
 }
