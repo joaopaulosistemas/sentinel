@@ -577,3 +577,14 @@ NÃO verificado: build Maven e testes Java (só no CI); API e dashboard rodando 
 
 Verificado: `semgrep --test` (15/15), paridade Opengrep × Semgrep (517 achados iguais).
 NÃO verificado: build Maven e testes Java (CI); falsos positivos das regras novas além do Juice Shop; API e dashboard rodando.
+
+## Dashboard 12.44.0 — Rodada 3: validação das regras Node em repositório novo
+
+- **Alvo:** `snyk-labs/nodejs-goof` (nunca lido pelo projeto; só contagens). As 15 regras `sentinel-node-*` deram 2 achados: injeção de comando (1) e `Math.random` em segredo (1). As vulnerabilidades documentadas do Goof são sobretudo dependências com CVE, que cabem ao Trivy/OSV, não ao SAST; esse caminho não foi rodado aqui.
+- **Validação acumulada das regras Node (só contagens):** NodeGoat 4, DVNA 4, Goof 2. Treino (Juice Shop): 20. Não conferi falso positivo nos três de validação, então não há taxa de precisão para eles.
+- **Conclusão do ciclo (3 rodadas):** o ganho real foi cobrir o backend Node/Express (de 0 para 15 regras). No Benchmark Java os falsos positivos restantes são armadilhas que o Opengrep não resolve (exigem análise sensível a caminho). O motor não segue dado entre funções e arquivos; para Java existe o Joern, para JS/TS não.
+- **Registro:** `conjuntos.json` ganhou NodeGoat, DVNA e Goof como validação.
+- **Próximo passo possível:** medir precisão (falsos positivos) nos repositórios de validação lendo os achados um a um e movendo os repositórios para treino; e avaliar análise entre arquivos para JS/TS.
+
+Verificado: contagens por regra com o Opengrep local.
+NÃO verificado: API e dashboard rodando (sem Maven Central nem Docker no ambiente); precisão nos repositórios de validação; Trivy/OSV sobre o Goof.
