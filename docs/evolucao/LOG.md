@@ -668,3 +668,14 @@ Verificado: programa `javac` com os cabeçalhos do WebGoat e casos negativos. N�
 - **Não feito:** linha de progresso própria para cada ferramenta de pacote (continuam dentro da linha SARIF).
 
 Verificado: nada além da leitura do código. NÃO verificado: JUnit/Maven (só CI), a tela.
+
+## Dashboard 12.54.0 — Ciclo (laço até estabilizar): WebGoat, java-sec-code e SecurityShepherd
+
+Branch única `ciclo/estabilizacao`; as auditorias rodaram a partir dela. Validação (dvja, NodeGoat) só por contagem.
+
+- **Volta 1 (WebGoat):** `src/it` (testes de integração do Maven) fora do lint e das métricas; tamanhos comuns (8, 16, 32, 64, 255…) deixam de ser "número mágico" no Checkstyle. 2.741 → 2.363 achados.
+- **Volta 2 (java-sec-code, treino novo):** parâmetro de handler Spring sem anotação conta como entrada do usuário (command injection, SSRF, path traversal, taint); regras novas `sentinel-xstream-qualquer-tipo`, `sentinel-ssti-modelo-variavel`, `sentinel-fastjson-autotype`, `sentinel-classloader-define-classe` (core-security 1.5.0). 663 → 671 achados, 8 problemas reais a mais; dvja e NodeGoat inalterados (176 e 328).
+- **Volta 3 (SecurityShepherd, treino novo):** `PathRole` reconhece `src/it` como teste; achado de qualidade em teste ou pasta ignorada não entra (jscpd lia o projeto inteiro): 5.088 → 4.763. `<%= bundle.getString(...) %>` e saída já codificada deixam de ser XSS em JSP.
+- **Não feito:** o Opengrep ainda lê testes de propósito (regras de segurança); `rs.getString` em JSP continua sinalizado (é dado do banco).
+
+Verificado: testes das regras (opengrep --test, 61 casos), programas `javac` para a detecção por caminho. NÃO verificado: JUnit/Maven (só CI), medição do XSS em JSP.
