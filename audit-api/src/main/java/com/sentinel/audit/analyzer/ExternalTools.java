@@ -135,6 +135,11 @@ final class ExternalTools {
         }
     }
 
+    /** {@code src/it} é onde o Maven guarda os testes de integração; "it" sozinho pode ser o idioma italiano. */
+    static boolean isMavenItDir(String[] parts, int i) {
+        return "it".equals(parts[i]) && i > 0 && "src".equals(parts[i - 1]) && i < parts.length - 1;
+    }
+
     /** Arquivo em pasta de build, dependências ou testes, ou biblioteca embutida: lint e métricas não valem a pena aí. */
     static boolean inIgnoredDir(String relPath) {
         if (relPath == null) {
@@ -142,7 +147,7 @@ final class ExternalTools {
         }
         String[] parts = relPath.replace('\\', '/').toLowerCase(java.util.Locale.ROOT).split("/");
         for (int i = 0; i < parts.length - 1; i++) {      // o último segmento é o arquivo
-            if (CleanCodeAnalyzer.IGNORED_DIRS.contains(parts[i])) {
+            if (CleanCodeAnalyzer.IGNORED_DIRS.contains(parts[i]) || isMavenItDir(parts, i)) {
                 return true;
             }
         }

@@ -57,7 +57,8 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
 
     static final Set<String> IGNORED_DIRS = Set.of(
             "target", "build", "dist", "out", "node_modules", ".git", ".sentinel", ".idea", ".gradle", "vendor", "coverage",
-            "test", "tests", "__tests__", "generated", "generated-sources", "e2e");
+            "test", "tests", "__tests__", "generated", "generated-sources", "e2e",
+            "integrationtest", "integration-test", "integration-tests");
     private static final Set<String> JAVA_EXT = Set.of(".java");
     private static final Set<String> TS_EXT = Set.of(".ts", ".tsx", ".js", ".jsx", ".mjs");
 
@@ -261,12 +262,20 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
 
     // ------------------------------------------------------------------ varredura de arquivos
 
+    /** Pasta {@code src/it}: testes de integração do Maven. */
+    private static boolean isSrcIt(Path dir) {
+        Path parent = dir.getParent();
+        return parent != null && "it".equals(dir.getFileName().toString()) && parent.getFileName() != null
+                && "src".equals(parent.getFileName().toString());
+    }
+
     private List<Path> collectSources(Path root) throws IOException {
         List<Path> files = new ArrayList<>();
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                if (!dir.equals(root) && IGNORED_DIRS.contains(dir.getFileName().toString().toLowerCase(Locale.ROOT))) {
+                if (!dir.equals(root) && (IGNORED_DIRS.contains(dir.getFileName().toString().toLowerCase(Locale.ROOT))
+                        || isSrcIt(dir))) {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
                 return FileVisitResult.CONTINUE;
