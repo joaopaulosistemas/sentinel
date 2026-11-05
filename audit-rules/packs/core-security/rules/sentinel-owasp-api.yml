@@ -141,7 +141,13 @@ rules:
       - pattern-not-inside: |
           $T $M(...) {
             ...
-            <... $V.verify(...) ...>;
+            $V.verify(...);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $R = $V.verify(...);
             ...
           }
     message: >
