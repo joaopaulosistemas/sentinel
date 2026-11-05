@@ -41,4 +41,29 @@ class ExternalToolsVendoredTest {
         assertTrue(SemgrepAnalyzer.VENDORED_EXCLUDES.containsAll(
                 java.util.List.of("jquery*.js", "font-awesome*.css", "patternfly*.css", "js/bootstrap*.js")));
     }
+
+    @Test
+    void jsOuCssMuitoGrandeEPacoteDeTerceiros() {
+        assertTrue(ExternalTools.isOversizedBundle("frontend/src/assets/private/three.js", 853_000));
+        assertTrue(ExternalTools.isOversizedBundle("web/estilos/tema.css", 600_000));
+        assertTrue(ExternalTools.isOversizedBundle("a/b.MJS", 500_000));
+    }
+
+    @Test
+    void arquivoGrandeDeOutroTipoOuPequenoNaoEPacote() {
+        assertFalse(ExternalTools.isOversizedBundle("src/app/pedidos.js", 20_000));
+        assertFalse(ExternalTools.isOversizedBundle("src/app/pedidos.js", 399_999));
+        assertFalse(ExternalTools.isOversizedBundle("src/Grande.java", 900_000));
+        assertFalse(ExternalTools.isOversizedBundle("src/grande.ts", 900_000));
+        assertFalse(ExternalTools.isOversizedBundle(null, 900_000));
+    }
+
+    @Test
+    void listaPacotesGrandesParaOMotorExcluir(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Path assets = java.nio.file.Files.createDirectories(dir.resolve("front/assets"));
+        java.nio.file.Files.write(assets.resolve("three.js"), new byte[450_000]);
+        java.nio.file.Files.write(assets.resolve("app.js"), new byte[1_000]);
+        assertTrue(ExternalTools.oversizedBundles(dir).contains("front/assets/three.js"));
+        assertFalse(ExternalTools.oversizedBundles(dir).contains("front/assets/app.js"));
+    }
 }
