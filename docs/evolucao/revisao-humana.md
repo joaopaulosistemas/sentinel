@@ -1,6 +1,6 @@
 # Revisão humana por amostragem
 
-Objetivo: dar ao Sentinel uma verdade que não venha de um modelo de linguagem. A cada rodada da Descoberta o agente acrescenta
+Objetivo: dar ao Sentinel uma verdade que não venha de um modelo de linguagem. A cada rodada de revisão o agente acrescenta
 aqui **20 achados** sorteados entre os repositórios auditados (de preferência de severidade média ou alta e de regras diferentes),
 com o link para a linha. A pessoa que revisa preenche a coluna **Veredito** com `VP` (verdadeiro positivo), `FP` (falso positivo)
 ou `?` (duvidoso) e, se quiser, a **Nota**. Cinco minutos por rodada bastam.

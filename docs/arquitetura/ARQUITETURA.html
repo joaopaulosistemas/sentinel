@@ -102,7 +102,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     subgraph Externos["Fora do Sentinel"]
         direction LR
         GIT["GitHub / GitLab\nrepositório auditado"]
-        TOOLS["Ferramentas de terceiros\nno contêiner da API:\nSemgrep, Trivy, Gitleaks,\nESLint, PMD, Stylelint, SQLFluff..."]
+        TOOLS["Ferramentas de terceiros\nno contêiner da API:\nOpengrep, Trivy, Gitleaks,\nESLint, PMD, Stylelint, SQLFluff..."]
         OSV["OSV.dev\nbase de vulnerabilidades"]
         NOTIF["Teams / Slack / webhook"]
         IDP["Keycloak / OIDC\n(opcional)"]
@@ -125,7 +125,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     subgraph Host["docker compose / Kubernetes (Helm)"]
         NG["audit-dashboard\nNginx servindo a SPA\n:80"]
-        AP["audit-api\nJRE 21 + Semgrep + Trivy + Gitleaks\n+ Node (ESLint, Stylelint) + venvs Python\n:8080"]
+        AP["audit-api\nJRE 21 + Opengrep + Trivy + Gitleaks\n+ Node (ESLint, Stylelint) + venvs Python\n:8080"]
         PG[("postgres:16-alpine\n:5432")]
     end
     NG -- "proxy /api" --&gt; AP
@@ -280,15 +280,15 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>Dashboard: <code>ReauditPanel</code>, <code>StartAuditModal</code></td>
 </tr>
 <tr>
-<td>Evolução automática do próprio Sentinel</td>
+<td>Evolução do próprio Sentinel (agente Sentinel Ciclo)</td>
 <td>—</td>
-<td><code>.github/workflows</code>, <code>.github/agente</code>, <code>scripts</code>, <code>docs/evolucao</code></td>
+<td><code>.claude/agents</code>, <code>.github/workflows/auditoria-completa.yml</code>, <code>scripts</code>, <code>docs/evolucao</code></td>
 </tr>
 </tbody>
 </table></div>
 <hr />
 <h2 id="3-backend-audit-api">3. Backend <code>audit-api</code></h2>
-<p>Pacote raiz: <code>com.sentinel.audit</code>. Quarkus 3.15, Java 21, Hibernate/Panache, PostgreSQL, CDI (<code>@ApplicationScoped</code>), REST (JAX-RS).</p>
+<p>Pacote raiz: <code>com.sentinel.audit</code>. Quarkus 3.33, Java 21, Hibernate/Panache, PostgreSQL, CDI (<code>@ApplicationScoped</code>), REST (JAX-RS).</p>
 <h3 id="31-camadas-desenho-micro">3.1 Camadas (desenho micro)</h3>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     RES["resource (borda REST)\nAuditResource, SystemResource, FindingResource,\nWebhookResource, PackResource, RuleResource,\nHealthResource, ApiKeyFilter, StartupChecks"]
@@ -510,7 +510,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 <tr>
 <td><code>RulePlaygroundService</code></td>
-<td>Valida e executa uma regra Semgrep sobre um trecho de código</td>
+<td>Valida e executa uma regra (formato Semgrep) sobre um trecho de código</td>
 </tr>
 </tbody>
 </table></div>
@@ -537,6 +537,10 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     CodeAnalyzer &lt;|.. ArchitecturePolicyAnalyzer
     CodeAnalyzer &lt;|.. CleanCodeAnalyzer
     CodeAnalyzer &lt;|.. HygieneAnalyzer
+    CodeAnalyzer &lt;|.. DependencyCyclesAnalyzer
+    CodeAnalyzer &lt;|.. DuplicationAnalyzer
+    CodeAnalyzer &lt;|.. HotspotAnalyzer
+    CodeAnalyzer &lt;|.. DeadCodeAnalyzer
     CodeAnalyzer &lt;|.. EvidenceAnalyzer
     SemgrepAnalyzer ..&gt; ExternalTools
     PmdAnalyzer ..&gt; ExternalTools
@@ -565,7 +569,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tbody>
 <tr>
 <td><code>SemgrepAnalyzer</code></td>
-<td>Roda o Semgrep com as regras dos pacotes ativos (segurança, qualidade, Spring, persistência, IaC, front); ignora bibliotecas embutidas (<code>node_modules</code>, <code>vendor</code>, <code>*.min.js</code>...)</td>
+<td>Roda o Opengrep (ou o Semgrep, via <code>SastEngine</code>) com as regras dos pacotes ativos (segurança, qualidade, Spring, persistência, IaC, front); ignora bibliotecas embutidas (<code>node_modules</code>, <code>vendor</code>, <code>*.min.js</code>...)</td>
 </tr>
 <tr>
 <td><code>PmdAnalyzer</code></td>
@@ -614,6 +618,26 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tr>
 <td><code>HygieneAnalyzer</code></td>
 <td>README, testes, CI, lockfile, segredos versionados, artefatos de build commitados, <code>.dockerignore</code></td>
+</tr>
+<tr>
+<td><code>DependencyCyclesAnalyzer</code></td>
+<td>Ciclos entre pacotes Java e entre arquivos TypeScript/JavaScript (só lê os imports; <code>import type</code> não conta)</td>
+</tr>
+<tr>
+<td><code>DuplicationAnalyzer</code></td>
+<td>Blocos de código repetidos em produção (ignora comentários, imports, getters e setters); limites <code>dup-window</code>, <code>dup-min-lines</code></td>
+</tr>
+<tr>
+<td><code>HotspotAnalyzer</code></td>
+<td>Arquivos que mudam muito e têm função complexa (<code>git log</code> × complexidade); precisa de histórico no clone</td>
+</tr>
+<tr>
+<td><code>CommitMessageAnalyzer</code></td>
+<td>Mensagens de commit fora do padrão Conventional Commits (<code>git log</code>, um achado só acima de <code>commit-max-bad-percent</code>); limites <code>commit-min-commits</code>, <code>commit-max-bad-percent</code></td>
+</tr>
+<tr>
+<td><code>DeadCodeAnalyzer</code></td>
+<td>Exportações TypeScript/JavaScript que nenhum arquivo usa; ignora bibliotecas publicadas</td>
 </tr>
 <tr>
 <td><code>EvidenceAnalyzer</code></td>
@@ -1053,7 +1077,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 <tr>
 <td><code>audit-api/Dockerfile</code></td>
-<td>Constrói com Maven (Java 21) e roda em JRE 21 com Git, Semgrep, Trivy, Gitleaks, Node (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; telemetria do Semgrep desligada</td>
+<td>Constrói com Maven (Java 21) e roda em JRE 21 com Git, Opengrep (Semgrep e Joern opcionais), Trivy, Gitleaks, Node (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; telemetria do Semgrep desligada</td>
 </tr>
 <tr>
 <td><code>deploy/helm/sentinel</code></td>
@@ -1094,12 +1118,10 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     CI --&gt; J3["Dashboard (tsc, Vitest, build)"]
     CI --&gt; J4["Imagens Docker e Helm + teste ponta a ponta"]
     CI --&gt; J5["Calibração em vários repositórios"]
-    CI --&gt; J6["Escopo dos PRs do agente"]
-    CI -- "falha" --&gt; EV["evolucao.yml\nSentinel Evolution"]
-    QUA["quarta-feira"] --&gt; EV
-    SEG["segunda-feira"] --&gt; DS["descoberta.yml\nSentinel Descoberta"]
-    EV --&gt; PRS["PRs evolucao/*"]
-    DS --&gt; PRS
+    AG["Agente Sentinel Ciclo\n(Claude Code, na sua máquina)"] -- "dispara" --&gt; AC["auditoria-completa.yml\nAPI real + todos os analisadores"]
+    AC --&gt; ART["artefato: achados, relatório PDF, SBOM"]
+    ART --&gt; AG
+    AG --&gt; PRS["PRs ciclo/*"]
     PRS --&gt; HUM["Você revisa e faz o merge"]
     HUM --&gt; TAG["tag vX.Y.Z"] --&gt; REL["release.yml\nimagens no GHCR, zip do CLI, SBOM"]
     PL["docs/evolucao/PLACAR.md"] -. "meta dos agentes" .-&gt; EV
@@ -1125,12 +1147,8 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td><code>.github/workflows/release.yml</code>, <code>scripts/versoes-pacotes.sh</code></td>
 </tr>
 <tr>
-<td>Sentinel Evolution</td>
-<td><code>.github/workflows/evolucao.yml</code>, <code>.github/agente/sentinel-evolution.md</code>, <code>scripts/evolucao-entrada.sh</code></td>
-</tr>
-<tr>
-<td>Sentinel Descoberta</td>
-<td><code>.github/workflows/descoberta.yml</code>, <code>.github/agente/sentinel-descoberta.md</code>, <code>scripts/descobrir-repos.sh</code>, <code>scripts/relatorio-descoberta.py</code></td>
+<td>Agente Sentinel Ciclo</td>
+<td><code>.claude/agents/sentinel-ciclo.md</code>, <code>.github/workflows/auditoria-completa.yml</code>, <code>scripts/auditoria-completa.sh</code></td>
 </tr>
 <tr>
 <td>Memória e metas</td>
@@ -1138,7 +1156,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 </tbody>
 </table></div>
-<p>Os agentes só abrem PR em <code>evolucao/*</code>; o merge é manual. O job <code>Escopo dos PRs do agente</code> reprova PR que mexa em <code>.github/</code>, scripts de entrada/CI, <code>.gitignore</code> ou <code>.env*</code>.</p>
+<p>O agente só abre PR em <code>ciclo/*</code> e roda na máquina de quem o chama; o merge é manual. A calibração pesada do CI roda nesses PRs.</p>
 <hr />
 <h2 id="9-terceiros">9. Terceiros</h2>
 <div class="tabela"><table>
@@ -1151,7 +1169,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </thead>
 <tbody>
 <tr>
-<td>Quarkus 3.15, Hibernate/Panache, JAX-RS</td>
+<td>Quarkus 3.33, Hibernate/Panache, JAX-RS</td>
 <td>Backend</td>
 <td>sim</td>
 </tr>
@@ -1166,7 +1184,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>sim</td>
 </tr>
 <tr>
-<td>Semgrep</td>
+<td>Opengrep (ou Semgrep)</td>
 <td><code>SemgrepAnalyzer</code> (regras dos pacotes)</td>
 <td>recomendado; sem ele a análise de regras fica de fora</td>
 </tr>
@@ -1241,7 +1259,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <li>Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (<code>AuditOrchestrationService</code>, <code>ScoringService</code>, camadas, dashboard). Classes grandes como <code>PackLoader</code> (641 linhas), <code>ArchitecturePolicyAnalyzer</code> (534) e <code>InsightsBuilder</code> (344) estão descritas pelo comentário de classe, não por leitura linha a linha.</li>
 <li>A lista de analisadores executados por padrão é a de <code>AuditOrchestrationService.runAnalyzers</code> (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.</li>
 <li>Os pesos e o teto do score vêm de <code>ScoringService</code> hoje; mudam com o código. Em caso de dúvida vale o código.</li>
-<li>Este documento não foi gerado automaticamente: se uma classe nascer, mudar de pacote ou sair, ele precisa de atualização manual (o agente de evolução pode propor isso num PR).</li>
+<li>Este documento não foi gerado automaticamente: se uma classe nascer, mudar de pacote ou sair, ele precisa de atualização manual (o agente Sentinel Ciclo pode propor isso num PR).</li>
 </ul>
   </main>
 </div>

@@ -128,7 +128,7 @@ flowchart LR
 | MCP: o Claude consulta a auditoria (leitura) | pacote `mcp` (`McpResource`, `McpProtocol`, `McpGateService`, `McpToolService`, `McpShaper`, `McpRateLimiter`) | Dashboard: `McpPanel`; doc `docs/integracao/mcp.md` |
 | Revisão do Claude: sugestões, regras propostas e funil | pacote `review` (`ReviewService`, `RuleFunnel`, `LocalRuleMaterializer`, `ReviewMetrics`) | Dashboard: `ClaudeReviewPanel` (Informações de Auditoria → Revisão do Claude) |
 | Reauditoria e pedidos do Claude com aprovação | pacote `actions` (`PendingActionService`, `PendingActionRules`, `PendingActionResource`) | Dashboard: `ReauditPanel`, `StartAuditModal` |
-| Evolução automática do próprio Sentinel | — | `.github/workflows`, `.github/agente`, `scripts`, `docs/evolucao` |
+| Evolução do próprio Sentinel (agente Sentinel Ciclo) | — | `.claude/agents`, `.github/workflows/auditoria-completa.yml`, `scripts`, `docs/evolucao` |
 
 ---
 
@@ -600,12 +600,10 @@ flowchart TB
     CI --> J3["Dashboard (tsc, Vitest, build)"]
     CI --> J4["Imagens Docker e Helm + teste ponta a ponta"]
     CI --> J5["Calibração em vários repositórios"]
-    CI --> J6["Escopo dos PRs do agente"]
-    CI -- "falha" --> EV["evolucao.yml\nSentinel Evolution"]
-    QUA["quarta-feira"] --> EV
-    SEG["segunda-feira"] --> DS["descoberta.yml\nSentinel Descoberta"]
-    EV --> PRS["PRs evolucao/*"]
-    DS --> PRS
+    AG["Agente Sentinel Ciclo\n(Claude Code, na sua máquina)"] -- "dispara" --> AC["auditoria-completa.yml\nAPI real + todos os analisadores"]
+    AC --> ART["artefato: achados, relatório PDF, SBOM"]
+    ART --> AG
+    AG --> PRS["PRs ciclo/*"]
     PRS --> HUM["Você revisa e faz o merge"]
     HUM --> TAG["tag vX.Y.Z"] --> REL["release.yml\nimagens no GHCR, zip do CLI, SBOM"]
     PL["docs/evolucao/PLACAR.md"] -. "meta dos agentes" .-> EV
@@ -617,11 +615,10 @@ flowchart TB
 | CI | `.github/workflows/ci.yml`, `scripts/ci-anotar.sh` (transforma falhas em anotações legíveis), `scripts/e2e.sh` (Postgres + API + auditoria do petclinic) |
 | Calibração | `scripts/calibracao.sh`, `scripts/comparar-calibracao.py`, `audit-rules/calibracao/esperado.json` |
 | Release | `.github/workflows/release.yml`, `scripts/versoes-pacotes.sh` |
-| Sentinel Evolution | `.github/workflows/evolucao.yml`, `.github/agente/sentinel-evolution.md`, `scripts/evolucao-entrada.sh` |
-| Sentinel Descoberta | `.github/workflows/descoberta.yml`, `.github/agente/sentinel-descoberta.md`, `scripts/descobrir-repos.sh`, `scripts/relatorio-descoberta.py` |
+| Agente Sentinel Ciclo | `.claude/agents/sentinel-ciclo.md`, `.github/workflows/auditoria-completa.yml`, `scripts/auditoria-completa.sh` |
 | Memória e metas | `docs/evolucao/` (`PLACAR.md`, `LOG.md`, `calibracao.md`, `precisao.md`, `relatorios/`, `AGENTE.md`) |
 
-Os agentes só abrem PR em `evolucao/*`; o merge é manual. O job `Escopo dos PRs do agente` reprova PR que mexa em `.github/`, scripts de entrada/CI, `.gitignore` ou `.env*`.
+O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é manual. A calibração pesada do CI roda nesses PRs.
 
 ---
 
@@ -665,4 +662,4 @@ Os agentes só abrem PR em `evolucao/*`; o merge é manual. O job `Escopo dos PR
 - Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (`AuditOrchestrationService`, `ScoringService`, camadas, dashboard). Classes grandes como `PackLoader` (641 linhas), `ArchitecturePolicyAnalyzer` (534) e `InsightsBuilder` (344) estão descritas pelo comentário de classe, não por leitura linha a linha.
 - A lista de analisadores executados por padrão é a de `AuditOrchestrationService.runAnalyzers` (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.
 - Os pesos e o teto do score vêm de `ScoringService` hoje; mudam com o código. Em caso de dúvida vale o código.
-- Este documento não foi gerado automaticamente: se uma classe nascer, mudar de pacote ou sair, ele precisa de atualização manual (o agente de evolução pode propor isso num PR).
+- Este documento não foi gerado automaticamente: se uma classe nascer, mudar de pacote ou sair, ele precisa de atualização manual (o agente Sentinel Ciclo pode propor isso num PR).
