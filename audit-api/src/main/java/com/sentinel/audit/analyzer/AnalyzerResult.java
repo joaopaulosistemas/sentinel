@@ -13,11 +13,21 @@ import java.util.List;
  * @param partialNote  {@code null} quando a ferramenta terminou normalmente; senão o motivo pelo qual o resultado
  *                     pode estar incompleto (tempo esgotado, saída anormal, relatório ilegível). O orquestrador
  *                     mostra o analisador como PARCIAL em vez de OK, para "0 achados" não parecer "código limpo".
+ * @param infoNote     {@code null} ou um resumo do que o analisador fez (ex.: quais ferramentas rodaram e quais não);
+ *                     aparece na tela de acompanhamento mesmo quando o resultado está OK, sem mudar o status
  */
-public record AnalyzerResult(List<Finding> findings, String analyzerName, Duration duration, String partialNote) {
+public record AnalyzerResult(List<Finding> findings, String analyzerName, Duration duration, String partialNote, String infoNote) {
+
+    public AnalyzerResult(List<Finding> findings, String analyzerName, Duration duration, String partialNote) {
+        this(findings, analyzerName, duration, partialNote, null);
+    }
 
     public AnalyzerResult(List<Finding> findings, String analyzerName, Duration duration) {
-        this(findings, analyzerName, duration, null);
+        this(findings, analyzerName, duration, null, null);
+    }
+
+    public boolean hasInfo() {
+        return infoNote != null && !infoNote.isBlank();
     }
 
     public boolean partial() {

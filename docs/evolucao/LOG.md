@@ -502,3 +502,15 @@ Depois da troca do motor (12.35.0), a tela de auditoria, o relatório e o CSV ai
 
 Verificado: `tsc` e `vitest` do painel (299 testes; um teste de `FindingsPage` foi ajustado ao novo nome); os arquivos Java alterados compilam sem erro de sintaxe e o novo helper foi executado (`isSastTool`/`sameTool`).
 NÃO verificado: Maven e testes Java (só o CI); a migração dos achados antigos contra um PostgreSQL real; relatório PDF/CSV com achados antigos.
+
+## Dashboard 12.38.0 / API — A tela mostra quais ferramentas de comando rodaram
+
+Faltava um jeito de saber se o Joern (e as demais ferramentas de comando do pacote `market-tools`) rodou: quando terminavam sem achar nada, não deixavam rastro, e quando eram ignoradas só havia uma linha de log.
+
+- `AnalyzerResult` ganha `infoNote`: um resumo que aparece na tela de acompanhamento mesmo com o analisador em OK, sem mudar o status.
+- O analisador SARIF resume: ferramentas que rodaram (tempo e número de achados), as que rodaram sem gerar resultado, as que falharam, as sem permissão para executar programas e as não instaladas. Ferramentas que não se aplicam ao projeto (sem arquivos do tipo) ficam de fora.
+- Log da API: `Fonte SARIF '<id>' rodou em N s: M achado(s)`.
+- README do Joern: seção "Como saber que rodou".
+
+Verificado: os arquivos Java alterados não têm erro de sintaxe; testes novos escritos (`SarifAnalyzerTest`).
+NÃO verificado: Maven e testes Java (só o CI); a aparência da nota na tela de acompanhamento (o painel não mudou; ele já exibe a nota do analisador).

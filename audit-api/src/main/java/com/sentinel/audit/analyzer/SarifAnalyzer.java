@@ -76,24 +76,78 @@ public class SarifAnalyzer implements CodeAnalyzer {
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun, AuditPolicy policy) {
         Instant start = Instant.now();
         List<Finding> findings = new ArrayList<>();
+        Resumo resumo = new Resumo();
         if (policy != null) {
             outer:
             for (RulePack pack : policy.packs()) {
                 boolean trusted = policy.isToolPackTrusted(pack.id());
                 for (ToolSpec spec : pack.tools()) {
                     try {
-                        findings.addAll(spec.executes() ? runCommand(spec, projectPath, auditRun, trusted)
-                                : readInputs(spec, projectPath, auditRun));
+                        if (spec.executes()) {
+                            Execucao e = executar(spec, projectPath, auditRun, trusted);
+                            findings.addAll(e.findings());
+                            resumo.registrar(spec, e);
+                        } else {
+                            findings.addAll(readInputs(spec, projectPath, auditRun));
+                        }
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         break outer;
                     } catch (Exception e) {
                         LOG.warnf("Fonte SARIF '%s' falhou e foi ignorada: %s", spec.id(), e.getMessage());
+                        resumo.falhou.add(spec.name());
                     }
                 }
             }
         }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()));
+        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), null, resumo.texto());
+    }
+
+    /** Como uma ferramenta de comando terminou: o que achou e o que aconteceu com ela. */
+    record Execucao(List<Finding> findings, Situacao situacao, long segundos) {
+    }
+
+    enum Situacao { RODOU, SEM_PERMISSAO, NAO_INSTALADA, SEM_ARQUIVOS, SEM_RESULTADO }
+
+    /** Resumo, para a tela de acompanhamento, de quais ferramentas de comando rodaram e quais ficaram de fora. */
+    static final class Resumo {
+        private final List<String> rodaram = new ArrayList<>();
+        private final List<String> semPermissao = new ArrayList<>();
+        private final List<String> naoInstaladas = new ArrayList<>();
+        private final List<String> semResultado = new ArrayList<>();
+        final List<String> falhou = new ArrayList<>();
+
+        void registrar(ToolSpec spec, Execucao e) {
+            switch (e.situacao()) {
+                case RODOU -> rodaram.add(spec.name() + " (" + e.segundos() + " s, " + e.findings().size()
+                        + (e.findings().size() == 1 ? " achado)" : " achados)"));
+                case SEM_PERMISSAO -> semPermissao.add(spec.name());
+                case NAO_INSTALADA -> naoInstaladas.add(spec.name());
+                case SEM_RESULTADO -> semResultado.add(spec.name());
+                case SEM_ARQUIVOS -> { /* não se aplica a este projeto: não entra no resumo */ }
+            }
+        }
+
+        /** {@code null} quando nenhuma ferramenta de comando entrou em jogo. */
+        String texto() {
+            List<String> partes = new ArrayList<>();
+            if (!rodaram.isEmpty()) {
+                partes.add("Rodaram: " + String.join(", ", rodaram));
+            }
+            if (!semResultado.isEmpty()) {
+                partes.add("Rodaram sem gerar resultado: " + String.join(", ", semResultado));
+            }
+            if (!falhou.isEmpty()) {
+                partes.add("Falharam: " + String.join(", ", falhou));
+            }
+            if (!semPermissao.isEmpty()) {
+                partes.add("Sem permissão para executar programas: " + String.join(", ", semPermissao));
+            }
+            if (!naoInstaladas.isEmpty()) {
+                partes.add("Não instaladas: " + String.join(", ", naoInstaladas));
+            }
+            return partes.isEmpty() ? null : String.join(". ", partes) + ".";
+        }
     }
 
     // ------------------------------------------------------------------ modo input
@@ -124,26 +178,38 @@ public class SarifAnalyzer implements CodeAnalyzer {
 
     List<Finding> runCommand(ToolSpec spec, Path projectPath, AuditRun run, boolean trustedPack)
             throws IOException, InterruptedException {
+        return executar(spec, projectPath, run, trustedPack).findings();
+    }
+
+    Execucao executar(ToolSpec spec, Path projectPath, AuditRun run, boolean trustedPack)
+            throws IOException, InterruptedException {
         if (!allowTools && !trustedPack) {
             LOG.infof("Fonte SARIF '%s' executa um comando e foi ignorada: ative sentinel.audit.packs.allow-tools para permitir", spec.id());
-            return List.of();
+            return new Execucao(List.of(), Situacao.SEM_PERMISSAO, 0);
         }
         Path exe = resolveExecutable(spec.command().get(0));
         if (exe == null) {
             LOG.infof("Fonte SARIF '%s': executável '%s' não encontrado; ignorada", spec.id(), spec.command().get(0));
-            return List.of();
+            return new Execucao(List.of(), Situacao.NAO_INSTALADA, 0);
         }
         Optional<List<String>> files = inputFiles(spec, projectPath);
         if (files.isEmpty()) {
             LOG.debugf("Fonte SARIF '%s': nenhum arquivo do tipo esperado no projeto; ignorada", spec.id());
-            return List.of();
+            return new Execucao(List.of(), Situacao.SEM_ARQUIVOS, 0);
         }
         Path output = Files.createTempFile("sarif-", ".json");
+        Instant inicio = Instant.now();
         try {
             List<String> cmd = buildCommand(exe, spec, files.get(), projectPath, output);
             int code = ExternalTools.run(cmd, projectPath, Map.of(), spec.timeoutSeconds(), spec.stdout() ? output : null);
             String sarif = readUsableOutput(spec, output, code);
-            return sarif == null ? List.of() : parse(sarif, spec, projectPath, run);
+            long segundos = Duration.between(inicio, Instant.now()).toSeconds();
+            if (sarif == null) {
+                return new Execucao(List.of(), Situacao.SEM_RESULTADO, segundos);
+            }
+            List<Finding> achados = parse(sarif, spec, projectPath, run);
+            LOG.infof("Fonte SARIF '%s' rodou em %d s: %d achado(s)", spec.id(), segundos, achados.size());
+            return new Execucao(achados, Situacao.RODOU, segundos);
         } finally {
             Files.deleteIfExists(output);
         }

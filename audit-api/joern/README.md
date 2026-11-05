@@ -41,3 +41,12 @@ Saneadores: `parseInt`, `parseLong`, `parseDouble`, `parseFloat`, `parseBoolean`
 - Reconhece pontos de entrada e saída por nome e anotação: bibliotecas com outros nomes não aparecem até alguém acrescentar no script.
 - Sem o bytecode, tipos de bibliotecas externas ficam sem resolução; o fluxo depende dos nomes dos métodos.
 - Não mede falso negativo ainda: os 6 casos de `testes/` provam que o mecanismo funciona, não que acha tudo.
+
+## Como saber que rodou
+
+- **Tela de acompanhamento da auditoria:** o analisador "SARIF" mostra um resumo, por exemplo
+  `Rodaram: Joern (taint entre arquivos) (12 s, 1 achado). Não instaladas: njsscan, Hadolint.`
+  Se o Joern não rodou, ele aparece em "Sem permissão para executar programas" (libere o pacote ou ative
+  `PACKS_ALLOW_TOOLS`) ou em "Não instaladas" (a imagem não foi construída com `WITH_JOERN=true`).
+- **Log da API:** `docker compose logs audit-api | grep -i "joern"` mostra `Fonte SARIF 'joern-taint' rodou em N s: M achado(s)`.
+- **Achados:** vêm com a ferramenta "Joern (taint entre arquivos)" e regras `joern-taint-*`.

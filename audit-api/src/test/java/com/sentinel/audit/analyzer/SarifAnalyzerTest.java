@@ -229,6 +229,34 @@ class SarifAnalyzerTest {
     }
 
     @Test
+    void oResumoDizQuaisFerramentasRodaramEQuaisFicaramDeFora() throws Exception {
+        Path bin = Files.createTempDirectory("bin").toRealPath();
+        Path exe = fakeTool(bin);
+        Path proj = Files.createTempDirectory("proj").toRealPath();
+        AuditPolicy pol = policyWithTools("- id: roda\n  name: Ferramenta A\n  command: [\"" + exe + "\", \"{output}\"]\n"
+                + "- id: some\n  name: Ferramenta B\n  command: [ferramenta-que-nao-existe, \"{output}\"]\n");
+
+        SarifAnalyzer liberado = new SarifAnalyzer();
+        liberado.allowTools = true;
+        liberado.pathEnv = "/nada";
+        AnalyzerResult r = liberado.analyze(proj, run(), pol);
+        assertTrue(r.hasInfo());
+        assertFalse(r.partial(), "o resumo não muda o status do analisador");
+        assertTrue(r.infoNote().contains("Rodaram: Ferramenta A"), r.infoNote());
+        assertTrue(r.infoNote().contains("4 achados"), r.infoNote());
+        assertTrue(r.infoNote().contains("Não instaladas: Ferramenta B"), r.infoNote());
+
+        AnalyzerResult bloqueado = new SarifAnalyzer().analyze(proj, run(), pol);
+        assertTrue(bloqueado.infoNote().contains("Sem permissão para executar programas: Ferramenta A, Ferramenta B"), bloqueado.infoNote());
+    }
+
+    @Test
+    void semFerramentaDeComandoNaoHaResumo() throws Exception {
+        Path proj = Files.createTempDirectory("proj").toRealPath();
+        assertFalse(new SarifAnalyzer().analyze(proj, run(), AuditPolicy.defaults(List.of())).hasInfo());
+    }
+
+    @Test
     void executavelInexistenteOuQueNaoGeraArquivoEIgnorado() throws Exception {
         Path proj = Files.createTempDirectory("proj").toRealPath();
         SarifAnalyzer a = new SarifAnalyzer();
