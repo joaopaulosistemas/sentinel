@@ -489,3 +489,16 @@ Primeira peça do ponto "Profundo" do plano: seguir o dado de um arquivo para ou
 
 Verificado: Joern 4.0.583 rodado de verdade neste ambiente. Os 6 casos passam (3 vulneráveis acham a classe esperada; 3 seguros não acham nada: versão corrigida com `?`, conversão com `Integer.parseInt` e fluxo dentro de um arquivo só). No Spring PetClinic: 0 achados em 20 s (sem falso alarme). O SARIF real do Joern foi gravado como fixture e é lido pelo `SarifAnalyzer`.
 NÃO verificado: Maven e testes Java (`SarifAnalyzerTest`, `PackLoaderTest` alterados; sem acesso ao Maven Central aqui, só o CI); build da imagem com `WITH_JOERN=true`; tempo e memória em sistema grande; acerto em código real (só 6 casos, sem medir falso negativo); o ganho sobre o Opengrep no conjunto de pares do plano (ainda não existe).
+
+## Dashboard 12.37.0 / API — "Opengrep" no lugar de "Semgrep" na tela, nos relatórios e no histórico
+
+Depois da troca do motor (12.35.0), a tela de auditoria, o relatório e o CSV ainda mostravam "Semgrep". Agora mostram "Opengrep".
+
+- O analisador e os achados novos passam a se chamar "Opengrep" (`SastEngine.TOOL_NAME`). As chaves de configuração (`SEMGREP_*`, `sentinel.audit.semgrep.*`) não mudam, para não quebrar instalações existentes.
+- Histórico: na subida, a API troca `tool_source = 'Semgrep'` por `'Opengrep'` nos achados antigos (`SchemaFixups`, idempotente; se falhar, só avisa e o painel ainda mostra "Opengrep" para o nome antigo).
+- Cobertura por área, qualidade das regras e deduplicação tratam os dois nomes como o mesmo analisador (`SastEngine.isSastTool` e `sameTool`), inclusive em bancos que ainda não foram atualizados.
+- Tela de Configurações e textos do painel citam o Opengrep.
+- Quando a variável `SENTINEL_SAST_ENGINE=semgrep` força o Semgrep, o nome mostrado continua "Opengrep": o rótulo é do analisador SAST do Sentinel, não do binário.
+
+Verificado: `tsc` e `vitest` do painel (299 testes; um teste de `FindingsPage` foi ajustado ao novo nome); os arquivos Java alterados compilam sem erro de sintaxe e o novo helper foi executado (`isSastTool`/`sameTool`).
+NÃO verificado: Maven e testes Java (só o CI); a migração dos achados antigos contra um PostgreSQL real; relatório PDF/CSV com achados antigos.

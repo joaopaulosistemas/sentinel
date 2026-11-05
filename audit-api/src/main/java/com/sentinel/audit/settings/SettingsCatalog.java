@@ -201,7 +201,7 @@ public final class SettingsCatalog {
     private static void analysisTools(List<SettingDef> l) {
         String p = "sentinel.audit.";
         // Ferramentas de análise
-        l.add(num(new Head("SEMGREP_TIMEOUT", p + "semgrep.timeout-seconds", FERR, "Semgrep", "Tempo limite", "Segundos antes de encerrar a análise."), "600", TIMEOUT_MIN, TIMEOUT_MAX, "s"));
+        l.add(num(new Head("SEMGREP_TIMEOUT", p + "semgrep.timeout-seconds", FERR, "Opengrep", "Tempo limite", "Segundos antes de encerrar a análise."), "600", TIMEOUT_MIN, TIMEOUT_MAX, "s"));
         l.add(bool(new Head("TRIVY_ENABLED", p + "trivy.enabled", FERR, "Trivy", "Ligado", "Dependências, configuração e infraestrutura como código."), true));
         l.add(text(new Head("TRIVY_SCANNERS", p + "trivy.scanners", FERR, "Trivy", "Verificações", "Lista separada por vírgula: vuln, misconfig, secret, license."), "vuln,misconfig"));
         l.add(num(new Head("TRIVY_TIMEOUT_SECONDS", p + "trivy.timeout-seconds", FERR, "Trivy", "Tempo limite", "Segundos antes de encerrar."), "900", TIMEOUT_MIN, TIMEOUT_MAX, "s"));
@@ -228,7 +228,7 @@ public final class SettingsCatalog {
         l.add(num(new Head("CLEANCODE_MAX_COMPLEXITY", p + "cleancode.max-complexity", FERR, "Clean code (métricas internas)", "Complexidade por função", "Complexidade ciclomática máxima."), "10", 1, COMPLEXIDADE_MAX, ""));
         l.add(num(new Head("CLEANCODE_MAX_NESTING", p + "cleancode.max-nesting", FERR, "Clean code (métricas internas)", "Aninhamento", "Níveis de if/for/while dentro de outros."), "4", 1, ANINHAMENTO_MAX, ""));
         l.add(num(new Head("CLEANCODE_MAX_FINDINGS", p + "cleancode.max-findings", FERR, "Clean code (métricas internas)", "Máximo de achados", "Limite por auditoria."), "300", 1, ACHADOS_MAX, ""));
-        l.add(ro(new Head("SEMGREP_CONFIG", p + "semgrep.config", FERR, "Semgrep", "Configuração extra", "Regras adicionais do Semgrep (caminho ou registro). Só se muda no ambiente."), "", false));
+        l.add(ro(new Head("SEMGREP_CONFIG", p + "semgrep.config", FERR, "Opengrep", "Configuração extra", "Regras adicionais do motor SAST, o Opengrep (caminho ou registro). Só se muda no ambiente."), "", false));
     }
 
     /** Pacotes de regras e laboratório. */
@@ -246,7 +246,7 @@ public final class SettingsCatalog {
         l.add(text(new Head("PACKS_TRUSTED_TOOL_PACKS", p + "packs.trusted-tool-packs", PACOTES, "Ativação e segurança", "Pacotes de confiança", "Pacotes embutidos cujas ferramentas (Checkstyle, Hadolint...) rodam mesmo com a opção acima desligada. Aceita market-tools e java-google-style."), "market-tools,java-google-style"));
         l.add(ro(new Head("PACKS_PUBLIC_KEY", p + "packs.public-key", PACOTES, "Ativação e segurança", "Chave pública de assinatura", "Base64. Gere o par com sentinel-pack keygen."), "", false));
         l.add(ro(new Head("PACKS_REQUIRE_SIGNATURE", p + "packs.require-signature", PACOTES, "Ativação e segurança", "Exigir assinatura", "Recusa pacote sem assinatura válida."), "false", false));
-        l.add(bool(new Head("PLAYGROUND_ENABLED", p + "playground.enabled", PACOTES, "Laboratório de regras", "Ligado", "Executa o Semgrep sobre texto enviado pelo usuário."), true));
+        l.add(bool(new Head("PLAYGROUND_ENABLED", p + "playground.enabled", PACOTES, "Laboratório de regras", "Ligado", "Executa o motor SAST (Opengrep) sobre texto enviado pelo usuário."), true));
         l.add(num(new Head("PLAYGROUND_TIMEOUT_SECONDS", p + "playground.timeout-seconds", PACOTES, "Laboratório de regras", "Tempo limite", "Segundos por teste."), "30", 1, CURTO_MAX, "s"));
     }
 

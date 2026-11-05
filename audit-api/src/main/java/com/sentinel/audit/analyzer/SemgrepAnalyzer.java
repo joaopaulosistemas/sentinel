@@ -43,7 +43,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
 
 
     private static final Logger LOG = Logger.getLogger(SemgrepAnalyzer.class);
-    private static final String ANALYZER_NAME = "Semgrep";
+    private static final String ANALYZER_NAME = SastEngine.TOOL_NAME;
     private static final String DEFAULT_REGISTRY_CONFIG = "p/default";
 
     private final ObjectMapper objectMapper = new ObjectMapper();

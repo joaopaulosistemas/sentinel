@@ -6,7 +6,7 @@ import java.util.Map;
 public final class AnalyzerCatalog {
 
     private static final Map<String, String> DESCRIPTIONS = Map.ofEntries(
-            Map.entry("Semgrep", "SAST · pacotes de regras"),
+            Map.entry("Opengrep", "SAST · pacotes de regras"),
             Map.entry("Secrets", "Segredos no código · regex nos arquivos"),
             Map.entry("Secrets-History", "Segredos no histórico · últimos commits do Git"),
             Map.entry("Gitleaks", "Segredos e histórico"),
@@ -31,7 +31,7 @@ public final class AnalyzerCatalog {
 
     /** Nomes dos analisadores conhecidos, na ordem de exibição. */
     public static java.util.List<String> names() {
-        return java.util.List.of("Semgrep", "Secrets", "Secrets-History", "Gitleaks", "Trivy", "OWASP-Dependency",
+        return java.util.List.of("Opengrep", "Secrets", "Secrets-History", "Gitleaks", "Trivy", "OWASP-Dependency",
                 "Architecture", "Arquitetura (pacotes)", "CleanCode", "PMD", "ESLint", "Higiene do projeto", "SARIF", "Evidências",
                 "Ciclos de dependência", "Duplicação", "Pontos quentes", "Código morto", "Mensagens de commit");
     }

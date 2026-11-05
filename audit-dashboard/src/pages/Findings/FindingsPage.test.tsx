@@ -91,7 +91,7 @@ describe('FindingsPage', () => {
   it('mostra de qual analisador veio cada achado', async () => {
     renderFindings();
     await screen.findByText('SQL por concatenação');
-    expect(screen.getAllByText('Semgrep').length).toBe(2);
+    expect(screen.getAllByText('Opengrep').length).toBe(2);
   });
 
   it('agrupa os achados por sistema quando o usuário pede', async () => {

@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 /** Converte um resultado do JSON do Semgrep em {@link Finding}: gravidade, categoria, CWE, modo sombra e caminho relativo. */
 final class SemgrepMapper {
 
-    private static final String TOOL = "Semgrep";
+    private static final String TOOL = SastEngine.TOOL_NAME;
     private static final String ELLIPSIS = "...";
     private static final int TITLE_MAX_CHARS = 500;
     private static final Pattern CWE_PATTERN = Pattern.compile("CWE-\\d+", Pattern.CASE_INSENSITIVE);

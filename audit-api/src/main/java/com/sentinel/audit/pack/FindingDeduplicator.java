@@ -22,7 +22,7 @@ public final class FindingDeduplicator {
 
     private FindingDeduplicator() {}
 
-    static final String PREFERRED_TOOL = "Semgrep";
+    static final String PREFERRED_TOOL = com.sentinel.audit.analyzer.SastEngine.TOOL_NAME;
 
     private static volatile List<DedupTopic> topics = List.of();
 
@@ -81,7 +81,7 @@ public final class FindingDeduplicator {
     /** O achado que fica é o da ferramenta que o tópico prefere (padrão: {@link #PREFERRED_TOOL}). */
     private static boolean isPreferred(Finding f, DedupTopic topic) {
         String tool = topic.prefer() == null || topic.prefer().isBlank() ? PREFERRED_TOOL : topic.prefer();
-        return tool.equalsIgnoreCase(f.getToolSource());
+        return com.sentinel.audit.analyzer.SastEngine.sameTool(tool, f.getToolSource());
     }
 
     private static boolean sameFile(Finding a, Finding b) {

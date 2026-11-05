@@ -3,7 +3,8 @@ import { originLabel } from './findingOrigin';
 
 describe('originLabel', () => {
   it('usa a grafia de exibição dos analisadores conhecidos, sem diferenciar maiúsculas', () => {
-    expect(originLabel('semgrep')).toBe('Semgrep');
+    expect(originLabel('semgrep')).toBe('Opengrep');
+    expect(originLabel('Opengrep')).toBe('Opengrep');
     expect(originLabel('SONARQUBE')).toBe('SonarQube');
     expect(originLabel('jscpd')).toBe('jscpd');
   });

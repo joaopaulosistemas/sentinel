@@ -75,4 +75,17 @@ class SastEngineTest {
         assertEquals("off", env.get("SEMGREP_SEND_METRICS"));
         assertEquals("0", env.get("SEMGREP_ENABLE_VERSION_CHECK"));
     }
+
+    @Test
+    void onomeDoAnalisadorEOpengrepEONomeAntigoContaComoOMesmo() {
+        assertEquals("Opengrep", SastEngine.TOOL_NAME);
+        assertTrue(SastEngine.isSastTool("Opengrep"));
+        assertTrue(SastEngine.isSastTool("semgrep"), "achados antigos ainda podem trazer o nome antigo");
+        assertFalse(SastEngine.isSastTool("PMD"));
+        assertFalse(SastEngine.isSastTool(null));
+        assertTrue(SastEngine.sameTool("Semgrep", "Opengrep"));
+        assertTrue(SastEngine.sameTool("PMD", "pmd"));
+        assertFalse(SastEngine.sameTool("PMD", "Opengrep"));
+        assertFalse(SastEngine.sameTool(null, "Opengrep"));
+    }
 }
