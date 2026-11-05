@@ -37,7 +37,8 @@ public class EngineConfigViews {
     public record CatalogRule(String id, String pack, String message, String severity, String category, String side) {}
 
     public record Tuning(List<RuleAdjustment> rules, Map<String, Integer> thresholds, List<String> enablePacks,
-                         List<String> disablePacks, List<String> disableAnalyzers, List<String> ignorePaths) {}
+                         List<String> disablePacks, List<String> disableAnalyzers, List<String> ignorePaths,
+                         List<String> disableSides) {}
 
     public record EngineConfigResponse(String profile, String profileDescription, int adjustments, Tuning tuning,
                                        List<RuleAdjustment> profileRules, List<PackState> packs,
@@ -101,7 +102,7 @@ public class EngineConfigViews {
         }
         Tuning dto = new Tuning(rules(tuning.rules()), tuning.thresholds(), tuning.enablePacks().stream().sorted().toList(),
                 tuning.disablePacks().stream().sorted().toList(), tuning.disableAnalyzers().stream().sorted().toList(),
-                List.copyOf(tuning.ignorePaths()));
+                List.copyOf(tuning.ignorePaths()), tuning.disableSides().stream().sorted().toList());
         String description = packRegistry.snapshot().profiles().containsKey(profileId == null ? "" : profileId.toLowerCase(Locale.ROOT))
                 ? packRegistry.snapshot().profiles().get(profileId.toLowerCase(Locale.ROOT)).description() : null;
         List<CatalogRule> catalog = RuleCatalog.of(packRegistry.snapshot().packs()).stream()

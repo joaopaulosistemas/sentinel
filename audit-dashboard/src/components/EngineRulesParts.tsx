@@ -1,7 +1,9 @@
 import { Button, Checkbox, InlineNotification } from '@carbon/react';
 import type { EngineConfig, RuleAdjustment } from '../types';
+import type { SidePack } from '../utils/ruleFamilies';
 import { isNoopAdjustment, type BulkAction, type RuleRow, type RuleScope } from '../utils/ruleCatalog';
-import { groupPacks, limitSide, type FamilyTab } from '../utils/ruleFamilies';
+import { SIDE_NAME, limitSide, packsBySide, sideIsOff, sideOfRule, type FamilyTab } from '../utils/ruleFamilies';
+import { SideBadge } from './EngineScope';
 
 export const mono = "'IBM Plex Mono', ui-monospace, monospace";
 export const SEVERITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'] as const;
@@ -93,44 +95,86 @@ function LimitsBox({ side, cfg, limits, setLimits, limitError }: LimitsProps & {
   );
 }
 
-function packLabel(p: EngineConfig['packs'][number], count: number | undefined): string {
-  return `${p.name || p.id}${p.inProfile ? '' : ' (fora do perfil)'}${count ? ` · ${count} ${count === 1 ? 'regra' : 'regras'}` : ''}`;
+function packLabel(p: SidePack, off: boolean): string {
+  const pk = p.pack;
+  const others = p.others.map((o) => `${SIDE_NAME[o.side]}: ${o.count}`).join(', ');
+  return `${pk.name || pk.id}${pk.inProfile ? '' : ' (fora do perfil)'}${p.count ? ` · ${p.count} ${p.count === 1 ? 'regra' : 'regras'}` : ''}${others ? ` · também em ${others}` : ''}${off ? ' · lado desligado' : ''}`;
 }
 
-/** Pacotes por lado (back-end, front-end, transversais); os limites de clean code ficam no grupo a que valem. */
-export function PacksFieldset({ cfg, packs, setPacks, ruleCounts, limits, setLimits, limitError }: LimitsProps & {
+/** Pacotes por lado (back-end, front-end, infra e comum); um pacote misto aparece nos dois lados. Os limites de clean code ficam no grupo a que valem. */
+export function PacksFieldset({ cfg, packs, setPacks, sidesOff, limits, setLimits, limitError }: LimitsProps & {
   packs: Record<string, boolean>;
   setPacks: (p: Record<string, boolean>) => void;
-  ruleCounts: Record<string, number>;
+  sidesOff: string[];
 }) {
-  const groups = groupPacks(cfg.packs);
+  const groups = packsBySide(cfg.packs, cfg.catalog);
   const present = new Set(groups.map((g) => g.side));
+  const limitSideOf = (side: string): 'front' | 'both' | null => (side === 'front' ? 'front' : side === 'common' ? 'both' : null);
   return (
     <fieldset style={groupStyle}>
       <legend style={groupLegend}>Pacotes de regras</legend>
-      {groups.map((g) => (
-        <div key={g.side} role="group" aria-label={g.title} style={{ display: 'grid', gap: 8, paddingTop: 6 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)', paddingBottom: 4 }}>
-            {g.title} <span style={{ fontWeight: 400 }}>· {g.packs.filter((p) => packs[p.id]).length} de {g.packs.length} ligados</span>
+      <p style={{ margin: 0, fontSize: 12, color: 'var(--s-text-3)' }}>
+        Um pacote com regras dos dois lados aparece nos dois, com a contagem de cada lado. A caixa do pacote é uma só: desmarcar “Segurança” tira as regras dos dois lados. Para tirar só um lado, use o escopo acima.
+      </p>
+      {groups.map((g) => {
+        const off = sideIsOff(g.side, sidesOff);
+        const box = limitSideOf(g.side);
+        return (
+          <div key={g.side} role="group" aria-label={g.title} style={{ display: 'grid', gap: 8, paddingTop: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)', paddingBottom: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <SideBadge side={g.side} /> {g.title}{' '}
+              <span style={{ fontWeight: 400 }}>· {g.packs.length} {g.packs.length === 1 ? 'pacote' : 'pacotes'} · {g.rules} {g.rules === 1 ? 'regra' : 'regras'}</span>
+            </div>
+            {g.packs.map((p) => (
+              <div key={p.pack.id} style={{ opacity: off ? 0.5 : 1 }}>
+                <Checkbox
+                  id={`eng-pack-${g.side}-${p.pack.id}`}
+                  labelText={packLabel(p, off)}
+                  helperText={p.pack.description ?? undefined}
+                  checked={!!packs[p.pack.id]}
+                  onChange={(_, { checked }) => setPacks({ ...packs, [p.pack.id]: checked })}
+                />
+              </div>
+            ))}
+            {box && <LimitsBox side={box} cfg={cfg} limits={limits} setLimits={setLimits} limitError={limitError} />}
           </div>
-          {g.packs.map((p) => (
-            <Checkbox
-              key={p.id}
-              id={`eng-pack-${p.id}`}
-              labelText={packLabel(p, ruleCounts[p.id])}
-              helperText={p.description ?? undefined}
-              checked={!!packs[p.id]}
-              onChange={(_, { checked }) => setPacks({ ...packs, [p.id]: checked })}
-            />
-          ))}
-          {(g.side === 'front' || g.side === 'both') && <LimitsBox side={g.side} cfg={cfg} limits={limits} setLimits={setLimits} limitError={limitError} />}
-        </div>
-      ))}
+        );
+      })}
       {/* Se não há pacote do lado a que um limite vale, o limite continua editável aqui. */}
-      {(['front', 'both'] as const).filter((side) => !present.has(side)).map((side) => (
+      {(['front', 'both'] as const).filter((side) => !present.has(side === 'both' ? 'common' : 'front')).map((side) => (
         <LimitsBox key={`limits-${side}`} side={side} cfg={cfg} limits={limits} setLimits={setLimits} limitError={limitError} />
       ))}
     </fieldset>
+  );
+}
+
+/** Abas por lado das regras: Todas, Back-end, Front-end, Infra e comum; lado desligado aparece marcado. */
+export function SideTabs({ counts, active, sidesOff, onPick }: { counts: Record<'all' | 'back' | 'front' | 'common', number>; active: string; sidesOff: string[]; onPick: (key: string) => void }) {
+  const tabs = [
+    { key: 'all', name: 'Todas' },
+    { key: 'back', name: SIDE_NAME.back },
+    { key: 'front', name: SIDE_NAME.front },
+    { key: 'common', name: SIDE_NAME.common },
+  ] as const;
+  return (
+    <div role="tablist" aria-label="Lado da regra" style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--s-border)' }}>
+      {tabs.map((t) => {
+        const on = t.key === active;
+        const off = t.key !== 'all' && sideIsOff(t.key, sidesOff);
+        return (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onPick(t.key)}
+            style={{ padding: '10px 16px', border: 0, borderBottom: `2px solid ${on ? '#0f62fe' : 'transparent'}`, background: on ? 'var(--s-surface)' : 'transparent', color: off ? 'var(--s-text-4)' : 'var(--s-text)', fontWeight: on ? 600 : 400, cursor: 'pointer' }}
+          >
+            {t.name}{off ? ' (desligado)' : ''} <span style={{ fontWeight: 400, color: 'var(--s-text-3)' }}>· {counts[t.key]}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -259,11 +303,13 @@ interface RowProps {
   adjustment: RuleAdjustment;
   inProfile: boolean;
   selected: boolean;
+  /** O lado da regra está desligado no escopo: a regra não roda e não se edita. */
+  off: boolean;
   onSelect: (id: string, on: boolean) => void;
   onChange: (id: string, patch: Partial<RuleAdjustment>) => void;
 }
 
-function RuleIdentityCell({ row, inProfile }: { row: RuleRow; inProfile: boolean }) {
+function RuleIdentityCell({ row, inProfile, off }: { row: RuleRow; inProfile: boolean; off: boolean }) {
   const origin = [row.pack, row.category, row.declared ? `declara ${row.declared}` : null].filter(Boolean);
   return (
     <td style={{ padding: '6px 8px', maxWidth: 520 }}>
@@ -276,15 +322,17 @@ function RuleIdentityCell({ row, inProfile }: { row: RuleRow; inProfile: boolean
         {origin.join(' · ')}
         {inProfile && <span>{origin.length > 0 ? ' · ' : ''}perfil já ajusta esta regra</span>}
       </div>
+      {off && <div style={{ color: 'var(--s-warn-text)', marginTop: 2 }}>Fora do escopo: não roda</div>}
     </td>
   );
 }
 
-function SeverityCell({ id, value, onChange }: { id: string; value: RuleAdjustment['severity']; onChange: RowProps['onChange'] }) {
+function SeverityCell({ id, value, onChange, disabled }: { id: string; value: RuleAdjustment['severity']; onChange: RowProps['onChange']; disabled: boolean }) {
   return (
     <td style={cellStyle}>
       <select
         aria-label={`Severidade de ${id}`}
+        disabled={disabled}
         value={value ?? ''}
         onChange={(e) => onChange(id, { severity: (e.target.value || null) as RuleAdjustment['severity'] })}
       >
@@ -297,21 +345,22 @@ function SeverityCell({ id, value, onChange }: { id: string; value: RuleAdjustme
   );
 }
 
-function RuleTableRow({ row, adjustment: r, inProfile, selected, onSelect, onChange }: RowProps) {
+function RuleTableRow({ row, adjustment: r, inProfile, selected, off, onSelect, onChange }: RowProps) {
   const id = row.id;
   return (
-    <tr style={{ borderTop: '1px solid var(--s-border)', background: isNoopAdjustment(r) ? undefined : 'var(--s-selected)' }}>
+    <tr style={{ borderTop: '1px solid var(--s-border)', background: off ? 'var(--s-layer)' : isNoopAdjustment(r) ? undefined : 'var(--s-selected)', opacity: off ? 0.5 : 1 }}>
       <td style={cellStyle}>
-        <input type="checkbox" aria-label={`Selecionar ${id}`} checked={selected} onChange={(e) => onSelect(id, e.target.checked)} />
+        <input type="checkbox" aria-label={`Selecionar ${id}`} checked={selected} disabled={off} onChange={(e) => onSelect(id, e.target.checked)} />
       </td>
-      <RuleIdentityCell row={row} inProfile={inProfile} />
-      <td style={{ ...cellStyle, color: row.gain ? 'var(--s-success-text)' : 'var(--s-text-3)' }}>{gainText(row)}</td>
-      <SeverityCell id={id} value={r.severity} onChange={onChange} />
+      <td style={cellStyle}><SideBadge side={sideOfRule(row)} /></td>
+      <RuleIdentityCell row={row} inProfile={inProfile} off={off} />
+      <td style={{ ...cellStyle, color: row.gain ? 'var(--s-success-text)' : 'var(--s-text-3)' }}>{off ? '—' : gainText(row)}</td>
+      <SeverityCell id={id} value={r.severity} onChange={onChange} disabled={off} />
       <td style={cellStyle}>
-        <input type="checkbox" aria-label={`Desligar ${id}`} checked={r.disabled} onChange={(e) => onChange(id, { disabled: e.target.checked })} />
+        <input type="checkbox" aria-label={`Desligar ${id}`} checked={r.disabled} disabled={off} onChange={(e) => onChange(id, { disabled: e.target.checked })} />
       </td>
       <td style={cellStyle}>
-        <input type="checkbox" aria-label={`Só observar ${id}`} checked={r.shadow === true} onChange={(e) => onChange(id, { shadow: e.target.checked ? true : null })} />
+        <input type="checkbox" aria-label={`Só observar ${id}`} checked={r.shadow === true} disabled={off} onChange={(e) => onChange(id, { shadow: e.target.checked ? true : null })} />
       </td>
     </tr>
   );
@@ -323,12 +372,14 @@ interface TableProps {
   isPicked: (id: string) => boolean;
   current: (id: string) => RuleAdjustment;
   inProfile: (id: string) => boolean;
+  /** O lado desta regra está desligado no escopo? */
+  isOff: (row: RuleRow) => boolean;
   onPickAll: (on: boolean) => void;
   onSelect: (id: string, on: boolean) => void;
   onChange: (id: string, patch: Partial<RuleAdjustment>) => void;
 }
 
-export function RulesTable({ rows, allShownPicked, isPicked, current, inProfile, onPickAll, onSelect, onChange }: TableProps) {
+export function RulesTable({ rows, allShownPicked, isPicked, current, inProfile, isOff, onPickAll, onSelect, onChange }: TableProps) {
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -337,6 +388,7 @@ export function RulesTable({ rows, allShownPicked, isPicked, current, inProfile,
             <th style={{ padding: '6px 8px', width: 28 }}>
               <input type="checkbox" aria-label="Selecionar as regras mostradas" checked={allShownPicked} onChange={(e) => onPickAll(e.target.checked)} />
             </th>
+            <th style={{ padding: '6px 8px' }}>Lado</th>
             <th style={{ padding: '6px 8px' }}>Regra</th>
             <th style={{ padding: '6px 8px' }}>Ganho na nota</th>
             <th style={{ padding: '6px 8px' }}>Severidade</th>
@@ -346,7 +398,7 @@ export function RulesTable({ rows, allShownPicked, isPicked, current, inProfile,
         </thead>
         <tbody>
           {rows.map((row) => (
-            <RuleTableRow key={row.id} row={row} adjustment={current(row.id)} inProfile={inProfile(row.id)} selected={isPicked(row.id)} onSelect={onSelect} onChange={onChange} />
+            <RuleTableRow key={row.id} row={row} adjustment={current(row.id)} inProfile={inProfile(row.id)} selected={isPicked(row.id)} off={isOff(row)} onSelect={onSelect} onChange={onChange} />
           ))}
         </tbody>
       </table>

@@ -1,4 +1,4 @@
-import type { EngineConfig, EnginePackState } from '../types';
+import type { EngineAnalyzerState, EngineConfig, EnginePackState, EngineSide } from '../types';
 import type { RuleRow } from './ruleCatalog';
 
 /** De que lado da aplicação o pacote trata. "both" cobre o que serve aos dois e os pacotes que não conhecemos. */
@@ -110,4 +110,96 @@ export function rowsOfActivePacks(rows: RuleRow[], packs: Record<string, boolean
 export function hiddenAdjustedCount(rows: RuleRow[], packs: Record<string, boolean>, adjustedIds: Set<string>): number {
   const visible = new Set(rowsOfActivePacks(rows, packs).map((r) => r.id));
   return rows.filter((r) => adjustedIds.has(r.id) && !visible.has(r.id)).length;
+}
+
+// ---------------------------------------------------------------- lado de cada regra (back, front, comum)
+
+export const SIDE_NAME: Record<EngineSide, string> = { back: 'Back-end', front: 'Front-end', common: 'Infra e comum' };
+export const SIDES: EngineSide[] = ['back', 'front', 'common'];
+
+/** Lado da regra: o que a API informa; sem isso (API antiga), o do pacote, com "transversal" virando comum. */
+export function sideOfRule(row: Pick<RuleRow, 'side' | 'pack'>): EngineSide {
+  if (row.side) return row.side;
+  const legacy = row.pack ? sideOfPack(row.pack) : 'both';
+  return legacy === 'both' ? 'common' : legacy;
+}
+
+type Sided = Array<{ pack: string; side?: EngineSide }> | undefined;
+
+/** Quantas regras há em cada lado, no catálogo de pacotes. */
+export function sideTotals(catalog: Sided): Record<EngineSide, number> {
+  const out: Record<EngineSide, number> = { back: 0, front: 0, common: 0 };
+  for (const c of catalog ?? []) out[sideOfRule({ side: c.side, pack: c.pack })] += 1;
+  return out;
+}
+
+export interface SidePack {
+  pack: EnginePackState;
+  /** Regras do pacote neste lado. */
+  count: number;
+  /** Regras do mesmo pacote nos outros lados (para avisar que o pacote é misto). */
+  others: Array<{ side: EngineSide; count: number }>;
+}
+
+export interface SideGroup {
+  side: EngineSide;
+  title: string;
+  packs: SidePack[];
+  /** Regras do lado somando os pacotes. */
+  rules: number;
+}
+
+/**
+ * Pacotes por lado. Um pacote com regras de dois lados aparece nos dois, cada vez com a contagem do lado; pacote sem regra
+ * no catálogo (só ferramentas externas) fica no lado que o mapa antigo dá a ele. Grupo vazio não aparece.
+ */
+export function packsBySide(packs: EnginePackState[], catalog: Sided): SideGroup[] {
+  const counts = new Map<string, Record<EngineSide, number>>();
+  for (const c of catalog ?? []) {
+    const m = counts.get(c.pack) ?? { back: 0, front: 0, common: 0 };
+    m[sideOfRule({ side: c.side, pack: c.pack })] += 1;
+    counts.set(c.pack, m);
+  }
+  const groups = SIDES.map((side): SideGroup => ({ side, title: SIDE_NAME[side], packs: [], rules: 0 }));
+  for (const p of packs) {
+    const m = counts.get(p.id);
+    if (!m) {
+      const legacy = sideOfPack(p.id);
+      groups[SIDES.indexOf(legacy === 'both' ? 'common' : legacy)].packs.push({ pack: p, count: 0, others: [] });
+      continue;
+    }
+    for (const side of SIDES) {
+      if (m[side] === 0) continue;
+      const others = SIDES.filter((o) => o !== side && m[o] > 0).map((o) => ({ side: o, count: m[o] }));
+      const g = groups[SIDES.indexOf(side)];
+      g.packs.push({ pack: p, count: m[side], others });
+      g.rules += m[side];
+    }
+  }
+  return groups.filter((g) => g.packs.length > 0);
+}
+
+/** Analisadores por lado; sem a informação (API antiga) ficam em "Infra e comum". */
+export function analyzersBySide(analyzers: EngineAnalyzerState[]): Array<{ side: EngineSide; title: string; items: EngineAnalyzerState[] }> {
+  return SIDES.map((side) => ({ side, title: SIDE_NAME[side], items: analyzers.filter((a) => (a.side ?? 'common') === side) })).filter((g) => g.items.length > 0);
+}
+
+/** Atalho de escopo: quais lados estão desligados. */
+export type ScopePreset = 'full' | 'back' | 'front';
+
+export function presetOf(sidesOff: string[]): ScopePreset | null {
+  const off = new Set(sidesOff);
+  if (off.size === 0) return 'full';
+  if (off.size === 1 && off.has('front')) return 'back';
+  if (off.size === 1 && off.has('back')) return 'front';
+  return null;
+}
+
+export function sidesOffOf(preset: ScopePreset): Array<'back' | 'front'> {
+  return preset === 'full' ? [] : preset === 'back' ? ['front'] : ['back'];
+}
+
+/** O lado desta regra ou analisador está desligado? "common" nunca está. */
+export function sideIsOff(side: EngineSide, sidesOff: string[]): boolean {
+  return side !== 'common' && sidesOff.includes(side);
 }

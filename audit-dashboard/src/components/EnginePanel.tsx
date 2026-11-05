@@ -34,11 +34,13 @@ import {
   PAGE,
   RuleFilters,
   RulesTable,
+  SideTabs,
   SaveBar,
   SaveNotices,
   mono,
 } from './EngineRulesParts';
-import { familyOf, familyTabs, hiddenAdjustedCount, rowsOfActivePacks, ruleCountByPack, type FamilyTab } from '../utils/ruleFamilies';
+import { analyzersBySide, familyOf, familyTabs, hiddenAdjustedCount, rowsOfActivePacks, sideIsOff, sideOfRule, type FamilyTab } from '../utils/ruleFamilies';
+import { ScopeSection, SideBadge } from './EngineScope';
 
 
 /** Soma o que o sistema mudou aos ajustes que o servidor já tem, sem perder o que a outra aba salvou. */
@@ -84,11 +86,12 @@ function Header({ cfg, onReset, busy }: { cfg: EngineConfig; onReset: () => void
   );
 }
 
-const empty: EngineTuning = { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: [] };
+const empty: EngineTuning = { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: [], disableSides: [] };
 
 /** Forma comparável do que está na tela, para saber se há alteração sem salvar. */
-function signature(slice: Pick<EngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'>): string {
+function signature(slice: Pick<EngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'> & { disableSides?: string[] }): string {
   return JSON.stringify({
+    disableSides: [...(slice.disableSides ?? [])].sort(),
     enablePacks: [...slice.enablePacks].sort(),
     disablePacks: [...slice.disablePacks].sort(),
     thresholds: Object.entries(slice.thresholds).sort(([a], [b]) => a.localeCompare(b)),
@@ -107,10 +110,11 @@ function hasUnsavedRules(
   packs: Record<string, boolean>,
   limits: Record<string, string>,
   rules: RuleAdjustment[],
+  sidesOff: Array<'back' | 'front'>,
 ): boolean {
   if (!cfg || Object.keys(packs).length === 0) return false;
-  const saved = { enablePacks: cfg.tuning.enablePacks, disablePacks: cfg.tuning.disablePacks, thresholds: cfg.tuning.thresholds, rules: cfg.tuning.rules };
-  return signature(sliceOf(cfg, packs, limits, rules)) !== signature(saved);
+  const saved = { enablePacks: cfg.tuning.enablePacks, disablePacks: cfg.tuning.disablePacks, thresholds: cfg.tuning.thresholds, rules: cfg.tuning.rules, disableSides: cfg.tuning.disableSides ?? [] };
+  return signature(sliceOf(cfg, packs, limits, rules, sidesOff)) !== signature(saved);
 }
 
 /** Avisa quem abriu o painel quando há (ou deixa de haver) alteração sem salvar. */
@@ -137,6 +141,7 @@ interface RulesSectionProps {
   onFilters: { text: (v: string) => void; scope: (v: RuleScope) => void; pack: (v: string) => void };
   catalogMissing: boolean;
   family: { tabs: FamilyTab[]; active: string; onPick: (key: string) => void };
+  side: { counts: Record<'all' | 'back' | 'front' | 'common', number>; active: string; off: string[]; onPick: (key: string) => void };
   packsNote: string;
   picked: Set<string>;
   gainPicked: number;
@@ -166,6 +171,7 @@ function RulesSection(p: RulesSectionProps) {
         O ganho na nota é uma estimativa da última auditoria: quanto a nota sobe se a regra deixar de pesar.
       </p>
       <div style={{ padding: '8px 12px', background: 'var(--s-header-row)', borderLeft: '3px solid #0f62fe', fontSize: 13 }}>{p.packsNote}</div>
+      <SideTabs counts={p.side.counts} active={p.side.active} sidesOff={p.side.off} onPick={p.side.onPick} />
       <FamilyTabs tabs={p.family.tabs} active={p.family.active} onPick={p.family.onPick} />
       <RuleFilters
         text={filters.text}
@@ -189,6 +195,7 @@ function RulesSection(p: RulesSectionProps) {
           isPicked={(id) => p.picked.has(id)}
           current={p.table.current}
           inProfile={p.table.inProfile}
+          isOff={(row) => sideIsOff(sideOfRule(row), p.side.off)}
           onPickAll={p.table.onPickAll}
           onSelect={p.table.onSelect}
           onChange={p.table.onChange}
@@ -207,6 +214,8 @@ function RulesSection(p: RulesSectionProps) {
 }
 
 interface RulesViewInput {
+  side: string;
+  sidesOff: string[];
   family: string;
   text: string;
   scope: RuleScope;
@@ -218,16 +227,23 @@ function rulesView(cfg: EngineConfig, allRows: RuleRow[], packs: Record<string, 
   const adjustedIds = new Set(rules.filter((r) => !isNoopAdjustment(r)).map((r) => r.id));
   // Só aparecem as regras dos pacotes ligados acima; a família escolhida filtra o resto.
   const packRows = rowsOfActivePacks(allRows, packs);
-  const tabs = familyTabs(packRows, adjustedIds);
+  const sideCounts = { all: 0, back: 0, front: 0, common: 0 };
+  for (const r of packRows) {
+    const side = sideOfRule(r);
+    sideCounts[side] += 1;
+    if (!sideIsOff(side, input.sidesOff)) sideCounts.all += 1;
+  }
+  const inSide = input.side === 'all' ? packRows : packRows.filter((r) => sideOfRule(r) === input.side);
+  const tabs = familyTabs(inSide, adjustedIds);
   const activeFamily = tabs.some((t) => t.key === input.family) ? input.family : (tabs[0]?.key ?? '');
-  const packNames = Array.from(new Set(packRows.map((r) => r.pack).filter((p): p is string => !!p))).sort();
-  const inFamily = tabs.length < 2 ? packRows : packRows.filter((r) => familyOf(r) === activeFamily);
+  const packNames = Array.from(new Set(inSide.map((r) => r.pack).filter((p): p is string => !!p))).sort();
+  const inFamily = tabs.length < 2 ? inSide : inSide.filter((r) => familyOf(r) === activeFamily);
   const filtered = filterRuleRows(inFamily, { query: input.text, scope: input.scope, pack: input.packFilter }, adjustedIds);
   const hidden = hiddenAdjustedCount(allRows, packs, adjustedIds);
   const packsNote =
     `Mostrando as regras dos ${cfg.packs.filter((p) => packs[p.id]).length} pacotes ligados acima (${packRows.length} ${packRows.length === 1 ? 'regra' : 'regras'}). Ligue um pacote para ver as regras dele aqui.` +
     (hidden > 0 ? ` ${hidden} ${hidden === 1 ? 'regra ajustada está' : 'regras ajustadas estão'} em pacote desligado e não aparece.` : '');
-  return { packRows, tabs, activeFamily, packNames, filtered, packsNote };
+  return { packRows, tabs, activeFamily, packNames, filtered, packsNote, sideCounts };
 }
 
 /** Aba "Motor de regras": pacotes, limites e regras deste sistema, por cima do perfil. A nota continua sendo do motor. */
@@ -242,6 +258,8 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   const [scope, setScope] = useState<RuleScope>('all');
   const [packFilter, setPackFilter] = useState('');
   const [family, setFamily] = useState('');
+  const [sideTab, setSideTab] = useState('all');
+  const [sidesOff, setSidesOff] = useState<Array<'back' | 'front'>>([]);
   const [visible, setVisible] = useState(PAGE);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const plan = useFixPlanItems(system.id);
@@ -250,10 +268,11 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
     setPacks(Object.fromEntries(data.packs.map((p) => [p.id, p.active])));
     setLimits(Object.fromEntries(Object.entries(data.tuning.thresholds).map(([k, v]) => [k, String(v)])));
     setRules(data.tuning.rules);
+    setSidesOff(data.tuning.disableSides ?? []);
     setPicked(new Set());
   };
 
-  const dirty = useMemo(() => hasUnsavedRules(cfg, packs, limits, rules), [cfg, packs, limits, rules]);
+  const dirty = useMemo(() => hasUnsavedRules(cfg, packs, limits, rules, sidesOff), [cfg, packs, limits, rules, sidesOff]);
 
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
@@ -277,14 +296,14 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;
 
-  const { packRows, tabs, activeFamily, packNames, filtered, packsNote } = rulesView(cfg, allRows, packs, rules, { family, text, scope, packFilter });
+  const { packRows, tabs, activeFamily, packNames, filtered, packsNote, sideCounts } = rulesView(cfg, allRows, packs, rules, { side: sideTab, sidesOff, family, text, scope, packFilter });
   const shown = filtered.slice(0, visible);
   const pickedIds = [...picked];
 
   const invalid = Object.keys(limits).some((k) => limitInvalid(limits[k]));
   const resetPage = () => setVisible(PAGE);
   const submit = () =>
-    save.mutate(mergeTuning(cfg.tuning, sliceOf(cfg, packs, limits, rules)), { onSuccess: (data) => syncFrom(data) });
+    save.mutate(mergeTuning(cfg.tuning, sliceOf(cfg, packs, limits, rules, sidesOff)), { onSuccess: (data) => syncFrom(data) });
 
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -293,11 +312,12 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
       </p>
       <SaveNotices save={save} dirty={dirty} />
       <Header cfg={cfg} busy={save.isPending} onReset={() => save.mutate(empty, { onSuccess: (data) => syncFrom(data) })} />
+      <ScopeSection cfg={cfg} sidesOff={sidesOff} onChange={(next) => { setSidesOff(next); resetPage(); }} />
       <PacksFieldset
         cfg={cfg}
         packs={packs}
         setPacks={setPacks}
-        ruleCounts={ruleCountByPack(cfg.catalog)}
+        sidesOff={sidesOff}
         limits={limits}
         setLimits={setLimits}
         limitError={(k) => limitInvalid(limits[k])}
@@ -314,6 +334,7 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
         }}
         catalogMissing={(cfg.catalog ?? []).length === 0}
         family={{ tabs, active: activeFamily, onPick: (k) => { setFamily(k); resetPage(); } }}
+        side={{ counts: sideCounts, active: sideTab, off: sidesOff, onPick: (k) => { setSideTab(k); resetPage(); } }}
         packsNote={packsNote}
         picked={picked}
         gainPicked={estimatedGain(allRows, pickedIds)}
@@ -380,6 +401,7 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
 
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;
+  const sidesOff = cfg.tuning.disableSides ?? [];
   const toggle = (name: string, runs: boolean) => setOff(runs ? off.filter((n) => n !== name) : [...off, name]);
   const tooManyPaths = paths.length > MAX_IGNORED_PATHS;
 
@@ -390,18 +412,35 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
       </p>
       <SaveNotices save={save} dirty={dirty} />
       <Header cfg={cfg} busy={save.isPending} onReset={() => save.mutate(empty, { onSuccess: syncSaved })} />
-      <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+      <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 12 }}>
         <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Analisadores</legend>
-        {cfg.analyzers.map((a) => (
-          <Checkbox
-            key={a.name}
-            id={`eng-an-${a.name}`}
-            labelText={a.name}
-            helperText={a.description}
-            checked={!off.includes(a.name)}
-            onChange={(_, { checked }) => toggle(a.name, checked)}
-          />
-        ))}
+        {sidesOff.length > 0 && (
+          <div role="status" style={{ padding: '10px 14px', background: 'var(--s-selected)', borderLeft: '3px solid #0f62fe', fontSize: 13 }}>
+            Com o escopo atual, os analisadores {sidesOff.includes('front') ? 'do front-end' : 'do back-end'} ficam desligados e só voltam se o lado for religado na aba Motor de regras.
+          </div>
+        )}
+        {analyzersBySide(cfg.analyzers).map((g) => {
+          const sideOff = sideIsOff(g.side, sidesOff);
+          const running = g.items.filter((a) => !sideOff && !off.includes(a.name)).length;
+          return (
+            <div key={g.side} role="group" aria-label={g.title} style={{ display: 'grid', gap: 8, opacity: sideOff ? 0.5 : 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)', paddingBottom: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
+                <SideBadge side={g.side} /> {g.title} <span style={{ fontWeight: 400 }}>· {running} de {g.items.length} ligados{sideOff ? ' · desligado pelo escopo' : ''}</span>
+              </div>
+              {g.items.map((a) => (
+                <Checkbox
+                  key={a.name}
+                  id={`eng-an-${a.name}`}
+                  labelText={a.name}
+                  helperText={a.description}
+                  checked={!sideOff && !off.includes(a.name)}
+                  disabled={sideOff}
+                  onChange={(_, { checked }) => toggle(a.name, checked)}
+                />
+              ))}
+            </div>
+          );
+        })}
       </fieldset>
       <TextArea
         id="eng-ignore-paths"

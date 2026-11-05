@@ -1,4 +1,4 @@
-import type { EngineConfig, FixPlanItem, RuleAdjustment } from '../types';
+import type { EngineConfig, EngineSide, FixPlanItem, RuleAdjustment } from '../types';
 
 /** Id curto da regra: o que vem depois do último ponto, em minúsculas. É assim que o motor casa os ajustes. */
 export const shortRuleId = (id: string): string => id.toLowerCase().slice(id.lastIndexOf('.') + 1);
@@ -21,6 +21,8 @@ export interface RuleRow {
   gain: number | null;
   /** O perfil já ajusta esta regra. */
   inProfile: boolean;
+  /** Lado da regra (back, front, comum). Ausente quando a API não informa. */
+  side?: EngineSide;
 }
 
 export interface RuleSources {
@@ -63,6 +65,7 @@ function applyCatalog(catalog: NonNullable<RuleSources['catalog']>, ensure: (id:
     row.pack = c.pack;
     row.declared = c.severity ?? null;
     row.category = c.category ?? null;
+    row.side = c.side;
   }
 }
 

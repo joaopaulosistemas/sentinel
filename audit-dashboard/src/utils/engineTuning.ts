@@ -1,7 +1,7 @@
 import type { AuditRunResponse, EngineConfig, EngineTuning, RuleAdjustment } from '../types';
 import { isNoopAdjustment } from './ruleCatalog';
 
-export type TuningSlice = Pick<EngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'>;
+export type TuningSlice = Pick<EngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'> & { disableSides: Array<'back' | 'front'> };
 
 /** Limite digitado: vazio vale "padrão do motor"; o resto precisa ser inteiro ≥ 1. */
 export function limitInvalid(value: string | undefined): boolean {
@@ -10,15 +10,15 @@ export function limitInvalid(value: string | undefined): boolean {
   return !(Number.isInteger(n) && n >= 1);
 }
 
-/** O que a tela edita (pacotes, limites, regras) na forma que o servidor guarda. */
-export function sliceOf(data: EngineConfig, packs: Record<string, boolean>, limits: Record<string, string>, rules: RuleAdjustment[]): TuningSlice {
+/** O que a tela edita (pacotes, limites, regras, lados desligados) na forma que o servidor guarda. */
+export function sliceOf(data: EngineConfig, packs: Record<string, boolean>, limits: Record<string, string>, rules: RuleAdjustment[], sidesOff: Array<'back' | 'front'> = []): TuningSlice {
   const enablePacks = data.packs.filter((p) => packs[p.id] && !p.inProfile).map((p) => p.id);
   const disablePacks = data.packs.filter((p) => !packs[p.id] && p.inProfile).map((p) => p.id);
   const thresholds: Record<string, number> = {};
   for (const [k, v] of Object.entries(limits)) {
     if (v.trim() !== '' && !limitInvalid(v)) thresholds[k] = Number(v);
   }
-  return { enablePacks, disablePacks, thresholds, rules: rules.filter((r) => !isNoopAdjustment(r)) };
+  return { enablePacks, disablePacks, thresholds, rules: rules.filter((r) => !isNoopAdjustment(r)), disableSides: [...sidesOff] };
 }
 
 const NO_ADJUSTMENT = (id: string): RuleAdjustment => ({ id, severity: null, disabled: false, shadow: null });
