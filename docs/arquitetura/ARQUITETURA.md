@@ -46,7 +46,7 @@ flowchart TB
     subgraph Externos["Fora do Sentinel"]
         direction LR
         GIT["GitHub / GitLab\nrepositório auditado"]
-        TOOLS["Ferramentas de terceiros\nno contêiner da API:\nSemgrep, Trivy, Gitleaks,\nESLint, PMD, Stylelint, SQLFluff..."]
+        TOOLS["Ferramentas de terceiros\nno contêiner da API:\nOpengrep, Trivy, Gitleaks,\nESLint, PMD, Stylelint, SQLFluff..."]
         OSV["OSV.dev\nbase de vulnerabilidades"]
         NOTIF["Teams / Slack / webhook"]
         IDP["Keycloak / OIDC\n(opcional)"]
@@ -73,7 +73,7 @@ flowchart TB
 flowchart TB
     subgraph Host["docker compose / Kubernetes (Helm)"]
         NG["audit-dashboard\nNginx servindo a SPA\n:80"]
-        AP["audit-api\nJRE 21 + Semgrep + Trivy + Gitleaks\n+ Node (ESLint, Stylelint) + venvs Python\n:8080"]
+        AP["audit-api\nJRE 21 + Opengrep + Trivy + Gitleaks\n+ Node (ESLint, Stylelint) + venvs Python\n:8080"]
         PG[("postgres:16-alpine\n:5432")]
     end
     NG -- "proxy /api" --> AP
@@ -134,7 +134,7 @@ flowchart LR
 
 ## 3. Backend `audit-api`
 
-Pacote raiz: `com.sentinel.audit`. Quarkus 3.15, Java 21, Hibernate/Panache, PostgreSQL, CDI (`@ApplicationScoped`), REST (JAX-RS).
+Pacote raiz: `com.sentinel.audit`. Quarkus 3.33, Java 21, Hibernate/Panache, PostgreSQL, CDI (`@ApplicationScoped`), REST (JAX-RS).
 
 ### 3.1 Camadas (desenho micro)
 
@@ -247,7 +247,7 @@ Pontos do código que valem saber (do comentário de `AuditOrchestrationService`
 | `NotificationService` | Avisos para Teams, Slack ou webhook genérico |
 | `WebhookService` | Valida a autenticidade, acha o sistema pelo repositório e dispara se o push é na branch configurada |
 | `RuleQualityService` | Mede quais regras viram falso positivo com frequência |
-| `RulePlaygroundService` | Valida e executa uma regra Semgrep sobre um trecho de código |
+| `RulePlaygroundService` | Valida e executa uma regra (formato Semgrep) sobre um trecho de código |
 
 ### 3.5 Pacote `analyzer` (motores de análise)
 
@@ -301,7 +301,7 @@ classDiagram
 
 | Classe | O que analisa |
 |---|---|
-| `SemgrepAnalyzer` | Roda o Semgrep com as regras dos pacotes ativos (segurança, qualidade, Spring, persistência, IaC, front); ignora bibliotecas embutidas (`node_modules`, `vendor`, `*.min.js`...) |
+| `SemgrepAnalyzer` | Roda o Opengrep (ou o Semgrep, via `SastEngine`) com as regras dos pacotes ativos (segurança, qualidade, Spring, persistência, IaC, front); ignora bibliotecas embutidas (`node_modules`, `vendor`, `*.min.js`...) |
 | `PmdAnalyzer` | Lint de Java com PMD (boas práticas, propensão a erro, design) |
 | `EslintAnalyzer` | Lint de TypeScript/JavaScript com ESLint; só liga as regras do Angular se o projeto depende de `@angular/*` |
 | `SarifAnalyzer` | Importa o SARIF 2.1.0 de qualquer ferramenta declarada em `tools/*.yml` dos pacotes (Stylelint, SQLFluff, Hadolint, Checkov, Spectral, Squawk, Checkstyle, jscpd, Dependency-Cruiser, njsscan, kube-linter, kube-score) |
@@ -579,7 +579,7 @@ flowchart TB
 | Item | Detalhe |
 |---|---|
 | `docker-compose.yml` | `postgres` (16-alpine, só no localhost), `audit-api`, `audit-dashboard` |
-| `audit-api/Dockerfile` | Constrói com Maven (Java 21) e roda em JRE 21 com Git, Semgrep, Trivy, Gitleaks, Node (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; telemetria do Semgrep desligada |
+| `audit-api/Dockerfile` | Constrói com Maven (Java 21) e roda em JRE 21 com Git, Opengrep (Semgrep e Joern opcionais), Trivy, Gitleaks, Node (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; telemetria do Semgrep desligada |
 | `deploy/helm/sentinel` | Chart com `api`, `dashboard`, `ingress`, `postgres` e `secret` |
 | Autenticação | Chave estática `X-API-Key` (`ApiKeyFilter`) ou OIDC/Keycloak em build com `-Poidc` (`QUARKUS_PROFILE=oidc`, com `API_KEY` vazia) |
 | Clone | token Git, hosts do token e profundidade do histórico são do cadastro de cada sistema (token cifrado com `SECRETS_KEY`, só vai para os hosts listados); clone raso quando o histórico é 0/1 |
@@ -629,10 +629,10 @@ Os agentes só abrem PR em `evolucao/*`; o merge é manual. O job `Escopo dos PR
 
 | Terceiro | Onde entra | Obrigatório? |
 |---|---|---|
-| Quarkus 3.15, Hibernate/Panache, JAX-RS | Backend | sim |
+| Quarkus 3.33, Hibernate/Panache, JAX-RS | Backend | sim |
 | PostgreSQL 16 | Persistência | sim |
 | React 18, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest | Dashboard | sim |
-| Semgrep | `SemgrepAnalyzer` (regras dos pacotes) | recomendado; sem ele a análise de regras fica de fora |
+| Opengrep (ou Semgrep) | `SemgrepAnalyzer` (regras dos pacotes) | recomendado; sem ele a análise de regras fica de fora |
 | Trivy | `TrivyAnalyzer` (SCA e IaC) | opcional; substitui o SCA interno |
 | Gitleaks | `GitleaksAnalyzer` (segredos e histórico) | opcional; substitui os analisadores internos de segredo |
 | PMD | `PmdAnalyzer` | opcional |

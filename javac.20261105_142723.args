@@ -1,6 +1,0 @@
--proc:none
--d
-/tmp/jc2
-audit-api/src/main/java/com/sentinel/audit/analyzer/AnalyzerResult.java
-audit-api/src/main/java/com/sentinel/audit/analyzer/SarifAnalyzer.java
-audit-api/src/main/java/com/sentinel/audit/service/AnalyzerRunner.java
