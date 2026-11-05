@@ -67,12 +67,22 @@ public final class ProjectConfig {
      *
      * @param findings    o que segue para a nota e o relatório
      * @param excluded    quantos achados saíram por {@code exclude}
+     * @param excludedByTool quantos saíram por {@code exclude}, por ferramenta (na ordem do maior para o menor)
      * @param suppressed  quantos foram marcados como suprimidos
      * @param problems    avisos sobre o arquivo (entrada inválida, supressão vencida, ...)
      */
-    public record Result(List<Finding> findings, int excluded, int suppressed, List<String> problems) {
+    public record Result(List<Finding> findings, int excluded, java.util.Map<String, Integer> excludedByTool,
+                         int suppressed, List<String> problems) {
         public boolean touched() {
             return excluded > 0 || suppressed > 0 || !problems.isEmpty();
+        }
+
+        private String byToolText() {
+            if (excludedByTool.isEmpty()) {
+                return "";
+            }
+            return " (" + excludedByTool.entrySet().stream().map(e -> e.getKey() + " " + e.getValue())
+                    .collect(java.util.stream.Collectors.joining(", ")) + ")";
         }
 
         /** Frase curta para o andamento da auditoria; vazia quando nada mudou. */
@@ -82,7 +92,7 @@ public final class ProjectConfig {
             }
             List<String> parts = new ArrayList<>();
             if (excluded > 0) {
-                parts.add(excluded + " ignorados por exclude");
+                parts.add(excluded + " ignorados por exclude" + byToolText());
             }
             if (suppressed > 0) {
                 parts.add(suppressed + " suprimidos");
@@ -315,10 +325,14 @@ public final class ProjectConfig {
         List<Finding> kept = new ArrayList<>();
         int excluded = 0;
         int suppressed = 0;
+        java.util.Map<String, Integer> byTool = new java.util.HashMap<>();
         for (Finding f : findings) {
             String path = normalize(f.getFilePath());
             if (matchesAny(excludes, path)) {
                 excluded++;
+                if (f.getToolSource() != null && !f.getToolSource().isBlank()) {
+                    byTool.merge(f.getToolSource(), 1, Integer::sum);
+                }
                 continue;
             }
             kept.add(f);
@@ -330,7 +344,11 @@ public final class ProjectConfig {
                 suppressed++;
             }
         }
-        return new Result(kept, excluded, suppressed, List.copyOf(notes));
+        java.util.Map<String, Integer> sorted = new java.util.LinkedHashMap<>();
+        byTool.entrySet().stream()
+                .sorted(java.util.Map.Entry.<String, Integer>comparingByValue().reversed().thenComparing(java.util.Map.Entry.comparingByKey()))
+                .forEach(e -> sorted.put(e.getKey(), e.getValue()));
+        return new Result(kept, excluded, java.util.Collections.unmodifiableMap(sorted), suppressed, List.copyOf(notes));
     }
 
     private static Suppression firstMatch(List<Suppression> live, Finding f, String path) {

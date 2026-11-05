@@ -660,3 +660,11 @@ Verificado: programa `javac` com os caminhos do WebGoat e os casos negativos. N�
 - **Limite:** aviso de licença da própria empresa com endereço no topo do arquivo também seria tratado como biblioteca; licença sem endereço/versão não conta.
 
 Verificado: programa `javac` com os cabeçalhos do WebGoat e casos negativos. NÃO verificado: JUnit/Maven (só CI); nova auditoria do WebGoat.
+
+## Dashboard 12.53.0 — O que o `exclude` do `.sentinel.yml` descartou, por ferramenta
+
+- **Problema visto em uso:** ao auditar o próprio Sentinel com `WITH_JOERN=true`, o Joern rodou (59 s, 2 achados nos logs) mas nenhum achado dele apareceu: ficavam em `audit-api/joern/testes/**`, que o `.sentinel.yml` exclui. Nada na tela dizia isso.
+- **Mudança:** `ProjectConfig.Result` ganha `excludedByTool`; o resumo da fase de pontuação passa a dizer, por exemplo, "3 ignorados por exclude (Joern (taint entre arquivos) 2, Checkov 1)".
+- **Não feito:** linha de progresso própria para cada ferramenta de pacote (continuam dentro da linha SARIF).
+
+Verificado: nada além da leitura do código. NÃO verificado: JUnit/Maven (só CI), a tela.

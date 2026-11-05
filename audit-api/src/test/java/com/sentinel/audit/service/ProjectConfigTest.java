@@ -189,4 +189,32 @@ class ProjectConfigTest {
         assertFalse(ProjectConfig.ruleMatches("checkstyle-*VisibilityModifier*", "checkstyle-MagicNumber"));
         assertFalse(ProjectConfig.ruleMatches("regra", "outra-regra"));
     }
+
+    @Test
+    void excludeInformaQuantosSairamDeCadaFerramenta() {
+        Finding a = f("joern-taint-sqli", "docs/a.md");
+        a.setToolSource("Joern (taint entre arquivos)");
+        Finding b = f("joern-taint-cmdi", "docs/b.md");
+        b.setToolSource("Joern (taint entre arquivos)");
+        Finding c = f("checkov-x", "docs/c.md");
+        c.setToolSource("Checkov");
+        Finding fica = f("r", "src/Main.java");
+        fica.setToolSource("Opengrep");
+
+        ProjectConfig.Result r = ProjectConfig.parse(ARQUIVO).apply(new ArrayList<>(List.of(a, b, c, fica)), HOJE);
+
+        assertEquals(3, r.excluded());
+        assertEquals(2, r.excludedByTool().get("Joern (taint entre arquivos)"));
+        assertEquals(1, r.excludedByTool().get("Checkov"));
+        assertFalse(r.excludedByTool().containsKey("Opengrep"));
+        assertTrue(r.summary().contains("3 ignorados por exclude (Joern (taint entre arquivos) 2, Checkov 1)"), r.summary());
+    }
+
+    @Test
+    void semFerramentaConhecidaOResumoNaoAbreParenteses() {
+        ProjectConfig.Result r = ProjectConfig.parse(ARQUIVO).apply(new ArrayList<>(List.of(f("r", "docs/a.md"))), HOJE);
+        assertEquals(1, r.excluded());
+        assertTrue(r.summary().contains("1 ignorados por exclude"), r.summary());
+        assertFalse(r.summary().contains("exclude ("), r.summary());
+    }
 }
