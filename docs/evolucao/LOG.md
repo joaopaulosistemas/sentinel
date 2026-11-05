@@ -525,3 +525,15 @@ Novo pacote `ts-clean-code-labs42`, a partir do guia [clean-code-typescript](htt
 
 Verificado: `semgrep --test` passa nas 21 regras (caso positivo e negativo cada); `scripts/paridade-motores.py` mostra os mesmos achados no Opengrep e no Semgrep sobre todos os pacotes; toda regra tem remediação.
 NÃO verificado: Maven e testes Java (só o CI; os testes de contagem de pacotes e o do novo perfil foram atualizados); precisão em repositório real (nenhuma taxa de falso positivo medida: use em sombra antes de pesar na nota).
+
+## Dashboard 12.40.0 / API — Documentação reorganizada em `docs/` e IMPACTO.md reescrito
+
+Toda a documentação do produto passou a viver em `docs/` (índice em `docs/README.md`). O README da raiz ficou curto e aponta para ela.
+
+- `README.md` (900 linhas) dividido em `docs/guia/instalacao.md`, `docs/referencia/pacotes-de-regras.md`, `docs/referencia/auditoria-e-api.md`, `docs/historia.md` e `docs/historico-de-versoes.md`; `IMPACTO.md` foi para `docs/IMPACTO.md`; `audit-api/joern/README.md` e `audit-api/certs/README.md` viraram `docs/integracao/joern.md` e `docs/guia/certificados.md` (as pastas guardam só um aviso curto).
+- Corrigido o que estava desatualizado e foi conferido no código: Quarkus 3.33 (era 3.15), Compose como caminho principal, ESLint ligado por padrão na imagem, 41 regras em `core-quality`, 16 em `core-spring`, Opengrep como motor na arquitetura, README sem a história do Bobathon.
+- `IMPACTO.md` reescrito: sem estimativas de percentual ou horas; traz o que o Sentinel faz, o que foi medido (com a fonte e o que a medição não prova), o que não está provado e indicadores para medir o ganho num piloto.
+- Removidos do repositório os arquivos `javac.*.args` (sobras de compilação) e adicionado ao `.gitignore`.
+
+Verificado: contagens de regras por pacote, versões de Quarkus e das bibliotecas do painel, endpoints (comparados com as classes de recursos), variáveis e build args do Compose e do Dockerfile, links relativos dos arquivos movidos.
+NÃO verificado: cada afirmação dos documentos longos (ARQUITETURA.md, auditoria-e-api.md e pacotes-de-regras.md receberam só os ajustes acima, não uma releitura linha a linha); endpoints fora da tabela original da API (`freshness`, `score-explanation`, `check-path`, `local-source`) foram descritos a partir da documentação do código, sem chamada real.
