@@ -636,3 +636,10 @@ NÃO verificado: JUnit/Maven (só no CI): `RuleSideTest`, `AnalyzerCatalogSideTe
 
 Verificado: 312 testes do dashboard, `tsc` e `vite build`; programa de teste via `javac` para `SystemTuning` e `RuleSide`.
 NÃO verificado: JUnit/Maven (só no CI): `SystemTuningSidesTest` (política, JSON, analisadores); a tela num navegador real.
+
+## Dashboard 12.50.0 — Remove `auditar-frequency.ps1`
+
+- **Removido:** `auditar-frequency.ps1` da raiz: script PowerShell que cadastrava e auditava só o repositório Frequency, com valores fixos. Nada no projeto o usava; a tela Sistemas, o workflow `auditoria-completa.yml` e o agente `sentinel-ciclo` fazem o mesmo para qualquer repositório.
+- **Mantidos:** `settings-local.xml` (usado pelo guia de instalação), `evidencias/` e `docs/evidencias/*` (usados pelo compose e pelo código).
+
+Verificado: nenhuma referência ao arquivo restou (busca no repositório).
