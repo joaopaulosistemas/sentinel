@@ -11,14 +11,14 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 
 /**
- * Catálogo das regras Semgrep declaradas nos pacotes: id, texto, severidade e categoria. Serve à tela de ajuste do motor,
+ * Catálogo das regras Semgrep declaradas nos pacotes: id, texto, severidade, categoria e lado (back-end, front-end ou comum). Serve à tela de ajuste do motor,
  * para mostrar o que cada regra faz mesmo quando ela ainda não disparou em nenhuma auditoria.
  * Só leitura; arquivo ilegível é ignorado (o carregamento do pacote já registrou o problema).
  */
 public final class RuleCatalog {
 
     /** Uma regra do catálogo. {@code message} vem numa linha só. */
-    public record Entry(String id, String pack, String message, String severity, String category) {}
+    public record Entry(String id, String pack, String message, String severity, String category, String side) {}
 
     private static final Logger LOG = Logger.getLogger(RuleCatalog.class);
 
@@ -58,19 +58,44 @@ public final class RuleCatalog {
                 if (rule == null) {
                     continue;
                 }
-                String id = Yamls.str(rule, "id");
-                if (id == null) {
-                    continue;
+                Entry entry = entryOf(packId, rule);
+                if (entry != null) {
+                    out.add(entry);
                 }
-                String message = Yamls.str(rule, "message");
-                Map<String, Object> metadata = Yamls.map(rule.get("metadata"));
-                out.add(new Entry(id, packId,
-                        message == null ? null : message.replaceAll("\\s+", " ").strip(),
-                        Yamls.str(rule, "severity"),
-                        metadata == null ? null : Yamls.str(metadata, "category")));
             }
         } catch (IOException | RuntimeException e) {
             LOG.debugf("Arquivo de regras fora do catálogo: %s (%s)", file.getFileName(), e.getMessage());
         }
+    }
+
+    /** Uma regra do YAML como item do catálogo; {@code null} se não tem id. O lado vem de {@code metadata.side} ou da inferência. */
+    static Entry entryOf(String packId, Map<String, Object> rule) {
+        String id = Yamls.str(rule, "id");
+        if (id == null) {
+            return null;
+        }
+        String message = Yamls.str(rule, "message");
+        Map<String, Object> metadata = Yamls.map(rule.get("metadata"));
+        RuleSide side = metadata == null ? null : RuleSide.parse(Yamls.str(metadata, "side"));
+        if (side == null) {
+            side = RuleSide.infer(strings(rule.get("languages")), strings(includeOf(rule)));
+        }
+        return new Entry(id, packId,
+                message == null ? null : message.replaceAll("\\s+", " ").strip(),
+                Yamls.str(rule, "severity"),
+                metadata == null ? null : Yamls.str(metadata, "category"),
+                side.id());
+    }
+
+    private static Object includeOf(Map<String, Object> rule) {
+        Map<String, Object> paths = Yamls.map(rule.get("paths"));
+        return paths == null ? null : paths.get("include");
+    }
+
+    private static List<String> strings(Object value) {
+        if (value instanceof List<?> l) {
+            return l.stream().filter(java.util.Objects::nonNull).map(String::valueOf).toList();
+        }
+        return value == null ? List.of() : List.of(String.valueOf(value));
     }
 }

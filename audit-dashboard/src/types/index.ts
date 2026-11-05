@@ -536,10 +536,15 @@ export interface EnginePackState {
   active: boolean;
 }
 
+/** De que lado da aplicação uma regra ou analisador trata. "common" vale para os dois (Docker, Kubernetes, segredos). */
+export type EngineSide = 'back' | 'front' | 'common';
+
 export interface EngineAnalyzerState {
   name: string;
   description: string;
   disabled: boolean;
+  /** Ausente em APIs antigas. */
+  side?: EngineSide;
 }
 
 export interface EngineThresholdState {
@@ -560,7 +565,7 @@ export interface EngineConfig {
   thresholds: EngineThresholdState[];
   knownRules: Array<{ id: string; count: number }>;
   /** Regras declaradas nos pacotes (id, texto, pacote). Ausente em APIs antigas. */
-  catalog?: Array<{ id: string; pack: string; message: string | null; severity: string | null; category: string | null }>;
+  catalog?: Array<{ id: string; pack: string; message: string | null; severity: string | null; category: string | null; side?: EngineSide }>;
 }
 
 export type SuggestionStatus = 'OPEN' | 'ADDRESSED' | 'DISMISSED';

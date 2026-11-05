@@ -27,5 +27,6 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
     metadata:
+      side: back
       category: performance
       cwe: "CWE-532: Insertion of Sensitive Information into Log File"

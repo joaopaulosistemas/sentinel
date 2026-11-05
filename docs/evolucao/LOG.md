@@ -614,3 +614,14 @@ Verificado: disparo, execução completa e leitura do resumo pelo log. NÃO veri
 
 Verificado: lógica do helper com um programa de teste via `javac` (7 casos, incluindo pasta ignorada); testes JUnit escritos antes (não compilavam sem os métodos).
 NÃO verificado: JUnit/Maven e a compilação de `SemgrepAnalyzer`/`CleanCodeAnalyzer` (só o CI); o ganho real (reauditar o Juice Shop depois do merge); Gitleaks em testes e ruído em `data/static`, ainda por analisar.
+
+## Dashboard 12.48.0 — Lado (back, front, comum) em cada regra e analisador
+
+- **Por quê:** o lado só existia por pacote, no dashboard, e pacotes como segurança e qualidade misturam regras de Java e de TypeScript. Primeira de duas PRs para poder auditar só o back-end ou só o front-end.
+- **Mudança:** cada regra tem um lado, em `metadata.side` ou deduzido da linguagem e dos caminhos (`RuleSide`). 18 regras ganharam o campo por serem ambíguas (15 de Node/Express, 2 de configuração Spring/JPA em YAML, 1 de `tsconfig`). O catálogo e a API de configuração do motor devolvem `side` por regra e por analisador (`AnalyzerCatalog.sideOf`).
+- **Resultado da marcação (255 regras):** 142 back, 89 front, 24 comuns (21 de Docker/Kubernetes e 3 de qualidade que valem para Java e TypeScript). Entre os analisadores internos só PMD, OWASP-Dependency e Evidências são back, e ESLint e código morto são front; o resto é comum.
+- **Versões:** core-security 1.4.1, core-boas-praticas 1.0.1, core-spring e core-persistencia 1.0.2.
+- **Não feito:** dividir `sentinel-int-http-sem-tls` em duas regras (mudaria o id de achados e supressões existentes); ela fica comum. Nada muda ainda para quem audita: o desligamento por lado vem na PR seguinte.
+
+Verificado: testes Opengrep de core-security, boas-praticas, persistencia e spring; `RuleSide` com um programa de teste via `javac`; `tsc` do dashboard.
+NÃO verificado: JUnit/Maven (só no CI): `RuleSideTest`, `AnalyzerCatalogSideTest` e a compilação do catálogo e da API.
