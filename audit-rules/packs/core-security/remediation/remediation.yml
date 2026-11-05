@@ -435,3 +435,31 @@
   after: "const perfil = JSON.parse(req.cookies.perfil) // e valide os campos esperados"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+
+- key: "sentinel-node-cookie-sem-flags"
+  summary: "Grave cookies de sessão com `httpOnly`, `secure` e `sameSite`."
+  before: "res.cookie('token', token)"
+  after: "res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'lax' })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+
+- key: "sentinel-node-jwt-sem-algoritmo"
+  summary: "Informe os algoritmos aceitos na verificação do JWT."
+  before: "jwt.verify(token, chave)"
+  after: "jwt.verify(token, chave, { algorithms: ['HS256'] })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
+- key: "sentinel-node-jwt-expiracao-ignorada"
+  summary: "Não ignore a expiração do token. Renove o token em vez disso."
+  before: "jwt.verify(token, chave, { ignoreExpiration: true })"
+  after: "jwt.verify(token, chave, { algorithms: ['HS256'] })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
+- key: "sentinel-node-math-random-segredo"
+  summary: "Use um gerador criptográfico para tokens, senhas temporárias e segredos."
+  before: "const token = Math.random().toString(36).slice(2)"
+  after: "const token = crypto.randomBytes(32).toString('hex')"
+  refs:
+    - "https://developer.mozilla.org/docs/Web/API/Crypto/getRandomValues"

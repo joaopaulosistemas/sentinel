@@ -209,3 +209,63 @@ export function carregarPerfilSeguro (req: any) {
   // ok: sentinel-node-desserializacao
   return JSON.parse(req.cookies.perfil)
 }
+
+// ---------- cookie sem httpOnly ----------
+export function gravarCookie (res: any, token: string) {
+  // ruleid: sentinel-node-cookie-sem-flags
+  res.cookie('token', token)
+}
+
+export function gravarCookieSemFlag (res: any, token: string) {
+  // ruleid: sentinel-node-cookie-sem-flags
+  res.cookie('session', token, { maxAge: 3600 })
+}
+
+export function gravarCookieSeguro (res: any, token: string) {
+  // ok: sentinel-node-cookie-sem-flags
+  res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'lax' })
+}
+
+export function gravarPreferencia (res: any) {
+  // ok: sentinel-node-cookie-sem-flags
+  res.cookie('tema', 'escuro')
+}
+
+// ---------- JWT ----------
+export function conferirToken (token: string, chave: string) {
+  // ruleid: sentinel-node-jwt-sem-algoritmo
+  return jwt.verify(token, chave)
+}
+
+export function conferirTokenComOpcoes (token: string, chave: string) {
+  // ruleid: sentinel-node-jwt-sem-algoritmo
+  return jsonwebtoken.verify(token, chave, { issuer: 'sentinel' })
+}
+
+export function conferirTokenSeguro (token: string, chave: string) {
+  // ok: sentinel-node-jwt-sem-algoritmo
+  return jwt.verify(token, chave, { algorithms: ['HS256'] })
+}
+
+export function conferirTokenIgnorandoValidade (token: string, chave: string) {
+  // ruleid: sentinel-node-jwt-expiracao-ignorada
+  return jwt.verify(token, chave, { algorithms: ['HS256'], ignoreExpiration: true })
+}
+
+// ---------- Math.random em valor de segurança ----------
+export function novoToken () {
+  // ruleid: sentinel-node-math-random-segredo
+  const token = Math.random().toString(36).slice(2)
+  return token
+}
+
+export const configuracao = {
+  // ruleid: sentinel-node-math-random-segredo
+  secret: '' + Math.random()
+}
+
+export function sorteio () {
+  // ok: sentinel-node-math-random-segredo
+  const indice = Math.floor(Math.random() * 10)
+  return indice
+}
