@@ -15,10 +15,14 @@
       "spring-projects/spring-petclinic",
       "gothinkster/angular-realworld-example-app",
       "gothinkster/react-redux-realworld-example-app",
-      "appsecco/dvja"
+      "appsecco/dvja",
+      "OWASP/NodeGoat",
+      "appsecco/dvna",
+      "snyk-labs/nodejs-goof"
     ],
     "benchmark_owasp": "casos BenchmarkTest01371 a BenchmarkTest02740",
     "regra": "Agentes não clonam nem leem o código destes conjuntos para escrever regras; só usam os números que o CI publica (calibração e OWASP Benchmark).",
-    "_nota_dvja": "appsecco/dvja (app Java vulnerável, Struts) entrou em 2026-11-05 no lugar do WebGoat; ninguém leu o código dele. Só os números do CI valem."
+    "_nota_dvja": "appsecco/dvja (app Java vulnerável, Struts) entrou em 2026-11-05 no lugar do WebGoat; ninguém leu o código dele. Só os números do CI valem.",
+    "_nota_node": "OWASP/NodeGoat, appsecco/dvna e snyk-labs/nodejs-goof entraram em 2026-11-05 para validar as regras sentinel-node-*. Só contagens de achados por regra foram vistas; o código não foi lido."
   }
 }
