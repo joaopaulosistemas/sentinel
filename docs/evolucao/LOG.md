@@ -567,3 +567,13 @@ Ciclo de teste com repositórios vulneráveis (Benchmark, Juice Shop, NodeGoat, 
 
 Verificado: `semgrep --test` das 11 regras (todas passam), paridade Opengrep × Semgrep (503 achados iguais), contagens acima.
 NÃO verificado: build Maven e testes Java (só no CI); API e dashboard rodando (sem Maven Central nem Docker aqui); precisão das regras novas além do Juice Shop.
+
+## Dashboard 12.43.0 / API — Rodada 2: higiene de sessão e segredos em Node (`core-security` 1.4.0)
+
+- **Correção da rodada 1:** no Juice Shop (sem `data/static/codefixes`) as regras `sentinel-node-*` davam 17 achados, não 15 como escrevi na entrada 12.42.0.
+- **Novo:** 4 regras `sentinel-node-*`: `cookie-sem-flags` (cookie de sessão sem `httpOnly`), `jwt-sem-algoritmo`, `jwt-expiracao-ignorada` e `math-random-segredo`. Com testes positivos e negativos e remediação. `core-security` tem 60 regras (15 de Node).
+- **Medido:** Juice Shop (treino) 17 → 20 achados `sentinel-node-*`; NodeGoat e DVNA (validação, só contagens) sem mudança (4 e 4): as regras novas não acharam nada neles, então a rodada não mostrou ganho fora do treino.
+- **Não feito (e por quê):** nada novo para o Opengrep que siga o dado entre funções e arquivos, nem para guardas `if (listaPermitida(x))`; é limite do motor, e a saída seria o Joern, que só cobre Java.
+
+Verificado: `semgrep --test` (15/15), paridade Opengrep × Semgrep (517 achados iguais).
+NÃO verificado: build Maven e testes Java (CI); falsos positivos das regras novas além do Juice Shop; API e dashboard rodando.
