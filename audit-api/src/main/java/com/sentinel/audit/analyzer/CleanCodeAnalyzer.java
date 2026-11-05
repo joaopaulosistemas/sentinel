@@ -277,6 +277,7 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
                 if (isCandidate(file, attrs)
                         && !ExternalTools.isVendoredLibrary(root.relativize(file).toString())
                         && !ExternalTools.isOversizedBundle(root.relativize(file).toString(), attrs.size())
+                        && !ExternalTools.hasThirdPartyBanner(file)
                         && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
                     files.add(file);
                 }

@@ -290,6 +290,7 @@ public class SarifAnalyzer implements CodeAnalyzer {
             return walk.filter(p -> Files.isRegularFile(p) && !Files.isSymbolicLink(p))
                     .map(projectPath::relativize)
                     .filter(rel -> !ExternalTools.inIgnoredDir(rel.toString()))
+                    .filter(rel -> !ExternalTools.hasThirdPartyBanner(projectPath.resolve(rel)))
                     .filter(rel -> !rel.toString().startsWith("-"))          // nome de arquivo não pode virar opção da ferramenta
                     .filter(rel -> matchers.stream().anyMatch(m -> m.matches(rel)))
                     .map(rel -> rel.toString().replace('\\', '/'))

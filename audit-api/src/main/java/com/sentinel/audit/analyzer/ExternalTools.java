@@ -203,6 +203,47 @@ final class ExternalTools {
         return false;
     }
 
+    private static final java.util.regex.Pattern LICENSE_WORD = java.util.regex.Pattern.compile(
+            "(?i)@license|\\blicen[sc]ed? under\\b|\\b(mit|bsd|apache|gpl|lgpl|mpl|isc)\\b[\\w .-]{0,12}licen[sc]e|\\bmit\\b");
+    private static final java.util.regex.Pattern OUTSIDE_SIGN = java.util.regex.Pattern.compile(
+            "(?i)https?://|@license|^/\\*!|\\bv?\\d+\\.\\d+\\.\\d+\\b");
+    private static final int BANNER_CHARS = 600;
+
+    /**
+     * O arquivo começa com o comentário de uma biblioteca: licença (MIT, Apache, BSD, GPL...) e um sinal de origem
+     * externa (endereço, versão, {@code /*!} ou {@code @license}). Só olha o começo do arquivo (depois de um
+     * {@code @charset}); licença citada no meio, ou aviso de licença sem origem externa, não conta.
+     */
+    static boolean hasThirdPartyBanner(String head) {
+        if (head == null) {
+            return false;
+        }
+        String h = head.stripLeading();
+        if (h.startsWith("@charset")) {
+            int nl = h.indexOf('\n');
+            h = nl < 0 ? "" : h.substring(nl + 1).stripLeading();
+        }
+        if (!h.startsWith("/*")) {
+            return false;
+        }
+        h = h.substring(0, Math.min(h.length(), BANNER_CHARS));
+        int end = h.indexOf("*/");
+        String comment = end < 0 ? h : h.substring(0, end);
+        return LICENSE_WORD.matcher(comment).find() && OUTSIDE_SIGN.matcher(comment).find();
+    }
+
+    /** Lê o começo de um JS/CSS e aplica {@link #hasThirdPartyBanner(String)}; erro de leitura vale "não". */
+    static boolean hasThirdPartyBanner(Path file) {
+        if (file == null || !BUNDLE_EXT.matcher(file.getFileName().toString()).find()) {
+            return false;
+        }
+        try (java.io.InputStream in = java.nio.file.Files.newInputStream(file)) {
+            return hasThirdPartyBanner(new String(in.readNBytes(BANNER_CHARS + 40), java.nio.charset.StandardCharsets.UTF_8));
+        } catch (java.io.IOException | RuntimeException e) {
+            return false;
+        }
+    }
+
     /** JS/CSS acima deste tamanho é pacote de terceiros (three.js, bundles); código escrito à mão não chega perto. */
     static final long OVERSIZED_BUNDLE_BYTES = 400_000;
     private static final java.util.regex.Pattern BUNDLE_EXT = java.util.regex.Pattern.compile("(?i)\\.(js|mjs|cjs|css)$");
