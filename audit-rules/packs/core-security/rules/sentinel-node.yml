@@ -1,0 +1,390 @@
+rules:
+  # Regras de segurança para backend Node/Express (JavaScript e TypeScript).
+  # Fontes: dados da requisição (req.query, req.params, req.body, req.headers, req.cookies).
+  # Escritas a partir de padrões comuns de aplicações Express; checadas no OWASP Juice Shop (alvo de treino).
+
+  - id: sentinel-node-sql-injection
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              ({..., $P, ...}: Request, ...) => {...}
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(params|query|body|headers|cookies)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB.query($Q, ...)
+              - pattern: $DB.raw($Q, ...)
+              - pattern: $DB.$METHOD($Q, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(query|raw|execute)$
+          - focus-metavariable: $Q
+    pattern-sanitizers:
+      - pattern: parseInt(...)
+      - pattern: Number(...)
+      - pattern: $X.escape(...)
+    message: >
+      Possível SQL injection (CWE-89): dado da requisição entra no texto da consulta. Use parâmetros
+      (`replacements`/`bind` do Sequelize, `?` no driver) em vez de montar o SQL com `+` ou template string.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-nosql-where
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              ({..., $P, ...}: Request, ...) => {...}
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(params|query|body|headers|cookies)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern: '{..., $where: $X, ...}'
+          - focus-metavariable: $X
+    pattern-sanitizers:
+      - pattern: parseInt(...)
+      - pattern: Number(...)
+    message: >
+      Possível injeção NoSQL (CWE-943): dado da requisição vai para `$where`, que executa JavaScript no banco.
+      Troque por operadores de consulta (`{ campo: valor }`) e valide o tipo do valor.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-eval-requisicao
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              ({..., $P, ...}: Request, ...) => {...}
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(params|query|body|headers|cookies)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: eval($X)
+              - pattern: new Function(..., $X)
+              - pattern: vm.runInContext($X, ...)
+              - pattern: vm.runInNewContext($X, ...)
+              - pattern: vm.runInThisContext($X, ...)
+          - focus-metavariable: $X
+    message: >
+      Execução de código vinda da requisição (CWE-95): `eval`, `new Function` ou `vm.run*` recebe dado externo.
+      Não execute texto do usuário; use um parser de expressões com lista de operações permitidas.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-eval-dinamico
+    patterns:
+      - pattern: eval($X)
+      - pattern-not: eval("...")
+      - pattern-not: eval(`...`)
+      - pattern-not: eval(<... req ...>)
+      - pattern-not: eval(<... request ...>)
+    message: >
+      `eval` com argumento que não é texto fixo (CWE-95). Mesmo sem origem externa óbvia, o dado pode vir do banco
+      ou de outra camada. Troque por um parser (JSON.parse, avaliador de expressões com lista de operações).
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-open-redirect
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              ({..., $P, ...}: Request, ...) => {...}
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(params|query|body|headers|cookies)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.redirect($U)
+              - pattern: $RES.redirect($S, $U)
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response)$
+          - focus-metavariable: $U
+    message: >
+      Redirecionamento aberto (CWE-601): o destino vem da requisição. Aceite só caminhos do próprio site ou
+      compare o destino exato com uma lista de permissão (não use `includes`/`indexOf` sobre a URL).
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"
+      owasp: A01:2021 - Broken Access Control
+
+  - id: sentinel-node-path-traversal
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              ({..., $P, ...}: Request, ...) => {...}
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(params|query|body|headers|cookies)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $FS.sendFile($P, ...)
+              - pattern: $FS.download($P, ...)
+              - pattern: $FS.readFile($P, ...)
+              - pattern: $FS.readFileSync($P, ...)
+              - pattern: $FS.createReadStream($P, ...)
+              - pattern: $FS.createWriteStream($P, ...)
+              - pattern: $FS.writeFile($P, ...)
+              - pattern: $FS.writeFileSync($P, ...)
+              - pattern: $FS.unlink($P, ...)
+              - pattern: $FS.unlinkSync($P, ...)
+              - pattern: $FS.readdir($P, ...)
+          - metavariable-regex:
+              metavariable: $FS
+              regex: ^(res|response|fs|fsp|fs\.promises|promises)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern: path.basename(...)
+      - pattern: $X.replace(...)
+    message: >
+      Possível path traversal (CWE-22): o caminho do arquivo vem da requisição. Use só `path.basename`, resolva o
+      caminho final e confira que continua dentro da pasta permitida (`resolved.startsWith(base + path.sep)`).
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp: A01:2021 - Broken Access Control
+
+  - id: sentinel-node-ssrf
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              ({..., $P, ...}: Request, ...) => {...}
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(params|query|body|headers|cookies)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($U, ...)
+              - pattern: axios($U, ...)
+              - pattern: axios.get($U, ...)
+              - pattern: axios.post($U, ...)
+              - pattern: axios.put($U, ...)
+              - pattern: axios.delete($U, ...)
+              - pattern: http.get($U, ...)
+              - pattern: https.get($U, ...)
+              - pattern: got($U, ...)
+              - pattern: got.get($U, ...)
+              - pattern: request($U, ...)
+          - focus-metavariable: $U
+    message: >
+      Possível SSRF (CWE-918): o servidor faz uma requisição para uma URL vinda do usuário. Valide o destino contra
+      uma lista de hosts permitidos, bloqueie IPs internos (127.0.0.0/8, 10.0.0.0/8, 169.254.0.0/16) e não siga
+      redirecionamentos sem conferir.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp: A10:2021 - Server-Side Request Forgery
+
+  - id: sentinel-node-hash-fraco
+    patterns:
+      - pattern-either:
+          - pattern: $C.createHash("md5")
+          - pattern: $C.createHash("sha1")
+          - pattern: $C.createHash("MD5")
+          - pattern: $C.createHash("SHA1")
+      - metavariable-regex:
+          metavariable: $C
+          regex: ^(crypto|nodeCrypto)$
+    message: >
+      Hash fraco (CWE-328): MD5 e SHA-1 permitem colisão. Para senha use `bcrypt`, `scrypt` ou `argon2`; para
+      integridade use SHA-256 ou superior.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-328: Use of Weak Hash"
+      owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-node-xxe
+    pattern-either:
+      - pattern: '$L.parseXml($X, {..., noent: true, ...})'
+      - pattern: '$L.parseXmlString($X, {..., noent: true, ...})'
+    message: >
+      Entidades externas XML ligadas (`noent: true`, CWE-611): o parser lê arquivos locais e faz requisições a
+      pedido do documento. Remova a opção e rejeite DOCTYPE em XML vindo de fora.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-611: Improper Restriction of XML External Entity Reference"
+      owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-node-command-injection
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              ({..., $P, ...}: Request, ...) => {...}
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(params|query|body|headers|cookies)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: exec($C, ...)
+              - pattern: execSync($C, ...)
+          - focus-metavariable: $C
+      - patterns:
+          - pattern-either:
+              - pattern: $CP.exec($C, ...)
+              - pattern: $CP.execSync($C, ...)
+          - metavariable-regex:
+              metavariable: $CP
+              regex: ^(child_process|childProcess|cp|shell)$
+          - focus-metavariable: $C
+    pattern-sanitizers:
+      - pattern: shellEscape(...)
+      - pattern: parseInt(...)
+      - pattern: Number(...)
+    message: >
+      Possível injeção de comando (CWE-78): dado da requisição vai para `exec`, que roda o texto em um shell.
+      Use `execFile`/`spawn` com os argumentos separados (sem `shell: true`) e valide o valor contra uma lista de permissão.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-desserializacao
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              ({..., $P, ...}: Request, ...) => {...}
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(params|query|body|headers|cookies)$
+          - focus-metavariable: $P
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: unserialize($X, ...)
+              - pattern: $S.unserialize($X, ...)
+          - focus-metavariable: $X
+    message: >
+      Desserialização de dado da requisição (CWE-502): `node-serialize` executa funções embutidas no texto. Troque
+      por JSON.parse e valide o formato do resultado.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures

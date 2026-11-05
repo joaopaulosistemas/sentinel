@@ -552,3 +552,18 @@ Deixado de fora de propósito: CVE do `minimatch` (a correção exige subir a ca
 Verificado: `tsc` limpo, `vitest` 299 testes verdes, suíte Joern 7/7, repro da auditoria com 0 achados, sintaxe Java com `javac`.
 NÃO verificado: compilação Maven e testes Java (só no CI); nova execução do Stylelint/PMD; se os ids de supressão novos casam com os da auditoria (só vendo a próxima auditoria).
 
+
+## Dashboard 12.42.0 / API — Regras de segurança para backend Node/Express (`core-security` 1.3.0)
+
+Ciclo de teste com repositórios vulneráveis (Benchmark, Juice Shop, NodeGoat, DVNA), sem a API: o Maven Central não responde no ambiente de trabalho, então só rodei o Opengrep com os pacotes, como o CI faz.
+
+- **OWASP Benchmark (Java):** média 0,62 no treino, 0,44 na validação, 0,53 no conjunto todo (local, regras `core-security`, `core-persistencia`, `core-spring`, `core-quality`). Os falsos positivos que sobram (60 a 70% em path traversal, SQL, comando e XSS na validação) vêm de armadilhas do Benchmark (switch ou condição constante, mapa com chave diferente). Fechar isso pede análise sensível a caminho; ajustar regra para esses casos só subiria a nota. Não foi feito. A diferença treino/validação pode ser só mistura diferente de armadilhas; não está provado sobreajuste.
+- **Lacuna real:** só 7 regras de segurança para JS/TS e nenhuma para backend Node. No Juice Shop (código de aplicação, sem `data/static/codefixes`) o Sentinel não achava SQL injection, eval, redirect, path traversal, SSRF nem MD5.
+- **Novo:** 11 regras `sentinel-node-*` em `core-security/rules/sentinel-node.yml`: SQL injection, NoSQL (`$where`), eval (por requisição e dinâmico), redirecionamento aberto, path traversal, SSRF, hash fraco (MD5/SHA-1), XXE, injeção de comando e desserialização. Reconhecem `req.query/params/body/...` e a forma desestruturada `({ params, query }: Request, res)`. Testes positivos e negativos e remediação para cada uma. `core-security` foi para 1.3.0 (56 regras).
+- **Medido (Juice Shop, treino):** 0 → 15 achados `sentinel-node-*` no código da aplicação. Há ao menos um falso positivo conhecido (`createWriteStream` com extensão filtrada por lista) e um MD5 de checksum em script de build.
+- **Medido (validação, repositórios que ninguém leu; só contagens):** NodeGoat 4 achados (eval ×3, redirect ×1); DVNA 4 (SQL, comando, redirect, XXE). Não conferi falso positivo nesses dois (regra do projeto: validação só com números).
+- **Limites conhecidos:** a análise do Opengrep não segue o dado entre funções e arquivos (ex.: `verify(file)` em `fileServer.ts`; `$where` do NodeGoat montado em outro arquivo), nem entende `if (listaPermitida(x))` como saneamento.
+- `juice-shop/juice-shop` entrou no conjunto de treino (`conjuntos.json`) porque o código foi lido.
+
+Verificado: `semgrep --test` das 11 regras (todas passam), paridade Opengrep × Semgrep (503 achados iguais), contagens acima.
+NÃO verificado: build Maven e testes Java (só no CI); API e dashboard rodando (sem Maven Central nem Docker aqui); precisão das regras novas além do Juice Shop.

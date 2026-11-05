@@ -342,3 +342,96 @@
   refs:
     - "https://owasp.org/www-community/attacks/Log_Injection"
 
+
+- key: "sentinel-node-sql-injection"
+  summary: "Nunca monte o SQL com dado da requisição. Use parâmetros nomeados (`replacements`/`bind` no Sequelize) ou `?` no driver."
+  before: "sequelize.query(`SELECT * FROM Users WHERE email = '${req.body.email}'`)"
+  after: |-
+    sequelize.query('SELECT * FROM Users WHERE email = :email', {
+      replacements: { email: req.body.email },
+      type: QueryTypes.SELECT
+    })
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html"
+
+- key: "sentinel-node-nosql-where"
+  summary: "Não use `$where` com dado externo. Use operadores de consulta e valide o tipo (número, texto) antes."
+  before: "db.reviews.find({ $where: 'this.product == ' + id })"
+  after: "db.reviews.find({ product: Number(id) })"
+  refs:
+    - "https://owasp.org/www-community/attacks/NoSQL_injection"
+
+- key: "sentinel-node-eval-requisicao"
+  summary: "Não execute texto vindo do usuário. Use um parser com lista de operações permitidas."
+  before: "const resultado = eval(req.body.expressao)"
+  after: |-
+    const resultado = avaliarExpressaoSegura(req.body.expressao) // só números e + - * /
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html"
+
+- key: "sentinel-node-eval-dinamico"
+  summary: "Troque `eval` por JSON.parse ou por um avaliador de expressões com lista de operações permitidas."
+  before: "const resposta = eval(expressao).toString()"
+  after: "const resposta = avaliarExpressaoSegura(expressao).toString()"
+  refs:
+    - "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_direct_eval!"
+
+- key: "sentinel-node-open-redirect"
+  summary: "Redirecione só para caminhos do próprio site ou compare o destino exato com uma lista de permissão."
+  before: "res.redirect(req.query.to)"
+  after: |-
+    const permitidos = new Set(['/inicio', '/conta'])
+    res.redirect(permitidos.has(req.query.to) ? req.query.to : '/inicio')
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html"
+
+- key: "sentinel-node-path-traversal"
+  summary: "Use só o nome do arquivo (`path.basename`), resolva o caminho e confira que continua dentro da pasta permitida."
+  before: "res.sendFile(path.resolve('ftp/', req.params.file))"
+  after: |-
+    const base = path.resolve('ftp')
+    const alvo = path.resolve(base, path.basename(req.params.file))
+    if (!alvo.startsWith(base + path.sep)) return res.status(403).end()
+    res.sendFile(alvo)
+  refs:
+    - "https://owasp.org/www-community/attacks/Path_Traversal"
+
+- key: "sentinel-node-ssrf"
+  summary: "Valide o destino contra uma lista de hosts permitidos e bloqueie endereços internos antes de chamar a URL."
+  before: "const resposta = await fetch(req.body.imageUrl)"
+  after: |-
+    const url = new URL(req.body.imageUrl)
+    if (!HOSTS_PERMITIDOS.has(url.hostname)) throw new Error('host não permitido')
+    const resposta = await fetch(url, { redirect: 'error' })
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-hash-fraco"
+  summary: "Para senha use bcrypt, scrypt ou argon2. Para integridade use SHA-256 ou superior."
+  before: "crypto.createHash('md5').update(senha).digest('hex')"
+  after: "await bcrypt.hash(senha, 12)"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
+- key: "sentinel-node-xxe"
+  summary: "Remova `noent: true` e rejeite documentos com DOCTYPE vindos de fora."
+  before: "libxml.parseXml(dados, { noent: true })"
+  after: "libxml.parseXml(dados, { noent: false, nonet: true })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-command-injection"
+  summary: "Evite shell. Use `execFile`/`spawn` com cada argumento separado e valide o valor contra uma lista de permissão."
+  before: "child_process.exec('ping -c 2 ' + req.body.address)"
+  after: |-
+    if (!/^[A-Za-z0-9.-]{1,253}$/.test(req.body.address)) throw new Error('host inválido')
+    child_process.execFile('ping', ['-c', '2', req.body.address])
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html"
+
+- key: "sentinel-node-desserializacao"
+  summary: "Não desserialize dado externo com `node-serialize`. Use JSON.parse e valide o formato."
+  before: "serialize.unserialize(req.cookies.perfil)"
+  after: "const perfil = JSON.parse(req.cookies.perfil) // e valide os campos esperados"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
