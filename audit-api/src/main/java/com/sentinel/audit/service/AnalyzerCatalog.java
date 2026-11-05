@@ -26,6 +26,14 @@ public final class AnalyzerCatalog {
             Map.entry("Código morto", "Exportações TypeScript que ninguém usa"),
             Map.entry("Mensagens de commit", "Primeira linha dos commits no padrão Conventional Commits"));
 
+    /** Analisadores que só tratam de um lado; os demais (segredos, dependências, Git, duplicação, clean code) valem para os dois. */
+    private static final Map<String, String> SIDES = Map.of(
+            "PMD", "back",
+            "OWASP-Dependency", "back",
+            "Evidências", "back",
+            "ESLint", "front",
+            "Código morto", "front");
+
     private AnalyzerCatalog() {
     }
 
@@ -39,5 +47,10 @@ public final class AnalyzerCatalog {
     /** Descrição do analisador, ou vazio quando não há. */
     public static String describe(String name) {
         return name == null ? "" : DESCRIPTIONS.getOrDefault(name, "");
+    }
+
+    /** Lado do analisador: {@code back}, {@code front} ou {@code common} (também para nome desconhecido). */
+    public static String sideOf(String name) {
+        return name == null ? "common" : SIDES.getOrDefault(name, "common");
     }
 }

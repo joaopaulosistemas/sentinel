@@ -11,4 +11,5 @@ rules:
       include: ["*tsconfig*.json"]
       exclude: ["**/node_modules/**"]
     metadata:
+      side: front
       category: quality

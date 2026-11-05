@@ -25,6 +25,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/target/**"]
     metadata:
+      side: back
       category: security
       cwe: "CWE-200: Exposure of Sensitive Information"
 

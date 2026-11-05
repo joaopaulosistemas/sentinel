@@ -27,14 +27,14 @@ public class EngineConfigViews {
 
     public record PackState(String id, String name, String description, boolean inProfile, boolean active) {}
 
-    public record AnalyzerState(String name, String description, boolean disabled) {}
+    public record AnalyzerState(String name, String description, boolean disabled, String side) {}
 
     public record ThresholdState(String key, Integer profileValue, Integer override) {}
 
     public record KnownRule(String id, long count) {}
 
-    /** Regra declarada num pacote: o que ela faz, de que pacote vem e a severidade que o Semgrep declara. */
-    public record CatalogRule(String id, String pack, String message, String severity, String category) {}
+    /** Regra declarada num pacote: o que ela faz, de que pacote vem, a severidade que o Semgrep declara e o lado (back, front ou common). */
+    public record CatalogRule(String id, String pack, String message, String severity, String category, String side) {}
 
     public record Tuning(List<RuleAdjustment> rules, Map<String, Integer> thresholds, List<String> enablePacks,
                          List<String> disablePacks, List<String> disableAnalyzers, List<String> ignorePaths) {}
@@ -87,7 +87,7 @@ public class EngineConfigViews {
                         inProfile.contains(p.id()), active.contains(p.id())))
                 .toList();
         List<AnalyzerState> analyzers = AnalyzerCatalog.names().stream()
-                .map(n -> new AnalyzerState(n, AnalyzerCatalog.describe(n), tuning.analyzerDisabled(n)))
+                .map(n -> new AnalyzerState(n, AnalyzerCatalog.describe(n), tuning.analyzerDisabled(n), AnalyzerCatalog.sideOf(n)))
                 .toList();
         List<ThresholdState> thresholds = ProfileLoader.KNOWN_THRESHOLDS.stream().sorted()
                 .map(k -> new ThresholdState(k, base.thresholds().get(k), tuning.thresholds().get(k)))
@@ -105,7 +105,7 @@ public class EngineConfigViews {
         String description = packRegistry.snapshot().profiles().containsKey(profileId == null ? "" : profileId.toLowerCase(Locale.ROOT))
                 ? packRegistry.snapshot().profiles().get(profileId.toLowerCase(Locale.ROOT)).description() : null;
         List<CatalogRule> catalog = RuleCatalog.of(packRegistry.snapshot().packs()).stream()
-                .map(e -> new CatalogRule(e.id(), e.pack(), e.message(), e.severity(), e.category()))
+                .map(e -> new CatalogRule(e.id(), e.pack(), e.message(), e.severity(), e.category(), e.side()))
                 .toList();
         return new EngineConfigResponse(profileId, description, tuning.adjustments(), dto, rules(base.baseOverrides()),
                 packs, analyzers, thresholds, known, catalog);

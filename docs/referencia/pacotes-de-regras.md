@@ -87,6 +87,8 @@ thresholds:                  # clean code: max-function-lines, max-component-lin
   max-function-lines: 120
 ```
 
+**Lado da regra (`metadata.side`):** `back`, `front` ou `common` (Docker, Kubernetes e o que vale para qualquer linguagem). Sem o campo, o Sentinel deduz: só `java`/`kotlin` é back; só `javascript`/`typescript` é front; regra de texto (`regex`) decide pelas extensões de `paths.include`; infra e dúvida são `common`. Escreva o campo quando a dedução erra (ex.: regra de Node/Express, que é TypeScript no back-end). A tela do motor de regras e o escopo por lado usam esse valor.
+
 **Modo sombra:** regra com `metadata.status: draft|experimental` já nasce em sombra; `shadow: false` no perfil a promove. Serve para
 introduzir uma regra nova sem derrubar a nota de ninguém: observe o volume, ajuste, promova. Exemplos prontos: `profiles/legado.yml`, `profiles/arquitetura-em-camadas.yml`.
 
