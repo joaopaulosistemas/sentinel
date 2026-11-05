@@ -476,3 +476,16 @@ Benchmark OWASP v1.2 (média TPR−FPR): Semgrep 1.172.0 = 0,461 (igual ao `base
 
 Verificado: execução dos dois motores sobre os pacotes e o Benchmark (números acima); paridade das regras.
 NÃO verificado: Maven e testes Java (`SastEngineTest` etc.; sem acesso ao Maven Central aqui), build da imagem Docker, workflows num GitHub real, taint entre arquivos no Opengrep.
+
+## Dashboard 12.36.0 / API — Taint entre arquivos com o Joern (opcional)
+
+Primeira peça do ponto "Profundo" do plano: seguir o dado de um arquivo para outro sem compilar o sistema auditado.
+
+- Ferramenta `joern-taint` no pacote `market-tools` (5.2.0): roda o Joern 4.0.583 (Apache-2.0, versão e SHA-256 fixos) sobre o código-fonte Java com o frontend `javasrc2cpg`, que não precisa de build. Entradas: parâmetros de endpoint Spring MVC e JAX-RS/Quarkus. Pontos perigosos: SQL por texto, comando do sistema e caminho de arquivo (CWE-89, 78 e 22). O caminho do dado vai na mensagem do achado.
+- Só relata caminhos que cruzam mais de um arquivo (o Opengrep já cobre dentro do arquivo). Conversão para número, booleano ou UUID corta o fluxo.
+- Fica desligada por padrão: a imagem só instala o Joern com `WITH_JOERN=true` (cerca de 2 GB); sem ele a ferramenta é ignorada como as demais. Memória: `SENTINEL_JOERN_XMX` (padrão 4g).
+- Nada do que roda hoje muda: o Joern entra ao lado e só deve ficar se a medição mandar.
+- CI: job `Joern (taint entre arquivos)` roda os 6 casos de `audit-api/joern/testes/`.
+
+Verificado: Joern 4.0.583 rodado de verdade neste ambiente. Os 6 casos passam (3 vulneráveis acham a classe esperada; 3 seguros não acham nada: versão corrigida com `?`, conversão com `Integer.parseInt` e fluxo dentro de um arquivo só). No Spring PetClinic: 0 achados em 20 s (sem falso alarme). O SARIF real do Joern foi gravado como fixture e é lido pelo `SarifAnalyzer`.
+NÃO verificado: Maven e testes Java (`SarifAnalyzerTest`, `PackLoaderTest` alterados; sem acesso ao Maven Central aqui, só o CI); build da imagem com `WITH_JOERN=true`; tempo e memória em sistema grande; acerto em código real (só 6 casos, sem medir falso negativo); o ganho sobre o Opengrep no conjunto de pares do plano (ainda não existe).
