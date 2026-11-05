@@ -597,3 +597,11 @@ NÃO verificado: API e dashboard rodando (sem Maven Central nem Docker no ambien
 
 Verificado: sintaxe do script (`bash -n`) e dos YAML.
 NÃO verificado: o workflow `auditoria-completa.yml` e o agente ainda não rodaram; o workflow só pode ser disparado depois de estar na `main`.
+
+## Dashboard 12.46.0 — Auditoria completa: resultado legível pelo log do job
+
+Primeira execução real do workflow `Auditoria completa` (disparada pelo ambiente de nuvem do Claude pela API REST), contra `spring-projects/spring-petclinic` (`JAVA`, sem Joern): concluída com sucesso, nota 44,71 (segurança 0,96, qualidade 4,24, arquitetura 72,61, dependências 100, observabilidade 100, desempenho 90,48), 276 achados (1 CRITICAL, 10 HIGH, 101 MEDIUM, 157 LOW, 7 INFO) de 14 ferramentas (Opengrep, ESLint, Stylelint, Trivy, PMD, jscpd, kube-score, Checkov, Hadolint, kube-linter, Checkstyle, SQLFluff e as de higiene e commit).
+
+Problema achado: o ambiente de nuvem não baixa o artefato (o armazenamento do GitHub devolve 403). Correção: o resumo e uma linha por achado (`achados-compactos.tsv`) passam a sair também no log do job, que a API do GitHub entrega. O artefato continua publicado para quem baixa na própria máquina.
+
+Verificado: disparo, execução completa e leitura do resumo pelo log. NÃO verificado: a nova etapa de log (será exercida na próxima execução); o Joern (`joern=true`); repositórios grandes.

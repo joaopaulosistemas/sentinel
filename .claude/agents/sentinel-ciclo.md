@@ -16,10 +16,11 @@ Você conduz o ciclo de auditoria do Sentinel Audit Tool. Responda em português
    gh workflow run auditoria-completa.yml -f repo_url=<url> -f branch=<branch> -f stack=<JAVA|JAVASCRIPT|MIXED>
    gh run list --workflow auditoria-completa.yml -L 1      # pegar o id
    gh run watch <id> --exit-status
-   gh run download <id> -n auditoria-completa -D saida-auditoria
+   gh run download <id> -n auditoria-completa -D saida-auditoria      # na sua máquina
    ```
+   Em ambiente de nuvem o download do artefato é bloqueado: leia o resumo e a lista de achados no log do job (`gh api repos/<dono>/<repo>/actions/runs/<id>/jobs` para o id do job e `gh api repos/<dono>/<repo>/actions/jobs/<job>/logs`). Dispare pela REST (`gh api -X POST repos/<dono>/<repo>/actions/workflows/auditoria-completa.yml/dispatches -f ref=main -f 'inputs[repo_url]=...'`), porque `gh workflow run` usa GraphQL, que é bloqueado lá.
    Com Docker na máquina também dá para rodar local: construir a imagem (`docker buildx build --load -f audit-api/Dockerfile -t sentinel-audit-api:ci .`) e usar `scripts/auditoria-completa.sh <url> <branch> <stack> <pasta>`.
-   A pasta traz `resumo.md`, `auditoria.json`, `achados.json`, `achados.csv`, `relatorio-tecnico.pdf/.html`, `relatorio-executivo.pdf`, `sbom.json`, `insights.json` e `log-api.txt`.
+   A pasta traz `resumo.md`, `auditoria.json`, `achados.json`, `achados.csv`, `achados-compactos.tsv`, `relatorio-tecnico.pdf/.html`, `relatorio-executivo.pdf`, `sbom.json`, `insights.json` e `log-api.txt`.
 3. **Analisar.** Para cada grupo de achados, abra o código no ponto (`arquivo:linha`) e classifique: verdadeiro positivo, **falso positivo**, **falso negativo** (falha conhecida que nenhuma regra pegou; confira a documentação do alvo) ou ruído de qualidade. Sem evidência (arquivo, linha, saída), registre "sem causa conclusiva" e siga.
 4. **Corrigir o Sentinel, não o alvo.** Uma correção pequena por problema, numa branch `ciclo/<assunto>`: regra nova ou ajustada em `audit-rules/packs/*/rules`, com caso positivo e negativo em `tests/` e entrada em `remediation/remediation.yml`. Rode `semgrep --test` e `scripts/paridade-motores.py`.
 5. **Registrar.** Entrada em `docs/evolucao/LOG.md` (o que mudou, medido antes e depois, `Verificado:` e `NÃO verificado:`).

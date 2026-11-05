@@ -29,7 +29,9 @@ Arquivo `.github/workflows/auditoria-completa.yml`, só sob demanda (Actions →
 | `stack` | `MIXED` | `JAVA`, `JAVASCRIPT` ou `MIXED` |
 | `joern` | `false` | Liga o taint entre arquivos em Java (imagem maior, auditoria mais lenta) |
 
-Constrói a imagem da API, sobe Postgres, cadastra o sistema, audita (até 60 min) e publica o artefato `auditoria-completa` (14 dias) com `resumo.md`, `auditoria.json`, `achados.json`, `achados.csv`, `relatorio-tecnico.pdf/.html`, `relatorio-executivo.pdf`, `sbom.json`, `insights.json` e `log-api.txt`.
+Constrói a imagem da API, sobe Postgres, cadastra o sistema, audita (até 60 min) e publica o artefato `auditoria-completa` (14 dias) com `resumo.md`, `auditoria.json`, `achados.json`, `achados.csv`, `achados-compactos.tsv`, `relatorio-tecnico.pdf/.html`, `relatorio-executivo.pdf`, `sbom.json`, `insights.json` e `log-api.txt`.
+
+**Como o agente lê o resultado:** o ambiente de nuvem do Claude não baixa o artefato (o armazenamento do GitHub é bloqueado lá), então o resumo e uma linha por achado também saem no log do job, que a API do GitHub entrega (`gh api repos/<dono>/<repo>/actions/jobs/<id>/logs`). Quem roda na própria máquina baixa o artefato normalmente com `gh run download`.
 
 Pela linha de comando (`gh`):
 ```

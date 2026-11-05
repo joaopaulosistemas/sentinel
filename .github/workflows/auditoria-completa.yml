@@ -55,6 +55,12 @@ jobs:
         if: always()
         run: |
           [ -f saida-auditoria/resumo.md ] && cat saida-auditoria/resumo.md >> "$GITHUB_STEP_SUMMARY" || echo "sem resumo" >> "$GITHUB_STEP_SUMMARY"
+      - name: Achados no log (uma linha por achado)
+        if: always()
+        run: |
+          echo "::group::achados-compactos.tsv"
+          [ -f saida-auditoria/achados-compactos.tsv ] && cat saida-auditoria/achados-compactos.tsv || echo "sem achados"
+          echo "::endgroup::"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

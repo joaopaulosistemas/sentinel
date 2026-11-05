@@ -3,7 +3,7 @@
 # sistema, roda a auditoria com todos os analisadores e grava os resultados em uma pasta.
 # Uso: scripts/auditoria-completa.sh <url-do-repositorio> [branch] [stack] [pasta-de-saida]
 #   stack: JAVA | JAVASCRIPT | MIXED (padrão MIXED)
-# Saída: auditoria.json, achados.json, achados.csv, relatorio-tecnico.pdf, relatorio-tecnico.html,
+# Saída: auditoria.json, achados.json, achados.csv, achados-compactos.tsv, relatorio-tecnico.pdf, relatorio-tecnico.html,
 #        relatorio-executivo.pdf, sbom.json, insights.json, log-api.txt e resumo.md
 set -u
 REPO_URL="${1:?informe a URL do repositório}"
@@ -87,6 +87,14 @@ linhas = [f"# Auditoria completa: {repo} ({branch})", "",
           f"- Por ferramenta: {dict(fer)}", "", "## Regras mais frequentes"]
 linhas += [f"- {n} × {t}/{r}" for (t, r), n in reg.most_common(25)]
 open(f"{out}/resumo.md", "w").write("\n".join(linhas) + "\n")
+# versão compacta (uma linha por achado) para ler direto no log do GitHub Actions, onde o artefato não chega
+ordem = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
+f.sort(key=lambda x: (ordem.get(x.get("severity"), 9), str(x.get("ruleId")), str(x.get("filePath")), x.get("lineNumber") or 0))
+with open(f"{out}/achados-compactos.tsv", "w") as t:
+    t.write("severidade\tferramenta\tregra\tarquivo:linha\ttitulo\n")
+    for x in f[:5000]:
+        titulo = (x.get("title") or "").replace("\t", " ").replace("\n", " ")[:140]
+        t.write("%s\t%s\t%s\t%s:%s\t%s\n" % (x.get("severity"), x.get("toolSource"), x.get("ruleId"), x.get("filePath"), x.get("lineNumber"), titulo))
 print("\n".join(linhas))
 PY
 docker rm -f sentinel-aud-api sentinel-aud-db >/dev/null 2>&1
