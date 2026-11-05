@@ -643,3 +643,12 @@ NÃO verificado: JUnit/Maven (só no CI): `SystemTuningSidesTest` (política, JS
 - **Mantidos:** `settings-local.xml` (usado pelo guia de instalação), `evidencias/` e `docs/evidencias/*` (usados pelo compose e pelo código).
 
 Verificado: nenhuma referência ao arquivo restou (busca no repositório).
+
+## Dashboard 12.51.0 — Ciclo, rodada 2 (WebGoat): bibliotecas de terceiros em `static/plugins` e `static/js/libs`
+
+- **Medido (WebGoat, treino):** nota 23,38 e 3.884 achados; 2.447 em `src/main/resources`, quase todos de bibliotecas copiadas (`wysihtml5-0.3.0.js` 750, `asciidoctor-default.css` 212, `ace.js` 155, `animate.css` 136).
+- **Causa:** a detecção de biblioteca só olhava o nome (jquery, bootstrap, `*.min.*`); `plugins/` e `js/libs/` passavam.
+- **Mudança:** `ExternalTools.isVendoredLibrary` passa a tratar JS/CSS dentro de `plugins`, `libs`, `vendor`, `vendors`, `third_party` quando há uma pasta de ativos web acima (`static`, `public`, `webapp`, `assets`, `resources`, `www`). Fora dos ativos ou de outro tipo de arquivo (Java, TS em `src/plugins`) não conta. O Semgrep ganhou `static/plugins`, `public/plugins`, `webapp/plugins`.
+- **Não feito:** os achados Java (Checkstyle `magic.number` 569, PMD) não foram mexidos nesta volta.
+
+Verificado: programa `javac` com os caminhos do WebGoat e os casos negativos. NÃO verificado: JUnit/Maven (só no CI); nova auditoria do WebGoat (depois do merge).

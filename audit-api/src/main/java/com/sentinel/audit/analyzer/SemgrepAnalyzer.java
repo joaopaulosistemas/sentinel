@@ -141,7 +141,8 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             "node_modules", "vendor", "vendors", "third_party", "thirdparty", "bower_components", "libs",
             "*.min.js", "*.min.css", "*.bundle.js", "*.pack.js",
             "jquery*.js", "jquery*.css", "font-awesome*.css", "fontawesome*.css", "patternfly*.css", "patternfly*.js",
-            "js/bootstrap*.js", "css/bootstrap*.css");
+            "js/bootstrap*.js", "css/bootstrap*.css",
+            "static/plugins", "public/plugins", "webapp/plugins");
 
     /** Saída do Semgrep: o JSON (ou null) e, se a execução não foi limpa, o motivo (resultado possivelmente incompleto). */
     record SemgrepRun(String json, String partial) {
