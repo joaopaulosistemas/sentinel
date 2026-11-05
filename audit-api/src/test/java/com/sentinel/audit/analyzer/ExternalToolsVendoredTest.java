@@ -99,6 +99,6 @@ class ExternalToolsVendoredTest {
         assertFalse(ExternalTools.hasThirdPartyBanner("/*\nbody{min-width:800px;}\n*/"));
         assertFalse(ExternalTools.hasThirdPartyBanner("function f(){}\n/* MIT License https://x.org */"));
         assertFalse(ExternalTools.hasThirdPartyBanner("/* Copyright Acme. Licensed under MIT. */\nvar a;"));
-        assertFalse(ExternalTools.hasThirdPartyBanner(null));
+        assertFalse(ExternalTools.hasThirdPartyBanner((String) null));
     }
 }
