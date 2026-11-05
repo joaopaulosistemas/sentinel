@@ -39,7 +39,7 @@ class ExternalToolsVendoredTest {
     @Test
     void semgrepExcluiAsMesmasBibliotecas() {
         assertTrue(SemgrepAnalyzer.VENDORED_EXCLUDES.containsAll(
-                java.util.List.of("jquery*.js", "font-awesome*.css", "patternfly*.css", "js/bootstrap*.js")));
+                java.util.List.of("jquery*.js", "font-awesome*.css", "patternfly*.css", "js/bootstrap*.js", "static/plugins")));
     }
 
     @Test
@@ -65,5 +65,22 @@ class ExternalToolsVendoredTest {
         java.nio.file.Files.write(assets.resolve("app.js"), new byte[1_000]);
         assertTrue(ExternalTools.oversizedBundles(dir).contains("front/assets/three.js"));
         assertFalse(ExternalTools.oversizedBundles(dir).contains("front/assets/app.js"));
+    }
+
+    @Test
+    void jsECssEmPastaDePluginsOuLibsDeAtivosEBibliotecaDeTerceiros() {
+        assertTrue(ExternalTools.isVendoredLibrary("src/main/resources/webgoat/static/plugins/bootstrap-wysihtml5/js/wysihtml5-0.3.0.js"));
+        assertTrue(ExternalTools.isVendoredLibrary("src/main/resources/webgoat/static/js/libs/ace.js"));
+        assertTrue(ExternalTools.isVendoredLibrary("src/main/resources/webgoat/static/css/libs/animate.css"));
+        assertTrue(ExternalTools.isVendoredLibrary("public/vendor/x/tema.css"));
+        assertTrue(ExternalTools.inIgnoredDir("webapp/plugins/nanoScroller/jquery.nanoscroller.js"));
+    }
+
+    @Test
+    void pastaPluginsOuLibsForaDeAtivosOuDeOutroTipoNaoEBiblioteca() {
+        assertFalse(ExternalTools.isVendoredLibrary("build/plugins/MeuPlugin.java"));
+        assertFalse(ExternalTools.isVendoredLibrary("src/plugins/loader.ts"));
+        assertFalse(ExternalTools.isVendoredLibrary("src/main/resources/static/js/app/lessons.js"));
+        assertFalse(ExternalTools.isVendoredLibrary("src/libs/util.js"));
     }
 }

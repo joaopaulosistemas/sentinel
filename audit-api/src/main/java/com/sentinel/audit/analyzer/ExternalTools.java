@@ -155,6 +155,10 @@ final class ExternalTools {
     private static final java.util.regex.Pattern VENDORED_ASSET_NAME = java.util.regex.Pattern.compile(
             "^bootstrap[\\w.-]*\\.(js|css)$");
     private static final java.util.Set<String> ASSET_DIRS = java.util.Set.of("js", "css", "lib", "assets", "static", "public", "webapp");
+    /** Pastas onde se guardam bibliotecas de terceiros dentro dos ativos web (ex.: static/plugins, static/js/libs). */
+    private static final java.util.Set<String> THIRD_PARTY_DIRS = java.util.Set.of("plugins", "libs", "vendor", "vendors", "third_party", "thirdparty");
+    private static final java.util.Set<String> WEB_ROOT_DIRS = java.util.Set.of("static", "public", "webapp", "assets", "resources", "www");
+    private static final java.util.regex.Pattern WEB_EXT = java.util.regex.Pattern.compile("\\.(js|mjs|css|map)$");
 
     /**
      * Biblioteca de terceiros copiada para dentro do projeto (jQuery, Bootstrap, Font Awesome, PatternFly, {@code *.min.*}).
@@ -174,6 +178,26 @@ final class ExternalTools {
                 if (ASSET_DIRS.contains(parts[i])) {
                     return true;
                 }
+            }
+        }
+        return inThirdPartyAssetDir(parts, name);
+    }
+
+    /**
+     * JS/CSS dentro de {@code plugins}, {@code libs} ou {@code vendor} que esteja sob uma pasta de ativos web
+     * ({@code static}, {@code public}, {@code webapp}, {@code assets}, {@code resources}). Fora dos ativos (build, src/plugins)
+     * ou de outro tipo de arquivo (Java etc.) não vale: o nome sozinho não prova que é de terceiros.
+     */
+    private static boolean inThirdPartyAssetDir(String[] parts, String name) {
+        if (!WEB_EXT.matcher(name).find()) {
+            return false;
+        }
+        int web = -1;
+        for (int i = 0; i < parts.length - 1; i++) {
+            if (web < 0 && WEB_ROOT_DIRS.contains(parts[i])) {
+                web = i;
+            } else if (web >= 0 && THIRD_PARTY_DIRS.contains(parts[i])) {
+                return true;
             }
         }
         return false;
