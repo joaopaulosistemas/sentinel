@@ -329,3 +329,17 @@ rules:
       category: security
       cwe: "CWE-502: Deserialization of Untrusted Data"
       owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-classloader-define-classe
+    pattern: ClassLoader.class.getDeclaredMethod("defineClass", ...)
+    message: >
+      Acesso por reflexão ao defineClass do ClassLoader: é a forma de carregar bytes de classe arbitrários em tempo de
+      execução. Se os bytes vierem de fora, é execução remota de código. Use um carregador de módulos/plugins conhecido.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-470: Use of Externally-Controlled Input to Select Classes or Code ('Unsafe Reflection')"
+      owasp: A03:2021 - Injection

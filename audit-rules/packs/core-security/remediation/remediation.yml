@@ -490,3 +490,12 @@
     - "https://cwe.mitre.org/data/definitions/502.html"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-classloader-define-classe"
+  summary: "Não carregue bytes de classe por reflexão; use um carregador de plugins que valide a origem."
+  before: "ClassLoader.class.getDeclaredMethod(\"defineClass\", String.class, byte[].class, int.class, int.class);"
+  after: "ServiceLoader.load(Plugin.class); // só implementações instaladas no classpath"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/470.html"
+  effort: M
+  regression-risk: MEDIUM

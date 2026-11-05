@@ -202,4 +202,15 @@ class SenhaComparadaComLiteral {
         // ok: sentinel-fastjson-autotype
         JSON.parseObject(json);
     }
+
+    void defineClassPorReflexao() throws Exception {
+        // ruleid: sentinel-classloader-define-classe
+        java.lang.reflect.Method m = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+        m.setAccessible(true);
+    }
+
+    void outroMetodoDoClassLoader() throws Exception {
+        // ok: sentinel-classloader-define-classe
+        java.lang.reflect.Method m = ClassLoader.class.getDeclaredMethod("getPackages");
+    }
 }
