@@ -28,3 +28,43 @@ rules:
       category: security
       cwe: "CWE-532: Insertion of Sensitive Information into Log File"
       owasp: A09:2021 - Security Logging and Monitoring Failures
+
+  - id: sentinel-log-injection
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., @$A(...) String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $A
+              regex: ^(RequestParam|PathVariable|RequestHeader|CookieValue|RequestBody|QueryParam|PathParam|HeaderParam)$
+          - focus-metavariable: $P
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getHeader(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $LOG.info($MSG, ...)
+              - pattern: $LOG.debug($MSG, ...)
+              - pattern: $LOG.warn($MSG, ...)
+              - pattern: $LOG.error($MSG, ...)
+              - pattern: $LOG.trace($MSG, ...)
+          - metavariable-regex:
+              metavariable: $LOG
+              regex: (?i)^(\w+\.)?(log|logger)$
+          - focus-metavariable: $MSG
+    pattern-sanitizers:
+      - pattern: $X.replace(...)
+      - pattern: $X.replaceAll(...)
+      - pattern: StringEscapeUtils.escapeJava(...)
+    message: >
+      Dado da requisição escrito no log sem tratar quebras de linha: o atacante forja linhas ("log spoofing") e
+      esconde ataques. Remova \r e \n do valor antes de registrar ou use um layout que escape (JSON).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-117: Improper Output Neutralization for Logs"
+      owasp: A09:2021 - Security Logging and Monitoring Failures

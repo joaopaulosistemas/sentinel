@@ -156,3 +156,46 @@ class PropagacaoEmColecoes {
         st.executeQuery("select * from u where n = '" + nome + "'");
     }
 }
+
+class InjecaoComShellEmVariavel {
+
+    void shellPorSistemaOperacional(String comando, boolean windows) throws Exception {
+        String shell = windows ? "cmd.exe" : "/bin/sh";
+        String switchArg = windows ? "/c" : "-c";
+        // ruleid: sentinel-command-injection-shell
+        new ProcessBuilder(shell, switchArg, comando).start();
+        // ruleid: sentinel-command-injection-shell
+        new ProcessBuilder("/bin/sh", "-c", comando).start();
+        // ok: sentinel-command-injection-shell
+        new ProcessBuilder("git", "--version", comando).start();
+        String gitFlag = "--no-pager";
+        // ok: sentinel-command-injection-shell
+        new ProcessBuilder("git", gitFlag, comando).start();
+        // ok: sentinel-command-injection-shell
+        new ProcessBuilder(shell, switchArg, "ls -la").start();
+    }
+}
+
+class LdapEXpathSoNoReceptorCerto {
+    interface Pesquisa {
+        Object search(String usuario, String titulo);
+        Object evaluate(Object configuracao);
+    }
+
+    void servicoDeDominio(Pesquisa service, String titulo, Object config) {
+        // ok: sentinel-ldap-injection
+        service.search("joao", titulo);
+        // ok: sentinel-xpath-injection
+        service.evaluate(config);
+    }
+
+    void ldapDeVerdade(javax.naming.directory.DirContext ctx, String usuario) throws Exception {
+        // ruleid: sentinel-ldap-injection
+        ctx.search("ou=pessoas", "(uid=" + usuario + ")", null);
+    }
+
+    void xpathDeVerdade(javax.xml.xpath.XPath xpath, org.w3c.dom.Document doc, String nome) throws Exception {
+        // ruleid: sentinel-xpath-injection
+        xpath.evaluate("//usuario[nome='" + nome + "']", doc);
+    }
+}

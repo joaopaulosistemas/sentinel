@@ -324,3 +324,21 @@
     - "https://cwe.mitre.org/data/definitions/330.html"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-senha-comparada-com-literal"
+  summary: "Não compare a senha com um texto fixo. Guarde o hash (bcrypt/Argon2) em banco ou cofre e compare com o verificador da biblioteca."
+  before: "if (\"BlackPearl\".equals(password)) { ... }"
+  after: |-
+    if (passwordEncoder.matches(password, usuario.getSenhaHash())) { ... }
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
+- key: "sentinel-log-injection"
+  summary: "Remova \\r e \\n do dado externo antes de registrar, ou use log em JSON, que escapa as quebras de linha."
+  before: "log.info(\"login: \" + usuario);"
+  after: |-
+    var limpo = usuario.replaceAll("[\\r\\n]", "_");
+    log.info("login: {}", limpo);
+  refs:
+    - "https://owasp.org/www-community/attacks/Log_Injection"
+
