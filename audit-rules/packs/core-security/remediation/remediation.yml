@@ -316,6 +316,15 @@
   effort: S
   regression-risk: LOW
 
+- key: "sentinel-crypto-random-nextbytes"
+  summary: "Bytes aleatórios para token, sal, IV ou chave exigem SecureRandom."
+  before: "new java.util.Random().nextBytes(token)"
+  after: "new java.security.SecureRandom().nextBytes(token)"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/330.html"
+  effort: S
+  regression-risk: LOW
+
 - key: "sentinel-crypto-random-servidor"
   summary: "Se o valor protege algo (token, sessão, senha provisória), troque por SecureRandom."
   before: "new java.util.Random().nextInt()"

@@ -96,6 +96,24 @@ rules:
       cwe: "CWE-330: Use of Insufficiently Random Values"
       owasp: A02:2021 - Cryptographic Failures
 
+  # nextBytes preenche um vetor de bytes: quase sempre token, sal, IV ou chave, em qualquer classe (não só servlet/controller)
+  - id: sentinel-crypto-random-nextbytes
+    patterns:
+      - pattern-either:
+          - pattern: new java.util.Random(...).nextBytes(...)
+          - pattern: new Random(...).nextBytes(...)
+          - pattern: (java.util.Random $R).nextBytes(...)
+          - pattern: (Random $R).nextBytes(...)
+    message: >
+      java.util.Random.nextBytes gera bytes previsíveis. Bytes aleatórios costumam virar token, sal, IV ou chave:
+      use java.security.SecureRandom. Se não protege nada, ignore este aviso com justificativa.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-330: Use of Insufficiently Random Values"
+      owasp: A02:2021 - Cryptographic Failures
+
   - id: sentinel-crypto-chave-fixa-no-codigo
     pattern-either:
       - pattern: new SecretKeySpec("...".getBytes(...), ...)
@@ -104,6 +122,10 @@ rules:
           - metavariable-regex:
               metavariable: $K
               regex: "^(?i:.*(?:key|chave|secret|segredo|passphrase).*)$"
+          # constante que nomeia atributo, parâmetro, cabeçalho, propriedade, coluna ou claim ("SESSION_ATTR_ADMIN_KEY") guarda o NOME de uma chave de busca, não uma chave criptográfica
+          - metavariable-regex:
+              metavariable: $K
+              regex: '^(?!(?i:.*(?:attr|attribute|param|parametro|header|cabecalho|prop|property|field|campo|column|coluna|claim|cookie|label|json|map).*key|.*key.*(?:attr|attribute|param|header|prop|property|field|column|claim|cookie|label|json|name|nome))).*$'
           # valor com cara de nome (user_id, app.crypto.key, X-Secret) é identificador de campo ou cabeçalho, não segredo
           - metavariable-regex:
               metavariable: $V

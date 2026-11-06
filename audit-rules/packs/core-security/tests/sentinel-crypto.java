@@ -1,6 +1,7 @@
 import java.io.ObjectInputStream;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Random;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -81,6 +82,10 @@ class CryptoCases {
     static final String SECRET_HEADER = "X-Secret";
     // ok: sentinel-crypto-chave-fixa-no-codigo
     static final String CHAVE_CONFIG = "app.crypto.key";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    static final String SESSION_ATTR_ADMIN_KEY = "admin";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    static final String HEADER_API_KEY = "authorization";
     // ruleid: sentinel-crypto-chave-fixa-no-codigo
     String segredoSimples = "supersecretkey";
     byte[] iv = new byte[16];
@@ -104,5 +109,17 @@ class CryptoCases {
         byte[] aleatorio = new byte[16];
         new SecureRandom().nextBytes(aleatorio);
         new IvParameterSpec(aleatorio);
+    }
+
+    void bytesAleatorios(byte[] destino) {
+        // ruleid: sentinel-crypto-random-nextbytes
+        new Random().nextBytes(destino);
+        java.util.Random sorteio = new java.util.Random();
+        // ruleid: sentinel-crypto-random-nextbytes
+        sorteio.nextBytes(destino);
+        // ok: sentinel-crypto-random-nextbytes
+        new SecureRandom().nextBytes(destino);
+        // ok: sentinel-crypto-random-nextbytes
+        new java.util.Random().nextInt(10);
     }
 }
