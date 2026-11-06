@@ -205,6 +205,11 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern: $REQ.file.originalname
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -308,8 +313,10 @@ rules:
     pattern-either:
       - pattern: '$L.parseXml($X, {..., noent: true, ...})'
       - pattern: '$L.parseXmlString($X, {..., noent: true, ...})'
+      - pattern: '$L.parseXml($X, {..., replaceEntities: true, ...})'
+      - pattern: '$L.parseXmlString($X, {..., replaceEntities: true, ...})'
     message: >
-      Entidades externas XML ligadas (`noent: true`, CWE-611): o parser lê arquivos locais e faz requisições a
+      Entidades externas XML ligadas (`noent: true` ou `replaceEntities: true`, CWE-611): o parser lê arquivos locais e faz requisições a
       pedido do documento. Remova a opção e rejeite DOCTYPE em XML vindo de fora.
     severity: ERROR
     languages: [javascript, typescript]
@@ -361,6 +368,35 @@ rules:
       Possível injeção de comando (CWE-78): dado da requisição vai para `exec`, que roda o texto em um shell.
       Use `execFile`/`spawn` com os argumentos separados (sem `shell: true`) e valide o valor contra uma lista de permissão.
     severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-exec-dinamico
+    patterns:
+      - pattern-either:
+          - pattern: exec($X, ...)
+          - pattern: execSync($X, ...)
+          - patterns:
+              - pattern-either:
+                  - pattern: $CP.exec($X, ...)
+                  - pattern: $CP.execSync($X, ...)
+              - metavariable-regex:
+                  metavariable: $CP
+                  regex: ^(child_process|childProcess|cp|shell)$
+      - pattern-not: $F("...", ...)
+      - pattern-not: $F(<... req ...>, ...)
+      - pattern-not: $F(<... request ...>, ...)
+      - pattern-not-inside: |
+          ({..., $P, ...}: Request, ...) => {...}
+    message: >
+      `exec` recebe um comando que não é texto fixo (CWE-78). O shell interpreta o texto inteiro; se qualquer parte vier
+      de arquivo, XML, banco ou outra camada, vira injeção de comando. Use `execFile`/`spawn` com os argumentos separados
+      e valide o valor contra uma lista de permissão.
+    severity: WARNING
     languages: [javascript, typescript]
     metadata:
       side: back

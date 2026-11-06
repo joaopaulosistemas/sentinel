@@ -401,3 +401,39 @@ export function respostaTexto (req: any, res: any) {
   res.send('erro: ' + req.query.name)
 }
 declare function escapeHtml (s: string): string
+
+// ---------- volta 10: XXE com replaceEntities, nome de arquivo enviado e exec dinâmico ----------
+export function lerXmlReplaceEntities (libxml: any, dados: string) {
+  // ruleid: sentinel-node-xxe
+  return libxml.parseXml(dados, { replaceEntities: true, recover: true, nonet: false })
+}
+
+export function lerXmlReplaceDesligado (libxml: any, dados: string) {
+  // ok: sentinel-node-xxe
+  return libxml.parseXml(dados, { replaceEntities: false, nonet: true })
+}
+
+export function receberUpload (req: any, fs: any, path: any) {
+  // ruleid: sentinel-node-path-traversal
+  fs.writeFileSync(path.join(__dirname, req.file.originalname), req.file.buffer)
+}
+
+export function receberUploadSeguro (req: any, fs: any, path: any) {
+  // ok: sentinel-node-path-traversal
+  fs.writeFileSync(path.join(__dirname, path.basename(req.file.originalname)), req.file.buffer)
+}
+
+export function rodarComando (comando: string, exec: any) {
+  // ruleid: sentinel-node-exec-dinamico
+  exec(comando, () => {})
+}
+
+export function rodarComandoComTemplate (nome: string, execSync: any) {
+  // ruleid: sentinel-node-exec-dinamico
+  execSync(`git checkout ${nome}`)
+}
+
+export function rodarComandoFixo (exec: any) {
+  // ok: sentinel-node-exec-dinamico
+  exec('git status', () => {})
+}

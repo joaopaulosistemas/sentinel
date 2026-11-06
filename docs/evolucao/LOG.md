@@ -771,3 +771,14 @@ Verificado: `semgrep --test` (Android 4/4, crypto 6/6), paridade Opengrep × Sem
 
 Verificado: `opengrep --test` e `semgrep --test` (75/75), paridade Opengrep × Semgrep (588 = 588), varredura de vulnerable-node e Juice Shop, auditorias no CI (vulnerable-node antes e depois, NodeGoat, dvja). NÃO verificado: JUnit/Maven (nada de Java mudou; roda no PR); Opengrep local 1.33.1 e não o 1.30.0 fixado no CI; treinos anteriores (WebGoat etc.) não reauditados; recall em código Node que ninguém leu além dos treinos.
 - **Branch `ciclo/estabilizacao-4`:** 2 voltas, ambas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
+
+## Dashboard 12.62.0 — Ciclo, volta 10 (branch `ciclo/estabilizacao-4`): skills/secure-code-game (treino novo), XXE, upload e exec dinâmico
+
+- **Repositório novo:** skills/secure-code-game (branch `main`, MIXED, 2.857 estrelas, jogo de treino de código seguro em JS, Python, Go e C), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 52,05 e 898 achados (CRITICAL 4, HIGH 35). Opengrep 704 (671 `ts-console-log`), ESLint 89, Trivy 53 (CVE de `package-lock.json`, acertos), Gitleaks 4 (`password.txt` de treino), njsscan 2 (Squirrelly sem escape, acerto). Python, Go e C ficam fora do escopo das regras (stack JAVA/JS).
+- **Análise (código JS lido, treino):** `Season-2/Level-3/code.js` tinha três falhas sem alerta de segurança: `libxmljs.parseXml(..., {replaceEntities: true})` (XXE), `path.join(__dirname, req.file.originalname)` gravado com `writeFileSync` (nome do arquivo enviado) e `exec(command)` com texto vindo do XML. Falso positivo claro de segurança: nenhum.
+- **Mudança:** `sentinel-node-xxe` reconhece `replaceEntities: true`; `sentinel-node-path-traversal` ganha `req.file.originalname` (upload multer) como origem; `sentinel-node-exec-dinamico` (WARNING, nova): `exec`/`execSync` com argumento que não é texto fixo, fora do que a regra de injeção já cobre. Testes e remediação incluídos.
+- **No treino:** secure-code-game acha XXE (1), upload (1) e 6 `exec` dinâmicos (1 em `Level-3/code.js`, 5 em `Season-4/bin/prodbot.js`, com `${porta}`/`${pid}` em `lsof`/`kill`: baixo risco, severidade WARNING); vulnerable-node acha mais 1 `exec` dinâmico real (`routes/extras.js:33`).
+- **Não feito:** achados de Python, Go e C do repositório; `console.log` em massa (671) é ruído de qualidade do conteúdo de treino, sem regra nova.
+
+Verificado: `opengrep --test` (76/76, v1.30.0), paridade Opengrep × Semgrep (602 = 602), varredura de secure-code-game e vulnerable-node. NÃO verificado: nova auditoria no CI com 12.62.0, dvja e NodeGoat com 12.62.0, JUnit/Maven (nada de Java mudou).
