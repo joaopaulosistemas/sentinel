@@ -771,3 +771,12 @@ Verificado: leitura do código. NÃO verificado: JUnit e vitest (só CI); tela r
 - **Não feito:** `client.ts:79` (`JSON.parse(...) as T` no cliente genérico): exige um esquema por endpoint (zod/valibot, dependência nova), decisão de design; God Object `SarifAnalyzer` e complexidade ciclomática (`EnginePanel` 18, `EngineScope` 11, `RuleSide.infer` 14, `SarifAnalyzer.registrar` 14): refatoração maior, sem teste de caracterização; os 348 LOW de estilo; achados de 100 a 304 do PDF (páginas 9 a 30) não lidos.
 
 Verificado: `opengrep --test` do pacote core-boas-praticas (8/8), `tsc --noEmit` e vitest do dashboard (312/312), ESLint com minimatch 11. NÃO verificado: JUnit/Maven (só CI; mudança Java é só nome de variável); nova auditoria do Sentinel; imagem Docker com o `package-lock.json` novo.
+
+## Dashboard 12.64.0 — Gerador de CLAUDE.md: três defeitos e dois guias de referência
+
+- **Defeitos achados** ao revisar os guias de Spring Boot e TypeScript gerados: (1) a regra de Android `webview-url-do-intent` aparecia em "Sem exceção" do Spring, porque as regras Android são `languages: [java]` e nenhuma tecnologia as reivindicava; (2) a mesma regra do Actuator (YAML e `.properties`) saía duas vezes; (3) o título da regra `ignoreExpiration` era cortado no `: ` de dentro das crases (saía "`ignoreExpiration").
+- **Mudança:** `stacks.yml` ganha o campo opcional `exclude` (java, spring e quarkus excluem `sentinel-android-*`; vale só para herança por linguagem, `own`/`also` continuam valendo); `GuideBook.semExcecao` ignora títulos repetidos; `GuideCatalog.title` não corta em `: ` dentro de crases. Testes novos em `GuideBookTest`.
+- **Docs:** `docs/referencia/claude-md-spring-boot.md` e `claude-md-typescript.md`, exemplos já com as correções (montados à mão a partir do texto colado: não vieram do gerador novo).
+- **Em aberto (decisão do João):** o guia diz "até 5 parâmetros", mas a regra `sentinel-cct` (pacote ts-clean-code-labs42, LOW) aponta função com mais de 2; os dois discordam.
+
+Verificado: lógica do título por `javac` com 4 casos (incluindo os existentes). NÃO verificado: `GuideBookTest` e demais JUnit (Maven Central inacessível aqui; só CI); texto real gerado pelo endpoint depois da mudança (o 8º item de "Sem exceção" do Spring pode mudar, pois a lista deixou de gastar vaga com a repetição).

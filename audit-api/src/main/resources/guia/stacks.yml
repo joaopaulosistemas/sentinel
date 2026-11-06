@@ -1,6 +1,7 @@
 # Guia de código: boas práticas por tecnologia, lidas pela tela "Guia de código" e pelo gerador de CLAUDE.md.
 # As regras do Sentinel de cada tecnologia vêm dos pacotes: aqui só ficam os critérios de quais regras entram (own/also/languages)
 # e o texto que as regras não trazem (práticas, lacunas, comandos).
+# exclude: regras que a tecnologia NÃO herda só por dividir a linguagem (ex.: regras de Android não entram no Java de servidor).
 # review.*: marque true quando o passo for feito de fato (conferido na documentação oficial, revisado pela equipe, testado com a IA).
 # Processo: vale para todas as tecnologias. Fontes: Google Engineering Practices (revisão de código) e AWS Well-Architected DL.CR.1.
 process:
@@ -37,6 +38,7 @@ stacks:
     languages: [java]
     own: []
     also: []
+    exclude: ["sentinel-android-*"]
     tools:
       - "Checkstyle"
       - "PMD"
@@ -79,6 +81,7 @@ stacks:
     languages: [java]
     own: ["sentinel-spring-*", "sentinel-camadas-controller-*", "sentinel-boas-spring-*"]
     also: []
+    exclude: ["sentinel-android-*"]
     tools:
       - "Regras próprias (pacote core-spring)"
       - "Checkstyle"
@@ -118,6 +121,7 @@ stacks:
     languages: [java]
     own: ["sentinel-quarkus-*"]
     also: ["sentinel-owasp-a01-endpoint-sem-autorizacao"]
+    exclude: ["sentinel-android-*"]
     tools:
       - "Regras de Java"
       - "Checkstyle"

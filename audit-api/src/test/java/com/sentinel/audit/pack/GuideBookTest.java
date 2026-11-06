@@ -118,4 +118,33 @@ class GuideBookTest {
         assertEquals("Hash fraco", GuideCatalog.title("Hash fraco: use SHA-256. Detalhe."));
         assertEquals("Algoritmo de hash fraco (MD5/SHA-1)", GuideCatalog.title("Algoritmo de hash fraco (MD5/SHA-1). Use SHA-256."));
     }
+
+    @Test
+    void tituloNaoCortaNoDoisPontosDentroDeCrases() {
+        assertEquals("`ignoreExpiration: true` (CWE-613)",
+                GuideCatalog.title("`ignoreExpiration: true` (CWE-613): token vencido continua valendo. Remova a opção."));
+        assertEquals("Hash fraco", GuideCatalog.title("Hash fraco: use SHA-256. Detalhe."));
+    }
+
+    @Test
+    void regrasDeAndroidNaoEntramNoJavaDeServidor() {
+        List<GuideBook.Stack> stacks = GuideBook.stacks();
+        List<GuideCatalog.GuideRule> rules = rules();
+
+        for (String id : List.of("java", "spring", "quarkus")) {
+            List<String> ids = GuideBook.rulesOf(stack(id), stacks, rules).stream().map(s -> s.rule().id()).toList();
+            assertTrue(ids.stream().noneMatch(r -> r.startsWith("sentinel-android-")), id + " sem regra de Android");
+        }
+    }
+
+    @Test
+    void semExcecaoNaoRepeteTituloNemListaAndroidNoSpring() {
+        List<GuideBook.Stack> stacks = GuideBook.stacks();
+        GuideBook.Stack spring = stack("spring");
+        String md = GuideBook.claudeMd(spring, GuideBook.rulesOf(spring, stacks, rules()));
+
+        List<String> linhas = md.lines().filter(l -> l.startsWith("- ") && l.contains(" → ")).toList();
+        assertEquals(linhas.size(), linhas.stream().distinct().count(), "sem linha repetida em 'Sem exceção'");
+        assertFalse(md.contains("Intent"), "regra de Android fora do guia de Spring");
+    }
 }
