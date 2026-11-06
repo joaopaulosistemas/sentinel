@@ -222,6 +222,30 @@ export function carregarPerfilSeguro (req: any) {
   return JSON.parse(req.cookies.perfil)
 }
 
+export const handlerLambda = async (event: any) => {
+  // ruleid: sentinel-node-desserializacao
+  const corpo = serialize.unserialize(event.body)
+  // ruleid: sentinel-node-desserializacao
+  const cabecalhos = serialize.unserialize(event.headers)
+  return [corpo, cabecalhos]
+}
+
+export const handlerLambdaSeguro = async (event: any) => {
+  // ok: sentinel-node-desserializacao
+  return JSON.parse(event.body)
+}
+
+export const handlerLambdaEval = async (event: any) => {
+  const cmd = event.body.cmd
+  // ruleid: sentinel-node-eval-requisicao, sentinel-node-eval-dinamico
+  eval(cmd)
+}
+
+export const naoEhEvento = (config: any) => {
+  // ok: sentinel-node-desserializacao
+  return serialize.unserialize(config.body)
+}
+
 // ---------- cookie sem httpOnly ----------
 export function gravarCookie (res: any, token: string) {
   // ruleid: sentinel-node-cookie-sem-flags

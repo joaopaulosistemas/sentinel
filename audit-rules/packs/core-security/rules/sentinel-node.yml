@@ -109,6 +109,15 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-either:
+              - pattern: $EV.body
+              - pattern: $EV.headers
+              - pattern: $EV.queryStringParameters
+              - pattern: $EV.pathParameters
+          - metavariable-regex:
+              metavariable: $EV
+              regex: ^event$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -424,6 +433,15 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-either:
+              - pattern: $EV.body
+              - pattern: $EV.headers
+              - pattern: $EV.queryStringParameters
+              - pattern: $EV.pathParameters
+          - metavariable-regex:
+              metavariable: $EV
+              regex: ^event$
     pattern-sinks:
       - patterns:
           - pattern-either:

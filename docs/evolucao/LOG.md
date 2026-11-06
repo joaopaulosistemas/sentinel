@@ -802,3 +802,14 @@ Verificado: `opengrep --test` (76/76, v1.30.0), paridade Opengrep × Semgrep (60
 
 Verificado: programa `javac` com o extrator (4 coordenadas esperadas; versão por variável ignorada), auditoria do log4shell antes e depois no CI, dvja e NodeGoat no CI. NÃO verificado: JUnit/Maven (só no PR); SBOM do log4shell com a mudança.
 - **Branch `ciclo/estabilizacao-4`:** 4 voltas, todas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
+
+## Dashboard 12.64.0 — Ciclo, volta 12 (branch `ciclo/estabilizacao-4`): OWASP/DVSA (treino novo), evento do AWS Lambda como origem
+
+- **Repositório novo:** OWASP/DVSA (branch `master`, JAVASCRIPT, 547 estrelas, app serverless de treino na AWS, Lambdas em Node e Python), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 41,99 e 727 achados (CRITICAL 25, HIGH 172). Trivy 349, ESLint 220, Opengrep 111 (quase tudo qualidade), Gitleaks 8 (chaves de exemplo em `template.yml`/`sls.yml`/bundle: acertos de padrão, sem lacuna). Python das Lambdas fica fora do escopo das regras.
+- **Falso negativo (código lido, treino):** `order-manager.js` faz `serialize.unserialize(event.body)` e `event.headers` (node-serialize, RCE) sem alerta; `admin_shell.js` faz `eval(cmd)` com `event.body.cmd` e só saiu como `eval-dinamico` (WARNING). As regras de desserialização e `eval` só viam `req`/`request` como origem, não o `event` do handler Lambda.
+- **Mudança:** `event.body`, `event.headers`, `event.queryStringParameters` e `event.pathParameters` (variável chamada `event`) passam a ser origem em `sentinel-node-desserializacao` e `sentinel-node-eval-requisicao`. Testes novos (positivo, seguro e `config.body` como negativo). No código do DVSA: `unserialize` (2 pontos) e `eval(cmd)` agora como ERROR.
+- **Não feito:** outras regras de injeção (exec, SQL, path) não ganharam a origem `event`; Python (Lambdas) sem regra.
+
+Verificado: `semgrep --test` (21/21; Semgrep 1.184, não o Opengrep) e varredura do código de treino. NÃO verificado: Opengrep nesta volta; nova auditoria do DVSA com 12.64.0 e dvja/NodeGoat (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
+- **Branch `ciclo/estabilizacao-4`:** 5 voltas, todas com mudança; sem PR ainda.
