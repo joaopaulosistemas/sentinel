@@ -275,6 +275,14 @@ class SarifAnalyzerTest {
     }
 
     @Test
+    void semOPacoteDeFerramentasOJoernAparecePorDesligado() throws Exception {
+        Path proj = Files.createTempDirectory("proj").toRealPath();
+        AuditPolicy semMarket = policyWithTools("- id: ext\n  name: Ferramenta A\n  input: \"*.sarif\"\n");
+        String nota = new SarifAnalyzer().analyze(proj, run(), semMarket).infoNote();
+        assertEquals("Joern (taint entre arquivos): desligado neste sistema (o pacote market-tools está fora do perfil ou desligado nos ajustes).", nota);
+    }
+
+    @Test
     void semFerramentaDeComandoNaoHaResumo() throws Exception {
         Path proj = Files.createTempDirectory("proj").toRealPath();
         assertFalse(new SarifAnalyzer().analyze(proj, run(), AuditPolicy.defaults(List.of())).hasInfo());
