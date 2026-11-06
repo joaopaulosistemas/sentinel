@@ -47,6 +47,21 @@ jobs:
           echo "joern=$(tem '^(audit-api/joern/|audit-rules/packs/market-tools/|\.github/)')" >> "$GITHUB_OUTPUT"
           echo "::notice title=Escopo do CI::$(echo "$arq" | wc -l) arquivo(s) alterado(s)"
 
+  separacao:
+    name: Separação treino e validação
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Falha se regra citar repositório de validação, se houver gabarito de validação sem fonte,
+      # se um repositório estiver nos dois conjuntos ou se estado.json estiver com o hash dos conjuntos velho.
+      - run: |
+          base="origin/main"
+          [ "${{ github.event_name }}" = "push" ] && base="HEAD~1"
+          python3 scripts/verificar-separacao.py --base "$base"
+
   backend:
     name: API, CLI e pacotes de regras
     runs-on: ubuntu-latest

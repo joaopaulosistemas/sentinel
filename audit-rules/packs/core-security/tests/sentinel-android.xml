@@ -7,5 +7,24 @@
         <activity android:name=".Envio" android:exported="true" />
         <!-- ok: sentinel-android-manifest-exported -->
         <activity android:name=".Interna" android:exported="false" />
+        <!-- ruleid: sentinel-android-manifest-exported -->
+        <activity android:name=".Antes" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+            </intent-filter>
+        </activity>
+        <!-- ok: sentinel-android-manifest-exported -->
+        <activity android:name=".Principal" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- ruleid: sentinel-android-manifest-exported -->
+        <activity android:name=".Deep" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>

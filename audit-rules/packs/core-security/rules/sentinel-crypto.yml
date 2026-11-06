@@ -100,10 +100,14 @@ rules:
     pattern-either:
       - pattern: new SecretKeySpec("...".getBytes(...), ...)
       - patterns:
-          - pattern: String $K = "...";
+          - pattern: String $K = "$V";
           - metavariable-regex:
               metavariable: $K
               regex: "^(?i:.*(?:key|chave|secret|segredo|passphrase).*)$"
+          # valor com cara de nome (user_id, app.crypto.key, X-Secret) é identificador de campo ou cabeçalho, não segredo
+          - metavariable-regex:
+              metavariable: $V
+              regex: '^(?![a-z0-9]+([._-][a-z0-9]+)+$)(?![A-Z][A-Za-z0-9]*(-[A-Za-z0-9]+)+$).{4,}$'
     message: >
       Chave de criptografia escrita no código-fonte (CWE-321). Ela vai para o Git e para o binário/APK, e quem a
       extrai decifra todos os dados. Gere a chave no armazém seguro do sistema (Android Keystore, KMS, cofre) ou leia

@@ -1,5 +1,5 @@
 {
-  "required_status_checks": {"strict": false, "contexts": ["API, CLI e pacotes de regras", "Testes Semgrep dos pacotes", "Dashboard", "Imagens Docker e Helm", "Calibração em vários repositórios"]},
+  "required_status_checks": {"strict": false, "contexts": ["API, CLI e pacotes de regras", "Testes Semgrep dos pacotes", "Dashboard", "Imagens Docker e Helm", "Calibração em vários repositórios", "Separação treino e validação"]},
   "enforce_admins": false,
   "required_pull_request_reviews": null,
   "restrictions": null,
