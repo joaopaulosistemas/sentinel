@@ -727,6 +727,12 @@ Verificado: programa `javac` com os caminhos do JavaSecLab, casos negativos e le
 - **Não feito:** cifra XOR caseira (`EncryptDecrypt`) e `jwt.verify` com segredo fixo curto não ganharam regra nova (o segundo já sai por `sentinel-api-jwt-chave-fixa-js`); achados de qualidade Java/PMD não mexidos.
 
 Verificado: testes das regras com Semgrep (core-security) e Opengrep, paridade dos dois motores (542 = 542), varredura do código de treino, ESLint rodado nos dois tipos de arquivo. NÃO verificado: nova auditoria do Damn-Vulnerable-Bank com 12.58.0; dvja e NodeGoat com 12.58.0 (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
+
+### Validação da volta 7 (números do CI, sem ler código)
+
+- **dvja:** 176 achados, nota 48,95: igual às voltas anteriores. **NodeGoat:** 278 achados, nota 47,14 (era 328 e 46,86); a queda de 50 vem do ESLint (`no-require-imports` em CommonJS), não de regra de segurança. Sem leitura do código para confirmar que nenhum achado de segurança sumiu; severidades CRITICAL 13, HIGH 56 conferidas só como contagem.
+- **Branch `ciclo/estabilizacao-3`:** 2 voltas, ambas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
+
 ## Dashboard 12.59.0 — Terraform fora do Trivy (decisão aprovada pelo João em 2026-11-06)
 
 - **Decisão:** ignorar Terraform (`.tf`) no Trivy e no Checkov, pois o escopo do projeto já o exclui.
