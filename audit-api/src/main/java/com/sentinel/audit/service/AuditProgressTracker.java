@@ -59,6 +59,9 @@ public class AuditProgressTracker {
         String repoUrl;
         long filesRead;
         long linesOfCode;
+        /** Arquivos copiados e total, na cópia da pasta local; zero quando não se sabe. */
+        long copyDone;
+        long copyTotal;
         /** Achados por severidade de cada analisador concluído; a soma é o resultado parcial. */
         final Map<String, Map<String, Integer>> severities = new LinkedHashMap<>();
     }
@@ -92,6 +95,23 @@ public class AuditProgressTracker {
             s.linesOfCode = linesOfCode;
         }
         mirror(auditId, s);
+    }
+
+    /**
+     * Andamento da cópia da pasta local. O espelho no banco é gravado no máximo uma vez por segundo (a última
+     * chamada, com {@code done == total}, sempre grava); serve também de batimento durante a cópia.
+     */
+    public void copyProgress(Long auditId, long done, long total) {
+        State s = state(auditId);
+        if (s == null) return;
+        synchronized (s) {
+            s.copyDone = Math.max(0, done);
+            s.copyTotal = Math.max(0, total);
+        }
+        Long last = lastBeat.get(auditId);
+        if (done >= total || last == null || System.currentTimeMillis() - last >= CHECK_MILLIS) {
+            mirror(auditId, s);
+        }
     }
 
     /** Registra os analisadores previstos (já com os que não vão rodar), na ordem em que aparecem na tela. */
@@ -223,7 +243,7 @@ public class AuditProgressTracker {
             one.forEach((sev, n) -> total.merge(sev, n, Integer::sum));
         }
         return new AuditProgressDto(s.phase, List.copyOf(s.analyzers.values()), List.copyOf(s.events),
-                s.repoUrl, s.filesRead, s.linesOfCode, total);
+                s.repoUrl, s.filesRead, s.linesOfCode, total, s.copyDone, s.copyTotal);
     }
 
     private static AnalyzerProgress withDescription(AnalyzerProgress a) {

@@ -255,12 +255,18 @@ public class IngestionService {
      * só é lida. O chamador apaga a cópia com {@link #cleanupDirectory(Path)}.
      */
     public Path snapshotLocal(String relative, String branch, LocalSnapshot mode, Integer historyDepth) {
+        return snapshotLocal(relative, branch, mode, historyDepth, LocalSource.CopyProgress.NONE);
+    }
+
+    /** Como {@link #snapshotLocal(String, String, LocalSnapshot, Integer)}, avisando quantos arquivos já foram copiados. */
+    public Path snapshotLocal(String relative, String branch, LocalSnapshot mode, Integer historyDepth,
+                              LocalSource.CopyProgress progress) {
         LocalSource source = requireLocalSource();
         Path basePath = Paths.get(cloneBaseDir).toAbsolutePath().normalize();
         try {
             LOG.infof("Copiando a pasta local %s (branch: %s, %s)", relative,
                     branch == null || branch.isBlank() ? "atual" : branch, mode == null ? LocalSnapshot.COMMIT : mode);
-            return source.snapshot(relative, branch, mode == null ? LocalSnapshot.COMMIT : mode, historyDepth, basePath);
+            return source.snapshot(relative, branch, mode == null ? LocalSnapshot.COMMIT : mode, historyDepth, basePath, progress);
         } catch (IOException e) {
             throw new IllegalStateException("Erro ao copiar a pasta local: " + e.getMessage(), e);
         } catch (InterruptedException e) {

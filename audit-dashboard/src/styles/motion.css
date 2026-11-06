@@ -13,6 +13,26 @@
     opacity: 0.45;
   }
 }
+/* Barra sem porcentagem (fila e clone): um trecho azul que vai e volta. */
+@keyframes sentinel-indeterminate {
+  0% {
+    left: -35%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+.sentinel-indeterminate {
+  position: relative;
+  overflow: hidden;
+}
+.sentinel-indeterminate > span {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 35%;
+  left: 0;
+}
 /* Só anima quando a pessoa não pediu "reduzir movimento". */
 @media (prefers-reduced-motion: no-preference) {
   .sentinel-spin {
@@ -20,5 +40,15 @@
   }
   .sentinel-pulse {
     animation: sentinel-pulse 1.4s ease-in-out infinite;
+  }
+  .sentinel-indeterminate > span {
+    animation: sentinel-indeterminate 1.3s ease-in-out infinite;
+  }
+}
+/* Sem animação, o trecho ocupa a barra inteira com menos força, só para indicar "em andamento". */
+@media (prefers-reduced-motion: reduce) {
+  .sentinel-indeterminate > span {
+    width: 100%;
+    opacity: 0.45;
   }
 }

@@ -897,3 +897,13 @@ Verificado: lógica do título por `javac` com 4 casos (incluindo os existentes)
 - **NÃO feito:** (1) gabarito de validação por fonte pública (cada volta cria um, exige ler documentação do alvo); (2) travar o merge no GitHub: `required_pull_request_reviews` continua `null`, porque o agente usa o token do João e o GitHub não deixa o autor aprovar o próprio PR; precisa de uma conta separada para o agente (decisão do João), e CODEOWNERS só vale com essa exigência; (3) gabaritos e baselines dos treinos antigos; (4) avaliação do Joern para JS/TS; (5) exigir remediação em core-security por teste Java; (6) dedup de eval/exec, remoção de `oversizedBundles`.
 
 Verificado: `opengrep --test` do core-security (79/79), paridade dos motores (645 = 645), `verificar-separacao.py` (incluindo teste negativo com gabarito sem fonte e regra citando NodeGoat), `medir-volta.py` com gabaritos de exemplo, YAML do CI. NÃO verificado: o job novo no GitHub Actions (só no PR); proteção aplicada no GitHub; as duas regras em repositórios reais.
+
+## Dashboard 12.69.0 — Indicador de carregamento na fila e no clone
+
+Problema: ao auditar pasta local no modo "como está agora", a tela ficava parada em "Copiando a pasta local" sem nenhum sinal de vida; a barra marcava 12% fixos e a API não registrava andamento nem quantos arquivos eram copiados.
+
+- API: `AuditProgressDto` ganhou `copyDone`/`copyTotal`; `LocalSource.copyWorkingTree` informa o total antes de copiar e o andamento a cada 100 arquivos, e registra no log a quantidade de arquivos e o tempo; a mensagem de estouro de tempo agora diz quantos arquivos foram copiados. O tracker espelha no banco no máximo uma vez por segundo (serve de batimento durante a cópia).
+- Dashboard: spinner na fase ativa (Fila/Clone), barra indeterminada sem porcentagem enquanto o código é baixado ou copiado, cartão "Copiando o código da pasta local… N de M arquivos" e aviso de lentidão depois de 30 s. Respeita "reduzir movimento".
+
+Verificado: `LocalSource` compilado com javac e rodado em repositório git real (avisos 0/250, 100/250, 200/250, 250/250; assinatura antiga preservada); `vitest` (318 testes), `tsc`.
+Não verificado: testes JUnit novos (`LocalSourceTest`, `AuditProgressTrackerTest`) — o Maven Central não é alcançável neste ambiente, ficam para o CI; tela real com a API rodando.
