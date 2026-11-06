@@ -750,3 +750,10 @@ Verificado: teste do Trivy atualizado (`ExternalScannersTest`). NÃO verificado:
 - **Não feito:** IV zerado vindo de campo `byte[] iv = {0,...}` (o motor não liga o campo ao `IvParameterSpec`); SQL injection por `selection` no ContentProvider exportado; escrita do extrato em armazenamento externo.
 
 Verificado: `semgrep --test` (Android 4/4, crypto 6/6), paridade Opengrep × Semgrep (553 = 553), varredura do código de treino. NÃO verificado: nova auditoria do InsecureBankv2 com 12.60.0; dvja e NodeGoat com 12.60.0 (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
+
+### Medições da volta 8 com 12.60.0 (números do CI)
+
+- **InsecureBankv2 depois:** nota 53,56 e 296 achados (era 57,16 e 293): +3 HIGH novos e verdadeiros (`modo-mundo` em `MyBroadCastReceiver:29`; `chave-fixa` em `CryptoClass:25` e em `wip-attackercode/ExploitAES/.../MainActivity:39`). A nota cai porque a auditoria passou a ver falhas reais; não é piora de qualidade das regras.
+- **Validação (só números):** dvja 176 achados, nota 48,95; NodeGoat 278 achados, nota 47,14: ambos iguais à volta 7. Treinos anteriores não reauditados.
+- **Branch `ciclo/estabilizacao-4`:** 1 volta com mudança; sem PR ainda.
+- NÃO verificado: JUnit/Maven (só no PR); treinos anteriores com 12.60.0.
