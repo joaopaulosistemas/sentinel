@@ -38,6 +38,7 @@ rules:
       exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
     metadata:
       category: security
+      cwe: "CWE-1022: Use of Web Link to Untrusted Target with window.opener Access"
 
   - id: sentinel-fe-html-sem-lang
     pattern-regex: '(?s)<html\b(?![^>]*\blang\s*=)(?![^>]*\bth:(?:replace|insert|include)\b)[^>]*>'

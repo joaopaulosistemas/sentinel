@@ -139,3 +139,4 @@ rules:
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
+      cwe: "CWE-1357: Reliance on Insufficiently Trustworthy Component"
