@@ -717,3 +717,13 @@ Verificado: programa `javac` com os caminhos do JavaSecLab, casos negativos e le
 - **Validação (números do CI, sem ler código):** NodeGoat 328 achados (nota 46,86) e dvja 176 (nota 48,95), iguais às voltas anteriores (12.56.0 e 12.57.0, respectivamente). Treinos anteriores não reauditados.
 - **Branch `ciclo/estabilizacao-3`:** 1 volta com mudança; sem PR ainda.
 - NÃO verificado: JUnit/Maven (só CI, no PR); JavaSecLab com 12.57.0; achados reais de Java do JavaSecLab.
+
+## Dashboard 12.58.0 — Ciclo, volta 7 (branch `ciclo/estabilizacao-3`): Damn-Vulnerable-Bank (treino novo), pacote Android
+
+- **Repositório novo:** rewanthtammana/Damn-Vulnerable-Bank (branch `master`, JAVA, 767 estrelas, app Android Java + backend Node de treino), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 44,76 e 591 achados (CRITICAL 8, HIGH 47). Opengrep 169, ESLint 201, Trivy 82, PMD 41, Checkstyle 34. Todos os CRITICAL/HIGH de Trivy são CVE de dependência do `package-lock.json` (acertos).
+- **Análise (código lido, treino):** o Sentinel não tinha nenhuma regra de Android. Falsos negativos reais: URL do Intent carregada no WebView (`CurrencyRates.java`), token no logcat (`Log.d("accesstoken", accessToken)`), `allowBackup`/`usesCleartextTraffic`/`exported` no manifesto, `Sequelize.literal` com valor da requisição (`Balance/transfer.js`). Falso positivo/ruído: 129 `no-require-imports` do ESLint em JavaScript CommonJS.
+- **Mudança:** `core-security/rules/sentinel-android.yml` (6 regras gerais, testes e remediação); `Sequelize.literal` como ponto de risco de `sentinel-node-sql-injection`; ESLint padrão deixa de aplicar `no-require-imports` a `.js/.cjs/.jsx` (continua em `.ts`). Nos arquivos do próprio repositório de treino, as regras novas acham 7 pontos e 2 em `transfer.js`, nenhum falso positivo.
+- **Não feito:** cifra XOR caseira (`EncryptDecrypt`) e `jwt.verify` com segredo fixo curto não ganharam regra nova (o segundo já sai por `sentinel-api-jwt-chave-fixa-js`); achados de qualidade Java/PMD não mexidos.
+
+Verificado: testes das regras com Semgrep (core-security) e Opengrep, paridade dos dois motores (542 = 542), varredura do código de treino, ESLint rodado nos dois tipos de arquivo. NÃO verificado: nova auditoria do Damn-Vulnerable-Bank com 12.58.0; dvja e NodeGoat com 12.58.0 (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
