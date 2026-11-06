@@ -789,3 +789,16 @@ Verificado: `opengrep --test` (76/76, v1.30.0), paridade Opengrep × Semgrep (60
 - **Validação (só números, sem ler código):** dvja 176 achados, nota 48,95 (igual). NodeGoat 279 achados, nota 46,87 (era 278 e 47,14): o +1 é um `sentinel-node-exec-dinamico` MEDIUM em `Gruntfile.js:165`; não li o arquivo, então não sei se é falso positivo (arquivo de build, WARNING). Nenhuma outra contagem mudou.
 - **Branch `ciclo/estabilizacao-4`:** 3 voltas, todas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
 - NÃO verificado: JUnit/Maven (só no PR); treinos anteriores com 12.62.0.
+
+## Dashboard 12.63.0 — Ciclo, volta 11 (branch `ciclo/estabilizacao-4`): christophetd/log4shell-vulnerable-app (treino novo), Gradle
+
+- **Repositório novo:** christophetd/log4shell-vulnerable-app (branch `main`, JAVA, 1.142 estrelas, app Spring Boot 2.6.1 com Log4j2 de propósito vulnerável), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 90,73 e 9 achados (HIGH 1: Trivy `DS-0002`, sem USER no Dockerfile). Acertos: `sentinel-log-injection` em `MainController.java:18` (a rota do log com o cabeçalho, o ponto do Log4Shell), Dockerfile sem USER/HEALTHCHECK.
+- **Falso negativo principal (sem correção):** nenhum CVE de dependência. O projeto é Gradle sem lockfile, o Log4j-core (CVE-2021-44228) entra só como dependência transitiva de `spring-boot-starter-log4j2`, e o Trivy só lê Gradle com `gradle.lockfile`. Dimensão dependências ficou em 100, o que é enganoso. No pipeline padrão o Trivy substitui o `OWASPDependencyAnalyzer`, então a leitura de `build.gradle` por OSV não entra nos achados.
+- **Mudança (pequena, geral):** `DependencyExtractor.fromGradle` passa a ler a notação de mapa (`group: 'x', name: 'y', version: 'z'`) e a versão fixa do plugin `org.springframework.boot` (como `org.springframework.boot:spring-boot`). Vale para SBOM e checagens de componente (usam o extrator); versões por variável continuam ignoradas. Teste novo em `DependencyExtractorTest`.
+- **Medido (depois, CI):** log4shell igual (nota 90,73, 9 achados): sem ganho de detecção, como esperado, porque o Trivy responde pelos CVEs.
+- **Não feito:** resolver dependência transitiva de Gradle sem lockfile (exigiria rodar o Gradle sobre código de terceiros, que não fazemos, ou um mapa BOM do Spring Boot, que seria sob medida); consultar OSV para manifestos que o Trivy não resolve (muda o desenho do pipeline). Fica como decisão futura.
+- **Validação (só números do CI):** dvja 176 achados, nota 48,95 e NodeGoat 279, nota 46,87: ambos iguais à volta 10.
+
+Verificado: programa `javac` com o extrator (4 coordenadas esperadas; versão por variável ignorada), auditoria do log4shell antes e depois no CI, dvja e NodeGoat no CI. NÃO verificado: JUnit/Maven (só no PR); SBOM do log4shell com a mudança.
+- **Branch `ciclo/estabilizacao-4`:** 4 voltas, todas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
