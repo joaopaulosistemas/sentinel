@@ -679,3 +679,12 @@ Branch única `ciclo/estabilizacao`; as auditorias rodaram a partir dela. Valida
 - **Não feito:** o Opengrep ainda lê testes de propósito (regras de segurança); `rs.getString` em JSP continua sinalizado (é dado do banco).
 
 Verificado: testes das regras (opengrep --test, 61 casos), programas `javac` para a detecção por caminho. NÃO verificado: JUnit/Maven (só CI), medição do XSS em JSP.
+
+## Ciclo, volta 4 (branch `ciclo/estabilizacao-2`) — OWASP/wrongsecrets (treino)
+
+- **Medido:** nota 31,55 e 969 achados (CRITICAL 19, HIGH 216). Gitleaks 165, Trivy 156, Opengrep 119, Checkov 115, kube-score 81, Checkstyle 79, Stylelint 77.
+- **Análise:** o projeto existe para expor segredos (CTF), então Gitleaks, Trivy `DS-0031` e `sentinel-spring-senha-em-properties` são acertos. `application.properties:9` (`password=...`) foi achado; as linhas com `if_you_see_this_please_use_...` são marcadores de lugar de propósito, não segredo. Nenhuma lacuna geral encontrada no código Java dos desafios (os segredos vêm de `@Value`, Dockerfile ou Kubernetes, que já têm regra).
+- **Mudança de código:** nenhuma. **Volta sem ganho** (conta para a estabilização: 1 de 2).
+- **Fora do escopo declarado:** 112 achados de Terraform (`aws/`, `azure/`, `gcp/`) via Checkov e Trivy; decidir se o Sentinel deve ignorar `.tf` (hoje o escopo do projeto exclui Terraform, mas as ferramentas ainda leem).
+
+Verificado: leitura do log da auditoria e do código do repositório de treino. NÃO verificado: nada além disso.
