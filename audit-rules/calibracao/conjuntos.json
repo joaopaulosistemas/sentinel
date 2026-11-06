@@ -9,13 +9,15 @@
       "whgojp/JavaSecLab",
       "rewanthtammana/Damn-Vulnerable-Bank",
       "dineshshetty/Android-InsecureBankv2",
-      "cr0hn/vulnerable-node"
+      "cr0hn/vulnerable-node",
+      "skills/secure-code-game"
     ],
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
     "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu.",
     "_nota_javaseclab": "whgojp/JavaSecLab (app Java de treino de segurança, branch i18n-bilingual, stack JAVA) entrou em 2026-11-06 na volta 6 (ciclo/estabilizacao-3); treino.",
     "_nota_insecurebank": "dineshshetty/Android-InsecureBankv2 (app Android Java de treino + backend Python, branch master, stack JAVA) entrou em 2026-11-06 na volta 8 (ciclo/estabilizacao-4); treino.",
-    "_nota_vulnerable_node": "cr0hn/vulnerable-node (app Node/Express vulnerável de treino, branch master, stack JAVASCRIPT) entrou em 2026-11-06 na volta 9 (ciclo/estabilizacao-4); treino."
+    "_nota_vulnerable_node": "cr0hn/vulnerable-node (app Node/Express vulnerável de treino, branch master, stack JAVASCRIPT) entrou em 2026-11-06 na volta 9 (ciclo/estabilizacao-4); treino.",
+    "_nota_secure_code_game": "skills/secure-code-game (jogo de treino de código seguro em JS, Python, Go e C, branch main, stack MIXED) entrou em 2026-11-06 na volta 10 (ciclo/estabilizacao-4); treino."
   },
   "validacao": {
     "repositorios_fixos": [
