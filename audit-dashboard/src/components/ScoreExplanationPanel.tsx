@@ -1,7 +1,7 @@
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { useState } from 'react';
 import { useScoreExplanation } from '../hooks/useAuditRuns';
-import type { AuditRunResponse, ScoreDimension, ScoreExplanation, ScoreGroup } from '../types';
+import type { IAuditRunResponse, IScoreDimension, IScoreExplanation, IScoreGroup } from '../types';
 import { categoryLabels } from '../utils/resultVerdict';
 import { deltaLabel, groupHint, toggleRule } from '../utils/scoreExplanation';
 import { scoreColor } from '../utils/scoreBand';
@@ -26,7 +26,7 @@ function RemovedChips({ rules, onUndo }: { rules: string[]; onUndo: (rule: strin
   );
 }
 
-function Summary({ data }: { data: ScoreExplanation }) {
+function Summary({ data }: { data: IScoreExplanation }) {
   const simulated = data.removedRules.length > 0;
   const delta = deltaLabel(data.overallBefore, data.overall);
   return (
@@ -48,7 +48,7 @@ function Summary({ data }: { data: ScoreExplanation }) {
   );
 }
 
-function GroupRow({ group, onSimulate }: { group: ScoreGroup; onSimulate: (rule: string) => void }) {
+function GroupRow({ group, onSimulate }: { group: IScoreGroup; onSimulate: (rule: string) => void }) {
   return (
     <tr style={{ borderTop: '1px solid var(--s-border)' }}>
       <td style={{ ...cell, fontFamily: mono, fontSize: 12, overflowWrap: 'anywhere' }}>{group.ruleId}</td>
@@ -66,7 +66,7 @@ function GroupRow({ group, onSimulate }: { group: ScoreGroup; onSimulate: (rule:
   );
 }
 
-function DimensionBlock({ dimension, onSimulate }: { dimension: ScoreDimension; onSimulate: (rule: string) => void }) {
+function DimensionBlock({ dimension, onSimulate }: { dimension: IScoreDimension; onSimulate: (rule: string) => void }) {
   return (
     <section aria-label={categoryLabels[dimension.category]} style={{ display: 'grid', gap: 6 }}>
       <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
@@ -97,7 +97,7 @@ function DimensionBlock({ dimension, onSimulate }: { dimension: ScoreDimension; 
   );
 }
 
-function Body({ data, onSimulate }: { data: ScoreExplanation; onSimulate: (rule: string) => void }) {
+function Body({ data, onSimulate }: { data: IScoreExplanation; onSimulate: (rule: string) => void }) {
   return (
     <div style={{ display: 'grid', gap: '1.25rem' }}>
       <Summary data={data} />
@@ -108,10 +108,10 @@ function Body({ data, onSimulate }: { data: ScoreExplanation; onSimulate: (rule:
 }
 
 /** "Por que esta nota?": quanto cada regra tirou em cada dimensão, onde o teto cortou e a simulação "e se". */
-export function ScoreExplanationPanel({ run }: { run: AuditRunResponse }) {
+export function ScoreExplanationPanel({ run }: { run: IAuditRunResponse }) {
   const [open, setOpen] = useState(false);
   const [without, setWithout] = useState<string[]>([]);
-  const { data, isLoading, error } = useScoreExplanation(run.id, open && run.status === 'COMPLETED', without);
+  const { data, isLoading, error } = useScoreExplanation({ auditId: run.id, enabled: open && run.status === 'COMPLETED', without });
   const simulate = (rule: string) => setWithout((current) => toggleRule(current, rule));
 
   return (

@@ -1,6 +1,6 @@
 import { Button, InlineNotification, Toggle } from '@carbon/react';
 import { useState } from 'react';
-import type { EngineConfig, EngineSide } from '../types';
+import type { IEngineConfig, EngineSide } from '../types';
 import { SIDE_NAME, packsBySide, presetOf, sideTotals, sidesOffOf, type ScopePreset } from '../utils/ruleFamilies';
 
 type OffSide = 'back' | 'front';
@@ -24,12 +24,12 @@ const BADGE_COLORS: Record<EngineSide, { bg: string; fg: string }> = {
 
 /** Etiqueta do lado (texto + cor, para não depender só da cor). */
 export function SideBadge({ side }: { side: EngineSide }) {
-  const c = BADGE_COLORS[side];
+  const colors = BADGE_COLORS[side];
   const text = side === 'back' ? 'BACK' : side === 'front' ? 'FRONT' : 'COMUM';
-  return <span style={{ padding: '2px 8px', background: c.bg, color: c.fg, fontSize: 11, fontWeight: 600 }}>{text}</span>;
+  return <span style={{ padding: '2px 8px', background: colors.bg, color: colors.fg, fontSize: 11, fontWeight: 600 }}>{text}</span>;
 }
 
-interface CardProps {
+interface ICardProps {
   side: OffSide;
   on: boolean;
   rules: number;
@@ -38,7 +38,7 @@ interface CardProps {
   onToggle: (on: boolean) => void;
 }
 
-function SideCard({ side, on, rules, packs, analyzers, onToggle }: CardProps) {
+function SideCard({ side, on, rules, packs, analyzers, onToggle }: ICardProps) {
   const name = SIDE_NAME[side];
   return (
     <div
@@ -66,14 +66,14 @@ function SideCard({ side, on, rules, packs, analyzers, onToggle }: CardProps) {
   );
 }
 
-interface Props {
-  cfg: EngineConfig;
+interface IProps {
+  cfg: IEngineConfig;
   sidesOff: string[];
   onChange: (next: OffSide[]) => void;
 }
 
 /** Escopo da auditoria: liga ou desliga o back-end ou o front-end do sistema de uma vez (regras, pacotes e analisadores do lado). */
-export function ScopeSection({ cfg, sidesOff, onChange }: Props) {
+export function ScopeSection({ cfg, sidesOff, onChange }: IProps) {
   const [refused, setRefused] = useState(false);
   const totals = sideTotals(cfg.catalog);
   const groups = packsBySide(cfg.packs, cfg.catalog);
@@ -84,13 +84,14 @@ export function ScopeSection({ cfg, sidesOff, onChange }: Props) {
     setRefused(false);
     onChange(next);
   };
-  const toggle = (side: OffSide, on: boolean) => {
+  const turnSideOn = (side: OffSide) => apply(sidesOff.filter((s) => s !== side) as OffSide[]);
+  const turnSideOff = (side: OffSide) => {
     const other: OffSide = side === 'back' ? 'front' : 'back';
-    if (!on && sidesOff.includes(other)) {
+    if (sidesOff.includes(other)) {
       setRefused(true);
       return;
     }
-    apply(on ? sidesOff.filter((s) => s !== side) as OffSide[] : [...sidesOff.filter((s) => s !== side), side] as OffSide[]);
+    apply([...sidesOff.filter((s) => s !== side), side] as OffSide[]);
   };
   const off = (['back', 'front'] as const).filter((s) => sidesOff.includes(s));
 
@@ -114,8 +115,8 @@ export function ScopeSection({ cfg, sidesOff, onChange }: Props) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-        <SideCard side="back" on={!sidesOff.includes('back')} rules={totals.back} packs={packsOf('back')} analyzers={analyzersOf('back')} onToggle={(on) => toggle('back', on)} />
-        <SideCard side="front" on={!sidesOff.includes('front')} rules={totals.front} packs={packsOf('front')} analyzers={analyzersOf('front')} onToggle={(on) => toggle('front', on)} />
+        <SideCard side="back" on={!sidesOff.includes('back')} rules={totals.back} packs={packsOf('back')} analyzers={analyzersOf('back')} onToggle={(on) => (on ? turnSideOn('back') : turnSideOff('back'))} />
+        <SideCard side="front" on={!sidesOff.includes('front')} rules={totals.front} packs={packsOf('front')} analyzers={analyzersOf('front')} onToggle={(on) => (on ? turnSideOn('front') : turnSideOff('front'))} />
         <div role="group" aria-label="Escopo Infra e comum" style={{ padding: 16, display: 'grid', gap: 10, border: '1px solid var(--s-border)', background: 'var(--s-header-row)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><SideBadge side="common" /><strong style={{ fontSize: 15 }}>Infra e comum</strong></span>

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { Category, FindingStatus, Severity } from '../types';
 
-interface FindingsFilter {
+interface IFindingsFilter {
   severity?: Severity;
   category?: Category;
   status?: FindingStatus;
@@ -10,7 +10,7 @@ interface FindingsFilter {
   onlyNew?: boolean;
 }
 
-export function useFindings(auditId: number, filter?: FindingsFilter) {
+export function useFindings(auditId: number, filter?: IFindingsFilter) {
   return useQuery({
     queryKey: ['findings', auditId, filter],
     queryFn: () => api.getFindings(auditId, filter),
@@ -18,7 +18,7 @@ export function useFindings(auditId: number, filter?: FindingsFilter) {
   });
 }
 
-export interface OverviewFilter extends Omit<FindingsFilter, 'severity'> {
+export interface IOverviewFilter extends Omit<IFindingsFilter, 'severity'> {
   severity?: Severity[];
   systemId?: number;
   limit: number;
@@ -26,7 +26,7 @@ export interface OverviewFilter extends Omit<FindingsFilter, 'severity'> {
 }
 
 /** Achados da última auditoria concluída de cada sistema, juntos. */
-export function useFindingsOverview(filter: OverviewFilter, enabled = true) {
+export function useFindingsOverview(filter: IOverviewFilter, enabled = true) {
   return useQuery({
     queryKey: ['findingsOverview', filter],
     queryFn: () => api.getFindingsOverview(filter),

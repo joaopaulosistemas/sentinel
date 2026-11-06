@@ -1,29 +1,29 @@
 import { Button } from '@carbon/react';
 import React, { useState } from 'react';
-import type { FindingResponse, FindingStatus } from '../types';
+import type { IFindingResponse, FindingStatus } from '../types';
 import { originLabel } from '../utils/findingOrigin';
 import { severityPill } from '../utils/findingsView';
 import { RemediationBlock } from './RemediationBlock';
 import { SuppressModal } from './SuppressModal';
 
 /** De onde vem o achado, quando a lista mistura vários sistemas. */
-export interface FindingOrigin {
+export interface IFindingOrigin {
   name: string;
   stack?: string | null;
   auditId?: number;
   onClick?: () => void;
 }
 
-interface FindingsTableProps {
-  findings: FindingResponse[];
+interface IFindingsTableProps {
+  findings: IFindingResponse[];
   /** Sistema ao qual a auditoria pertence; mostrado em cada linha para não haver dúvida de onde vem o achado. */
   systemName?: string;
   /** Auditoria dos achados, quando a lista é de uma só. */
   auditId?: number;
   /** Sistema de cada achado, quando a lista mistura vários sistemas. Tem prioridade sobre systemName. */
-  systemOf?: (finding: FindingResponse) => FindingOrigin | undefined;
+  systemOf?: (finding: IFindingResponse) => IFindingOrigin | undefined;
   /** Sugestão aberta do Claude sobre o achado, se houver; vira um selo na linha. */
-  claudeNoteOf?: (finding: FindingResponse) => { title: string } | undefined;
+  claudeNoteOf?: (finding: IFindingResponse) => { title: string } | undefined;
 }
 
 const statusLabels: Record<FindingStatus, string> = {
@@ -55,7 +55,7 @@ function Badge({ title, color, border, marginRight = 4, children }: { title: str
 }
 
 /** Selos do achado: sugestão do Claude, confiança e modo sombra. */
-function FindingBadges({ f, claudeNote }: { f: FindingResponse; claudeNote: { title: string } | undefined }) {
+function FindingBadges({ f, claudeNote }: { f: IFindingResponse; claudeNote: { title: string } | undefined }) {
   return (
     <>
       {claudeNote && (
@@ -82,7 +82,7 @@ function FindingBadges({ f, claudeNote }: { f: FindingResponse; claudeNote: { ti
   );
 }
 
-function SystemCell({ origin, name }: { origin: FindingOrigin | undefined; name: string }) {
+function SystemCell({ origin, name }: { origin: IFindingOrigin | undefined; name: string }) {
   return (
     <td style={{ ...td, minWidth: 0 }}>
       {origin?.onClick ? (
@@ -98,7 +98,7 @@ function SystemCell({ origin, name }: { origin: FindingOrigin | undefined; name:
 }
 
 /** Detalhe aberto da linha: descrição, trecho, identificador, correção e a saída "falso positivo". */
-function FindingDetail({ f, onSuppress }: { f: FindingResponse; onSuppress: () => void }) {
+function FindingDetail({ f, onSuppress }: { f: IFindingResponse; onSuppress: () => void }) {
   return (
     <tr style={{ borderBottom: '1px solid var(--s-border)', background: 'var(--s-layer)' }}>
       <td colSpan={7} style={{ padding: '1rem 1rem 1rem 3.5rem' }}>
@@ -134,9 +134,9 @@ function FindingDetail({ f, onSuppress }: { f: FindingResponse; onSuppress: () =
   );
 }
 
-interface RowProps {
-  f: FindingResponse;
-  origin: FindingOrigin | undefined;
+interface IRowProps {
+  f: IFindingResponse;
+  origin: IFindingOrigin | undefined;
   systemName: string;
   auditId: number | undefined;
   claudeNote: { title: string } | undefined;
@@ -147,7 +147,7 @@ interface RowProps {
   onSuppress: () => void;
 }
 
-function FindingRow({ f, origin, systemName, auditId, claudeNote, expanded, selected, onSelect, onToggleOpen, onSuppress }: RowProps) {
+function FindingRow({ f, origin, systemName, auditId, claudeNote, expanded, selected, onSelect, onToggleOpen, onSuppress }: IRowProps) {
   const pill = severityPill[f.severity];
   const situation = f.isNew === true && f.status === 'OPEN' ? 'Novo' : statusLabels[f.status];
   return (
@@ -215,7 +215,7 @@ function BatchBar({ count, onSuppress, onClear }: { count: number; onSuppress: (
   );
 }
 
-function toggledIn(set: Set<number>, id: number, on: boolean): Set<number> {
+function toggledIn({ set, id, on }: { set: Set<number>; id: number; on: boolean }): Set<number> {
   const next = new Set(set);
   if (on) next.add(id);
   else next.delete(id);
@@ -223,8 +223,8 @@ function toggledIn(set: Set<number>, id: number, on: boolean): Set<number> {
 }
 
 /** Lista de achados: severidade, sistema, achado, local, origem e situação; cada linha abre o detalhe. */
-export function FindingsTable({ findings, systemName, auditId, systemOf, claudeNoteOf }: FindingsTableProps) {
-  const [toSuppress, setToSuppress] = useState<FindingResponse[]>([]);
+export function FindingsTable({ findings, systemName, auditId, systemOf, claudeNoteOf }: IFindingsTableProps) {
+  const [toSuppress, setToSuppress] = useState<IFindingResponse[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [open, setOpen] = useState<Set<number>>(new Set());
   const selectable = findings.filter((f) => f.status !== 'SUPPRESSED');
@@ -272,8 +272,8 @@ export function FindingsTable({ findings, systemName, auditId, systemOf, claudeN
                   claudeNote={claudeNoteOf?.(f)}
                   expanded={open.has(f.id)}
                   selected={selected.has(f.id)}
-                  onSelect={(on) => setSelected(toggledIn(selected, f.id, on))}
-                  onToggleOpen={() => setOpen(toggledIn(open, f.id, !open.has(f.id)))}
+                  onSelect={(on) => setSelected(toggledIn({ set: selected, id: f.id, on }))}
+                  onToggleOpen={() => setOpen(toggledIn({ set: open, id: f.id, on: !open.has(f.id) }))}
                   onSuppress={() => setToSuppress([f])}
                 />
               );

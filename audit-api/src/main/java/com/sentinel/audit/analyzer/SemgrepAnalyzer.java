@@ -212,26 +212,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
     private SemgrepRun runSemgrep(Path projectPath, List<String> configs) throws IOException, InterruptedException {
         SastEngine.Engine engine = SastEngine.find(System.getenv("PATH"))
                 .orElseThrow(() -> new IOException("nem Opengrep nem Semgrep estão no PATH"));
-        List<String> command = new ArrayList<>();
-        command.add(engine.executable().toString());
-        for (String config : configs) {
-            command.add("--config");
-            command.add(config);
-        }
-        for (String pattern : VENDORED_EXCLUDES) {
-            command.add("--exclude");
-            command.add(pattern);
-        }
-        for (String bundle : ExternalTools.vendoredFiles(projectPath)) {
-            command.add("--exclude");
-            command.add(bundle);
-        }
-        command.add("--json");
-        command.add("--quiet");
-        command.addAll(engine.quietFlags());
-        command.add("--timeout");
-        command.add("60");
-        command.add(projectPath.toString());
+        List<String> command = buildCommand(engine, projectPath, configs);
 
         Path outputFile = Files.createTempFile("semgrep-out-", ".json");
         Path errFile = Files.createTempFile("semgrep-err-", ".txt");
@@ -263,6 +244,31 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             Files.deleteIfExists(outputFile);
             Files.deleteIfExists(errFile);
         }
+    }
+
+    /** Linha de comando do motor: configs, exclusões de terceiros, formato JSON e a pasta a analisar. */
+    private static List<String> buildCommand(SastEngine.Engine engine, Path projectPath, List<String> configs) {
+        List<String> command = new ArrayList<>();
+        command.add(engine.executable().toString());
+        for (String config : configs) {
+            command.add("--config");
+            command.add(config);
+        }
+        for (String pattern : VENDORED_EXCLUDES) {
+            command.add("--exclude");
+            command.add(pattern);
+        }
+        for (String bundle : ExternalTools.vendoredFiles(projectPath)) {
+            command.add("--exclude");
+            command.add(bundle);
+        }
+        command.add("--json");
+        command.add("--quiet");
+        command.addAll(engine.quietFlags());
+        command.add("--timeout");
+        command.add("60");
+        command.add(projectPath.toString());
+        return command;
     }
 
     /**

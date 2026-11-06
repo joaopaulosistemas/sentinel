@@ -50,3 +50,33 @@ describe('apiFetch: resposta de sucesso sem corpo', () => {
     await expect(api.getSettings()).resolves.toEqual({ restartRequired: true, settings: [] });
   });
 });
+
+describe('chamadas com vários valores recebem um objeto', () => {
+  function stubCapture() {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  it('checkRepo envia só o que foi preenchido', async () => {
+    const fetchMock = stubCapture();
+    await api.checkRepo({ repoUrl: 'https://git/x', branch: '', systemId: 7, gitToken: '', gitTokenHosts: 'git' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/v1/systems/check-repo');
+    expect(JSON.parse(String(init?.body))).toEqual({ repoUrl: 'https://git/x', systemId: 7, gitTokenHosts: 'git' });
+  });
+
+  it('reviewAction usa o sistema e o caminho na URL e o corpo no POST', async () => {
+    const fetchMock = stubCapture();
+    await api.reviewAction({ systemId: 3, path: 'run', body: { a: 1 } });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/v1/claude-review/3/run');
+    expect(init?.body).toBe('{"a":1}');
+  });
+
+  it('decidePendingAction monta a URL com a decisão', async () => {
+    const fetchMock = stubCapture();
+    await api.decidePendingAction({ systemId: 2, actionId: 9, decision: 'reject' });
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/pending-actions/2/9/reject');
+  });
+});

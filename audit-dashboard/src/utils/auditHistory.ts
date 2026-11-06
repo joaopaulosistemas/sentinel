@@ -1,4 +1,4 @@
-import type { AuditRunResponse } from '../types';
+import type { IAuditRunResponse } from '../types';
 import { scoreBand, type ScoreBand } from './scoreBand';
 
 /** Quantas auditorias o gráfico mostra: as mais recentes do sistema. */
@@ -7,7 +7,7 @@ export const HISTORY_SIZE = 10;
 /** O que a coluna representa: nota, falha, cancelamento ou auditoria ainda em andamento. */
 export type HistoryKind = 'scored' | 'failed' | 'cancelled' | 'active';
 
-export interface HistoryPoint {
+export interface IHistoryPoint {
   id: number;
   kind: HistoryKind;
   /** Nota geral arredondada; nula quando a auditoria não gerou nota. */
@@ -23,7 +23,7 @@ export interface HistoryPoint {
   high: number;
 }
 
-const KIND_BY_STATUS: Record<AuditRunResponse['status'], HistoryKind> = {
+const KIND_BY_STATUS: Record<IAuditRunResponse['status'], HistoryKind> = {
   COMPLETED: 'scored',
   FAILED: 'failed',
   CANCELLED: 'cancelled',
@@ -41,19 +41,19 @@ function timeLabel(date: Date): string {
   return Number.isNaN(date.getTime()) ? '' : `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-const startedAt = (run: AuditRunResponse) => {
-  const t = Date.parse(run.startedAt);
-  return Number.isNaN(t) ? 0 : t;
+const startedAt = (run: IAuditRunResponse) => {
+  const parsed = Date.parse(run.startedAt);
+  return Number.isNaN(parsed) ? 0 : parsed;
 };
 
 /**
  * As últimas auditorias do sistema, da mais antiga para a mais recente, prontas para o gráfico.
  * A variação vem do servidor (`scoreDelta`); sem ela, compara com a auditoria anterior que gerou nota.
  */
-export function buildHistory(runs: AuditRunResponse[], size: number = HISTORY_SIZE): HistoryPoint[] {
+export function buildHistory(runs: IAuditRunResponse[], size: number = HISTORY_SIZE): IHistoryPoint[] {
   const ordered = [...runs].sort((a, b) => startedAt(a) - startedAt(b) || a.id - b.id);
   let previousScore: number | null = null;
-  const points = ordered.map((run): HistoryPoint => {
+  const points = ordered.map((run): IHistoryPoint => {
     const point = toPoint(run, previousScore);
     if (point.score !== null) previousScore = point.score;
     return point;
@@ -62,17 +62,17 @@ export function buildHistory(runs: AuditRunResponse[], size: number = HISTORY_SI
 }
 
 /** Nota arredondada da auditoria, ou `null` quando ela não gerou nota. */
-function scoreOf(run: AuditRunResponse, kind: HistoryPoint['kind']): number | null {
+function scoreOf(run: IAuditRunResponse, kind: IHistoryPoint['kind']): number | null {
   return kind === 'scored' && run.riskScore ? Math.round(run.riskScore.overall) : null;
 }
 
 /** Variação da nota: a do servidor quando existe; senão, a diferença para a última auditoria que gerou nota. */
-function deltaOf(run: AuditRunResponse, score: number | null, previousScore: number | null): number | null {
+function deltaOf({ run, score, previousScore }: { run: IAuditRunResponse; score: number | null; previousScore: number | null }): number | null {
   if (run.scoreDelta != null) return Math.round(run.scoreDelta);
   return score !== null && previousScore !== null ? score - previousScore : null;
 }
 
-function toPoint(run: AuditRunResponse, previousScore: number | null): HistoryPoint {
+function toPoint(run: IAuditRunResponse, previousScore: number | null): IHistoryPoint {
   const kind = KIND_BY_STATUS[run.status];
   const score = scoreOf(run, kind);
   const when = new Date(run.completedAt ?? run.startedAt);
@@ -83,14 +83,14 @@ function toPoint(run: AuditRunResponse, previousScore: number | null): HistoryPo
     band: scoreBand(score),
     dayLabel: dayLabel(when),
     timeLabel: timeLabel(when),
-    delta: deltaOf(run, score, previousScore),
+    delta: deltaOf({ run, score, previousScore }),
     critical: run.findingsSummary?.CRITICAL ?? 0,
     high: run.findingsSummary?.HIGH ?? 0,
   };
 }
 
 /** Quantas das auditorias com nota estão na meta (nota boa) e quantas têm nota. */
-export function historySummary(points: HistoryPoint[]): { onTarget: number; scored: number } {
+export function historySummary(points: IHistoryPoint[]): { onTarget: number; scored: number } {
   const scored = points.filter((p) => p.score !== null);
   return { onTarget: scored.filter((p) => p.band === 'good').length, scored: scored.length };
 }

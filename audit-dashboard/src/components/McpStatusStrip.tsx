@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { McpCall } from '../types';
+import type { IMcpCall } from '../types';
 import { timeAgo } from '../utils/timeAgo';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
-export interface McpStatusStripProps {
+export interface IMcpStatusStripProps {
   systemId: number;
   /** null enquanto a configuração do sistema não chegou: nada é mostrado até saber. */
   enabled: boolean | null;
   /** Chamadas do Claude desde o início desta auditoria, da mais recente para a mais antiga. */
-  calls: McpCall[];
+  calls: IMcpCall[];
   /** Pedidos do Claude esperando aprovação. */
   pending: number;
 }
@@ -19,7 +19,7 @@ export interface McpStatusStripProps {
  * Faixa "Claude (MCP)" da tela de execução da auditoria: diz se o Claude pode consultar este sistema e se já consultou
  * durante esta execução. É só informação: o motor de regras continua sendo a única fonte da nota.
  */
-export function McpStatusStrip({ systemId, enabled, calls, pending }: McpStatusStripProps) {
+export function McpStatusStrip({ systemId, enabled, calls, pending }: IMcpStatusStripProps) {
   if (enabled === null) return null;
 
   const last = calls[0];

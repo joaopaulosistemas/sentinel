@@ -2,17 +2,17 @@ import { InlineNotification } from '@carbon/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDiff, useFreshness } from '../../hooks/useLifecycle';
 import { useAuditStore } from '../../store/useAuditStore';
-import type { AuditRunResponse, SystemSummaryResponse } from '../../types';
+import type { IAuditRunResponse, ISystemSummaryResponse } from '../../types';
 import { activeFilterChips, footerText } from '../../utils/findingsView';
 import { FindingsFilters, PaginationFooter } from './FindingsFilters';
 import { FindingsListBody, ResolvedSection, SystemSummaryCards, originFinder } from './FindingsParts';
 import { isDefaultFilters, useClaudeNotes, useFindingsData, type FindingFilters } from './useFindingsPage';
 
-interface Props {
+interface IProps {
   auditMode: boolean;
   auditId: number;
-  audit: AuditRunResponse | undefined;
-  systems: SystemSummaryResponse[] | undefined;
+  audit: IAuditRunResponse | undefined;
+  systems: ISystemSummaryResponse[] | undefined;
   filters: FindingFilters;
   auditSystemId: number | undefined;
   activeSystemId: number | undefined;
@@ -31,8 +31,13 @@ function StaleAuditNotice({ auditedCommit, currentCommit }: { auditedCommit?: st
 
 type FindingsData = ReturnType<typeof useFindingsData>;
 
+interface IAuditScope {
+  auditMode: boolean;
+  auditId: number;
+}
+
 /** Os resolvidos não estão na lista da auditoria (já não existem nela): vêm da comparação com a anterior. */
-function useResolvedFindings(auditMode: boolean, auditId: number) {
+function useResolvedFindings({ auditMode, auditId }: IAuditScope) {
   const { data: diff } = useDiff(auditMode ? auditId : undefined);
   const { data: freshness } = useFreshness(auditMode ? auditId : undefined);
   const resolved = (diff?.resolvedFindings ?? []).map((f) => ({ ...f, status: 'FIXED' as const }));
@@ -40,25 +45,29 @@ function useResolvedFindings(auditMode: boolean, auditId: number) {
 }
 
 /** Clicar na origem de um achado abre o sistema dele (só na visão de todos os sistemas). */
-function useSystemOrigin(auditMode: boolean, data: FindingsData) {
+function useSystemOrigin({ auditMode, data }: { auditMode: boolean; data: FindingsData }) {
   const navigate = useNavigate();
   const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
   if (auditMode) return undefined;
-  return originFinder(data.itemByFinding, data.stackBySystem, (hit) => {
-    setSelectedAudit(hit.auditId);
-    navigate(`/systems/${hit.systemId}`);
+  return originFinder({
+    itemByFinding: data.itemByFinding,
+    stackByName: data.stackBySystem,
+    open: (hit) => {
+      setSelectedAudit(hit.auditId);
+      navigate(`/systems/${hit.systemId}`);
+    },
   });
 }
 
-interface ConnectedFiltersProps {
+interface IConnectedFiltersProps {
   auditMode: boolean;
-  systems: SystemSummaryResponse[] | undefined;
+  systems: ISystemSummaryResponse[] | undefined;
   activeSystemId: number | undefined;
   filters: FindingFilters;
   data: FindingsData;
 }
 
-function ConnectedFilters({ auditMode, systems, activeSystemId, filters, data }: ConnectedFiltersProps) {
+function ConnectedFilters({ auditMode, systems, activeSystemId, filters, data }: IConnectedFiltersProps) {
   const [, setSearchParams] = useSearchParams();
   const systemName = data.summary.find((b) => b.systemId === filters.systemId)?.systemName ?? '';
   const chips = activeFilterChips({ systemName, showSystem: !auditMode, severity: filters.severity, category: filters.category, situation: filters.situation });
@@ -91,7 +100,7 @@ function ConnectedFilters({ auditMode, systems, activeSystemId, filters, data }:
   );
 }
 
-interface ListSectionProps {
+interface IListSectionProps {
   auditMode: boolean;
   auditId: number;
   auditSystemName: string | undefined;
@@ -101,7 +110,7 @@ interface ListSectionProps {
   claudeNoteOf: ReturnType<typeof useClaudeNotes>;
 }
 
-function ListSection({ auditMode, auditId, auditSystemName, filters, data, systemOf, claudeNoteOf }: ListSectionProps) {
+function ListSection({ auditMode, auditId, auditSystemName, filters, data, systemOf, claudeNoteOf }: IListSectionProps) {
   const showFooter = !data.loading && !data.error && data.total > 0;
   return (
     <section aria-label="Lista de findings" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
@@ -120,7 +129,7 @@ function ListSection({ auditMode, auditId, auditSystemName, filters, data, syste
       />
       {showFooter && (
         <PaginationFooter
-          text={footerText(data.rows.length, data.total, filters.situation, filters.severity, auditMode ? 1 : data.summary.length)}
+          text={footerText({ shown: data.rows.length, total: data.total, situation: filters.situation, severity: filters.severity, systems: auditMode ? 1 : data.summary.length })}
           page={filters.page}
           pages={data.pages}
           pageSize={filters.pageSize}
@@ -133,11 +142,11 @@ function ListSection({ auditMode, auditId, auditSystemName, filters, data, syste
 }
 
 /** Aba "Achados e nota": filtros, resumo por sistema, lista paginada e os achados resolvidos desde a auditoria anterior. */
-export function FindingsTab({ auditMode, auditId, audit, systems, filters, auditSystemId, activeSystemId }: Props) {
-  const { resolved, stale } = useResolvedFindings(auditMode, auditId);
-  const data = useFindingsData(auditMode, auditId, filters);
-  const claudeNoteOf = useClaudeNotes(auditMode, auditSystemId, filters.systemId, data);
-  const systemOf = useSystemOrigin(auditMode, data);
+export function FindingsTab({ auditMode, auditId, audit, systems, filters, auditSystemId, activeSystemId }: IProps) {
+  const { resolved, stale } = useResolvedFindings({ auditMode, auditId });
+  const data = useFindingsData({ auditMode, auditId, filters });
+  const claudeNoteOf = useClaudeNotes({ auditMode, auditSystemId, systemId: filters.systemId, data });
+  const systemOf = useSystemOrigin({ auditMode, data });
 
   return (
     <>

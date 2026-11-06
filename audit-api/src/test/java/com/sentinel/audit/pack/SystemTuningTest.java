@@ -130,7 +130,7 @@ class SystemTuningTest {
 
     @Test
     void caminhosIgnoradosTiramOsAchadosDoArquivo() {
-        SystemTuning t = new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), Set.of("docs/", "**/test/**"));
+        SystemTuning t = new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), Set.of("docs/", "**/test/**"), Set.of());
         assertEquals(2, t.adjustments());
         assertFalse(t.isEmpty());
         AuditPolicy p = new AuditPolicy("p", List.of(), Map.of(), Map.of()).withTuning(t, List.of());

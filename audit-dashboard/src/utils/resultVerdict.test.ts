@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { FixPlan, RiskScoreDto } from '../types';
+import type { IFixPlan, IRiskScoreDto } from '../types';
 import { categoriesByScore, verdict } from './resultVerdict';
 
-const plan = (over: Partial<FixPlan>): FixPlan => ({ scoreNow: 63, scoreIfCriticalFixed: 74, criticalCount: 3, items: [], ...over });
+const plan = (over: Partial<IFixPlan>): IFixPlan => ({ scoreNow: 63, scoreIfCriticalFixed: 74, criticalCount: 3, items: [], ...over });
 
 describe('veredito do resultado', () => {
   it('com críticos mostra quantos e o ganho de corrigir só eles', () => {
@@ -37,7 +37,7 @@ describe('veredito do resultado', () => {
   });
 
   it('categorias saem da pior para a melhor e ignoram dimensão ausente', () => {
-    const score: RiskScoreDto = { overall: 60, security: 40, quality: 80, architecture: 60, dependencies: 20, observability: 90 };
+    const score: IRiskScoreDto = { overall: 60, security: 40, quality: 80, architecture: 60, dependencies: 20, observability: 90 };
     expect(categoriesByScore(score).map((c) => c.label)).toEqual(['Dependências', 'Segurança', 'Arquitetura', 'Qualidade', 'Observabilidade']);
     expect(categoriesByScore(null)).toEqual([]);
   });

@@ -9,13 +9,13 @@ const finding = (id: number, title: string) => ({
   codeSnippet: null, ruleId: 'r', toolSource: 'semgrep', cveId: null, aiRecommendation: null, status: 'OPEN',
 });
 
-function stub(urls: string[]) {
+function stub(onRequest: (url: string) => void) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
-      urls.push(String(url));
-      const u = String(url);
-      const body = u.startsWith('/api/v1/findings?')
+      onRequest(String(url));
+      const requestUrl = String(url);
+      const body = requestUrl.startsWith('/api/v1/findings?')
         ? {
             total: 2,
             bySystem: [
@@ -36,7 +36,7 @@ function stub(urls: string[]) {
 afterEach(() => vi.unstubAllGlobals());
 
 function renderFindings(url = '/findings') {
-  stub([]);
+  stub(() => {});
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter initialEntries={[url]}>
@@ -49,7 +49,7 @@ function renderFindings(url = '/findings') {
 describe('FindingsPage', () => {
   it('sem auditoria na URL mostra os achados de todos os sistemas, com o sistema de cada um', async () => {
     const urls: string[] = [];
-    stub(urls);
+    stub((url) => urls.push(url));
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <MemoryRouter initialEntries={['/findings']}>
@@ -116,7 +116,7 @@ describe('FindingsPage', () => {
 
   it('escolher um sistema no filtro acrescenta o chip dele e filtra a consulta', async () => {
     const urls: string[] = [];
-    stub(urls);
+    stub((url) => urls.push(url));
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <MemoryRouter initialEntries={['/findings']}>
@@ -135,12 +135,12 @@ describe('FindingsPage', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
-        const u = String(url);
-        if (u === '/api/v1/findings/suppress-batch') {
-          calls.push({ url: u, body: String(init?.body) });
+        const requestUrl = String(url);
+        if (requestUrl === '/api/v1/findings/suppress-batch') {
+          calls.push({ url: requestUrl, body: String(init?.body) });
           return new Response(JSON.stringify({ requested: 2, suppressed: 2, failures: [] }), { status: 200 });
         }
-        const body = u.startsWith('/api/v1/findings?')
+        const body = requestUrl.startsWith('/api/v1/findings?')
           ? {
               total: 2,
               bySystem: [],

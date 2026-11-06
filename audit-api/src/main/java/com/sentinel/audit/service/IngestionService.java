@@ -266,7 +266,8 @@ public class IngestionService {
         try {
             LOG.infof("Copiando a pasta local %s (branch: %s, %s)", relative,
                     branch == null || branch.isBlank() ? "atual" : branch, mode == null ? LocalSnapshot.COMMIT : mode);
-            return source.snapshot(relative, branch, mode == null ? LocalSnapshot.COMMIT : mode, historyDepth, basePath, progress);
+            return source.snapshot(new LocalSource.SnapshotRequest(relative, branch, mode == null ? LocalSnapshot.COMMIT : mode, historyDepth),
+                    basePath, progress);
         } catch (IOException e) {
             throw new IllegalStateException("Erro ao copiar a pasta local: " + e.getMessage(), e);
         } catch (InterruptedException e) {

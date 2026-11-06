@@ -1,9 +1,9 @@
-import type { Category, FixPlan, RiskScoreDto } from '../types';
+import type { Category, IFixPlan, IRiskScoreDto } from '../types';
 import { TARGET_SCORE, WARN_SCORE } from './scoreBand';
 
 export { TARGET_SCORE };
 
-export interface Verdict {
+export interface IVerdict {
   tone: 'good' | 'warn' | 'bad';
   headline: string;
   detail: string;
@@ -13,7 +13,7 @@ export interface Verdict {
  * Frase do veredito: diz o que pesa e o que fazer, sem exigir que a pessoa leia a lista inteira.
  * Trechos entre ** ** são o destaque (negrito) de quem exibe.
  */
-export function verdict(plan: FixPlan): Verdict {
+export function verdict(plan: IFixPlan): IVerdict {
   const now = Math.round(plan.scoreNow);
   const tone = now >= TARGET_SCORE ? 'good' : now >= WARN_SCORE ? 'warn' : 'bad';
   if (plan.criticalCount > 0) return { tone, ...criticalVerdict(plan, now) };
@@ -28,7 +28,7 @@ export function verdict(plan: FixPlan): Verdict {
   };
 }
 
-function criticalVerdict(plan: FixPlan, now: number): Pick<Verdict, 'headline' | 'detail'> {
+function criticalVerdict(plan: IFixPlan, now: number): Pick<IVerdict, 'headline' | 'detail'> {
   const after = Math.round(plan.scoreIfCriticalFixed);
   const plural = plan.criticalCount === 1 ? 'problema crítico' : 'problemas críticos';
   const headline =
@@ -50,7 +50,7 @@ export const categoryLabels: Record<Category, string> = {
   PERFORMANCE: 'Desempenho',
 };
 
-const scoreKey: Record<Category, keyof RiskScoreDto> = {
+const scoreKey: Record<Category, keyof IRiskScoreDto> = {
   SECURITY: 'security',
   QUALITY: 'quality',
   ARCHITECTURE: 'architecture',
@@ -60,7 +60,7 @@ const scoreKey: Record<Category, keyof RiskScoreDto> = {
 };
 
 /** Categorias com a nota de cada uma, da pior para a melhor. Sem nota (dimensão ausente) não entra. */
-export function categoriesByScore(score: RiskScoreDto | null): Array<{ category: Category; label: string; score: number }> {
+export function categoriesByScore(score: IRiskScoreDto | null): Array<{ category: Category; label: string; score: number }> {
   if (!score) return [];
   return (Object.keys(scoreKey) as Category[])
     .map((category) => ({ category, label: categoryLabels[category], score: score[scoreKey[category]] }))

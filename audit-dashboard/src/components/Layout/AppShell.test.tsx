@@ -4,26 +4,24 @@ import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
-import pkg from '../../../package.json';
 
 function Wrap({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{children}</QueryClientProvider>;
 }
 
-const matchMediaOriginal = window.matchMedia;
-afterEach(() => { vi.unstubAllGlobals(); window.localStorage.clear(); window.matchMedia = matchMediaOriginal; });
+afterEach(() => { vi.unstubAllGlobals(); window.localStorage.clear(); });
 
 /** Simula tela larga, em que o menu fica fixo e o divisor aparece. */
 function telaLarga() {
-  window.matchMedia = ((query: string) => ({ matches: true, media: query, onchange: null, addListener: () => {}, removeListener: () => {},
-    addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: true, media: query, onchange: null, addListener: () => {}, removeListener: () => {},
+    addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false }));
 }
 
 describe('AppShell', () => {
   it('mostra quantos pedidos do Claude esperam decisão no item de Informações de Auditoria', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      const u = String(url);
-      if (u.includes('/pending-actions/')) return new Response(JSON.stringify([{ id: 1, kind: 'START_AUDIT', summary: 's', status: 'PENDING', createdAt: '', expiresAt: '', decidedAt: null, resultNote: null, auditRunId: null }, { id: 2, kind: 'START_AUDIT', summary: 's', status: 'APPROVED', createdAt: '', expiresAt: '', decidedAt: null, resultNote: null, auditRunId: null }]), { status: 200 });
+      const requestUrl = String(url);
+      if (requestUrl.includes('/pending-actions/')) return new Response(JSON.stringify([{ id: 1, kind: 'START_AUDIT', summary: 's', status: 'PENDING', createdAt: '', expiresAt: '', decidedAt: null, resultNote: null, auditRunId: null }, { id: 2, kind: 'START_AUDIT', summary: 's', status: 'APPROVED', createdAt: '', expiresAt: '', decidedAt: null, resultNote: null, auditRunId: null }]), { status: 200 });
       return new Response(JSON.stringify([{ id: 4, name: 'a', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 }]), { status: 200 });
     }));
     render(<Wrap><MemoryRouter><AppShell><p>x</p></AppShell></MemoryRouter></Wrap>);
@@ -38,7 +36,7 @@ describe('AppShell', () => {
         </AppShell>
       </MemoryRouter></Wrap>,
     );
-    expect(screen.getByText(`v${pkg.version}`)).toBeInTheDocument();
+    expect(screen.getByText(`v${__APP_VERSION__}`)).toBeInTheDocument();
     expect(screen.getByText('conteúdo')).toBeInTheDocument();
   });
 

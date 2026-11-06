@@ -6,19 +6,25 @@ import { SystemsPage } from './SystemsPage';
 
 const created = { id: 7, name: 'legado', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 };
 
-function renderPage(enabled: boolean, pathCheck: unknown = {}, systems: unknown[] = []) {
+interface IRenderOptions {
+  enabled: boolean;
+  pathCheck?: unknown;
+  systems?: unknown[];
+}
+
+function renderPage({ enabled, pathCheck = {}, systems = [] }: IRenderOptions) {
   const calls: Array<{ url: string; method: string; body?: string }> = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
+      const requestUrl = String(url);
       const method = init?.method ?? 'GET';
-      calls.push({ url: u, method, body: init?.body as string | undefined });
-      if (u.endsWith('/local-source')) return new Response(JSON.stringify({ enabled }), { status: 200 });
-      if (u.endsWith('/check-path')) return new Response(JSON.stringify(pathCheck), { status: 200 });
-      if (u.includes('/mcp-access/') && u.includes('/calls')) return new Response('[]', { status: 200 });
-      if (u.includes('/mcp-access/')) return new Response(JSON.stringify({ enabled: false, hasKey: false, keyPrefix: null, keyCreatedAt: null, dataLevel: 'TITLES', tools: [] }), { status: 200 });
-      if (u.includes('/packs')) return new Response(JSON.stringify({ packs: [], profiles: [] }), { status: 200 });
+      calls.push({ url: requestUrl, method, body: init?.body as string | undefined });
+      if (requestUrl.endsWith('/local-source')) return new Response(JSON.stringify({ enabled }), { status: 200 });
+      if (requestUrl.endsWith('/check-path')) return new Response(JSON.stringify(pathCheck), { status: 200 });
+      if (requestUrl.includes('/mcp-access/') && requestUrl.includes('/calls')) return new Response('[]', { status: 200 });
+      if (requestUrl.includes('/mcp-access/')) return new Response(JSON.stringify({ enabled: false, hasKey: false, keyPrefix: null, keyCreatedAt: null, dataLevel: 'TITLES', tools: [] }), { status: 200 });
+      if (requestUrl.includes('/packs')) return new Response(JSON.stringify({ packs: [], profiles: [] }), { status: 200 });
       if (method === 'POST' || method === 'PUT') return new Response(JSON.stringify(created), { status: 201 });
       return new Response(JSON.stringify(systems), { status: 200 });
     }),
@@ -37,7 +43,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('SystemsPage com pasta local', () => {
   it('não oferece a pasta local quando o servidor não a habilitou', async () => {
-    renderPage(false);
+    renderPage({ enabled: false });
     fireEvent.click(await screen.findByRole('button', { name: 'Novo sistema' }));
     await screen.findByLabelText(/Nome do sistema/);
     expect(screen.queryByRole('tab', { name: 'Pasta local' })).toBeNull();
@@ -45,7 +51,7 @@ describe('SystemsPage com pasta local', () => {
   });
 
   it('cadastra um sistema por pasta local, sem repoUrl', async () => {
-    const calls = renderPage(true, { ok: true, message: null, defaultBranch: 'main', branchFound: null, fileCount: 812, uncommittedFiles: 3 });
+    const calls = renderPage({ enabled: true, pathCheck: { ok: true, message: null, defaultBranch: 'main', branchFound: null, fileCount: 812, uncommittedFiles: 3 } });
     fireEvent.click(await screen.findByRole('button', { name: 'Novo sistema' }));
     fireEvent.change(await screen.findByLabelText(/Nome do sistema/), { target: { value: 'legado' } });
     fireEvent.click(await screen.findByText('Pasta local'));
@@ -64,7 +70,7 @@ describe('SystemsPage com pasta local', () => {
   });
 
   it('mostra o motivo quando a pasta não serve', async () => {
-    renderPage(true, { ok: false, message: 'A pasta não é um repositório Git.' });
+    renderPage({ enabled: true, pathCheck: { ok: false, message: 'A pasta não é um repositório Git.' } });
     fireEvent.click(await screen.findByRole('button', { name: 'Novo sistema' }));
     fireEvent.click(await screen.findByText('Pasta local'));
     fireEvent.change(screen.getByLabelText(/Pasta \(dentro da raiz/), { target: { value: 'x' } });
@@ -73,7 +79,7 @@ describe('SystemsPage com pasta local', () => {
   });
 
   it('lista a pasta no lugar do repositório', async () => {
-    renderPage(true, {}, [{ ...created, sourceType: 'LOCAL_PATH', localPath: 'legado/app', repoUrl: null }]);
+    renderPage({ enabled: true, systems: [{ ...created, sourceType: 'LOCAL_PATH', localPath: 'legado/app', repoUrl: null }] });
     expect(await screen.findByText('pasta: legado/app')).toBeInTheDocument();
   });
 });

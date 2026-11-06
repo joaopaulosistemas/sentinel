@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { FixPlanItem } from '../types';
+import type { IFixPlanItem } from '../types';
 import { applyBulk, buildRuleRows, estimatedGain, filterRuleRows, shortRuleId } from './ruleCatalog';
 
-const plan = (ruleId: string, scoreGain: number): FixPlanItem => ({
+const plan = (ruleId: string, scoreGain: number): IFixPlanItem => ({
   ruleId, title: `t-${ruleId}`, severity: 'HIGH', category: 'SECURITY', occurrences: 2, scoreGain, exampleFile: null, exampleLine: null, howToFix: null,
 });
 
@@ -41,20 +41,20 @@ describe('ruleCatalog', () => {
       known: [{ id: 'beta', count: 5 }], profileRules: [], adjusted: [], plan: [],
     });
     const adjusted = new Set(['alpha']);
-    expect(filterRuleRows(rows, { query: '', scope: 'all', pack: '' }, adjusted).map((r) => r.id)).toEqual(['alpha', 'beta']);
-    expect(filterRuleRows(rows, { query: 'senha', scope: 'all', pack: '' }, adjusted).map((r) => r.id)).toEqual(['alpha']);
-    expect(filterRuleRows(rows, { query: '', scope: 'seen', pack: '' }, adjusted).map((r) => r.id)).toEqual(['beta']);
-    expect(filterRuleRows(rows, { query: '', scope: 'adjusted', pack: '' }, adjusted).map((r) => r.id)).toEqual(['alpha']);
-    expect(filterRuleRows(rows, { query: '', scope: 'all', pack: 'p2' }, adjusted).map((r) => r.id)).toEqual(['beta']);
+    expect(filterRuleRows({ rows, filter: { query: '', scope: 'all', pack: '' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['alpha', 'beta']);
+    expect(filterRuleRows({ rows, filter: { query: 'senha', scope: 'all', pack: '' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['alpha']);
+    expect(filterRuleRows({ rows, filter: { query: '', scope: 'seen', pack: '' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['beta']);
+    expect(filterRuleRows({ rows, filter: { query: '', scope: 'adjusted', pack: '' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['alpha']);
+    expect(filterRuleRows({ rows, filter: { query: '', scope: 'all', pack: 'p2' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['beta']);
   });
 
   it('aplica ações em lote e descarta o que não tem efeito', () => {
     const start = [{ id: 'a', severity: null, disabled: true, shadow: null }];
-    const shadowed = applyBulk(start, ['a', 'b'], { kind: 'shadow', on: true });
+    const shadowed = applyBulk({ current: start, ids: ['a', 'b'], action: { kind: 'shadow', on: true } });
     expect(shadowed.find((r) => r.id === 'b')).toMatchObject({ shadow: true });
-    expect(applyBulk(shadowed, ['a'], { kind: 'disable', on: false }).find((r) => r.id === 'a')).toMatchObject({ disabled: false, shadow: true });
-    expect(applyBulk(shadowed, ['a', 'b'], { kind: 'reset' })).toEqual([]);
-    expect(applyBulk([], ['x'], { kind: 'severity', value: 'LOW' })).toEqual([{ id: 'x', severity: 'LOW', disabled: false, shadow: null }]);
+    expect(applyBulk({ current: shadowed, ids: ['a'], action: { kind: 'disable', on: false } }).find((r) => r.id === 'a')).toMatchObject({ disabled: false, shadow: true });
+    expect(applyBulk({ current: shadowed, ids: ['a', 'b'], action: { kind: 'reset' } })).toEqual([]);
+    expect(applyBulk({ current: [], ids: ['x'], action: { kind: 'severity', value: 'LOW' } })).toEqual([{ id: 'x', severity: 'LOW', disabled: false, shadow: null }]);
   });
 
   it('soma o ganho só das regras escolhidas', () => {

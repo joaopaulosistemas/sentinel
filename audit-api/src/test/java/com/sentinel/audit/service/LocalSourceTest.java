@@ -264,7 +264,7 @@ class LocalSourceTest {
         sujar(dir);
         List<long[]> avisos = new ArrayList<>();
 
-        source.snapshot("api", null, LocalSnapshot.TREE, null, work, (done, total) -> avisos.add(new long[] {done, total}));
+        source.snapshot(new LocalSource.SnapshotRequest("api", null, LocalSnapshot.TREE, null), work, (done, total) -> avisos.add(new long[] {done, total}));
 
         assertFalse(avisos.isEmpty());
         long[] primeiro = avisos.get(0);
@@ -287,7 +287,7 @@ class LocalSourceTest {
         }
         List<long[]> avisos = new ArrayList<>();
 
-        Path copia = source.snapshot("api", null, LocalSnapshot.TREE, null, work, (done, total) -> avisos.add(new long[] {done, total}));
+        Path copia = source.snapshot(new LocalSource.SnapshotRequest("api", null, LocalSnapshot.TREE, null), work, (done, total) -> avisos.add(new long[] {done, total}));
 
         for (int d = 0; d < 20; d++) {
             for (int f = 0; f < 25; f++) {
@@ -304,7 +304,7 @@ class LocalSourceTest {
     void copiaDoCommitNaoAvisaAndamentoDeArquivos() throws Exception {
         repo("api");
         List<long[]> avisos = new ArrayList<>();
-        source.snapshot("api", null, LocalSnapshot.COMMIT, null, work, (done, total) -> avisos.add(new long[] {done, total}));
+        source.snapshot(new LocalSource.SnapshotRequest("api", null, LocalSnapshot.COMMIT, null), work, (done, total) -> avisos.add(new long[] {done, total}));
         assertTrue(avisos.isEmpty());
     }
 

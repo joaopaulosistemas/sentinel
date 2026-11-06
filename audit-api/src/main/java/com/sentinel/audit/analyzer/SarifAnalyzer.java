@@ -74,137 +74,51 @@ public class SarifAnalyzer implements CodeAnalyzer {
         return analyze(projectPath, auditRun, null);
     }
 
+    /** O que uma análise acumula: o projeto, a auditoria, os achados e o resumo das ferramentas de comando. */
+    private record Coleta(Path projectPath, AuditRun auditRun, List<Finding> findings, SarifResumo resumo) {
+    }
+
     @Override
     public AnalyzerResult analyze(Path projectPath, AuditRun auditRun, AuditPolicy policy) {
         Instant start = Instant.now();
-        List<Finding> findings = new ArrayList<>();
-        Resumo resumo = new Resumo();
+        Coleta coleta = new Coleta(projectPath, auditRun, new ArrayList<>(), new SarifResumo());
         if (policy != null) {
             for (RulePack pack : policy.packs()) {
-                boolean trusted = policy.isToolPackTrusted(pack.id());
-                if (!analisarPacote(pack, trusted, projectPath, auditRun, findings, resumo)) {
+                if (!analisarPacote(pack, policy.isToolPackTrusted(pack.id()), coleta)) {
                     break;
                 }
             }
-            if (!policy.packs().isEmpty() && policy.packs().stream().noneMatch(p -> TOOLS_PACK_ID.equals(p.id()))) {
-                resumo.joernDesligado();
+            if (!policy.packs().isEmpty() && policy.packs().stream().noneMatch(p -> SarifResumo.TOOLS_PACK_ID.equals(p.id()))) {
+                coleta.resumo().joernDesligado();
             }
         }
-        return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), null, resumo.texto());
+        return new AnalyzerResult(coleta.findings(), ANALYZER_NAME, Duration.between(start, Instant.now()), null,
+                coleta.resumo().texto());
     }
 
     /** Roda as fontes SARIF de um pacote. Devolve {@code false} quando a thread foi interrompida e a análise deve parar. */
-    private boolean analisarPacote(RulePack pack, boolean trusted, Path projectPath, AuditRun auditRun,
-                                   List<Finding> findings, Resumo resumo) {
+    private boolean analisarPacote(RulePack pack, boolean trusted, Coleta coleta) {
         for (ToolSpec spec : pack.tools()) {
             try {
-                analisarFonte(spec, trusted, projectPath, auditRun, findings, resumo);
+                analisarFonte(spec, trusted, coleta);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return false;
             } catch (Exception e) {
                 LOG.warnf("Fonte SARIF '%s' falhou e foi ignorada: %s", spec.id(), e.getMessage());
-                resumo.falhou(spec);
+                coleta.resumo().falhou(spec);
             }
         }
         return true;
     }
 
-    private void analisarFonte(ToolSpec spec, boolean trusted, Path projectPath, AuditRun auditRun,
-                               List<Finding> findings, Resumo resumo) throws Exception {
+    private void analisarFonte(ToolSpec spec, boolean trusted, Coleta coleta) throws Exception {
         if (spec.executes()) {
-            Execucao e = executar(spec, projectPath, auditRun, trusted);
-            findings.addAll(e.findings());
-            resumo.registrar(spec, e);
+            SarifExecucao e = executar(spec, coleta.projectPath(), coleta.auditRun(), trusted);
+            coleta.findings().addAll(e.findings());
+            coleta.resumo().registrar(spec, e);
         } else {
-            findings.addAll(readInputs(spec, projectPath, auditRun));
-        }
-    }
-
-    /** Como uma ferramenta de comando terminou: o que achou e o que aconteceu com ela. */
-    record Execucao(List<Finding> findings, Situacao situacao, long segundos) {
-    }
-
-    /** Identificador da fonte do Joern em {@code market-tools/tools/taint.yml}. */
-    static final String JOERN_ID = "joern-taint";
-
-    /** Pacote que traz as ferramentas externas, entre elas o Joern. */
-    static final String TOOLS_PACK_ID = "market-tools";
-
-    enum Situacao { RODOU, SEM_PERMISSAO, NAO_INSTALADA, SEM_ARQUIVOS, SEM_RESULTADO }
-
-    /** Resumo, para a tela de acompanhamento, de quais ferramentas de comando rodaram e quais ficaram de fora. */
-    static final class Resumo {
-        private final List<String> rodaram = new ArrayList<>();
-        private final List<String> semPermissao = new ArrayList<>();
-        private final List<String> naoInstaladas = new ArrayList<>();
-        private final List<String> semResultado = new ArrayList<>();
-        private final List<String> falhou = new ArrayList<>();
-        /** Situação do Joern em frase própria: é a ferramenta opcional, e a pessoa precisa ver se está ativa. */
-        private String joern;
-
-        /** O pacote das ferramentas externas não está ativo neste sistema (fora do perfil ou desligado nos ajustes). */
-        void joernDesligado() {
-            if (joern == null) {
-                joern = "desligado neste sistema (o pacote " + TOOLS_PACK_ID + " está fora do perfil ou desligado nos ajustes).";
-            }
-        }
-
-        void falhou(ToolSpec spec) {
-            if (JOERN_ID.equals(spec.id())) {
-                joern = "falhou. Veja o log da API.";
-            } else {
-                falhou.add(spec.name());
-            }
-        }
-
-        void registrar(ToolSpec spec, Execucao e) {
-            if (JOERN_ID.equals(spec.id())) {
-                joern = switch (e.situacao()) {
-                    case RODOU -> "ativo, rodou em " + e.segundos() + " s com " + e.findings().size()
-                            + (e.findings().size() == 1 ? " achado." : " achados.");
-                    case SEM_RESULTADO -> "rodou sem gerar resultado.";
-                    case NAO_INSTALADA -> "não instalado nesta imagem. Construa com WITH_JOERN=true para ligar.";
-                    case SEM_PERMISSAO -> "sem permissão para executar programas neste pacote.";
-                    case SEM_ARQUIVOS -> "não se aplica: o projeto não tem arquivos Java.";
-                };
-                return;
-            }
-            switch (e.situacao()) {
-                case RODOU -> rodaram.add(spec.name() + " (" + e.segundos() + " s, " + e.findings().size()
-                        + (e.findings().size() == 1 ? " achado)" : " achados)"));
-                case SEM_PERMISSAO -> semPermissao.add(spec.name());
-                case NAO_INSTALADA -> naoInstaladas.add(spec.name());
-                case SEM_RESULTADO -> semResultado.add(spec.name());
-                case SEM_ARQUIVOS -> { /* não se aplica a este projeto: não entra no resumo */ }
-            }
-        }
-
-        /** {@code null} quando nenhuma ferramenta de comando entrou em jogo. */
-        String texto() {
-            List<String> partes = new ArrayList<>();
-            if (!rodaram.isEmpty()) {
-                partes.add("Rodaram: " + String.join(", ", rodaram));
-            }
-            if (!semResultado.isEmpty()) {
-                partes.add("Rodaram sem gerar resultado: " + String.join(", ", semResultado));
-            }
-            if (!falhou.isEmpty()) {
-                partes.add("Falharam: " + String.join(", ", falhou));
-            }
-            if (!semPermissao.isEmpty()) {
-                partes.add("Sem permissão para executar programas: " + String.join(", ", semPermissao));
-            }
-            if (!naoInstaladas.isEmpty()) {
-                partes.add("Não instaladas: " + String.join(", ", naoInstaladas));
-            }
-            String geral = partes.isEmpty() ? null : String.join(". ", partes) + ".";
-            if (joern == null) {
-                return geral;
-            }
-            String linhaJoern = "Joern (taint entre arquivos): " + joern;
-            // A frase do Joern vai primeiro: a tela corta a nota em 300 caracteres e a lista geral pode ser longa.
-            return geral == null ? linhaJoern : linhaJoern + "\n" + geral;
+            coleta.findings().addAll(readInputs(spec, coleta.projectPath(), coleta.auditRun()));
         }
     }
 
@@ -239,21 +153,21 @@ public class SarifAnalyzer implements CodeAnalyzer {
         return executar(spec, projectPath, run, trustedPack).findings();
     }
 
-    Execucao executar(ToolSpec spec, Path projectPath, AuditRun run, boolean trustedPack)
+    SarifExecucao executar(ToolSpec spec, Path projectPath, AuditRun run, boolean trustedPack)
             throws IOException, InterruptedException {
         if (!allowTools && !trustedPack) {
             LOG.infof("Fonte SARIF '%s' executa um comando e foi ignorada: ative sentinel.audit.packs.allow-tools para permitir", spec.id());
-            return new Execucao(List.of(), Situacao.SEM_PERMISSAO, 0);
+            return SarifExecucao.semAchados(SarifExecucao.Situacao.SEM_PERMISSAO);
         }
         Path exe = resolveExecutable(spec.command().get(0));
         if (exe == null) {
             LOG.infof("Fonte SARIF '%s': executável '%s' não encontrado; ignorada", spec.id(), spec.command().get(0));
-            return new Execucao(List.of(), Situacao.NAO_INSTALADA, 0);
+            return SarifExecucao.semAchados(SarifExecucao.Situacao.NAO_INSTALADA);
         }
         Optional<List<String>> files = inputFiles(spec, projectPath);
         if (files.isEmpty()) {
             LOG.debugf("Fonte SARIF '%s': nenhum arquivo do tipo esperado no projeto; ignorada", spec.id());
-            return new Execucao(List.of(), Situacao.SEM_ARQUIVOS, 0);
+            return SarifExecucao.semAchados(SarifExecucao.Situacao.SEM_ARQUIVOS);
         }
         Path output = Files.createTempFile("sarif-", ".json");
         Instant inicio = Instant.now();
@@ -263,11 +177,11 @@ public class SarifAnalyzer implements CodeAnalyzer {
             String sarif = readUsableOutput(spec, output, code);
             long segundos = Duration.between(inicio, Instant.now()).toSeconds();
             if (sarif == null) {
-                return new Execucao(List.of(), Situacao.SEM_RESULTADO, segundos);
+                return new SarifExecucao(List.of(), SarifExecucao.Situacao.SEM_RESULTADO, segundos);
             }
             List<Finding> achados = parse(sarif, spec, projectPath, run);
             LOG.infof("Fonte SARIF '%s' rodou em %d s: %d achado(s)", spec.id(), segundos, achados.size());
-            return new Execucao(achados, Situacao.RODOU, segundos);
+            return new SarifExecucao(achados, SarifExecucao.Situacao.RODOU, segundos);
         } finally {
             Files.deleteIfExists(output);
         }
@@ -387,17 +301,32 @@ public class SarifAnalyzer implements CodeAnalyzer {
                 continue;                                  // já suprimido na própria ferramenta
             }
             Finding f = toFinding(result, rules, spec, projectPath, run);
-            if (f != null && !qualityInIgnoredPath(f)) {
+            if (f != null && !qualityInIgnoredPath(f, projectPath)) {
                 out.add(f);
             }
         }
         return true;
     }
 
-    /** Achado de qualidade (não de segurança) em pasta ignorada, como testes: a ferramenta leu o projeto inteiro, o Sentinel não quer isso. */
-    private static boolean qualityInIgnoredPath(Finding f) {
+    /**
+     * Achado de qualidade (não de segurança) em pasta ignorada, como testes, ou em biblioteca de terceiros embutida
+     * (nome conhecido ou cabeçalho de licença externa): a ferramenta leu o projeto inteiro, o Sentinel não quer isso.
+     */
+    private static boolean qualityInIgnoredPath(Finding f, Path projectPath) {
         return f.getCategory() != Category.SECURITY
-                && (ExternalTools.inIgnoredDir(f.getFilePath()) || PathRole.of(f.getFilePath()) == PathRole.TEST);
+                && (ExternalTools.inIgnoredDir(f.getFilePath()) || PathRole.of(f.getFilePath()) == PathRole.TEST
+                || isThirdPartyFile(f.getFilePath(), projectPath));
+    }
+
+    private static boolean isThirdPartyFile(String rel, Path projectPath) {
+        if (rel == null || rel.isBlank() || projectPath == null) {
+            return false;
+        }
+        try {
+            return ExternalTools.hasThirdPartyBanner(projectPath.resolve(rel));
+        } catch (RuntimeException e) {
+            return false;                                  // caminho que não é de arquivo (ex.: "." do projeto)
+        }
     }
 
     private Finding toFinding(JsonNode result, Map<String, JsonNode> rules, ToolSpec spec, Path projectPath, AuditRun run) {

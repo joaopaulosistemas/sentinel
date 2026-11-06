@@ -26,8 +26,8 @@ const TEXT_KEY = 'sentinel.textsize';
 
 function readSavedTextSize(): TextSize {
   try {
-    const v = window.localStorage.getItem(TEXT_KEY);
-    return v === 'grande' || v === 'pequeno' ? v : 'normal';
+    const saved = window.localStorage.getItem(TEXT_KEY);
+    return saved === 'grande' || saved === 'pequeno' ? saved : 'normal';
   } catch {
     return 'normal';
   }
@@ -38,8 +38,8 @@ const PALETTE_KEY = 'sentinel.palette';
 
 function readSavedPalette(): Palette {
   try {
-    const v = window.localStorage.getItem(PALETTE_KEY);
-    return v === 'classico' || v === 'alternativo' || v === 'suave' ? v : 'suave';
+    const saved = window.localStorage.getItem(PALETTE_KEY);
+    return saved === 'classico' || saved === 'alternativo' || saved === 'suave' ? saved : 'suave';
   } catch {
     return 'suave';
   }
@@ -62,7 +62,7 @@ export function applyTheme(mode: ThemeMode, palette: Palette = readSavedPalette(
   document.documentElement.setAttribute('data-texto', readSavedTextSize());
 }
 
-interface ThemeStore {
+interface IThemeStore {
   mode: ThemeMode;
   palette: Palette;
   textSize: TextSize;
@@ -72,7 +72,7 @@ interface ThemeStore {
   toggle: () => void;
 }
 
-export const useThemeStore = create<ThemeStore>((set, get) => ({
+export const useThemeStore = create<IThemeStore>((set, get) => ({
   mode: readSaved(),
   palette: readSavedPalette(),
   textSize: readSavedTextSize(),

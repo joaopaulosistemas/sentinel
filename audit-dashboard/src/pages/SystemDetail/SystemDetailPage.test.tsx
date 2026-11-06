@@ -37,13 +37,13 @@ function Where() {
 
 function renderPage() {
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-    const u = String(url);
-    if (u.endsWith('/systems/3/audits')) return new Response(JSON.stringify(runs), { status: 200 });
-    if (u.endsWith('/systems/3/suppressions')) return new Response(JSON.stringify(suppressed), { status: 200 });
-    if (u.includes('/systems/3/trend')) return new Response('[]', { status: 200 });
-    if (u.endsWith('/audits/214/diff')) return new Response(JSON.stringify({ hasBaseline: false }), { status: 200 });
-    if (u.endsWith('/audits/214/insights')) return new Response(JSON.stringify(insights), { status: 200 });
-    if (u.endsWith('/systems/3')) return new Response(JSON.stringify(system), { status: 200 });
+    const requestUrl = String(url);
+    if (requestUrl.endsWith('/systems/3/audits')) return new Response(JSON.stringify(runs), { status: 200 });
+    if (requestUrl.endsWith('/systems/3/suppressions')) return new Response(JSON.stringify(suppressed), { status: 200 });
+    if (requestUrl.includes('/systems/3/trend')) return new Response('[]', { status: 200 });
+    if (requestUrl.endsWith('/audits/214/diff')) return new Response(JSON.stringify({ hasBaseline: false }), { status: 200 });
+    if (requestUrl.endsWith('/audits/214/insights')) return new Response(JSON.stringify(insights), { status: 200 });
+    if (requestUrl.endsWith('/systems/3')) return new Response(JSON.stringify(system), { status: 200 });
     return new Response(JSON.stringify({}), { status: 200 });
   }));
   render(

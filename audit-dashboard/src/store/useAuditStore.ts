@@ -1,23 +1,23 @@
 import { create } from 'zustand';
 import type { Category, FindingStatus, Severity } from '../types';
 
-interface FindingsFilter {
+interface IFindingsFilter {
   severity?: Severity;
   category?: Category;
   status?: FindingStatus;
 }
 
-interface AuditStore {
+interface IAuditStore {
   selectedSystemId: number | null;
   selectedAuditId: number | null;
-  findingsFilter: FindingsFilter;
+  findingsFilter: IFindingsFilter;
   setSelectedSystem: (id: number | null) => void;
   setSelectedAudit: (id: number | null) => void;
-  setFindingsFilter: (filter: FindingsFilter) => void;
+  setFindingsFilter: (filter: IFindingsFilter) => void;
   resetFindingsFilter: () => void;
 }
 
-export const useAuditStore = create<AuditStore>((set) => ({
+export const useAuditStore = create<IAuditStore>((set) => ({
   selectedSystemId: null,
   selectedAuditId: null,
   findingsFilter: {},

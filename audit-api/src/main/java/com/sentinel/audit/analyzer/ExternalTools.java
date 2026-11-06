@@ -155,7 +155,7 @@ final class ExternalTools {
     }
 
     private static final java.util.regex.Pattern VENDORED_NAME = java.util.regex.Pattern.compile(
-            "^(jquery[\\w.-]*|font-?awesome[\\w.-]*|patternfly[\\w.-]*|[\\w.-]+\\.min)\\.(js|css|map)$");
+            "^(jquery[\\w.-]*|font-?awesome[\\w.-]*|patternfly[\\w.-]*|[\\w.-]+\\.min|[\\w.-]+-dbg)\\.(js|css|map)$");
     /** "bootstrap.js" também é o nome do arquivo de partida de aplicações Angular/Webpack: só vale como biblioteca em pasta de ativos. */
     private static final java.util.regex.Pattern VENDORED_ASSET_NAME = java.util.regex.Pattern.compile(
             "^bootstrap[\\w.-]*\\.(js|css)$");
@@ -188,10 +188,7 @@ final class ExternalTools {
                 }
             }
         }
-        if (HASHED_BUILD_NAME.matcher(name).matches() && underWebRoot(parts)) {
-            return true;
-        }
-        return inThirdPartyAssetDir(parts, name);
+        return (HASHED_BUILD_NAME.matcher(name).matches() && underWebRoot(parts)) || inThirdPartyAssetDir(parts, name);
     }
 
     private static boolean underWebRoot(String[] parts) {
@@ -227,7 +224,13 @@ final class ExternalTools {
             "(?i)@license|\\blicen[sc]ed? under\\b|\\blicensed to the apache\\b|\\bapache software foundation\\b|\\b(mit|bsd|apache|gpl|lgpl|mpl|isc)\\b[\\w .-]{0,12}licen[sc]e|\\bmit\\b");
     private static final java.util.regex.Pattern OUTSIDE_SIGN = java.util.regex.Pattern.compile(
             "(?i)https?://|@license|^/\\*!|\\bv?\\d+\\.\\d+\\.\\d+\\b");
+    /** Endereços do texto de licenças padrão; não indicam de onde veio o arquivo. */
+    private static final java.util.regex.Pattern LICENSE_TEXT_URL = java.util.regex.Pattern.compile(
+            "(?i)https?://(www\\.)?(apache\\.org/licenses|opensource\\.org/licenses?|gnu\\.org/licenses|creativecommons\\.org/licenses|mozilla\\.org/(MPL|en-US/MPL))[^\\s)\\]>\"']*");
+    private static final java.util.regex.Pattern ASF_NAME = java.util.regex.Pattern.compile("(?i)\\bapache software foundation\\b");
     private static final int BANNER_CHARS = 1200;
+    /** Folga, em bytes, ao ler o começo do arquivo: um caractere multibyte cortado ao meio não pode esconder o fim do cabeçalho. */
+    private static final int BANNER_BYTES_SLACK = 40;
 
     /**
      * O arquivo começa com o comentário de uma biblioteca: licença (MIT, Apache, BSD, GPL...) e um sinal de origem
@@ -257,19 +260,63 @@ final class ExternalTools {
             h = h.substring(0, Math.min(h.length(), BANNER_CHARS));
             int end = h.indexOf("*/");
             comment = end < 0 ? h : h.substring(0, end);
+        } else if (preservedBannerAfterPrelude(h) != null) {   // pacote otimizado: uma ou duas linhas de código e só então o /*! da licença
+            comment = preservedBannerAfterPrelude(h);
         } else {
             return false;
         }
-        return LICENSE_WORD.matcher(comment).find() && OUTSIDE_SIGN.matcher(comment).find();
+        if (!LICENSE_WORD.matcher(comment).find()) {
+            return false;
+        }
+        // O endereço do texto da licença (Apache 2.0, GPL...) vem em todo arquivo licenciado, inclusive o do próprio projeto:
+        // sozinho não prova origem externa. A Fundação Apache (ASF) continua valendo como sinal próprio.
+        String semUrlDeLicenca = LICENSE_TEXT_URL.matcher(comment).replaceAll(" ");
+        return OUTSIDE_SIGN.matcher(semUrlDeLicenca).find() || ASF_NAME.matcher(comment).find();
     }
 
-    /** Lê o começo de um JS/CSS e aplica {@link #hasThirdPartyBanner(String)}; erro de leitura vale "não". */
+    /** Quantos caracteres de código podem vir antes do comentário {@code /*!} de licença (ex.: {@code window["x"]=true; try {}). */
+    private static final int PRELUDE_CHARS = 200;
+
+    /** O comentário {@code /*!} (convenção para licença preservada) logo no começo, depois de um prefácio curto; nulo se não houver. */
+    private static String preservedBannerAfterPrelude(String h) {
+        int start = h.indexOf("/*!");
+        if (start < 0 || start > PRELUDE_CHARS) {
+            return null;
+        }
+        int end = h.indexOf("*/", start);
+        return end < 0 ? h.substring(start) : h.substring(start, end);
+    }
+
+    /** Linha de código tão longa só sai de minificador; código escrito à mão não passa de algumas centenas de caracteres. */
+    static final int MINIFIED_LINE_CHARS = 1000;
+    private static final int MINIFIED_SAMPLE_BYTES = 8000;
+
+    /** O começo do texto tem uma linha de {@link #MINIFIED_LINE_CHARS} caracteres ou mais (arquivo minificado, mesmo sem {@code .min} no nome). */
+    static boolean looksMinified(String head) {
+        if (head == null) {
+            return false;
+        }
+        int run = 0;
+        for (int i = 0; i < head.length(); i++) {
+            run = head.charAt(i) == '\n' ? 0 : run + 1;
+            if (run >= MINIFIED_LINE_CHARS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Lê o começo de um JS/CSS e diz se é de terceiros: cabeçalho de biblioteca ({@link #hasThirdPartyBanner(String)}) ou
+     * código minificado ({@link #looksMinified}), que não é escrito à mão. Erro de leitura vale "não".
+     */
     static boolean hasThirdPartyBanner(Path file) {
         if (file == null || !BUNDLE_EXT.matcher(file.getFileName().toString()).find()) {
             return false;
         }
         try (java.io.InputStream in = java.nio.file.Files.newInputStream(file)) {
-            return hasThirdPartyBanner(new String(in.readNBytes(BANNER_CHARS + 40), java.nio.charset.StandardCharsets.UTF_8));
+            String head = new String(in.readNBytes(MINIFIED_SAMPLE_BYTES), java.nio.charset.StandardCharsets.UTF_8);
+            return hasThirdPartyBanner(head.substring(0, Math.min(head.length(), BANNER_CHARS + BANNER_BYTES_SLACK))) || looksMinified(head);
         } catch (java.io.IOException | RuntimeException e) {
             return false;
         }
@@ -287,48 +334,88 @@ final class ExternalTools {
         return relPath != null && bytes >= OVERSIZED_BUNDLE_BYTES && BUNDLE_EXT.matcher(relPath).find();
     }
 
-    /** Máximo de arquivos de terceiros passados ao motor SAST como --exclude (limite do tamanho da linha de comando). */
-    static final int MAX_VENDORED_EXCLUDES = 1500;
+    /**
+     * Máximo de padrões {@code --exclude} passados ao motor SAST. O Opengrep/Semgrep compila os padrões com o wcmatch, que
+     * aborta com "Pattern limit exceeded the limit of 1000" (cada padrão vira mais de um): com ~500 a varredura já morre
+     * sem nenhum achado. No DVHMA (OpenUI5 embutido, 1.173 arquivos) o SAST inteiro sumiu por isso.
+     */
+    static final int MAX_VENDORED_EXCLUDES = 400;
+    /** Acima disto, arquivos de terceiros viram exclusão por pasta (quando a pasta só tem JS/CSS de terceiros). */
+    static final int COLLAPSE_ABOVE = 300;
 
     /**
      * Pacotes grandes, bibliotecas embutidas e arquivos com cabeçalho de terceiros, para o motor SAST excluir.
      * O motor só excluía por nome; as mesmas regras de {@link #isVendoredLibrary} e {@link #hasThirdPartyBanner}
-     * já valiam para lint e métricas, mas o Opengrep seguia lendo layui, codemirror e afins.
+     * já valiam para lint e métricas, mas o Opengrep seguia lendo layui, codemirror e afins. Com muitos arquivos a lista
+     * vira pastas inteiras ({@link #collapseToDirs}), para não estourar o limite de padrões do motor.
      */
     static java.util.List<String> vendoredFiles(Path root) {
-        java.util.List<String> found = new java.util.ArrayList<>();
-        try {
-            java.nio.file.Files.walkFileTree(root, new java.nio.file.SimpleFileVisitor<>() {
-                @Override
-                public java.nio.file.FileVisitResult preVisitDirectory(Path dir, java.nio.file.attribute.BasicFileAttributes a) {
-                    boolean skip = !dir.equals(root)
-                            && CleanCodeAnalyzer.IGNORED_DIRS.contains(dir.getFileName().toString().toLowerCase(java.util.Locale.ROOT));
-                    return skip ? java.nio.file.FileVisitResult.SKIP_SUBTREE : java.nio.file.FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public java.nio.file.FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes a) {
-                    String rel = root.relativize(file).toString().replace('\\', '/');
-                    if (found.size() < MAX_VENDORED_EXCLUDES && a.isRegularFile() && BUNDLE_EXT.matcher(rel).find()
-                            && (isOversizedBundle(rel, a.size()) || isVendoredLibrary(rel) || hasThirdPartyBanner(file))) {
-                        found.add(rel);
-                    }
-                    return java.nio.file.FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public java.nio.file.FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return java.nio.file.FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException ignored) {
-            // sem a lista o motor apenas analisa mais arquivos
+        java.util.List<String> found = scanBundles(root, MAX_COLLECTED, (file, rel, size) -> BUNDLE_EXT.matcher(rel).find()
+                && isThirdPartyBundle(file, rel, size));
+        if (found.size() <= COLLAPSE_ABOVE) {
+            return found;
         }
-        return found;
+        java.util.Map<String, Integer> totalPorPasta = new java.util.HashMap<>();
+        for (String rel : scanBundles(root, Integer.MAX_VALUE, (file, r, size) -> BUNDLE_EXT.matcher(r).find())) {
+            totalPorPasta.merge(parentOf(rel), 1, Integer::sum);
+        }
+        return collapseToDirs(found, totalPorPasta);
+    }
+
+    /** Pacote grande, biblioteca embutida ou arquivo com cabeçalho de terceiros. */
+    private static boolean isThirdPartyBundle(Path file, String rel, long size) {
+        return isOversizedBundle(rel, size) || isVendoredLibrary(rel) || hasThirdPartyBanner(file);
+    }
+
+    /** Teto de arquivos de terceiros lembrados durante a varredura (antes de colapsar em pastas). */
+    private static final int MAX_COLLECTED = 50_000;
+
+    private static String parentOf(String rel) {
+        int i = rel.lastIndexOf('/');
+        return i < 0 ? "" : rel.substring(0, i);
+    }
+
+    /**
+     * Até {@link #COLLAPSE_ABOVE} arquivos a lista fica como está. Acima disso, toda pasta cujos JS/CSS são todos de
+     * terceiros entra uma vez só (a pasta), e os arquivos soltos de pastas mistas continuam individuais. O resultado
+     * respeita {@link #MAX_VENDORED_EXCLUDES}: pastas primeiro, depois arquivos, o excedente fica de fora.
+     */
+    static java.util.List<String> collapseToDirs(java.util.List<String> files, java.util.Map<String, Integer> totalPorPasta) {
+        if (files.size() <= COLLAPSE_ABOVE) {
+            return files;
+        }
+        java.util.Map<String, Integer> vendoradosPorPasta = new java.util.HashMap<>();
+        for (String f : files) {
+            vendoradosPorPasta.merge(parentOf(f), 1, Integer::sum);
+        }
+        java.util.Set<String> pastas = new java.util.TreeSet<>();
+        for (java.util.Map.Entry<String, Integer> e : vendoradosPorPasta.entrySet()) {
+            if (!e.getKey().isEmpty() && e.getValue().equals(totalPorPasta.get(e.getKey()))) {
+                pastas.add(e.getKey());
+            }
+        }
+        java.util.List<String> out = new java.util.ArrayList<>(pastas);
+        for (String f : files) {
+            if (!pastas.contains(parentOf(f))) {
+                out.add(f);
+            }
+        }
+        return out.size() > MAX_VENDORED_EXCLUDES ? new java.util.ArrayList<>(out.subList(0, MAX_VENDORED_EXCLUDES)) : out;
     }
 
     /** Caminhos relativos (com "/") dos pacotes grandes sob a raiz, para o motor SAST excluir. Pastas ignoradas são puladas. */
     static java.util.List<String> oversizedBundles(Path root) {
+        return scanBundles(root, Integer.MAX_VALUE, (file, rel, size) -> isOversizedBundle(rel, size));
+    }
+
+    /** Decide se um arquivo regular entra na lista: o arquivo, o caminho relativo (com "/") e o tamanho em bytes. */
+    @FunctionalInterface
+    private interface BundleFilter {
+        boolean accepts(Path file, String rel, long size);
+    }
+
+    /** Percorre a raiz (pulando as pastas ignoradas) e junta, até {@code limit}, os caminhos que o filtro aceita. */
+    private static java.util.List<String> scanBundles(Path root, int limit, BundleFilter filter) {
         java.util.List<String> found = new java.util.ArrayList<>();
         try {
             java.nio.file.Files.walkFileTree(root, new java.nio.file.SimpleFileVisitor<>() {
@@ -342,7 +429,7 @@ final class ExternalTools {
                 @Override
                 public java.nio.file.FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes a) {
                     String rel = root.relativize(file).toString().replace('\\', '/');
-                    if (a.isRegularFile() && isOversizedBundle(rel, a.size())) {
+                    if (found.size() < limit && a.isRegularFile() && filter.accepts(file, rel, a.size())) {
                         found.add(rel);
                     }
                     return java.nio.file.FileVisitResult.CONTINUE;

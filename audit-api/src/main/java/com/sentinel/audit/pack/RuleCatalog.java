@@ -1,12 +1,10 @@
 package com.sentinel.audit.pack;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -31,12 +29,8 @@ public final class RuleCatalog {
             if (dir == null) {
                 continue;
             }
-            try (Stream<Path> files = Files.list(dir)) {
-                List<Path> yamls = files
-                        .filter(p -> p.getFileName().toString().endsWith(".yml") || p.getFileName().toString().endsWith(".yaml"))
-                        .sorted()
-                        .toList();
-                for (Path file : yamls) {
+            try {
+                for (Path file : RuleYaml.yamlFiles(dir)) {
                     read(pack.id(), file, out);
                 }
             } catch (IOException e) {
@@ -48,16 +42,7 @@ public final class RuleCatalog {
 
     private static void read(String packId, Path file, List<Entry> out) {
         try {
-            Map<String, Object> root = Yamls.map(Yamls.parse(Files.readString(file)));
-            List<Object> rules = root == null ? null : Yamls.list(root.get("rules"));
-            if (rules == null) {
-                return;
-            }
-            for (Object item : rules) {
-                Map<String, Object> rule = Yamls.map(item);
-                if (rule == null) {
-                    continue;
-                }
+            for (Map<String, Object> rule : RuleYaml.rules(file)) {
                 Entry entry = entryOf(packId, rule);
                 if (entry != null) {
                     out.add(entry);

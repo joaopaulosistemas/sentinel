@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { FindingResponse, ReviewSuggestion } from '../types';
+import type { IFindingResponse, IReviewSuggestion } from '../types';
 import { suggestionFor } from './claudeHint';
 
-const finding = { id: 1, ruleId: 'java.sql.sql-injection', filePath: 'src/main/Repo.java', lineNumber: 42 } as FindingResponse;
-const sug = (over: Partial<ReviewSuggestion>): ReviewSuggestion => ({
+const finding = { id: 1, ruleId: 'java.sql.sql-injection', filePath: 'src/main/Repo.java', lineNumber: 42 } as IFindingResponse;
+const sug = (over: Partial<IReviewSuggestion>): IReviewSuggestion => ({
   id: 1, title: 't', detail: null, ruleRef: 'sql-injection', file: null, line: null, status: 'OPEN', createdAt: '', ...over,
 });
 

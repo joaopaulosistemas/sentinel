@@ -1,7 +1,7 @@
 import { Button, InlineNotification, SkeletonText } from '@carbon/react';
 import { useState } from 'react';
 import { useGuideClaudeMd } from '../../hooks/useGuide';
-import type { GuideStack } from '../../types';
+import type { IGuideStack } from '../../types';
 
 const card = { background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '1rem 1.25rem' } as const;
 const muted = { color: 'var(--s-text-3)', fontSize: '0.875rem' } as const;
@@ -38,8 +38,8 @@ function Aside() {
   );
 }
 
-export function AiPanel({ stack }: { stack: GuideStack }) {
-  const { data, isLoading, error } = useGuideClaudeMd(stack.id, true);
+export function AiPanel({ stack }: { stack: IGuideStack }) {
+  const { data, isLoading, error } = useGuideClaudeMd({ stackId: stack.id, enabled: true });
   const [copied, setCopied] = useState(false);
   const copy = () => {
     void navigator.clipboard?.writeText(data ?? '').then(() => setCopied(true), () => setCopied(false));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AnalyzerProgress, AuditRunResponse } from '../types';
+import type { IAnalyzerProgress, IAuditRunResponse } from '../types';
 import {
   analyzerCounts,
   analyzerStatusLabel,
@@ -12,7 +12,7 @@ import {
   remainingSeconds,
 } from './auditProgress';
 
-const an = (name: string, status: AnalyzerProgress['status']): AnalyzerProgress => ({
+const an = (name: string, status: IAnalyzerProgress['status']): IAnalyzerProgress => ({
   name,
   status,
   findings: 0,
@@ -20,12 +20,12 @@ const an = (name: string, status: AnalyzerProgress['status']): AnalyzerProgress 
   note: null,
 });
 
-const running = (phase: NonNullable<AuditRunResponse['progress']>['phase'], analyzers: AnalyzerProgress[] = []) =>
-  ({ status: 'RUNNING', progress: { phase, analyzers, events: [] } }) as Pick<AuditRunResponse, 'status' | 'progress'>;
+const running = (phase: NonNullable<IAuditRunResponse['progress']>['phase'], analyzers: IAnalyzerProgress[] = []) =>
+  ({ status: 'RUNNING', progress: { phase, analyzers, events: [] } }) as Pick<IAuditRunResponse, 'status' | 'progress'>;
 
 describe('andamento da auditoria', () => {
   it('concluída tem todas as etapas prontas e 100%', () => {
-    const run = { status: 'COMPLETED', progress: null } as Pick<AuditRunResponse, 'status' | 'progress'>;
+    const run = { status: 'COMPLETED', progress: null } as Pick<IAuditRunResponse, 'status' | 'progress'>;
     expect(phaseIndex(run)).toBe(5);
     expect(progressPercent(run)).toBe(100);
   });
@@ -69,7 +69,7 @@ describe('andamento da auditoria', () => {
 });
 
 describe('estimativa de tempo', () => {
-  const done = (start: string, end: string | null, status: AuditRunResponse['status'] = 'COMPLETED') => ({
+  const done = ({ start, end, status = 'COMPLETED' }: { start: string; end: string | null; status?: IAuditRunResponse['status'] }) => ({
     status,
     startedAt: start,
     completedAt: end,
@@ -78,19 +78,19 @@ describe('estimativa de tempo', () => {
   it('tira a média das concluídas e ignora falhas, canceladas e em andamento', () => {
     expect(
       averageDurationSeconds([
-        done('2026-10-22T10:00:00', '2026-10-22T10:04:00'), // 240 s
-        done('2026-10-21T10:00:00', '2026-10-21T10:02:00'), // 120 s
-        done('2026-10-20T10:00:00', '2026-10-20T10:00:05', 'FAILED'),
-        done('2026-10-19T10:00:00', null, 'RUNNING'),
-        done('2026-10-18T10:00:00', '2026-10-18T10:00:30', 'CANCELLED'),
+        done({ start: '2026-10-22T10:00:00', end: '2026-10-22T10:04:00' }), // 240 s
+        done({ start: '2026-10-21T10:00:00', end: '2026-10-21T10:02:00' }), // 120 s
+        done({ start: '2026-10-20T10:00:00', end: '2026-10-20T10:00:05', status: 'FAILED' }),
+        done({ start: '2026-10-19T10:00:00', end: null, status: 'RUNNING' }),
+        done({ start: '2026-10-18T10:00:00', end: '2026-10-18T10:00:30', status: 'CANCELLED' }),
       ]),
     ).toBe(180);
     expect(averageDurationSeconds([])).toBeNull();
   });
 
   it('usa só as 5 mais recentes', () => {
-    const recent = Array.from({ length: 5 }, () => done('2026-10-22T10:00:00', '2026-10-22T10:01:00'));
-    const old = done('2026-01-01T10:00:00', '2026-01-01T12:00:00');
+    const recent = Array.from({ length: 5 }, () => done({ start: '2026-10-22T10:00:00', end: '2026-10-22T10:01:00' }));
+    const old = done({ start: '2026-01-01T10:00:00', end: '2026-01-01T12:00:00' });
     expect(averageDurationSeconds([...recent, old])).toBe(60);
   });
 

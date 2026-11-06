@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../api/client';
 import { startLabel } from '../utils/timeAgo';
-import type { McpConfig, McpConfigRequest, McpDataLevel, McpNewKey, SystemSummaryResponse } from '../types';
+import type { IMcpConfig, IMcpConfigRequest, McpDataLevel, IMcpNewKey, ISystemSummaryResponse } from '../types';
 import { LoadError } from './EngineRulesParts';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -14,8 +14,13 @@ const LEVELS: Array<{ id: McpDataLevel; titulo: string; texto: string }> = [
   { id: 'SENSITIVE', titulo: 'Sensível: só números', texto: 'Contagens por regra e severidade, sem títulos nem locais. Para sistemas que não podem expor nada.' },
 ];
 
+interface IToolToggle {
+  name: string;
+  on: boolean;
+}
+
 /** Comando que registra este sistema no Claude Code. A chave é a que acabou de ser gerada. */
-export function connectCommand(url: string, systemName: string, key: string): string {
+export function connectCommand({ url, systemName, key }: { url: string; systemName: string; key: string }): string {
   return `claude mcp add --transport http sentinel-${systemName} ${url} --header "Authorization: Bearer ${key}"`;
 }
 
@@ -38,13 +43,13 @@ function callParams(c: { ok: boolean; detail?: string | null }): string {
 }
 
 
-type UpdateMutation = { isPending: boolean; mutate: (body: McpConfigRequest) => void };
+type UpdateMutation = { isPending: boolean; mutate: (body: IMcpConfigRequest) => void };
 
-interface KeyProps {
-  cfg: McpConfig;
+interface IKeyProps {
+  cfg: IMcpConfig;
   url: string;
   systemName: string;
-  fresh: McpNewKey | null;
+  fresh: IMcpNewKey | null;
   confirmNew: boolean;
   issuing: boolean;
   revoking: boolean;
@@ -54,7 +59,7 @@ interface KeyProps {
   onDismissFresh: () => void;
 }
 
-function KeyButtons({ cfg, confirmNew, issuing, revoking, onIssue, onRevoke, onConfirmNew }: Pick<KeyProps, 'cfg' | 'confirmNew' | 'issuing' | 'revoking' | 'onIssue' | 'onRevoke' | 'onConfirmNew'>) {
+function KeyButtons({ cfg, confirmNew, issuing, revoking, onIssue, onRevoke, onConfirmNew }: Pick<IKeyProps, 'cfg' | 'confirmNew' | 'issuing' | 'revoking' | 'onIssue' | 'onRevoke' | 'onConfirmNew'>) {
   return (
     <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
       {!cfg.hasKey || confirmNew ? (
@@ -74,8 +79,8 @@ function KeyButtons({ cfg, confirmNew, issuing, revoking, onIssue, onRevoke, onC
   );
 }
 
-function FreshKey({ fresh, url, systemName, onDismiss }: { fresh: McpNewKey; url: string; systemName: string; onDismiss: () => void }) {
-  const command = connectCommand(url, systemName, fresh.key);
+function FreshKey({ fresh, url, systemName, onDismiss }: { fresh: IMcpNewKey; url: string; systemName: string; onDismiss: () => void }) {
+  const command = connectCommand({ url, systemName, key: fresh.key });
   return (
     <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
       <strong>Copie a chave agora: ela não aparece de novo.</strong>
@@ -91,7 +96,7 @@ function FreshKey({ fresh, url, systemName, onDismiss }: { fresh: McpNewKey; url
   );
 }
 
-function KeySection(props: KeyProps) {
+function KeySection(props: IKeyProps) {
   const { cfg, url, systemName, fresh, onDismissFresh } = props;
   return (
     <section aria-label="Endereço e chave" style={{ display: 'grid', gap: 10 }}>
@@ -121,7 +126,7 @@ function KeySection(props: KeyProps) {
   );
 }
 
-function LevelsFieldset({ cfg, update }: { cfg: McpConfig; update: UpdateMutation }) {
+function LevelsFieldset({ cfg, update }: { cfg: IMcpConfig; update: UpdateMutation }) {
   return (
     <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
       <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>O que o Claude pode ver</legend>
@@ -150,7 +155,7 @@ function LevelsFieldset({ cfg, update }: { cfg: McpConfig; update: UpdateMutatio
   );
 }
 
-function ToolsFieldset({ cfg, update, onToggle }: { cfg: McpConfig; update: UpdateMutation; onToggle: (name: string, on: boolean) => void }) {
+function ToolsFieldset({ cfg, update, onToggle }: { cfg: IMcpConfig; update: UpdateMutation; onToggle: (toggle: IToolToggle) => void }) {
   return (
     <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
       <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Ferramentas liberadas</legend>
@@ -162,7 +167,7 @@ function ToolsFieldset({ cfg, update, onToggle }: { cfg: McpConfig; update: Upda
           helperText={t.description}
           checked={t.enabled}
           disabled={update.isPending}
-          onChange={(_, { checked }) => onToggle(t.name, checked)}
+          onChange={(_, { checked }) => onToggle({ name: t.name, on: checked })}
         />
       ))}
     </fieldset>
@@ -218,20 +223,20 @@ function CallsSection({ calls }: { calls: CallRow[] | undefined }) {
  * Aba "Claude (MCP)" do cadastro de um sistema. Tudo aqui vale só para este sistema e salva na hora:
  * liga a consulta, gera a chave, escolhe quanto do resultado pode sair e quais ferramentas ficam liberadas.
  */
-export function McpPanel({ system }: { system: SystemSummaryResponse }) {
+export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
   const queryClient = useQueryClient();
   const key = ['mcp', system.id];
   const config = useQuery({ queryKey: key, queryFn: () => api.getMcp(system.id) });
   const calls = useCalls(system.id);
   // A chave completa só existe logo depois de gerada; ao fechar o painel ela some.
-  const [fresh, setFresh] = useState<McpNewKey | null>(null);
+  const [fresh, setFresh] = useState<IMcpNewKey | null>(null);
   const [confirmNew, setConfirmNew] = useState(false);
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: key });
   };
   const update = useMutation({
-    mutationFn: (body: McpConfigRequest) => api.updateMcp(system.id, body),
+    mutationFn: (body: IMcpConfigRequest) => api.updateMcp(system.id, body),
     onSuccess: (data) => queryClient.setQueryData(key, data),
   });
   const issue = useMutation({
@@ -256,7 +261,7 @@ export function McpPanel({ system }: { system: SystemSummaryResponse }) {
   const cfg = config.data;
   const url = `${window.location.origin}/mcp/${encodeURIComponent(system.name)}`;
   const enabledTools = cfg.tools.filter((t) => t.enabled).map((t) => t.name);
-  const toggleTool = (name: string, on: boolean) =>
+  const toggleTool = ({ name, on }: IToolToggle) =>
     update.mutate({ tools: on ? [...enabledTools, name] : enabledTools.filter((n) => n !== name) });
   const error = (update.error ?? issue.error ?? revoke.error) as Error | null;
 

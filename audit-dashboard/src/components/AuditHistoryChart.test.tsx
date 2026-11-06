@@ -2,12 +2,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AuditRunResponse } from '../types';
+import type { IAuditRunResponse } from '../types';
 import { AuditHistoryChart } from './AuditHistoryChart';
 
 const SCORE = { security: 0, quality: 0, architecture: 0, dependencies: 0, observability: 0 };
 
-function run(id: number, day: number, overall: number | null, extra: Partial<AuditRunResponse> = {}): AuditRunResponse {
+interface IRunOptions {
+  id: number;
+  day: number;
+  overall: number | null;
+  extra?: Partial<IAuditRunResponse>;
+}
+
+function run({ id, day, overall, extra = {} }: IRunOptions): IAuditRunResponse {
   const started = `2026-10-${String(day).padStart(2, '0')}T10:00:00`;
   return {
     id,
@@ -27,7 +34,7 @@ function Where() {
   return <span data-testid="onde">{useLocation().pathname}</span>;
 }
 
-function renderChart(history: AuditRunResponse[], currentId = 44) {
+function renderChart(history: IAuditRunResponse[], currentId = 44) {
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(history), { status: 200 })));
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -41,10 +48,15 @@ function renderChart(history: AuditRunResponse[], currentId = 44) {
   );
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('AuditHistoryChart', () => {
-  const history = [run(31, 28, 54), run(36, 29, 61), run(40, 29, null), run(44, 30, 77)];
+  const history = [
+    run({ id: 31, day: 28, overall: 54 }),
+    run({ id: 36, day: 29, overall: 61 }),
+    run({ id: 40, day: 29, overall: null }),
+    run({ id: 44, day: 30, overall: 77 }),
+  ];
 
   it('mostra uma coluna por auditoria, com a nota, e resume quantas estão na meta', async () => {
     renderChart(history);
@@ -65,13 +77,13 @@ describe('AuditHistoryChart', () => {
   });
 
   it('clicar na coluna (ou no valor dela) abre o resultado daquela auditoria', async () => {
-    window.scrollTo = vi.fn();
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     renderChart(history);
     const column = await screen.findByRole('link', { name: /Abrir a auditoria 36/ });
     expect(column).toHaveAttribute('href', '/audits/36');
     fireEvent.click(within(column).getByText('61'));
     await waitFor(() => expect(screen.getByTestId('onde')).toHaveTextContent('/audits/36'));
-    expect(window.scrollTo).toHaveBeenCalled();
+    expect(scrollTo).toHaveBeenCalled();
   });
 
   it('a dica mostra nota, distância da meta, variação e críticos ao focar a coluna', async () => {
@@ -96,7 +108,7 @@ describe('AuditHistoryChart', () => {
   });
 
   it('com uma auditoria só, explica que ainda não há evolução para mostrar', async () => {
-    renderChart([run(44, 30, 77)]);
+    renderChart([run({ id: 44, day: 30, overall: 77 })]);
     expect(await screen.findByText(/primeira auditoria do sistema/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Abrir a auditoria/ })).not.toBeInTheDocument();
   });

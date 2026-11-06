@@ -2,14 +2,14 @@ import { DataTableSkeleton, InlineNotification } from '@carbon/react';
 import { useState } from 'react';
 import { PageShell } from '../../components/PageShell';
 import { useGuide } from '../../hooks/useGuide';
-import type { GuideResponse, GuideStack } from '../../types';
+import type { IGuideResponse, IGuideStack } from '../../types';
 import { rulesOfStack } from '../../utils/guide';
 import { AiPanel } from './AiPanel';
 import { AudienceSwitch, GapsNotice, GradePanel, PracticeGrid, ProcessSection, RulesList, StackPicker, SummaryCards } from './GuideParts';
 
 const DEFAULT_STACK = 'quarkus';
 
-function PeopleView({ stack, guide }: { stack: GuideStack; guide: GuideResponse }) {
+function PeopleView({ stack, guide }: { stack: IGuideStack; guide: IGuideResponse }) {
   return (
     <>
       <PracticeGrid stack={stack} />
