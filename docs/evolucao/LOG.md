@@ -907,3 +907,12 @@ Problema: ao auditar pasta local no modo "como está agora", a tela ficava parad
 
 Verificado: `LocalSource` compilado com javac e rodado em repositório git real (avisos 0/250, 100/250, 200/250, 250/250; assinatura antiga preservada); `vitest` (318 testes), `tsc`.
 Não verificado: testes JUnit novos (`LocalSourceTest`, `AuditProgressTrackerTest`) — o Maven Central não é alcançável neste ambiente, ficam para o CI; tela real com a API rodando.
+
+## Dashboard 12.69.1 — Cópia da pasta local em paralelo
+
+Problema: auditoria TREE de pasta em volume lento falhou com "A cópia da pasta excedeu o tempo limite de 300s (2600 de 2764 arquivos copiados)", cerca de 9 arquivos por segundo. O gargalo era a espera do sistema de arquivos por arquivo (3 consultas de tipo/tamanho/caminho real, criação de pasta e cópia, em sequência).
+
+- `LocalSource.copyWorkingTree` copia com 8 threads; tipo e tamanho vêm de uma única consulta; a checagem de caminho real (contra link para fora da pasta) e a criação da pasta de destino rodam uma vez por pasta, não por arquivo. As regras de segurança não mudaram (links, submódulos, arquivos acima de 10 MB e caminhos que escapam da pasta continuam de fora).
+
+Verificado: `LocalSource` compilado com javac e rodado em 3000 arquivos em 20 pastas (todos copiados, link para /etc não copiado, contagem 3001/3001).
+Não verificado: ganho real em volume lento (aqui o disco é rápido); JUnit novo (`copiaDaPastaComoEstaCopiaTodosOsArquivosDeUmaArvoreGrande`) fica para o CI.

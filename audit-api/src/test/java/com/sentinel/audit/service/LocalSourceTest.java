@@ -276,6 +276,31 @@ class LocalSourceTest {
     }
 
     @Test
+    void copiaDaPastaComoEstaCopiaTodosOsArquivosDeUmaArvoreGrande() throws Exception {
+        Path dir = repo("api");
+        for (int d = 0; d < 20; d++) {
+            Path sub = dir.resolve("m" + d).resolve("src");
+            Files.createDirectories(sub);
+            for (int f = 0; f < 25; f++) {
+                Files.writeString(sub.resolve("F" + f + ".java"), "class F" + f + " { int d = " + d + "; }\n");
+            }
+        }
+        List<long[]> avisos = new ArrayList<>();
+
+        Path copia = source.snapshot("api", null, LocalSnapshot.TREE, null, work, (done, total) -> avisos.add(new long[] {done, total}));
+
+        for (int d = 0; d < 20; d++) {
+            for (int f = 0; f < 25; f++) {
+                assertEquals("class F" + f + " { int d = " + d + "; }\n",
+                        Files.readString(copia.resolve("m" + d).resolve("src").resolve("F" + f + ".java")));
+            }
+        }
+        long[] ultimo = avisos.get(avisos.size() - 1);
+        assertEquals(ultimo[1], ultimo[0]);
+        assertTrue(ultimo[1] >= 500);
+    }
+
+    @Test
     void copiaDoCommitNaoAvisaAndamentoDeArquivos() throws Exception {
         repo("api");
         List<long[]> avisos = new ArrayList<>();
