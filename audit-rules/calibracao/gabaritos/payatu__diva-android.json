@@ -1,0 +1,122 @@
+{
+ "_comentario": "Falhas de payatu/diva-android lidas no código (treino), volta 16. Entrada com regras [] é lacuna assumida. Gabarito escrito pelo mesmo agente que corrige: recall mede só o que li. Desafio nativo (InputValidation3, DivaJni) fora. Linhas conferidas com grep -n.",
+ "repo": "payatu/diva-android",
+ "falhas": [
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 10,
+   "cwe": "CWE-530",
+   "regras": [
+    "sentinel-android-manifest-allow-backup"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 61,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported",
+    "sentinel-android-manifest-intent-filter-implicito"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 74,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported",
+    "sentinel-android-manifest-intent-filter-implicito"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 88,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/LogActivity.java",
+   "linha": 56,
+   "cwe": "CWE-532",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/HardcodeActivity.java",
+   "linha": 50,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-android-segredo-literal-comparado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/InsecureDataStorage1Activity.java",
+   "linha": 57,
+   "cwe": "CWE-312",
+   "regras": [
+    "sentinel-android-prefs-senha-em-claro"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/InsecureDataStorage2Activity.java",
+   "linha": 67,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-android-sqlite-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/InsecureDataStorage3Activity.java",
+   "linha": 61,
+   "cwe": "CWE-732",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/InsecureDataStorage4Activity.java",
+   "linha": 57,
+   "cwe": "CWE-922",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/SQLInjectionActivity.java",
+   "linha": 70,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-android-sqlite-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/InputValidation2URISchemeActivity.java",
+   "linha": 50,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-android-webview-javascript"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/NotesProvider.java",
+   "linha": 118,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-android-sqlite-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/NotesProvider.java",
+   "linha": 180,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-android-sqlite-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/jakhar/aseem/diva/NotesProvider.java",
+   "linha": 207,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-android-sqlite-concatenado"
+   ]
+  }
+ ]
+}

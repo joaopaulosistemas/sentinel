@@ -194,3 +194,103 @@ rules:
       category: security
       cwe: "CWE-94: Improper Control of Generation of Code ('Code Injection')"
       owasp: M7 - Insufficient Binary Protections
+
+  - id: sentinel-android-sqlite-concatenado
+    patterns:
+      - pattern-either:
+          - pattern: $DB.rawQuery($Q, ...)
+          - pattern: $DB.execSQL($Q, ...)
+          - pattern: $QB.appendWhere($Q)
+          - pattern: (android.database.sqlite.SQLiteDatabase $DB).delete($T, $Q, ...)
+          - pattern: (SQLiteDatabase $DB).delete($T, $Q, ...)
+          - pattern: (android.database.sqlite.SQLiteDatabase $DB).update($T, $V, $Q, ...)
+          - pattern: (SQLiteDatabase $DB).update($T, $V, $Q, ...)
+      # só conta quando a consulta junta algo que não é literal nem constante (NOME_EM_MAIÚSCULAS)
+      - metavariable-pattern:
+          metavariable: $Q
+          patterns:
+            - pattern-either:
+                - patterns:
+                    - pattern: <... $L + $X ...>
+                    - metavariable-regex:
+                        metavariable: $X
+                        regex: '^(?!["\x27])(?![A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)*$).+'
+                - patterns:
+                    - pattern: <... $X + $R ...>
+                    - metavariable-regex:
+                        metavariable: $X
+                        regex: '^(?!["\x27])(?![A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)*$)(?!.* \+ ).+'
+    message: >
+      Consulta SQLite montada por concatenação (CWE-89): se o texto vier de um campo da tela, de um Intent ou da URI de
+      um ContentProvider, quem controla a entrada altera a consulta e lê ou apaga dados de outros registros. Use
+      parâmetros (?) com o array de argumentos: rawQuery(sql, args), db.delete(tabela, "id = ?", args).
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: M4 - Insufficient Input/Output Validation
+
+  - id: sentinel-android-segredo-literal-comparado
+    patterns:
+      - pattern-either:
+          - pattern: $IN.equals("$LIT")
+          - pattern: $IN.equalsIgnoreCase("$LIT")
+          - pattern: '"$LIT".equals($IN)'
+          - pattern: '"$LIT".equalsIgnoreCase($IN)'
+      # palavra única de 8+ letras/dígitos que contém um termo de segredo ("vendorsecretkey"); "password",
+      # "access_token" e frases ficam de fora: são nomes de campo ou rótulos, não o valor do segredo
+      - metavariable-regex:
+          metavariable: $LIT
+          regex: '^(?i)(?=[A-Za-z0-9]{8,}$)[A-Za-z0-9]*(secret|passw|senha|token|apikey|privatekey|vendorkey|licensekey)[A-Za-z0-9]*$'
+      - metavariable-regex:
+          metavariable: $LIT
+          regex: '^(?i)(?!(password|passwords|passwd|secretkey|accesstoken|refreshtoken|authtoken|senha)$).*'
+    message: >
+      O código compara o que o usuário digitou com uma chave ou senha escrita no código (CWE-798). Quem abre o APK ou o
+      JAR (decompilador, strings) lê o valor e passa pela verificação. Valide no servidor ou compare o hash de um
+      segredo guardado fora do código (Keystore, variável de ambiente).
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: M1 - Improper Credential Usage
+
+  - id: sentinel-android-prefs-senha-em-claro
+    patterns:
+      - pattern: $ED.putString("$K", $V)
+      - metavariable-regex:
+          metavariable: $K
+          regex: '^(?i)([a-z0-9]*[_.-])?(passw(or)?d|pwd|pass|senha|secret|pin|apikey|api_key|credit_?card|cvv)$'
+      - pattern-not: $ED.putString("$K", "")
+      - pattern-not: $ED.putString("$K", null)
+    message: >
+      Senha, PIN ou segredo gravado em SharedPreferences sem criptografia (CWE-312): o arquivo XML fica legível com
+      backup do adb, com root e em aparelhos de outro dono. Guarde um token de curta duração, ou cifre com o Android
+      Keystore (EncryptedSharedPreferences).
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-312: Cleartext Storage of Sensitive Information"
+      owasp: M9 - Insecure Data Storage
+
+  - id: sentinel-android-manifest-intent-filter-implicito
+    patterns:
+      - pattern-regex: '<(?:activity|service|receiver)\b(?:(?!android:exported|>)[\s\S])*>\s*<intent-filter>(?:(?!</intent-filter>)[\s\S])*</intent-filter>'
+      # a activity de entrada (MAIN/LAUNCHER) é exportada por desenho
+      - pattern-not-regex: '<(?:activity|service|receiver)\b(?:(?!android:exported|>)[\s\S])*>\s*<intent-filter>(?:(?!</intent-filter>)[\s\S])*android\.intent\.category\.LAUNCHER(?:(?!</intent-filter>)[\s\S])*</intent-filter>'
+    message: >
+      Componente com <intent-filter> e sem android:exported (CWE-926): em apps com targetSdk abaixo de 31 isso o torna
+      exportado, e qualquer app do aparelho o inicia com uma Intent própria, inclusive telas que mostram dados
+      restritos. Declare android:exported="false" (ou "true" só se for preciso) e valide os extras recebidos.
+    severity: WARNING
+    languages: [generic]
+    paths:
+      include:
+        - "*.xml"
+    metadata:
+      category: security
+      cwe: "CWE-926: Improper Export of Android Application Components"
+      owasp: M8 - Security Misconfiguration

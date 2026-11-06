@@ -650,3 +650,34 @@
   refs:
     - "https://cwe.mitre.org/data/definitions/94.html"
     - "https://developer.android.com/privacy-and-security/risks/dynamic-code-loading"
+
+- key: "sentinel-android-sqlite-concatenado"
+  summary: "Não concatene texto na consulta SQLite: use parâmetros (?) e o array de argumentos."
+  before: "db.rawQuery(\"SELECT * FROM u WHERE user = '\" + nome + \"'\", null);"
+  after: "db.rawQuery(\"SELECT * FROM u WHERE user = ?\", new String[] { nome });"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/89.html"
+    - "https://developer.android.com/privacy-and-security/risks/sql-injection"
+
+- key: "sentinel-android-segredo-literal-comparado"
+  summary: "Não compare a entrada com uma chave escrita no código: valide no servidor ou compare o hash de um segredo guardado fora do APK."
+  before: "if (campo.getText().toString().equals(\"vendorsecretkey\")) { liberar(); }"
+  after: "if (servidor.validaChave(campo.getText().toString())) { liberar(); }"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/798.html"
+
+- key: "sentinel-android-prefs-senha-em-claro"
+  summary: "Não grave senha em SharedPreferences comum: guarde um token de curta duração ou use EncryptedSharedPreferences (Android Keystore)."
+  before: "prefs.edit().putString(\"password\", senha).apply();"
+  after: "EncryptedSharedPreferences.create(...).edit().putString(\"token\", tokenDeSessao).apply();"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/312.html"
+    - "https://developer.android.com/privacy-and-security/security-tips#StoringData"
+
+- key: "sentinel-android-manifest-intent-filter-implicito"
+  summary: "Declare android:exported no componente com intent-filter; use false quando só o próprio app o inicia."
+  before: "<activity android:name=\".Creds\"><intent-filter>...</intent-filter></activity>"
+  after: "<activity android:name=\".Creds\" android:exported=\"false\"><intent-filter>...</intent-filter></activity>"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/926.html"
+    - "https://developer.android.com/privacy-and-security/risks/android-exported"

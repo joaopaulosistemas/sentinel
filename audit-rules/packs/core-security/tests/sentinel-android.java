@@ -72,4 +72,67 @@ class AndroidTeste extends android.app.Activity {
         // ok: sentinel-android-classloader-armazenamento-externo
         new DexClassLoader(apk.getAbsolutePath(), ctx.getCacheDir().getAbsolutePath(), null, ctx.getClassLoader());
     }
+
+    static final String TABELA = "notas";
+    static final String COL_ID = "_id";
+
+    void consultas(android.database.sqlite.SQLiteDatabase db, android.widget.EditText busca, String id) {
+        // ruleid: sentinel-android-sqlite-concatenado
+        db.rawQuery("SELECT * FROM u WHERE user = '" + busca.getText().toString() + "'", null);
+        // ruleid: sentinel-android-sqlite-concatenado
+        db.execSQL("INSERT INTO u VALUES ('" + busca.getText().toString() + "', 'x');");
+        // ruleid: sentinel-android-sqlite-concatenado
+        db.rawQuery("SELECT * FROM n WHERE " + COL_ID + " = " + id, null);
+        // ok: sentinel-android-sqlite-concatenado
+        db.rawQuery("SELECT * FROM u WHERE user = ?", new String[] { busca.getText().toString() });
+        // ok: sentinel-android-sqlite-concatenado
+        db.execSQL("INSERT INTO " + TABELA + "(" + COL_ID + ") VALUES (1)");
+        // ok: sentinel-android-sqlite-concatenado
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + "u(user VARCHAR);");
+    }
+
+    void construtor(android.database.sqlite.SQLiteQueryBuilder qb, Uri uri) {
+        // ruleid: sentinel-android-sqlite-concatenado
+        qb.appendWhere(COL_ID + "=" + uri.getLastPathSegment());
+        // ok: sentinel-android-sqlite-concatenado
+        qb.appendWhere(COL_ID + "=" + TABELA);
+        // ok: sentinel-android-sqlite-concatenado
+        qb.appendWhere("_id = ?");
+    }
+
+    void tabelaComDelete(android.database.sqlite.SQLiteDatabase db, String id, String[] args) {
+        // ruleid: sentinel-android-sqlite-concatenado
+        db.delete(TABELA, COL_ID + " = " + id, args);
+        // ok: sentinel-android-sqlite-concatenado
+        db.delete(TABELA, COL_ID + " = ?", new String[] { id });
+    }
+
+    void segredoLiteral(android.widget.EditText chave, String nome) {
+        // ruleid: sentinel-android-segredo-literal-comparado
+        if (chave.getText().toString().equals("vendorsecretkey")) { }
+        // ruleid: sentinel-android-segredo-literal-comparado
+        if ("AdminPassword2024".equals(chave.getText().toString())) { }
+        // ok: sentinel-android-segredo-literal-comparado
+        if ("password".equals(nome)) { }
+        // ok: sentinel-android-segredo-literal-comparado
+        if ("access_token".equals(nome)) { }
+        // ok: sentinel-android-segredo-literal-comparado
+        if (chave.getText().toString().equals("sim")) { }
+    }
+
+    void guardaSenha(android.content.SharedPreferences sp, String usuario, String senha) {
+        // ruleid: sentinel-android-prefs-senha-em-claro
+        sp.edit().putString("password", senha).commit();
+        // ruleid: sentinel-android-prefs-senha-em-claro
+        sp.edit().putString("user_pwd", senha).apply();
+        android.content.SharedPreferences.Editor ed = sp.edit();
+        // ruleid: sentinel-android-prefs-senha-em-claro
+        ed.putString("secret", senha);
+        // ok: sentinel-android-prefs-senha-em-claro
+        ed.putString("user", usuario);
+        // ok: sentinel-android-prefs-senha-em-claro
+        ed.putString("password", "");
+        // ok: sentinel-android-prefs-senha-em-claro
+        ed.putString("password_hint", usuario);
+    }
 }
