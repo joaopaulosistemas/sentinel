@@ -18,7 +18,7 @@ public final class AnalyzerCatalog {
             Map.entry("PMD", "Lint de Java"),
             Map.entry("ESLint", "TypeScript e Angular"),
             Map.entry("Higiene do projeto", "README, testes, CI, lockfile"),
-            Map.entry("SARIF", "Ferramentas externas (SARIF)"),
+            Map.entry("SARIF", "Ferramentas externas (SARIF), inclui o Joern; desligar aqui desliga todas"),
             Map.entry("Evidências", "Dump do banco, cobertura, memória"),
             Map.entry("Ciclos de dependência", "Pacotes Java e arquivos TypeScript que se importam em círculo"),
             Map.entry("Duplicação", "Blocos de código repetidos"),

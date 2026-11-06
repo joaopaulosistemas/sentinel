@@ -300,6 +300,7 @@ function ToolsSection({ runId }: { runId: number }) {
                 <span style={{ fontSize: 13, color: 'var(--s-text-2)' }}>{t.findings} {t.findings === 1 ? 'achado' : 'achados'}</span>
               </div>
               <div style={{ fontSize: 12, color: v.color }}>{v.text}</div>
+              {t.note && <div style={{ fontSize: 12, color: 'var(--s-text-3)', whiteSpace: 'pre-line', overflowWrap: 'anywhere', marginTop: 4 }}>{t.note}</div>}
             </li>
           );
         })}

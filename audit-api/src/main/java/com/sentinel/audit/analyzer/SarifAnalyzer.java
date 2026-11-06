@@ -203,7 +203,8 @@ public class SarifAnalyzer implements CodeAnalyzer {
                 return geral;
             }
             String linhaJoern = "Joern (taint entre arquivos): " + joern;
-            return geral == null ? linhaJoern : geral + "\n" + linhaJoern;
+            // A frase do Joern vai primeiro: a tela corta a nota em 300 caracteres e a lista geral pode ser longa.
+            return geral == null ? linhaJoern : linhaJoern + "\n" + geral;
         }
     }
 

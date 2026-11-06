@@ -755,3 +755,11 @@ Verificado: leitura do código. NÃO verificado: JUnit/Maven (só CI; `SarifAnal
 - **Limite:** só vale quando o sistema tem algum pacote ativo; sem nenhum pacote, não há nota.
 
 Verificado: leitura do código. NÃO verificado: JUnit (só CI; teste novo `semOPacoteDeFerramentasOJoernAparecePorDesligado`); tela real.
+
+## Dashboard 12.62.0 — Coerência entre telas do Joern (revisão das telas)
+
+- **Gap achado:** a nota do analisador é cortada em 300 caracteres e a frase do Joern vinha no fim (simulação de 6 ferramentas rodando e 6 ausentes: 325 caracteres); a tela de resultado só mostrava a nota em tooltip; `joern.md` descrevia o formato antigo.
+- **Mudança:** a frase do Joern passa a ser a primeira linha da nota; a tela de resultado mostra a nota visível abaixo de cada ferramenta (com quebra de linha); o log de eventos troca a quebra de linha por " | "; a descrição do analisador SARIF avisa que desligá-lo desliga o Joern e as demais; `joern.md` atualizado.
+- **Não feito (decisão de produto):** unificar os nomes "analisadores" e "Ferramentas de análise"; listar o estado das ferramentas nos relatórios PDF/HTML.
+
+Verificado: leitura do código. NÃO verificado: JUnit e vitest (só CI); tela real; o corte em 300 com uma auditoria real.
