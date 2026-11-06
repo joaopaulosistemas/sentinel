@@ -499,3 +499,40 @@
     - "https://cwe.mitre.org/data/definitions/470.html"
   effort: M
   regression-risk: MEDIUM
+
+- key: "sentinel-android-log-segredo"
+  summary: "Não grave token, senha ou segredo no logcat. Registre só um identificador ou remova a linha do build de produção."
+  before: "Log.d(\"accesstoken\", accessToken);"
+  after: "Log.d(\"login\", \"token recebido\");"
+  refs:
+    - "https://mas.owasp.org/MASTG/tests/android/MASVS-STORAGE/MASTG-TEST-0003/"
+
+- key: "sentinel-android-webview-url-do-intent"
+  summary: "Valide esquema e host da URL recebida contra uma lista de permissão antes de chamar loadUrl."
+  before: "webView.loadUrl(getIntent().getData().getQueryParameter(\"url\"));"
+  after: |-
+    Uri u = Uri.parse(url);
+    if ("https".equals(u.getScheme()) && "www.exemplo.com".equals(u.getHost())) webView.loadUrl(url);
+  refs:
+    - "https://developer.android.com/privacy-and-security/risks/unsafe-uri-loading"
+
+- key: "sentinel-android-manifest-allow-backup"
+  summary: "Desligue a cópia de segurança do app ou exclua os dados sensíveis dela."
+  before: "android:allowBackup=\"true\""
+  after: "android:allowBackup=\"false\""
+  refs:
+    - "https://developer.android.com/privacy-and-security/risks/backup-best-practices"
+
+- key: "sentinel-android-manifest-cleartext"
+  summary: "Use HTTPS e remova o tráfego em texto puro."
+  before: "android:usesCleartextTraffic=\"true\""
+  after: "android:usesCleartextTraffic=\"false\""
+  refs:
+    - "https://developer.android.com/privacy-and-security/risks/cleartext-communications"
+
+- key: "sentinel-android-manifest-exported"
+  summary: "Exporte só o componente que precisa receber Intent de outros apps e proteja-o com permissão."
+  before: "<activity android:name=\".Envio\" android:exported=\"true\" />"
+  after: "<activity android:name=\".Envio\" android:exported=\"false\" />"
+  refs:
+    - "https://developer.android.com/privacy-and-security/risks/android-exported"

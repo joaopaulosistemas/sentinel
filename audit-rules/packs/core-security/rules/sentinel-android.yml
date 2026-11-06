@@ -1,0 +1,90 @@
+rules:
+  - id: sentinel-android-log-segredo
+    patterns:
+      - pattern: Log.$M($TAG, <... $ARG ...>, ...)
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(v|d|i|w|e|wtf)$
+      - metavariable-regex:
+          metavariable: $ARG
+          regex: "^[^'\"]*(?:[Pp]ass(?:word|wd)|[Ss]enha|[Ss]ecret|[Tt]oken|[Jj]wt|[Aa]pi_?[Kk]ey|[Aa]uthorization|[Pp]rivate_?[Kk]ey|[Cc]redential)"
+    message: >
+      Token, senha ou segredo gravado no logcat (CWE-532). Em Android qualquer app com permissão de depuração, o adb e
+      relatórios de erro leem o logcat, e o valor vale como credencial enquanto não expirar. Remova o valor do log.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+      owasp: M9 - Insecure Data Storage
+
+  - id: sentinel-android-webview-url-do-intent
+    mode: taint
+    pattern-sources:
+      - pattern: getIntent().getData().getQueryParameter(...)
+      - pattern: getIntent().getStringExtra(...)
+      - pattern: getIntent().getDataString()
+      - pattern: $I.getData().getQueryParameter(...)
+      - pattern: $I.getStringExtra(...)
+    pattern-sinks:
+      - pattern: $W.loadUrl($X, ...)
+        focus-metavariable: $X
+    message: >
+      URL recebida por Intent (deep link ou extra) carregada direto no WebView (CWE-939/CWE-79). Outro app, ou uma
+      página aberta no navegador, escolhe a página que roda dentro do app, com o JavaScript e as sessões dele. Valide
+      esquema e host contra uma lista de permissão antes de chamar loadUrl.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-939: Improper Authorization in Handler for Custom URL Scheme"
+      owasp: M4 - Insufficient Input/Output Validation
+
+  - id: sentinel-android-webview-javascript
+    pattern: $S.setJavaScriptEnabled(true)
+    message: >
+      JavaScript habilitado no WebView. Só carregue conteúdo próprio ou de hosts fixos; com URL vinda de fora do app
+      isso permite XSS dentro do app (CWE-79).
+    severity: INFO
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting"
+      owasp: M4 - Insufficient Input/Output Validation
+
+  - id: sentinel-android-manifest-allow-backup
+    pattern: 'android:allowBackup="true"'
+    message: >
+      O app permite cópia de segurança pelo adb (allowBackup=true): quem tem o aparelho extrai bancos e
+      preferências do app (CWE-921). Use android:allowBackup="false" ou regras de backup que excluam dados sensíveis.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-921: Storage of Sensitive Data in a Mechanism without Access Control"
+      owasp: M9 - Insecure Data Storage
+
+  - id: sentinel-android-manifest-cleartext
+    pattern: 'android:usesCleartextTraffic="true"'
+    message: >
+      O app aceita tráfego HTTP sem TLS (usesCleartextTraffic=true): a rede intercepta e altera tokens e dados
+      (CWE-319). Remova o atributo e use HTTPS; para exceção de desenvolvimento use networkSecurityConfig só no
+      build de depuração.
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      owasp: M5 - Insecure Communication
+
+  - id: sentinel-android-manifest-exported
+    pattern: 'android:exported="true"'
+    message: >
+      Componente exportado (exported=true): qualquer app do aparelho pode iniciá-lo com Intent própria (CWE-926).
+      Exporte só o necessário, exija android:permission e valide os extras recebidos.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-926: Improper Export of Android Application Components"
+      owasp: M8 - Security Misconfiguration
