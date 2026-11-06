@@ -116,4 +116,41 @@ class ExternalToolsVendoredTest {
         assertFalse(ExternalTools.inIgnoredDir("src/item/Pedido.java"));
         assertFalse(ExternalTools.inIgnoredDir("it/Pedido.java"));
     }
+
+    @Test
+    void libEThirdPartyEmAtivosEBibliotecaESaidaDeBuildComHashTambem() {
+        assertTrue(ExternalTools.isVendoredLibrary("src/main/resources/static/lib/layui/layui.js"));
+        assertTrue(ExternalTools.isVendoredLibrary("src/main/resources/static/lib/ueditor/third-party/highcharts/modules/canvas-tools.js"));
+        assertTrue(ExternalTools.isVendoredLibrary("src/main/resources/static/other/infoleak/chunk-0226s3f2.57e3ed6f.js"));
+        assertTrue(ExternalTools.isVendoredLibrary("public/js/app.3f2a9c1b.css"));
+    }
+
+    @Test
+    void libForaDeAtivosOuNomeSemHashNaoEBiblioteca() {
+        assertFalse(ExternalTools.isVendoredLibrary("src/lib/util.js"));
+        assertFalse(ExternalTools.isVendoredLibrary("src/main/java/lib/Util.java"));
+        assertFalse(ExternalTools.isVendoredLibrary("src/app/chunk-loader.js"));
+        assertFalse(ExternalTools.isVendoredLibrary("static/js/relatorio.2024.js"));
+        assertFalse(ExternalTools.isVendoredLibrary("src/app/main.3f2a9c1b.js"));
+    }
+
+    @Test
+    void comentarioDeLinhaComLicencaEEnderecoIndicaTerceiros() {
+        assertTrue(ExternalTools.hasThirdPartyBanner("// CodeMirror, copyright (c) by Marijn Haverbeke and others\n// Distributed under an MIT license: https://codemirror.net/LICENSE\n\n(function(){})();"));
+        assertFalse(ExternalTools.hasThirdPartyBanner("// utilitarios\nfunction f(){}\n// MIT license https://x.org"));
+        assertFalse(ExternalTools.hasThirdPartyBanner("// Copyright Acme, MIT\nvar a;"));
+    }
+
+    @Test
+    void motorExcluiBibliotecasEmbutidasDoDiretorio(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Path lib = java.nio.file.Files.createDirectories(dir.resolve("src/main/resources/static/lib/layui"));
+        java.nio.file.Path js = java.nio.file.Files.createDirectories(dir.resolve("src/main/resources/static/js"));
+        java.nio.file.Files.writeString(lib.resolve("layui.js"), "var a;");
+        java.nio.file.Files.writeString(js.resolve("cm.js"), "// X, copyright\n// MIT license: https://x.org/LICENSE\nvar a;");
+        java.nio.file.Files.writeString(js.resolve("pedidos.js"), "var a;");
+        java.util.List<String> v = ExternalTools.vendoredFiles(dir);
+        assertTrue(v.contains("src/main/resources/static/lib/layui/layui.js"));
+        assertTrue(v.contains("src/main/resources/static/js/cm.js"));
+        assertFalse(v.contains("src/main/resources/static/js/pedidos.js"));
+    }
 }

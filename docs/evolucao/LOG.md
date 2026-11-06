@@ -698,3 +698,14 @@ Verificado: leitura do log da auditoria e do código do repositório de treino. 
 - **Validação (dvja, NodeGoat):** sem mudança de código nas voltas 4 e 5, então as contagens (176 e 328) não têm motivo para mudar; não reauditei.
 
 Verificado: log da auditoria completa (execução 42148534934) e leitura de `GitleaksAnalyzer` e `FindingConfidence`. NÃO verificado: nova medição de dvja/NodeGoat; JUnit/Maven (nada de Java mudou).
+
+## Dashboard 12.56.0 — Ciclo, volta 6 (branch `ciclo/estabilizacao-3`): JavaSecLab (treino novo), bibliotecas embutidas no Opengrep
+
+- **Repositório novo:** whgojp/JavaSecLab (branch `i18n-bilingual`, JAVA, 888 estrelas, app Java de treino de segurança), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 30,52 e 11.274 achados (CRITICAL 8, HIGH 221). Opengrep 8.929, Stylelint 1.000. Os maiores arquivos de achados do Opengrep eram `static/js/codemirror.js` (835), `static/lib/layui/layui.js` (374, duas cópias), `ueditor/third-party/codemirror` (310), `chunk-*.57e3ed6f.js` (159), `canvas-tools*.js` (296): bibliotecas de terceiros. Só `sentinel-ts-igualdade-frouxa` e `sentinel-ts-var` somam ~7.400.
+- **Causa:** o Opengrep só excluía por nome/pasta fixos e por tamanho (>400 KB). A detecção por pasta, cabeçalho de licença e nome (12.51/12.52) valia só para lint e métricas.
+- **Mudança:** `ExternalTools.vendoredFiles` (usado pelo Opengrep) junta tamanho, `isVendoredLibrary` e cabeçalho de terceiros (limite de 1.500 exclusões). `isVendoredLibrary` agora também reconhece JS/CSS em `lib` e `third-party` sob pasta de ativos web e saída de build com hash no nome (`chunk-xxx.57e3ed6f.js`) sob pasta de ativos. Cabeçalho de terceiros vale também com comentários de linha `//` no topo (licença + endereço/versão).
+- **Limite:** `lib` sob `static`/`public`/`webapp`/`resources` conta como terceiros mesmo se o projeto guardar código próprio ali.
+- **Não feito:** achados reais do código Java do JavaSecLab (SQLi, XSS etc.) ainda não analisados um a um; fica para a próxima leitura.
+
+Verificado: programa `javac` com os caminhos do JavaSecLab, casos negativos e leitura de diretório temporário. NÃO verificado: JUnit/Maven (só CI); nova auditoria do JavaSecLab; contagem de dvja e NodeGoat depois da mudança (a conferir pelo CI).
