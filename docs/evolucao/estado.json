@@ -1,9 +1,9 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 18,
-  "ultimoRepositorioTreino": "logicalhacking/DVHMA",
-  "ultimaStack": "JAVASCRIPT",
-  "branchAtual": "ciclo/estabilizacao-6",
+  "ultimaVolta": 19,
+  "ultimoRepositorioTreino": "Warxim/vucsa",
+  "ultimaStack": "JAVA",
+  "branchAtual": "ciclo/estabilizacao-7",
   "proximaBranch": null,
   "voltasNaBranch": 1,
   "voltasSemGanhoSeguidas": 0,
@@ -21,6 +21,7 @@
     "Volta 16 sem linha de Generalização completa (sem gabarito de validação por fonte pública, sem Benchmark local, sem amostra de 20 achados)",
     "Java em scriptlet de JSP (SQL em adminlogin.jsp, ProcessBuilder em ping.jsp, ObjectInputStream em preferences.jsp) não é analisado pelo Opengrep; upload sem validação (AvatarUpload) e JWT sem verificação de assinatura sem regra",
     "Pedido do João (06/11): depois do merge da branch, revisão profunda dos YAML de regras em busca de conflitos entre regras, com relatório e propostas",
-    "Biblioteca embutida sem cabeçalho nem marca no nome (support.css, *.templates.xml do OpenUI5) segue inflando Stylelint/jscpd; <access origin=\"*\"> do Cordova (config.xml) sem regra"
+    "Biblioteca embutida sem cabeçalho nem marca no nome (support.css, *.templates.xml do OpenUI5) segue inflando Stylelint/jscpd; <access origin=\"*\"> do Cordova (config.xml) sem regra",
+    "vucsa: IDOR em leitura de documento por id (CWE-639), enumeração de usuário por status distinto (CWE-204) e papel de acesso vertical fixo (CWE-269) sem regra: falhas lógicas, fora do alcance de padrão sintático; hash de senha SHA-256 sem salt sem regra"
   ]
 }
