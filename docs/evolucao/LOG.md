@@ -958,3 +958,12 @@ Verificado: `opengrep --test` core-security 86/86 (Opengrep 1.30.0); quatro regr
 - **Não feito:** Java dentro de scriptlet JSP não é analisado (SQL em `adminlogin.jsp:19`, `ping.jsp:18`, `preferences.jsp:66`); SQL com campo da classe em `Install.java:127`; upload sem validação (`AvatarUpload:44`); JWT sem verificação de assinatura (`JwtUtil:44`). Revisão de conflitos entre regras pedida pelo João para depois do merge (ver `estado.json`).
 
 Verificado: `opengrep --test` core-security 87/87 (Opengrep 1.30.0), regras rodadas sobre o código do alvo, auditorias no CI antes e depois, dvja e NodeGoat pelos números do CI. NÃO verificado: paridade Opengrep x Semgrep (semgrep não instalável aqui; fica para o CI do PR); JUnit/Maven (Java do produto intocado); **Generalização**: sem gabarito de validação por fonte pública, sem OWASP Benchmark local (a regra Java nova é de servlet, o Benchmark não foi rodado) e sem amostra de 20 achados; efeito da exceção `path` em outros treinos JSP não medido.
+
+## Dashboard 12.69.1 — Cópia da pasta local em paralelo
+
+Problema: auditoria TREE de pasta em volume lento falhou com "A cópia da pasta excedeu o tempo limite de 300s (2600 de 2764 arquivos copiados)", cerca de 9 arquivos por segundo. O gargalo era a espera do sistema de arquivos por arquivo (3 consultas de tipo/tamanho/caminho real, criação de pasta e cópia, em sequência).
+
+- `LocalSource.copyWorkingTree` copia com 8 threads; tipo e tamanho vêm de uma única consulta; a checagem de caminho real (contra link para fora da pasta) e a criação da pasta de destino rodam uma vez por pasta, não por arquivo. As regras de segurança não mudaram (links, submódulos, arquivos acima de 10 MB e caminhos que escapam da pasta continuam de fora).
+
+Verificado: `LocalSource` compilado com javac e rodado em 3000 arquivos em 20 pastas (todos copiados, link para /etc não copiado, contagem 3001/3001).
+Não verificado: ganho real em volume lento (aqui o disco é rápido); JUnit novo (`copiaDaPastaComoEstaCopiaTodosOsArquivosDeUmaArvoreGrande`) fica para o CI.

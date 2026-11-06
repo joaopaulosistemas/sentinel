@@ -353,45 +353,104 @@ public final class LocalSource {
         progress.report(0, total);
         Files.createDirectories(target);
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(Math.max(timeoutSeconds, 1));
-        long done = 0;
-        for (String rel : files) {
-            if (rel.isEmpty()) {
-                continue;
+        // Em volume lento (disco do Windows no WSL, bind mount do Docker Desktop) cada arquivo custa dezenas de
+        // milissegundos só em chamadas ao sistema de arquivos: copiar em paralelo esconde essa espera.
+        java.util.concurrent.atomic.AtomicLong done = new java.util.concurrent.atomic.AtomicLong();
+        CopyContext ctx = new CopyContext(src, target);
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(COPY_THREADS);
+        try {
+            List<java.util.concurrent.Future<?>> pending = new ArrayList<>();
+            for (String rel : files) {
+                if (rel.isEmpty()) {
+                    continue;
+                }
+                pending.add(pool.submit(() -> {
+                    if (System.nanoTime() > deadline) {
+                        throw new IllegalStateException("A cópia da pasta excedeu o tempo limite de " + timeoutSeconds
+                                + "s (" + done.get() + " de " + total + " arquivos copiados)");
+                    }
+                    copyOne(ctx, rel);
+                    long n = done.incrementAndGet();
+                    if (n % PROGRESS_EVERY == 0) {
+                        progress.report(n, total);
+                    }
+                    return null;
+                }));
             }
-            if (System.nanoTime() > deadline) {
-                throw new IllegalStateException("A cópia da pasta excedeu o tempo limite de " + timeoutSeconds
-                        + "s (" + done + " de " + total + " arquivos copiados)");
+            for (java.util.concurrent.Future<?> f : pending) {
+                try {
+                    f.get();
+                } catch (java.util.concurrent.ExecutionException e) {
+                    pool.shutdownNow();
+                    Throwable cause = e.getCause();
+                    if (cause instanceof IOException io) {
+                        throw io;
+                    }
+                    if (cause instanceof RuntimeException re) {
+                        throw re;
+                    }
+                    throw new IllegalStateException(cause);
+                }
             }
-            copyOne(src, target, rel);
-            done++;
-            if (done % PROGRESS_EVERY == 0) {
-                progress.report(done, total);
-            }
+        } finally {
+            pool.shutdownNow();
         }
         progress.report(total, total);
         LOG.infof("Pasta local copiada: %d arquivos em %d ms", total,
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
     }
 
-    private static void copyOne(Path src, Path target, String rel) throws IOException {
+    /** Quantos arquivos são copiados ao mesmo tempo. */
+    static final int COPY_THREADS = 8;
+
+    /** Pastas já verificadas/criadas: evita repetir, para cada arquivo, as consultas que só dependem da pasta. */
+    private static final class CopyContext {
+        final Path src;
+        final Path target;
+        final java.util.Set<Path> trustedParents = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        final java.util.Set<Path> createdDirs = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        CopyContext(Path src, Path target) {
+            this.src = src;
+            this.target = target;
+        }
+    }
+
+    private static void copyOne(CopyContext ctx, String rel) throws IOException {
         Path relPath = Paths.get(rel).normalize();
         if (relPath.isAbsolute() || relPath.startsWith("..") || relPath.toString().isEmpty()) {
             return;
         }
-        Path from = src.resolve(relPath);
-        // Link simbólico, submódulo (pasta) ou arquivo apagado: não entram.
-        if (!Files.isRegularFile(from, LinkOption.NOFOLLOW_LINKS) || Files.size(from) > MAX_FILE_BYTES) {
+        Path from = ctx.src.resolve(relPath);
+        // Link simbólico, submódulo (pasta) ou arquivo apagado: não entram. Uma consulta só dá tipo e tamanho.
+        java.nio.file.attribute.BasicFileAttributes attrs;
+        try {
+            attrs = Files.readAttributes(from, java.nio.file.attribute.BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException | RuntimeException e) {
             return;
         }
-        // Um componente do meio pode ter virado link para fora da pasta: o caminho real precisa continuar dentro dela.
-        if (!from.toRealPath().startsWith(src)) {
+        if (!attrs.isRegularFile() || attrs.size() > MAX_FILE_BYTES) {
             return;
         }
-        Path to = target.resolve(relPath).normalize();
-        if (!to.startsWith(target)) {
+        // Um componente do meio pode ter virado link para fora da pasta: o caminho real da pasta do arquivo precisa
+        // continuar dentro dela (o arquivo em si já não é link). A checagem vale para a pasta toda, então roda uma vez.
+        Path parent = from.getParent();
+        if (parent != null && !ctx.trustedParents.contains(parent)) {
+            if (!parent.toRealPath().startsWith(ctx.src)) {
+                return;
+            }
+            ctx.trustedParents.add(parent);
+        }
+        Path to = ctx.target.resolve(relPath).normalize();
+        if (!to.startsWith(ctx.target)) {
             return;
         }
-        Files.createDirectories(to.getParent());
+        Path toParent = to.getParent();
+        if (!ctx.createdDirs.contains(toParent)) {
+            // Só marca depois de criar: outra thread não pode achar que a pasta existe antes da hora.
+            Files.createDirectories(toParent);
+            ctx.createdDirs.add(toParent);
+        }
         Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
     }
 
