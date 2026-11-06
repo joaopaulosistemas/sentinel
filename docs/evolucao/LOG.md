@@ -709,3 +709,11 @@ Verificado: log da auditoria completa (execução 42148534934) e leitura de `Git
 - **Não feito:** achados reais do código Java do JavaSecLab (SQLi, XSS etc.) ainda não analisados um a um; fica para a próxima leitura.
 
 Verificado: programa `javac` com os caminhos do JavaSecLab, casos negativos e leitura de diretório temporário. NÃO verificado: JUnit/Maven (só CI); nova auditoria do JavaSecLab; contagem de dvja e NodeGoat depois da mudança (a conferir pelo CI).
+
+### Medições da volta 6 e 12.57.0
+
+- **JavaSecLab depois de 12.56.0:** nota 30,93 e 3.433 achados (era 30,52 e 11.274). Opengrep 8.929 → 1.843. A nota quase não mexe porque segurança já estava em ~0,8. ESLint foi de 27 para 493: o JavaSecLab ainda tem `lay-module/echarts/echarts.js` (cabeçalho Apache da ASF não era reconhecido); sem causa conclusiva para o resto da alta (a lista compacta do log é cortada, não dá para comparar arquivo a arquivo).
+- **12.57.0:** `hasThirdPartyBanner` reconhece "Licensed to the Apache Software Foundation" e olha 1.200 caracteres do topo (antes 600). Verificado por `javac` (cabeçalho ASF positivo; "Licensed to Acme" negativo).
+- **Validação (números do CI, sem ler código):** NodeGoat 328 achados (nota 46,86) e dvja 176 (nota 48,95), iguais às voltas anteriores (12.56.0 e 12.57.0, respectivamente). Treinos anteriores não reauditados.
+- **Branch `ciclo/estabilizacao-3`:** 1 volta com mudança; sem PR ainda.
+- NÃO verificado: JUnit/Maven (só CI, no PR); JavaSecLab com 12.57.0; achados reais de Java do JavaSecLab.
