@@ -160,4 +160,37 @@ class ExternalToolsVendoredTest {
         assertTrue(ExternalTools.hasThirdPartyBanner(asf));
         assertFalse(ExternalTools.hasThirdPartyBanner("/* Meu sistema interno. Licensed to Acme. */\nvar a;"));
     }
+
+    @Test
+    void pacoteOtimizadoComUmPrefacioCurtoAntesDoBannerPreservadoETerceiros() {
+        String bundle = "window[\"sap-ui-optimized\"] = true;\ntry {\n/*!\n * SAP UI development toolkit\n * (c) Copyright 2009-2015 SAP SE\n"
+                + " * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.\n */\nif(1){}";
+        assertTrue(ExternalTools.hasThirdPartyBanner(bundle));
+        assertFalse(ExternalTools.hasThirdPartyBanner("x".repeat(300) + "\n/*! MIT license https://x.org/lib */"));
+    }
+
+    @Test
+    void cabecalhoApachePadraoDoProprioProjetoNaoIndicaTerceiros() {
+        String proprio = "/*  Copyright 2015 SAP SE\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n"
+                + " * you may not use this file except in compliance with the License.\n *     http://www.apache.org/licenses/LICENSE-2.0\n */\nfunction f(){}";
+        assertFalse(ExternalTools.hasThirdPartyBanner(proprio));
+        assertFalse(ExternalTools.hasThirdPartyBanner("/* Copyright Acme. GPL, see https://www.gnu.org/licenses/gpl-3.0.html */\nvar a;"));
+    }
+
+    @Test
+    void muitasBibliotecasViramExclusaoPorPastaParaNaoEstourarOLimiteDoMotor(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Path lib = java.nio.file.Files.createDirectories(dir.resolve("static/lib/grande"));
+        for (int i = 0; i < 350; i++) {
+            java.nio.file.Files.writeString(lib.resolve("m" + i + ".min.js"), "var a;");
+        }
+        java.nio.file.Path js = java.nio.file.Files.createDirectories(dir.resolve("static/js"));
+        java.nio.file.Files.writeString(js.resolve("q.min.js"), "var a;");
+        java.nio.file.Files.writeString(js.resolve("pedidos.js"), "var a;");
+        java.util.List<String> v = ExternalTools.vendoredFiles(dir);
+        assertTrue(v.size() <= ExternalTools.MAX_VENDORED_EXCLUDES);
+        assertTrue(v.contains("static/lib/grande"));
+        assertFalse(v.contains("static/lib/grande/m1.min.js"));
+        assertTrue(v.contains("static/js/q.min.js"));        // pasta mista: segue por arquivo
+        assertFalse(v.contains("static/js"));
+    }
 }
