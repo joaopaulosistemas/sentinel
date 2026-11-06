@@ -480,3 +480,216 @@ rules:
       category: security
       cwe: "CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)"
       owasp: A02:2021 - Cryptographic Failures
+
+  # --- Camada de dados e utilitários: a falha costuma estar numa função que recebe o dado já pronto,
+  # --- longe da rota; o motor não segue o dado entre funções, então estas regras olham o próprio padrão.
+
+  - id: sentinel-node-sql-concatenado
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: '"..." + $B'
+              - pattern: '$A + "..."'
+          - pattern-not: '"..." + "..."'
+      - pattern: '`...${$X}...`'
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB.query($Q, ...)
+              - pattern: $DB.execute($Q, ...)
+              - pattern: $DB.raw($Q, ...)
+              - pattern: $DB.unsafe($Q, ...)
+          - metavariable-regex:
+              metavariable: $DB
+              regex: (?i)^(.*\.)?(pool|db|client|conn|connection|knex|sequelize|database|pg|mysql|sqlite|trx|tx)\w*$
+          # funções que recebem a requisição já são cobertas por sentinel-node-sql-injection
+          - pattern-not-inside: 'function $F(..., req, ...) {...}'
+          - pattern-not-inside: 'function $F(..., request, ...) {...}'
+          - pattern-not-inside: '(..., req, ...) => {...}'
+          - pattern-not-inside: '(..., request, ...) => {...}'
+          - pattern-not-inside: '({..., $P, ...}: Request, ...) => {...}'
+          - focus-metavariable: $Q
+    message: >
+      SQL montado com concatenação ou template string (CWE-89): o texto da consulta recebe valor variável
+      e o driver não separa dado de comando. Use parâmetros (`$1`, `?`, `:nome`) e, para nome de coluna ou
+      ordem, escolha o valor de uma lista fixa.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-nosql-operador
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.body
+              - pattern: $REQ.query
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $C.find($Q, ...)
+              - pattern: $C.findOne($Q, ...)
+              - pattern: $C.findOneAndUpdate($Q, ...)
+              - pattern: $C.updateOne($Q, ...)
+              - pattern: $C.updateMany($Q, ...)
+              - pattern: $C.deleteOne($Q, ...)
+              - pattern: $C.deleteMany($Q, ...)
+              - pattern: $C.countDocuments($Q, ...)
+          - pattern-not: '$C.$M(($A) => ..., ...)'
+          - pattern-not: '$C.$M(function (...) {...}, ...)'
+          - pattern-not: '$C.$M({..., where: ..., ...}, ...)'
+          - focus-metavariable: $Q
+    pattern-sanitizers:
+      - pattern: String(...)
+      - pattern: Number(...)
+      - pattern: parseInt(...)
+      - pattern: $X.toString()
+      - pattern: '`...${...}...`'
+    message: >
+      Filtro de banco de documentos montado com dado da requisição (CWE-943): um objeto JSON como
+      `{"$ne": null}` ou `{"$gt": ""}` vira operador e muda a consulta. Converta o valor para texto
+      (`String(valor)`) ou valide o formato antes de consultar.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-prototype-pollution
+    patterns:
+      - pattern-either:
+          - pattern: |
+              function $F($T, $S) {
+                ...
+                $F($T[$K], $S[$K]);
+                ...
+              }
+          - pattern: |
+              const $F = ($T, $S) => {
+                ...
+                $F($T[$K], $S[$K]);
+                ...
+              }
+      - pattern-not: |
+          function $F($T, $S) {
+            ...
+            <... "__proto__" ...>
+            ...
+          }
+      - pattern-not: |
+          const $F = ($T, $S) => {
+            ...
+            <... "__proto__" ...>
+            ...
+          }
+    message: >
+      Mescla recursiva sem bloquear as chaves `__proto__`, `constructor` e `prototype` (CWE-1321): um JSON
+      como `{"__proto__": {"admin": true}}` altera `Object.prototype` e contamina todos os objetos. Ignore
+      essas chaves, use `Object.create(null)` ou uma biblioteca mantida e atualizada.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-1321: Improperly Controlled Modification of Object Prototype Attributes ('Prototype Pollution')"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-node-regexp-da-requisicao
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern: new RegExp($P, ...)
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i)^(_\.)?escape(Reg|Re)\w*$
+    message: >
+      Expressão regular criada com dado da requisição (CWE-1333 / CWE-185): o usuário escolhe o padrão e
+      um padrão com repetição aninhada (`^(\d+)*$`) trava o processo (ReDoS). Escape o texto antes de
+      montar a expressão, limite o tamanho ou use um motor sem retrocesso (RE2).
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-1333: Inefficient Regular Expression Complexity"
+      owasp: A04:2021 - Insecure Design
+
+  - id: sentinel-node-xss-refletido
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($H + $V)
+              - pattern: $RES.send($H + $V + $T)
+              - pattern: $RES.end($H + $V)
+              - pattern: $RES.write($H + $V)
+          - metavariable-regex:
+              metavariable: $H
+              regex: ^["'`]\s*<
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response)$
+          - focus-metavariable: $V
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($T)
+              - pattern: $RES.end($T)
+              - pattern: $RES.write($T)
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response)$
+          - metavariable-regex:
+              metavariable: $T
+              regex: ^`\s*<[\s\S]*\$\{
+          - focus-metavariable: $T
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i)^(.*\.)?(escape|escapeHtml|encode|encodeURIComponent|sanitize|sanitizeHtml|xss|purify|clean)\w*$
+      - pattern: parseInt(...)
+      - pattern: Number(...)
+    message: >
+      HTML montado com dado da requisição e devolvido na resposta (CWE-79): o navegador interpreta o que o
+      usuário enviou como marcação (XSS refletido). Escape o valor (`escape-html`, `he.encode`) ou use um
+      motor de templates com escape automático.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection

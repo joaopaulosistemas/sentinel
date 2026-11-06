@@ -560,3 +560,38 @@
     new IvParameterSpec(iv);
   refs:
     - "https://cwe.mitre.org/data/definitions/329.html"
+
+- key: "sentinel-node-sql-concatenado"
+  summary: "Passe os valores como parâmetros do driver; para coluna ou ordem, escolha de uma lista fixa."
+  before: "pool.query(\"SELECT * FROM users WHERE name = '\" + nome + \"'\")"
+  after: "pool.query('SELECT * FROM users WHERE name = $1', [nome])"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html"
+
+- key: "sentinel-node-nosql-operador"
+  summary: "Converta o valor da requisição para texto antes de montar o filtro, para que objetos com operadores não passem."
+  before: "col.findOne({ email: req.body.email })"
+  after: "col.findOne({ email: String(req.body.email) })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-prototype-pollution"
+  summary: "Ignore as chaves __proto__, constructor e prototype ao mesclar objetos vindos de fora."
+  before: "for (const k of Object.keys(src)) { merge(dst[k], src[k]) }"
+  after: "for (const k of Object.keys(src)) { if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue; merge(dst[k], src[k]) }"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-regexp-da-requisicao"
+  summary: "Escape o texto do usuário antes de virar expressão regular, limite o tamanho ou use RE2."
+  before: "new RegExp(req.body.pattern)"
+  after: "new RegExp(escapeRegExp(req.body.pattern))"
+  refs:
+    - "https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS"
+
+- key: "sentinel-node-xss-refletido"
+  summary: "Escape o valor antes de colocá-lo no HTML ou use um motor de templates com escape automático."
+  before: "res.send('<h1>' + req.query.name + '</h1>')"
+  after: "res.send('<h1>' + escapeHtml(req.query.name) + '</h1>')"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"

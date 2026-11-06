@@ -281,3 +281,123 @@ export function sorteio () {
   const indice = Math.floor(Math.random() * 10)
   return indice
 }
+
+// ---------- SQL montado com texto e variável (camada de dados) ----------
+export function entrar (pool: any, usuario: string, senha: string) {
+  const q = "SELECT * FROM users WHERE username = '" + usuario + "' AND password = '" + senha + "'"
+  // ruleid: sentinel-node-sql-concatenado
+  return pool.query(q)
+}
+
+export function buscar (db: any, termo: string) {
+  // ruleid: sentinel-node-sql-concatenado
+  return db.query("SELECT * FROM products WHERE name ILIKE '%" + termo + "%'")
+}
+
+export function ordenar (pool: any, usuario: number, coluna: string) {
+  // ruleid: sentinel-node-sql-concatenado
+  return pool.query(`SELECT * FROM orders WHERE user_id = $1 ORDER BY ${coluna} DESC`, [usuario])
+}
+
+export function porId (pool: any, id: number) {
+  // ok: sentinel-node-sql-concatenado
+  return pool.query('SELECT * FROM users WHERE id = $1', [id])
+}
+
+export function fixo (pool: any) {
+  // ok: sentinel-node-sql-concatenado
+  return pool.query('SELECT * FROM ' + 'products ORDER BY id')
+}
+
+// ---------- NoSQL: corpo da requisição direto no filtro ----------
+export function filtrar (req: any, col: any) {
+  const filtro = { origem: req.body.tags }
+  // ruleid: sentinel-node-nosql-operador
+  return col.find(filtro).toArray()
+}
+
+export function filtrarGet (req: any, col: any) {
+  // ruleid: sentinel-node-nosql-operador
+  return col.findOne({ email: req.query.email })
+}
+
+export function filtrarComTexto (req: any, col: any) {
+  // ok: sentinel-node-nosql-operador
+  return col.find({ email: String(req.query.email) }).toArray()
+}
+
+export function listaLocal (itens: any[], id: number) {
+  // ok: sentinel-node-nosql-operador
+  return itens.find((i) => i.id === id)
+}
+
+// ---------- Prototype pollution: merge recursivo sem bloqueio de chave ----------
+// ruleid: sentinel-node-prototype-pollution
+function merge (target: any, source: any) {
+  for (const key of Object.keys(source)) {
+    if (typeof source[key] === 'object' && source[key] !== null) {
+      if (!target[key]) target[key] = {}
+      merge(target[key], source[key])
+    } else {
+      target[key] = source[key]
+    }
+  }
+  return target
+}
+
+// ok: sentinel-node-prototype-pollution
+function mergeSeguro (target: any, source: any) {
+  for (const key of Object.keys(source)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue
+    if (typeof source[key] === 'object' && source[key] !== null) {
+      if (!target[key]) target[key] = {}
+      mergeSeguro(target[key], source[key])
+    } else {
+      target[key] = source[key]
+    }
+  }
+  return target
+}
+
+// ---------- RegExp montada com dado da requisição (ReDoS) ----------
+export function testarPadrao (req: any) {
+  const padrao = req.body.pattern
+  // ruleid: sentinel-node-regexp-da-requisicao
+  const re = new RegExp(padrao)
+  return re.test('x')
+}
+
+export function testarEscapado (req: any) {
+  // ok: sentinel-node-regexp-da-requisicao
+  const re = new RegExp(escapeRegExp(req.query.q))
+  return re.test('x')
+}
+
+export function testarFixo () {
+  // ok: sentinel-node-regexp-da-requisicao
+  return new RegExp('^a+$').test('aaa')
+}
+declare function escapeRegExp (s: string): string
+
+// ---------- XSS refletido: HTML montado com dado da requisição ----------
+export function saudacao (req: any, res: any) {
+  const nome = req.query.name || 'visitante'
+  // ruleid: sentinel-node-xss-refletido
+  res.send('<h1>Olá ' + nome + '</h1>')
+}
+
+export function saudacaoTemplate (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.send(`<p>${req.params.nome}</p>`)
+}
+
+export function saudacaoEscapada (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send('<h1>Olá ' + escapeHtml(req.query.name) + '</h1>')
+}
+
+export function respostaTexto (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send('erro: ' + req.query.name)
+}
+declare function escapeHtml (s: string): string
