@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { BatchSuppressRequest, ScheduleRequest, SuppressRequest } from '../types';
+import type { IBatchSuppressRequest, IScheduleRequest, ISuppressRequest } from '../types';
 
 export function useTrend(systemId: number) {
   return useQuery({
@@ -50,7 +50,7 @@ function useInvalidateLifecycle() {
 export function useSuppressFinding() {
   const invalidate = useInvalidateLifecycle();
   return useMutation({
-    mutationFn: ({ findingId, body }: { findingId: number; body: SuppressRequest }) =>
+    mutationFn: ({ findingId, body }: { findingId: number; body: ISuppressRequest }) =>
       api.suppressFinding(findingId, body),
     onSuccess: invalidate,
   });
@@ -59,7 +59,7 @@ export function useSuppressFinding() {
 export function useSuppressFindings() {
   const invalidate = useInvalidateLifecycle();
   return useMutation({
-    mutationFn: (body: BatchSuppressRequest) => api.suppressFindings(body),
+    mutationFn: (body: IBatchSuppressRequest) => api.suppressFindings(body),
     onSuccess: invalidate,
   });
 }
@@ -100,7 +100,7 @@ export function useUpdateProfile() {
 export function useUpdateSchedule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ systemId, body }: { systemId: number; body: ScheduleRequest }) =>
+    mutationFn: ({ systemId, body }: { systemId: number; body: IScheduleRequest }) =>
       api.updateSchedule(systemId, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['systems'] });

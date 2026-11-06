@@ -1,4 +1,4 @@
-import type { Remediation } from '../types';
+import type { IRemediation } from '../types';
 
 const codeStyle = {
   margin: 0,
@@ -10,7 +10,7 @@ const codeStyle = {
 };
 
 /** Como corrigir: resumo, exemplo antes/depois e referências oficiais. */
-export function RemediationBlock({ remediation }: { remediation: Remediation }) {
+export function RemediationBlock({ remediation }: { remediation: IRemediation }) {
   const hasExamples = !!(remediation.before || remediation.after);
   return (
     <div

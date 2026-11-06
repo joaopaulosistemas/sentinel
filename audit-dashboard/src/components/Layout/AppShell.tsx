@@ -18,7 +18,7 @@ import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { MENU_MIN, MENU_PADRAO, MENU_TRILHO, clampMenu, menuMaxFor, readMenuWidth, saveMenuWidth } from '../../utils/menuWidth';
 import { PALETTES, TEXT_SIZES, useThemeStore, type Palette, type TextSize } from '../../store/useThemeStore';
 
-interface AppShellProps {
+interface IAppShellProps {
   children: React.ReactNode;
 }
 
@@ -74,7 +74,14 @@ function useMenuFixo(): boolean {
 
 
 /** Para onde a tecla leva a largura do menu; `null` = a tecla não é do separador. */
-export function larguraPorTecla(key: string, shift: boolean, atual: number, max: number): number | null {
+export interface ITeclaMenu {
+  key: string;
+  shift: boolean;
+  atual: number;
+  max: number;
+}
+
+export function larguraPorTecla({ key, shift, atual, max }: ITeclaMenu): number | null {
   const passo = shift ? 48 : 16;
   switch (key) {
     case 'ArrowRight':
@@ -99,9 +106,9 @@ function useMenuLargura() {
   const ref = useRef(largura);
   ref.current = largura;
   const aplicar = (w: number) => {
-    const v = clampMenu(w, window.innerWidth);
-    setLargura(v);
-    saveMenuWidth(v);
+    const larguraLimitada = clampMenu(w, window.innerWidth);
+    setLargura(larguraLimitada);
+    saveMenuWidth(larguraLimitada);
   };
   const iniciar = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -117,7 +124,7 @@ function useMenuLargura() {
     saveMenuWidth(ref.current);
   };
   const teclado = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const alvo = larguraPorTecla(e.key, e.shiftKey, ref.current, menuMaxFor(window.innerWidth));
+    const alvo = larguraPorTecla({ key: e.key, shift: e.shiftKey, atual: ref.current, max: menuMaxFor(window.innerWidth) });
     if (alvo === null) return;
     aplicar(alvo);
     e.preventDefault();
@@ -219,7 +226,7 @@ function isActiveRoute(item: MenuItem, pathname: string): boolean {
   return item.exata ? pathname === item.rota : pathname.startsWith(item.rota);
 }
 
-interface ShellMenuProps {
+interface IShellMenuProps {
   fixo: boolean;
   aberto: boolean;
   largura: number;
@@ -227,7 +234,7 @@ interface ShellMenuProps {
   onClose: () => void;
 }
 
-function ShellMenu({ fixo, aberto, largura, trilho, onClose }: ShellMenuProps) {
+function ShellMenu({ fixo, aberto, largura, trilho, onClose }: IShellMenuProps) {
   const location = useLocation();
   const pending = usePendingClaude().total;
   const className = fixo ? `sentinel-menu-redim${trilho ? ' sentinel-menu-trilho' : ''}` : undefined;
@@ -264,7 +271,7 @@ function MenuSeparator({ menu }: { menu: ReturnType<typeof useMenuLargura> }) {
 }
 
 /** Cabeçalho escuro no topo e a navegação principal fixa na lateral esquerda. */
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children }: IAppShellProps) {
   const location = useLocation();
   const dark = useThemeStore((st) => st.mode) === 'dark';
   const fixo = useMenuFixo();

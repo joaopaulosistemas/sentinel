@@ -34,6 +34,13 @@ class RuleSideTest {
     }
 
     @Test
+    void linguagensMistasDeixamOsCaminhosDecidir() {
+        assertEquals(RuleSide.BACK, RuleSide.infer(List.of("java", "typescript"), List.of("*.java")));
+        assertEquals(RuleSide.COMMON, RuleSide.infer(List.of("java", "typescript"), List.of()));
+        assertEquals(RuleSide.COMMON, RuleSide.infer(List.of("java", "typescript"), null));
+    }
+
+    @Test
     void ladoEscritoNaRegraValeMaisQueAInferencia() {
         Map<String, Object> rule = Map.of("id", "x", "languages", List.of("typescript"),
                 "metadata", Map.of("side", "back", "category", "security"));

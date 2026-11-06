@@ -1,35 +1,35 @@
 import { useNavigate } from 'react-router-dom';
-import type { SystemSummaryResponse } from '../../types';
+import type { ISystemSummaryResponse } from '../../types';
 import { scoreColor } from '../../utils/systemAttention';
 import { EditIcon, ListIcon, PlayIcon, TrashIcon } from '../../components/ActionIcons';
 import { scheduleText, sourceText, stackShort } from './systemForm';
 
-interface Props {
-  systems: SystemSummaryResponse[];
+interface IProps {
+  systems: ISystemSummaryResponse[];
   /** Sistema aberto no pop-up, para destacar a linha. */
   selectedId: number | null;
-  onAudit: (s: SystemSummaryResponse) => void;
-  onEdit: (s: SystemSummaryResponse) => void;
-  onDelete: (s: SystemSummaryResponse) => void;
+  onAudit: (s: ISystemSummaryResponse) => void;
+  onEdit: (s: ISystemSummaryResponse) => void;
+  onDelete: (s: ISystemSummaryResponse) => void;
 }
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 const actionButton = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: 'transparent', border: 0, color: 'var(--s-link)', cursor: 'pointer', fontSize: 14 } as const;
 
-interface RowProps {
-  system: SystemSummaryResponse;
+interface IRowProps {
+  system: ISystemSummaryResponse;
   selected: boolean;
-  onAudit: (s: SystemSummaryResponse) => void;
-  onEdit: (s: SystemSummaryResponse) => void;
-  onDelete: (s: SystemSummaryResponse) => void;
+  onAudit: (s: ISystemSummaryResponse) => void;
+  onEdit: (s: ISystemSummaryResponse) => void;
+  onDelete: (s: ISystemSummaryResponse) => void;
 }
 
 /** Sem o contador (API antiga), a data da última auditoria concluída é o melhor sinal. */
-function hasAudits(s: SystemSummaryResponse): boolean {
+function hasAudits(s: ISystemSummaryResponse): boolean {
   return (s.auditCount ?? (s.lastAuditDate ? 1 : 0)) > 0;
 }
 
-function RowActions({ system: s, onAudit, onEdit, onDelete }: Omit<RowProps, 'selected'>) {
+function RowActions({ system: s, onAudit, onEdit, onDelete }: Omit<IRowProps, 'selected'>) {
   const navigate = useNavigate();
   const audits = hasAudits(s);
   return (
@@ -61,7 +61,7 @@ function RowActions({ system: s, onAudit, onEdit, onDelete }: Omit<RowProps, 'se
   );
 }
 
-function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: RowProps) {
+function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: IRowProps) {
   const navigate = useNavigate();
   const score = s.lastAuditScore === null ? null : Math.round(s.lastAuditScore);
   return (
@@ -88,7 +88,7 @@ function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: RowProps)
 }
 
 /** Tabela dos sistemas cadastrados, com as ações de cada linha. */
-export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }: Props) {
+export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }: IProps) {
   return (
     <div className="sys-table-wrap" style={{ overflowX: 'auto' }}>
       <table className="sys-table" aria-label="Sistemas cadastrados" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 920 }}>

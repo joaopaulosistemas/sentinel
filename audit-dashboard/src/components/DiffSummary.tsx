@@ -18,6 +18,9 @@ function scoreTagType(delta: number): 'green' | 'red' | 'warm-gray' {
   return delta < 0 ? 'red' : 'warm-gray';
 }
 
+/** Quantos achados novos aparecem na lista; o resto vira "…e mais N". */
+const MAX_NEW_FINDINGS_SHOWN = 5;
+
 /** O que mudou desde a auditoria anterior: novos, corrigidos e variação do score. */
 export function DiffSummary({ auditId }: { auditId: number }) {
   const { data, isLoading } = useDiff(auditId);
@@ -49,14 +52,14 @@ export function DiffSummary({ auditId }: { auditId: number }) {
           </div>
           {data.newFindings.length > 0 && (
             <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-              {data.newFindings.slice(0, 5).map((f) => (
+              {data.newFindings.slice(0, MAX_NEW_FINDINGS_SHOWN).map((f) => (
                 <li key={f.id} className="sentinel-linha-hover" style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderTop: '1px solid var(--s-border)' }}>
                   <RiskBadge severity={f.severity} />
                   <span style={{ fontSize: 14 }}>{f.title}</span>
                 </li>
               ))}
-              {data.newFindings.length > 5 && (
-                <li style={{ padding: '8px 0', borderTop: '1px solid var(--s-border)', fontSize: 13, color: 'var(--s-text-3)' }}>…e mais {data.newFindings.length - 5}</li>
+              {data.newFindings.length > MAX_NEW_FINDINGS_SHOWN && (
+                <li style={{ padding: '8px 0', borderTop: '1px solid var(--s-border)', fontSize: 13, color: 'var(--s-text-3)' }}>…e mais {data.newFindings.length - MAX_NEW_FINDINGS_SHOWN}</li>
               )}
             </ul>
           )}

@@ -1,4 +1,4 @@
-import type { ScoreGroup } from '../types';
+import type { IScoreGroup } from '../types';
 
 /** Liga ou desliga uma regra na lista da simulação "e se", sem repetir e sem alterar a lista recebida. */
 export function toggleRule(rules: string[], rule: string): string[] {
@@ -6,7 +6,7 @@ export function toggleRule(rules: string[], rule: string): string[] {
 }
 
 /** Frase curta sobre o efeito da regra na nota: a do teto é a que mais surpreende. */
-export function groupHint(group: ScoreGroup): string {
+export function groupHint(group: IScoreGroup): string {
   if (group.capped) {
     return `Teto: ${group.count} ocorrências somariam ${group.raw}, mas só ${group.counted} entram. Só some da nota quando todas forem corrigidas.`;
   }

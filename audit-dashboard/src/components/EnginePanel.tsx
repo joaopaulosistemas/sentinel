@@ -4,7 +4,7 @@ import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { useAuditRuns, useFixPlan } from '../hooks/useAuditRuns';
-import type { EngineConfig, EngineTuning, RuleAdjustment, SystemSummaryResponse } from '../types';
+import type { IEngineConfig, IEngineTuning, IRuleAdjustment, ISystemSummaryResponse } from '../types';
 import {
   applyBulk,
   buildRuleRows,
@@ -12,7 +12,7 @@ import {
   filterRuleRows,
   isNoopAdjustment,
   type BulkAction,
-  type RuleRow,
+  type IRuleRow,
   type RuleScope,
 } from '../utils/ruleCatalog';
 import {
@@ -20,9 +20,11 @@ import {
   latestCompleted,
   limitInvalid,
   patchAdjustment,
-  pickShown,
+  pickAllShown,
+  setWith,
+  setWithout,
   sliceOf,
-  toggledSet,
+  unpickAllShown,
   withNewRule,
 } from '../utils/engineTuning';
 import {
@@ -39,12 +41,12 @@ import {
   SaveNotices,
   mono,
 } from './EngineRulesParts';
-import { analyzersBySide, familyOf, familyTabs, hiddenAdjustedCount, rowsOfActivePacks, sideIsOff, sideOfRule, type FamilyTab } from '../utils/ruleFamilies';
+import { analyzersBySide, familyOf, familyTabs, hiddenAdjustedCount, rowsOfActivePacks, sideIsOff, sideOfRule, type IFamilyTab } from '../utils/ruleFamilies';
 import { ScopeSection, SideBadge } from './EngineScope';
 
 
 /** Soma o que o sistema mudou aos ajustes que o servidor já tem, sem perder o que a outra aba salvou. */
-export function mergeTuning(server: EngineTuning, slice: Partial<EngineTuning>): EngineTuning {
+export function mergeTuning(server: IEngineTuning, slice: Partial<IEngineTuning>): IEngineTuning {
   return { ...server, ...slice };
 }
 
@@ -56,7 +58,7 @@ function useEngine(systemId: number) {
   const key = ['engine', systemId];
   const query = useQuery({ queryKey: key, queryFn: () => api.getEngineConfig(systemId) });
   const save = useMutation({
-    mutationFn: (body: EngineTuning) => api.updateEngineConfig(systemId, body),
+    mutationFn: (body: IEngineTuning) => api.updateEngineConfig(systemId, body),
     onSuccess: (data) => {
       queryClient.setQueryData(key, data);
       queryClient.invalidateQueries({ queryKey: ['systems'] });
@@ -65,7 +67,7 @@ function useEngine(systemId: number) {
   return { query, save };
 }
 
-function Header({ cfg, onReset, busy }: { cfg: EngineConfig; onReset: () => void; busy: boolean }) {
+function Header({ cfg, onReset, busy }: { cfg: IEngineConfig; onReset: () => void; busy: boolean }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
       <div style={{ fontSize: 14 }}>
@@ -86,10 +88,10 @@ function Header({ cfg, onReset, busy }: { cfg: EngineConfig; onReset: () => void
   );
 }
 
-const empty: EngineTuning = { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: [], disableSides: [] };
+const empty: IEngineTuning = { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: [], disableSides: [] };
 
 /** Forma comparável do que está na tela, para saber se há alteração sem salvar. */
-function signature(slice: Pick<EngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'> & { disableSides?: string[] }): string {
+function signature(slice: Pick<IEngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'> & { disableSides?: string[] }): string {
   return JSON.stringify({
     disableSides: [...(slice.disableSides ?? [])].sort(),
     enablePacks: [...slice.enablePacks].sort(),
@@ -99,26 +101,33 @@ function signature(slice: Pick<EngineTuning, 'enablePacks' | 'disablePacks' | 't
   });
 }
 
-interface PanelProps {
-  system: SystemSummaryResponse;
+interface IPanelProps {
+  system: ISystemSummaryResponse;
   /** Avisa quem abriu o painel quando há (ou deixa de haver) alteração sem salvar. */
   onDirtyChange?: (dirty: boolean) => void;
 }
 
-function hasUnsavedRules(
-  cfg: EngineConfig | undefined,
-  packs: Record<string, boolean>,
-  limits: Record<string, string>,
-  rules: RuleAdjustment[],
-  sidesOff: Array<'back' | 'front'>,
-): boolean {
+interface IUnsavedRulesInput {
+  cfg: IEngineConfig | undefined;
+  packs: Record<string, boolean>;
+  limits: Record<string, string>;
+  rules: IRuleAdjustment[];
+  sidesOff: Array<'back' | 'front'>;
+}
+
+function hasUnsavedRules({ cfg, packs, limits, rules, sidesOff }: IUnsavedRulesInput): boolean {
   if (!cfg || Object.keys(packs).length === 0) return false;
   const saved = { enablePacks: cfg.tuning.enablePacks, disablePacks: cfg.tuning.disablePacks, thresholds: cfg.tuning.thresholds, rules: cfg.tuning.rules, disableSides: cfg.tuning.disableSides ?? [] };
-  return signature(sliceOf(cfg, packs, limits, rules, sidesOff)) !== signature(saved);
+  return signature(sliceOf({ data: cfg, packs, limits, rules, sidesOff })) !== signature(saved);
+}
+
+interface IDirtyReport {
+  dirty: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 /** Avisa quem abriu o painel quando há (ou deixa de haver) alteração sem salvar. */
-function useDirtyReport(dirty: boolean, onDirtyChange?: (dirty: boolean) => void): void {
+function useDirtyReport({ dirty, onDirtyChange }: IDirtyReport): void {
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
@@ -128,36 +137,36 @@ function useDirtyReport(dirty: boolean, onDirtyChange?: (dirty: boolean) => void
 function useFixPlanItems(systemId: number) {
   const runs = useAuditRuns(systemId);
   const latest = latestCompleted(runs.data);
-  const fixPlan = useFixPlan(latest?.id ?? 0, latest !== undefined);
+  const fixPlan = useFixPlan({ auditId: latest?.id ?? 0, enabled: latest !== undefined });
   const items = Array.isArray(fixPlan.data?.items) ? fixPlan.data.items : [];
   return { items, data: fixPlan.data };
 }
 
-interface RulesSectionProps {
-  allRows: RuleRow[];
-  filtered: RuleRow[];
-  shown: RuleRow[];
+interface IRulesSectionProps {
+  allRows: IRuleRow[];
+  filtered: IRuleRow[];
+  shown: IRuleRow[];
   filters: { text: string; scope: RuleScope; packFilter: string; packNames: string[] };
   onFilters: { text: (v: string) => void; scope: (v: RuleScope) => void; pack: (v: string) => void };
   catalogMissing: boolean;
-  family: { tabs: FamilyTab[]; active: string; onPick: (key: string) => void };
+  family: { tabs: IFamilyTab[]; active: string; onPick: (key: string) => void };
   side: { counts: Record<'all' | 'back' | 'front' | 'common', number>; active: string; off: string[]; onPick: (key: string) => void };
   packsNote: string;
   picked: Set<string>;
   gainPicked: number;
   bulk: (action: BulkAction) => void;
   table: {
-    current: (id: string) => RuleAdjustment;
+    current: (id: string) => IRuleAdjustment;
     inProfile: (id: string) => boolean;
     onPickAll: (on: boolean) => void;
     onSelect: (id: string, on: boolean) => void;
-    onChange: (id: string, patch: Partial<RuleAdjustment>) => void;
+    onChange: (id: string, patch: Partial<IRuleAdjustment>) => void;
   };
   onMore: () => void;
   newRule: { value: string; onChange: (v: string) => void; onAdd: () => void };
 }
 
-function RulesSection(p: RulesSectionProps) {
+function RulesSection(p: IRulesSectionProps) {
   const { filtered, shown, allRows, filters } = p;
   const allShownPicked = shown.length > 0 && shown.every((r) => p.picked.has(r.id));
   return (
@@ -213,7 +222,7 @@ function RulesSection(p: RulesSectionProps) {
   );
 }
 
-interface RulesViewInput {
+interface IRulesViewInput {
   side: string;
   sidesOff: string[];
   family: string;
@@ -222,8 +231,16 @@ interface RulesViewInput {
   packFilter: string;
 }
 
+interface IRulesViewArgs {
+  cfg: IEngineConfig;
+  allRows: IRuleRow[];
+  packs: Record<string, boolean>;
+  rules: IRuleAdjustment[];
+  input: IRulesViewInput;
+}
+
 /** O que a aba mostra: regras dos pacotes ligados, abas por família, filtros aplicados e a nota explicativa. */
-function rulesView(cfg: EngineConfig, allRows: RuleRow[], packs: Record<string, boolean>, rules: RuleAdjustment[], input: RulesViewInput) {
+function rulesView({ cfg, allRows, packs, rules, input }: IRulesViewArgs) {
   const adjustedIds = new Set(rules.filter((r) => !isNoopAdjustment(r)).map((r) => r.id));
   // Só aparecem as regras dos pacotes ligados acima; a família escolhida filtra o resto.
   const packRows = rowsOfActivePacks(allRows, packs);
@@ -238,8 +255,8 @@ function rulesView(cfg: EngineConfig, allRows: RuleRow[], packs: Record<string, 
   const activeFamily = tabs.some((t) => t.key === input.family) ? input.family : (tabs[0]?.key ?? '');
   const packNames = Array.from(new Set(inSide.map((r) => r.pack).filter((p): p is string => !!p))).sort();
   const inFamily = tabs.length < 2 ? inSide : inSide.filter((r) => familyOf(r) === activeFamily);
-  const filtered = filterRuleRows(inFamily, { query: input.text, scope: input.scope, pack: input.packFilter }, adjustedIds);
-  const hidden = hiddenAdjustedCount(allRows, packs, adjustedIds);
+  const filtered = filterRuleRows({ rows: inFamily, filter: { query: input.text, scope: input.scope, pack: input.packFilter }, adjustedIds });
+  const hidden = hiddenAdjustedCount({ rows: allRows, packs, adjustedIds });
   const packsNote =
     `Mostrando as regras dos ${cfg.packs.filter((p) => packs[p.id]).length} pacotes ligados acima (${packRows.length} ${packRows.length === 1 ? 'regra' : 'regras'}). Ligue um pacote para ver as regras dele aqui.` +
     (hidden > 0 ? ` ${hidden} ${hidden === 1 ? 'regra ajustada está' : 'regras ajustadas estão'} em pacote desligado e não aparece.` : '');
@@ -247,12 +264,12 @@ function rulesView(cfg: EngineConfig, allRows: RuleRow[], packs: Record<string, 
 }
 
 /** Aba "Motor de regras": pacotes, limites e regras deste sistema, por cima do perfil. A nota continua sendo do motor. */
-export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
+export function EngineRulesPanel({ system, onDirtyChange }: IPanelProps) {
   const { query, save } = useEngine(system.id);
   const cfg = query.data;
   const [packs, setPacks] = useState<Record<string, boolean>>({});
   const [limits, setLimits] = useState<Record<string, string>>({});
-  const [rules, setRules] = useState<RuleAdjustment[]>([]);
+  const [rules, setRules] = useState<IRuleAdjustment[]>([]);
   const [newRule, setNewRule] = useState('');
   const [text, setText] = useState('');
   const [scope, setScope] = useState<RuleScope>('all');
@@ -264,7 +281,7 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const plan = useFixPlanItems(system.id);
 
-  const syncFrom = (data: EngineConfig) => {
+  const syncFrom = (data: IEngineConfig) => {
     setPacks(Object.fromEntries(data.packs.map((p) => [p.id, p.active])));
     setLimits(Object.fromEntries(Object.entries(data.tuning.thresholds).map(([k, v]) => [k, String(v)])));
     setRules(data.tuning.rules);
@@ -272,11 +289,11 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
     setPicked(new Set());
   };
 
-  const dirty = useMemo(() => hasUnsavedRules(cfg, packs, limits, rules, sidesOff), [cfg, packs, limits, rules, sidesOff]);
+  const dirty = useMemo(() => hasUnsavedRules({ cfg, packs, limits, rules, sidesOff }), [cfg, packs, limits, rules, sidesOff]);
 
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
-  useDirtyReport(dirty, onDirtyChange);
+  useDirtyReport({ dirty, onDirtyChange });
 
   // Só recarrega a tela com o que veio do servidor se não houver edição em andamento.
   useEffect(() => {
@@ -296,14 +313,14 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;
 
-  const { packRows, tabs, activeFamily, packNames, filtered, packsNote, sideCounts } = rulesView(cfg, allRows, packs, rules, { side: sideTab, sidesOff, family, text, scope, packFilter });
+  const { packRows, tabs, activeFamily, packNames, filtered, packsNote, sideCounts } = rulesView({ cfg, allRows, packs, rules, input: { side: sideTab, sidesOff, family, text, scope, packFilter } });
   const shown = filtered.slice(0, visible);
   const pickedIds = [...picked];
 
   const invalid = Object.keys(limits).some((k) => limitInvalid(limits[k]));
   const resetPage = () => setVisible(PAGE);
   const submit = () =>
-    save.mutate(mergeTuning(cfg.tuning, sliceOf(cfg, packs, limits, rules, sidesOff)), { onSuccess: (data) => syncFrom(data) });
+    save.mutate(mergeTuning(cfg.tuning, sliceOf({ data: cfg, packs, limits, rules, sidesOff })), { onSuccess: (data) => syncFrom(data) });
 
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -338,13 +355,13 @@ export function EngineRulesPanel({ system, onDirtyChange }: PanelProps) {
         packsNote={packsNote}
         picked={picked}
         gainPicked={estimatedGain(allRows, pickedIds)}
-        bulk={(action) => setRules(applyBulk(rules, pickedIds, action))}
+        bulk={(action) => setRules(applyBulk({ current: rules, ids: pickedIds, action }))}
         table={{
           current: (id) => currentAdjustment(rules, id),
           inProfile: (id) => cfg.profileRules.some((r) => r.id === id),
-          onPickAll: (on) => setPicked(pickShown(picked, shown.map((r) => r.id), on)),
-          onSelect: (id, on) => setPicked(toggledSet(picked, id, on)),
-          onChange: (id, patch) => setRules(patchAdjustment(rules, id, patch)),
+          onPickAll: (on) => setPicked(on ? pickAllShown(picked, shown.map((r) => r.id)) : unpickAllShown(picked, shown.map((r) => r.id))),
+          onSelect: (id, on) => setPicked(on ? setWith(picked, id) : setWithout(picked, id)),
+          onChange: (id, patch) => setRules(patchAdjustment({ rules, id, patch })),
         }}
         onMore={() => setVisible(visible + PAGE)}
         newRule={{
@@ -366,7 +383,7 @@ export function pathLines(text: string): string[] {
   return [...new Set(text.split('\n').map((l) => l.trim()).filter((l) => l !== ''))];
 }
 
-function analyzersDirty(cfg: EngineConfig | undefined, off: string[], paths: string[]): boolean {
+function analyzersDirty({ cfg, off, paths }: { cfg: IEngineConfig | undefined; off: string[]; paths: string[] }): boolean {
   if (!cfg) return false;
   const offChanged = JSON.stringify([...off].sort()) !== JSON.stringify([...cfg.tuning.disableAnalyzers].sort());
   return offChanged || JSON.stringify(paths) !== JSON.stringify(cfg.tuning.ignorePaths ?? []);
@@ -375,14 +392,14 @@ function analyzersDirty(cfg: EngineConfig | undefined, off: string[], paths: str
 const MAX_IGNORED_PATHS = 50;
 
 /** Aba "Analisadores": quais ferramentas rodam neste sistema e quais caminhos ficam fora da auditoria. */
-export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
+export function EngineAnalyzersPanel({ system, onDirtyChange }: IPanelProps) {
   const { query, save } = useEngine(system.id);
   const cfg = query.data;
   const [off, setOff] = useState<string[]>([]);
   const [pathsText, setPathsText] = useState('');
   const paths = pathLines(pathsText);
-  const dirty = analyzersDirty(cfg, off, paths);
-  const syncSaved = (data: EngineConfig) => {
+  const dirty = analyzersDirty({ cfg, off, paths });
+  const syncSaved = (data: IEngineConfig) => {
     setOff(data.tuning.disableAnalyzers);
     setPathsText((data.tuning.ignorePaths ?? []).join('\n'));
   };
@@ -390,7 +407,7 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
   const loadedRef = useRef(false);
   dirtyRef.current = dirty;
 
-  useDirtyReport(dirty, onDirtyChange);
+  useDirtyReport({ dirty, onDirtyChange });
   useEffect(() => {
     // Na primeira carga os campos ainda estão vazios (parecem "alterados"), então ela sempre preenche.
     if (cfg && (!loadedRef.current || !dirtyRef.current)) {
@@ -402,7 +419,7 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;
   const sidesOff = cfg.tuning.disableSides ?? [];
-  const toggle = (name: string, runs: boolean) => setOff(runs ? off.filter((n) => n !== name) : [...off, name]);
+  const toggle = ({ name, runs }: { name: string; runs: boolean }) => setOff(runs ? off.filter((n) => n !== name) : [...off, name]);
   const tooManyPaths = paths.length > MAX_IGNORED_PATHS;
 
   return (
@@ -435,7 +452,7 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: PanelProps) {
                   helperText={a.description}
                   checked={!sideOff && !off.includes(a.name)}
                   disabled={sideOff}
-                  onChange={(_, { checked }) => toggle(a.name, checked)}
+                  onChange={(_, { checked }) => toggle({ name: a.name, runs: checked })}
                 />
               ))}
             </div>

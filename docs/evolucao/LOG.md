@@ -968,6 +968,15 @@ Problema: auditoria TREE de pasta em volume lento falhou com "A cópia da pasta 
 Verificado: `LocalSource` compilado com javac e rodado em 3000 arquivos em 20 pastas (todos copiados, link para /etc não copiado, contagem 3001/3001).
 Não verificado: ganho real em volume lento (aqui o disco é rápido); JUnit novo (`copiaDaPastaComoEstaCopiaTodosOsArquivosDeUmaArvoreGrande`) fica para o CI.
 
+## Dashboard 12.70.0 — Correção dos achados da autoauditoria #123
+
+- **Origem:** relatório técnico da auditoria #123 do próprio Sentinel (1 HIGH, 14 MEDIUM, 355 LOW).
+- **Medido:** as regras do Sentinel rodadas localmente sobre `audit-dashboard/src` e `audit-api/src/main` davam 323 achados do Opengrep; depois, 10 (todos já suprimidos em `.sentinel.yml` com motivo).
+- **Dashboard:** 136 interfaces com prefixo `I`; funções com mais de 2 parâmetros e parâmetros booleanos viraram objeto tipado ou funções separadas; nomes de uma letra, números mágicos, condições compostas e marcadores de seção corrigidos. 39 testes novos ou adaptados (318 → 357).
+- **API (Java):** `LocalSource` e `SarifAnalyzer` divididos (`WorkingTreeCopier`, `SarifResumo`, `SarifExecucao`), `AuditRunViews` e `FindingRefinement` para reduzir fan-out, complexidade de `copyOne`, `infer` e `registrar`, imports `.*` expandidos, leitura de recurso com limite, `GitLog` e `RuleYaml` contra duplicação. `McpGateService`: `"snt_"` é o prefixo público da chave, não segredo; constante renomeada e documentada (mudar o valor invalidaria chaves emitidas).
+- **Não feito:** validação real do `JSON.parse` em `client.ts` (exige esquema zod/valibot por endpoint, dependência nova); `TooManyFields`/`ExcessivePublicCount` em `Finding` e `AuditedSystem` (mexe em schema); `CouplingBetweenObjects` em 7 classes; `ImmutableField` em entidades JPA (falso positivo); "31% dos commits fora do padrão" (histórico do Git).
+- **Verificado:** `tsc --noEmit` limpo, 357 testes do dashboard, Opengrep local, `javac` e execução isolada do `WorkingTreeCopier`.
+- **NÃO verificado:** JUnit, Checkstyle e PMD (sem Maven Central aqui; só no CI); fan-out e coupling por contagem manual; CSS `leitura.css` no navegador.
 ## Dashboard 12.73.0 — Ciclo, volta 18 (branch `ciclo/estabilizacao-6`): logicalhacking/DVHMA (treino novo), SAST inteiro sumia por limite de `--exclude`
 
 - **Repositório novo:** logicalhacking/DVHMA (app híbrido Cordova com plugins Android em Java e OpenUI5 embutido, branch `master`, JAVASCRIPT), escolhido em 2026-11-06 por busca de repositório de treino com mais estrelas ainda não lido (274 estrelas, 12 MB); ninguém o tinha lido nem auditado. Não foi a opção Java (allsafe-android) para alternar a stack depois de quatro voltas Java.

@@ -1,3 +1,4 @@
+import { shouldCheckOnBlur } from '../../utils/sourceCheck';
 import {
   Button,
   Checkbox,
@@ -15,28 +16,28 @@ import {
 } from '@carbon/react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import { CheckIcon, CrossIcon, SpinnerIcon } from '../../components/StatusIcons';
-import type { PathCheck, ProfileInfo, RepoCheck } from '../../types';
+import type { IPathCheck, IProfileInfo, IRepoCheck } from '../../types';
 import {
   newWebhookSecret,
   notifyFormats,
   notifySeverities,
   stackOptions,
   validate,
-  type SystemFormValues,
+  type ISystemFormValues,
 } from './systemForm';
 
-interface Props {
-  values: SystemFormValues;
-  setValues: (v: SystemFormValues) => void;
-  errors: Partial<Record<keyof SystemFormValues, string>>;
+interface IProps {
+  values: ISystemFormValues;
+  setValues: (v: ISystemFormValues) => void;
+  errors: Partial<Record<keyof ISystemFormValues, string>>;
   touched: boolean;
-  check: UseMutationResult<RepoCheck, Error, void>;
-  checkPath: UseMutationResult<PathCheck, Error, void>;
+  check: UseMutationResult<IRepoCheck, Error, void>;
+  checkPath: UseMutationResult<IPathCheck, Error, void>;
   /** O servidor liberou a origem "pasta local" (SENTINEL_LOCAL_ROOT) */
   localEnabled: boolean;
   save: { isError: boolean; error: unknown };
-  profiles: ProfileInfo[];
-  profileInfo: ProfileInfo | undefined;
+  profiles: IProfileInfo[];
+  profileInfo: IProfileInfo | undefined;
   tokenSaved: boolean;
   notifySaved: boolean;
   webhookSaved: boolean;
@@ -44,10 +45,10 @@ interface Props {
 }
 
 /** Parte do formulário que lê e grava os valores. */
-interface FormSlice {
-  values: SystemFormValues;
-  setValues: (v: SystemFormValues) => void;
-  errors: Partial<Record<keyof SystemFormValues, string>>;
+interface IFormSlice {
+  values: ISystemFormValues;
+  setValues: (v: ISystemFormValues) => void;
+  errors: Partial<Record<keyof ISystemFormValues, string>>;
   touched: boolean;
 }
 
@@ -75,7 +76,7 @@ function UseDetectedBranch({ detected, current, onUse }: { detected: string | nu
   );
 }
 
-function RepoStatus({ check, values, setValues, mono }: Pick<Props, 'check' | 'values' | 'setValues' | 'mono'>) {
+function RepoStatus({ check, values, setValues, mono }: Pick<IProps, 'check' | 'values' | 'setValues' | 'mono'>) {
   const data = check.data;
   return (
     <>
@@ -117,7 +118,7 @@ function RepoStatus({ check, values, setValues, mono }: Pick<Props, 'check' | 'v
   );
 }
 
-function RepoUrlField({ values, setValues, errors, touched, check, mono }: FormSlice & Pick<Props, 'check' | 'mono'>) {
+function RepoUrlField({ values, setValues, errors, touched, check, mono }: IFormSlice & Pick<IProps, 'check' | 'mono'>) {
   return (
     <div style={{ display: 'grid', gap: 8 }}>
   <TextInput
@@ -133,7 +134,7 @@ function RepoUrlField({ values, setValues, errors, touched, check, mono }: FormS
     }}
     onBlur={() => {
       // Ao sair do campo com um endereço válido, já confere o repositório.
-      if (!validate(values).repoUrl && !check.data && !check.isPending) check.mutate();
+      if (shouldCheckOnBlur(validate(values).repoUrl, check)) check.mutate();
     }}
   />
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -146,7 +147,7 @@ function RepoUrlField({ values, setValues, errors, touched, check, mono }: FormS
   );
 }
 
-function GitAccessFieldset({ values, setValues, errors, touched, check, tokenSaved }: FormSlice & Pick<Props, 'check' | 'tokenSaved'>) {
+function GitAccessFieldset({ values, setValues, errors, touched, check, tokenSaved }: IFormSlice & Pick<IProps, 'check' | 'tokenSaved'>) {
   return (
   <fieldset style={fieldsetStyle}>
     <legend style={legendStyle}>Git: acesso ao repositório</legend>
@@ -198,10 +199,10 @@ function GitAccessFieldset({ values, setValues, errors, touched, check, tokenSav
   );
 }
 
-type PathData = NonNullable<Props['checkPath']['data']>;
+type PathData = NonNullable<IProps['checkPath']['data']>;
 
 /** Resultado positivo da conferência da pasta, com a branch detectada e a opção de usá-la. */
-function LocalFound({ data, values, setValues, mono }: { data: PathData } & Pick<Props, 'values' | 'setValues' | 'mono'>) {
+function LocalFound({ data, values, setValues, mono }: { data: PathData } & Pick<IProps, 'values' | 'setValues' | 'mono'>) {
   return (
     <>
       <span role="status" style={statusOk}>
@@ -224,7 +225,7 @@ function LocalFound({ data, values, setValues, mono }: { data: PathData } & Pick
   );
 }
 
-function LocalStatus({ checkPath, values, setValues, mono }: Pick<Props, 'checkPath' | 'values' | 'setValues' | 'mono'>) {
+function LocalStatus({ checkPath, values, setValues, mono }: Pick<IProps, 'checkPath' | 'values' | 'setValues' | 'mono'>) {
   const data = checkPath.data;
   return (
     <>
@@ -250,7 +251,7 @@ function LocalStatus({ checkPath, values, setValues, mono }: Pick<Props, 'checkP
   );
 }
 
-function LocalPathFieldset({ values, setValues, errors, touched, checkPath, mono }: FormSlice & Pick<Props, 'checkPath' | 'mono'>) {
+function LocalPathFieldset({ values, setValues, errors, touched, checkPath, mono }: IFormSlice & Pick<IProps, 'checkPath' | 'mono'>) {
   return (
     <fieldset style={fieldsetStyle}>
       <legend style={legendStyle}>Pasta local do projeto</legend>
@@ -269,7 +270,7 @@ function LocalPathFieldset({ values, setValues, errors, touched, checkPath, mono
               checkPath.reset();
             }}
             onBlur={() => {
-              if (!validate(values).localPath && !checkPath.data && !checkPath.isPending) checkPath.mutate();
+              if (shouldCheckOnBlur(validate(values).localPath, checkPath)) checkPath.mutate();
             }}
           />
         </div>
@@ -299,7 +300,7 @@ function LocalPathFieldset({ values, setValues, errors, touched, checkPath, mono
   );
 }
 
-function StackTeamProfile({ values, setValues, profiles, profileInfo }: Pick<Props, 'values' | 'setValues' | 'profiles' | 'profileInfo'>) {
+function StackTeamProfile({ values, setValues, profiles, profileInfo }: Pick<IProps, 'values' | 'setValues' | 'profiles' | 'profileInfo'>) {
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 16 }}>
@@ -307,7 +308,7 @@ function StackTeamProfile({ values, setValues, profiles, profileInfo }: Pick<Pro
           id="sys-stack"
           labelText="Stack"
           value={values.stack}
-          onChange={(e) => setValues({ ...values, stack: e.target.value as SystemFormValues['stack'] })}
+          onChange={(e) => setValues({ ...values, stack: e.target.value as ISystemFormValues['stack'] })}
         >
           {stackOptions.map((o) => (
             <SelectItem key={o.value} value={o.value} text={o.label} />
@@ -334,7 +335,7 @@ function StackTeamProfile({ values, setValues, profiles, profileInfo }: Pick<Pro
   );
 }
 
-function PushWebhookFields({ values, setValues, webhookSaved }: Pick<Props, 'values' | 'setValues' | 'webhookSaved'>) {
+function PushWebhookFields({ values, setValues, webhookSaved }: Pick<IProps, 'values' | 'setValues' | 'webhookSaved'>) {
   return (
     <>
         <Checkbox
@@ -376,7 +377,7 @@ function PushWebhookFields({ values, setValues, webhookSaved }: Pick<Props, 'val
   );
 }
 
-function ScheduleFieldset({ values, setValues, errors, check, local, webhookSaved }: Pick<FormSlice, 'values' | 'setValues' | 'errors'> & Pick<Props, 'check' | 'webhookSaved'> & { local: boolean }) {
+function ScheduleFieldset({ values, setValues, errors, check, local, webhookSaved }: Pick<IFormSlice, 'values' | 'setValues' | 'errors'> & Pick<IProps, 'check' | 'webhookSaved'> & { local: boolean }) {
   return (
     <fieldset style={fieldsetStyle}>
       <legend style={legendStyle}>Auditoria automática</legend>
@@ -409,7 +410,7 @@ function ScheduleFieldset({ values, setValues, errors, check, local, webhookSave
   );
 }
 
-function NotifyFieldset({ values, setValues, errors, touched, notifySaved }: FormSlice & Pick<Props, 'notifySaved'>) {
+function NotifyFieldset({ values, setValues, errors, touched, notifySaved }: IFormSlice & Pick<IProps, 'notifySaved'>) {
   return (
   <fieldset style={fieldsetStyle}>
     <legend style={legendStyle}>Notificações (Teams, Slack ou genérico)</legend>
@@ -470,7 +471,7 @@ function NotifyFieldset({ values, setValues, errors, touched, notifySaved }: For
   );
 }
 
-function SourceSwitcher({ values, setValues, check, checkPath, localEnabled }: Pick<Props, 'values' | 'setValues' | 'check' | 'checkPath' | 'localEnabled'>) {
+function SourceSwitcher({ values, setValues, check, checkPath, localEnabled }: Pick<IProps, 'values' | 'setValues' | 'check' | 'checkPath' | 'localEnabled'>) {
   const local = values.sourceType === 'LOCAL_PATH';
   // Quem já tem sistema em pasta local continua vendo a opção mesmo se o servidor a desligou (com aviso).
   if (!localEnabled && !local) return null;
@@ -502,7 +503,7 @@ function SourceSwitcher({ values, setValues, check, checkPath, localEnabled }: P
 }
 
 /** Aba "Cadastro e Git" do pop-up de sistema: identificação, repositório, agendamento, perfil, notificação e webhook. */
-export function SystemFormFields({ values, setValues, errors, touched, check, checkPath, localEnabled, save, profiles, profileInfo, tokenSaved, notifySaved, webhookSaved, mono }: Props) {
+export function SystemFormFields({ values, setValues, errors, touched, check, checkPath, localEnabled, save, profiles, profileInfo, tokenSaved, notifySaved, webhookSaved, mono }: IProps) {
   const local = values.sourceType === 'LOCAL_PATH';
   const slice = { values, setValues, errors, touched };
   return (

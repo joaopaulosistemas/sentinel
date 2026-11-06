@@ -1,7 +1,7 @@
 import { InlineNotification, Modal, Select, SelectItem, TextArea, TextInput } from '@carbon/react';
 import { useState } from 'react';
 import { useSuppressFinding, useSuppressFindings } from '../hooks/useLifecycle';
-import type { FindingResponse, SuppressionReason } from '../types';
+import type { IFindingResponse, SuppressionReason } from '../types';
 
 const reasonLabels: Record<SuppressionReason, string> = {
   FALSE_POSITIVE: 'Falso positivo (a ferramenta errou)',
@@ -9,17 +9,17 @@ const reasonLabels: Record<SuppressionReason, string> = {
   WONT_FIX: 'Não será corrigido (ex.: código em desativação)',
 };
 
-interface Props {
+interface IProps {
   /** Um ou mais findings; vazio = modal fechado. */
-  findings: FindingResponse[];
+  findings: IFindingResponse[];
   /** Achados visíveis na lista: dali saem os "parecidos" (mesma regra) que podem ser suprimidos junto. */
-  candidates?: FindingResponse[];
+  candidates?: IFindingResponse[];
   onClose: () => void;
 }
 
 /** Retira um finding do score, exigindo justificativa; opcionalmente com data de validade. */
 /** Mesma regra e ferramenta, ainda abertos e fora da seleção. */
-export function similarTo(selected: FindingResponse[], candidates: FindingResponse[]): FindingResponse[] {
+export function similarTo(selected: IFindingResponse[], candidates: IFindingResponse[]): IFindingResponse[] {
   const ids = new Set(selected.map((f) => f.id));
   const keys = new Set(selected.filter((f) => f.ruleId).map((f) => `${f.toolSource}|${f.ruleId}`));
   return candidates.filter((c) => !ids.has(c.id) && c.status !== 'SUPPRESSED' && c.ruleId && keys.has(`${c.toolSource}|${c.ruleId}`));
@@ -27,7 +27,14 @@ export function similarTo(selected: FindingResponse[], candidates: FindingRespon
 
 type Mutation = { isPending: boolean; isError: boolean; error: unknown };
 
-function commonBody(reason: SuppressionReason, justification: string, createdBy: string, expires: string) {
+interface ICommonBodyInput {
+  reason: SuppressionReason;
+  justification: string;
+  createdBy: string;
+  expires: string;
+}
+
+export function commonBody({ reason, justification, createdBy, expires }: ICommonBodyInput) {
   return {
     reason,
     justification: justification.trim(),
@@ -37,12 +44,23 @@ function commonBody(reason: SuppressionReason, justification: string, createdBy:
   };
 }
 
-function primaryLabel(pending: boolean, bulk: boolean, total: number): string {
+/** Mínimo de caracteres (sem espaços nas pontas) para a justificativa valer. */
+export const MIN_JUSTIFICATION_LENGTH = 10;
+
+export const justificationTooShort = (justification: string): boolean => justification.trim().length < MIN_JUSTIFICATION_LENGTH;
+
+interface IPrimaryLabelInput {
+  pending: boolean;
+  bulk: boolean;
+  total: number;
+}
+
+export function primaryLabel({ pending, bulk, total }: IPrimaryLabelInput): string {
   if (pending) return 'Salvando…';
   return bulk ? `Suprimir ${total}` : 'Suprimir';
 }
 
-interface FieldsProps {
+interface IFieldsProps {
   similarCount: number;
   withSimilar: boolean;
   onWithSimilar: (v: boolean) => void;
@@ -56,8 +74,8 @@ interface FieldsProps {
   onExpires: (v: string) => void;
 }
 
-function SuppressFields(p: FieldsProps) {
-  const tooShort = p.justification.trim().length < 10;
+function SuppressFields(p: IFieldsProps) {
+  const tooShort = justificationTooShort(p.justification);
   return (
     <>
       <p style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>
@@ -135,7 +153,7 @@ function SuppressFeedback({ failures, mutation }: { failures: Array<{ findingId:
   );
 }
 
-export function SuppressModal({ findings, candidates = [], onClose }: Props) {
+export function SuppressModal({ findings, candidates = [], onClose }: IProps) {
   const single = useSuppressFinding();
   const batch = useSuppressFindings();
   const [withSimilar, setWithSimilar] = useState(false);
@@ -161,7 +179,7 @@ export function SuppressModal({ findings, candidates = [], onClose }: Props) {
   };
 
   const submit = () => {
-    const common = commonBody(reason, justification, createdBy, expires);
+    const common = commonBody({ reason, justification, createdBy, expires });
     if (bulk) {
       batch.mutate(
         { ...common, findingIds: targets.map((f) => f.id) },
@@ -177,9 +195,9 @@ export function SuppressModal({ findings, candidates = [], onClose }: Props) {
       open
       modalHeading="Retirar do score"
       modalLabel={bulk ? `${targets.length} findings selecionados` : finding.title}
-      primaryButtonText={primaryLabel(mutation.isPending, bulk, targets.length)}
+      primaryButtonText={primaryLabel({ pending: mutation.isPending, bulk, total: targets.length })}
       secondaryButtonText="Cancelar"
-      primaryButtonDisabled={justification.trim().length < 10 || mutation.isPending}
+      primaryButtonDisabled={justificationTooShort(justification) || mutation.isPending}
       onRequestClose={close}
       onRequestSubmit={submit}
     >

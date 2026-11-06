@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Pontos quentes: arquivos que mudam muito e têm função complexa (churn × complexidade). Lê o histórico do clone
@@ -44,7 +43,6 @@ public class HotspotAnalyzer implements CodeAnalyzer {
     private static final int DEFAULT_MAX_HOTSPOTS = 15;
     /** Complexidade a partir da qual um ponto quente muito mexido vira alto. */
     private static final int HIGH_COMPLEXITY = 30;
-    private static final int GIT_TIMEOUT_SECONDS = 30;
 
 
     private static final Logger LOG = Logger.getLogger(HotspotAnalyzer.class);
@@ -129,19 +127,7 @@ public class HotspotAnalyzer implements CodeAnalyzer {
 
     /** Saída de {@code git log} do clone, ou texto vazio se não houver Git ou histórico. */
     private static String gitLog(Path root) throws IOException, InterruptedException {
-        Path out = Files.createTempFile("sentinel-gitlog-", ".txt");
-        try {
-            Process p = new ProcessBuilder("git", "-C", root.toString(), "log", "--name-only", "--no-merges",
-                    "--pretty=format:%H", "-n", "500")
-                    .redirectErrorStream(true).redirectOutput(out.toFile()).start();
-            if (!p.waitFor(GIT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                p.destroyForcibly();
-                return "";
-            }
-            return p.exitValue() == 0 ? Files.readString(out, StandardCharsets.UTF_8) : "";
-        } finally {
-            Files.deleteIfExists(out);
-        }
+        return GitLog.read(root, List.of("--name-only", "--no-merges", "--pretty=format:%H", "-n", "500"));
     }
 
     @Override

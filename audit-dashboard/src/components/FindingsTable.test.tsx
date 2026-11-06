@@ -2,10 +2,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import type { FindingResponse } from '../types';
+import type { IFindingResponse } from '../types';
 import { FindingsTable } from './FindingsTable';
 
-const finding = (id: number, ruleId: string): FindingResponse => ({
+const finding = (id: number, ruleId: string): IFindingResponse => ({
   id, category: 'SECURITY', severity: 'HIGH', title: `Achado ${id}`, description: '', filePath: 'A.java', lineNumber: id,
   codeSnippet: null, ruleId, toolSource: 'semgrep', cveId: null, aiRecommendation: null, status: 'OPEN',
 });

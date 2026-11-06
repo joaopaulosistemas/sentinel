@@ -11,14 +11,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Mensagens de commit: aponta um achado só quando a parte dos commits fora do padrão Conventional Commits passa do limite.
@@ -34,7 +31,6 @@ public class CommitMessageAnalyzer implements CodeAnalyzer {
     private static final int DEFAULT_MIN_COMMITS = 20;
     private static final int DEFAULT_MAX_BAD_PERCENT = 30;
     private static final int EXAMPLES = 5;
-    private static final int GIT_TIMEOUT_SECONDS = 30;
     private static final Logger LOG = Logger.getLogger(CommitMessageAnalyzer.class);
 
     @Override
@@ -77,18 +73,7 @@ public class CommitMessageAnalyzer implements CodeAnalyzer {
 
     /** Assuntos dos últimos commits do clone, ou texto vazio se não houver Git ou histórico. */
     private static String gitLog(Path root) throws IOException, InterruptedException {
-        Path out = Files.createTempFile("sentinel-commits-", ".txt");
-        try {
-            Process p = new ProcessBuilder("git", "-C", root.toString(), "log", "--no-merges", "--pretty=format:%H%x1f%s", "-n", "200")
-                    .redirectErrorStream(true).redirectOutput(out.toFile()).start();
-            if (!p.waitFor(GIT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                p.destroyForcibly();
-                return "";
-            }
-            return p.exitValue() == 0 ? Files.readString(out, StandardCharsets.UTF_8) : "";
-        } finally {
-            Files.deleteIfExists(out);
-        }
+        return GitLog.read(root, List.of("--no-merges", "--pretty=format:%H%x1f%s", "-n", "200"));
     }
 
     @Override

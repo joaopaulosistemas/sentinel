@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SystemSummaryResponse } from '../../types';
+import type { ISystemSummaryResponse } from '../../types';
 import { emptyForm, formFrom, scheduleChanged, sourceText, toRequest, toSchedule, validate } from './systemForm';
 
 describe('formulário de sistema', () => {
@@ -62,7 +62,7 @@ describe('formulário de sistema', () => {
     expect(scheduleChanged(emptyForm, null)).toBe(false);
     expect(scheduleChanged(values, null)).toBe(true);
 
-    const system = { auditIntervalHours: 24, scheduledBranch: 'develop', auditOnPush: true } as SystemSummaryResponse;
+    const system = { auditIntervalHours: 24, scheduledBranch: 'develop', auditOnPush: true } as ISystemSummaryResponse;
     expect(scheduleChanged(values, system)).toBe(false);
     expect(scheduleChanged({ ...values, auditIntervalHours: 12 }, system)).toBe(true);
     expect(scheduleChanged({ ...values, auditOnPush: false }, system)).toBe(true);

@@ -7,7 +7,7 @@ export const RESTART_TIMEOUT_SECONDS = 90;
 
 export type RestartPhase = 'requesting' | 'waiting';
 
-interface Props {
+interface IProps {
   /** requesting: o pedido de reinício está a caminho; waiting: a API foi encerrada e a tela espera ela voltar. */
   phase: RestartPhase;
   /** Pede mais um período de espera (reinicia o cronômetro). */
@@ -127,7 +127,7 @@ function RestartSteps({ phase, elapsed }: { phase: RestartPhase; elapsed: number
   );
 }
 
-function statusMessage(phase: RestartPhase, timedOut: boolean): string {
+function statusMessage({ phase, timedOut }: { phase: RestartPhase; timedOut: boolean }): string {
   if (timedOut) return 'A API está demorando para voltar.';
   return phase === 'requesting' ? 'Enviando o pedido de reinício.' : 'Aguardando a API voltar.';
 }
@@ -136,7 +136,7 @@ function statusMessage(phase: RestartPhase, timedOut: boolean): string {
  * Trava a tela inteira enquanto a API reinicia e explica o que está acontecendo.
  * Sem isso, quem usa a tela continua clicando numa API que está fora do ar e vê erros sem sentido.
  */
-export function RestartOverlay({ phase, onKeepWaiting, onClose }: Props) {
+export function RestartOverlay({ phase, onKeepWaiting, onClose }: IProps) {
   const elapsed = useElapsedSeconds();
   const box = useRef<HTMLDivElement>(null);
   const timedOut = phase === 'waiting' && elapsed >= RESTART_TIMEOUT_SECONDS;
@@ -179,7 +179,7 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: Props) {
         <RestartSteps phase={phase} elapsed={elapsed} />
 
         <div role="status" aria-live="polite" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
-          {statusMessage(phase, timedOut)}
+          {statusMessage({ phase, timedOut })}
         </div>
 
         {timedOut && (

@@ -1,11 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
 
+interface IMcpActivityInput {
+  systemId: number | undefined;
+  refresh: boolean;
+}
+
 /**
  * O que o Claude (MCP) está fazendo com um sistema: se a consulta está ligada, as últimas chamadas e os pedidos
  * esperando aprovação. Só leitura: nada aqui muda a auditoria nem a nota. Enquanto a auditoria roda, atualiza sozinho.
  */
-export function useMcpActivity(systemId: number | undefined, refresh: boolean) {
+export function useMcpActivity({ systemId, refresh }: IMcpActivityInput) {
   const known = systemId !== undefined;
   const config = useQuery({
     queryKey: ['mcp', systemId],

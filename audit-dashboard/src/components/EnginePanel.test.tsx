@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { EngineConfig, SystemSummaryResponse } from '../types';
+import type { IEngineConfig, ISystemSummaryResponse } from '../types';
 import { EngineAnalyzersPanel, EngineRulesPanel, isNoop, mergeTuning, pathLines } from './EnginePanel';
 
-const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as SystemSummaryResponse;
+const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as ISystemSummaryResponse;
 
-function config(over: Partial<EngineConfig> = {}): EngineConfig {
+function config(over: Partial<IEngineConfig> = {}): IEngineConfig {
   return {
     profile: 'java-bancario',
     profileDescription: 'Regras para serviços Java',
@@ -27,7 +27,17 @@ function config(over: Partial<EngineConfig> = {}): EngineConfig {
   };
 }
 
-function setup(initial: EngineConfig, Panel = EngineRulesPanel, audits: unknown = [], onDirty?: (d: boolean) => void, plan: unknown = { scoreNow: 60, scoreIfCriticalFixed: 60, criticalCount: 0, items: [] }) {
+interface ISetupOptions {
+  Panel?: typeof EngineRulesPanel;
+  audits?: unknown;
+  onDirty?: (d: boolean) => void;
+  plan?: unknown;
+}
+
+const EMPTY_PLAN = { scoreNow: 60, scoreIfCriticalFixed: 60, criticalCount: 0, items: [] };
+
+function setup(initial: IEngineConfig, options: ISetupOptions = {}) {
+  const { Panel = EngineRulesPanel, audits = [], onDirty, plan = EMPTY_PLAN } = options;
   const calls: Array<{ method: string; body?: string }> = [];
   vi.stubGlobal(
     'fetch',
@@ -105,7 +115,7 @@ describe('EnginePanel', () => {
 
   it('desligar um analisador salva sem perder os ajustes de regra', async () => {
     const tuning = { rules: [{ id: 'x', severity: 'LOW' as const, disabled: false, shadow: null }], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [] };
-    const calls = setup(config({ adjustments: 1, tuning }), EngineAnalyzersPanel);
+    const calls = setup(config({ adjustments: 1, tuning }), { Panel: EngineAnalyzersPanel });
     fireEvent.click(await screen.findByRole('checkbox', { name: /PMD/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Salvar ajustes' }));
     await waitFor(() => expect(calls.some((c) => c.method === 'PUT')).toBe(true));
@@ -117,7 +127,7 @@ describe('EnginePanel', () => {
   it('caminhos ignorados: mostra os salvos, marca alteração e salva uma linha por caminho', async () => {
     const tuning = { rules: [], thresholds: {}, enablePacks: [], disablePacks: [], disableAnalyzers: [], ignorePaths: ['docs/'] };
     const onDirty = vi.fn();
-    const calls = setup(config({ adjustments: 1, tuning }), EngineAnalyzersPanel, [], onDirty);
+    const calls = setup(config({ adjustments: 1, tuning }), { Panel: EngineAnalyzersPanel, onDirty });
     const box = (await screen.findByLabelText('Caminhos ignorados')) as HTMLTextAreaElement;
     await waitFor(() => expect(box.value).toBe('docs/'));
     fireEvent.change(box, { target: { value: 'docs/\n\n**/test/**\ndocs/\n *.md ' } });
@@ -193,7 +203,7 @@ describe('EnginePanel', () => {
       criticalCount: 0,
       items: [{ ruleId: 'semgrep.rules.sentinel-god-class', title: 'Classe grande', severity: 'HIGH', category: 'QUALITY', occurrences: 4, scoreGain: 3.5, exampleFile: null, exampleLine: null, howToFix: null }],
     };
-    setup(catalogConfig(), EngineRulesPanel, audits, undefined, plan);
+    setup(catalogConfig(), { audits, plan });
     fireEvent.click(await screen.findByRole('tab', { name: /Qualidade/ }));
     expect(await screen.findByText('+3.5')).toBeInTheDocument();
   });
@@ -263,7 +273,7 @@ describe('EnginePanel', () => {
 
   it('avisa quando há alteração sem salvar e deixa de avisar depois de salvar', async () => {
     const onDirty = vi.fn();
-    setup(config(), EngineRulesPanel, [], onDirty);
+    setup(config(), { onDirty });
     fireEvent.click(await screen.findByRole('checkbox', { name: 'Desligar sentinel-god-class' }));
     await waitFor(() => expect(onDirty).toHaveBeenLastCalledWith(true));
     expect(screen.getByText('Alterações não salvas')).toBeInTheDocument();
@@ -272,7 +282,7 @@ describe('EnginePanel', () => {
   });
 
   describe('escopo por lado', () => {
-    const sided = (over: Partial<EngineConfig> = {}) =>
+    const sided = (over: Partial<IEngineConfig> = {}) =>
       config({
         packs: [
           { id: 'core-security', name: 'Segurança', description: null, inProfile: true, active: true },
@@ -295,7 +305,7 @@ describe('EnginePanel', () => {
 
     it('o atalho "Só back-end" desliga o front e o salvar manda o lado', async () => {
       const onDirty = vi.fn();
-      const calls = setup(sided(), EngineRulesPanel, [], onDirty);
+      const calls = setup(sided(), { onDirty });
       fireEvent.click(await screen.findByRole('button', { name: 'Só back-end' }));
       await waitFor(() => expect(onDirty).toHaveBeenLastCalledWith(true));
       expect(screen.getByText(/Front-end desligado: 1 regras/)).toBeInTheDocument();
@@ -344,7 +354,7 @@ describe('EnginePanel', () => {
     });
 
     it('analisadores do lado desligado ficam desmarcados e travados', async () => {
-      setup(withSidesOff('front'), EngineAnalyzersPanel);
+      setup(withSidesOff('front'), { Panel: EngineAnalyzersPanel });
       const eslint = await screen.findByRole('checkbox', { name: /ESLint/ });
       expect(eslint).not.toBeChecked();
       expect(eslint).toBeDisabled();

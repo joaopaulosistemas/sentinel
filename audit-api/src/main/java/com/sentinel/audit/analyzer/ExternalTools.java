@@ -188,10 +188,7 @@ final class ExternalTools {
                 }
             }
         }
-        if (HASHED_BUILD_NAME.matcher(name).matches() && underWebRoot(parts)) {
-            return true;
-        }
-        return inThirdPartyAssetDir(parts, name);
+        return (HASHED_BUILD_NAME.matcher(name).matches() && underWebRoot(parts)) || inThirdPartyAssetDir(parts, name);
     }
 
     private static boolean underWebRoot(String[] parts) {
@@ -232,6 +229,8 @@ final class ExternalTools {
             "(?i)https?://(www\\.)?(apache\\.org/licenses|opensource\\.org/licenses?|gnu\\.org/licenses|creativecommons\\.org/licenses|mozilla\\.org/(MPL|en-US/MPL))[^\\s)\\]>\"']*");
     private static final java.util.regex.Pattern ASF_NAME = java.util.regex.Pattern.compile("(?i)\\bapache software foundation\\b");
     private static final int BANNER_CHARS = 1200;
+    /** Folga, em bytes, ao ler o começo do arquivo: um caractere multibyte cortado ao meio não pode esconder o fim do cabeçalho. */
+    private static final int BANNER_BYTES_SLACK = 40;
 
     /**
      * O arquivo começa com o comentário de uma biblioteca: licença (MIT, Apache, BSD, GPL...) e um sinal de origem
@@ -317,7 +316,7 @@ final class ExternalTools {
         }
         try (java.io.InputStream in = java.nio.file.Files.newInputStream(file)) {
             String head = new String(in.readNBytes(MINIFIED_SAMPLE_BYTES), java.nio.charset.StandardCharsets.UTF_8);
-            return hasThirdPartyBanner(head.substring(0, Math.min(head.length(), BANNER_CHARS + 40))) || looksMinified(head);
+            return hasThirdPartyBanner(head.substring(0, Math.min(head.length(), BANNER_CHARS + BANNER_BYTES_SLACK))) || looksMinified(head);
         } catch (java.io.IOException | RuntimeException e) {
             return false;
         }
@@ -351,39 +350,21 @@ final class ExternalTools {
      * vira pastas inteiras ({@link #collapseToDirs}), para não estourar o limite de padrões do motor.
      */
     static java.util.List<String> vendoredFiles(Path root) {
-        java.util.List<String> found = new java.util.ArrayList<>();
+        java.util.List<String> found = scanBundles(root, MAX_COLLECTED, (file, rel, size) -> BUNDLE_EXT.matcher(rel).find()
+                && isThirdPartyBundle(file, rel, size));
+        if (found.size() <= COLLAPSE_ABOVE) {
+            return found;
+        }
         java.util.Map<String, Integer> totalPorPasta = new java.util.HashMap<>();
-        try {
-            java.nio.file.Files.walkFileTree(root, new java.nio.file.SimpleFileVisitor<>() {
-                @Override
-                public java.nio.file.FileVisitResult preVisitDirectory(Path dir, java.nio.file.attribute.BasicFileAttributes a) {
-                    boolean skip = !dir.equals(root)
-                            && CleanCodeAnalyzer.IGNORED_DIRS.contains(dir.getFileName().toString().toLowerCase(java.util.Locale.ROOT));
-                    return skip ? java.nio.file.FileVisitResult.SKIP_SUBTREE : java.nio.file.FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public java.nio.file.FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes a) {
-                    String rel = root.relativize(file).toString().replace('\\', '/');
-                    if (a.isRegularFile() && BUNDLE_EXT.matcher(rel).find()) {
-                        totalPorPasta.merge(parentOf(rel), 1, Integer::sum);
-                        if (found.size() < MAX_COLLECTED
-                                && (isOversizedBundle(rel, a.size()) || isVendoredLibrary(rel) || hasThirdPartyBanner(file))) {
-                            found.add(rel);
-                        }
-                    }
-                    return java.nio.file.FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public java.nio.file.FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return java.nio.file.FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException ignored) {
-            // sem a lista o motor apenas analisa mais arquivos
+        for (String rel : scanBundles(root, Integer.MAX_VALUE, (file, r, size) -> BUNDLE_EXT.matcher(r).find())) {
+            totalPorPasta.merge(parentOf(rel), 1, Integer::sum);
         }
         return collapseToDirs(found, totalPorPasta);
+    }
+
+    /** Pacote grande, biblioteca embutida ou arquivo com cabeçalho de terceiros. */
+    private static boolean isThirdPartyBundle(Path file, String rel, long size) {
+        return isOversizedBundle(rel, size) || isVendoredLibrary(rel) || hasThirdPartyBanner(file);
     }
 
     /** Teto de arquivos de terceiros lembrados durante a varredura (antes de colapsar em pastas). */
@@ -424,6 +405,17 @@ final class ExternalTools {
 
     /** Caminhos relativos (com "/") dos pacotes grandes sob a raiz, para o motor SAST excluir. Pastas ignoradas são puladas. */
     static java.util.List<String> oversizedBundles(Path root) {
+        return scanBundles(root, Integer.MAX_VALUE, (file, rel, size) -> isOversizedBundle(rel, size));
+    }
+
+    /** Decide se um arquivo regular entra na lista: o arquivo, o caminho relativo (com "/") e o tamanho em bytes. */
+    @FunctionalInterface
+    private interface BundleFilter {
+        boolean accepts(Path file, String rel, long size);
+    }
+
+    /** Percorre a raiz (pulando as pastas ignoradas) e junta, até {@code limit}, os caminhos que o filtro aceita. */
+    private static java.util.List<String> scanBundles(Path root, int limit, BundleFilter filter) {
         java.util.List<String> found = new java.util.ArrayList<>();
         try {
             java.nio.file.Files.walkFileTree(root, new java.nio.file.SimpleFileVisitor<>() {
@@ -437,7 +429,7 @@ final class ExternalTools {
                 @Override
                 public java.nio.file.FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes a) {
                     String rel = root.relativize(file).toString().replace('\\', '/');
-                    if (a.isRegularFile() && isOversizedBundle(rel, a.size())) {
+                    if (found.size() < limit && a.isRegularFile() && filter.accepts(file, rel, a.size())) {
                         found.add(rel);
                     }
                     return java.nio.file.FileVisitResult.CONTINUE;

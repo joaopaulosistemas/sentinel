@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { ScoreGroup } from '../types';
+import type { IScoreGroup } from '../types';
 import { deltaLabel, groupHint, toggleRule } from './scoreExplanation';
 
-const group = (over: Partial<ScoreGroup>): ScoreGroup => ({ ruleId: 'r', severity: 'MEDIUM', count: 3, raw: 15, counted: 15, capped: false, ...over });
+const group = (over: Partial<IScoreGroup>): IScoreGroup => ({ ruleId: 'r', severity: 'MEDIUM', count: 3, raw: 15, counted: 15, capped: false, ...over });
 
 describe('scoreExplanation', () => {
   it('liga e desliga regras sem repetir nem mutar', () => {

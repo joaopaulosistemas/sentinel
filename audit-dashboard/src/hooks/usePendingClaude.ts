@@ -1,12 +1,12 @@
 import { useQueries } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { PendingAction, SystemSummaryResponse } from '../types';
+import type { IPendingAction, ISystemSummaryResponse } from '../types';
 import { useSystems } from './useSystems';
 
-export interface PendingBySystem {
-  system: SystemSummaryResponse;
+export interface IPendingBySystem {
+  system: ISystemSummaryResponse;
   count: number;
-  actions: PendingAction[];
+  actions: IPendingAction[];
 }
 
 /**
@@ -23,7 +23,7 @@ export function usePendingClaude() {
       refetchInterval: 60_000,
     })),
   });
-  const bySystem: PendingBySystem[] = list
+  const bySystem: IPendingBySystem[] = list
     .map((system, i) => {
       const data = results[i]?.data;
       const actions = Array.isArray(data) ? data.filter((a) => a.status === 'PENDING') : [];

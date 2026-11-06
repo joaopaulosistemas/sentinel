@@ -1,13 +1,13 @@
-import type { SystemSummaryResponse } from '../types';
+import type { ISystemSummaryResponse } from '../types';
 
-export interface TeamSummary {
+export interface ITeamSummary {
   team: string;
   systems: number;
   audited: number;
   avgScore: number | null;
   critical: number;
   high: number;
-  worst: SystemSummaryResponse | null;
+  worst: ISystemSummaryResponse | null;
 }
 
 const NO_TEAM = 'Sem time';
@@ -16,11 +16,11 @@ const NO_TEAM = 'Sem time';
  * Ordem de atenção: sistemas nunca auditados primeiro (risco desconhecido), depois por
  * críticos abertos, altos abertos e, por último, score mais baixo.
  */
-export function rankSystems(systems: SystemSummaryResponse[]): SystemSummaryResponse[] {
+export function rankSystems(systems: ISystemSummaryResponse[]): ISystemSummaryResponse[] {
   return [...systems].sort(compareAttention);
 }
 
-function compareAttention(a: SystemSummaryResponse, b: SystemSummaryResponse): number {
+function compareAttention(a: ISystemSummaryResponse, b: ISystemSummaryResponse): number {
   return (
     compareNeverAudited(a, b) ||
     compareOpenIssues(a, b) ||
@@ -30,25 +30,25 @@ function compareAttention(a: SystemSummaryResponse, b: SystemSummaryResponse): n
 }
 
 /** Nunca auditado vem antes: o risco dele é desconhecido. */
-function compareNeverAudited(a: SystemSummaryResponse, b: SystemSummaryResponse): number {
+function compareNeverAudited(a: ISystemSummaryResponse, b: ISystemSummaryResponse): number {
   const aNever = a.lastAuditScore == null;
   const bNever = b.lastAuditScore == null;
   if (aNever === bNever) return 0;
   return aNever ? -1 : 1;
 }
 
-function compareOpenIssues(a: SystemSummaryResponse, b: SystemSummaryResponse): number {
+function compareOpenIssues(a: ISystemSummaryResponse, b: ISystemSummaryResponse): number {
   return (b.openCritical ?? 0) - (a.openCritical ?? 0) || (b.openHigh ?? 0) - (a.openHigh ?? 0);
 }
 
 /** Resume por time. A média considera só sistemas já auditados; times piores aparecem primeiro. */
-export function summarizeTeams(systems: SystemSummaryResponse[]): TeamSummary[] {
+export function summarizeTeams(systems: ISystemSummaryResponse[]): ITeamSummary[] {
   const rows = [...groupByTeam(systems)].map(([team, list]) => summarizeTeam(team, list));
   return rows.sort(compareTeams);
 }
 
-function groupByTeam(systems: SystemSummaryResponse[]): Map<string, SystemSummaryResponse[]> {
-  const groups = new Map<string, SystemSummaryResponse[]>();
+function groupByTeam(systems: ISystemSummaryResponse[]): Map<string, ISystemSummaryResponse[]> {
+  const groups = new Map<string, ISystemSummaryResponse[]>();
   for (const s of systems) {
     const key = s.team?.trim() || NO_TEAM;
     groups.set(key, [...(groups.get(key) ?? []), s]);
@@ -56,7 +56,7 @@ function groupByTeam(systems: SystemSummaryResponse[]): Map<string, SystemSummar
   return groups;
 }
 
-function summarizeTeam(team: string, list: SystemSummaryResponse[]): TeamSummary {
+function summarizeTeam(team: string, list: ISystemSummaryResponse[]): ITeamSummary {
   const scored = list.filter((s) => s.lastAuditScore != null);
   return {
     team,
@@ -69,12 +69,12 @@ function summarizeTeam(team: string, list: SystemSummaryResponse[]): TeamSummary
   };
 }
 
-function averageScore(scored: SystemSummaryResponse[]): number | null {
+function averageScore(scored: ISystemSummaryResponse[]): number | null {
   if (scored.length === 0) return null;
   return Math.round(scored.reduce((acc, s) => acc + (s.lastAuditScore as number), 0) / scored.length);
 }
 
-function compareTeams(a: TeamSummary, b: TeamSummary): number {
+function compareTeams(a: ITeamSummary, b: ITeamSummary): number {
   return (
     b.critical - a.critical ||
     b.high - a.high ||
@@ -83,13 +83,13 @@ function compareTeams(a: TeamSummary, b: TeamSummary): number {
   );
 }
 
-export interface Trend {
+export interface ITrend {
   text: string;
   tone: 'up' | 'down' | 'flat' | 'none';
 }
 
 /** Variação da nota desde a auditoria anterior, pronta para exibir (▲ sobe, ▼ cai, — igual, "novo" sem histórico). */
-export function formatTrend(delta: number | null | undefined): Trend {
+export function formatTrend(delta: number | null | undefined): ITrend {
   if (delta === null || delta === undefined) return { text: 'sem histórico', tone: 'none' };
   const rounded = Math.round(delta * 10) / 10;
   if (rounded > 0) return { text: `▲ +${rounded}`, tone: 'up' };

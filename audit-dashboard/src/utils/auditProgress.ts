@@ -1,4 +1,4 @@
-import type { AnalyzerProgress, AnalyzerProgressStatus, AuditPhase, AuditRunResponse } from '../types';
+import type { IAnalyzerProgress, AnalyzerProgressStatus, AuditPhase, IAuditRunResponse } from '../types';
 
 export const PHASES: Array<{ id: AuditPhase; label: string; hint: string }> = [
   { id: 'FILA', label: 'Fila', hint: 'Aguardando um lugar para rodar' },
@@ -22,13 +22,13 @@ export const analyzerStatusLabel: Record<AnalyzerProgressStatus, string> = {
 };
 
 /** Analisadores que realmente rodam (os demais não contam para o andamento). */
-const isCounted = (a: AnalyzerProgress) =>
+const isCounted = (a: IAnalyzerProgress) =>
   a.status === 'ESPERANDO' || a.status === 'EXECUTANDO' || a.status === 'OK' || a.status === 'PARCIAL' || a.status === 'FALHOU';
 
-const isSettled = (a: AnalyzerProgress) => a.status === 'OK' || a.status === 'PARCIAL' || a.status === 'FALHOU';
+const isSettled = (a: IAnalyzerProgress) => a.status === 'OK' || a.status === 'PARCIAL' || a.status === 'FALHOU';
 
 /** Posição da etapa atual (0 a 4). Concluída = 5, ou seja, todas as etapas prontas. */
-export function phaseIndex(run: Pick<AuditRunResponse, 'status' | 'progress'>): number {
+export function phaseIndex(run: Pick<IAuditRunResponse, 'status' | 'progress'>): number {
   if (run.status === 'COMPLETED') return PHASES.length;
   if (run.progress) {
     const i = PHASES.findIndex((p) => p.id === run.progress!.phase);
@@ -37,7 +37,7 @@ export function phaseIndex(run: Pick<AuditRunResponse, 'status' | 'progress'>): 
   return run.status === 'PENDING' ? 0 : 1;
 }
 
-export function analyzerCounts(analyzers: AnalyzerProgress[]): { done: number; total: number } {
+export function analyzerCounts(analyzers: IAnalyzerProgress[]): { done: number; total: number } {
   const counted = analyzers.filter(isCounted);
   return { done: counted.filter(isSettled).length, total: counted.length };
 }
@@ -46,7 +46,7 @@ export function analyzerCounts(analyzers: AnalyzerProgress[]): { done: number; t
  * Percentual aproximado: a análise é a etapa longa, então ela ocupa a maior faixa e anda com os analisadores
  * que terminam. Nunca chega a 100 antes de a auditoria concluir.
  */
-export function progressPercent(run: Pick<AuditRunResponse, 'status' | 'progress'>): number {
+export function progressPercent(run: Pick<IAuditRunResponse, 'status' | 'progress'>): number {
   if (run.status === 'COMPLETED') return 100;
   const i = phaseIndex(run);
   switch (i) {
@@ -66,7 +66,7 @@ export function progressPercent(run: Pick<AuditRunResponse, 'status' | 'progress
 }
 
 /** Duração em segundos, usando só horários do servidor (evita diferença de fuso com o navegador). */
-export function elapsedSeconds(run: Pick<AuditRunResponse, 'startedAt' | 'completedAt' | 'progress'>): number | null {
+export function elapsedSeconds(run: Pick<IAuditRunResponse, 'startedAt' | 'completedAt' | 'progress'>): number | null {
   if (!run.startedAt) return null;
   const start = Date.parse(run.startedAt);
   const lastEvent = run.progress?.events[run.progress.events.length - 1]?.at;
@@ -75,14 +75,16 @@ export function elapsedSeconds(run: Pick<AuditRunResponse, 'startedAt' | 'comple
   return Math.max(0, Math.round((end - start) / 1000));
 }
 
+const SECONDS_PER_MINUTE = 60;
+
 export function formatDuration(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return m > 0 ? `${m} min ${String(s).padStart(2, '0')} s` : `${s} s`;
+  const minutes = Math.floor(totalSeconds / SECONDS_PER_MINUTE);
+  const seconds = totalSeconds % SECONDS_PER_MINUTE;
+  return minutes > 0 ? `${minutes} min ${String(seconds).padStart(2, '0')} s` : `${seconds} s`;
 }
 
 /** A auditoria ainda está na fila ou baixando/copiando o código: não há porcentagem real para mostrar. */
-export function isLoadingSource(run: Pick<AuditRunResponse, 'status' | 'progress'>): boolean {
+export function isLoadingSource(run: Pick<IAuditRunResponse, 'status' | 'progress'>): boolean {
   return isActiveRun(run) && phaseIndex(run) <= 1;
 }
 
@@ -94,17 +96,17 @@ export function copyText(progress: AuditProgressLike | null | undefined): string
   return `${done.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} arquivos`;
 }
 
-type AuditProgressLike = NonNullable<AuditRunResponse['progress']>;
+type AuditProgressLike = NonNullable<IAuditRunResponse['progress']>;
 
 /** Segundos depois dos quais o carregamento ganha o aviso de que está demorando. */
 export const SLOW_LOAD_SECONDS = 30;
 
 export const isSlowLoad = (seconds: number | null): boolean => seconds !== null && seconds >= SLOW_LOAD_SECONDS;
 
-export const isActiveRun = (run: Pick<AuditRunResponse, 'status'>) => run.status === 'PENDING' || run.status === 'RUNNING';
+export const isActiveRun = (run: Pick<IAuditRunResponse, 'status'>) => run.status === 'PENDING' || run.status === 'RUNNING';
 
 /** Duração média, em segundos, das últimas auditorias concluídas (até 5); nulo se não houver nenhuma. */
-export function averageDurationSeconds(runs: Array<Pick<AuditRunResponse, 'status' | 'startedAt' | 'completedAt'>>): number | null {
+export function averageDurationSeconds(runs: Array<Pick<IAuditRunResponse, 'status' | 'startedAt' | 'completedAt'>>): number | null {
   const durations = runs
     .filter((r) => r.status === 'COMPLETED' && r.startedAt && r.completedAt)
     .slice(0, 5)
@@ -123,15 +125,15 @@ export function remainingSeconds(elapsed: number | null, average: number | null)
 
 /** mm:ss a partir de segundos (o relógio da tela de execução). */
 export function clock(totalSeconds: number): string {
-  const s = Math.max(0, Math.round(totalSeconds));
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  const rounded = Math.max(0, Math.round(totalSeconds));
+  return `${String(Math.floor(rounded / SECONDS_PER_MINUTE)).padStart(2, '0')}:${String(rounded % SECONDS_PER_MINUTE).padStart(2, '0')}`;
 }
 
 /** Segundos entre dois horários do servidor; zero se algum for inválido. */
 export function secondsBetween(from: string, to: string): number {
-  const a = Date.parse(from);
-  const b = Date.parse(to);
-  return Number.isNaN(a) || Number.isNaN(b) ? 0 : Math.max(0, Math.round((b - a) / 1000));
+  const fromMs = Date.parse(from);
+  const toMs = Date.parse(to);
+  return Number.isNaN(fromMs) || Number.isNaN(toMs) ? 0 : Math.max(0, Math.round((toMs - fromMs) / 1000));
 }
 
 /** "github.com/org/repo" a partir de uma URL de clone. */
@@ -143,11 +145,11 @@ export function shortRepo(url: string | null | undefined): string | null {
 /** Texto curto de quanto falta, em minutos ou segundos. */
 export function etaText(left: number | null): string {
   if (left === null) return 'estimando o tempo restante';
-  const s = Math.max(5, Math.round(left / 5) * 5);
-  return `faltam cerca de ${s >= 60 ? `${Math.ceil(s / 60)} min` : `${s} s`}`;
+  const rounded = Math.max(5, Math.round(left / 5) * 5);
+  return `faltam cerca de ${rounded >= SECONDS_PER_MINUTE ? `${Math.ceil(rounded / SECONDS_PER_MINUTE)} min` : `${rounded} s`}`;
 }
 
-export interface PhaseView {
+export interface IPhaseView {
   n: number;
   id: AuditPhase;
   name: string;
@@ -157,9 +159,9 @@ export interface PhaseView {
 
 /** As cinco fases com o estado e o texto de apoio de cada uma, como no protótipo. */
 export function phaseViews(
-  run: Pick<AuditRunResponse, 'status' | 'progress'>,
+  run: Pick<IAuditRunResponse, 'status' | 'progress'>,
   counts: { done: number; total: number },
-): PhaseView[] {
+): IPhaseView[] {
   const index = phaseIndex(run);
   const failed = run.status === 'FAILED' || run.status === 'CANCELLED';
   const repo = shortRepo(run.progress?.repoUrl);
@@ -171,7 +173,7 @@ export function phaseViews(
     RELATORIO: 'insights e plano de ação',
   };
   return PHASES.map((p, i) => {
-    const state: PhaseView['state'] =
+    const state: IPhaseView['state'] =
       i < index ? 'done' : i === index ? (failed ? 'failed' : 'active') : 'pending';
     return {
       n: i + 1,

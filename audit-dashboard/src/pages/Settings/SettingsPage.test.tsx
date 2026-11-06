@@ -2,17 +2,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { SettingView, SettingsResponse } from '../../types';
+import type { ISettingView, ISettingsResponse } from '../../types';
 import { SettingsPage } from './SettingsPage';
 
-function setting(over: Partial<SettingView>): SettingView {
+function setting(over: Partial<ISettingView>): ISettingView {
   return {
     key: 'TRIVY_ENABLED', section: 'ferr', group: 'Trivy', label: 'Trivy ligado', help: 'Dependências e infraestrutura', kind: 'bool', def: 'true',
     options: [], unit: '', min: 0, max: 0, editable: true, secret: false, value: 'true', savedValue: null, source: 'ambiente', pendingRestart: false, ...over,
   };
 }
 
-const base: SettingsResponse = {
+const base: ISettingsResponse = {
   restartRequired: false,
   settings: [
     setting({}),
@@ -21,7 +21,7 @@ const base: SettingsResponse = {
   ],
 };
 
-function stubApi(inicial: SettingsResponse) {
+function stubApi(inicial: ISettingsResponse) {
   let atual = inicial;
   const chamadas: { method: string; url: string; body?: string }[] = [];
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
@@ -112,7 +112,7 @@ describe('SettingsPage', () => {
   });
 
   it('reiniciar a API trava a tela, explica e libera quando a API volta', async () => {
-    const pendente: SettingsResponse = { restartRequired: true, settings: base.settings.map((s) => ({ ...s, pendingRestart: true })) };
+    const pendente: ISettingsResponse = { restartRequired: true, settings: base.settings.map((s) => ({ ...s, pendingRestart: true })) };
     let reiniciou = false;
     let consultasDepois = 0;
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
@@ -140,7 +140,7 @@ describe('SettingsPage', () => {
   }, 15000);
 
   it('se o pedido de reinício falha, não trava a tela e mostra o erro', async () => {
-    const pendente: SettingsResponse = { restartRequired: true, settings: base.settings };
+    const pendente: ISettingsResponse = { restartRequired: true, settings: base.settings };
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
       if (init?.method === 'POST') return new Response(JSON.stringify({ message: 'Sem permissão' }), { status: 403 });
       return new Response(JSON.stringify(pendente), { status: 200 });

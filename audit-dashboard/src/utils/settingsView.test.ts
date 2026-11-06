@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SettingView } from '../types';
+import type { ISettingView } from '../types';
 import {
   SETTINGS_SECTIONS,
   currentValue,
@@ -13,7 +13,7 @@ import {
   shownValue,
 } from './settingsView';
 
-function setting(over: Partial<SettingView>): SettingView {
+function setting(over: Partial<ISettingView>): ISettingView {
   return {
     key: 'TRIVY_ENABLED', section: 'ferr', group: 'Trivy', label: 'Ligado', help: 'Dependências e infraestrutura', kind: 'bool', def: 'true',
     options: [], unit: '', min: 0, max: 0, editable: true, secret: false, value: 'true', savedValue: null, source: 'ambiente', pendingRestart: false, ...over,
@@ -45,15 +45,15 @@ describe('settingsView', () => {
   });
 
   it('sem busca filtra pela seção; com busca procura em todas, por nome, variável ou texto de ajuda', () => {
-    expect(filterSettings(lista, 'ferr', '').map((s) => s.key)).toEqual(['TRIVY_ENABLED', 'TRIVY_TIMEOUT_SECONDS', 'GITLEAKS_ENABLED']);
-    expect(filterSettings(lista, 'ferr', 'chave').map((s) => s.key)).toEqual(['API_KEY']);
-    expect(filterSettings(lista, 'ferr', 'api_key').map((s) => s.key)).toEqual(['API_KEY']);
-    expect(filterSettings(lista, 'ferr', 'procura segredos').map((s) => s.key)).toEqual(['GITLEAKS_ENABLED']);
-    expect(filterSettings(lista, 'ferr', '   ')).toHaveLength(3);
+    expect(filterSettings({ settings: lista, section: 'ferr', query: '' }).map((s) => s.key)).toEqual(['TRIVY_ENABLED', 'TRIVY_TIMEOUT_SECONDS', 'GITLEAKS_ENABLED']);
+    expect(filterSettings({ settings: lista, section: 'ferr', query: 'chave' }).map((s) => s.key)).toEqual(['API_KEY']);
+    expect(filterSettings({ settings: lista, section: 'ferr', query: 'api_key' }).map((s) => s.key)).toEqual(['API_KEY']);
+    expect(filterSettings({ settings: lista, section: 'ferr', query: 'procura segredos' }).map((s) => s.key)).toEqual(['GITLEAKS_ENABLED']);
+    expect(filterSettings({ settings: lista, section: 'ferr', query: '   ' })).toHaveLength(3);
   });
 
   it('agrupa mantendo a ordem do catálogo', () => {
-    const g = groupSettings(filterSettings(lista, 'ferr', ''));
+    const g = groupSettings(filterSettings({ settings: lista, section: 'ferr', query: '' }));
     expect(g.map((x) => [x.group, x.items.length])).toEqual([['Trivy', 2], ['Gitleaks', 1]]);
   });
 

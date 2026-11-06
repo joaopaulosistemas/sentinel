@@ -9,7 +9,7 @@ import { McpPanel } from '../../components/McpPanel';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { usePacks } from '../../hooks/useLifecycle';
 import { useSystems } from '../../hooks/useSystems';
-import type { ProfileInfo, SystemSummaryResponse } from '../../types';
+import type { IProfileInfo, ISystemSummaryResponse } from '../../types';
 import {
   emptyForm,
   formFrom,
@@ -17,7 +17,7 @@ import {
   toRequest,
   toSchedule,
   validate,
-  type SystemFormValues,
+  type ISystemFormValues,
 } from './systemForm';
 import { SystemsTable } from './SystemsTable';
 import { SystemFormFields } from './SystemFormFields';
@@ -32,24 +32,29 @@ const TABS: ReadonlyArray<readonly [Tab, string]> = [
 ];
 
 /** O sistema já cadastrado que está sendo editado (nulo ao criar ou com o painel fechado). */
-function savedSystem(editing: SystemSummaryResponse | 'new' | null): SystemSummaryResponse | null {
+function savedSystem(editing: ISystemSummaryResponse | 'new' | null): ISystemSummaryResponse | null {
   return editing !== null && editing !== 'new' ? editing : null;
 }
 
-async function saveSystem(values: SystemFormValues, current: SystemSummaryResponse | null) {
+async function saveSystem(values: ISystemFormValues, current: ISystemSummaryResponse | null) {
   const body = toRequest(values);
   const system = current ? await api.updateSystem(current.id, body) : await api.createSystem(body);
   return scheduleChanged(values, current) ? api.updateSchedule(system.id, toSchedule(values)) : system;
 }
 
-function filterSystems(systems: SystemSummaryResponse[], query: string): SystemSummaryResponse[] {
+function filterSystems(systems: ISystemSummaryResponse[], query: string): ISystemSummaryResponse[] {
   const term = query.trim().toLowerCase();
   return [...systems]
     .filter((s) => term === '' || `${s.name} ${s.team} ${s.repoUrl ?? ''} ${s.localPath ?? ''}`.toLowerCase().includes(term))
     .sort((a, b) => (a.lastAuditScore ?? -1) - (b.lastAuditScore ?? -1));
 }
 
-function dirtyLabels(cadastro: boolean, engine: { motor: boolean; analisadores: boolean }): string[] {
+interface IDirtyLabelsInput {
+  cadastro: boolean;
+  engine: { motor: boolean; analisadores: boolean };
+}
+
+function dirtyLabels({ cadastro, engine }: IDirtyLabelsInput): string[] {
   const labels: string[] = [];
   if (cadastro) labels.push('Cadastro e Git');
   if (engine.motor) labels.push('Motor de regras');
@@ -57,14 +62,14 @@ function dirtyLabels(cadastro: boolean, engine: { motor: boolean; analisadores: 
   return labels;
 }
 
-interface SystemTabsProps {
+interface ISystemTabsProps {
   tab: Tab;
   onSelect: (tab: Tab) => void;
   isNew: boolean;
   dirty: Record<'cadastro' | 'motor' | 'analisadores', boolean>;
 }
 
-function SystemTabs({ tab, onSelect, isNew, dirty }: SystemTabsProps) {
+function SystemTabs({ tab, onSelect, isNew, dirty }: ISystemTabsProps) {
   return (
     <div role="tablist" aria-label="Seções do sistema" style={{ display: 'flex', borderBottom: '1px solid var(--s-border)', padding: '0 12px' }}>
       {TABS.map(([id, nome]) => {
@@ -120,13 +125,15 @@ function ConfirmCloseBar({ tabs, onKeep, onDiscard }: { tabs: string[]; onKeep: 
 }
 
 /** Esc fecha o pop-up; com alteração sem salvar, pergunta antes (e um segundo Esc cancela a pergunta). */
-function useEscapeToClose(
-  open: boolean,
-  dirty: boolean,
-  confirming: boolean,
-  setConfirming: (value: boolean) => void,
-  close: () => void,
-) {
+interface IEscapeToClose {
+  open: boolean;
+  dirty: boolean;
+  confirming: boolean;
+  setConfirming: (value: boolean) => void;
+  close: () => void;
+}
+
+function useEscapeToClose({ open, dirty, confirming, setConfirming, close }: IEscapeToClose) {
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e: KeyboardEvent) => {
@@ -144,16 +151,20 @@ function useEscapeToClose(
 
 const footerButton = { flex: '1 1 120px', height: 56, border: 0, fontSize: 14, cursor: 'pointer', textAlign: 'left', padding: '0 16px' } as const;
 
-function FormFooter({ pending, onCancel, onSave }: { pending: boolean; onCancel: () => void; onSave: (auditNow: boolean) => void }) {
+interface ISaveOptions {
+  auditNow: boolean;
+}
+
+function FormFooter({ pending, onCancel, onSave }: { pending: boolean; onCancel: () => void; onSave: (options: ISaveOptions) => void }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: '1px solid var(--s-border)', position: 'sticky', bottom: 0, background: 'var(--s-surface)', marginTop: 'auto' }}>
       <button type="button" onClick={onCancel} style={{ ...footerButton, background: 'var(--s-surface)', color: 'var(--s-text)', borderRight: '1px solid var(--s-border)' }}>
         Cancelar
       </button>
-      <button type="button" disabled={pending} onClick={() => onSave(false)} style={{ ...footerButton, flex: '1 1 140px', background: '#393939', color: '#fff' }}>
+      <button type="button" disabled={pending} onClick={() => onSave({ auditNow: false })} style={{ ...footerButton, flex: '1 1 140px', background: '#393939', color: '#fff' }}>
         Salvar
       </button>
-      <button type="button" disabled={pending} onClick={() => onSave(true)} style={{ ...footerButton, flex: '1 1 180px', background: 'var(--s-primary)', color: '#fff' }}>
+      <button type="button" disabled={pending} onClick={() => onSave({ auditNow: true })} style={{ ...footerButton, flex: '1 1 180px', background: 'var(--s-primary)', color: '#fff' }}>
         {pending ? 'Salvando…' : 'Salvar e auditar agora'}
       </button>
     </div>
@@ -174,7 +185,13 @@ function EmptyList({ hasSystems }: { hasSystems: boolean }) {
 }
 
 /** Troca um dos avisos de "alteração sem salvar" sem recriar o objeto quando nada mudou. */
-function withFlag<T extends Record<string, boolean>>(flags: T, key: keyof T, value: boolean): T {
+interface IFlagChange<T> {
+  flags: T;
+  key: keyof T;
+  value: boolean;
+}
+
+function withFlag<T extends Record<string, boolean>>({ flags, key, value }: IFlagChange<T>): T {
   return flags[key] === value ? flags : { ...flags, [key]: value };
 }
 
@@ -222,8 +239,8 @@ function SearchBar({ query, onQuery }: { query: string; onQuery: (q: string) => 
   );
 }
 
-interface EditDialogProps {
-  editing: SystemSummaryResponse | 'new';
+interface IEditDialogProps {
+  editing: ISystemSummaryResponse | 'new';
   tab: Tab;
   visited: Tab[];
   cadastroDirty: boolean;
@@ -240,7 +257,7 @@ interface EditDialogProps {
   cadastro: ReactNode;
 }
 
-function DialogHeader({ editing, onClose }: { editing: SystemSummaryResponse | 'new'; onClose: () => void }) {
+function DialogHeader({ editing, onClose }: { editing: ISystemSummaryResponse | 'new'; onClose: () => void }) {
   const isNew = editing === 'new';
   return (
     <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
@@ -256,7 +273,7 @@ function DialogHeader({ editing, onClose }: { editing: SystemSummaryResponse | '
 }
 
 /** As abas do motor ficam montadas (só escondidas) depois da primeira visita; "Claude (MCP)" e "Cadastro" montam só quando ativas. */
-function DialogPanels(p: EditDialogProps & { editing: SystemSummaryResponse }) {
+function DialogPanels(p: IEditDialogProps & { editing: ISystemSummaryResponse }) {
   const { editing, tab, visited } = p;
   return (
     <>
@@ -276,7 +293,7 @@ function DialogPanels(p: EditDialogProps & { editing: SystemSummaryResponse }) {
 }
 
 /** Pop-up de cadastro e edição: abas, aviso de alteração sem salvar e o painel da aba ativa. */
-function EditDialog(p: EditDialogProps) {
+function EditDialog(p: IEditDialogProps) {
   const { editing, tab } = p;
   return (
     <div
@@ -307,14 +324,14 @@ function EditDialog(p: EditDialogProps) {
   );
 }
 
-interface DeleteMutation {
+interface IDeleteMutation {
   isPending: boolean;
   isError: boolean;
   error: unknown;
-  mutate: (target: SystemSummaryResponse) => void;
+  mutate: (target: ISystemSummaryResponse, options?: { onSuccess?: () => void }) => void;
 }
 
-function DeleteSystemModal({ target, remove, onClose }: { target: SystemSummaryResponse | null; remove: DeleteMutation; onClose: () => void }) {
+function DeleteSystemModal({ target, remove, onClose }: { target: ISystemSummaryResponse | null; remove: IDeleteMutation; onClose: () => void }) {
   return (
     <Modal
       open={target !== null}
@@ -329,7 +346,7 @@ function DeleteSystemModal({ target, remove, onClose }: { target: SystemSummaryR
         if (!remove.isPending) onClose();
       }}
       onRequestSubmit={() => {
-        if (target) remove.mutate(target);
+        if (target) remove.mutate(target, { onSuccess: onClose });
       }}
     >
       <p>
@@ -351,36 +368,46 @@ function DeleteSystemModal({ target, remove, onClose }: { target: SystemSummaryR
   );
 }
 
+/** Sem resposta do servidor, a origem "pasta local" fica desligada. */
+async function fetchLocalSourceEnabled(): Promise<boolean> {
+  try {
+    return (await api.getLocalSourceEnabled()).enabled;
+  } catch {
+    return false;
+  }
+}
+
 /** A origem "pasta local" só aparece quando o servidor a habilitou (SENTINEL_LOCAL_ROOT). */
 function useLocalSourceEnabled(): boolean {
   return (
     useQuery({
       queryKey: ['local-source-enabled'],
-      queryFn: () => api.getLocalSourceEnabled().then((r) => r.enabled).catch(() => false),
+      queryFn: fetchLocalSourceEnabled,
       staleTime: 5 * 60_000,
     }).data === true
   );
 }
 
 /** Exclui o sistema e todas as suas auditorias (a API remove tudo junto); só depois da confirmação. */
-function useRemoveSystem(onDone: () => void) {
+function useRemoveSystem() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (target: SystemSummaryResponse) => api.deleteSystem(target.id),
+    mutationFn: (target: ISystemSummaryResponse) => api.deleteSystem(target.id),
     onSuccess: (_data, target) => {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
       void queryClient.invalidateQueries({ queryKey: ['audits'] });
       queryClient.removeQueries({ queryKey: ['systems', target.id] });
-      onDone();
     },
   });
 }
 
 /** Confere o endereço (responde? qual a branch padrão?) e a pasta local, sem clonar. */
-function useSourceChecks(values: SystemFormValues, editing: SystemSummaryResponse | 'new' | null) {
+function useSourceChecks(values: ISystemFormValues, editing: ISystemSummaryResponse | 'new' | null) {
   const check = useMutation({
     mutationFn: () =>
-      api.checkRepo(values.repoUrl.trim(), values.scheduledBranch.trim() || undefined, {
+      api.checkRepo({
+        repoUrl: values.repoUrl.trim(),
+        branch: values.scheduledBranch.trim() || undefined,
         systemId: savedSystem(editing)?.id,
         gitToken: values.gitToken.trim(),
         gitTokenHosts: values.gitTokenHosts.trim(),
@@ -413,22 +440,21 @@ const CLEAN: EngineDirty = { motor: false, analisadores: false };
 /** O que cada aba do motor avisou que mudou sem salvar. */
 function useEngineDirty() {
   const [engineDirty, setEngineDirty] = useState<EngineDirty>(CLEAN);
-  const onMotorDirty = useCallback((d: boolean) => setEngineDirty((p) => withFlag(p, 'motor', d)), []);
-  const onAnalyzersDirty = useCallback((d: boolean) => setEngineDirty((p) => withFlag(p, 'analisadores', d)), []);
+  const onMotorDirty = useCallback((d: boolean) => setEngineDirty((p) => withFlag({ flags: p, key: 'motor', value: d })), []);
+  const onAnalyzersDirty = useCallback((d: boolean) => setEngineDirty((p) => withFlag({ flags: p, key: 'analisadores', value: d })), []);
   return { engineDirty, onMotorDirty, onAnalyzersDirty, resetEngineDirty: () => setEngineDirty(CLEAN) };
 }
 
-/** Grava o cadastro (e o agendamento, se mudou); `onSaved` decide o que fazer depois. */
-function useSaveSystem(values: SystemFormValues, editing: SystemSummaryResponse | 'new' | null, onSaved: (system: SystemSummaryResponse, auditNow: boolean) => void) {
+/** Grava o cadastro (e o agendamento, se mudou); quem chama `mutate` decide o que fazer depois. */
+function useSaveSystem(values: ISystemFormValues, editing: ISystemSummaryResponse | 'new' | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (vars: { auditNow: boolean }) => ({
       system: await saveSystem(values, savedSystem(editing)),
       auditNow: vars.auditNow,
     }),
-    onSuccess: ({ system, auditNow }) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
-      onSaved(system, auditNow);
     },
   });
 }
@@ -437,7 +463,13 @@ function useSaveSystem(values: SystemFormValues, editing: SystemSummaryResponse 
  * "Editar sistema" na tela do sistema chega aqui com ?edit=ID: abre o painel desse sistema.
  * Com &tab=mcp (faixa do Claude na execução da auditoria), já abre na aba Claude (MCP).
  */
-function useOpenFromUrl(systems: SystemSummaryResponse[] | undefined, open: (s: SystemSummaryResponse) => void, setTab: (t: Tab) => void) {
+interface IOpenFromUrl {
+  systems: ISystemSummaryResponse[] | undefined;
+  open: (s: ISystemSummaryResponse) => void;
+  setTab: (t: Tab) => void;
+}
+
+function useOpenFromUrl({ systems, open, setTab }: IOpenFromUrl) {
   const [params, setParams] = useSearchParams();
   const editId = params.get('edit');
   const editTab = params.get('tab');
@@ -455,16 +487,16 @@ function useOpenFromUrl(systems: SystemSummaryResponse[] | undefined, open: (s: 
 
 type FormFieldsProps = ComponentProps<typeof SystemFormFields>;
 
-interface CadastroTabProps extends Pick<FormFieldsProps, 'values' | 'setValues' | 'errors' | 'touched' | 'check' | 'checkPath' | 'localEnabled' | 'save'> {
+interface ICadastroTabProps extends Pick<FormFieldsProps, 'values' | 'setValues' | 'errors' | 'touched' | 'check' | 'checkPath' | 'localEnabled' | 'save'> {
   pending: boolean;
-  profiles: ProfileInfo[];
-  current: SystemSummaryResponse | null;
+  profiles: IProfileInfo[];
+  current: ISystemSummaryResponse | null;
   onCancel: () => void;
-  onSave: (auditNow: boolean) => void;
+  onSave: (options: ISaveOptions) => void;
 }
 
 /** Aba "Cadastro e Git": os campos e o rodapé com salvar. */
-function CadastroTab({ pending, profiles, current, onCancel, onSave, ...fields }: CadastroTabProps) {
+function CadastroTab({ pending, profiles, current, onCancel, onSave, ...fields }: ICadastroTabProps) {
   return (
     <>
       <SystemFormFields
@@ -481,16 +513,16 @@ function CadastroTab({ pending, profiles, current, onCancel, onSave, ...fields }
   );
 }
 
-interface ListSectionProps {
-  systems: SystemSummaryResponse[];
+interface IListSectionProps {
+  systems: ISystemSummaryResponse[];
   selectedId: number | null;
-  onAudit: (s: SystemSummaryResponse) => void;
-  onEdit: (s: SystemSummaryResponse) => void;
-  onDelete: (s: SystemSummaryResponse) => void;
+  onAudit: (s: ISystemSummaryResponse) => void;
+  onEdit: (s: ISystemSummaryResponse) => void;
+  onDelete: (s: ISystemSummaryResponse) => void;
 }
 
 /** Busca e a tabela de sistemas (ou o aviso de lista vazia). */
-function SystemsListSection({ systems, selectedId, onAudit, onEdit, onDelete }: ListSectionProps) {
+function SystemsListSection({ systems, selectedId, onAudit, onEdit, onDelete }: IListSectionProps) {
   const [query, setQuery] = useState('');
   const list = filterSystems(systems, query);
   return (
@@ -506,7 +538,13 @@ function SystemsListSection({ systems, selectedId, onAudit, onEdit, onDelete }: 
 }
 
 /** Marca o formulário como tocado (para mostrar os erros) e só envia se estiver válido. */
-function submitForm(errors: object, setTouched: (v: boolean) => void, send: () => void) {
+interface ISubmitForm {
+  errors: object;
+  setTouched: (v: boolean) => void;
+  send: () => void;
+}
+
+function submitForm({ errors, setTouched, send }: ISubmitForm) {
   setTouched(true);
   if (Object.keys(errors).length === 0) send();
 }
@@ -521,13 +559,13 @@ function useCloseGuard(g: {
   close: () => void;
 }) {
   const { modalOpen, cadastroDirty, engineDirty, confirmClose, setConfirmClose, close } = g;
-  const dirtyTabs = dirtyLabels(cadastroDirty, engineDirty);
+  const dirtyTabs = dirtyLabels({ cadastro: cadastroDirty, engine: engineDirty });
   const anyDirty = modalOpen && dirtyTabs.length > 0;
   const requestClose = () => {
     if (anyDirty) setConfirmClose(true);
     else close();
   };
-  useEscapeToClose(modalOpen, anyDirty, confirmClose, setConfirmClose, close);
+  useEscapeToClose({ open: modalOpen, dirty: anyDirty, confirming: confirmClose, setConfirming: setConfirmClose, close });
   return { cadastroDirty, dirtyTabs, requestClose };
 }
 
@@ -536,11 +574,11 @@ export function SystemsPage() {
   const { data: systems, isLoading, error } = useSystems();
   const { data: packs } = usePacks();
 
-  const [editing, setEditing] = useState<SystemSummaryResponse | 'new' | null>(null);
-  const [values, setValues] = useState<SystemFormValues>(emptyForm);
+  const [editing, setEditing] = useState<ISystemSummaryResponse | 'new' | null>(null);
+  const [values, setValues] = useState<ISystemFormValues>(emptyForm);
   const [touched, setTouched] = useState(false);
-  const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<SystemSummaryResponse | null>(null);
+  const [auditTarget, setAuditTarget] = useState<ISystemSummaryResponse | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ISystemSummaryResponse | null>(null);
   const [snapshot, setSnapshot] = useState('');
   const [confirmClose, setConfirmClose] = useState(false);
   const { tab, visited, setTab, resetTabs } = useEditorTabs();
@@ -549,13 +587,10 @@ export function SystemsPage() {
   const errors = validate(values);
   const { check, checkPath } = useSourceChecks(values, editing);
   const localEnabled = useLocalSourceEnabled();
-  const remove = useRemoveSystem(() => setDeleteTarget(null));
-  const save = useSaveSystem(values, editing, (system, auditNow) => {
-    setEditing(null);
-    if (auditNow) setAuditTarget(system);
-  });
+  const remove = useRemoveSystem();
+  const save = useSaveSystem(values, editing);
 
-  const open = (target: SystemSummaryResponse | 'new') => {
+  const open = (target: ISystemSummaryResponse | 'new') => {
     const initial = target === 'new' ? emptyForm : formFrom(target);
     setEditing(target);
     resetTabs();
@@ -568,7 +603,7 @@ export function SystemsPage() {
     check.reset();
     checkPath.reset();
   };
-  useOpenFromUrl(systems, open, setTab);
+  useOpenFromUrl({ systems, open, setTab });
 
   const guard = useCloseGuard({
     modalOpen: editing !== null,
@@ -583,7 +618,12 @@ export function SystemsPage() {
   if (error) return <LoadError error={error} />;
 
   const current = savedSystem(editing);
-  const onSave = (auditNow: boolean) => submitForm(errors, setTouched, () => save.mutate({ auditNow }));
+  const onSaved = (system: ISystemSummaryResponse, { auditNow }: ISaveOptions) => {
+    setEditing(null);
+    if (auditNow) setAuditTarget(system);
+  };
+  const onSave = ({ auditNow }: ISaveOptions) =>
+    submitForm({ errors, setTouched, send: () => save.mutate({ auditNow }, { onSuccess: ({ system }) => onSaved(system, { auditNow }) }) });
   const list = systems ?? [];
 
   return (

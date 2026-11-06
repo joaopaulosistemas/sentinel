@@ -8,6 +8,7 @@ import {
   DEFAULT_SITUATION,
   severityChoices,
   situationChoices,
+  type IShowLowChange,
   type SeverityChoice,
   type SituationChoice,
 } from '../../utils/findingsView';
@@ -40,7 +41,7 @@ export function useFindingFilters(searchParams: URLSearchParams) {
     setSeverity: (value: SeverityChoice) => { setSeverity(value); reset(); },
     setCategory: (value: Category | undefined) => { setCategory(value); reset(); },
     setSituation: (value: SituationChoice) => { setSituation(value); reset(); },
-    setShowLow: (value: boolean) => { setShowLow(value); reset(); },
+    setShowLow: ({ visible }: IShowLowChange) => { setShowLow(visible); reset(); },
     setPageSize: (value: number) => { setPageSize(value); setPage(1); },
     restoreDefaults: () => {
       setSeverity(DEFAULT_SEVERITY);
@@ -59,8 +60,14 @@ export function isDefaultFilters(f: FindingFilters): boolean {
   return f.severity === DEFAULT_SEVERITY && f.situation === DEFAULT_SITUATION && f.category === undefined && f.systemId === undefined;
 }
 
+interface IFindingsDataInput {
+  auditMode: boolean;
+  auditId: number;
+  filters: FindingFilters;
+}
+
 /** Consultas da tela e tudo o que se deriva delas (linhas da página, totais, origem de cada achado). */
-export function useFindingsData(auditMode: boolean, auditId: number, f: FindingFilters) {
+export function useFindingsData({ auditMode, auditId, filters: f }: IFindingsDataInput) {
   const sev = severityChoices.find((c) => c.id === f.severity)?.severities ?? [];
   const sit = situationChoices.find((c) => c.id === f.situation) ?? situationChoices[0];
   const single = useFindings(auditId, {
@@ -108,12 +115,19 @@ export function useFindingsData(auditMode: boolean, auditId: number, f: FindingF
 
 export type FindingsData = ReturnType<typeof useFindingsData>;
 
+interface IClaudeNotesInput {
+  auditMode: boolean;
+  auditSystemId: number | undefined;
+  systemId: number | undefined;
+  data: FindingsData;
+}
+
 /** Sugestões abertas do Claude (mesma consulta da aba Revisão), para marcar na lista os achados de que elas falam. */
-export function useClaudeNotes(auditMode: boolean, auditSystemId: number | undefined, systemId: number | undefined, data: FindingsData) {
-  const ids = reviewSystemIds(auditMode, auditSystemId, systemId, data.items);
+export function useClaudeNotes({ auditMode, auditSystemId, systemId, data }: IClaudeNotesInput) {
+  const ids = reviewSystemIds({ auditMode, auditSystemId, systemId, items: data.items });
   const reviews = useQueries({
     queries: ids.map((id) => ({ queryKey: ['claude-review', id], queryFn: () => api.getClaudeReview(id), staleTime: 30_000 })),
   });
   const suggestionsBySystem = new Map(ids.map((id, i) => [id, reviews[i]?.data?.suggestions ?? []]));
-  return claudeNoteFinder(auditMode, auditSystemId, systemId, data.itemByFinding, suggestionsBySystem);
+  return claudeNoteFinder({ auditMode, auditSystemId, systemId, itemByFinding: data.itemByFinding, suggestionsBySystem });
 }

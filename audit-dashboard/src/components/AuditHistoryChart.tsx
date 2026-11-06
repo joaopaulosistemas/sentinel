@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useAuditRuns } from '../hooks/useAuditRuns';
-import { buildHistory, historySummary, type HistoryPoint } from '../utils/auditHistory';
+import { buildHistory, historySummary, type IHistoryPoint } from '../utils/auditHistory';
 import { TARGET_SCORE, WARN_SCORE, type ScoreBand } from '../utils/scoreBand';
 
 const box = { background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderRadius: 8, padding: '1.25rem 1.5rem' } as const;
@@ -11,8 +11,8 @@ const TICKS = [0, 25, 50, 75, 100];
 const BAND_TEXT: Record<ScoreBand, string> = { good: 'Boa', warn: 'Atenção', bad: 'Ruim', none: 'Sem nota' };
 const KIND_TEXT = { failed: 'Falhou', cancelled: 'Cancelada', active: 'Em andamento' } as const;
 
-interface Tip {
-  point: HistoryPoint;
+interface ITip {
+  point: IHistoryPoint;
   /** Centro da coluna e topo/base dela na janela, para posicionar a dica (que fica no body, fora do cartão). */
   x: number;
   top: number;
@@ -23,7 +23,7 @@ const pointsText = (n: number) => `${Math.abs(n)} ${Math.abs(n) === 1 ? 'ponto' 
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
 /** Frase lida por leitores de tela: o destino, a nota e a distância da meta. */
-function columnLabel(p: HistoryPoint, currentId: number): string {
+function columnLabel(p: IHistoryPoint, currentId: number): string {
   const here = p.id === currentId ? ' Esta é a auditoria aberta.' : '';
   if (p.score === null) return `Abrir a auditoria ${p.id}, ${p.dayLabel}. ${p.kind === 'scored' ? 'Sem nota' : KIND_TEXT[p.kind]}.${here}`;
   const gap = p.score - TARGET_SCORE;
@@ -31,7 +31,7 @@ function columnLabel(p: HistoryPoint, currentId: number): string {
   return `Abrir a auditoria ${p.id}, ${p.dayLabel}. Nota ${p.score}, ${BAND_TEXT[p.band]}, ${where}.${here}`;
 }
 
-function ColumnBody({ point }: { point: HistoryPoint }) {
+function ColumnBody({ point }: { point: IHistoryPoint }) {
   if (point.score !== null) {
     return (
       <span className={`sentinel-grafico__barra sentinel-grafico__barra--${point.band}`} style={{ height: `${Math.max(0, Math.min(100, point.score))}%` }}>
@@ -48,7 +48,7 @@ function ColumnBody({ point }: { point: HistoryPoint }) {
 }
 
 /** Texto da dica quando a auditoria não tem nota: explica por quê. */
-function noScoreText(point: HistoryPoint): string {
+function noScoreText(point: IHistoryPoint): string {
   if (point.kind === 'scored') return 'A auditoria não trouxe nota.';
   if (point.kind === 'active') return 'Em andamento: a nota aparece quando terminar.';
   return `${KIND_TEXT[point.kind]}: não gerou nota.`;
@@ -64,7 +64,7 @@ function deltaClass(delta: number | null): string | undefined {
   return delta > 0 ? 'sentinel-grafico__sobe' : 'sentinel-grafico__desce';
 }
 
-function TipBody({ tip, currentId }: { tip: Tip; currentId: number }) {
+function TipBody({ tip, currentId }: { tip: ITip; currentId: number }) {
   const { point } = tip;
   const gap = point.score === null ? null : point.score - TARGET_SCORE;
   return (
@@ -87,17 +87,17 @@ function TipBody({ tip, currentId }: { tip: Tip; currentId: number }) {
   );
 }
 
-interface ChartBodyProps {
-  points: HistoryPoint[];
+interface IChartBodyProps {
+  points: IHistoryPoint[];
   systemName: string;
   currentId: number;
-  show: (point: HistoryPoint, el: HTMLElement) => void;
+  show: (point: IHistoryPoint, el: HTMLElement) => void;
   hide: () => void;
   goTop: () => void;
 }
 
 /** Colunas, eixos, rótulos e legenda do gráfico (só existe com 2 ou mais auditorias). */
-function ChartBody({ points, systemName, currentId, show, hide, goTop }: ChartBodyProps) {
+function ChartBody({ points, systemName, currentId, show, hide, goTop }: IChartBodyProps) {
   return (
     <>
       <p style={{ margin: '0 0 16px', color: 'var(--s-text-3)', fontSize: 14 }}>Clique numa coluna para abrir aquela auditoria.</p>
@@ -162,15 +162,18 @@ function ChartBody({ points, systemName, currentId, show, hide, goTop }: ChartBo
  * Nota das últimas auditorias do sistema, da mais antiga para a mais recente, contra a meta e o limite de atenção.
  * Clicar numa coluna (ou no valor) abre o resultado daquela auditoria.
  */
+/** Espaço mínimo (px) acima do ponto para a dica abrir para cima; abaixo disso ela abre para baixo. */
+const TIP_MIN_SPACE_ABOVE = 220;
+
 export function AuditHistoryChart({ systemId, systemName, currentId }: { systemId: number; systemName: string; currentId: number }) {
   const { data, isLoading } = useAuditRuns(systemId);
   const points = useMemo(() => buildHistory(data ?? []), [data]);
-  const [tip, setTip] = useState<Tip | null>(null);
+  const [tip, setTip] = useState<ITip | null>(null);
   const { onTarget, scored } = historySummary(points);
 
-  const show = (point: HistoryPoint, el: HTMLElement) => {
-    const r = el.getBoundingClientRect();
-    setTip({ point, x: r.left + r.width / 2, top: r.top, bottom: r.bottom });
+  const show = (point: IHistoryPoint, el: HTMLElement) => {
+    const rect = el.getBoundingClientRect();
+    setTip({ point, x: rect.left + rect.width / 2, top: rect.top, bottom: rect.bottom });
   };
   const hide = () => setTip(null);
   const goTop = () => { hide(); window.scrollTo({ top: 0 }); };
@@ -192,7 +195,7 @@ export function AuditHistoryChart({ systemId, systemName, currentId }: { systemI
         <div
           role="status"
           className="sentinel-grafico__dica"
-          style={{ left: Math.max(8, Math.min(tip.x - 110, window.innerWidth - 228)), top: tip.top > 220 ? tip.top - 12 : tip.bottom + 12, transform: tip.top > 220 ? 'translateY(-100%)' : undefined }}
+          style={{ left: Math.max(8, Math.min(tip.x - 110, window.innerWidth - 228)), top: tip.top > TIP_MIN_SPACE_ABOVE ? tip.top - 12 : tip.bottom + 12, transform: tip.top > TIP_MIN_SPACE_ABOVE ? 'translateY(-100%)' : undefined }}
         >
           <TipBody tip={tip} currentId={currentId} />
         </div>,

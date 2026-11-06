@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import type { SystemSummaryResponse } from '../../types';
+import type { ISystemSummaryResponse } from '../../types';
 import { formatTrend } from '../../utils/ranking';
 import { sortSystems } from './RankingPage';
 
-const sys = (id: number, name: string, score: number | null, critical: number): SystemSummaryResponse => ({
+interface ISysInput {
+  id: number;
+  name: string;
+  score: number | null;
+  critical: number;
+}
+
+const sys = ({ id, name, score, critical }: ISysInput): ISystemSummaryResponse => ({
   id, name, stack: 'JAVA', team: 'T', lastAuditScore: score, lastAuditDate: null, openCritical: critical, openHigh: 0,
 });
 
-const list = [sys(1, 'a', 80, 0), sys(2, 'b', 40, 2), sys(3, 'c', null, 0), sys(4, 'd', 60, 5)];
+const list = [sys({ id: 1, name: 'a', score: 80, critical: 0 }), sys({ id: 2, name: 'b', score: 40, critical: 2 }), sys({ id: 3, name: 'c', score: null, critical: 0 }), sys({ id: 4, name: 'd', score: 60, critical: 5 })];
 
 describe('ordenação do ranking', () => {
   it('por nota põe a melhor primeiro e o nunca auditado por último', () => {
@@ -23,10 +30,10 @@ describe('ordenação do ranking', () => {
 
   it('por tendência põe os maiores ganhos primeiro e quem não tem histórico por último', () => {
     const withDelta = [
-      { ...sys(1, 'a', 80, 0), scoreDelta: 3 },
-      { ...sys(2, 'b', 40, 2), scoreDelta: -4 },
-      sys(3, 'c', null, 0),
-      { ...sys(4, 'd', 60, 5), scoreDelta: 0 },
+      { ...sys({ id: 1, name: 'a', score: 80, critical: 0 }), scoreDelta: 3 },
+      { ...sys({ id: 2, name: 'b', score: 40, critical: 2 }), scoreDelta: -4 },
+      sys({ id: 3, name: 'c', score: null, critical: 0 }),
+      { ...sys({ id: 4, name: 'd', score: 60, critical: 5 }), scoreDelta: 0 },
     ];
     expect(sortSystems(withDelta, 'tendencia').map((s) => s.name)).toEqual(['a', 'd', 'b', 'c']);
   });
