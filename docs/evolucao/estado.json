@@ -10,7 +10,7 @@
   "limiteVoltasPorBranch": 6,
   "ultimoPrMesclado": "#142",
   "gabaritosValidacao": [],
-  "conjuntosSha256": "5f10e4b67502a72ce1d8c6952271571a3a851e80d7e643a6f7f164428e9e2bc3",
+  "conjuntosSha256": "56066f19643fef9017e0b546ba6be1d0b252656509396f54d6707f9190ae63e9",
   "pendencias": [
     "Gabarito de validação por fonte pública (dvja, NodeGoat, dvna, nodejs-goof): nenhum existe ainda",
     "Volta dedicada a avaliar o Joern para JS/TS (decisão pendente desde a 12.65.0)",
