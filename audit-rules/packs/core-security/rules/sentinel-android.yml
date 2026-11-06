@@ -250,7 +250,7 @@ rules:
       O código compara o que o usuário digitou com uma chave ou senha escrita no código (CWE-798). Quem abre o APK ou o
       JAR (decompilador, strings) lê o valor e passa pela verificação. Valide no servidor ou compare o hash de um
       segredo guardado fora do código (Keystore, variável de ambiente).
-    severity: WARNING
+    severity: ERROR
     languages: [java]
     metadata:
       category: security

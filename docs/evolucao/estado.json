@@ -20,6 +20,7 @@
     "Android sem regra para: sendBroadcast implícito com dados sensíveis (CWE-927), PendingIntent/redirect de Intent, log de objeto com credencial ou cartão (CWE-532, LogActivity do DIVA), readObject com efeito colateral, IntentService com caminho vindo de extra, credencial gravada em armazenamento externo (CWE-922, InsecureDataStorage4 do DIVA), arquivo em dataDir com setReadable(true)",
     "Volta 16 sem linha de Generalização completa (sem gabarito de validação por fonte pública, sem Benchmark local, sem amostra de 20 achados)",
     "Java em scriptlet de JSP (SQL em adminlogin.jsp, ProcessBuilder em ping.jsp, ObjectInputStream em preferences.jsp) não é analisado pelo Opengrep; upload sem validação (AvatarUpload) e JWT sem verificação de assinatura sem regra",
-    "Pedido do João (06/11): depois do merge da branch, revisão profunda dos YAML de regras em busca de conflitos entre regras, com relatório e propostas"
+    "Ligar scripts/verificar-regras.py ao CI (exige mexer em .github/, decisão do João)",
+    "Fontes de taint Java copiadas em ~10 regras (item G do relatório de conflitos) e peso do estilo (tsp-*, cct-*) na nota (item I, decisão de produto)"
   ]
 }

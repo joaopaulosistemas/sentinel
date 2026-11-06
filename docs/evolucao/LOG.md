@@ -967,3 +967,14 @@ Problema: auditoria TREE de pasta em volume lento falhou com "A cópia da pasta 
 
 Verificado: `LocalSource` compilado com javac e rodado em 3000 arquivos em 20 pastas (todos copiados, link para /etc não copiado, contagem 3001/3001).
 Não verificado: ganho real em volume lento (aqui o disco é rápido); JUnit novo (`copiaDaPastaComoEstaCopiaTodosOsArquivosDeUmaArvoreGrande`) fica para o CI.
+
+## Dashboard 12.73.0 — Conflitos entre regras (revisão pedida pelo João, opção 1 para o limite de parâmetros)
+
+- **Origem:** revisão dos 285 YAML de regras e rodada de todos os pacotes sobre JavaVulnerableLab, java-sec-code, vulnerable-node e juice-shop (achados de regras diferentes na mesma linha).
+- **Limite de parâmetros:** `sentinel-cct-parametros-demais` passa de "mais de 2" para "mais de 5" (igual ao CleanCode e ao guia CLAUDE.md); testes e `clean-code-labs42.md` alinhados. Fecha a decisão aberta desde a 12.64.0.
+- **Duplicata na mesma linha:** `dedup.yml` ganha o campo `order` (regras da MESMA ferramenta, da mais específica para a genérica); `FindingDeduplicator` mantém o achado da primeira, com a maior severidade e a nota da outra, sem mudar o `ruleId`. Oito tópicos em `core-security/dedup.yml`: command injection Java (4 regras), command injection/eval/SQL do Node, log injection, log de dado sensível, chave fixa e XSS Angular por URL.
+- **Consistência:** CWE nas 4 regras de segurança que não tinham; `compose-segredo-em-env` e `android-segredo-literal-comparado` em ERROR (como as irmãs de Docker e Java); `cert-throw-generico` em WARNING como a regra corporativa; `ts-console-log` não repete o achado quando o primeiro argumento nomeia segredo (fica `log-segredo-js`); limite da exceção `path` do XSS-JSP escrito na mensagem.
+- **Critério:** `docs/referencia/severidade-das-regras.md` e `scripts/verificar-regras.py` (ids únicos, CWE em segurança, ids do `order` existentes).
+- **Não feito:** ligar o script ao CI (`.github/`, decisão do João); unificar as fontes de taint copiadas em ~10 regras; peso do estilo na nota (decisão de produto); `sql-injection` × `sql-select-estrela` ficam separados de propósito (segurança × estilo).
+
+Verificado: `opengrep --test` ts-clean-code-labs42 21/21, core-quality 41/41, core-security 87/87, core-iac 11/11; `verificar-regras.py` (285 regras, 0 problemas); lógica de `mergeSameTool` com javac contra classes de apoio (3 cenários: mesmo ponto, 3 regras, outra linha/arquivo/tópico). NÃO verificado: JUnit/Maven (só no CI; `FindingDeduplicatorTest` com 3 testes novos e leitura real do `dedup.yml` por `PackLoader`); paridade Opengrep × Semgrep; efeito na nota de dvja e NodeGoat (a dedup reduz contagens; conferir nos números do CI).
