@@ -288,13 +288,36 @@ final class ExternalTools {
         return end < 0 ? h.substring(start) : h.substring(start, end);
     }
 
-    /** Lê o começo de um JS/CSS e aplica {@link #hasThirdPartyBanner(String)}; erro de leitura vale "não". */
+    /** Linha de código tão longa só sai de minificador; código escrito à mão não passa de algumas centenas de caracteres. */
+    static final int MINIFIED_LINE_CHARS = 1000;
+    private static final int MINIFIED_SAMPLE_BYTES = 8000;
+
+    /** O começo do texto tem uma linha de {@link #MINIFIED_LINE_CHARS} caracteres ou mais (arquivo minificado, mesmo sem {@code .min} no nome). */
+    static boolean looksMinified(String head) {
+        if (head == null) {
+            return false;
+        }
+        int run = 0;
+        for (int i = 0; i < head.length(); i++) {
+            run = head.charAt(i) == '\n' ? 0 : run + 1;
+            if (run >= MINIFIED_LINE_CHARS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Lê o começo de um JS/CSS e diz se é de terceiros: cabeçalho de biblioteca ({@link #hasThirdPartyBanner(String)}) ou
+     * código minificado ({@link #looksMinified}), que não é escrito à mão. Erro de leitura vale "não".
+     */
     static boolean hasThirdPartyBanner(Path file) {
         if (file == null || !BUNDLE_EXT.matcher(file.getFileName().toString()).find()) {
             return false;
         }
         try (java.io.InputStream in = java.nio.file.Files.newInputStream(file)) {
-            return hasThirdPartyBanner(new String(in.readNBytes(BANNER_CHARS + 40), java.nio.charset.StandardCharsets.UTF_8));
+            String head = new String(in.readNBytes(MINIFIED_SAMPLE_BYTES), java.nio.charset.StandardCharsets.UTF_8);
+            return hasThirdPartyBanner(head.substring(0, Math.min(head.length(), BANNER_CHARS + 40))) || looksMinified(head);
         } catch (java.io.IOException | RuntimeException e) {
             return false;
         }

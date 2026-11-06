@@ -193,4 +193,14 @@ class ExternalToolsVendoredTest {
         assertTrue(v.contains("static/js/q.min.js"));        // pasta mista: segue por arquivo
         assertFalse(v.contains("static/js"));
     }
+
+    @Test
+    void arquivoMinificadoSemMinNoNomeETerceirosMasCodigoNormalNao(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Files.writeString(dir.resolve("lib.js"), "/*\n * ! lib\n */\nsap.ui.define([],function(){" + "var a=1;".repeat(300) + "});");
+        java.nio.file.Files.writeString(dir.resolve("pedidos.js"), "function f(){\n  return 1;\n}\n".repeat(200));
+        assertTrue(ExternalTools.hasThirdPartyBanner(dir.resolve("lib.js")));
+        assertFalse(ExternalTools.hasThirdPartyBanner(dir.resolve("pedidos.js")));
+        assertFalse(ExternalTools.looksMinified("function f(){\n  return 1;\n}\n"));
+        assertFalse(ExternalTools.looksMinified(null));
+    }
 }
