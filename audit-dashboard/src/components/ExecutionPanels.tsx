@@ -79,7 +79,7 @@ export function AnalyzerCard({ a }: { a: AnalyzerProgress }) {
         <span style={{ fontWeight: 500, fontSize: 13, minWidth: 0 }}>{a.name}</span>
         <span style={{ flex: 'none', display: 'inline-flex', alignItems: 'center' }}>{s.icon}</span>
       </div>
-      <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{a.note ?? a.description ?? ' '}</div>
+      <div style={{ fontSize: 12, color: 'var(--s-text-3)', whiteSpace: 'pre-line' }}>{a.note ?? a.description ?? ' '}</div>
       <div style={{ height: 4, background: 'var(--s-border)' }} aria-hidden="true">
         <div className={s.pulse ? 'sentinel-pulse' : undefined} style={{ height: 4, background: s.bar, width: `${s.width}%` }} />
       </div>
