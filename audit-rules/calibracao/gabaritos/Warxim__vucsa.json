@@ -1,5 +1,5 @@
 {
- "_comentario": "Falhas de Warxim/vucsa lidas no código (treino), volta 19. Entrada com regra "lacuna-sem-regra" é lacuna assumida (falha lógica de controle de acesso/enumeração sem padrão sintático; nunca casa, para o recall não contar acerto por achado de qualidade na mesma linha). Gabarito escrito pelo mesmo agente que corrige: recall mede só o que li.",
+ "_comentario": "Falhas de Warxim/vucsa lidas no código (treino), volta 19. Entrada com a regra lacuna-sem-regra é lacuna assumida (falha lógica de controle de acesso/enumeração sem padrão sintático; nunca casa, para o recall não contar acerto por achado de qualidade na mesma linha). Gabarito escrito pelo mesmo agente que corrige: recall mede só o que li.",
  "repo": "Warxim/vucsa",
  "falhas": [
   {"arquivo": "vucsa-server/src/main/java/com/warxim/vucsa/server/challenge/commandexecution/CommandExecutionHandler.java", "linha": 66, "cwe": "CWE-78", "regras": ["sentinel-command-injection-shell"]},
