@@ -3,8 +3,11 @@ package com.sentinel.audit.pack;
 import com.sentinel.audit.model.Finding;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Junta o mesmo problema reportado por ferramentas diferentes (ex.: a regra Semgrep do Sentinel e o Trivy
@@ -38,7 +41,12 @@ public final class FindingDeduplicator {
 
     public static List<Finding> apply(List<Finding> findings, List<DedupTopic> rules) {
         List<Finding> removed = new ArrayList<>();
+        Set<Finding> removedSameTool = Collections.newSetFromMap(new IdentityHashMap<>());
         for (DedupTopic topic : rules) {
+            if (!topic.order().isEmpty()) {
+                mergeSameTool(findings, topic, removedSameTool);
+                continue;
+            }
             List<Finding> inTopic = findings.stream().filter(f -> topicOf(f, rules) == topic).toList();
             for (Finding candidate : inTopic) {
                 if (removed.contains(candidate) || isPreferred(candidate, topic)) {
@@ -56,11 +64,50 @@ public final class FindingDeduplicator {
         }
         List<Finding> result = new ArrayList<>(findings.size());
         for (Finding f : findings) {
-            if (!removed.contains(f)) {
+            if (!removed.contains(f) && !removedSameTool.contains(f)) {
                 result.add(f);
             }
         }
         return result;
+    }
+
+    /**
+     * Duas regras da mesma ferramenta no mesmo ponto (ex.: command-injection e command-injection-requisicao): fica
+     * o achado da regra que vem primeiro em {@code order}, com a maior severidade das duas e a nota da outra.
+     */
+    private static void mergeSameTool(List<Finding> findings, DedupTopic topic, Set<Finding> removed) {
+        for (Finding candidate : findings) {
+            int rc = rank(candidate, topic);
+            if (rc < 0 || removed.contains(candidate)) {
+                continue;
+            }
+            Finding anchor = null;
+            for (Finding a : findings) {
+                int ra = rank(a, topic);
+                if (a != candidate && ra >= 0 && ra < rc && !removed.contains(a)
+                        && com.sentinel.audit.analyzer.SastEngine.sameTool(a.getToolSource(), candidate.getToolSource())
+                        && sameFile(a, candidate) && near(a, candidate, topic.maxLines())
+                        && (anchor == null || ra < rank(anchor, topic))) {
+                    anchor = a;
+                }
+            }
+            if (anchor != null) {
+                merge(anchor, candidate);
+                removed.add(candidate);
+            }
+        }
+    }
+
+    /** Posição da regra do achado em {@code order} (-1 se não consta); compara o id inteiro ou o sufixo após o último ponto. */
+    private static int rank(Finding f, DedupTopic topic) {
+        String rule = f.getRuleId() == null ? "" : f.getRuleId().toLowerCase(Locale.ROOT);
+        for (int i = 0; i < topic.order().size(); i++) {
+            String id = topic.order().get(i);
+            if (rule.equals(id) || rule.endsWith("." + id)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static DedupTopic topicOf(Finding f, List<DedupTopic> rules) {
