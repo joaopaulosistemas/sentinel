@@ -14,5 +14,17 @@
     <p><%= levelName + request.getParameter("x") %></p>
     <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
     <p><%= rs.getString("nome") %></p>
+    <!-- ok: sentinel-xss-jsp-unescaped-output -->
+    <a href="<%=path%>/login.jsp">Entrar</a>
+    <!-- ok: sentinel-xss-jsp-unescaped-output -->
+    <a href="<%= request.getContextPath() %>/login.jsp">Entrar</a>
+    <!-- ok: sentinel-xss-jsp-unescaped-output -->
+    <p><%= esc(titulo) %></p>
+    <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
+    <p><%= pathInfo + request.getParameter("x") %></p>
+    <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
+    <p><%= session.getAttribute("user") %></p>
+    <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
+    <p><%= esc(titulo) + request.getParameter("x") %></p>
   </body>
 </html>
