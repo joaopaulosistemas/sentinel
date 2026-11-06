@@ -1,0 +1,148 @@
+{
+ "_comentario": "Falhas de CSPF-Founder/JavaVulnerableLab lidas no código (treino), volta 17: os 19 arquivos Java e os JSP mais evidentes (grep de createStatement, ProcessBuilder, ObjectInputStream). Entrada com regras [] é lacuna assumida. Gabarito escrito pelo mesmo agente que corrige: recall mede só o que li; os 63 JSP não foram lidos por inteiro (lacuna: Java em scriptlet JSP não é analisado pelo Opengrep).",
+ "repo": "CSPF-Founder/JavaVulnerableLab",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/LoginValidator.java",
+   "linha": 52,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/EmailCheck.java",
+   "linha": 48,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/UsernameCheck.java",
+   "linha": 48,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/Register.java",
+   "linha": 58,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/Install.java",
+   "linha": 127,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/webapp/admin/adminlogin.jsp",
+   "linha": 19,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/XPathQuery.java",
+   "linha": 53,
+   "cwe": "CWE-643",
+   "regras": [
+    "sentinel-xpath-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/xxe.java",
+   "linha": 45,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/Open.java",
+   "linha": 39,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-open-redirect"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/ForwardMe.java",
+   "linha": 41,
+   "cwe": "CWE-552",
+   "regras": [
+    "sentinel-forward-nao-validado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/AddPage.java",
+   "linha": 45,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-servlet-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/AvatarUpload.java",
+   "linha": 44,
+   "cwe": "CWE-434",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/model/JwtUtil.java",
+   "linha": 24,
+   "cwe": "CWE-321",
+   "regras": [
+    "sentinel-crypto-chave-fixa-no-codigo"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/model/JwtUtil.java",
+   "linha": 44,
+   "cwe": "CWE-347",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/model/HashMe.java",
+   "linha": 16,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-crypto-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/cysecurity/cspf/jvl/controller/LoginValidator.java",
+   "linha": 67,
+   "cwe": "CWE-312",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/webapp/vulnerability/Injection/ping.jsp",
+   "linha": 18,
+   "cwe": "CWE-78",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/webapp/vulnerability/deserialize/preferences.jsp",
+   "linha": 66,
+   "cwe": "CWE-502",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/webapp/backup/config.properties.bak",
+   "linha": 15,
+   "cwe": "CWE-798",
+   "regras": [
+    "gitleaks-stripe-access-token"
+   ]
+  }
+ ]
+}

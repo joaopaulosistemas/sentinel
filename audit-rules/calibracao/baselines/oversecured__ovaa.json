@@ -1,0 +1,42 @@
+{
+ "repo": "oversecured/ovaa",
+ "nota": 56.55,
+ "total": 52,
+ "porSeveridade": {
+  "HIGH": 16,
+  "MEDIUM": 20,
+  "LOW": 16
+ },
+ "porRegra": {
+  "Opengrep/sentinel-android-classloader-armazenamento-externo": 1,
+  "Opengrep/sentinel-android-provider-openfile-caminho": 1,
+  "Opengrep/sentinel-android-webview-url-do-intent": 1,
+  "Opengrep/sentinel-crypto-chave-fixa-no-codigo": 2,
+  "Opengrep/sentinel-crypto-cifra-fraca": 1,
+  "PMD/pmd-AvoidBranchingStatementAsLastInLoop": 1,
+  "PMD/pmd-AvoidThrowingRawExceptionTypes": 3,
+  "PMD/pmd-ClassWithOnlyPrivateConstructorsShouldBeFinal": 5,
+  "Higiene do projeto/sentinel-proj-no-tests": 1,
+  "Opengrep/sentinel-int-http-sem-tls": 2,
+  "Opengrep/sentinel-android-manifest-allow-backup": 1,
+  "Opengrep/sentinel-android-manifest-exported": 5,
+  "Checkov/checkov-CKV2_GHA_1": 1,
+  "PMD/pmd-AssignmentInOperand": 1,
+  "PMD/pmd-CloseResource": 4,
+  "PMD/pmd-DoNotHardCodeSDCard": 1,
+  "PMD/pmd-EmptyCatchBlock": 1,
+  "PMD/pmd-FinalizeDoesNotCallSuperFinalize": 1,
+  "PMD/pmd-HardCodedCryptoKey": 1,
+  "Ciclos de dependência/sentinel-arq-ciclo-pacotes": 1,
+  "CleanCode/sentinel-cc-complexidade": 1,
+  "Opengrep/sentinel-java-singleton-manual": 1,
+  "Opengrep/sentinel-android-webview-javascript": 1,
+  "Checkstyle/avoid": 1,
+  "Checkstyle/method": 1,
+  "Checkstyle/class": 6,
+  "Checkstyle/field": 1,
+  "Checkstyle/notPrivate": 3,
+  "PMD/pmd-AvoidDeeplyNestedIfStmts": 1,
+  "PMD/pmd-CollapsibleIfStatements": 1
+ }
+}

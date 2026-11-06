@@ -31,3 +31,7 @@ skills/secure-code-game
 christophetd/log4shell-vulnerable-app
 OWASP/DVSA
 BrightSec/brokencrystals
+HCL-TECH-SOFTWARE/AltoroJ
+oversecured/ovaa
+payatu/diva-android
+CSPF-Founder/JavaVulnerableLab

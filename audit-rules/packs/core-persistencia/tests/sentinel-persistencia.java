@@ -88,9 +88,18 @@ class Exemplos {
         String h = "DELETE FROM conta";
         // ok: sentinel-sql-delete-sem-where
         String i = "DELETE FROM conta WHERE id = ?";
+        // ok: sentinel-sql-delete-sem-where
+        String i2 = "DELETE FROM conta " + "WHERE id = " + id;
         // ruleid: sentinel-sql-update-sem-where
         String j = "update conta set saldo = 0";
         // ok: sentinel-sql-update-sem-where
         String k = "update conta set saldo = 0 where id = ?";
+        // ok: sentinel-sql-update-sem-where
+        String l = "UPDATE conta SET saldo = " + saldo + " WHERE id = " + id;
+        // ok: sentinel-sql-update-sem-where
+        String m = "UPDATE usuario SET senha = '" + hash + "' " +
+                "WHERE login = ?";
+        // ruleid: sentinel-sql-update-sem-where
+        String n = "UPDATE conta SET saldo = " + saldo;
     }
 }

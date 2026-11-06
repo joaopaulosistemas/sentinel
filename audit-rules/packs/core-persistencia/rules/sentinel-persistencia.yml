@@ -152,7 +152,7 @@ rules:
       cwe: "CWE-1049: Excessive Data Query Operations in a Large Data Table"
 
   - id: sentinel-sql-delete-sem-where
-    pattern-regex: '(?i)"\s*delete\s+from\s+[\w.]+\s*"'
+    pattern-regex: '(?i)"\s*delete\s+from\s+[\w.]+\s*"(?![^;]*\bwhere\b)'
     message: >
       DELETE sem WHERE apaga todas as linhas da tabela. Se a intenção é limpar a tabela, deixe isso explícito
       (TRUNCATE em migration); senão, acrescente a condição.
@@ -166,7 +166,8 @@ rules:
       cwe: "CWE-1025: Comparison Using Wrong Factors"
 
   - id: sentinel-sql-update-sem-where
-    pattern-regex: '(?i)"\s*update\s+[\w.]+\s+set\s+(?![^"]*\bwhere\b)[^"]*"'
+    # o WHERE pode vir em outro trecho concatenado da mesma instrução ("... SET x = " + v + " WHERE id = " + id)
+    pattern-regex: '(?i)"\s*update\s+[\w.]+\s+set\s+(?![^"]*\bwhere\b)[^"]*"(?![^;]*\bwhere\b)'
     message: >
       UPDATE sem WHERE altera todas as linhas da tabela. Acrescente a condição ou confirme que a intenção é essa.
     severity: ERROR

@@ -96,18 +96,51 @@ rules:
       cwe: "CWE-330: Use of Insufficiently Random Values"
       owasp: A02:2021 - Cryptographic Failures
 
+  # nextBytes preenche um vetor de bytes: quase sempre token, sal, IV ou chave, em qualquer classe (não só servlet/controller)
+  - id: sentinel-crypto-random-nextbytes
+    patterns:
+      - pattern-either:
+          - pattern: new java.util.Random(...).nextBytes(...)
+          - pattern: new Random(...).nextBytes(...)
+          - pattern: (java.util.Random $R).nextBytes(...)
+          - pattern: (Random $R).nextBytes(...)
+    message: >
+      java.util.Random.nextBytes gera bytes previsíveis. Bytes aleatórios costumam virar token, sal, IV ou chave:
+      use java.security.SecureRandom. Se não protege nada, ignore este aviso com justificativa.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-330: Use of Insufficiently Random Values"
+      owasp: A02:2021 - Cryptographic Failures
+
   - id: sentinel-crypto-chave-fixa-no-codigo
     pattern-either:
       - pattern: new SecretKeySpec("...".getBytes(...), ...)
+      # constante byte[] com nome de segredo e texto fixo (private static final byte[] SECRET = "...".getBytes()), usada depois em SecretKeySpec ou HMAC
+      - patterns:
+          - pattern: byte[] $K = "$V".getBytes(...);
+          - metavariable-regex:
+              metavariable: $K
+              regex: "^(?i:.*(?:key|chave|secret|segredo|passphrase).*)$"
+          - metavariable-regex:
+              metavariable: $V
+              regex: '^(?![a-z0-9]+(\.[a-z0-9]+)+$).{8,}$'
       - patterns:
           - pattern: String $K = "$V";
           - metavariable-regex:
               metavariable: $K
               regex: "^(?i:.*(?:key|chave|secret|segredo|passphrase).*)$"
+          # constante que nomeia atributo, parâmetro, cabeçalho, propriedade, coluna ou claim ("SESSION_ATTR_ADMIN_KEY") guarda o NOME de uma chave de busca, não uma chave criptográfica
+          - metavariable-regex:
+              metavariable: $K
+              regex: '^(?!(?i:.*(?:attr|attribute|param|parametro|header|cabecalho|prop|property|field|campo|column|coluna|claim|cookie|label|json|map).*key|.*key.*(?:attr|attribute|param|header|prop|property|field|column|claim|cookie|label|json|name|nome))).*$'
           # valor com cara de nome (user_id, app.crypto.key, X-Secret) é identificador de campo ou cabeçalho, não segredo
           - metavariable-regex:
               metavariable: $V
               regex: '^(?![a-z0-9]+([._-][a-z0-9]+)+$)(?![A-Z][A-Za-z0-9]*(-[A-Za-z0-9]+)+$).{4,}$'
+          # constante CAMPO_KEY com palavra minúscula (EMAIL_KEY = "email") é o nome de uma chave de SharedPreferences ou Map, não segredo; nomes de cripto (SECRET, AES, MASTER, API...) continuam alertando
+          - pattern-not-regex: 'String\s+(?![A-Z0-9_]*(?:SECRET|SEGREDO|CHAVE|AES|DES|RSA|HMAC|CRYPT|CIPHER|MASTER|PRIVATE|SIGN|SALT|TOKEN|API|PASSPHRASE))[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*_KEY\s*=\s*"[a-z]+(?:_[a-z]+)*"'
     message: >
       Chave de criptografia escrita no código-fonte (CWE-321). Ela vai para o Git e para o binário/APK, e quem a
       extrai decifra todos os dados. Gere a chave no armazém seguro do sistema (Android Keystore, KMS, cofre) ou leia

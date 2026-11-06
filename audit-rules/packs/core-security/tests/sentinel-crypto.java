@@ -1,6 +1,7 @@
 import java.io.ObjectInputStream;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Random;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -81,9 +82,29 @@ class CryptoCases {
     static final String SECRET_HEADER = "X-Secret";
     // ok: sentinel-crypto-chave-fixa-no-codigo
     static final String CHAVE_CONFIG = "app.crypto.key";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    static final String SESSION_ATTR_ADMIN_KEY = "admin";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    static final String HEADER_API_KEY = "authorization";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final String EMAIL_KEY = "email";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final String PASSWORD_KEY = "password";
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    private static final String MASTER_KEY = "changeme";
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    private static final String AES_KEY = "abcdefgh";
     // ruleid: sentinel-crypto-chave-fixa-no-codigo
     String segredoSimples = "supersecretkey";
     byte[] iv = new byte[16];
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    private static final byte[] SECRET = "jvl-demo-hs256-secret-do-not-reuse".getBytes(UTF8);
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    private static final byte[] CHAVE_HMAC = "minha-chave-de-assinatura".getBytes();
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final byte[] CHAVE_DO_AMBIENTE = System.getenv("APP_KEY").getBytes();
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final byte[] KEY_NAME = "app.crypto.key".getBytes();
 
     void chaveFixa(String entrada) throws Exception {
         // ruleid: sentinel-crypto-chave-fixa-no-codigo
@@ -104,5 +125,17 @@ class CryptoCases {
         byte[] aleatorio = new byte[16];
         new SecureRandom().nextBytes(aleatorio);
         new IvParameterSpec(aleatorio);
+    }
+
+    void bytesAleatorios(byte[] destino) {
+        // ruleid: sentinel-crypto-random-nextbytes
+        new Random().nextBytes(destino);
+        java.util.Random sorteio = new java.util.Random();
+        // ruleid: sentinel-crypto-random-nextbytes
+        sorteio.nextBytes(destino);
+        // ok: sentinel-crypto-random-nextbytes
+        new SecureRandom().nextBytes(destino);
+        // ok: sentinel-crypto-random-nextbytes
+        new java.util.Random().nextInt(10);
     }
 }
