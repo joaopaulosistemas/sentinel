@@ -813,3 +813,9 @@ Verificado: programa `javac` com o extrator (4 coordenadas esperadas; versão po
 
 Verificado: `semgrep --test` (21/21; Semgrep 1.184, não o Opengrep) e varredura do código de treino. NÃO verificado: Opengrep nesta volta; nova auditoria do DVSA com 12.64.0 e dvja/NodeGoat (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
 - **Branch `ciclo/estabilizacao-4`:** 5 voltas, todas com mudança; sem PR ainda.
+
+### Medições da volta 12 com 12.64.0 (números do CI)
+
+- **DVSA depois:** nota 41,7 e 730 achados (era 41,99 e 727): +3 HIGH de Opengrep (2 `sentinel-node-desserializacao` e 1 `sentinel-node-eval-requisicao`), conferidos no código de treino.
+- **Validação (só números, sem ler código):** dvja 176 achados, nota 48,95 (igual); NodeGoat 279, nota 46,87 (igual).
+- NÃO verificado: treinos anteriores com 12.64.0; JUnit/Maven (só no PR).
