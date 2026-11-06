@@ -46,9 +46,11 @@ Saneadores: `parseInt`, `parseLong`, `parseDouble`, `parseFloat`, `parseBoolean`
 
 ## Como saber que rodou
 
-- **Tela de acompanhamento da auditoria:** o analisador "SARIF" mostra um resumo, por exemplo
-  `Rodaram: Joern (taint entre arquivos) (12 s, 1 achado). Não instaladas: njsscan, Hadolint.`
-  Se o Joern não rodou, ele aparece em "Sem permissão para executar programas" (libere o pacote ou ative
-  `PACKS_ALLOW_TOOLS`) ou em "Não instaladas" (a imagem não foi construída com `WITH_JOERN=true`).
+- **Tela de acompanhamento e tela de resultado:** o card "Ferramentas externas (SARIF)" (analisador SARIF) traz, na primeira linha da nota, a situação do Joern:
+  `Joern (taint entre arquivos): ativo, rodou em 12 s com 1 achado.` Os outros casos são "não instalado nesta imagem. Construa com
+  WITH_JOERN=true para ligar", "sem permissão para executar programas neste pacote" (libere o pacote ou ative `PACKS_ALLOW_TOOLS`),
+  "não se aplica: o projeto não tem arquivos Java", "rodou sem gerar resultado", "falhou" e "desligado neste sistema" (o pacote `market-tools`
+  está fora do perfil ou desligado nos ajustes). Em seguida vem a lista das demais ferramentas (`Rodaram: …`, `Não instaladas: …`).
+  Se o analisador SARIF inteiro for desligado nos ajustes, nenhuma ferramenta externa roda e a nota não é gerada.
 - **Log da API:** `docker compose logs audit-api | grep -i "joern"` mostra `Fonte SARIF 'joern-taint' rodou em N s: M achado(s)`.
 - **Achados:** vêm com a ferramenta "Joern (taint entre arquivos)" e regras `joern-taint-*`.

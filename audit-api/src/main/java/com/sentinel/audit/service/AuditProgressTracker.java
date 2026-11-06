@@ -142,7 +142,7 @@ public class AuditProgressTracker {
 
     private static String finishMessage(String name, Done done) {
         String found = done.findings() + (done.findings() == 1 ? " achado" : " achados");
-        String note = done.note() == null ? "" : ": " + done.note();
+        String note = done.note() == null ? "" : ": " + done.note().replace("\n", " | ");
         if ("FALHOU".equals(done.status())) {
             return name + " falhou" + note;
         }
