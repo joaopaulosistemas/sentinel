@@ -86,6 +86,14 @@ class CryptoCases {
     static final String SESSION_ATTR_ADMIN_KEY = "admin";
     // ok: sentinel-crypto-chave-fixa-no-codigo
     static final String HEADER_API_KEY = "authorization";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final String EMAIL_KEY = "email";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final String PASSWORD_KEY = "password";
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    private static final String MASTER_KEY = "changeme";
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    private static final String AES_KEY = "abcdefgh";
     // ruleid: sentinel-crypto-chave-fixa-no-codigo
     String segredoSimples = "supersecretkey";
     byte[] iv = new byte[16];
