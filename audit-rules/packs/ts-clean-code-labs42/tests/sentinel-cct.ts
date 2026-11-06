@@ -1,7 +1,13 @@
 // Casos de teste do pacote ts-clean-code-labs42. Cada "ruleid:/ok:" vale para a linha seguinte.
 
-// ruleid: sentinel-cct-parametros-demais
+// ok: sentinel-cct-parametros-demais
 function emitir(nome: string, valor: number, vencimento: Date) {}
+// ok: sentinel-cct-parametros-demais
+function emitirCinco(a: string, b: number, c: Date, d: string, e: string) {}
+// ruleid: sentinel-cct-parametros-demais
+function emitirSeis(a: string, b: number, c: Date, d: string, e: string, f: number) {}
+// ruleid: sentinel-cct-parametros-demais
+const emitirSeisSeta = (a: string, b: number, c: Date, d: string, e: string, f: number) => {};
 // ok: sentinel-cct-parametros-demais
 function emitirComObjeto(boleto: Boleto, banco: string) {}
 

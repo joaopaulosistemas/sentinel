@@ -14,7 +14,7 @@ Regras automáticas baseadas no guia [clean-code-typescript](https://labs42io.gi
 | Variáveis | `sentinel-cct-nome-sem-significado` | Variável de uma letra (fora i, j, k, x, y) ou nome genérico (temp, aux, foo) |
 | Variáveis | `sentinel-cct-numero-magico` | Número solto em comparação (3 ou mais) |
 | Variáveis | `sentinel-cct-valor-padrao-com-ou` | Valor padrão do parâmetro dado com `\|\|` dentro da função |
-| Funções | `sentinel-cct-parametros-demais` | Mais de dois parâmetros (construtores ficam de fora) |
+| Funções | `sentinel-cct-parametros-demais` | Mais de cinco parâmetros, o mesmo limite do analisador CleanCode (construtores ficam de fora) |
 | Funções | `sentinel-cct-parametro-booleano` | Parâmetro booleano (a função costuma fazer duas coisas) |
 | Funções | `sentinel-cct-altera-parametro` | Função que muda o objeto ou a lista recebida |
 | Funções | `sentinel-cct-escreve-no-global` | Escrita em `window`, `globalThis` ou em tipo nativo (`Array.prototype`) |

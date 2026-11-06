@@ -6,20 +6,21 @@ rules:
   - id: sentinel-cct-parametros-demais
     patterns:
       - pattern-either:
-          - pattern: function $F($A, $B, $C, ...) {...}
-          - pattern: $F = ($A, $B, $C, ...) => {...}
+          - pattern: function $F($A, $B, $C, $D, $E, $G, ...) {...}
+          - pattern: $F = ($A, $B, $C, $D, $E, $G, ...) => {...}
           - pattern: |
               class $K {
                 ...
-                $M($A, $B, $C, ...) {...}
+                $M($A, $B, $C, $D, $E, $G, ...) {...}
                 ...
               }
       - metavariable-regex:
           metavariable: $F
           regex: '^(?!constructor$).*'
     message: >
-      Função com mais de dois parâmetros. Quanto mais argumentos, mais combinações para testar e mais fácil trocar
-      a ordem sem querer. Agrupe os valores em um objeto (com tipo ou interface) e receba um só parâmetro.
+      Função com mais de cinco parâmetros (o mesmo limite do analisador CleanCode e do guia CLAUDE.md). Quanto mais
+      argumentos, mais combinações para testar e mais fácil trocar a ordem sem querer. Agrupe os valores em um
+      objeto (com tipo ou interface) e receba um só parâmetro.
     severity: INFO
     languages: [typescript]
     paths:
