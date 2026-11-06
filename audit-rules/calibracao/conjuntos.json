@@ -16,7 +16,12 @@
       "BrightSec/brokencrystals",
       "OWASP/wrongsecrets",
       "JoyChou93/java-sec-code",
-      "OWASP/SecurityShepherd"
+      "OWASP/SecurityShepherd",
+      "HCL-TECH-SOFTWARE/AltoroJ",
+      "oversecured/ovaa",
+      "payatu/diva-android",
+      "CSPF-Founder/JavaVulnerableLab",
+      "logicalhacking/DVHMA"
     ],
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
     "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu.",
@@ -27,7 +32,12 @@
     "_nota_log4shell": "christophetd/log4shell-vulnerable-app (app Spring Boot com Log4j vulnerável, branch main, stack JAVA) entrou em 2026-11-06 na volta 11 (ciclo/estabilizacao-4); treino.",
     "_nota_dvsa": "OWASP/DVSA (app serverless de treino em Node/AWS Lambda, branch master, MIXED) entrou em 2026-11-06 na volta 12 (ciclo/estabilizacao-4); treino.",
     "_nota_brokencrystals": "BrightSec/brokencrystals (NestJS + front-end React de treino, branch stable, stack MIXED) entrou em 2026-11-06 na volta 13 (ciclo/estabilizacao-4); treino.",
-    "_nota_completude": "wrongsecrets, java-sec-code e SecurityShepherd foram lidos antes do ciclo e passam a constar aqui; scripts/verificar-separacao.py confere a separação no CI."
+    "_nota_completude": "wrongsecrets, java-sec-code e SecurityShepherd foram lidos antes do ciclo e passam a constar aqui; scripts/verificar-separacao.py confere a separação no CI.",
+    "_nota_altoroj": "HCL-TECH-SOFTWARE/AltoroJ (app bancária Java/JSP de treino, branch AltoroJ-3.2, stack JAVA) entrou em 2026-11-06 na volta 14 (ciclo/estabilizacao-5); treino.",
+    "_nota_ovaa": "oversecured/ovaa (app Android Java vulnerável de treino, branch master, stack JAVA) entrou em 2026-11-06 na volta 15 (ciclo/estabilizacao-5); treino.",
+    "_nota_diva": "payatu/diva-android (app Android Java de treino DIVA, branch master, stack JAVA) entrou em 2026-11-06 na volta 16 (ciclo/estabilizacao-5); treino.",
+    "_nota_javavulnerablelab": "CSPF-Founder/JavaVulnerableLab (app web Java/JSP vulnerável de treino, branch master, stack JAVA) entrou em 2026-11-06 na volta 17 (ciclo/estabilizacao-5); treino.",
+    "_nota_dvhma": "logicalhacking/DVHMA (app híbrido Cordova + servidor Node de treino, branch master, stack JAVASCRIPT) entrou em 2026-11-06 na volta 18 (ciclo/estabilizacao-6); treino."
   },
   "validacao": {
     "repositorios_fixos": [

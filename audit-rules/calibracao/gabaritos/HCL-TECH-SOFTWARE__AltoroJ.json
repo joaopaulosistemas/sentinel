@@ -1,0 +1,178 @@
+{
+ "_comentario": "Falhas de HCL-TECH-SOFTWARE/AltoroJ lidas no código (treino), volta 14. SQL de DBUtil com parâmetro long (getAccount, linha 456) não conta: tipo numérico não carrega injeção.",
+ "repo": "HCL-TECH-SOFTWARE/AltoroJ",
+ "falhas": [
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 224
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 247
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 281
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 408
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 476
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 487
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 499
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 511
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/DBUtil.java",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ],
+   "linha": 524
+  },
+  {
+   "arquivo": "WebContent/bank/customize.jsp",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ],
+   "linha": 44
+  },
+  {
+   "arquivo": "WebContent/bank/queryxpath.jsp",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ],
+   "linha": 36
+  },
+  {
+   "arquivo": "WebContent/bank/transaction.jsp",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ],
+   "linha": 126
+  },
+  {
+   "arquivo": "WebContent/bank/transaction.jsp",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ],
+   "linha": 128
+  },
+  {
+   "arquivo": "WebContent/util/serverStatusCheckService.jsp",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ],
+   "linha": 4
+  },
+  {
+   "arquivo": "WebContent/search.jsp",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ],
+   "linha": 44
+  },
+  {
+   "arquivo": "WebContent/index.jsp",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ],
+   "linha": 91
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/servlet/SurveyServlet.java",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-response-write"
+   ],
+   "linha": 101
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/ServletUtil.java",
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml"
+   ],
+   "linha": 95
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/ServletUtil.java",
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-cookie-sem-secure",
+    "sentinel-cookie-sem-httponly"
+   ],
+   "linha": 345,
+   "nota": "cookie de sessão sem HttpOnly/Secure"
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/util/OperationsUtil.java",
+   "cwe": "CWE-330",
+   "regras": [
+    "sentinel-crypto-random-nextbytes",
+    "sentinel-crypto-random-previsivel"
+   ],
+   "linha": 148,
+   "nota": "token de API com java.util.Random; recall só sobe com a regra nova"
+  },
+  {
+   "arquivo": "src/com/ibm/security/appscan/altoromutual/servlet/AdminLoginServlet.java",
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-senha-comparada-com-literal"
+   ],
+   "linha": 45
+  }
+ ]
+}

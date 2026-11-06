@@ -5,6 +5,8 @@ rules:
       - pattern: <%= ... %>
       # texto de pacote de mensagens (escrito pela equipe) e saída já passada por um codificador conhecido
       - pattern-not-regex: '<%=[^%]*([Bb]undle\w*\.getString\(|Encode\.for\w+\(|encodeFor\w+\(|escapeHtml\w*\(|escapeXml\w*\(|escapeJavaScript\()[^%]*%>'
+      # caminho da aplicação (idioma `String path = request.getContextPath();` do cabeçalho comum) e ajudante `esc(...)`
+      - pattern-not-regex: '<%=\s*(request\.getContextPath\(\)|path|contextPath|ctxPath|ctx|basePath|esc\([^()%]*(\([^()%]*\))?[^()%]*\))\s*%>'
     paths:
       include:
         - "*.jsp"

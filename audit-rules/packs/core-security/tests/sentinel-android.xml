@@ -26,5 +26,29 @@
                 <action android:name="android.intent.action.VIEW" />
             </intent-filter>
         </activity>
+        <!-- ruleid: sentinel-android-manifest-intent-filter-implicito -->
+        <activity
+            android:name=".Creds"
+            android:label="@string/creds" >
+            <intent-filter>
+                <action android:name="app.action.VIEW_CREDS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <!-- ok: sentinel-android-manifest-intent-filter-implicito -->
+        <activity android:name=".Fechada" android:exported="false">
+            <intent-filter>
+                <action android:name="app.action.INTERNA" />
+            </intent-filter>
+        </activity>
+        <!-- ok: sentinel-android-manifest-intent-filter-implicito -->
+        <activity android:name=".Entrada">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- ok: sentinel-android-manifest-intent-filter-implicito -->
+        <activity android:name=".SemFiltro" />
     </application>
 </manifest>

@@ -1,0 +1,146 @@
+{
+ "_comentario": "Falhas de oversecured/ovaa lidas no código (treino), volta 15. Entrada com regras [] é lacuna assumida. Gabarito escrito pelo mesmo agente que corrige: recall mede só o que li. DeeplinkActivity (linha 8) e a MAIN/LAUNCHER (28) ficam de fora: exportadas por desenho. Linhas conferidas com grep -n.",
+ "repo": "oversecured/ovaa",
+ "falhas": [
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 7,
+   "cwe": "CWE-312",
+   "regras": [
+    "sentinel-android-manifest-allow-backup"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 22,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 34,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 46,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 51,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/activities/WebViewActivity.java",
+   "linha": 20,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-android-webview-url-do-intent"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/activities/WebViewActivity.java",
+   "linha": 26,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-android-webview-javascript"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/activities/WebViewActivity.java",
+   "linha": 27,
+   "cwe": "CWE-200",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/utils/WeakCrypto.java",
+   "linha": 9,
+   "cwe": "CWE-321",
+   "regras": [
+    "sentinel-crypto-chave-fixa-no-codigo"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/utils/WeakCrypto.java",
+   "linha": 17,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-crypto-cifra-fraca"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/activities/LoginActivity.java",
+   "linha": 60,
+   "cwe": "CWE-532",
+   "regras": [
+    "sentinel-android-log-segredo"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/utils/LoginUtils.java",
+   "linha": 39,
+   "cwe": "CWE-312",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/providers/TheftOverwriteProvider.java",
+   "linha": 48,
+   "cwe": "CWE-22",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/services/InsecureLoggerService.java",
+   "linha": 31,
+   "cwe": "CWE-22",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/services/InsecureLoggerService.java",
+   "linha": 42,
+   "cwe": "CWE-22",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/OversecuredApplication.java",
+   "linha": 45,
+   "cwe": "CWE-94",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/OversecuredApplication.java",
+   "linha": 32,
+   "cwe": "CWE-94",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/objects/DeleteFilesSerializable.java",
+   "linha": 11,
+   "cwe": "CWE-502",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/activities/MainActivity.java",
+   "linha": 47,
+   "cwe": "CWE-927",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/oversecured/ovaa/activities/LoginActivity.java",
+   "linha": 78,
+   "cwe": "CWE-927",
+   "regras": []
+  }
+ ]
+}
