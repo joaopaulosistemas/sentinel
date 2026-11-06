@@ -833,7 +833,7 @@ Verificado: `semgrep --test` (21/21; Semgrep 1.184, não o Opengrep) e varredura
 
 Verificado: `semgrep --test` (79/79), paridade Opengrep × Semgrep (624 = 624), auditoria do vulnerable-node antes e depois no CI, recall pelo script. NÃO verificado: JUnit/Maven (nada de Java mudou); Opengrep local 1.33.1 e não o 1.30.0 do CI; regras novas em NodeGoat e dvja (a conferir pelo CI na próxima volta).
 
-## Dashboard 12.66.0 — Ciclo, volta 13 (branch `ciclo/estabilizacao-4`): BrightSec/brokencrystals (treino novo), decoradores do NestJS
+## Dashboard 12.67.0 — Ciclo, volta 13 (branch `ciclo/estabilizacao-4`): BrightSec/brokencrystals (treino novo), decoradores do NestJS
 
 - **Repositório novo:** BrightSec/brokencrystals (branch `stable`, MIXED, 209 estrelas, NestJS + front-end React de treino), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
 - **Medido (antes):** nota 38,3 e 918 achados (CRITICAL 14, HIGH 184). Trivy 293 (CVE de dependência), Stylelint 230, Opengrep 192 (a maioria qualidade/CSS), Gitleaks 23.
@@ -845,3 +845,25 @@ Verificado: `semgrep --test` (79/79), paridade Opengrep × Semgrep (624 = 624), 
 - **Branch `ciclo/estabilizacao-4`:** 6 voltas (8 a 13), todas com mudança; PR aberto para main nesta volta.
 
 Verificado: `opengrep --test` (79/79, Opengrep 1.30.0), paridade Opengrep × Semgrep (641 = 641), varredura do código de treino (3 achados novos, todos verdadeiros), auditorias no CI. NÃO verificado: JUnit/Maven (nada de Java mudou; só no CI do PR); treinos que não são vulnerable-node com a 12.66.0; taint entre arquivos de serviços Nest.
+## Dashboard 12.60.0 — Joern com frase própria no card "Ferramentas externas (SARIF)"
+
+- **Motivo:** o Joern é uma fonte SARIF (`joern-taint`), não um analisador; a pessoa não via se ele estava ativo, porque a imagem padrão é construída sem ele (`WITH_JOERN=false`).
+- **Mudança:** `SarifAnalyzer.Resumo` tira o Joern das listas gerais e escreve uma linha própria no fim da nota: "Joern (taint entre arquivos): ativo, rodou em N s com M achados" / "não instalado nesta imagem. Construa com WITH_JOERN=true para ligar" / "sem permissão…" / "não se aplica: o projeto não tem arquivos Java" / "falhou". O card passa a respeitar quebra de linha (`white-space: pre-line`). Sem mudança de contrato da API nem da contagem de analisadores.
+- **Não feito:** card separado do Joern (mudaria o contrato do progresso); estado "desligado no sistema" (o pacote desligado simplesmente não gera linha).
+
+Verificado: leitura do código. NÃO verificado: JUnit/Maven (só CI; `SarifAnalyzerTest.oJoernTemFraseProprianoResumo` é novo e não rodou); vitest/tipos do dashboard (sem `node_modules` aqui); tela real.
+
+## Dashboard 12.61.0 — Joern "desligado" no card SARIF
+
+- **Mudança:** quando nenhum pacote ativo do sistema se chama `market-tools` (fora do perfil ou desligado nos ajustes), a nota do card "Ferramentas externas (SARIF)" traz "Joern (taint entre arquivos): desligado neste sistema (…)". Antes o Joern simplesmente não aparecia.
+- **Limite:** só vale quando o sistema tem algum pacote ativo; sem nenhum pacote, não há nota.
+
+Verificado: leitura do código. NÃO verificado: JUnit (só CI; teste novo `semOPacoteDeFerramentasOJoernAparecePorDesligado`); tela real.
+
+## Dashboard 12.62.0 — Coerência entre telas do Joern (revisão das telas)
+
+- **Gap achado:** a nota do analisador é cortada em 300 caracteres e a frase do Joern vinha no fim (simulação de 6 ferramentas rodando e 6 ausentes: 325 caracteres); a tela de resultado só mostrava a nota em tooltip; `joern.md` descrevia o formato antigo.
+- **Mudança:** a frase do Joern passa a ser a primeira linha da nota; a tela de resultado mostra a nota visível abaixo de cada ferramenta (com quebra de linha); o log de eventos troca a quebra de linha por " | "; a descrição do analisador SARIF avisa que desligá-lo desliga o Joern e as demais; `joern.md` atualizado.
+- **Não feito (decisão de produto):** unificar os nomes "analisadores" e "Ferramentas de análise"; listar o estado das ferramentas nos relatórios PDF/HTML.
+
+Verificado: leitura do código. NÃO verificado: JUnit e vitest (só CI); tela real; o corte em 300 com uma auditoria real.

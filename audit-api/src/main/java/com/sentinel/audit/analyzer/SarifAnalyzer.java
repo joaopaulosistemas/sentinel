@@ -86,6 +86,9 @@ public class SarifAnalyzer implements CodeAnalyzer {
                     break;
                 }
             }
+            if (!policy.packs().isEmpty() && policy.packs().stream().noneMatch(p -> TOOLS_PACK_ID.equals(p.id()))) {
+                resumo.joernDesligado();
+            }
         }
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), null, resumo.texto());
     }
@@ -101,7 +104,7 @@ public class SarifAnalyzer implements CodeAnalyzer {
                 return false;
             } catch (Exception e) {
                 LOG.warnf("Fonte SARIF '%s' falhou e foi ignorada: %s", spec.id(), e.getMessage());
-                resumo.falhou.add(spec.name());
+                resumo.falhou(spec);
             }
         }
         return true;
@@ -122,6 +125,12 @@ public class SarifAnalyzer implements CodeAnalyzer {
     record Execucao(List<Finding> findings, Situacao situacao, long segundos) {
     }
 
+    /** Identificador da fonte do Joern em {@code market-tools/tools/taint.yml}. */
+    static final String JOERN_ID = "joern-taint";
+
+    /** Pacote que traz as ferramentas externas, entre elas o Joern. */
+    static final String TOOLS_PACK_ID = "market-tools";
+
     enum Situacao { RODOU, SEM_PERMISSAO, NAO_INSTALADA, SEM_ARQUIVOS, SEM_RESULTADO }
 
     /** Resumo, para a tela de acompanhamento, de quais ferramentas de comando rodaram e quais ficaram de fora. */
@@ -130,9 +139,37 @@ public class SarifAnalyzer implements CodeAnalyzer {
         private final List<String> semPermissao = new ArrayList<>();
         private final List<String> naoInstaladas = new ArrayList<>();
         private final List<String> semResultado = new ArrayList<>();
-        final List<String> falhou = new ArrayList<>();
+        private final List<String> falhou = new ArrayList<>();
+        /** Situação do Joern em frase própria: é a ferramenta opcional, e a pessoa precisa ver se está ativa. */
+        private String joern;
+
+        /** O pacote das ferramentas externas não está ativo neste sistema (fora do perfil ou desligado nos ajustes). */
+        void joernDesligado() {
+            if (joern == null) {
+                joern = "desligado neste sistema (o pacote " + TOOLS_PACK_ID + " está fora do perfil ou desligado nos ajustes).";
+            }
+        }
+
+        void falhou(ToolSpec spec) {
+            if (JOERN_ID.equals(spec.id())) {
+                joern = "falhou. Veja o log da API.";
+            } else {
+                falhou.add(spec.name());
+            }
+        }
 
         void registrar(ToolSpec spec, Execucao e) {
+            if (JOERN_ID.equals(spec.id())) {
+                joern = switch (e.situacao()) {
+                    case RODOU -> "ativo, rodou em " + e.segundos() + " s com " + e.findings().size()
+                            + (e.findings().size() == 1 ? " achado." : " achados.");
+                    case SEM_RESULTADO -> "rodou sem gerar resultado.";
+                    case NAO_INSTALADA -> "não instalado nesta imagem. Construa com WITH_JOERN=true para ligar.";
+                    case SEM_PERMISSAO -> "sem permissão para executar programas neste pacote.";
+                    case SEM_ARQUIVOS -> "não se aplica: o projeto não tem arquivos Java.";
+                };
+                return;
+            }
             switch (e.situacao()) {
                 case RODOU -> rodaram.add(spec.name() + " (" + e.segundos() + " s, " + e.findings().size()
                         + (e.findings().size() == 1 ? " achado)" : " achados)"));
@@ -161,7 +198,13 @@ public class SarifAnalyzer implements CodeAnalyzer {
             if (!naoInstaladas.isEmpty()) {
                 partes.add("Não instaladas: " + String.join(", ", naoInstaladas));
             }
-            return partes.isEmpty() ? null : String.join(". ", partes) + ".";
+            String geral = partes.isEmpty() ? null : String.join(". ", partes) + ".";
+            if (joern == null) {
+                return geral;
+            }
+            String linhaJoern = "Joern (taint entre arquivos): " + joern;
+            // A frase do Joern vai primeiro: a tela corta a nota em 300 caracteres e a lista geral pode ser longa.
+            return geral == null ? linhaJoern : linhaJoern + "\n" + geral;
         }
     }
 

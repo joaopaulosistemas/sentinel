@@ -251,6 +251,38 @@ class SarifAnalyzerTest {
     }
 
     @Test
+    void oJoernTemFraseProprianoResumo() throws Exception {
+        Path bin = Files.createTempDirectory("bin").toRealPath();
+        Path exe = fakeTool(bin);
+        Path proj = Files.createTempDirectory("proj").toRealPath();
+
+        AuditPolicy rodou = policyWithTools("- id: joern-taint\n  name: Joern (taint entre arquivos)\n  command: [\"" + exe + "\", \"{output}\"]\n"
+                + "- id: outra\n  name: Ferramenta B\n  command: [ferramenta-que-nao-existe, \"{output}\"]\n");
+        SarifAnalyzer liberado = new SarifAnalyzer();
+        liberado.allowTools = true;
+        liberado.pathEnv = "/nada";
+        String nota = liberado.analyze(proj, run(), rodou).infoNote();
+        assertTrue(nota.startsWith("Joern (taint entre arquivos): ativo, rodou em"), "o Joern vem primeiro: " + nota);
+        assertTrue(nota.contains("Não instaladas: Ferramenta B"), nota);
+        assertFalse(nota.contains("Rodaram: Joern"), "o Joern não repete na lista geral: " + nota);
+
+        AuditPolicy ausente = policyWithTools("- id: joern-taint\n  name: Joern (taint entre arquivos)\n  command: [ferramenta-que-nao-existe, \"{output}\"]\n");
+        String semJoern = liberado.analyze(proj, run(), ausente).infoNote();
+        assertEquals("Joern (taint entre arquivos): não instalado nesta imagem. Construa com WITH_JOERN=true para ligar.", semJoern);
+
+        String bloqueado = new SarifAnalyzer().analyze(proj, run(), ausente).infoNote();
+        assertTrue(bloqueado.startsWith("Joern (taint entre arquivos): sem permissão"), bloqueado);
+    }
+
+    @Test
+    void semOPacoteDeFerramentasOJoernAparecePorDesligado() throws Exception {
+        Path proj = Files.createTempDirectory("proj").toRealPath();
+        AuditPolicy semMarket = policyWithTools("- id: ext\n  name: Ferramenta A\n  input: \"*.sarif\"\n");
+        String nota = new SarifAnalyzer().analyze(proj, run(), semMarket).infoNote();
+        assertEquals("Joern (taint entre arquivos): desligado neste sistema (o pacote market-tools está fora do perfil ou desligado nos ajustes).", nota);
+    }
+
+    @Test
     void semFerramentaDeComandoNaoHaResumo() throws Exception {
         Path proj = Files.createTempDirectory("proj").toRealPath();
         assertFalse(new SarifAnalyzer().analyze(proj, run(), AuditPolicy.defaults(List.of())).hasInfo());
