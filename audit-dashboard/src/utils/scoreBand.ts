@@ -7,12 +7,16 @@ export const WARN_SCORE = 50;
 
 export type ScoreBand = 'good' | 'warn' | 'bad' | 'none';
 
+function hasNoScore(score: number | null | undefined): score is null | undefined {
+  return score === null || score === undefined || Number.isNaN(score);
+}
+
 /** Faixa da nota: boa na meta ou acima, atenção a partir de 50, ruim abaixo; sem nota (nunca auditado) é "none". */
 export function scoreBand(score: number | null | undefined): ScoreBand {
-  if (score === null || score === undefined || Number.isNaN(score)) return 'none';
-  const n = Math.round(score);
-  if (n >= TARGET_SCORE) return 'good';
-  if (n >= WARN_SCORE) return 'warn';
+  if (hasNoScore(score)) return 'none';
+  const rounded = Math.round(score);
+  if (rounded >= TARGET_SCORE) return 'good';
+  if (rounded >= WARN_SCORE) return 'warn';
   return 'bad';
 }
 

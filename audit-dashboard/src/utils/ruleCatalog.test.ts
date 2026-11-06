@@ -41,20 +41,20 @@ describe('ruleCatalog', () => {
       known: [{ id: 'beta', count: 5 }], profileRules: [], adjusted: [], plan: [],
     });
     const adjusted = new Set(['alpha']);
-    expect(filterRuleRows(rows, { query: '', scope: 'all', pack: '' }, adjusted).map((r) => r.id)).toEqual(['alpha', 'beta']);
-    expect(filterRuleRows(rows, { query: 'senha', scope: 'all', pack: '' }, adjusted).map((r) => r.id)).toEqual(['alpha']);
-    expect(filterRuleRows(rows, { query: '', scope: 'seen', pack: '' }, adjusted).map((r) => r.id)).toEqual(['beta']);
-    expect(filterRuleRows(rows, { query: '', scope: 'adjusted', pack: '' }, adjusted).map((r) => r.id)).toEqual(['alpha']);
-    expect(filterRuleRows(rows, { query: '', scope: 'all', pack: 'p2' }, adjusted).map((r) => r.id)).toEqual(['beta']);
+    expect(filterRuleRows({ rows, filter: { query: '', scope: 'all', pack: '' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['alpha', 'beta']);
+    expect(filterRuleRows({ rows, filter: { query: 'senha', scope: 'all', pack: '' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['alpha']);
+    expect(filterRuleRows({ rows, filter: { query: '', scope: 'seen', pack: '' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['beta']);
+    expect(filterRuleRows({ rows, filter: { query: '', scope: 'adjusted', pack: '' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['alpha']);
+    expect(filterRuleRows({ rows, filter: { query: '', scope: 'all', pack: 'p2' }, adjustedIds: adjusted }).map((r) => r.id)).toEqual(['beta']);
   });
 
   it('aplica ações em lote e descarta o que não tem efeito', () => {
     const start = [{ id: 'a', severity: null, disabled: true, shadow: null }];
-    const shadowed = applyBulk(start, ['a', 'b'], { kind: 'shadow', on: true });
+    const shadowed = applyBulk({ current: start, ids: ['a', 'b'], action: { kind: 'shadow', on: true } });
     expect(shadowed.find((r) => r.id === 'b')).toMatchObject({ shadow: true });
-    expect(applyBulk(shadowed, ['a'], { kind: 'disable', on: false }).find((r) => r.id === 'a')).toMatchObject({ disabled: false, shadow: true });
-    expect(applyBulk(shadowed, ['a', 'b'], { kind: 'reset' })).toEqual([]);
-    expect(applyBulk([], ['x'], { kind: 'severity', value: 'LOW' })).toEqual([{ id: 'x', severity: 'LOW', disabled: false, shadow: null }]);
+    expect(applyBulk({ current: shadowed, ids: ['a'], action: { kind: 'disable', on: false } }).find((r) => r.id === 'a')).toMatchObject({ disabled: false, shadow: true });
+    expect(applyBulk({ current: shadowed, ids: ['a', 'b'], action: { kind: 'reset' } })).toEqual([]);
+    expect(applyBulk({ current: [], ids: ['x'], action: { kind: 'severity', value: 'LOW' } })).toEqual([{ id: 'x', severity: 'LOW', disabled: false, shadow: null }]);
   });
 
   it('soma o ganho só das regras escolhidas', () => {

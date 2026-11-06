@@ -13,12 +13,12 @@ function stub() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
-      const u = String(url);
-      if (u === '/api/v1/systems') return new Response(JSON.stringify(systems), { status: 200 });
-      if (u === '/api/v1/audits/26') {
+      const requestUrl = String(url);
+      if (requestUrl === '/api/v1/systems') return new Response(JSON.stringify(systems), { status: 200 });
+      if (requestUrl === '/api/v1/audits/26') {
         return new Response(JSON.stringify({ id: 26, systemId: 2, systemName: 'portal-cooperado', branch: 'main', status: 'COMPLETED', riskScore: null, findingsSummary: {}, startedAt: '2026-10-20T10:00:00', completedAt: null }), { status: 200 });
       }
-      if (u.includes('/claude-review/')) return new Response(JSON.stringify({ openSuggestions: 0, suggestions: [], proposals: [] }), { status: 200 });
+      if (requestUrl.includes('/claude-review/')) return new Response(JSON.stringify({ openSuggestions: 0, suggestions: [], proposals: [] }), { status: 200 });
       return new Response('[]', { status: 200 });
     }),
   );

@@ -20,7 +20,8 @@ interface IKpi {
   note: string;
 }
 
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+const plural = (count: number, forms: { one: string; many: string }) => (count === 1 ? forms.one : forms.many);
+const systemsWord = { one: 'sistema', many: 'sistemas' };
 
 function averageDelta(list: ISystemSummaryResponse[]): number | null {
   const deltas = list.map((s) => s.scoreDelta).filter((d): d is number => d != null);
@@ -34,7 +35,7 @@ function averageScore(list: ISystemSummaryResponse[]): number | null {
 
 function averageNote(avgDelta: number | null, total: number): string {
   if (avgDelta !== null && avgDelta !== 0) return `${avgDelta > 0 ? '+' : ''}${avgDelta} desde a auditoria anterior`;
-  return `${total} ${plural(total, 'sistema', 'sistemas')}`;
+  return `${total} ${plural(total, systemsWord)}`;
 }
 
 function criticalKpi(list: ISystemSummaryResponse[]): IKpi {
@@ -44,11 +45,17 @@ function criticalKpi(list: ISystemSummaryResponse[]): IKpi {
     label: 'Achados críticos abertos',
     value: totalCritical,
     color: totalCritical > 0 ? 'var(--s-danger-text)' : 'var(--s-success-text)',
-    note: totalCritical > 0 ? `em ${criticalSystems.length} ${plural(criticalSystems.length, 'sistema', 'sistemas')}` : 'nenhum em aberto',
+    note: totalCritical > 0 ? `em ${criticalSystems.length} ${plural(criticalSystems.length, systemsWord)}` : 'nenhum em aberto',
   };
 }
 
-function buildKpis(list: ISystemSummaryResponse[], recent: IAuditRunResponse[], now: number): IKpi[] {
+interface IKpiInput {
+  list: ISystemSummaryResponse[];
+  recent: IAuditRunResponse[];
+  now: number;
+}
+
+function buildKpis({ list, recent, now }: IKpiInput): IKpi[] {
   const avg = averageScore(list);
   const runningRuns = recent.filter(isActiveRun);
   const staleSystems = list.filter((s) => isStale(s, now));
@@ -190,8 +197,8 @@ function useStartedNotice() {
   const [started, setStarted] = useState<IAuditRunResponse | null>(null);
   useEffect(() => {
     if (!started) return undefined;
-    const t = setTimeout(() => setStarted(null), 10_000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setStarted(null), 10_000);
+    return () => clearTimeout(timer);
   }, [started]);
   return [started, setStarted] as const;
 }
@@ -227,7 +234,7 @@ export function OverviewPage() {
       <OverviewHeader list={list} picked={picked} onPick={setPickedId} onStart={() => picked && setStartTarget(picked)} />
       {started && <StartedNotice run={started} />}
       <PendingClaudeNotice pending={pendingClaude} />
-      <KpiGrid kpis={buildKpis(list, recent ?? [], now)} />
+      <KpiGrid kpis={buildKpis({ list, recent: recent ?? [], now })} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))', gap: 24, alignItems: 'start' }}>
         <AttentionList rows={attentionRows(list, now)} />
         <RecentAudits />

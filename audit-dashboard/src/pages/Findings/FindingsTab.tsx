@@ -31,8 +31,13 @@ function StaleAuditNotice({ auditedCommit, currentCommit }: { auditedCommit?: st
 
 type FindingsData = ReturnType<typeof useFindingsData>;
 
+interface IAuditScope {
+  auditMode: boolean;
+  auditId: number;
+}
+
 /** Os resolvidos não estão na lista da auditoria (já não existem nela): vêm da comparação com a anterior. */
-function useResolvedFindings(auditMode: boolean, auditId: number) {
+function useResolvedFindings({ auditMode, auditId }: IAuditScope) {
   const { data: diff } = useDiff(auditMode ? auditId : undefined);
   const { data: freshness } = useFreshness(auditMode ? auditId : undefined);
   const resolved = (diff?.resolvedFindings ?? []).map((f) => ({ ...f, status: 'FIXED' as const }));
@@ -40,13 +45,17 @@ function useResolvedFindings(auditMode: boolean, auditId: number) {
 }
 
 /** Clicar na origem de um achado abre o sistema dele (só na visão de todos os sistemas). */
-function useSystemOrigin(auditMode: boolean, data: FindingsData) {
+function useSystemOrigin({ auditMode, data }: { auditMode: boolean; data: FindingsData }) {
   const navigate = useNavigate();
   const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
   if (auditMode) return undefined;
-  return originFinder(data.itemByFinding, data.stackBySystem, (hit) => {
-    setSelectedAudit(hit.auditId);
-    navigate(`/systems/${hit.systemId}`);
+  return originFinder({
+    itemByFinding: data.itemByFinding,
+    stackByName: data.stackBySystem,
+    open: (hit) => {
+      setSelectedAudit(hit.auditId);
+      navigate(`/systems/${hit.systemId}`);
+    },
   });
 }
 
@@ -120,7 +129,7 @@ function ListSection({ auditMode, auditId, auditSystemName, filters, data, syste
       />
       {showFooter && (
         <PaginationFooter
-          text={footerText(data.rows.length, data.total, filters.situation, filters.severity, auditMode ? 1 : data.summary.length)}
+          text={footerText({ shown: data.rows.length, total: data.total, situation: filters.situation, severity: filters.severity, systems: auditMode ? 1 : data.summary.length })}
           page={filters.page}
           pages={data.pages}
           pageSize={filters.pageSize}
@@ -134,10 +143,10 @@ function ListSection({ auditMode, auditId, auditSystemName, filters, data, syste
 
 /** Aba "Achados e nota": filtros, resumo por sistema, lista paginada e os achados resolvidos desde a auditoria anterior. */
 export function FindingsTab({ auditMode, auditId, audit, systems, filters, auditSystemId, activeSystemId }: IProps) {
-  const { resolved, stale } = useResolvedFindings(auditMode, auditId);
-  const data = useFindingsData(auditMode, auditId, filters);
-  const claudeNoteOf = useClaudeNotes(auditMode, auditSystemId, filters.systemId, data);
-  const systemOf = useSystemOrigin(auditMode, data);
+  const { resolved, stale } = useResolvedFindings({ auditMode, auditId });
+  const data = useFindingsData({ auditMode, auditId, filters });
+  const claudeNoteOf = useClaudeNotes({ auditMode, auditSystemId, systemId: filters.systemId, data });
+  const systemOf = useSystemOrigin({ auditMode, data });
 
   return (
     <>

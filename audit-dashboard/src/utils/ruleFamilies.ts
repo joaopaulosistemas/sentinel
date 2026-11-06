@@ -64,8 +64,8 @@ const FAMILY_ORDER = Object.keys(FAMILY_LABEL);
 
 /** Família da regra: a categoria que ela declara no pacote. Sem categoria, "Sem família". */
 export function familyOf(row: Pick<IRuleRow, 'category'>): string {
-  const c = row.category?.trim().toLowerCase();
-  return c ? c : NO_FAMILY;
+  const category = row.category?.trim().toLowerCase();
+  return category ? category : NO_FAMILY;
 }
 
 export function familyLabel(key: string): string {
@@ -106,14 +106,19 @@ export function rowsOfActivePacks(rows: IRuleRow[], packs: Record<string, boolea
   return rows.filter((r) => r.pack === null || !(r.pack in packs) || packs[r.pack]);
 }
 
+interface IHiddenAdjustedInput {
+  rows: IRuleRow[];
+  packs: Record<string, boolean>;
+  adjustedIds: Set<string>;
+}
+
 /** Quantas regras ajustadas ficam escondidas porque o pacote delas está desligado. */
-export function hiddenAdjustedCount(rows: IRuleRow[], packs: Record<string, boolean>, adjustedIds: Set<string>): number {
+export function hiddenAdjustedCount({ rows, packs, adjustedIds }: IHiddenAdjustedInput): number {
   const visible = new Set(rowsOfActivePacks(rows, packs).map((r) => r.id));
   return rows.filter((r) => adjustedIds.has(r.id) && !visible.has(r.id)).length;
 }
 
-// ---------------------------------------------------------------- lado de cada regra (back, front, comum)
-
+/** Nome de cada lado (back, front, comum) na tela. */
 export const SIDE_NAME: Record<EngineSide, string> = { back: 'Back-end', front: 'Front-end', common: 'Infra e comum' };
 export const SIDES: EngineSide[] = ['back', 'front', 'common'];
 
@@ -156,24 +161,24 @@ export interface ISideGroup {
 export function packsBySide(packs: IEnginePackState[], catalog: Sided): ISideGroup[] {
   const counts = new Map<string, Record<EngineSide, number>>();
   for (const c of catalog ?? []) {
-    const m = counts.get(c.pack) ?? { back: 0, front: 0, common: 0 };
-    m[sideOfRule({ side: c.side, pack: c.pack })] += 1;
-    counts.set(c.pack, m);
+    const packCounts = counts.get(c.pack) ?? { back: 0, front: 0, common: 0 };
+    packCounts[sideOfRule({ side: c.side, pack: c.pack })] += 1;
+    counts.set(c.pack, packCounts);
   }
   const groups = SIDES.map((side): ISideGroup => ({ side, title: SIDE_NAME[side], packs: [], rules: 0 }));
   for (const p of packs) {
-    const m = counts.get(p.id);
-    if (!m) {
+    const packCounts = counts.get(p.id);
+    if (!packCounts) {
       const legacy = sideOfPack(p.id);
       groups[SIDES.indexOf(legacy === 'both' ? 'common' : legacy)].packs.push({ pack: p, count: 0, others: [] });
       continue;
     }
     for (const side of SIDES) {
-      if (m[side] === 0) continue;
-      const others = SIDES.filter((o) => o !== side && m[o] > 0).map((o) => ({ side: o, count: m[o] }));
-      const g = groups[SIDES.indexOf(side)];
-      g.packs.push({ pack: p, count: m[side], others });
-      g.rules += m[side];
+      if (packCounts[side] === 0) continue;
+      const others = SIDES.filter((o) => o !== side && packCounts[o] > 0).map((o) => ({ side: o, count: packCounts[o] }));
+      const group = groups[SIDES.indexOf(side)];
+      group.packs.push({ pack: p, count: packCounts[side], others });
+      group.rules += packCounts[side];
     }
   }
   return groups.filter((g) => g.packs.length > 0);

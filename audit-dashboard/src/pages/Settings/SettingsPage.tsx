@@ -138,12 +138,13 @@ function useRestartFlow(setNotice: SetNotice) {
   const restartRequired = query.data?.restartRequired ?? false;
 
   // A API voltou depois do reinício: a resposta nova não pede mais reinício.
+  const apiCameBack = restarting && query.isSuccess && !query.isFetching && !restartRequired;
   useEffect(() => {
-    if (restarting && query.isSuccess && !query.isFetching && !restartRequired) {
+    if (apiCameBack) {
       setRestarting(false);
       setNotice({ kind: 'success', title: 'API reiniciada', text: 'As configurações salvas já estão em uso.' });
     }
-  }, [restarting, query.isSuccess, query.isFetching, restartRequired, setNotice]);
+  }, [apiCameBack, setNotice]);
 
   const onRestart = () => {
     setConfirm(false);
@@ -359,7 +360,7 @@ export function SettingsPage() {
   const settings = useMemo(() => query.data?.settings ?? [], [query.data]);
   const editor = useSettingsEditor(settings, setNotice);
 
-  const list = filterSettings(settings, section, search);
+  const list = filterSettings({ settings, section, query: search });
   const searching = search.trim() !== '';
 
   return (

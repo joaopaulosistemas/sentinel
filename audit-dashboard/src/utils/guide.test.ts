@@ -28,15 +28,15 @@ describe('filterRules', () => {
     rule({ id: 'r3', title: 'Gama', severity: 'alta', action: 'use parâmetros' }),
   ];
   it('ordena do mais grave para o menos grave e, no empate, por título', () => {
-    expect(filterRules(rules, 'todas', '').map((r) => r.id)).toEqual(['r2', 'r3', 'r1']);
+    expect(filterRules(rules, { severity: 'todas', query: '' }).map((r) => r.id)).toEqual(['r2', 'r3', 'r1']);
   });
   it('filtra por severidade', () => {
-    expect(filterRules(rules, 'baixa', '').map((r) => r.id)).toEqual(['r1']);
+    expect(filterRules(rules, { severity: 'baixa', query: '' }).map((r) => r.id)).toEqual(['r1']);
   });
   it('busca no título, no id, no CWE e na ação, sem diferenciar maiúsculas', () => {
-    expect(filterRules(rules, 'todas', 'cwe-79').map((r) => r.id)).toEqual(['r2']);
-    expect(filterRules(rules, 'todas', 'PARÂMETROS').map((r) => r.id)).toEqual(['r3']);
-    expect(filterRules(rules, 'todas', 'r1').map((r) => r.id)).toEqual(['r1']);
+    expect(filterRules(rules, { severity: 'todas', query: 'cwe-79' }).map((r) => r.id)).toEqual(['r2']);
+    expect(filterRules(rules, { severity: 'todas', query: 'PARÂMETROS' }).map((r) => r.id)).toEqual(['r3']);
+    expect(filterRules(rules, { severity: 'todas', query: 'r1' }).map((r) => r.id)).toEqual(['r1']);
   });
 });
 

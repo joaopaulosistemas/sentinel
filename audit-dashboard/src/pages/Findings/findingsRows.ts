@@ -48,28 +48,43 @@ export function pickRows({ auditMode, single, severities, showLow, page, pageSiz
   };
 }
 
+export interface IReviewScope {
+  auditMode: boolean;
+  auditSystemId: number | undefined;
+  systemId: number | undefined;
+  items: OverviewItem[];
+}
+
+export interface IClaudeNoteScope extends Omit<IReviewScope, 'items'> {
+  itemByFinding: Map<number, OverviewItem>;
+  suggestionsBySystem: Map<number, Parameters<typeof suggestionFor>[1]>;
+}
+
+export interface ICrumbsScope {
+  auditMode: boolean;
+  audit: IAuditRunResponse | undefined;
+  auditId: number;
+}
+
+/** Quantidade de achados altos a partir da qual o cartão do sistema ganha a borda vermelha. */
+export const HIGH_ALERT_THRESHOLD = 50;
+
 /** Sistemas cujas sugestões do Claude marcam a lista: o da auditoria aberta, o escolhido ou todos os que aparecem. */
-export function reviewSystemIds(auditMode: boolean, auditSystemId: number | undefined, systemId: number | undefined, items: OverviewItem[]): number[] {
+export function reviewSystemIds({ auditMode, auditSystemId, systemId, items }: IReviewScope): number[] {
   if (auditMode) return auditSystemId !== undefined ? [auditSystemId] : [];
   if (systemId !== undefined) return [systemId];
   return [...new Set(items.map((i) => i.systemId))];
 }
 
 /** Função que devolve a sugestão do Claude para um achado, procurando no sistema a que ele pertence. */
-export function claudeNoteFinder(
-  auditMode: boolean,
-  auditSystemId: number | undefined,
-  systemId: number | undefined,
-  itemByFinding: Map<number, OverviewItem>,
-  suggestionsBySystem: Map<number, Parameters<typeof suggestionFor>[1]>,
-) {
+export function claudeNoteFinder({ auditMode, auditSystemId, systemId, itemByFinding, suggestionsBySystem }: IClaudeNoteScope) {
   return (f: IFindingResponse) => {
-    const sid = auditMode ? auditSystemId : (systemId ?? itemByFinding.get(f.id)?.systemId);
-    return sid === undefined ? undefined : suggestionFor(f, suggestionsBySystem.get(sid) ?? []);
+    const scopedSystemId = auditMode ? auditSystemId : (systemId ?? itemByFinding.get(f.id)?.systemId);
+    return scopedSystemId === undefined ? undefined : suggestionFor(f, suggestionsBySystem.get(scopedSystemId) ?? []);
   };
 }
 
-export function findingsCrumbs(auditMode: boolean, audit: IAuditRunResponse | undefined, auditId: number): ICrumb[] {
+export function findingsCrumbs({ auditMode, audit, auditId }: ICrumbsScope): ICrumb[] {
   if (!auditMode) return [{ label: 'Início', to: '/' }, { label: 'Informações de Auditoria' }];
   const system: ICrumb[] = audit
     ? [{ label: audit.systemName, to: audit.systemId !== undefined ? `/systems/${audit.systemId}` : undefined }]
@@ -79,6 +94,6 @@ export function findingsCrumbs(auditMode: boolean, audit: IAuditRunResponse | un
 
 /** Cor da borda do cartão do sistema: vermelho com críticos (ou muitos altos), laranja só com altos, verde sem nenhum. */
 export function edgeColor(critical: number, high: number): string {
-  if (critical > 0 || high >= 50) return '#da1e28';
+  if (critical > 0 || high >= HIGH_ALERT_THRESHOLD) return '#da1e28';
   return high > 0 ? '#ff832b' : '#198038';
 }

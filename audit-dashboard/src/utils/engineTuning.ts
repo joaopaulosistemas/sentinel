@@ -6,12 +6,20 @@ export type TuningSlice = Pick<IEngineTuning, 'enablePacks' | 'disablePacks' | '
 /** Limite digitado: vazio vale "padrão do motor"; o resto precisa ser inteiro ≥ 1. */
 export function limitInvalid(value: string | undefined): boolean {
   if (value === undefined || value.trim() === '') return false;
-  const n = Number(value);
-  return !(Number.isInteger(n) && n >= 1);
+  const parsed = Number(value);
+  return !(Number.isInteger(parsed) && parsed >= 1);
 }
 
 /** O que a tela edita (pacotes, limites, regras, lados desligados) na forma que o servidor guarda. */
-export function sliceOf(data: IEngineConfig, packs: Record<string, boolean>, limits: Record<string, string>, rules: IRuleAdjustment[], sidesOff: Array<'back' | 'front'> = []): TuningSlice {
+export interface ISliceInput {
+  data: IEngineConfig;
+  packs: Record<string, boolean>;
+  limits: Record<string, string>;
+  rules: IRuleAdjustment[];
+  sidesOff?: Array<'back' | 'front'>;
+}
+
+export function sliceOf({ data, packs, limits, rules, sidesOff = [] }: ISliceInput): TuningSlice {
   const enablePacks = data.packs.filter((p) => packs[p.id] && !p.inProfile).map((p) => p.id);
   const disablePacks = data.packs.filter((p) => !packs[p.id] && p.inProfile).map((p) => p.id);
   const thresholds: Record<string, number> = {};
@@ -27,27 +35,50 @@ export function currentAdjustment(rules: IRuleAdjustment[], id: string): IRuleAd
   return rules.find((r) => r.id === id) ?? NO_ADJUSTMENT(id);
 }
 
-export function patchAdjustment(rules: IRuleAdjustment[], id: string, patch: Partial<IRuleAdjustment>): IRuleAdjustment[] {
+export interface IPatchAdjustmentInput {
+  rules: IRuleAdjustment[];
+  id: string;
+  patch: Partial<IRuleAdjustment>;
+}
+
+export function patchAdjustment({ rules, id, patch }: IPatchAdjustmentInput): IRuleAdjustment[] {
   return [...rules.filter((r) => r.id !== id), { ...currentAdjustment(rules, id), ...patch }];
 }
 
 /** Regra nova (id ou padrão com *) entra só observada; id inválido ou repetido não muda nada. */
 export function withNewRule(rules: IRuleAdjustment[], typed: string): IRuleAdjustment[] {
   const id = typed.trim().toLowerCase();
-  if (!id || !/^[a-z0-9_.*:/-]+$/.test(id) || rules.some((r) => r.id === id)) return rules;
+  if (!isAcceptableNewRuleId(id, rules)) return rules;
   return [...rules, { id, severity: null, disabled: false, shadow: true }];
 }
 
-export function toggledSet(set: Set<string>, id: string, on: boolean): Set<string> {
+/** Id preenchido, só com os caracteres permitidos e ainda não ajustado. */
+function isAcceptableNewRuleId(id: string, rules: IRuleAdjustment[]): boolean {
+  const filled = id !== '';
+  const hasAllowedCharsOnly = /^[a-z0-9_.*:/-]+$/.test(id);
+  const alreadyAdjusted = rules.some((r) => r.id === id);
+  return filled && hasAllowedCharsOnly && !alreadyAdjusted;
+}
+
+/** Cópia do conjunto com o id dentro. */
+export function setWith(set: Set<string>, id: string): Set<string> {
+  return new Set(set).add(id);
+}
+
+/** Cópia do conjunto sem o id. */
+export function setWithout(set: Set<string>, id: string): Set<string> {
   const next = new Set(set);
-  if (on) next.add(id);
-  else next.delete(id);
+  next.delete(id);
   return next;
 }
 
-/** Marca ou desmarca todas as linhas mostradas, preservando as seleções fora da página. */
-export function pickShown(picked: Set<string>, shownIds: string[], on: boolean): Set<string> {
-  if (on) return new Set([...picked, ...shownIds]);
+/** Marca todas as linhas mostradas, preservando as seleções fora da página. */
+export function pickAllShown(picked: Set<string>, shownIds: string[]): Set<string> {
+  return new Set([...picked, ...shownIds]);
+}
+
+/** Desmarca todas as linhas mostradas, preservando as seleções fora da página. */
+export function unpickAllShown(picked: Set<string>, shownIds: string[]): Set<string> {
   const shown = new Set(shownIds);
   return new Set([...picked].filter((id) => !shown.has(id)));
 }

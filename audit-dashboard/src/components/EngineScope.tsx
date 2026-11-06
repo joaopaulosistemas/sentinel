@@ -24,9 +24,9 @@ const BADGE_COLORS: Record<EngineSide, { bg: string; fg: string }> = {
 
 /** Etiqueta do lado (texto + cor, para não depender só da cor). */
 export function SideBadge({ side }: { side: EngineSide }) {
-  const c = BADGE_COLORS[side];
+  const colors = BADGE_COLORS[side];
   const text = side === 'back' ? 'BACK' : side === 'front' ? 'FRONT' : 'COMUM';
-  return <span style={{ padding: '2px 8px', background: c.bg, color: c.fg, fontSize: 11, fontWeight: 600 }}>{text}</span>;
+  return <span style={{ padding: '2px 8px', background: colors.bg, color: colors.fg, fontSize: 11, fontWeight: 600 }}>{text}</span>;
 }
 
 interface ICardProps {
@@ -84,13 +84,14 @@ export function ScopeSection({ cfg, sidesOff, onChange }: IProps) {
     setRefused(false);
     onChange(next);
   };
-  const toggle = (side: OffSide, on: boolean) => {
+  const turnSideOn = (side: OffSide) => apply(sidesOff.filter((s) => s !== side) as OffSide[]);
+  const turnSideOff = (side: OffSide) => {
     const other: OffSide = side === 'back' ? 'front' : 'back';
-    if (!on && sidesOff.includes(other)) {
+    if (sidesOff.includes(other)) {
       setRefused(true);
       return;
     }
-    apply(on ? sidesOff.filter((s) => s !== side) as OffSide[] : [...sidesOff.filter((s) => s !== side), side] as OffSide[]);
+    apply([...sidesOff.filter((s) => s !== side), side] as OffSide[]);
   };
   const off = (['back', 'front'] as const).filter((s) => sidesOff.includes(s));
 
@@ -114,8 +115,8 @@ export function ScopeSection({ cfg, sidesOff, onChange }: IProps) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-        <SideCard side="back" on={!sidesOff.includes('back')} rules={totals.back} packs={packsOf('back')} analyzers={analyzersOf('back')} onToggle={(on) => toggle('back', on)} />
-        <SideCard side="front" on={!sidesOff.includes('front')} rules={totals.front} packs={packsOf('front')} analyzers={analyzersOf('front')} onToggle={(on) => toggle('front', on)} />
+        <SideCard side="back" on={!sidesOff.includes('back')} rules={totals.back} packs={packsOf('back')} analyzers={analyzersOf('back')} onToggle={(on) => (on ? turnSideOn('back') : turnSideOff('back'))} />
+        <SideCard side="front" on={!sidesOff.includes('front')} rules={totals.front} packs={packsOf('front')} analyzers={analyzersOf('front')} onToggle={(on) => (on ? turnSideOn('front') : turnSideOff('front'))} />
         <div role="group" aria-label="Escopo Infra e comum" style={{ padding: 16, display: 'grid', gap: 10, border: '1px solid var(--s-border)', background: 'var(--s-header-row)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><SideBadge side="common" /><strong style={{ fontSize: 15 }}>Infra e comum</strong></span>

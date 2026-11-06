@@ -162,6 +162,9 @@ function ChartBody({ points, systemName, currentId, show, hide, goTop }: IChartB
  * Nota das últimas auditorias do sistema, da mais antiga para a mais recente, contra a meta e o limite de atenção.
  * Clicar numa coluna (ou no valor) abre o resultado daquela auditoria.
  */
+/** Espaço mínimo (px) acima do ponto para a dica abrir para cima; abaixo disso ela abre para baixo. */
+const TIP_MIN_SPACE_ABOVE = 220;
+
 export function AuditHistoryChart({ systemId, systemName, currentId }: { systemId: number; systemName: string; currentId: number }) {
   const { data, isLoading } = useAuditRuns(systemId);
   const points = useMemo(() => buildHistory(data ?? []), [data]);
@@ -169,8 +172,8 @@ export function AuditHistoryChart({ systemId, systemName, currentId }: { systemI
   const { onTarget, scored } = historySummary(points);
 
   const show = (point: IHistoryPoint, el: HTMLElement) => {
-    const r = el.getBoundingClientRect();
-    setTip({ point, x: r.left + r.width / 2, top: r.top, bottom: r.bottom });
+    const rect = el.getBoundingClientRect();
+    setTip({ point, x: rect.left + rect.width / 2, top: rect.top, bottom: rect.bottom });
   };
   const hide = () => setTip(null);
   const goTop = () => { hide(); window.scrollTo({ top: 0 }); };
@@ -192,7 +195,7 @@ export function AuditHistoryChart({ systemId, systemName, currentId }: { systemI
         <div
           role="status"
           className="sentinel-grafico__dica"
-          style={{ left: Math.max(8, Math.min(tip.x - 110, window.innerWidth - 228)), top: tip.top > 220 ? tip.top - 12 : tip.bottom + 12, transform: tip.top > 220 ? 'translateY(-100%)' : undefined }}
+          style={{ left: Math.max(8, Math.min(tip.x - 110, window.innerWidth - 228)), top: tip.top > TIP_MIN_SPACE_ABOVE ? tip.top - 12 : tip.bottom + 12, transform: tip.top > TIP_MIN_SPACE_ABOVE ? 'translateY(-100%)' : undefined }}
         >
           <TipBody tip={tip} currentId={currentId} />
         </div>,

@@ -138,7 +138,20 @@ export function severityPhrase(choice: SeverityChoice): string {
 }
 
 /** Texto do rodapé da lista: "Mostrando 9 de 142 abertos (críticos e altos) em 4 sistemas". */
-export function footerText(shown: number, total: number, situation: SituationChoice, severity: SeverityChoice, systems: number): string {
+/** Mudança do filtro "mostrar achados de baixa confiança". */
+export interface IShowLowChange {
+  visible: boolean;
+}
+
+export interface IFooterTextInput {
+  shown: number;
+  total: number;
+  situation: SituationChoice;
+  severity: SeverityChoice;
+  systems: number;
+}
+
+export function footerText({ shown, total, situation, severity, systems }: IFooterTextInput): string {
   const noun = situationChoices.find((c) => c.id === situation)?.noun ?? 'achados';
   const phrase = severityPhrase(severity);
   const scope = systems > 0 ? ` em ${systems} ${systems === 1 ? 'sistema' : 'sistemas'}` : '';

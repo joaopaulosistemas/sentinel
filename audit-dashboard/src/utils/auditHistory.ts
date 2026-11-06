@@ -42,8 +42,8 @@ function timeLabel(date: Date): string {
 }
 
 const startedAt = (run: IAuditRunResponse) => {
-  const t = Date.parse(run.startedAt);
-  return Number.isNaN(t) ? 0 : t;
+  const parsed = Date.parse(run.startedAt);
+  return Number.isNaN(parsed) ? 0 : parsed;
 };
 
 /**
@@ -67,7 +67,7 @@ function scoreOf(run: IAuditRunResponse, kind: IHistoryPoint['kind']): number | 
 }
 
 /** Variação da nota: a do servidor quando existe; senão, a diferença para a última auditoria que gerou nota. */
-function deltaOf(run: IAuditRunResponse, score: number | null, previousScore: number | null): number | null {
+function deltaOf({ run, score, previousScore }: { run: IAuditRunResponse; score: number | null; previousScore: number | null }): number | null {
   if (run.scoreDelta != null) return Math.round(run.scoreDelta);
   return score !== null && previousScore !== null ? score - previousScore : null;
 }
@@ -83,7 +83,7 @@ function toPoint(run: IAuditRunResponse, previousScore: number | null): IHistory
     band: scoreBand(score),
     dayLabel: dayLabel(when),
     timeLabel: timeLabel(when),
-    delta: deltaOf(run, score, previousScore),
+    delta: deltaOf({ run, score, previousScore }),
     critical: run.findingsSummary?.CRITICAL ?? 0,
     high: run.findingsSummary?.HIGH ?? 0,
   };

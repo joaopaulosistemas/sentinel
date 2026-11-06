@@ -48,8 +48,8 @@ export function sortSystems(systems: ISystemSummaryResponse[], by: SortKey): ISy
   const chain = sortChains[by];
   return [...systems].sort((a, b) => {
     for (const cmp of chain) {
-      const d = cmp(a, b);
-      if (d !== 0) return d;
+      const difference = cmp(a, b);
+      if (difference !== 0) return difference;
     }
     return 0;
   });

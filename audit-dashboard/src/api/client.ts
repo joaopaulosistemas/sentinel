@@ -37,6 +37,26 @@ import type {
 
 // URLs relativas: em dev o proxy do Vite e, em produção, o nginx encaminham /api para a API.
 // VITE_API_URL só é necessário se a API estiver em outro host (e então exige CORS).
+export interface ICheckRepoParams {
+  repoUrl: string;
+  branch?: string;
+  systemId?: number;
+  gitToken?: string;
+  gitTokenHosts?: string;
+}
+
+export interface IReviewActionParams {
+  systemId: number;
+  path: string;
+  body?: unknown;
+}
+
+export interface IDecidePendingActionParams {
+  systemId: number;
+  actionId: number;
+  decision: 'approve' | 'reject';
+}
+
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 /** A API devolve mensagens úteis (validação, regra de negócio); mostra em vez de só o código HTTP. */
@@ -57,8 +77,12 @@ function detailFromJson(body: { message?: string; title?: string; detail?: strin
   return body.violations.map((v: { message?: string }) => v.message).filter(Boolean).join('; ');
 }
 
+const MAX_PLAIN_ERROR_LENGTH = 300;
+const HTTP_NO_CONTENT = 204;
+const REQUEST_TIMEOUT_MS = 30_000;
+
 function isShortPlainText(raw: string): boolean {
-  return raw !== '' && raw.length <= 300 && !raw.trimStart().startsWith('<');
+  return raw !== '' && raw.length <= MAX_PLAIN_ERROR_LENGTH && !raw.trimStart().startsWith('<');
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
@@ -66,22 +90,23 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     ...options,
     // Sem limite, uma API travada deixaria a tela esperando para sempre.
-    signal: options?.signal ?? AbortSignal.timeout(30_000),
+    signal: options?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!res.ok) {
     const detail = await readErrorDetail(res);
     throw new Error(detail || `HTTP ${res.status}: ${res.statusText}`);
   }
   // 204 e respostas aceitas sem corpo (ex.: 202 do reinício da API) não têm JSON para ler.
-  if (res.status === 204) return undefined as T;
+  if (res.status === HTTP_NO_CONTENT) return undefined as T;
   const text = await res.text();
   if (text.trim() === '') return undefined as T;
-  return JSON.parse(text) as T;
+  const parsed: unknown = JSON.parse(text);
+  return parsed as T;
 }
 
 /** Resposta em texto (o CLAUDE.md vem como Markdown, não JSON). */
 async function apiText(path: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}${path}`, { signal: AbortSignal.timeout(30_000) });
+  const res = await fetch(`${BASE_URL}${path}`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   if (!res.ok) {
     const detail = await readErrorDetail(res);
     throw new Error(detail || `HTTP ${res.status}: ${res.statusText}`);
@@ -125,15 +150,15 @@ export const api = {
   cancelAudit: (id: number) =>
     apiFetch<IAuditRunResponse>(`/api/v1/audits/${id}/cancel`, { method: 'POST' }),
 
-  checkRepo: (repoUrl: string, branch?: string, access?: { systemId?: number; gitToken?: string; gitTokenHosts?: string }) =>
+  checkRepo: ({ repoUrl, branch, systemId, gitToken, gitTokenHosts }: ICheckRepoParams) =>
     apiFetch<IRepoCheck>('/api/v1/systems/check-repo', {
       method: 'POST',
       body: JSON.stringify({
         repoUrl,
         branch: branch || undefined,
-        systemId: access?.systemId,
-        gitToken: access?.gitToken || undefined,
-        gitTokenHosts: access?.gitTokenHosts || undefined,
+        systemId,
+        gitToken: gitToken || undefined,
+        gitTokenHosts: gitTokenHosts || undefined,
       }),
     }),
 
@@ -274,7 +299,7 @@ export const api = {
 
   getClaudeReview: (systemId: number) => apiFetch<IClaudeReview>(`/api/v1/claude-review/${systemId}`),
 
-  reviewAction: (systemId: number, path: string, body?: unknown) =>
+  reviewAction: ({ systemId, path, body }: IReviewActionParams) =>
     apiFetch<IClaudeReview>(`/api/v1/claude-review/${systemId}/${path}`, {
       method: 'POST',
       body: JSON.stringify(body ?? {}),
@@ -282,7 +307,7 @@ export const api = {
 
   getPendingActions: (systemId: number) => apiFetch<IPendingAction[]>(`/api/v1/pending-actions/${systemId}`),
 
-  decidePendingAction: (systemId: number, actionId: number, decision: 'approve' | 'reject') =>
+  decidePendingAction: ({ systemId, actionId, decision }: IDecidePendingActionParams) =>
     apiFetch<IPendingAction[]>(`/api/v1/pending-actions/${systemId}/${actionId}/${decision}`, { method: 'POST', body: '{}' }),
 
   getMcpCalls: (systemId: number, limit = 20) =>

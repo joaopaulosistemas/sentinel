@@ -65,8 +65,10 @@ function stepLabel(run: IAuditRunResponse): string {
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 const cell = { padding: '12px 8px' } as const;
 
+const MAX_ERROR_LENGTH = 60;
+
 function truncated(message: string): string {
-  return message.length > 60 ? `${message.slice(0, 60)}…` : message;
+  return message.length > MAX_ERROR_LENGTH ? `${message.slice(0, MAX_ERROR_LENGTH)}…` : message;
 }
 
 /** Estado da execução na tabela: andamento com barra, concluída, falhou ou cancelada. */
@@ -111,11 +113,15 @@ function RunStatus({ run, active, pct }: { run: IAuditRunResponse; active: boole
   );
 }
 
+const isPresent = (value: number | null | undefined): boolean => value !== null && value !== undefined;
+const hasFindingsTotal = (run: IAuditRunResponse): boolean => run.status === 'COMPLETED' && isPresent(run.totalFindings);
+const hasComparison = (run: IAuditRunResponse): boolean => isPresent(run.newFindings) && isPresent(run.resolvedFindings);
+
 /** "252 (4 novos, 9 resolvidos)"; sem comparação mostra só o total. */
 function findingsText(run: IAuditRunResponse): string {
   if (run.status === 'PENDING' || run.status === 'RUNNING') return 'calculando';
-  if (run.status !== 'COMPLETED' || run.totalFindings === null || run.totalFindings === undefined) return '-';
-  if (run.newFindings !== null && run.newFindings !== undefined && run.resolvedFindings !== null && run.resolvedFindings !== undefined) {
+  if (!hasFindingsTotal(run)) return '-';
+  if (hasComparison(run)) {
     return `${run.totalFindings} (${run.newFindings} ${run.newFindings === 1 ? 'novo' : 'novos'}, ${run.resolvedFindings} ${run.resolvedFindings === 1 ? 'resolvido' : 'resolvidos'})`;
   }
   return String(run.totalFindings);
@@ -317,7 +323,14 @@ function newestCompleted(runs: IAuditRunResponse[] | undefined): IAuditRunRespon
   return runs?.filter((r) => r.status === 'COMPLETED').sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())[0];
 }
 
-function buildIndex(runCount: number, hasCompleted: boolean, debtCount?: number, suppressedCount = 0): IIndexItem[] {
+interface IIndexInput {
+  runCount: number;
+  hasCompleted: boolean;
+  debtCount?: number;
+  suppressedCount?: number;
+}
+
+function buildIndex({ runCount, hasCompleted, debtCount, suppressedCount = 0 }: IIndexInput): IIndexItem[] {
   const hasInsights = debtCount !== undefined;
   return [
     { id: 'visao', label: 'Visão geral' },
@@ -386,7 +399,7 @@ export function SystemDetailPage() {
   if (systemError || !system) return <SystemNotFound error={systemError} />;
 
   const runs = auditRuns?.slice(0, 8) ?? [];
-  const index = buildIndex(runs.length, !!latestCompleted, insights.data?.debtTable.length, suppressions.data?.length);
+  const index = buildIndex({ runCount: runs.length, hasCompleted: !!latestCompleted, debtCount: insights.data?.debtTable.length, suppressedCount: suppressions.data?.length });
 
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, { label: system.name }]}>

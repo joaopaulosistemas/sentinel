@@ -27,7 +27,14 @@ export function similarTo(selected: IFindingResponse[], candidates: IFindingResp
 
 type Mutation = { isPending: boolean; isError: boolean; error: unknown };
 
-function commonBody(reason: SuppressionReason, justification: string, createdBy: string, expires: string) {
+interface ICommonBodyInput {
+  reason: SuppressionReason;
+  justification: string;
+  createdBy: string;
+  expires: string;
+}
+
+export function commonBody({ reason, justification, createdBy, expires }: ICommonBodyInput) {
   return {
     reason,
     justification: justification.trim(),
@@ -37,7 +44,18 @@ function commonBody(reason: SuppressionReason, justification: string, createdBy:
   };
 }
 
-function primaryLabel(pending: boolean, bulk: boolean, total: number): string {
+/** Mínimo de caracteres (sem espaços nas pontas) para a justificativa valer. */
+export const MIN_JUSTIFICATION_LENGTH = 10;
+
+export const justificationTooShort = (justification: string): boolean => justification.trim().length < MIN_JUSTIFICATION_LENGTH;
+
+interface IPrimaryLabelInput {
+  pending: boolean;
+  bulk: boolean;
+  total: number;
+}
+
+export function primaryLabel({ pending, bulk, total }: IPrimaryLabelInput): string {
   if (pending) return 'Salvando…';
   return bulk ? `Suprimir ${total}` : 'Suprimir';
 }
@@ -57,7 +75,7 @@ interface IFieldsProps {
 }
 
 function SuppressFields(p: IFieldsProps) {
-  const tooShort = p.justification.trim().length < 10;
+  const tooShort = justificationTooShort(p.justification);
   return (
     <>
       <p style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>
@@ -161,7 +179,7 @@ export function SuppressModal({ findings, candidates = [], onClose }: IProps) {
   };
 
   const submit = () => {
-    const common = commonBody(reason, justification, createdBy, expires);
+    const common = commonBody({ reason, justification, createdBy, expires });
     if (bulk) {
       batch.mutate(
         { ...common, findingIds: targets.map((f) => f.id) },
@@ -177,9 +195,9 @@ export function SuppressModal({ findings, candidates = [], onClose }: IProps) {
       open
       modalHeading="Retirar do score"
       modalLabel={bulk ? `${targets.length} findings selecionados` : finding.title}
-      primaryButtonText={primaryLabel(mutation.isPending, bulk, targets.length)}
+      primaryButtonText={primaryLabel({ pending: mutation.isPending, bulk, total: targets.length })}
       secondaryButtonText="Cancelar"
-      primaryButtonDisabled={justification.trim().length < 10 || mutation.isPending}
+      primaryButtonDisabled={justificationTooShort(justification) || mutation.isPending}
       onRequestClose={close}
       onRequestSubmit={submit}
     >

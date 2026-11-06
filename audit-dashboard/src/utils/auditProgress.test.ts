@@ -69,7 +69,7 @@ describe('andamento da auditoria', () => {
 });
 
 describe('estimativa de tempo', () => {
-  const done = (start: string, end: string | null, status: IAuditRunResponse['status'] = 'COMPLETED') => ({
+  const done = ({ start, end, status = 'COMPLETED' }: { start: string; end: string | null; status?: IAuditRunResponse['status'] }) => ({
     status,
     startedAt: start,
     completedAt: end,
@@ -78,19 +78,19 @@ describe('estimativa de tempo', () => {
   it('tira a média das concluídas e ignora falhas, canceladas e em andamento', () => {
     expect(
       averageDurationSeconds([
-        done('2026-10-22T10:00:00', '2026-10-22T10:04:00'), // 240 s
-        done('2026-10-21T10:00:00', '2026-10-21T10:02:00'), // 120 s
-        done('2026-10-20T10:00:00', '2026-10-20T10:00:05', 'FAILED'),
-        done('2026-10-19T10:00:00', null, 'RUNNING'),
-        done('2026-10-18T10:00:00', '2026-10-18T10:00:30', 'CANCELLED'),
+        done({ start: '2026-10-22T10:00:00', end: '2026-10-22T10:04:00' }), // 240 s
+        done({ start: '2026-10-21T10:00:00', end: '2026-10-21T10:02:00' }), // 120 s
+        done({ start: '2026-10-20T10:00:00', end: '2026-10-20T10:00:05', status: 'FAILED' }),
+        done({ start: '2026-10-19T10:00:00', end: null, status: 'RUNNING' }),
+        done({ start: '2026-10-18T10:00:00', end: '2026-10-18T10:00:30', status: 'CANCELLED' }),
       ]),
     ).toBe(180);
     expect(averageDurationSeconds([])).toBeNull();
   });
 
   it('usa só as 5 mais recentes', () => {
-    const recent = Array.from({ length: 5 }, () => done('2026-10-22T10:00:00', '2026-10-22T10:01:00'));
-    const old = done('2026-01-01T10:00:00', '2026-01-01T12:00:00');
+    const recent = Array.from({ length: 5 }, () => done({ start: '2026-10-22T10:00:00', end: '2026-10-22T10:01:00' }));
+    const old = done({ start: '2026-01-01T10:00:00', end: '2026-01-01T12:00:00' });
     expect(averageDurationSeconds([...recent, old])).toBe(60);
   });
 

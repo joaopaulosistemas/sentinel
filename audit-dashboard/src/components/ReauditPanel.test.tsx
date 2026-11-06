@@ -19,11 +19,11 @@ function setup(actions: IPendingAction[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
-      calls.push({ url: u, method: init?.method ?? 'GET' });
-      if (u.includes('/pending-actions/') && init?.method === 'POST') return new Response(JSON.stringify([action({ status: 'APPROVED', resultNote: 'Auditoria #9 iniciada.', auditRunId: 9 })]), { status: 200 });
-      if (u.includes('/pending-actions/')) return new Response(JSON.stringify(actions), { status: 200 });
-      if (u.includes('/audits')) return new Response('[]', { status: 200 });
+      const requestUrl = String(url);
+      calls.push({ url: requestUrl, method: init?.method ?? 'GET' });
+      if (requestUrl.includes('/pending-actions/') && init?.method === 'POST') return new Response(JSON.stringify([action({ status: 'APPROVED', resultNote: 'Auditoria #9 iniciada.', auditRunId: 9 })]), { status: 200 });
+      if (requestUrl.includes('/pending-actions/')) return new Response(JSON.stringify(actions), { status: 200 });
+      if (requestUrl.includes('/audits')) return new Response('[]', { status: 200 });
       return new Response('{}', { status: 200 });
     }),
   );

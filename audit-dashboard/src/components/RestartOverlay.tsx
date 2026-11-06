@@ -127,7 +127,7 @@ function RestartSteps({ phase, elapsed }: { phase: RestartPhase; elapsed: number
   );
 }
 
-function statusMessage(phase: RestartPhase, timedOut: boolean): string {
+function statusMessage({ phase, timedOut }: { phase: RestartPhase; timedOut: boolean }): string {
   if (timedOut) return 'A API está demorando para voltar.';
   return phase === 'requesting' ? 'Enviando o pedido de reinício.' : 'Aguardando a API voltar.';
 }
@@ -179,7 +179,7 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: IProps) {
         <RestartSteps phase={phase} elapsed={elapsed} />
 
         <div role="status" aria-live="polite" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
-          {statusMessage(phase, timedOut)}
+          {statusMessage({ phase, timedOut })}
         </div>
 
         {timedOut && (

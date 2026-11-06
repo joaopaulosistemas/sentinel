@@ -91,12 +91,14 @@ export function SystemSummaryCards({ summary }: { summary: IFindingsOverview['by
   );
 }
 
+interface IOriginFinderInput {
+  itemByFinding: Map<number, OverviewItem>;
+  stackByName: Map<number, string | null | undefined>;
+  open: (item: OverviewItem) => void;
+}
+
 /** Monta, para cada achado da visão geral, o sistema de onde ele vem (nome, stack e atalho para abrir o sistema). */
-export function originFinder(
-  itemByFinding: Map<number, OverviewItem>,
-  stackByName: Map<number, string | null | undefined>,
-  open: (item: OverviewItem) => void,
-) {
+export function originFinder({ itemByFinding, stackByName, open }: IOriginFinderInput) {
   return (f: IFindingResponse): IFindingOrigin | undefined => {
     const hit = itemByFinding.get(f.id);
     if (!hit) return undefined;

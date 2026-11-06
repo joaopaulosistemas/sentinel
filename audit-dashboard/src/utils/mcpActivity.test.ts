@@ -2,18 +2,18 @@ import { describe, expect, it } from 'vitest';
 import type { IMcpCall, IPendingAction } from '../types';
 import { callsSince, mcpCallEvents, mergeEvents, pendingCount } from './mcpActivity';
 
-const call = (tool: string, at: string, ok = true, detail: string | null = null): IMcpCall => ({ tool, ok, durationMs: 12, detail, at });
+const call = ({ tool, at, ok = true, detail = null }: { tool: string; at: string; ok?: boolean; detail?: string | null }): IMcpCall => ({ tool, ok, durationMs: 12, detail, at });
 
 describe('mcpActivity', () => {
   const started = '2026-10-26T10:00:00';
 
   it('ignora chamadas anteriores ao início da auditoria e ordena da mais recente para a mais antiga', () => {
-    const calls = [call('status_auditoria', '2026-10-26T09:59:59'), call('buscar_achados', '2026-10-26T10:01:00'), call('diff_auditoria', '2026-10-26T10:02:00')];
+    const calls = [call({ tool: 'status_auditoria', at: '2026-10-26T09:59:59' }), call({ tool: 'buscar_achados', at: '2026-10-26T10:01:00' }), call({ tool: 'diff_auditoria', at: '2026-10-26T10:02:00' })];
     expect(callsSince(calls, started).map((c) => c.tool)).toEqual(['diff_auditoria', 'buscar_achados']);
   });
 
   it('sem horário de início, mantém todas as chamadas', () => {
-    expect(callsSince([call('a', '2026-10-26T09:00:00')], null)).toHaveLength(1);
+    expect(callsSince([call({ tool: 'a', at: '2026-10-26T09:00:00' })], null)).toHaveLength(1);
   });
 
   it('resposta que não é lista vira lista vazia', () => {
@@ -23,7 +23,7 @@ describe('mcpActivity', () => {
   });
 
   it('chamadas viram eventos; as recusadas dizem o motivo', () => {
-    const events = mcpCallEvents([call('buscar_achados', '2026-10-26T10:01:00'), call('suprimir_achado', '2026-10-26T10:02:00', false, 'ferramenta desligada')], started);
+    const events = mcpCallEvents([call({ tool: 'buscar_achados', at: '2026-10-26T10:01:00' }), call({ tool: 'suprimir_achado', at: '2026-10-26T10:02:00', ok: false, detail: 'ferramenta desligada' })], started);
     expect(events.map((e) => e.message)).toEqual([
       'Claude (MCP): suprimir_achado recusada (ferramenta desligada)',
       'Claude (MCP) chamou buscar_achados',

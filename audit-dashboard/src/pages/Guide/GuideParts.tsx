@@ -186,7 +186,7 @@ export function RulesList({ rules }: { rules: Array<IGuideRule & { own: boolean 
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
-  const shown = filterRules(rules, severity, query);
+  const shown = filterRules(rules, { severity, query });
   const count = (s: SeverityFilter) => (s === 'todas' ? rules.length : rules.filter((r) => r.severity === s).length);
   return (
     <section aria-labelledby="guia-regras" style={{ ...card, display: 'grid', gap: 12 }}>

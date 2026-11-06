@@ -23,15 +23,15 @@ function setup(initial: IMcpConfig) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
+      const requestUrl = String(url);
       const method = init?.method ?? 'GET';
-      calls.push({ url: u, method, body: init?.body as string | undefined });
-      if (u.endsWith('/calls?limit=20')) return new Response(JSON.stringify(callList), { status: 200 });
-      if (u.endsWith('/key') && method === 'POST') {
+      calls.push({ url: requestUrl, method, body: init?.body as string | undefined });
+      if (requestUrl.endsWith('/calls?limit=20')) return new Response(JSON.stringify(callList), { status: 200 });
+      if (requestUrl.endsWith('/key') && method === 'POST') {
         current = { ...current, hasKey: true, keyPrefix: 'snt_AbCdEf' };
         return new Response(JSON.stringify({ key: 'snt_AbCdEfGHIJ-chave-completa', keyPrefix: 'snt_AbCdEf' }), { status: 200 });
       }
-      if (u.endsWith('/key') && method === 'DELETE') {
+      if (requestUrl.endsWith('/key') && method === 'DELETE') {
         current = { ...current, hasKey: false, enabled: false, keyPrefix: null };
         return new Response(null, { status: 204 });
       }
@@ -123,7 +123,7 @@ describe('McpPanel', () => {
   });
 
   it('monta o comando do Claude Code com a chave e o endereço', () => {
-    expect(connectCommand('https://s.exemplo/mcp/api', 'api', 'snt_x')).toBe(
+    expect(connectCommand({ url: 'https://s.exemplo/mcp/api', systemName: 'api', key: 'snt_x' })).toBe(
       'claude mcp add --transport http sentinel-api https://s.exemplo/mcp/api --header "Authorization: Bearer snt_x"',
     );
   });

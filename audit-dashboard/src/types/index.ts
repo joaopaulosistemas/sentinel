@@ -280,7 +280,7 @@ export interface IRuleQuality {
   needsReview: boolean;
 }
 
-// ---------------------------------------------------------------- auditoria completa (insights)
+// Auditoria completa (insights)
 
 export type AreaState = 'CRITICO' | 'ATENCAO' | 'SEM_ACHADOS' | 'NAO_VERIFICADO';
 
@@ -366,7 +366,7 @@ export interface IAuditInsights {
   projectMap: IProjectMapInfo | null;
 }
 
-// ---------------------------------------------------------------- plano de correção
+// Plano de correção
 
 export interface IFixPlanItem {
   ruleId: string | null;
@@ -388,7 +388,7 @@ export interface IFixPlan {
   items: IFixPlanItem[];
 }
 
-// ---------------------------------------------------------------- explicação da nota
+// Explicação da nota
 
 export interface IScoreGroup {
   ruleId: string;
@@ -421,7 +421,7 @@ export interface IScoreExplanation {
   dimensions: IScoreDimension[];
 }
 
-// ---------------------------------------------------------------- achados de todos os sistemas
+// Achados de todos os sistemas
 
 export interface IFindingsOverview {
   total: number;
@@ -472,7 +472,7 @@ export interface IBatchSuppressResponse {
   failures: { findingId: number; message: string }[];
 }
 
-// ---- Acesso do Claude (MCP) a um sistema ----
+// Acesso do Claude (MCP) a um sistema
 
 export type McpDataLevel = 'TITLES' | 'FILE_LINE' | 'SENSITIVE';
 
@@ -685,7 +685,7 @@ export interface ISettingsResponse {
   restartRequired: boolean;
 }
 
-// ---- Guia de código ----
+// Guia de código
 
 export type GuideSeverity = 'alta' | 'media' | 'baixa';
 

@@ -29,21 +29,32 @@ export function currentValue(s: ISettingView, drafts: Record<string, string>): s
   return drafts[s.key] ?? shownValue(s);
 }
 
+/** O campo é editável e tem rascunho diferente do valor mostrado. */
+function isChangedDraft(s: ISettingView, draft: string | undefined): draft is string {
+  return s.editable && draft !== undefined && draft !== shownValue(s);
+}
+
 /** Só o que o usuário mudou de fato: rascunho igual ao valor mostrado não conta. */
 export function pendingChanges(settings: ISettingView[], drafts: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const s of settings) {
-    const d = drafts[s.key];
-    if (s.editable && d !== undefined && d !== shownValue(s)) out[s.key] = d;
+    const draft = drafts[s.key];
+    if (isChangedDraft(s, draft)) out[s.key] = draft;
   }
   return out;
 }
 
+export interface IFilterSettingsInput {
+  settings: ISettingView[];
+  section: string;
+  query: string;
+}
+
 /** Com busca, procura em todas as seções; sem busca, mostra só a seção escolhida. */
-export function filterSettings(settings: ISettingView[], section: string, query: string): ISettingView[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return settings.filter((s) => s.section === section);
-  return settings.filter((s) => `${s.label} ${s.key} ${s.help} ${s.group}`.toLowerCase().includes(q));
+export function filterSettings({ settings, section, query }: IFilterSettingsInput): ISettingView[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return settings.filter((s) => s.section === section);
+  return settings.filter((s) => `${s.label} ${s.key} ${s.help} ${s.group}`.toLowerCase().includes(needle));
 }
 
 /** Agrupa mantendo a ordem em que o catálogo as entrega. */
@@ -69,8 +80,8 @@ export function sectionLabel(id: string): string {
 export function numberProblem(s: ISettingView, value: string): string | null {
   if (s.kind !== 'number') return null;
   if (!/^-?\d+$/.test(value.trim())) return 'Informe um número inteiro';
-  const n = Number(value);
-  if (n < s.min || n > s.max) return `Use um valor entre ${s.min} e ${s.max}`;
+  const parsed = Number(value);
+  if (parsed < s.min || parsed > s.max) return `Use um valor entre ${s.min} e ${s.max}`;
   return null;
 }
 

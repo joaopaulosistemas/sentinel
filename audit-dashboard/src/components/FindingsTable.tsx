@@ -215,7 +215,7 @@ function BatchBar({ count, onSuppress, onClear }: { count: number; onSuppress: (
   );
 }
 
-function toggledIn(set: Set<number>, id: number, on: boolean): Set<number> {
+function toggledIn({ set, id, on }: { set: Set<number>; id: number; on: boolean }): Set<number> {
   const next = new Set(set);
   if (on) next.add(id);
   else next.delete(id);
@@ -272,8 +272,8 @@ export function FindingsTable({ findings, systemName, auditId, systemOf, claudeN
                   claudeNote={claudeNoteOf?.(f)}
                   expanded={open.has(f.id)}
                   selected={selected.has(f.id)}
-                  onSelect={(on) => setSelected(toggledIn(selected, f.id, on))}
-                  onToggleOpen={() => setOpen(toggledIn(open, f.id, !open.has(f.id)))}
+                  onSelect={(on) => setSelected(toggledIn({ set: selected, id: f.id, on }))}
+                  onToggleOpen={() => setOpen(toggledIn({ set: open, id: f.id, on: !open.has(f.id) }))}
                   onSuppress={() => setToSuppress([f])}
                 />
               );

@@ -88,17 +88,17 @@ function ScoreRing({ run, plan }: { run: IAuditRunResponse; plan: Plan }) {
 
 /** Etapa 1: o medidor da nota, o veredito em uma frase e o atalho para a lista de correções. */
 function VerdictSection({ run, plan }: { run: IAuditRunResponse; plan: Plan }) {
-  const v = verdict(plan);
+  const view = verdict(plan);
   return (
     <section
       aria-labelledby="etapa-1"
-      style={{ ...box, background: 'var(--s-selected)', borderLeft: `4px solid ${toneColor[v.tone]}`, display: 'flex', gap: '1rem 2rem', alignItems: 'center', flexWrap: 'wrap', padding: '16px 24px' }}
+      style={{ ...box, background: 'var(--s-selected)', borderLeft: `4px solid ${toneColor[view.tone]}`, display: 'flex', gap: '1rem 2rem', alignItems: 'center', flexWrap: 'wrap', padding: '16px 24px' }}
     >
       <ScoreRing run={run} plan={plan} />
       <div style={{ flex: 1, minWidth: 280, display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span id="etapa-1" style={eyebrow}>Etapa 1 · Veredito</span>
-        <span style={{ fontSize: 20 }}><Emphasis text={v.headline} /></span>
-        <span style={{ color: 'var(--s-text-2)' }}><Emphasis text={v.detail} /></span>
+        <span style={{ fontSize: 20 }}><Emphasis text={view.headline} /></span>
+        <span style={{ color: 'var(--s-text-2)' }}><Emphasis text={view.detail} /></span>
       </div>
       {plan.items.length > 0 && (
         <a href="#criticos" style={{ height: 40, display: 'inline-flex', alignItems: 'center', padding: '0 20px', background: '#161616', color: '#fff', textDecoration: 'none', borderRadius: 6 }}>
@@ -121,8 +121,8 @@ function SeverityCard({ run }: { run: IAuditRunResponse }) {
       {total > 0 && (
         <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', background: 'var(--s-border)' }}>
           {SEV_ORDER.map((sev) => {
-            const n = run.findingsSummary?.[sev] ?? 0;
-            return n > 0 ? <span key={sev} style={{ display: 'block', width: `${(n / total) * 100}%`, background: sevBadge[sev].bg }} /> : null;
+            const count = run.findingsSummary?.[sev] ?? 0;
+            return count > 0 ? <span key={sev} style={{ display: 'block', width: `${(count / total) * 100}%`, background: sevBadge[sev].bg }} /> : null;
           })}
         </div>
       )}
@@ -184,28 +184,38 @@ function ChangesCard({ run }: { run: IAuditRunResponse }) {
 
 const RADAR_ORDER: Category[] = ['SECURITY', 'DEPENDENCY', 'ARCHITECTURE', 'QUALITY', 'PERFORMANCE', 'OBSERVABILITY'];
 
+/** Menos eixos que isso não formam um polígono: o radar some. */
+const MIN_RADAR_AXES = 3;
+
+interface IRadarPoint {
+  index: number;
+  value: number;
+  /** Distância extra (px) além do valor, para posicionar os rótulos. */
+  extra?: number;
+}
+
 /** Radar das categorias: o anel tracejado é a meta; quanto mais perto da borda, melhor a nota. */
 function Radar({ cats }: { cats: ReturnType<typeof categoriesByScore> }) {
   const byCat = new Map(cats.map((c) => [c.category, c]));
   const axes = RADAR_ORDER.filter((c) => byCat.has(c));
-  if (axes.length < 3) return null;
+  if (axes.length < MIN_RADAR_AXES) return null;
   const size = 260;
   const mid = size / 2;
   const radius = 84;
-  const point = (i: number, value: number, extra = 0) => {
-    const angle = -Math.PI / 2 + (i * 2 * Math.PI) / axes.length;
-    const r = (radius * Math.max(0, Math.min(100, value))) / 100 + extra;
-    return [mid + r * Math.cos(angle), mid + r * Math.sin(angle)] as const;
+  const point = ({ index, value, extra = 0 }: IRadarPoint) => {
+    const angle = -Math.PI / 2 + (index * 2 * Math.PI) / axes.length;
+    const distance = (radius * Math.max(0, Math.min(100, value))) / 100 + extra;
+    return [mid + distance * Math.cos(angle), mid + distance * Math.sin(angle)] as const;
   };
-  const ring = (value: number) => axes.map((_, i) => point(i, value).join(',')).join(' ');
-  const shape = axes.map((c, i) => point(i, byCat.get(c)?.score ?? 0).join(',')).join(' ');
+  const ring = (value: number) => axes.map((_, i) => point({ index: i, value }).join(',')).join(' ');
+  const shape = axes.map((c, i) => point({ index: i, value: byCat.get(c)?.score ?? 0 }).join(',')).join(' ');
   return (
     <svg aria-hidden="true" viewBox={`-60 0 ${size + 120} ${size}`} style={{ width: '100%', maxWidth: 380, height: 'auto', alignSelf: 'center' }}>
       {[25, 50, 100].map((v) => <polygon key={v} points={ring(v)} fill="none" stroke="var(--s-border)" strokeWidth="1" />)}
       <polygon points={ring(TARGET_SCORE)} fill="none" stroke="var(--s-success-text)" strokeWidth="1.5" strokeDasharray="4 3" />
       <polygon points={shape} fill="var(--s-link)" fillOpacity="0.2" stroke="var(--s-link)" strokeWidth="2" />
       {axes.map((c, i) => {
-        const [x, y] = point(i, 100, 16);
+        const [x, y] = point({ index: i, value: 100, extra: 16 });
         return (
           <text key={c} x={x} y={y} fontSize="11" fill="var(--s-text-2)" textAnchor={x < mid - 4 ? 'end' : x > mid + 4 ? 'start' : 'middle'} dominantBaseline="middle">
             {categoryLabels[c]}
@@ -292,14 +302,14 @@ function ToolsSection({ runId }: { runId: number }) {
       </div>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))', gap: 12 }}>
         {tools.map((t) => {
-          const v = toolView(t);
+          const view = toolView(t);
           return (
-            <li key={t.name} className="sentinel-linha-hover" title={t.note ?? undefined} style={{ borderLeft: `4px solid ${v.color}`, padding: '6px 12px', borderRadius: 4 }}>
+            <li key={t.name} className="sentinel-linha-hover" title={t.note ?? undefined} style={{ borderLeft: `4px solid ${view.color}`, padding: '6px 12px', borderRadius: 4 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                 <strong style={{ fontWeight: 600 }}>{t.name}</strong>
                 <span style={{ fontSize: 13, color: 'var(--s-text-2)' }}>{t.findings} {t.findings === 1 ? 'achado' : 'achados'}</span>
               </div>
-              <div style={{ fontSize: 12, color: v.color }}>{v.text}</div>
+              <div style={{ fontSize: 12, color: view.color }}>{view.text}</div>
               {t.note && <div style={{ fontSize: 12, color: 'var(--s-text-3)', whiteSpace: 'pre-line', overflowWrap: 'anywhere', marginTop: 4 }}>{t.note}</div>}
             </li>
           );
@@ -373,7 +383,7 @@ function FixSection({ run, plan, category, items, onOpenFindings }: { run: IAudi
 
 /** Resultado em três etapas, do geral para o detalhe: veredito, onde está o risco, o que corrigir primeiro. */
 export function ResultSteps({ run, onOpenFindings }: { run: IAuditRunResponse; onOpenFindings: () => void }) {
-  const { data: plan, isLoading, error } = useFixPlan(run.id, run.status === 'COMPLETED');
+  const { data: plan, isLoading, error } = useFixPlan({ auditId: run.id, enabled: run.status === 'COMPLETED' });
   const [category, setCategory] = useState<Category | null>(null);
 
   if (isLoading) return <SkeletonText paragraph lineCount={5} />;

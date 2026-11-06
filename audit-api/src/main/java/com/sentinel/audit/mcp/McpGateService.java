@@ -27,13 +27,14 @@ public class McpGateService {
     /** Cada byte vira dois caracteres hexadecimais. */
     private static final int API_KEY_HEX_CHARS = API_KEY_BYTES * 2;
     /** Caracteres aleatórios mostrados depois do prefixo fixo da chave. */
-    private static final int KEY_PREFIX_RANDOM_CHARS = 6;
+    private static final int PUBLIC_PREFIX_RANDOM_CHARS = 6;
     private static final int LOG_DETAIL_MAX_CHARS = 300;
     private static final int MAX_RECENT_LOGS = 200;
 
 
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final String KEY_PREFIX = "snt_";
+    /** Prefixo público que identifica uma chave do Sentinel (mostrado na tela); não é segredo, o segredo é o resto da chave. */
+    private static final String PUBLIC_PREFIX = "snt_";
 
     @Inject
     McpAccessRepository accessRepository;
@@ -48,7 +49,7 @@ public class McpGateService {
     static String newKey() {
         byte[] raw = new byte[API_KEY_BYTES];
         RANDOM.nextBytes(raw);
-        return KEY_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
+        return PUBLIC_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
     }
 
     static String hash(String key) {
@@ -84,7 +85,7 @@ public class McpGateService {
         McpAccess access = accessFor(systemId);
         String key = newKey();
         access.setKeyHash(hash(key));
-        access.setKeyPrefix(key.substring(0, KEY_PREFIX.length() + KEY_PREFIX_RANDOM_CHARS));
+        access.setKeyPrefix(key.substring(0, PUBLIC_PREFIX.length() + PUBLIC_PREFIX_RANDOM_CHARS));
         access.setKeyCreatedAt(LocalDateTime.now());
         return new IssuedKey(key, access.getKeyPrefix());
     }

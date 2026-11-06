@@ -2,6 +2,7 @@ package com.sentinel.audit.pack;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -49,18 +50,29 @@ public enum RuleSide {
      * regra de texto ("regex") decide pelas extensões dos caminhos; Docker, Kubernetes e Compose são comuns; dúvida é comum.
      */
     public static RuleSide infer(List<String> languages, List<String> includes) {
-        if (languages != null && !languages.isEmpty()) {
-            List<String> langs = languages.stream().map(l -> l.strip().toLowerCase(Locale.ROOT)).toList();
-            if (BACK_LANGUAGES.containsAll(langs)) {
-                return BACK;
-            }
-            if (langs.size() == 1 && langs.get(0).equals("dockerfile")) {
-                return COMMON;
-            }
-            if (FRONT_LANGUAGES.containsAll(langs)) {
-                return FRONT;
-            }
+        return sideOfLanguages(languages).orElseGet(() -> sideOfIncludes(includes));
+    }
+
+    /** O lado que as linguagens decidem; vazio quando não decidem (sem linguagem, ou uma mistura). */
+    private static Optional<RuleSide> sideOfLanguages(List<String> languages) {
+        if (languages == null || languages.isEmpty()) {
+            return Optional.empty();
         }
+        List<String> langs = languages.stream().map(l -> l.strip().toLowerCase(Locale.ROOT)).toList();
+        if (BACK_LANGUAGES.containsAll(langs)) {
+            return Optional.of(BACK);
+        }
+        if (langs.size() == 1 && langs.get(0).equals("dockerfile")) {
+            return Optional.of(COMMON);
+        }
+        if (FRONT_LANGUAGES.containsAll(langs)) {
+            return Optional.of(FRONT);
+        }
+        return Optional.empty();
+    }
+
+    /** O lado que as extensões dos caminhos indicam; infraestrutura, mistura ou nenhum caminho é comum. */
+    private static RuleSide sideOfIncludes(List<String> includes) {
         boolean front = false;
         boolean back = false;
         if (includes != null) {
@@ -76,10 +88,7 @@ public enum RuleSide {
         if (front && !back) {
             return FRONT;
         }
-        if (back && !front) {
-            return BACK;
-        }
-        return COMMON;
+        return back && !front ? BACK : COMMON;
     }
 
     /** Lado de um arquivo pela extensão: {@code null} quando não é de código de um lado só (Dockerfile, YAML, Markdown). */

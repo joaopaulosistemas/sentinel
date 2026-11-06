@@ -60,7 +60,7 @@ function RunNotFound({ error }: { error: unknown }) {
 const FINISHED: RunState[] = ['COMPLETED', 'FAILED', 'CANCELLED'];
 
 /** Ao terminar, as listas que mostram nota e situação precisam do dado novo. */
-function useRefreshListsWhenFinished(finished: boolean) {
+function useRefreshListsWhenFinished({ finished }: { finished: boolean }) {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!finished) return;
@@ -70,7 +70,13 @@ function useRefreshListsWhenFinished(finished: boolean) {
   }, [finished, queryClient]);
 }
 
-function stepTextFor(status: RunState, index: number, counts: { done: number; total: number }): string {
+interface IStepTextInput {
+  status: RunState;
+  index: number;
+  counts: { done: number; total: number };
+}
+
+function stepTextFor({ status, index, counts }: IStepTextInput): string {
   if (status === 'COMPLETED') return 'Concluída';
   if (status === 'FAILED') return 'A auditoria falhou';
   if (status === 'CANCELLED') return 'Auditoria cancelada';
@@ -119,7 +125,7 @@ function CompletedHeader({ run, seconds, onRerun }: { run: IAuditRunResponse; se
         </span>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <Button kind="tertiary" href={reportUrl(BASE_URL, run.id, 'html')} target="_blank" rel="noreferrer">
+        <Button kind="tertiary" href={reportUrl({ base: BASE_URL, auditId: run.id, format: 'html' })} target="_blank" rel="noreferrer">
           Baixar relatório
         </Button>
         {run.systemId !== undefined && <Button onClick={onRerun}>Auditar de novo</Button>}
@@ -293,12 +299,11 @@ function CancelModal({ open, pending, error, isError, onClose, onConfirm }: ICan
 }
 
 /** Cancela a auditoria e atualiza as listas que a mostram. */
-function useCancelAudit(id: number, onDone: () => void) {
+function useCancelAudit(id: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => api.cancelAudit(id),
     onSuccess: () => {
-      onDone();
       void queryClient.invalidateQueries({ queryKey: ['audit', id] });
       void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
     },
@@ -306,7 +311,13 @@ function useCancelAudit(id: number, onDone: () => void) {
 }
 
 /** Tempo restante estimado pela média das auditorias anteriores do mesmo sistema. */
-function etaLabelFor(run: IAuditRunResponse, history: IAuditRunResponse[], seconds: number | null): string | null {
+interface IEtaInput {
+  run: IAuditRunResponse;
+  history: IAuditRunResponse[];
+  seconds: number | null;
+}
+
+function etaLabelFor({ run, history, seconds }: IEtaInput): string | null {
   const average = averageDurationSeconds(history.filter((r) => r.id !== run.id));
   return etaText(remainingSeconds(seconds, average));
 }
@@ -314,7 +325,13 @@ function etaLabelFor(run: IAuditRunResponse, history: IAuditRunResponse[], secon
 type McpActivity = ReturnType<typeof useMcpActivity>;
 
 /** O que o Claude (MCP) fez durante a auditoria: ligado ou não, chamadas e eventos para o registro. */
-function mcpViewOf(mcp: McpActivity, run: IAuditRunResponse, progressEvents: IAuditProgress['events']) {
+interface IMcpViewInput {
+  mcp: McpActivity;
+  run: IAuditRunResponse;
+  progressEvents: IAuditProgress['events'];
+}
+
+function mcpViewOf({ mcp, run, progressEvents }: IMcpViewInput) {
   const enabled = mcp.config.data?.enabled ?? null;
   return {
     enabled,
@@ -387,12 +404,12 @@ interface IRunningViewProps {
 function RunningView({ run, progress, history, mcp, seconds }: IRunningViewProps) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [rerun, setRerun] = useState(false);
-  const cancel = useCancelAudit(run.id, () => setConfirmCancel(false));
+  const cancel = useCancelAudit(run.id);
   const analyzers = progress?.analyzers ?? [];
-  const mcpView = mcpViewOf(mcp, run, progress?.events ?? []);
+  const mcpView = mcpViewOf({ mcp, run, progressEvents: progress?.events ?? [] });
   const counts = analyzerCounts(analyzers);
   const active = !FINISHED.includes(run.status);
-  const etaLabel = active ? etaLabelFor(run, history ?? [], seconds) : null;
+  const etaLabel = active ? etaLabelFor({ run, history: history ?? [], seconds }) : null;
   const loadingSource = isLoadingSource({ status: run.status, progress });
 
   return (
@@ -409,7 +426,7 @@ function RunningView({ run, progress, history, mcp, seconds }: IRunningViewProps
       <ProgressSection
         phases={phaseViews({ status: run.status, progress }, counts)}
         percent={progressPercent(run)}
-        stepText={stepTextFor(run.status, phaseIndex(run), counts)}
+        stepText={stepTextFor({ status: run.status, index: phaseIndex(run), counts })}
         seconds={seconds}
         etaLabel={etaLabel}
         barColor={barColorFor(run.status)}
@@ -431,7 +448,7 @@ function RunningView({ run, progress, history, mcp, seconds }: IRunningViewProps
         isError={cancel.isError}
         error={cancel.error}
         onClose={() => setConfirmCancel(false)}
-        onConfirm={() => cancel.mutate()}
+        onConfirm={() => cancel.mutate(undefined, { onSuccess: () => setConfirmCancel(false) })}
       />
       <RerunModal run={run} open={rerun} onClose={() => setRerun(false)} />
     </PageShell>
@@ -448,11 +465,11 @@ export function AuditRunPage() {
   // Histórico do mesmo sistema: base da estimativa de tempo.
   const { data: history } = useAuditRuns(run?.systemId ?? 0);
   // O que o Claude (MCP) fez com este sistema desde que a auditoria começou. Só informação: não entra na nota.
-  const mcp = useMcpActivity(run?.systemId, run !== undefined && !finished);
+  const mcp = useMcpActivity({ systemId: run?.systemId, refresh: run !== undefined && !finished });
 
   if (run?.progress) lastProgress.current = run.progress;
 
-  useRefreshListsWhenFinished(finished);
+  useRefreshListsWhenFinished({ finished });
 
   if (isLoading) return <RunSkeleton />;
   if (error || !run) return <RunNotFound error={error} />;

@@ -95,10 +95,12 @@ function LimitsBox({ side, cfg, limits, setLimits, limitError }: ILimitsProps & 
   );
 }
 
-function packLabel(p: ISidePack, off: boolean): string {
+const SIDE_OFF_SUFFIX = ' · lado desligado';
+
+function packLabel(p: ISidePack): string {
   const pk = p.pack;
   const others = p.others.map((o) => `${SIDE_NAME[o.side]}: ${o.count}`).join(', ');
-  return `${pk.name || pk.id}${pk.inProfile ? '' : ' (fora do perfil)'}${p.count ? ` · ${p.count} ${p.count === 1 ? 'regra' : 'regras'}` : ''}${others ? ` · também em ${others}` : ''}${off ? ' · lado desligado' : ''}`;
+  return `${pk.name || pk.id}${pk.inProfile ? '' : ' (fora do perfil)'}${p.count ? ` · ${p.count} ${p.count === 1 ? 'regra' : 'regras'}` : ''}${others ? ` · também em ${others}` : ''}`;
 }
 
 /** Pacotes por lado (back-end, front-end, infra e comum); um pacote misto aparece nos dois lados. Os limites de clean code ficam no grupo a que valem. */
@@ -129,7 +131,7 @@ export function PacksFieldset({ cfg, packs, setPacks, sidesOff, limits, setLimit
               <div key={p.pack.id} style={{ opacity: off ? 0.5 : 1 }}>
                 <Checkbox
                   id={`eng-pack-${g.side}-${p.pack.id}`}
-                  labelText={packLabel(p, off)}
+                  labelText={`${packLabel(p)}${off ? SIDE_OFF_SUFFIX : ''}`}
                   helperText={p.pack.description ?? undefined}
                   checked={!!packs[p.pack.id]}
                   onChange={(_, { checked }) => setPacks({ ...packs, [p.pack.id]: checked })}

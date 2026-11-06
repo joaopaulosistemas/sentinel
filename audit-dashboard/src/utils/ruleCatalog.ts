@@ -86,16 +86,22 @@ export interface IRuleFilter {
   pack: string;
 }
 
+export interface IFilterRuleRowsInput {
+  rows: IRuleRow[];
+  filter: IRuleFilter;
+  adjustedIds: Set<string>;
+}
+
 /** Filtra por texto (id, texto da regra, pacote), por escopo (todas, vistas na última auditoria, ajustadas) e por pacote. */
-export function filterRuleRows(rows: IRuleRow[], filter: IRuleFilter, adjustedIds: Set<string>): IRuleRow[] {
-  const q = filter.query.trim().toLowerCase();
+export function filterRuleRows({ rows, filter, adjustedIds }: IFilterRuleRowsInput): IRuleRow[] {
+  const query = filter.query.trim().toLowerCase();
   return rows
     .filter((r) => {
       if (filter.scope === 'seen' && r.count === 0) return false;
       if (filter.scope === 'adjusted' && !adjustedIds.has(r.id)) return false;
       if (filter.pack !== '' && r.pack !== filter.pack) return false;
-      if (q === '') return true;
-      return `${r.id} ${r.title ?? ''} ${r.pack ?? ''} ${r.category ?? ''}`.toLowerCase().includes(q);
+      if (query === '') return true;
+      return `${r.id} ${r.title ?? ''} ${r.pack ?? ''} ${r.category ?? ''}`.toLowerCase().includes(query);
     })
     .sort((a, b) => Number(adjustedIds.has(b.id)) - Number(adjustedIds.has(a.id)) || b.count - a.count || a.id.localeCompare(b.id));
 }
@@ -107,7 +113,13 @@ export type BulkAction =
   | { kind: 'reset' };
 
 /** Aplica uma ação a várias regras de uma vez; devolve a lista nova de ajustes (sem os que não têm efeito). */
-export function applyBulk(current: IRuleAdjustment[], ids: string[], action: BulkAction): IRuleAdjustment[] {
+export interface IApplyBulkInput {
+  current: IRuleAdjustment[];
+  ids: string[];
+  action: BulkAction;
+}
+
+export function applyBulk({ current, ids, action }: IApplyBulkInput): IRuleAdjustment[] {
   const byId = new Map(current.map((r) => [r.id, r]));
   for (const id of ids) {
     const base: IRuleAdjustment = byId.get(id) ?? { id, severity: null, disabled: false, shadow: null };

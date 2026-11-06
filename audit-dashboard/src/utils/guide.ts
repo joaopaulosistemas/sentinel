@@ -18,11 +18,16 @@ export function rulesOfStack(stack: IGuideStack, rules: IGuideRule[]): Array<IGu
 }
 
 /** Filtra por severidade e por texto (título, id, CWE e ação); mais grave primeiro, depois por título. */
-export function filterRules<T extends IGuideRule>(rules: T[], severity: SeverityFilter, query: string): T[] {
-  const q = query.trim().toLowerCase();
+export interface IRuleFilter {
+  severity: SeverityFilter;
+  query: string;
+}
+
+export function filterRules<T extends IGuideRule>(rules: T[], { severity, query }: IRuleFilter): T[] {
+  const normalizedQuery = query.trim().toLowerCase();
   return rules
     .filter((r) => severity === 'todas' || r.severity === severity)
-    .filter((r) => q === '' || `${r.title} ${r.id} ${r.cwe} ${r.action}`.toLowerCase().includes(q))
+    .filter((r) => normalizedQuery === '' || `${r.title} ${r.id} ${r.cwe} ${r.action}`.toLowerCase().includes(normalizedQuery))
     .sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || a.title.localeCompare(b.title, 'pt-BR'));
 }
 

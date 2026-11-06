@@ -15,9 +15,10 @@ export function stepText(run: IAuditRunResponse): string {
     const { done, total } = analyzerCounts(run.progress?.analyzers ?? []);
     return total > 0 ? `Analisando ${done}/${total}` : 'Analisando';
   }
-  return i === 3 ? 'Pontuando' : (PHASES[Math.min(i, PHASES.length - 1)]?.label ?? 'Em execução');
+  return i === SCORING_PHASE_INDEX ? 'Pontuando' : (PHASES[Math.min(i, PHASES.length - 1)]?.label ?? 'Em execução');
 }
 
+const SCORING_PHASE_INDEX = 3;
 const cell = { padding: '12px 8px' } as const;
 
 function RunStatus({ run }: { run: IAuditRunResponse }) {

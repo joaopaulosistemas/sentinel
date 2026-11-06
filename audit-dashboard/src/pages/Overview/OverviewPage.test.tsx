@@ -10,18 +10,18 @@ const system = (over: Partial<ISystemSummaryResponse>): ISystemSummaryResponse =
   id: 1, name: 'x', stack: 'JAVA', team: 'T', lastAuditScore: 90, lastAuditDate: daysAgo(1), openCritical: 0, openHigh: 0, ...over,
 });
 
-let pendingFor: (u: string) => unknown[] = () => [];
+let pendingFor: (requestUrl: string) => unknown[] = () => [];
 
 function renderPage(systems: ISystemSummaryResponse[], onCall?: (url: string, init?: RequestInit) => void) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
-      onCall?.(u, init);
-      if (init?.method === 'POST' && u === '/api/v1/audits') {
+      const requestUrl = String(url);
+      onCall?.(requestUrl, init);
+      if (init?.method === 'POST' && requestUrl === '/api/v1/audits') {
         return new Response(JSON.stringify({ id: 77, systemId: 5, systemName: 'conta', branch: 'develop', status: 'PENDING', riskScore: null, findingsSummary: {}, startedAt: daysAgo(0), completedAt: null }), { status: 202 });
       }
-      if (u.startsWith('/api/v1/audits')) {
+      if (requestUrl.startsWith('/api/v1/audits')) {
         return new Response(
           JSON.stringify([
             { id: 9, systemId: 2, systemName: 'portal', branch: 'main', status: 'PENDING', riskScore: null, findingsSummary: {}, startedAt: daysAgo(0), completedAt: null },
@@ -30,8 +30,8 @@ function renderPage(systems: ISystemSummaryResponse[], onCall?: (url: string, in
           { status: 200 },
         );
       }
-      if (u.includes('/pending-actions/')) {
-        return new Response(JSON.stringify(pendingFor(u)), { status: 200 });
+      if (requestUrl.includes('/pending-actions/')) {
+        return new Response(JSON.stringify(pendingFor(requestUrl)), { status: 200 });
       }
       return new Response(JSON.stringify(systems), { status: 200 });
     }),
@@ -86,8 +86,8 @@ describe('OverviewPage', () => {
 
   it('Iniciar auditoria dispara a auditoria do sistema escolhido e avisa com link para acompanhar', async () => {
     const calls: Array<{ url: string; method: string; body?: string }> = [];
-    renderPage([system({ id: 5, name: 'conta', scheduledBranch: 'develop' })], (u, init) => {
-      calls.push({ url: u, method: init?.method ?? 'GET', body: init?.body as string | undefined });
+    renderPage([system({ id: 5, name: 'conta', scheduledBranch: 'develop' })], (requestUrl, init) => {
+      calls.push({ url: requestUrl, method: init?.method ?? 'GET', body: init?.body as string | undefined });
     });
     fireEvent.click(await screen.findByRole('button', { name: 'Nova auditoria' }));
     expect(await screen.findByLabelText('Branch')).toHaveValue('develop');

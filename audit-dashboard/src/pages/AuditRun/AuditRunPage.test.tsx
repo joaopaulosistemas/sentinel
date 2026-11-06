@@ -11,7 +11,18 @@ interface McpMock {
   pending?: Array<Partial<IPendingAction>>;
 }
 
-function renderPage(run: Partial<IAuditRunResponse>, plan?: IFixPlan, history: Array<Partial<IAuditRunResponse>> = [], mcp?: McpMock, insights?: { analyzers: unknown[] }) {
+function isMcpCallsUrl(requestUrl: string): boolean {
+  return requestUrl.includes('/mcp-access/') && requestUrl.includes('/calls');
+}
+
+interface IRenderExtras {
+  plan?: IFixPlan;
+  history?: Array<Partial<IAuditRunResponse>>;
+  mcp?: McpMock;
+  insights?: { analyzers: unknown[] };
+}
+
+function renderPage(run: Partial<IAuditRunResponse>, { plan, history = [], mcp, insights }: IRenderExtras = {}) {
   const full: IAuditRunResponse = {
     id: 215,
     systemName: 'conta-corrente-api',
@@ -27,17 +38,17 @@ function renderPage(run: Partial<IAuditRunResponse>, plan?: IFixPlan, history: A
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
-      calls.push({ url: u, method: init?.method ?? 'GET' });
-      if (u.endsWith('/insights')) return new Response(JSON.stringify(insights ?? { analyzers: [] }), { status: 200 });
-      if (u.endsWith('/fix-plan')) return new Response(JSON.stringify(plan), { status: 200 });
-      if (u.includes('/systems/') && u.endsWith('/audits')) return new Response(JSON.stringify(history), { status: 200 });
-      if (u.endsWith('/cancel')) return new Response(JSON.stringify({ ...full, status: 'CANCELLED' }), { status: 202 });
-      if (mcp && u.includes('/mcp-access/') && u.includes('/calls')) return new Response(JSON.stringify(mcp.calls ?? []), { status: 200 });
-      if (mcp && u.includes('/mcp-access/')) {
+      const requestUrl = String(url);
+      calls.push({ url: requestUrl, method: init?.method ?? 'GET' });
+      if (requestUrl.endsWith('/insights')) return new Response(JSON.stringify(insights ?? { analyzers: [] }), { status: 200 });
+      if (requestUrl.endsWith('/fix-plan')) return new Response(JSON.stringify(plan), { status: 200 });
+      if (requestUrl.includes('/systems/') && requestUrl.endsWith('/audits')) return new Response(JSON.stringify(history), { status: 200 });
+      if (requestUrl.endsWith('/cancel')) return new Response(JSON.stringify({ ...full, status: 'CANCELLED' }), { status: 202 });
+      if (mcp && isMcpCallsUrl(requestUrl)) return new Response(JSON.stringify(mcp.calls ?? []), { status: 200 });
+      if (mcp && requestUrl.includes('/mcp-access/')) {
         return new Response(JSON.stringify({ enabled: mcp.enabled, hasKey: true, keyPrefix: 'snt_', keyCreatedAt: null, dataLevel: 'TITLES', tools: [] }), { status: 200 });
       }
-      if (mcp && u.includes('/pending-actions/')) return new Response(JSON.stringify(mcp.pending ?? []), { status: 200 });
+      if (mcp && requestUrl.includes('/pending-actions/')) return new Response(JSON.stringify(mcp.pending ?? []), { status: 200 });
       return new Response(JSON.stringify(full), { status: 200 });
     }),
   );
@@ -103,8 +114,7 @@ describe('AuditRunPage', () => {
         status: 'COMPLETED',
         completedAt: '2026-10-22T10:04:12',
         riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 },
-      },
-      {
+      }, { plan: {
         scoreNow: 63,
         scoreIfCriticalFixed: 74,
         criticalCount: 3,
@@ -112,8 +122,7 @@ describe('AuditRunPage', () => {
           { ruleId: 'sql-injection', title: 'SQL montado por concatenação', severity: 'CRITICAL', category: 'SECURITY', occurrences: 2, scoreGain: 4.5, exampleFile: 'ContaRepository.java', exampleLine: 212, howToFix: 'usar parâmetros nomeados' },
           { ruleId: 'cors', title: 'CORS aberto', severity: 'HIGH', category: 'DEPENDENCY', occurrences: 1, scoreGain: 1, exampleFile: 'main.ts', exampleLine: 12, howToFix: null },
         ],
-      },
-    );
+      } });
     expect(await screen.findByText('3 problemas críticos')).toBeInTheDocument();
     expect(screen.getByText('74')).toBeInTheDocument();
     expect(screen.getByText('Etapa 1 · Veredito')).toBeInTheDocument();
@@ -142,9 +151,7 @@ describe('AuditRunPage', () => {
         resolvedFindings: 13,
         previousAuditId: 214,
         scoreDelta: -5,
-      },
-      { scoreNow: 63, scoreIfCriticalFixed: 74, criticalCount: 3, items: [] },
-    );
+      }, { plan: { scoreNow: 63, scoreIfCriticalFixed: 74, criticalCount: 3, items: [] } });
     expect(await screen.findByRole('img', { name: 'Nota 63 de 100, meta 75' })).toBeInTheDocument();
     expect(screen.getByText('Meta 75 · faltam 12 pontos', { exact: false })).toBeInTheDocument();
     const severity = screen.getByRole('region', { name: 'Achados por gravidade' });
@@ -159,14 +166,11 @@ describe('AuditRunPage', () => {
 
   it('o medidor da nota fica no veredito e o gráfico das últimas auditorias ocupa o lugar dele', async () => {
     const score = { security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 };
-    const past = (id: number, day: number, overall: number): Partial<IAuditRunResponse> => ({
+    const past = ({ id, day, overall }: { id: number; day: number; overall: number }): Partial<IAuditRunResponse> => ({
       id, systemId: 7, status: 'COMPLETED', riskScore: { overall, ...score }, startedAt: `2026-10-${day}T10:00:00`, completedAt: `2026-10-${day}T10:04:00`,
     });
     renderPage(
-      { systemId: 7, status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, ...score }, previousAuditId: 214, scoreDelta: 5 },
-      { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] },
-      [past(213, 20, 50), past(214, 21, 58), past(215, 22, 63)],
-    );
+      { systemId: 7, status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, ...score }, previousAuditId: 214, scoreDelta: 5 }, { plan: { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] }, history: [past({ id: 213, day: 20, overall: 50 }), past({ id: 214, day: 21, overall: 58 }), past({ id: 215, day: 22, overall: 63 })] });
     const verdict = await screen.findByRole('region', { name: /Etapa 1/ });
     expect(within(verdict).getByRole('img', { name: 'Nota 63 de 100, meta 75' })).toBeInTheDocument();
     expect(within(verdict).getByText('Meta 75 · faltam 12 pontos', { exact: false })).toBeInTheDocument();
@@ -178,18 +182,14 @@ describe('AuditRunPage', () => {
 
   it('sem o sistema da auditoria não há como buscar o histórico, então o gráfico não aparece', async () => {
     renderPage(
-      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 80, security: 80, quality: 80, architecture: 80, dependencies: 80, observability: 80 } },
-      { scoreNow: 80, scoreIfCriticalFixed: 80, criticalCount: 0, items: [] },
-    );
+      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 80, security: 80, quality: 80, architecture: 80, dependencies: 80, observability: 80 } }, { plan: { scoreNow: 80, scoreIfCriticalFixed: 80, criticalCount: 0, items: [] } });
     expect(await screen.findByRole('region', { name: 'O que mudou' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Últimas auditorias' })).not.toBeInTheDocument();
   });
 
   it('sem auditoria anterior o cartão "O que mudou" avisa que não há com o que comparar', async () => {
     renderPage(
-      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 80, security: 80, quality: 80, architecture: 80, dependencies: 80, observability: 80 } },
-      { scoreNow: 80, scoreIfCriticalFixed: 80, criticalCount: 0, items: [] },
-    );
+      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 80, security: 80, quality: 80, architecture: 80, dependencies: 80, observability: 80 } }, { plan: { scoreNow: 80, scoreIfCriticalFixed: 80, criticalCount: 0, items: [] } });
     const changes = await screen.findByRole('region', { name: 'O que mudou' });
     expect(within(changes).getByText(/ainda não há com o que comparar/)).toBeInTheDocument();
     expect(screen.getByText('Dentro da meta de 75')).toBeInTheDocument();
@@ -197,16 +197,11 @@ describe('AuditRunPage', () => {
 
   it('concluída lista as ferramentas de análise com situação e achados', async () => {
     renderPage(
-      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } },
-      { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] },
-      [],
-      undefined,
-      { analyzers: [
+      { status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } }, { plan: { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] }, insights: { analyzers: [
         { name: 'Semgrep', status: 'OK', findings: 61, durationMs: 4200, note: null },
         { name: 'PMD', status: 'INDISPONIVEL', findings: 0, durationMs: 0, note: 'ausente' },
         { name: 'Checkstyle', status: 'PARCIAL', findings: 1, durationMs: 900, note: null },
-      ] },
-    );
+      ] } });
     const tools = await screen.findByRole('region', { name: 'Ferramentas de análise' });
     expect(within(tools).getByText('2 de 3 concluídas')).toBeInTheDocument();
     expect(within(tools).getByText('concluído em 4 s')).toBeInTheDocument();
@@ -241,18 +236,13 @@ describe('AuditRunPage', () => {
     const start = new Date(Date.now() - 60_000).toISOString().slice(0, 19);
     const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 19);
     renderPage(
-      { systemId: 3, startedAt: start, progress: { phase: 'ANALISE', analyzers: [], events: [{ at: fmt(Date.now()), message: 'x' }] } },
-      undefined,
-      [{ id: 200, status: 'COMPLETED', startedAt: '2026-10-21T10:00:00', completedAt: '2026-10-21T10:04:00' }],
-    );
+      { systemId: 3, startedAt: start, progress: { phase: 'ANALISE', analyzers: [], events: [{ at: fmt(Date.now()), message: 'x' }] } }, { history: [{ id: 200, status: 'COMPLETED', startedAt: '2026-10-21T10:00:00', completedAt: '2026-10-21T10:04:00' }] });
     expect(await screen.findByText(/faltam cerca de/)).toBeInTheDocument();
   });
 
   it('concluída oferece baixar o relatório e auditar de novo', async () => {
     renderPage(
-      { status: 'COMPLETED', systemId: 3, completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } },
-      { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] },
-    );
+      { status: 'COMPLETED', systemId: 3, completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } }, { plan: { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] } });
     const link = await screen.findByRole('link', { name: 'Baixar relatório' });
     expect(link).toHaveAttribute('href', '/api/v1/audits/215/report');
     expect(screen.getByRole('button', { name: 'Auditar de novo' })).toBeInTheDocument();
@@ -263,17 +253,13 @@ describe('AuditRunPage', () => {
 
     it('mostra a faixa e as chamadas do Claude no quadro de eventos', async () => {
       renderPage(
-        running,
-        undefined,
-        [],
-        {
+        running, { mcp: {
           enabled: true,
           calls: [
             { tool: 'buscar_achados', ok: true, durationMs: 20, detail: null, at: '2026-10-22T10:00:30' },
             { tool: 'status_auditoria', ok: true, durationMs: 11, detail: null, at: '2026-10-22T09:00:00' }, // antes do início: não conta
           ],
-        },
-      );
+        } });
       expect(await screen.findByText(/1 consulta nesta auditoria/)).toBeInTheDocument();
       expect(screen.getByText('Claude (MCP) chamou buscar_achados')).toBeInTheDocument();
       expect(screen.getByText('Clone concluído')).toBeInTheDocument();
@@ -281,13 +267,13 @@ describe('AuditRunPage', () => {
     });
 
     it('com a consulta desligada avisa e oferece configurar', async () => {
-      renderPage(running, undefined, [], { enabled: false });
+      renderPage(running, { mcp: { enabled: false } });
       expect(await screen.findByText(/desligado para este sistema/)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Configurar' })).toHaveAttribute('href', '/systems?edit=3&tab=mcp');
     });
 
     it('pedido do Claude aguardando aprovação aparece na faixa', async () => {
-      renderPage(running, undefined, [], { enabled: true, pending: [{ id: 1, status: 'PENDING' }] });
+      renderPage(running, { mcp: { enabled: true, pending: [{ id: 1, status: 'PENDING' }] } });
       expect(await screen.findByRole('link', { name: '1 pedido do Claude aguarda aprovação' })).toBeInTheDocument();
     });
 
@@ -300,11 +286,7 @@ describe('AuditRunPage', () => {
 
     it('auditoria concluída não mostra a faixa', async () => {
       renderPage(
-        { status: 'COMPLETED', systemId: 3, completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } },
-        { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] },
-        [],
-        { enabled: true },
-      );
+        { status: 'COMPLETED', systemId: 3, completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } }, { plan: { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] }, mcp: { enabled: true } });
       expect(await screen.findByRole('link', { name: 'Baixar relatório' })).toBeInTheDocument();
       expect(screen.queryByRole('region', { name: 'Claude (MCP)' })).not.toBeInTheDocument();
     });

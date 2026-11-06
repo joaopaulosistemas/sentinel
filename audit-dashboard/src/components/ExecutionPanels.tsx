@@ -17,19 +17,19 @@ export function PhaseStrip({ phases }: { phases: IPhaseView[] }) {
   return (
     <ol aria-label="Fases da auditoria" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexWrap: 'wrap', gap: '8px 0' }}>
       {phases.map((p) => {
-        const c = style[p.state];
+        const colors = style[p.state];
         return (
           <li key={p.id} aria-current={p.state === 'active' ? 'step' : undefined}
             style={{ flex: '1 1 180px', minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: 10, paddingRight: 12 }}>
             <span style={{ flex: 'none', width: 28, height: 28, borderRadius: 14, display: 'inline-flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 12, fontWeight: 600, background: c.bg, color: c.fg, border: `2px solid ${c.border}` }}>
+              justifyContent: 'center', fontSize: 12, fontWeight: 600, background: colors.bg, color: colors.fg, border: `2px solid ${colors.border}` }}>
               {p.state === 'done' ? <CheckIcon size={14} color="#ffffff" strokeWidth={3.5} />
                 : p.state === 'failed' ? <CrossIcon size={14} color="#ffffff" />
                 : p.state === 'active' && (p.id === 'FILA' || p.id === 'CLONE') ? <SpinnerIcon size={16} color="#ffffff" label="Em andamento" />
                 : p.n}
             </span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-              <span style={{ fontWeight: 500, color: c.title }}>{p.name}</span>
+              <span style={{ fontWeight: 500, color: colors.title }}>{p.name}</span>
               <span style={{ fontSize: 12, color: 'var(--s-text-3)', overflowWrap: 'anywhere' }}>{p.sub}</span>
             </span>
           </li>
@@ -104,21 +104,21 @@ const state = (a: IAnalyzerProgress): IStateView => (a.status === 'OK' ? doneSta
 
 /** Cartão de um analisador: nome, o que ele verifica, barra, achados e situação. */
 export function AnalyzerCard({ a }: { a: IAnalyzerProgress }) {
-  const s = state(a);
+  const view = state(a);
   return (
-    <li style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderTop: `3px solid ${s.accent}`, padding: '12px 14px',
+    <li style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderTop: `3px solid ${view.accent}`, padding: '12px 14px',
       display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
         <span style={{ fontWeight: 500, fontSize: 13, minWidth: 0 }}>{a.name}</span>
-        <span style={{ flex: 'none', display: 'inline-flex', alignItems: 'center' }}>{s.icon}</span>
+        <span style={{ flex: 'none', display: 'inline-flex', alignItems: 'center' }}>{view.icon}</span>
       </div>
       <div style={{ fontSize: 12, color: 'var(--s-text-3)', whiteSpace: 'pre-line' }}>{a.note ?? a.description ?? ' '}</div>
       <div style={{ height: 4, background: 'var(--s-border)' }} aria-hidden="true">
-        <div className={s.pulse ? 'sentinel-pulse' : undefined} style={{ height: 4, background: s.bar, width: `${s.width}%` }} />
+        <div className={view.pulse ? 'sentinel-pulse' : undefined} style={{ height: 4, background: view.bar, width: `${view.width}%` }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12, color: 'var(--s-text-3)' }}>
         <span><strong style={{ color: 'var(--s-text)', fontWeight: 600, fontFamily: mono }}>{a.findings}</strong> {a.findings === 1 ? 'achado' : 'achados'}</span>
-        <span>{s.text}</span>
+        <span>{view.text}</span>
       </div>
     </li>
   );
@@ -172,7 +172,7 @@ function PendingScore() {
 }
 
 /** Números do resultado: o final vem da auditoria concluída; antes disso, do progresso. */
-function resultNumbers(run: IAuditRunResponse, progress: IAuditProgress | null, finished: boolean) {
+function resultNumbers({ run, progress, finished }: { run: IAuditRunResponse; progress: IAuditProgress | null; finished: boolean }) {
   const counts = (id: Severity) => (finished ? run.findingsSummary?.[id] : progress?.severities?.[id]) ?? 0;
   const lines = (finished ? run.linesOfCode ?? progress?.linesOfCode : progress?.linesOfCode) ?? 0;
   return { counts, lines };
@@ -181,7 +181,7 @@ function resultNumbers(run: IAuditRunResponse, progress: IAuditProgress | null, 
 /** Contagem por severidade, arquivos e linhas; durante a execução os números crescem. */
 export function PartialResult({ run, progress }: { run: IAuditRunResponse; progress: IAuditProgress | null }) {
   const finished = run.status === 'COMPLETED';
-  const { counts, lines } = resultNumbers(run, progress, finished);
+  const { counts, lines } = resultNumbers({ run, progress, finished });
   const title = finished ? 'Resultado final' : 'Resultado parcial';
   return (
     <section aria-label={title}

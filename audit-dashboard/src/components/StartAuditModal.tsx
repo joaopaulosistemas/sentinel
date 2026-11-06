@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { IAuditRunResponse } from '../types';
+import type { IAuditRunResponse, IPathCheck } from '../types';
 
 interface IProps {
   system: { id: number; name: string; scheduledBranch?: string | null; sourceType?: 'GIT_URL' | 'LOCAL_PATH' | null; localPath?: string | null } | null;
@@ -24,8 +24,8 @@ function useInitialBranch(system: IProps['system'], setBranch: (b: string) => vo
     let ativo = true;
     const usarBranchAtual = async () => {
       try {
-        const c = await api.checkPath(system.localPath as string, system.scheduledBranch || 'main');
-        if (ativo && c.ok && c.branchFound === false && c.defaultBranch) setBranch(c.defaultBranch);
+        const check = await api.checkPath(system.localPath as string, system.scheduledBranch || 'main');
+        if (ativo && shouldFallBackToCurrentBranch(check)) setBranch(check.defaultBranch);
       } catch {
         // Sem a checagem a branch fica a agendada (ou main) e a pessoa ainda pode editar o campo.
       }
@@ -35,6 +35,14 @@ function useInitialBranch(system: IProps['system'], setBranch: (b: string) => vo
       ativo = false;
     };
   }, [system, setBranch]);
+}
+
+/** A pasta é válida, a branch pedida não existe nela e a pasta informou a sua branch atual. */
+export function shouldFallBackToCurrentBranch(check: IPathCheck): check is IPathCheck & { defaultBranch: string } {
+  const folderIsValid = check.ok;
+  const requestedBranchMissing = check.branchFound === false;
+  const hasCurrentBranch = !!check.defaultBranch;
+  return folderIsValid && requestedBranchMissing && hasCurrentBranch;
 }
 
 function isLocalWithPath(system: AuditTarget): boolean {

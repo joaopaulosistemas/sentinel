@@ -3,16 +3,15 @@ package com.sentinel.audit.pack;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -40,12 +39,8 @@ public final class GuideCatalog {
             if (dir == null) {
                 continue;
             }
-            try (Stream<Path> files = Files.list(dir)) {
-                List<Path> yamls = files
-                        .filter(p -> p.getFileName().toString().endsWith(".yml") || p.getFileName().toString().endsWith(".yaml"))
-                        .sorted()
-                        .toList();
-                for (Path file : yamls) {
+            try {
+                for (Path file : RuleYaml.yamlFiles(dir)) {
                     read(pack, file, out);
                 }
             } catch (IOException e) {
@@ -57,14 +52,8 @@ public final class GuideCatalog {
 
     private static void read(RulePack pack, Path file, List<GuideRule> out) {
         try {
-            Map<String, Object> root = Yamls.map(Yamls.parse(Files.readString(file)));
-            List<Object> rules = root == null ? null : Yamls.list(root.get("rules"));
-            if (rules == null) {
-                return;
-            }
-            for (Object item : rules) {
-                Map<String, Object> rule = Yamls.map(item);
-                String id = rule == null ? null : Yamls.str(rule, "id");
+            for (Map<String, Object> rule : RuleYaml.rules(file)) {
+                String id = Yamls.str(rule, "id");
                 if (id != null) {
                     out.add(toRule(pack, rule, id));
                 }
@@ -138,22 +127,27 @@ public final class GuideCatalog {
         return List.copyOf(out);
     }
 
+    /** Extensão do glob e a linguagem que ela indica, na ordem em que valem. */
+    private static final Map<String, String> LANGUAGE_BY_SUFFIX = languageSuffixes();
+
+    private static Map<String, String> languageSuffixes() {
+        Map<String, String> m = new LinkedHashMap<>();
+        m.put(".ts", "typescript");
+        m.put(".tsx", "typescript");
+        m.put(".js", "javascript");
+        m.put(".jsx", "javascript");
+        m.put(".java", "java");
+        m.put(".vue", "vue");
+        m.put(".properties", "properties");
+        return m;
+    }
+
     private static String languageOfGlob(String glob) {
         String g = glob.toLowerCase(Locale.ROOT);
-        if (g.endsWith(".ts") || g.endsWith(".tsx")) {
-            return "typescript";
-        }
-        if (g.endsWith(".js") || g.endsWith(".jsx")) {
-            return "javascript";
-        }
-        if (g.endsWith(".java")) {
-            return "java";
-        }
-        if (g.endsWith(".vue")) {
-            return "vue";
-        }
-        if (g.endsWith(".properties")) {
-            return "properties";
+        for (Map.Entry<String, String> e : LANGUAGE_BY_SUFFIX.entrySet()) {
+            if (g.endsWith(e.getKey())) {
+                return e.getValue();
+            }
         }
         return g.contains("tsconfig") ? "typescript" : null;
     }
@@ -214,13 +208,26 @@ public final class GuideCatalog {
         return "";
     }
 
-    /** Lê um recurso do classpath como texto; {@code null} se não existir. */
+    /** Maior recurso do guia aceito: os arquivos embutidos têm poucos KB, então o limite só protege de engano. */
+    static final int MAX_RESOURCE_BYTES = 1024 * 1024;
+
+    /** Lê um recurso do classpath como texto; {@code null} se não existir, for ilegível ou passar de {@link #MAX_RESOURCE_BYTES}. */
     public static String resource(String name) {
         try (InputStream in = GuideCatalog.class.getResourceAsStream(name)) {
-            return in == null ? null : new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            return in == null ? null : readBounded(in, name);
         } catch (IOException e) {
             LOG.warnf("Recurso do guia ilegível: %s (%s)", name, e.getMessage());
             return null;
         }
+    }
+
+    /** O texto do fluxo, lendo no máximo o limite (mais um byte, só para saber se passou); {@code null} se passou. */
+    static String readBounded(InputStream in, String name) throws IOException {
+        byte[] bytes = in.readNBytes(MAX_RESOURCE_BYTES + 1);
+        if (bytes.length > MAX_RESOURCE_BYTES) {
+            LOG.warnf("Recurso do guia maior que %d bytes, ignorado: %s", MAX_RESOURCE_BYTES, name);
+            return null;
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 }

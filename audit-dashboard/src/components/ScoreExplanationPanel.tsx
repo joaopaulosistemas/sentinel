@@ -111,7 +111,7 @@ function Body({ data, onSimulate }: { data: IScoreExplanation; onSimulate: (rule
 export function ScoreExplanationPanel({ run }: { run: IAuditRunResponse }) {
   const [open, setOpen] = useState(false);
   const [without, setWithout] = useState<string[]>([]);
-  const { data, isLoading, error } = useScoreExplanation(run.id, open && run.status === 'COMPLETED', without);
+  const { data, isLoading, error } = useScoreExplanation({ auditId: run.id, enabled: open && run.status === 'COMPLETED', without });
   const simulate = (rule: string) => setWithout((current) => toggleRule(current, rule));
 
   return (

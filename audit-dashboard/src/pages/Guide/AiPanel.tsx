@@ -39,7 +39,7 @@ function Aside() {
 }
 
 export function AiPanel({ stack }: { stack: IGuideStack }) {
-  const { data, isLoading, error } = useGuideClaudeMd(stack.id, true);
+  const { data, isLoading, error } = useGuideClaudeMd({ stackId: stack.id, enabled: true });
   const [copied, setCopied] = useState(false);
   const copy = () => {
     void navigator.clipboard?.writeText(data ?? '').then(() => setCopied(true), () => setCopied(false));

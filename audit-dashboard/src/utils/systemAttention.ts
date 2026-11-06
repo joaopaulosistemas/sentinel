@@ -16,8 +16,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** Dias desde a última auditoria concluída; nulo se nunca foi auditado. */
 export function daysSinceAudit(system: Pick<ISystemSummaryResponse, 'lastAuditDate'>, now: number): number | null {
   if (!system.lastAuditDate) return null;
-  const t = Date.parse(system.lastAuditDate);
-  return Number.isNaN(t) ? null : Math.max(0, Math.floor((now - t) / DAY_MS));
+  const auditTimestamp = Date.parse(system.lastAuditDate);
+  return Number.isNaN(auditTimestamp) ? null : Math.max(0, Math.floor((now - auditTimestamp) / DAY_MS));
 }
 
 export const isStale = (system: ISystemSummaryResponse, now: number) => {
@@ -64,13 +64,19 @@ const points = (n: number) => `${n} ${n === 1 ? 'ponto' : 'pontos'}`;
 /** Cor da nota: ver `scoreBand` (régua única). */
 export const scoreColor = (n: number | null) => bandColor(n);
 
-function attentionReason(system: ISystemSummaryResponse, lastScore: number | null, now: number): string {
-  if (lastScore === null) return 'nunca auditado';
-  const critical = system.openCritical > 0 ? `${system.openCritical} ${system.openCritical === 1 ? 'crítico' : 'críticos'}` : 'Sem críticos';
-  return `${critical} · ${auditDetail(system, lastScore, now)}`;
+interface IAuditContext {
+  system: ISystemSummaryResponse;
+  now: number;
 }
 
-function auditDetail(system: ISystemSummaryResponse, lastScore: number, now: number): string {
+function attentionReason({ system, now }: IAuditContext): string {
+  const lastScore = system.lastAuditScore;
+  if (lastScore === null) return 'nunca auditado';
+  const critical = system.openCritical > 0 ? `${system.openCritical} ${system.openCritical === 1 ? 'crítico' : 'críticos'}` : 'Sem críticos';
+  return `${critical} · ${auditDetail({ system, now }, lastScore)}`;
+}
+
+function auditDetail({ system, now }: IAuditContext, lastScore: number): string {
   const days = daysSinceAudit(system, now);
   if (days !== null && days > STALE_DAYS) return `não é auditado há ${days} dias`;
   const delta = system.scoreDelta == null ? 0 : Math.round(system.scoreDelta);
@@ -87,7 +93,7 @@ export function attentionRows(systems: ISystemSummaryResponse[], now: number): I
     .map((system): IAttentionRow => ({
       system,
       score: system.lastAuditScore === null ? null : Math.round(system.lastAuditScore),
-      reason: attentionReason(system, system.lastAuditScore, now),
+      reason: attentionReason({ system, now }),
     }))
     .sort((a, b) => (a.score ?? -1) - (b.score ?? -1) || a.system.name.localeCompare(b.system.name));
 }

@@ -17,7 +17,14 @@ function findAuditSystemId(audit: IAuditRunResponse | undefined, systems: ISyste
 }
 
 /** Sistema em foco: o da auditoria aberta (vindo de "Ver todos os achados") ou o escolhido no filtro. */
-function useFocusedSystem(auditMode: boolean, audit: IAuditRunResponse | undefined, systems: ISystemSummaryResponse[] | undefined, filterSystemId: number | undefined) {
+interface IFocusedSystemInput {
+  auditMode: boolean;
+  audit: IAuditRunResponse | undefined;
+  systems: ISystemSummaryResponse[] | undefined;
+  filterSystemId: number | undefined;
+}
+
+function useFocusedSystem({ auditMode, audit, systems, filterSystemId }: IFocusedSystemInput) {
   const auditSystemId = auditMode ? findAuditSystemId(audit, systems ?? []) : undefined;
   return { auditSystemId, activeSystemId: auditMode ? auditSystemId : filterSystemId };
 }
@@ -38,12 +45,12 @@ export function FindingsPage() {
   const { data: audit } = useAudit(auditId);
 
   // As três abas partem do sistema em foco, então quem escolheu o sistema não precisa escolher de novo.
-  const { auditSystemId, activeSystemId } = useFocusedSystem(auditMode, audit, systems, filters.systemId);
+  const { auditSystemId, activeSystemId } = useFocusedSystem({ auditMode, audit, systems, filterSystemId: filters.systemId });
   const panelProps = { systems: systems ?? [], initialSystemId: activeSystemId };
   const panelKey = activeSystemId ?? 'sem-sistema';
 
   return (
-    <PageShell crumbs={findingsCrumbs(auditMode, audit, auditId)}>
+    <PageShell crumbs={findingsCrumbs({ auditMode, audit, auditId })}>
       <PageHeading auditMode={auditMode} auditId={auditId} systemName={audit?.systemName} />
       <TabBar aba={aba} onSelect={setAba} />
       {aba === 'revisao' && <ClaudeReviewPanel key={panelKey} {...panelProps} />}

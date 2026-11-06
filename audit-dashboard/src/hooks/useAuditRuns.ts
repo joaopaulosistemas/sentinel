@@ -34,7 +34,13 @@ export function useAudit(id: number) {
   });
 }
 
-export function useScoreExplanation(auditId: number, enabled: boolean, without: string[]) {
+interface IScoreExplanationInput {
+  auditId: number;
+  enabled: boolean;
+  without: string[];
+}
+
+export function useScoreExplanation({ auditId, enabled, without }: IScoreExplanationInput) {
   return useQuery({
     queryKey: ['scoreExplanation', auditId, without],
     queryFn: () => api.getScoreExplanation(auditId, without),
@@ -43,7 +49,12 @@ export function useScoreExplanation(auditId: number, enabled: boolean, without: 
   });
 }
 
-export function useFixPlan(auditId: number, enabled: boolean) {
+interface IFixPlanInput {
+  auditId: number;
+  enabled: boolean;
+}
+
+export function useFixPlan({ auditId, enabled }: IFixPlanInput) {
   return useQuery({
     queryKey: ['fixPlan', auditId],
     queryFn: () => api.getFixPlan(auditId),

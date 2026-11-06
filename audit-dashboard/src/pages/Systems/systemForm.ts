@@ -168,17 +168,21 @@ function isWebhookUrl(value: string): boolean {
 
 export const BRANCH_NAME = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 export const MAX_INTERVAL_HOURS = 720;
+const MAX_NAME_LENGTH = 255;
+const MAX_LOCAL_PATH_LENGTH = 500;
+const MAX_GIT_HISTORY_DEPTH = 5000;
+const MAX_SCORE_DROP = 100;
 
 function validateName(name: string): string | undefined {
   if (name.trim() === '') return 'Informe o nome do sistema';
-  if (name.length > 255) return 'No máximo 255 caracteres';
+  if (name.length > MAX_NAME_LENGTH) return 'No máximo 255 caracteres';
   return undefined;
 }
 
 function validateLocalPath(raw: string): string | undefined {
   const path = raw.trim();
   if (path === '') return 'Informe a pasta do projeto';
-  if (path.length > 500) return 'No máximo 500 caracteres';
+  if (path.length > MAX_LOCAL_PATH_LENGTH) return 'No máximo 500 caracteres';
   if (path.split(/[\\/]/).includes('..')) return 'Não use ".." no caminho';
   return undefined;
 }
@@ -190,35 +194,47 @@ function validateRepoUrl(raw: string): string | undefined {
   return undefined;
 }
 
-function outOfRange(value: number, max: number, integer: boolean): boolean {
+interface IRangeCheck {
+  value: number;
+  max: number;
+  integer: boolean;
+}
+
+function outOfRange({ value, max, integer }: IRangeCheck): boolean {
   return (integer && !Number.isInteger(value)) || !Number.isFinite(value) || value < 0 || value > max;
 }
 
-function validateOptional(raw: string, isValid: (value: string) => boolean, message: string): string | undefined {
+interface IOptionalCheck {
+  raw: string;
+  isValid: (value: string) => boolean;
+  message: string;
+}
+
+function validateOptional({ raw, isValid, message }: IOptionalCheck): string | undefined {
   const value = raw.trim();
   return value !== '' && !isValid(value) ? message : undefined;
 }
 
 function validateSchedule(values: ISystemFormValues): IFormErrors {
   return {
-    scheduledBranch: validateOptional(values.scheduledBranch, (v) => BRANCH_NAME.test(v), 'Nome de branch inválido'),
-    auditIntervalHours: outOfRange(values.auditIntervalHours, MAX_INTERVAL_HOURS, true)
+    scheduledBranch: validateOptional({ raw: values.scheduledBranch, isValid: (v) => BRANCH_NAME.test(v), message: 'Nome de branch inválido' }),
+    auditIntervalHours: outOfRange({ value: values.auditIntervalHours, max: MAX_INTERVAL_HOURS, integer: true })
       ? `Use um número de 0 a ${MAX_INTERVAL_HOURS} horas`
       : undefined,
-    gitTokenHosts: validateOptional(
-      values.gitTokenHosts,
-      isHostList,
-      'Use nomes de host separados por vírgula, por exemplo github.com, git.empresa.com',
-    ),
-    gitHistoryDepth: outOfRange(values.gitHistoryDepth, 5000, true) ? 'Use um número inteiro de 0 a 5000' : undefined,
+    gitTokenHosts: validateOptional({
+      raw: values.gitTokenHosts,
+      isValid: isHostList,
+      message: 'Use nomes de host separados por vírgula, por exemplo github.com, git.empresa.com',
+    }),
+    gitHistoryDepth: outOfRange({ value: values.gitHistoryDepth, max: MAX_GIT_HISTORY_DEPTH, integer: true }) ? 'Use um número inteiro de 0 a 5000' : undefined,
   };
 }
 
 function validateNotify(values: ISystemFormValues): IFormErrors {
   return {
-    notifyUrl: validateOptional(values.notifyUrl, isWebhookUrl, 'Use o endereço https:// do webhook do Teams ou do Slack'),
-    notifyMinScoreDrop: outOfRange(values.notifyMinScoreDrop, 100, false) ? 'Use um número de 0 a 100' : undefined,
-    notifyPublicUrl: validateOptional(values.notifyPublicUrl, (v) => /^https?:\/\/\S+$/.test(v), 'Use um endereço http:// ou https://'),
+    notifyUrl: validateOptional({ raw: values.notifyUrl, isValid: isWebhookUrl, message: 'Use o endereço https:// do webhook do Teams ou do Slack' }),
+    notifyMinScoreDrop: outOfRange({ value: values.notifyMinScoreDrop, max: MAX_SCORE_DROP, integer: false }) ? 'Use um número de 0 a 100' : undefined,
+    notifyPublicUrl: validateOptional({ raw: values.notifyPublicUrl, isValid: (v) => /^https?:\/\/\S+$/.test(v), message: 'Use um endereço http:// ou https://' }),
   };
 }
 

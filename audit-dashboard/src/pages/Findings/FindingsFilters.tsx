@@ -3,6 +3,7 @@ import {
   severityChoices,
   situationChoices,
   type IFilterChip,
+  type IShowLowChange,
   type SeverityChoice,
   type SituationChoice,
 } from '../../utils/findingsView';
@@ -37,7 +38,7 @@ interface IFiltersProps {
   lowTotal: number;
   lowHidden: number;
   showLow: boolean;
-  onShowLow: (v: boolean) => void;
+  onShowLow: (change: IShowLowChange) => void;
   chips: IFilterChip[];
   isDefault: boolean;
   onRestore: () => void;
@@ -79,10 +80,10 @@ function SystemField({ systems, value, onPick }: { systems: ISystemSummaryRespon
   );
 }
 
-function LowConfidenceToggle({ lowHidden, showLow, onShowLow }: { lowHidden: number; showLow: boolean; onShowLow: (v: boolean) => void }) {
+function LowConfidenceToggle({ lowHidden, showLow, onShowLow }: { lowHidden: number; showLow: boolean; onShowLow: (change: IShowLowChange) => void }) {
   return (
     <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-      <input type="checkbox" checked={showLow} onChange={(e) => onShowLow(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#0f62fe' }} />
+      <input type="checkbox" checked={showLow} onChange={(e) => onShowLow({ visible: e.target.checked })} style={{ width: 16, height: 16, accentColor: '#0f62fe' }} />
       Mostrar achados de baixa confiança
       {!showLow && <span style={{ color: 'var(--s-text-3)' }}>({lowHidden} ocultos: em testes, exemplos ou de regras com muitos falsos positivos)</span>}
     </label>

@@ -75,10 +75,12 @@ export function elapsedSeconds(run: Pick<IAuditRunResponse, 'startedAt' | 'compl
   return Math.max(0, Math.round((end - start) / 1000));
 }
 
+const SECONDS_PER_MINUTE = 60;
+
 export function formatDuration(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return m > 0 ? `${m} min ${String(s).padStart(2, '0')} s` : `${s} s`;
+  const minutes = Math.floor(totalSeconds / SECONDS_PER_MINUTE);
+  const seconds = totalSeconds % SECONDS_PER_MINUTE;
+  return minutes > 0 ? `${minutes} min ${String(seconds).padStart(2, '0')} s` : `${seconds} s`;
 }
 
 /** A auditoria ainda está na fila ou baixando/copiando o código: não há porcentagem real para mostrar. */
@@ -123,15 +125,15 @@ export function remainingSeconds(elapsed: number | null, average: number | null)
 
 /** mm:ss a partir de segundos (o relógio da tela de execução). */
 export function clock(totalSeconds: number): string {
-  const s = Math.max(0, Math.round(totalSeconds));
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  const rounded = Math.max(0, Math.round(totalSeconds));
+  return `${String(Math.floor(rounded / SECONDS_PER_MINUTE)).padStart(2, '0')}:${String(rounded % SECONDS_PER_MINUTE).padStart(2, '0')}`;
 }
 
 /** Segundos entre dois horários do servidor; zero se algum for inválido. */
 export function secondsBetween(from: string, to: string): number {
-  const a = Date.parse(from);
-  const b = Date.parse(to);
-  return Number.isNaN(a) || Number.isNaN(b) ? 0 : Math.max(0, Math.round((b - a) / 1000));
+  const fromMs = Date.parse(from);
+  const toMs = Date.parse(to);
+  return Number.isNaN(fromMs) || Number.isNaN(toMs) ? 0 : Math.max(0, Math.round((toMs - fromMs) / 1000));
 }
 
 /** "github.com/org/repo" a partir de uma URL de clone. */
@@ -143,8 +145,8 @@ export function shortRepo(url: string | null | undefined): string | null {
 /** Texto curto de quanto falta, em minutos ou segundos. */
 export function etaText(left: number | null): string {
   if (left === null) return 'estimando o tempo restante';
-  const s = Math.max(5, Math.round(left / 5) * 5);
-  return `faltam cerca de ${s >= 60 ? `${Math.ceil(s / 60)} min` : `${s} s`}`;
+  const rounded = Math.max(5, Math.round(left / 5) * 5);
+  return `faltam cerca de ${rounded >= SECONDS_PER_MINUTE ? `${Math.ceil(rounded / SECONDS_PER_MINUTE)} min` : `${rounded} s`}`;
 }
 
 export interface IPhaseView {

@@ -14,8 +14,13 @@ const LEVELS: Array<{ id: McpDataLevel; titulo: string; texto: string }> = [
   { id: 'SENSITIVE', titulo: 'Sensível: só números', texto: 'Contagens por regra e severidade, sem títulos nem locais. Para sistemas que não podem expor nada.' },
 ];
 
+interface IToolToggle {
+  name: string;
+  on: boolean;
+}
+
 /** Comando que registra este sistema no Claude Code. A chave é a que acabou de ser gerada. */
-export function connectCommand(url: string, systemName: string, key: string): string {
+export function connectCommand({ url, systemName, key }: { url: string; systemName: string; key: string }): string {
   return `claude mcp add --transport http sentinel-${systemName} ${url} --header "Authorization: Bearer ${key}"`;
 }
 
@@ -75,7 +80,7 @@ function KeyButtons({ cfg, confirmNew, issuing, revoking, onIssue, onRevoke, onC
 }
 
 function FreshKey({ fresh, url, systemName, onDismiss }: { fresh: IMcpNewKey; url: string; systemName: string; onDismiss: () => void }) {
-  const command = connectCommand(url, systemName, fresh.key);
+  const command = connectCommand({ url, systemName, key: fresh.key });
   return (
     <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
       <strong>Copie a chave agora: ela não aparece de novo.</strong>
@@ -150,7 +155,7 @@ function LevelsFieldset({ cfg, update }: { cfg: IMcpConfig; update: UpdateMutati
   );
 }
 
-function ToolsFieldset({ cfg, update, onToggle }: { cfg: IMcpConfig; update: UpdateMutation; onToggle: (name: string, on: boolean) => void }) {
+function ToolsFieldset({ cfg, update, onToggle }: { cfg: IMcpConfig; update: UpdateMutation; onToggle: (toggle: IToolToggle) => void }) {
   return (
     <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
       <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Ferramentas liberadas</legend>
@@ -162,7 +167,7 @@ function ToolsFieldset({ cfg, update, onToggle }: { cfg: IMcpConfig; update: Upd
           helperText={t.description}
           checked={t.enabled}
           disabled={update.isPending}
-          onChange={(_, { checked }) => onToggle(t.name, checked)}
+          onChange={(_, { checked }) => onToggle({ name: t.name, on: checked })}
         />
       ))}
     </fieldset>
@@ -256,7 +261,7 @@ export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
   const cfg = config.data;
   const url = `${window.location.origin}/mcp/${encodeURIComponent(system.name)}`;
   const enabledTools = cfg.tools.filter((t) => t.enabled).map((t) => t.name);
-  const toggleTool = (name: string, on: boolean) =>
+  const toggleTool = ({ name, on }: IToolToggle) =>
     update.mutate({ tools: on ? [...enabledTools, name] : enabledTools.filter((n) => n !== name) });
   const error = (update.error ?? issue.error ?? revoke.error) as Error | null;
 

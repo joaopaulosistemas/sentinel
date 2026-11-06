@@ -1,3 +1,4 @@
+import { shouldCheckOnBlur } from '../../utils/sourceCheck';
 import {
   Button,
   Checkbox,
@@ -133,7 +134,7 @@ function RepoUrlField({ values, setValues, errors, touched, check, mono }: IForm
     }}
     onBlur={() => {
       // Ao sair do campo com um endereço válido, já confere o repositório.
-      if (!validate(values).repoUrl && !check.data && !check.isPending) check.mutate();
+      if (shouldCheckOnBlur(validate(values).repoUrl, check)) check.mutate();
     }}
   />
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -269,7 +270,7 @@ function LocalPathFieldset({ values, setValues, errors, touched, checkPath, mono
               checkPath.reset();
             }}
             onBlur={() => {
-              if (!validate(values).localPath && !checkPath.data && !checkPath.isPending) checkPath.mutate();
+              if (shouldCheckOnBlur(validate(values).localPath, checkPath)) checkPath.mutate();
             }}
           />
         </div>

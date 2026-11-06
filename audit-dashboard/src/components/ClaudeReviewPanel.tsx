@@ -25,17 +25,17 @@ function rate(v: number | null | undefined): string {
 }
 
 function MetricsBox({ systemId }: { systemId: number }) {
-  const m = useQuery({ queryKey: ['review-metrics', systemId], queryFn: () => api.getReviewMetrics(systemId) });
-  const d = m.data;
-  if (!d || typeof d.suggestionsTotal !== 'number') return null;
+  const metricsQuery = useQuery({ queryKey: ['review-metrics', systemId], queryFn: () => api.getReviewMetrics(systemId) });
+  const metrics = metricsQuery.data;
+  if (!metrics || typeof metrics.suggestionsTotal !== 'number') return null;
   return (
     <section aria-label="Quanto o Claude acerta" style={{ border: '1px solid var(--s-border)', background: 'var(--s-surface)', padding: 14, display: 'grid', gap: 4 }}>
       <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Quanto o Claude acerta</h2>
       <div style={{ fontSize: 13 }}>
-        Sugestões aproveitadas: <strong>{rate(d.suggestionAdoption)}</strong> ({d.suggestionsAddressed} tratadas, {d.suggestionsDismissed} dispensadas, {d.suggestionsOpen} abertas)
+        Sugestões aproveitadas: <strong>{rate(metrics.suggestionAdoption)}</strong> ({metrics.suggestionsAddressed} tratadas, {metrics.suggestionsDismissed} dispensadas, {metrics.suggestionsOpen} abertas)
       </div>
       <div style={{ fontSize: 13 }}>
-        Regras promovidas: <strong>{rate(d.rulePromotion)}</strong> ({d.rulesPromoted} promovidas, {d.rulesDiscarded} descartadas, {d.rulesInProgress} no funil)
+        Regras promovidas: <strong>{rate(metrics.rulePromotion)}</strong> ({metrics.rulesPromoted} promovidas, {metrics.rulesDiscarded} descartadas, {metrics.rulesInProgress} no funil)
       </div>
       <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Medido pelo que as pessoas decidiram. Não entra na nota.</div>
     </section>
@@ -64,16 +64,16 @@ function ProposalHeader({ p }: { p: IRuleProposalView }) {
   );
 }
 
-function plural(n: number, one: string, many: string): string {
-  return n === 1 ? one : many;
+function plural(count: number, forms: { one: string; many: string }): string {
+  return count === 1 ? forms.one : forms.many;
 }
 
 function ObservationBox({ p }: { p: IRuleProposalView }) {
-  const e = p.evidence;
+  const evidence = p.evidence;
   return (
     <div role="status" style={{ fontSize: 13, background: 'var(--s-layer)', padding: '8px 12px' }}>
-      Observação desde {startLabel(p.observationStartedAt as string)}: {e.hits} {plural(e.hits, 'achado', 'achados')}, {e.falsePositives} falso(s) positivo(s)
-      {e.hits > 0 && <>, precisão {pct(e.precision)}</>}, {e.auditsSinceStart} {plural(e.auditsSinceStart, 'auditoria', 'auditorias')}.
+      Observação desde {startLabel(p.observationStartedAt as string)}: {evidence.hits} {plural(evidence.hits, { one: 'achado', many: 'achados' })}, {evidence.falsePositives} falso(s) positivo(s)
+      {evidence.hits > 0 && <>, precisão {pct(evidence.precision)}</>}, {evidence.auditsSinceStart} {plural(evidence.auditsSinceStart, { one: 'auditoria', many: 'auditorias' })}.
       {p.stage === 'OBSERVING' && <> Para promover: precisão de {pct(p.minPrecision)} ou mais e {p.minHits}+ achados. Marque falso positivo suprimindo o achado.</>}
     </div>
   );
@@ -184,7 +184,7 @@ function SuggestionCard({ s, busy, onStatus }: { s: Suggestion; busy: boolean; o
 function SuggestionsSection({ data, busy, onStatus }: { data: IClaudeReview; busy: boolean; onStatus: (id: number, status: SuggestionStatus) => void }) {
   return (
     <div style={{ display: 'grid', gap: 10 }}>
-      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Sugestões ({data.openSuggestions} {plural(data.openSuggestions, 'aberta', 'abertas')})</h2>
+      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Sugestões ({data.openSuggestions} {plural(data.openSuggestions, { one: 'aberta', many: 'abertas' })})</h2>
       {data.suggestions.length === 0 ? (
         <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma sugestão. Libere a ferramenta registrar_sugestao na aba Claude (MCP) do sistema para o Claude registrar as dele.</span>
       ) : (
@@ -221,7 +221,7 @@ export function ClaudeReviewPanel({ systems, initialSystemId }: { systems: ISyst
   const key = ['claude-review', systemId];
   const review = useQuery({ queryKey: key, queryFn: () => api.getClaudeReview(systemId as number), enabled: systemId !== undefined });
   const mutation = useMutation({
-    mutationFn: (v: { path: string; body?: unknown }) => api.reviewAction(systemId as number, v.path, v.body),
+    mutationFn: (v: { path: string; body?: unknown }) => api.reviewAction({ systemId: systemId as number, path: v.path, body: v.body }),
     onSuccess: (data) => queryClient.setQueryData(key, data),
   });
   const act = (path: string, body?: unknown) => mutation.mutate({ path, body });
