@@ -763,3 +763,20 @@ Verificado: leitura do código. NÃO verificado: JUnit (só CI; teste novo `semO
 - **Não feito (decisão de produto):** unificar os nomes "analisadores" e "Ferramentas de análise"; listar o estado das ferramentas nos relatórios PDF/HTML.
 
 Verificado: leitura do código. NÃO verificado: JUnit e vitest (só CI); tela real; o corte em 300 com uma auditoria real.
+
+## Dashboard 12.63.0 — Correções da autoauditoria #105 (commit 648d83a)
+
+- **Relatório:** nota 78,1; 0 CRITICAL/HIGH, 16 MEDIUM, 348 LOW (quase tudo estilo de qualidade).
+- **Corrigido:** (1) falso positivo da regra `sentinel-boas-java-recurso-sem-try-with-resources` em `DbConfigSource.java:92`: o código já usava try-with-resources, mas a regra só reconhecia cabeçalho com 1 recurso; agora reconhece 2, 3 e 4 (teste novo). (2) `ExternalTools.java:324/356` catch vazio (PMD): variável renomeada para `ignored`, comentário mantido. (3) `StartAuditModal.tsx:25`: erro de `checkPath` não é mais engolido por `.catch(() => undefined)`; virou `async/try/catch` com a razão escrita. (4) `ReportsPage.tsx:39`: histórico do localStorage é validado (itens sem `id`, `systemName`, `generatedAt` e `url` em texto são descartados). (5) CVE-2026-118764 (minimatch 10.2.6) em `audit-rules/lint/eslint`: `overrides` para minimatch 11.0.5; ESLint 9.39.5 com typescript-eslint e a config `eslint.padrao-ts` rodam normalmente.
+- **Não feito:** `client.ts:79` (`JSON.parse(...) as T` no cliente genérico): exige um esquema por endpoint (zod/valibot, dependência nova), decisão de design; God Object `SarifAnalyzer` e complexidade ciclomática (`EnginePanel` 18, `EngineScope` 11, `RuleSide.infer` 14, `SarifAnalyzer.registrar` 14): refatoração maior, sem teste de caracterização; os 348 LOW de estilo; achados de 100 a 304 do PDF (páginas 9 a 30) não lidos.
+
+Verificado: `opengrep --test` do pacote core-boas-praticas (8/8), `tsc --noEmit` e vitest do dashboard (312/312), ESLint com minimatch 11. NÃO verificado: JUnit/Maven (só CI; mudança Java é só nome de variável); nova auditoria do Sentinel; imagem Docker com o `package-lock.json` novo.
+
+## Dashboard 12.64.0 — Gerador de CLAUDE.md: três defeitos e dois guias de referência
+
+- **Defeitos achados** ao revisar os guias de Spring Boot e TypeScript gerados: (1) a regra de Android `webview-url-do-intent` aparecia em "Sem exceção" do Spring, porque as regras Android são `languages: [java]` e nenhuma tecnologia as reivindicava; (2) a mesma regra do Actuator (YAML e `.properties`) saía duas vezes; (3) o título da regra `ignoreExpiration` era cortado no `: ` de dentro das crases (saía "`ignoreExpiration").
+- **Mudança:** `stacks.yml` ganha o campo opcional `exclude` (java, spring e quarkus excluem `sentinel-android-*`; vale só para herança por linguagem, `own`/`also` continuam valendo); `GuideBook.semExcecao` ignora títulos repetidos; `GuideCatalog.title` não corta em `: ` dentro de crases. Testes novos em `GuideBookTest`.
+- **Docs:** `docs/referencia/claude-md-spring-boot.md` e `claude-md-typescript.md`, exemplos já com as correções (montados à mão a partir do texto colado: não vieram do gerador novo).
+- **Em aberto (decisão do João):** o guia diz "até 5 parâmetros", mas a regra `sentinel-cct` (pacote ts-clean-code-labs42, LOW) aponta função com mais de 2; os dois discordam.
+
+Verificado: lógica do título por `javac` com 4 casos (incluindo os existentes). NÃO verificado: `GuideBookTest` e demais JUnit (Maven Central inacessível aqui; só CI); texto real gerado pelo endpoint depois da mudança (o 8º item de "Sem exceção" do Spring pode mudar, pois a lista deixou de gastar vaga com a repetição).

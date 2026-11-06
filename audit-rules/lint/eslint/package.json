@@ -18,5 +18,8 @@
     "eslint-plugin-sonarjs": "4.2.2",
     "typescript": "5.9.3",
     "typescript-eslint": "8.72.0"
+  },
+  "overrides": {
+    "minimatch": "11.0.5"
   }
 }

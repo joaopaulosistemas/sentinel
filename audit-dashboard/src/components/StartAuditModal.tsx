@@ -22,12 +22,15 @@ function useInitialBranch(system: Props['system'], setBranch: (b: string) => voi
     if (!isLocalWithPath(system)) return;
     // Pasta local: a branch padrão ("main") pode nem existir lá. Se não existir, usa a branch atual da pasta.
     let ativo = true;
-    api
-      .checkPath(system.localPath as string, system.scheduledBranch || 'main')
-      .then((c) => {
+    const usarBranchAtual = async () => {
+      try {
+        const c = await api.checkPath(system.localPath as string, system.scheduledBranch || 'main');
         if (ativo && c.ok && c.branchFound === false && c.defaultBranch) setBranch(c.defaultBranch);
-      })
-      .catch(() => undefined);
+      } catch {
+        // Sem a checagem a branch fica a agendada (ou main) e a pessoa ainda pode editar o campo.
+      }
+    };
+    void usarBranchAtual();
     return () => {
       ativo = false;
     };

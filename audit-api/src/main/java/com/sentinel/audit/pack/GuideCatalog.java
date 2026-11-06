@@ -186,8 +186,22 @@ public final class GuideCatalog {
     /** Título: o trecho antes do primeiro ': ' da primeira frase, ou a primeira frase inteira. */
     static String title(String message) {
         String first = firstSentence(message);
-        int colon = first.indexOf(": ");
+        int colon = colonOutsideBackticks(first);
         return stripDot(colon > 0 ? first.substring(0, colon) : first);
+    }
+
+    /** Posição do primeiro ': ' que não está dentro de crases (`a: b` é código, não o fim do título); -1 se não houver. */
+    private static int colonOutsideBackticks(String text) {
+        boolean inCode = false;
+        for (int i = 0; i < text.length() - 1; i++) {
+            char c = text.charAt(i);
+            if (c == '`') {
+                inCode = !inCode;
+            } else if (!inCode && c == ':' && text.charAt(i + 1) == ' ') {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static String secondSentence(String message) {
