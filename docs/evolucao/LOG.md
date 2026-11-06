@@ -819,3 +819,16 @@ Verificado: `semgrep --test` (21/21; Semgrep 1.184, não o Opengrep) e varredura
 - **DVSA depois:** nota 41,7 e 730 achados (era 41,99 e 727): +3 HIGH de Opengrep (2 `sentinel-node-desserializacao` e 1 `sentinel-node-eval-requisicao`), conferidos no código de treino.
 - **Validação (só números, sem ler código):** dvja 176 achados, nota 48,95 (igual); NodeGoat 279, nota 46,87 (igual).
 - NÃO verificado: treinos anteriores com 12.64.0; JUnit/Maven (só no PR).
+
+## Dashboard 12.65.0 — Melhorias do laço (pedido do João): medição, gabarito e escopo fixo
+
+- **Escopo fixo (decisão do João):** Java, Spring, JavaScript, TypeScript, React, Vue, Angular, HTML, SCSS e CSS. Nada de Python, PHP, Go. Registrado em `.claude/agents/sentinel-ciclo.md`, com a regra de alternar a stack entre voltas.
+- **Medição automática:** `scripts/medir-volta.py` (`extrair`, `recall`, `comparar`) lê a lista completa de achados no log do job. `audit-rules/calibracao/gabaritos/` guarda as falhas conhecidas por repositório de treino; `baselines/` guarda as contagens por regra para detectar regressão (total +25 % ou regra que dobra). O critério de parada passa a ser ganho medido (recall que sobe ou falso positivo conferido que cai).
+- **Primeiro gabarito (cr0hn/vulnerable-node, 29 falhas lidas no código e em `sast/ground-truth.yaml`):** recall 22/29 (76 %) com 12.64.0; 25/29 (86 %) com 12.65.0.
+- **Regras novas (Node/EJS):** `sentinel-ejs-saida-sem-escape` (`<%- valor %>` em `*.ejs`, sem `body`, `include`, `partial`, `JSON.stringify`), `sentinel-node-mass-assignment` (corpo inteiro em `create/update/new Model`) e `sentinel-node-mass-assignment-campo` (papel/saldo/permissão recebendo `req.body.x`). Nas fontes do Juice Shop só `wallet.ts:27` (saldo vindo do corpo) acerta; uma versão com taint (descartada) gerava falso positivo em leituras de `balance`.
+- **Medido (CI, vulnerable-node):** 265 → 268 achados, nota 47,61 → 47,44; +2 EJS e +1 mass assignment, todos conferidos.
+- **Ainda perdidas (assumidas):** INSERT com `fields.role` em array de valores (`auth.js:55`) e três sementes que passam o dado por parâmetro de função (NoSQL, SSRF, ReDoS): limite do motor entre funções.
+- **Decisões pendentes (não feitas por tocarem em `.github/` ou por exigirem avaliação):** (1) permitir lista de repositórios no workflow `auditoria-completa.yml` para rodar treino, validação e regressão em paralelo; (2) volta dedicada a avaliar o Joern para JS/TS (dado entre funções) antes de decidir se compensa.
+- **Regressão de treinos anteriores:** ainda sem baseline (só vulnerable-node tem). Cada volta nova grava o baseline do repositório auditado; reauditar dois treinos antigos por mudança de regra passou a ser passo obrigatório do guia.
+
+Verificado: `semgrep --test` (79/79), paridade Opengrep × Semgrep (624 = 624), auditoria do vulnerable-node antes e depois no CI, recall pelo script. NÃO verificado: JUnit/Maven (nada de Java mudou); Opengrep local 1.33.1 e não o 1.30.0 do CI; regras novas em NodeGoat e dvja (a conferir pelo CI na próxima volta).
