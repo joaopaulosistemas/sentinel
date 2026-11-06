@@ -782,3 +782,10 @@ Verificado: `opengrep --test` e `semgrep --test` (75/75), paridade Opengrep × S
 - **Não feito:** achados de Python, Go e C do repositório; `console.log` em massa (671) é ruído de qualidade do conteúdo de treino, sem regra nova.
 
 Verificado: `opengrep --test` (76/76, v1.30.0), paridade Opengrep × Semgrep (602 = 602), varredura de secure-code-game e vulnerable-node. NÃO verificado: nova auditoria no CI com 12.62.0, dvja e NodeGoat com 12.62.0, JUnit/Maven (nada de Java mudou).
+
+### Medições da volta 10 com 12.62.0 (números do CI)
+
+- **secure-code-game depois:** nota 48,45 e 906 achados (era 52,05 e 898): +8, todos conferidos no código de treino (1 XXE, 1 upload, 6 `exec` dinâmico). A nota cai porque a auditoria passou a ver falhas reais.
+- **Validação (só números, sem ler código):** dvja 176 achados, nota 48,95 (igual). NodeGoat 279 achados, nota 46,87 (era 278 e 47,14): o +1 é um `sentinel-node-exec-dinamico` MEDIUM em `Gruntfile.js:165`; não li o arquivo, então não sei se é falso positivo (arquivo de build, WARNING). Nenhuma outra contagem mudou.
+- **Branch `ciclo/estabilizacao-4`:** 3 voltas, todas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
+- NÃO verificado: JUnit/Maven (só no PR); treinos anteriores com 12.62.0.
