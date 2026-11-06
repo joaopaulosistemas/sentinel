@@ -99,6 +99,9 @@ class Extras {
         String jwtSecretKey = "k3y-s3gr3d0-Longo-9f2a";
         // ruleid: sentinel-senha-fixa-no-codigo
         String accessKeySecret = "changeme";
+        // frase de mensagem ao usuário não é credencial
+        // ok: sentinel-senha-fixa-no-codigo
+        String secretData = "Congratulations, you have successfully exploited buffer over-read!";
     }
 
     // nomes de campo, cabeçalho, prefixo e chave de cache não são credencial

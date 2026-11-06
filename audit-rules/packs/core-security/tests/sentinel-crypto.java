@@ -90,6 +90,9 @@ class CryptoCases {
     private static final String EMAIL_KEY = "email";
     // ok: sentinel-crypto-chave-fixa-no-codigo
     private static final String PASSWORD_KEY = "password";
+    // frase de mensagem ao usuário (maiúscula inicial, várias palavras, pontuação final) não é chave
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final String SECRET_DATA = "Congratulations, you have successfully exploited buffer over-read!";
     // ruleid: sentinel-crypto-chave-fixa-no-codigo
     private static final String MASTER_KEY = "changeme";
     // ruleid: sentinel-crypto-chave-fixa-no-codigo

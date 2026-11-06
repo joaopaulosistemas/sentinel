@@ -88,6 +88,21 @@ class InjectionCases {
         new ProcessBuilder("git", "log", "--oneline");
     }
 
+    void executa(String[] cmd) throws Exception {
+        new ProcessBuilder(cmd).start();
+    }
+
+    void shellEmVetor(String host) throws Exception {
+        // ruleid: sentinel-command-injection-shell
+        executa(new String[] {"sh", "-c", "ping -c 4 " + host});
+        // ruleid: sentinel-command-injection-shell
+        executa(new String[] {"cmd.exe", "/C", "ping " + host});
+        // ok: sentinel-command-injection-shell
+        executa(new String[] {"sh", "-c", "ping -c 4 localhost"});
+        // ok: sentinel-command-injection-shell
+        executa(new String[] {"git", "log", "--oneline" + host});
+    }
+
     void ldap(javax.naming.directory.DirContext ctx, String user) throws Exception {
         // ruleid: sentinel-ldap-injection
         ctx.search("dc=empresa", "(uid=" + user + ")", null);

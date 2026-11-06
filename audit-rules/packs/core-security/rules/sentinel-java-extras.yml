@@ -245,6 +245,10 @@ rules:
       - metavariable-regex:
           metavariable: $VAL
           regex: (?i)^(?!(bearer|authorization|jwt|token|password|senha|secret|apikey|api_key|passwd|pwd|username)$)(?!x-)(?!.*[:\s]$)(?!\$\{)(?!\w+(\.\w+)+$).+$
+      # frase de mensagem ao usuário (maiúscula inicial, 4+ palavras, pontuação final) não é credencial
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: ^(?![A-Z][^ ]* [^ ]* [^ ]* .*[.!?]$)
       - pattern-not: String $V = "";
     message: >
       Credencial escrita no código-fonte. Ela vai para o Git e para todo build. Leia de variável de ambiente, de
