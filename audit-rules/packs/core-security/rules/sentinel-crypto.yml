@@ -117,6 +117,15 @@ rules:
   - id: sentinel-crypto-chave-fixa-no-codigo
     pattern-either:
       - pattern: new SecretKeySpec("...".getBytes(...), ...)
+      # constante byte[] com nome de segredo e texto fixo (private static final byte[] SECRET = "...".getBytes()), usada depois em SecretKeySpec ou HMAC
+      - patterns:
+          - pattern: byte[] $K = "$V".getBytes(...);
+          - metavariable-regex:
+              metavariable: $K
+              regex: "^(?i:.*(?:key|chave|secret|segredo|passphrase).*)$"
+          - metavariable-regex:
+              metavariable: $V
+              regex: '^(?![a-z0-9]+(\.[a-z0-9]+)+$).{8,}$'
       - patterns:
           - pattern: String $K = "$V";
           - metavariable-regex:

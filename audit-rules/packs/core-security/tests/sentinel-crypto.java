@@ -97,6 +97,14 @@ class CryptoCases {
     // ruleid: sentinel-crypto-chave-fixa-no-codigo
     String segredoSimples = "supersecretkey";
     byte[] iv = new byte[16];
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    private static final byte[] SECRET = "jvl-demo-hs256-secret-do-not-reuse".getBytes(UTF8);
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    private static final byte[] CHAVE_HMAC = "minha-chave-de-assinatura".getBytes();
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final byte[] CHAVE_DO_AMBIENTE = System.getenv("APP_KEY").getBytes();
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    private static final byte[] KEY_NAME = "app.crypto.key".getBytes();
 
     void chaveFixa(String entrada) throws Exception {
         // ruleid: sentinel-crypto-chave-fixa-no-codigo
