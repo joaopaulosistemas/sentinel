@@ -6,7 +6,8 @@
     "repositorios_fixos": [
       "WebGoat/WebGoat",
       "juice-shop/juice-shop",
-      "whgojp/JavaSecLab"
+      "whgojp/JavaSecLab",
+      "rewanthtammana/Damn-Vulnerable-Bank"
     ],
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
     "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu.",
