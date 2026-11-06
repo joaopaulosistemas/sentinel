@@ -679,3 +679,22 @@ Branch única `ciclo/estabilizacao`; as auditorias rodaram a partir dela. Valida
 - **Não feito:** o Opengrep ainda lê testes de propósito (regras de segurança); `rs.getString` em JSP continua sinalizado (é dado do banco).
 
 Verificado: testes das regras (opengrep --test, 61 casos), programas `javac` para a detecção por caminho. NÃO verificado: JUnit/Maven (só CI), medição do XSS em JSP.
+
+## Ciclo, volta 4 (branch `ciclo/estabilizacao-2`) — OWASP/wrongsecrets (treino)
+
+- **Medido:** nota 31,55 e 969 achados (CRITICAL 19, HIGH 216). Gitleaks 165, Trivy 156, Opengrep 119, Checkov 115, kube-score 81, Checkstyle 79, Stylelint 77.
+- **Análise:** o projeto existe para expor segredos (CTF), então Gitleaks, Trivy `DS-0031` e `sentinel-spring-senha-em-properties` são acertos. `application.properties:9` (`password=...`) foi achado; as linhas com `if_you_see_this_please_use_...` são marcadores de lugar de propósito, não segredo. Nenhuma lacuna geral encontrada no código Java dos desafios (os segredos vêm de `@Value`, Dockerfile ou Kubernetes, que já têm regra).
+- **Mudança de código:** nenhuma. **Volta sem ganho** (conta para a estabilização: 1 de 2).
+- **Fora do escopo declarado:** 112 achados de Terraform (`aws/`, `azure/`, `gcp/`) via Checkov e Trivy; decidir se o Sentinel deve ignorar `.tf` (hoje o escopo do projeto exclui Terraform, mas as ferramentas ainda leem).
+
+Verificado: leitura do log da auditoria e do código do repositório de treino. NÃO verificado: nada além disso.
+
+## Dashboard 12.55.0 — Ciclo, volta 5 (branch `ciclo/estabilizacao-2`): Juice Shop reauditado, estável
+
+- **Medido (Juice Shop, treino):** nota 47,7 e 1.958 achados (CRITICAL 20, HIGH 118). Na rodada 1 (12.47.0) eram 4.193 achados e nota 47,65. A nota quase não mexe porque a dimensão segurança já está em 0.
+- **Análise:** os CRITICAL são todos de Terraform (Trivy). Os HIGH de Opengrep são acertos do projeto (SQL injection, path traversal, `$where`, `eval`, JWT fixo, `bypassSecurityTrust*`), parte repetida em `data/static/codefixes` (variantes de correção do desafio). Os 57 do Gitleaks são HIGH, mas 4 em cada grande arquivo de `test/` já saem com confiança BAIXA no `FindingConfidence` (caminho de teste): não há lacuna ali.
+- **Mudança de código:** nenhuma. **Volta sem ganho** (2 de 2 seguidas, com a volta 4): o laço está estável.
+- **Decisão pendente (não tomada, muda a política de escopo):** ignorar `.tf` (Terraform) em Trivy e Checkov, que hoje leem arquivos que o escopo do projeto exclui (Juice Shop: ~34 CRITICAL; wrongsecrets: 112 achados). Também não escrevi regra para `data/static/codefixes`, por ser um padrão específico deste repositório.
+- **Validação (dvja, NodeGoat):** sem mudança de código nas voltas 4 e 5, então as contagens (176 e 328) não têm motivo para mudar; não reauditei.
+
+Verificado: log da auditoria completa (execução 42148534934) e leitura de `GitleaksAnalyzer` e `FindingConfidence`. NÃO verificado: nova medição de dvja/NodeGoat; JUnit/Maven (nada de Java mudou).
