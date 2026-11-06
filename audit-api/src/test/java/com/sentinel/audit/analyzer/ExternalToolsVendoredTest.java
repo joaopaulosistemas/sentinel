@@ -17,11 +17,13 @@ class ExternalToolsVendoredTest {
         assertTrue(ExternalTools.isVendoredLibrary("web/css/bootstrap-theme.css"));
         assertTrue(ExternalTools.isVendoredLibrary("static/app.min.js"));
         assertTrue(ExternalTools.isVendoredLibrary("static\\js\\jquery.min.js"));
+        assertTrue(ExternalTools.isVendoredLibrary("www/resources/sap/m/Table-dbg.js"));   // versão de depuração de biblioteca
     }
 
     @Test
     void naoConfundeCodigoDoProjeto() {
         assertFalse(ExternalTools.isVendoredLibrary("src/bootstrap.ts"));
+        assertFalse(ExternalTools.isVendoredLibrary("src/app/debug.js"));
         assertFalse(ExternalTools.isVendoredLibrary("src/app/bootstrap.js"));
         assertFalse(ExternalTools.isVendoredLibrary("src/main/js/jquery-plugin-pedidos.ts"));
         assertFalse(ExternalTools.isVendoredLibrary("src/main/java/Fontes.java"));

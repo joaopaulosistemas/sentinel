@@ -155,7 +155,7 @@ final class ExternalTools {
     }
 
     private static final java.util.regex.Pattern VENDORED_NAME = java.util.regex.Pattern.compile(
-            "^(jquery[\\w.-]*|font-?awesome[\\w.-]*|patternfly[\\w.-]*|[\\w.-]+\\.min)\\.(js|css|map)$");
+            "^(jquery[\\w.-]*|font-?awesome[\\w.-]*|patternfly[\\w.-]*|[\\w.-]+\\.min|[\\w.-]+-dbg)\\.(js|css|map)$");
     /** "bootstrap.js" também é o nome do arquivo de partida de aplicações Angular/Webpack: só vale como biblioteca em pasta de ativos. */
     private static final java.util.regex.Pattern VENDORED_ASSET_NAME = java.util.regex.Pattern.compile(
             "^bootstrap[\\w.-]*\\.(js|css)$");
