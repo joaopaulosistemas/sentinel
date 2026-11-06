@@ -1,0 +1,66 @@
+{
+ "_comentario": "Falhas conhecidas de BrightSec/brokencrystals lidas no código (treino); amostra de 7, não é o gabarito completo. Entradas sem regra são lacunas assumidas.",
+ "repo": "BrightSec/brokencrystals",
+ "falhas": [
+  {
+   "arquivo": "src/app.controller.ts",
+   "linha": 95,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-node-open-redirect"
+   ],
+   "nota": "GET /goto redireciona para @Query('url')"
+  },
+  {
+   "arquivo": "src/app.controller.ts",
+   "linha": 121,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-node-xxe"
+   ],
+   "nota": "POST /metadata com noent:true"
+  },
+  {
+   "arquivo": "src/app.controller.ts",
+   "linha": 219,
+   "cwe": "CWE-95",
+   "regras": [
+    "sentinel-node-eval-requisicao",
+    "sentinel-node-eval-dinamico"
+   ],
+   "nota": "POST /process_numbers: eval do corpo"
+  },
+  {
+   "arquivo": "src/file/file.controller.ts",
+   "linha": 291,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ],
+   "nota": "PUT /file/raw grava no caminho de @Query('path')"
+  },
+  {
+   "arquivo": "src/app.service.ts",
+   "linha": 25,
+   "cwe": "CWE-78",
+   "regras": [],
+   "nota": "GET /spawn: comando do @Query chega por outro arquivo (controller → service); lacuna do motor"
+  },
+  {
+   "arquivo": "src/auth/jwt/jwt.token.with.sql.kid.processor.ts",
+   "linha": 10,
+   "cwe": "CWE-89",
+   "regras": [],
+   "nota": "SQL do kid do JWT em template string e consulta em outra linha; lacuna assumida"
+  },
+  {
+   "arquivo": "src/users/users.controller.ts",
+   "linha": 608,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-node-xxe"
+   ],
+   "nota": "achado do Sentinel nesta linha; rota não conferida um a um"
+  }
+ ]
+}

@@ -118,6 +118,13 @@ rules:
           - metavariable-regex:
               metavariable: $EV
               regex: ^event$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -175,6 +182,13 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -183,6 +197,13 @@ rules:
           - metavariable-regex:
               metavariable: $RES
               regex: ^(res|response)$
+          - focus-metavariable: $U
+      - patterns:
+          - pattern-inside: |
+              class $C { ... @Redirect(...) $M(...) {...} ... }
+          - pattern-either:
+              - pattern: 'return { url: $U, ... }'
+              - pattern: 'return { $U, ... }'
           - focus-metavariable: $U
     message: >
       Redirecionamento aberto (CWE-601): o destino vem da requisição. Aceite só caminhos do próprio site ou
@@ -219,6 +240,13 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -270,6 +298,13 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -355,6 +390,13 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -368,6 +410,13 @@ rules:
           - metavariable-regex:
               metavariable: $CP
               regex: ^(child_process|childProcess|cp|shell)$
+          - focus-metavariable: $C
+      - patterns:
+          - pattern-either:
+              - pattern: spawn($C, ...)
+              - pattern: spawnSync($C, ...)
+              - pattern: execFile($C, ...)
+              - pattern: execFileSync($C, ...)
           - focus-metavariable: $C
     pattern-sanitizers:
       - pattern: shellEscape(...)

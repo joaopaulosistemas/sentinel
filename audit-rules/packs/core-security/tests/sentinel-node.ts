@@ -501,3 +501,68 @@ export function papelFixo (req: any) {
   const papel = 'cliente'
   return papel + req.body.nome
 }
+
+// ---------- NestJS: parâmetros decorados como origem ----------
+export class NestExemplo {
+  @Get('goto')
+  @Redirect()
+  async irPara (@Query('url') url: string) {
+    // ruleid: sentinel-node-open-redirect
+    return { url }
+  }
+
+  @Get('goto-fixo')
+  @Redirect()
+  async irParaFixo (@Query('url') url: string) {
+    // ok: sentinel-node-open-redirect
+    return { url: '/inicio' }
+  }
+
+  @Post('calcular')
+  async calcular (@Body() payload: { expressao: string }) {
+    // ruleid: sentinel-node-eval-requisicao, sentinel-node-eval-dinamico
+    return eval(payload.expressao)
+  }
+
+  @Post('calcular-fixo')
+  async calcularFixo (@Body() payload: { expressao: string }) {
+    // ok: sentinel-node-eval-requisicao
+    return eval('1 + 1')
+  }
+
+  @Get('rodar')
+  async rodar (@Query('cmd') cmd: string) {
+    // ruleid: sentinel-node-command-injection, sentinel-node-exec-dinamico
+    return execSync(cmd).toString()
+  }
+
+  @Get('rodar-spawn')
+  async rodarSpawn (@Query('cmd') cmd: string) {
+    // ruleid: sentinel-node-command-injection
+    return spawn(cmd, [])
+  }
+
+  @Get('rodar-ok')
+  async rodarOk (@Query('n') n: string) {
+    // ok: sentinel-node-command-injection
+    return spawn('ls', ['-la']).pid
+  }
+
+  @Get('arquivo')
+  async arquivo (@Query('path') caminho: string) {
+    // ruleid: sentinel-node-path-traversal
+    return fs.createReadStream(caminho)
+  }
+
+  @Get('buscar')
+  async buscar (@Query('url') alvo: string) {
+    // ruleid: sentinel-node-ssrf
+    return axios.get(alvo)
+  }
+
+  @Get('sem-decorador')
+  async semDecorador (@Inject() servico: string, valor: string) {
+    // ok: sentinel-node-eval-requisicao
+    return JSON.parse(servico)
+  }
+}
