@@ -33,3 +33,4 @@ OWASP/DVSA
 BrightSec/brokencrystals
 HCL-TECH-SOFTWARE/AltoroJ
 oversecured/ovaa
+payatu/diva-android
