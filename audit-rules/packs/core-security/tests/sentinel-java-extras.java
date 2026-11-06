@@ -160,4 +160,57 @@ class SenhaComparadaComLiteral {
         // ok: sentinel-senha-comparada-com-literal
         return hashBanco.equals(password);
     }
+
+    void xstreamQualquerTipo() {
+        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        // ruleid: sentinel-xstream-qualquer-tipo
+        xs.addPermission(AnyTypePermission.ANY);
+    }
+
+    void xstreamTipoEspecifico() {
+        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        // ok: sentinel-xstream-qualquer-tipo
+        xs.addPermission(new WildcardTypePermission(new String[] {"com.exemplo.dto.*"}));
+    }
+
+    void velocityComTextoVariavel(String modelo, VelocityContext ctx, java.io.StringWriter out) {
+        // ruleid: sentinel-ssti-modelo-variavel
+        Velocity.evaluate(ctx, out, "test", modelo);
+    }
+
+    void velocityComTextoFixo(VelocityContext ctx, java.io.StringWriter out) {
+        // ok: sentinel-ssti-modelo-variavel
+        Velocity.evaluate(ctx, out, "test", "Olá $nome");
+    }
+
+    void freemarkerComTextoVariavel(String modelo, freemarker.template.Configuration cfg) throws Exception {
+        // ruleid: sentinel-ssti-modelo-variavel
+        new freemarker.template.Template("t", new java.io.StringReader(modelo), cfg);
+    }
+
+    void fastjsonAutotypeLigado() {
+        // ruleid: sentinel-fastjson-autotype
+        ParserConfig.getGlobalInstance().setAutoTypeSupport(true);
+    }
+
+    void fastjsonCampoNaoPublico(String json) {
+        // ruleid: sentinel-fastjson-autotype
+        JSON.parseObject(json, Feature.SupportNonPublicField);
+    }
+
+    void fastjsonPadrao(String json) {
+        // ok: sentinel-fastjson-autotype
+        JSON.parseObject(json);
+    }
+
+    void defineClassPorReflexao() throws Exception {
+        // ruleid: sentinel-classloader-define-classe
+        java.lang.reflect.Method m = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+        m.setAccessible(true);
+    }
+
+    void outroMetodoDoClassLoader() throws Exception {
+        // ok: sentinel-classloader-define-classe
+        java.lang.reflect.Method m = ClassLoader.class.getDeclaredMethod("getPackages");
+    }
 }

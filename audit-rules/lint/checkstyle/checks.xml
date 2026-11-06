@@ -48,7 +48,7 @@
     <module name="UnusedImports"/>
     <module name="RedundantImport"/>
     <module name="IllegalImport"/>
-    <module name="MagicNumber"><property name="ignoreNumbers" value="-1, 0, 1, 2, 10, 100, 1000"/><property name="ignoreHashCodeMethod" value="true"/><property name="ignoreAnnotation" value="true"/><property name="constantWaiverParentToken" value="TYPECAST, METHOD_CALL, EXPR, ARRAY_INIT, UNARY_MINUS, UNARY_PLUS, ELIST, STAR, ASSIGN, PLUS, MINUS, DIV, LITERAL_NEW"/></module>
+    <module name="MagicNumber"><property name="ignoreNumbers" value="-1, 0, 1, 2, 8, 10, 16, 32, 64, 100, 128, 255, 256, 512, 1000, 1024"/><property name="ignoreHashCodeMethod" value="true"/><property name="ignoreAnnotation" value="true"/><property name="constantWaiverParentToken" value="TYPECAST, METHOD_CALL, EXPR, ARRAY_INIT, UNARY_MINUS, UNARY_PLUS, ELIST, STAR, ASSIGN, PLUS, MINUS, DIV, LITERAL_NEW"/></module>
     <module name="TodoComment"><property name="format" value="FIXME|XXX"/></module>
   </module>
 </module>

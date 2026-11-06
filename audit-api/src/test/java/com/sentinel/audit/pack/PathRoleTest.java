@@ -49,4 +49,18 @@ class PathRoleTest {
         assertEquals(TEST, PathRole.of("src\\Test\\Java\\FooTest.java"));
         assertEquals(DOCS, PathRole.of("Docs/Guia.html"));
     }
+
+    @Test
+    void testesDeIntegracaoDoMavenSaoTeste() {
+        assertEquals(TEST, PathRole.of("src/it/java/servlets/Login.java"));
+        assertEquals(TEST, PathRole.of("modulo/src/it/java/A.java"));
+        assertEquals(TEST, PathRole.of("src/integrationTest/java/A.java"));
+    }
+
+    @Test
+    void pastaItQueNaoESrcItContinuaProducao() {
+        assertEquals(PRODUCTION, PathRole.of("src/main/resources/i18n/it/mensagens.ts"));
+        assertEquals(PRODUCTION, PathRole.of("src/item/Pedido.java"));
+        assertEquals(PRODUCTION, PathRole.of("it/Pedido.java"));
+    }
 }

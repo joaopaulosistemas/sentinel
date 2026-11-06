@@ -14,7 +14,7 @@ public enum PathRole {
     FIXTURE,
     GENERATED;
 
-    private static final Set<String> TEST_DIRS = Set.of("test", "tests", "__tests__", "spec", "specs", "e2e", "integration-tests");
+    private static final Set<String> TEST_DIRS = Set.of("test", "tests", "__tests__", "spec", "specs", "e2e", "integration-tests", "integrationtest", "integration-test");
     private static final Set<String> DOC_DIRS = Set.of("docs", "doc", "documentation", "wiki");
     private static final Set<String> FIXTURE_DIRS = Set.of("fixtures", "__fixtures__", "testdata", "test-data", "mocks", "__mocks__",
             "examples", "example", "samples", "sample", "demo", "demos");
@@ -54,12 +54,22 @@ public enum PathRole {
             role = GENERATED;
         } else if (FIXTURE_SUFFIXES.stream().anyMatch(file::endsWith) || inDirs(parts, FIXTURE_DIRS)) {
             role = FIXTURE;
-        } else if (inDirs(parts, TEST_DIRS) || isTestFile(file)) {
+        } else if (inDirs(parts, TEST_DIRS) || isMavenIt(parts) || isTestFile(file)) {
             role = TEST;
         } else if (inDirs(parts, DOC_DIRS) || isTopLevelDoc(parts, file)) {
             role = DOCS;
         }
         return role;
+    }
+
+    /** {@code src/it}: testes de integração do Maven ("it" sozinho pode ser o idioma italiano). */
+    private static boolean isMavenIt(String[] parts) {
+        for (int i = 1; i < parts.length - 1; i++) {
+            if ("it".equals(parts[i]) && "src".equals(parts[i - 1])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Algum diretório do caminho (o último elemento é o arquivo e não conta) está no conjunto. */

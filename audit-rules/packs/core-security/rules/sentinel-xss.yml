@@ -1,7 +1,10 @@
 rules:
   - id: sentinel-xss-jsp-unescaped-output
     # JSP não é uma linguagem suportada pelo parser do Semgrep: usa o modo "generic".
-    pattern: <%= ... %>
+    patterns:
+      - pattern: <%= ... %>
+      # texto de pacote de mensagens (escrito pela equipe) e saída já passada por um codificador conhecido
+      - pattern-not-regex: '<%=[^%]*([Bb]undle\w*\.getString\(|Encode\.for\w+\(|encodeFor\w+\(|escapeHtml\w*\(|escapeXml\w*\(|escapeJavaScript\()[^%]*%>'
     paths:
       include:
         - "*.jsp"

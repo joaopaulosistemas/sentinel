@@ -375,4 +375,28 @@ class SarifAnalyzerTest {
         assertEquals(4, new SarifAnalyzer().analyze(proj, run(), pol.withTrustedToolPacks(java.util.Set.of("ferramentas")))
                 .findings().size());
     }
+
+    private static String sarifEm(String... caminhos) {
+        StringBuilder r = new StringBuilder();
+        for (String c : caminhos) {
+            r.append(r.length() == 0 ? "" : ",").append("{\"ruleId\":\"dup\",\"level\":\"warning\",\"message\":{\"text\":\"repetido\"},"
+                    + "\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"" + c + "\"},\"region\":{\"startLine\":3}}}]}");
+        }
+        return "{\"runs\":[{\"tool\":{\"driver\":{\"name\":\"x\",\"rules\":[]}},\"results\":[" + r + "]}]}";
+    }
+
+    @Test
+    void achadoDeQualidadeEmTesteDeIntegracaoOuPastaIgnoradaNaoEntra() {
+        String sarif = sarifEm("src/main/java/A.java", "src/it/java/B.java", "src/test/java/C.java", "node_modules/x/D.js");
+        List<Finding> fs = new SarifAnalyzer().parse(sarif, spec("jscpd", "*", null, Map.of()), PROJ, run());
+        assertEquals(1, fs.size());
+        assertEquals("src/main/java/A.java", fs.get(0).getFilePath());
+    }
+
+    @Test
+    void achadoDeSegurancaEmTesteContinua() {
+        ToolSpec seguranca = new ToolSpec("sec", "sec", null, "*", Category.SECURITY, Map.of(), 30, false, List.of());
+        List<Finding> fs = new SarifAnalyzer().parse(sarifEm("src/it/java/B.java"), seguranca, PROJ, run());
+        assertEquals(1, fs.size());
+    }
 }

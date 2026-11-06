@@ -277,3 +277,69 @@ rules:
       category: security
       cwe: "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
       owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-xstream-qualquer-tipo
+    pattern: $X.addPermission(AnyTypePermission.ANY)
+    message: >
+      XStream configurado para aceitar qualquer tipo (AnyTypePermission.ANY): um XML de origem externa pode instanciar
+      classes arbitrárias e executar código. Libere só os tipos esperados (allowTypes, allowTypesByWildcard).
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-ssti-modelo-variavel
+    patterns:
+      - pattern-either:
+          - pattern: Velocity.evaluate($CTX, $OUT, $NAME, $TEMPLATE)
+          - pattern: new freemarker.template.Template($NAME, new java.io.StringReader($TEMPLATE), ...)
+          - pattern: new Template($NAME, new StringReader($TEMPLATE), ...)
+      - pattern-not: Velocity.evaluate($CTX, $OUT, $NAME, "...")
+      - pattern-not: new freemarker.template.Template($NAME, new java.io.StringReader("..."), ...)
+      - pattern-not: new Template($NAME, new StringReader("..."), ...)
+    message: >
+      O texto do modelo (Velocity/FreeMarker) vem de uma variável: se algum trecho dele for escolhido pelo usuário,
+      há injeção de modelo (SSTI) e execução de código. Use modelos fixos e passe os dados só pelo contexto.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-1336: Improper Neutralization of Special Elements Used in a Template Engine"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-fastjson-autotype
+    pattern-either:
+      - pattern: $C.setAutoTypeSupport(true)
+      - pattern: JSON.parseObject($S, Feature.SupportNonPublicField)
+      - pattern: JSON.parse($S, Feature.SupportNonPublicField)
+    message: >
+      Fastjson com AutoType ou campos não públicos habilitados: um JSON externo escolhe a classe a instanciar e
+      pode levar a execução de código. Mantenha o padrão (AutoType desligado) e use classes fixas na leitura.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-classloader-define-classe
+    pattern: ClassLoader.class.getDeclaredMethod("defineClass", ...)
+    message: >
+      Acesso por reflexão ao defineClass do ClassLoader: é a forma de carregar bytes de classe arbitrários em tempo de
+      execução. Se os bytes vierem de fora, é execução remota de código. Use um carregador de módulos/plugins conhecido.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-470: Use of Externally-Controlled Input to Select Classes or Code ('Unsafe Reflection')"
+      owasp: A03:2021 - Injection

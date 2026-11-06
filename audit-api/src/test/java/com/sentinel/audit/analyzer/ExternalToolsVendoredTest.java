@@ -101,4 +101,19 @@ class ExternalToolsVendoredTest {
         assertFalse(ExternalTools.hasThirdPartyBanner("/* Copyright Acme. Licensed under MIT. */\nvar a;"));
         assertFalse(ExternalTools.hasThirdPartyBanner((String) null));
     }
+
+    @Test
+    void testesDeIntegracaoDoMavenFicamFora() {
+        assertTrue(ExternalTools.inIgnoredDir("src/it/java/org/owasp/webgoat/integration/AccessControlIntegrationTest.java"));
+        assertTrue(ExternalTools.inIgnoredDir("modulo/src/it/java/A.java"));
+        assertTrue(ExternalTools.inIgnoredDir("src/integrationTest/java/A.java"));
+        assertTrue(ExternalTools.inIgnoredDir("app/integration-tests/A.java"));
+    }
+
+    @Test
+    void pastaItQueNaoESrcItNaoESaTeste() {
+        assertFalse(ExternalTools.inIgnoredDir("src/main/resources/i18n/it/mensagens.ts"));
+        assertFalse(ExternalTools.inIgnoredDir("src/item/Pedido.java"));
+        assertFalse(ExternalTools.inIgnoredDir("it/Pedido.java"));
+    }
 }

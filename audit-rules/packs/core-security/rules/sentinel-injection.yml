@@ -117,6 +117,14 @@ rules:
               metavariable: $A
               regex: ^(RequestParam|PathVariable|RequestHeader|QueryParam|PathParam|FormParam|HeaderParam)$
           - focus-metavariable: $P
+      - patterns:
+          - pattern-inside: |
+              @$M(...)
+              $RET $F(..., String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(Get|Post|Put|Delete|Patch|Request)Mapping$
+          - focus-metavariable: $P
     # O dado que entra numa coleção continua sendo dado externo quando sai dela (list.add / map.put).
     pattern-propagators:
       - pattern: $L.add($X)

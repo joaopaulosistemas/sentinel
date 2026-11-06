@@ -3,7 +3,9 @@ package com.sentinel.audit.analyzer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.model.AuditRun;
+import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
+import com.sentinel.audit.pack.PathRole;
 import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.model.Stack;
 import com.sentinel.audit.pack.AuditPolicy;
@@ -342,11 +344,17 @@ public class SarifAnalyzer implements CodeAnalyzer {
                 continue;                                  // já suprimido na própria ferramenta
             }
             Finding f = toFinding(result, rules, spec, projectPath, run);
-            if (f != null) {
+            if (f != null && !qualityInIgnoredPath(f)) {
                 out.add(f);
             }
         }
         return true;
+    }
+
+    /** Achado de qualidade (não de segurança) em pasta ignorada, como testes: a ferramenta leu o projeto inteiro, o Sentinel não quer isso. */
+    private static boolean qualityInIgnoredPath(Finding f) {
+        return f.getCategory() != Category.SECURITY
+                && (ExternalTools.inIgnoredDir(f.getFilePath()) || PathRole.of(f.getFilePath()) == PathRole.TEST);
     }
 
     private Finding toFinding(JsonNode result, Map<String, JsonNode> rules, ToolSpec spec, Path projectPath, AuditRun run) {

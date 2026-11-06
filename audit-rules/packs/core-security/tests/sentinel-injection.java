@@ -198,4 +198,32 @@ class LdapEXpathSoNoReceptorCerto {
         // ruleid: sentinel-xpath-injection
         xpath.evaluate("//usuario[nome='" + nome + "']", doc);
     }
+
+    // Spring MVC liga parâmetros de handler sem anotação aos parâmetros da requisição.
+    @GetMapping("/rce")
+    public String cmdiParametroSemAnotacao(String cmd) throws Exception {
+        // ruleid: sentinel-command-injection-requisicao, sentinel-command-injection-variable
+        Runtime.getRuntime().exec(cmd);
+        return "ok";
+    }
+
+    @PostMapping
+    public String cmdiParametroSemAnotacaoPost(String cmd) throws Exception {
+        // ruleid: sentinel-command-injection-requisicao
+        new ProcessBuilder(cmd, "-x").start();
+        return "ok";
+    }
+
+    @GetMapping("/ok")
+    public String cmdiParametroNumerico(int n) throws Exception {
+        // ok: sentinel-command-injection-requisicao
+        new ProcessBuilder("ls", String.valueOf(n)).start();
+        return "ok";
+    }
+
+    public String cmdiMetodoSemMapeamento(String cmd) throws Exception {
+        // ok: sentinel-command-injection-requisicao
+        new ProcessBuilder(cmd, "-x").start();
+        return "ok";
+    }
 }
