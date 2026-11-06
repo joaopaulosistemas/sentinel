@@ -832,3 +832,16 @@ Verificado: `semgrep --test` (21/21; Semgrep 1.184, não o Opengrep) e varredura
 - **Regressão de treinos anteriores:** ainda sem baseline (só vulnerable-node tem). Cada volta nova grava o baseline do repositório auditado; reauditar dois treinos antigos por mudança de regra passou a ser passo obrigatório do guia.
 
 Verificado: `semgrep --test` (79/79), paridade Opengrep × Semgrep (624 = 624), auditoria do vulnerable-node antes e depois no CI, recall pelo script. NÃO verificado: JUnit/Maven (nada de Java mudou); Opengrep local 1.33.1 e não o 1.30.0 do CI; regras novas em NodeGoat e dvja (a conferir pelo CI na próxima volta).
+
+## Dashboard 12.66.0 — Ciclo, volta 13 (branch `ciclo/estabilizacao-4`): BrightSec/brokencrystals (treino novo), decoradores do NestJS
+
+- **Repositório novo:** BrightSec/brokencrystals (branch `stable`, MIXED, 209 estrelas, NestJS + front-end React de treino), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 38,3 e 918 achados (CRITICAL 14, HIGH 184). Trivy 293 (CVE de dependência), Stylelint 230, Opengrep 192 (a maioria qualidade/CSS), Gitleaks 23.
+- **Falso negativo (código lido, treino):** as regras Node só viam `req`/`request`/`event` como origem; no NestJS o dado entra por `@Query()`/`@Body()`/`@Param()`. Ficaram sem alerta: redirecionamento aberto (`@Redirect()` devolvendo `{ url }`), `eval` do corpo em `/process_numbers` (saiu só como `eval-dinamico`, MEDIUM) e gravação de arquivo no caminho de `@Query('path')`.
+- **Mudança:** parâmetro com `@Query/@Body/@Param/@Headers` vira origem em `open-redirect`, `eval-requisicao`, `command-injection`, `path-traversal` e `ssrf`; `return { url }` em método `@Redirect()` é destino; `spawn/spawnSync/execFile/execFileSync` com o executável vindo da requisição entram como destino de `command-injection`. Testes novos (positivos, seguros e parâmetro sem decorador de origem).
+- **Medido (CI, depois):** nota 38,26 e 921 achados (+3: open-redirect, eval-requisicao, path-traversal, todos conferidos no código). Recall do gabarito (`gabaritos/BrightSec__brokencrystals.json`, amostra de 7 falhas lidas): 4/7 → 6/7. Baseline gravado.
+- **Não feito (lacunas assumidas):** `GET /spawn` (comando entra no controller e é usado em `AppService.launchCommand`, outro arquivo: limite do motor); SQL do `kid` do JWT (template string num arquivo, consulta em outro); LDAP injection; doT/SSTI; SQL e SSRF dentro de serviços Nest.
+- **Regressão (números do CI):** vulnerable-node 268 achados, nota 47,44, recall 25/29: iguais ao baseline. dvja 176 (nota 48,95) e NodeGoat 279 (nota 46,87): iguais à volta 12.
+- **Branch `ciclo/estabilizacao-4`:** 6 voltas (8 a 13), todas com mudança; PR aberto para main nesta volta.
+
+Verificado: `opengrep --test` (79/79, Opengrep 1.30.0), paridade Opengrep × Semgrep (641 = 641), varredura do código de treino (3 achados novos, todos verdadeiros), auditorias no CI. NÃO verificado: JUnit/Maven (nada de Java mudou; só no CI do PR); treinos que não são vulnerable-node com a 12.66.0; taint entre arquivos de serviços Nest.
