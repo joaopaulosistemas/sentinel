@@ -108,12 +108,16 @@ public class TrivyAnalyzer implements CodeAnalyzer {
                 + dicaCertificado(code, stderr);
     }
 
+    /** Terraform está fora do escopo do Sentinel; o Trivy lia esses arquivos e inflava o relatório com achados de nuvem. */
+    static final String TERRAFORM_FILES = "**/*.tf,**/*.tf.json,**/*.tfvars";
+
     private int executar(Path exe, Path projectPath, Path report, Path stderr, boolean offline)
             throws IOException, InterruptedException {
         List<String> cmd = new ArrayList<>(List.of(exe.toString(), "fs", "--quiet", "--no-progress",
                 "--format", "json", "--output", report.toString(),
                 "--scanners", String.join(",", scannerList()),
                 "--skip-dirs", "node_modules,.git",
+                "--skip-files", TERRAFORM_FILES,
                 "--timeout", timeoutSeconds + "s"));
         if (offline) {
             cmd.add("--offline-scan");

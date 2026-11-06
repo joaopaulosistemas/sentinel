@@ -234,6 +234,7 @@ class ExternalScannersTest {
         String used = Files.readString(args);
         assertTrue(used.contains("--scanners misconfig,vuln"), used);       // limpa, sem repetição nem lixo
         assertTrue(used.contains("--skip-dirs node_modules,.git"));
+        assertTrue(used.contains("--skip-files **/*.tf,**/*.tf.json,**/*.tfvars"), used);   // Terraform fora do escopo
         assertTrue(used.contains(project.toString()));
 
         Path lento = Files.createTempDirectory("fakeslow");

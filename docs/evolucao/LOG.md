@@ -727,3 +727,10 @@ Verificado: programa `javac` com os caminhos do JavaSecLab, casos negativos e le
 - **Não feito:** cifra XOR caseira (`EncryptDecrypt`) e `jwt.verify` com segredo fixo curto não ganharam regra nova (o segundo já sai por `sentinel-api-jwt-chave-fixa-js`); achados de qualidade Java/PMD não mexidos.
 
 Verificado: testes das regras com Semgrep (core-security) e Opengrep, paridade dos dois motores (542 = 542), varredura do código de treino, ESLint rodado nos dois tipos de arquivo. NÃO verificado: nova auditoria do Damn-Vulnerable-Bank com 12.58.0; dvja e NodeGoat com 12.58.0 (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
+## Dashboard 12.59.0 — Terraform fora do Trivy (decisão aprovada pelo João em 2026-11-06)
+
+- **Decisão:** ignorar Terraform (`.tf`) no Trivy e no Checkov, pois o escopo do projeto já o exclui.
+- **Mudança:** `TrivyAnalyzer` passa `--skip-files **/*.tf,**/*.tf.json,**/*.tfvars`. O Checkov já rodava só com `--framework dockerfile kubernetes github_actions` (`market-tools/tools/infra.yml`), sem Terraform; nada a mudar ali. O Gitleaks continua lendo `.tf` (segredo em Terraform segue sendo achado).
+- **Efeito esperado:** Juice Shop (~34 CRITICAL) e wrongsecrets (~112 achados) perdem os achados de Terraform do Trivy; o restante não muda.
+
+Verificado: teste do Trivy atualizado (`ExternalScannersTest`). NÃO verificado: JUnit/Maven (só CI); nome exato da flag em `trivy fs` na versão da imagem; reauditoria de Juice Shop e wrongsecrets.
