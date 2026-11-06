@@ -33,6 +33,11 @@ rules:
               metavariable: $METHOD
               regex: ^(query|raw|execute)$
           - focus-metavariable: $Q
+      - patterns:
+          - pattern-either:
+              - pattern: Sequelize.literal($Q)
+              - pattern: sequelize.literal($Q)
+          - focus-metavariable: $Q
     pattern-sanitizers:
       - pattern: parseInt(...)
       - pattern: Number(...)

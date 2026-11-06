@@ -27,6 +27,18 @@ export function buscarPorId (req: any) {
   return db.query(`SELECT * FROM Produtos WHERE id = ${id}`)
 }
 
+export function transferir (req: any) {
+  const valor = req.body.amount
+  // ruleid: sentinel-node-sql-injection
+  return { saldo: Sequelize.literal(`balance - ${valor}`) }
+}
+
+export function transferirSeguro (req: any) {
+  const valor = Number(req.body.amount)
+  // ok: sentinel-node-sql-injection
+  return { saldo: Sequelize.literal(`balance - ${valor}`) }
+}
+
 export function consultaFixa () {
   // ok: sentinel-node-sql-injection
   return models.sequelize.query('SELECT sql FROM sqlite_master')
