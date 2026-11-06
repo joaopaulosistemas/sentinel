@@ -224,10 +224,10 @@ final class ExternalTools {
     }
 
     private static final java.util.regex.Pattern LICENSE_WORD = java.util.regex.Pattern.compile(
-            "(?i)@license|\\blicen[sc]ed? under\\b|\\b(mit|bsd|apache|gpl|lgpl|mpl|isc)\\b[\\w .-]{0,12}licen[sc]e|\\bmit\\b");
+            "(?i)@license|\\blicen[sc]ed? under\\b|\\blicensed to the apache\\b|\\bapache software foundation\\b|\\b(mit|bsd|apache|gpl|lgpl|mpl|isc)\\b[\\w .-]{0,12}licen[sc]e|\\bmit\\b");
     private static final java.util.regex.Pattern OUTSIDE_SIGN = java.util.regex.Pattern.compile(
             "(?i)https?://|@license|^/\\*!|\\bv?\\d+\\.\\d+\\.\\d+\\b");
-    private static final int BANNER_CHARS = 600;
+    private static final int BANNER_CHARS = 1200;
 
     /**
      * O arquivo começa com o comentário de uma biblioteca: licença (MIT, Apache, BSD, GPL...) e um sinal de origem

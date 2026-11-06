@@ -153,4 +153,11 @@ class ExternalToolsVendoredTest {
         assertTrue(v.contains("src/main/resources/static/js/cm.js"));
         assertFalse(v.contains("src/main/resources/static/js/pedidos.js"));
     }
+
+    @Test
+    void cabecalhoPadraoDaFundacaoApacheIndicaTerceiros() {
+        String asf = "/*\n* Licensed to the Apache Software Foundation (ASF) under one\n* or more contributor license agreements.  See the NOTICE file\n* distributed with this work for additional information\n* regarding copyright ownership.  The ASF licenses this file\n* to you under the Apache License, Version 2.0 (the\n* \"License\"); you may not use this file except in compliance\n* with the License.  You may obtain a copy of the License at\n*\n*   http://www.apache.org/licenses/LICENSE-2.0\n*/\n(function(){})();";
+        assertTrue(ExternalTools.hasThirdPartyBanner(asf));
+        assertFalse(ExternalTools.hasThirdPartyBanner("/* Meu sistema interno. Licensed to Acme. */\nvar a;"));
+    }
 }
