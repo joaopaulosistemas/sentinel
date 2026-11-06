@@ -920,3 +920,16 @@ Problema: ao auditar pasta local no modo "como está agora", a tela ficava parad
 
 Verificado: `LocalSource` compilado com javac e rodado em repositório git real (avisos 0/250, 100/250, 200/250, 250/250; assinatura antiga preservada); `vitest` (318 testes), `tsc`.
 Não verificado: testes JUnit novos (`LocalSourceTest`, `AuditProgressTrackerTest`) — o Maven Central não é alcançável neste ambiente, ficam para o CI; tela real com a API rodando.
+
+## Dashboard 12.70.0 — Ciclo, volta 15 (branch `ciclo/estabilizacao-5`): oversecured/ovaa (treino novo), path traversal em ContentProvider e DexClassLoader externo
+
+- **Repositório novo:** oversecured/ovaa (branch `master`, JAVA, app Android de treino, 765 estrelas), escolhido em 2026-11-06; ninguém o tinha lido nem auditado. Código lido (20 arquivos Java + manifesto).
+- **Medido (antes):** nota 56,55 e 52 achados (HIGH 16, MEDIUM 20, LOW 16). Recall do gabarito (`gabaritos/oversecured__ovaa.json`, 20 falhas lidas no código): 13/20.
+- **Falso positivo (ruído removido: 2 achados, conferidos):** `sentinel-crypto-chave-fixa-no-codigo` em `LoginUtils.java:11,12` (`EMAIL_KEY = "email"`, `PASSWORD_KEY = "password"`: nomes de chave de SharedPreferences, não segredo).
+- **Falso negativo (detecção nova: 2 achados conferidos):** `TheftOverwriteProvider.java:48` (`openFile` monta `new File(dir, uri.getLastPathSegment())` sem validar: CWE-22) e `OversecuredApplication.java:45` (`DexClassLoader` sobre `/sdcard/updater.apk`: CWE-94).
+- **Mudança:** exceção para constante `CAMPO_KEY` com valor de palavra minúscula em `crypto-chave-fixa-no-codigo` (nomes com SECRET, AES, MASTER, API, TOKEN etc. continuam alertando); regras novas `sentinel-android-provider-openfile-caminho` e `sentinel-android-classloader-armazenamento-externo` (ERROR), com remediação. Testes primeiro (vermelho, depois verde); o caso negativo do `getCanonicalPath` foi provado removendo-o (a regra dispara).
+- **Medido (CI, depois):** nota 56,55 e 52 achados (-2 ruído, +2 detecção). Recall do treino 13/20 -> 14/20 (IC 95 % 48 a 85 %; gabarito escrito pelo mesmo agente que corrigiu). Baseline gravado.
+- **Regressão (números do CI):** dvja 176 achados (nota 48,95) e NodeGoat 279 (nota 46,87): iguais à volta 14. Treinos anteriores não reauditados nesta volta (a mudança de `chave-fixa` só retira achados e as duas regras novas só valem em Android).
+- **Não feito:** `sendBroadcast` implícito com dado sensível (CWE-927), redirecionamento de Intent (`LoginActivity:78`), log de objeto com credencial (`Log.d("..." + loginData)`), `readObject` com efeito colateral (CWE-502), caminho vindo de extra em IntentService (`InsecureLoggerService`), senha em SharedPreferences (`LoginUtils:39`): sem regra geral segura ainda.
+
+Verificado: `opengrep --test` core-security 82/82 (Opengrep 1.30.0), paridade Opengrep x Semgrep 652 = 652, auditorias no CI antes e depois, achados removidos e criados lidos no código. NÃO verificado: JUnit/Maven (nada de Java do produto mudou); `core-corporativo` com 5 testes falhando no `opengrep --test` local (pacote que não toquei; não investigado, confira no CI); **Generalização**: sem gabarito de validação por fonte pública (sem leitura de fontes públicas nesta execução) e sem OWASP Benchmark (as regras novas são Android, não afetam Java de servlet); reauditoria dos treinos antigos.
