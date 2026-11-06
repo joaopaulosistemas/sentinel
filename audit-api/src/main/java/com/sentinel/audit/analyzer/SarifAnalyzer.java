@@ -387,17 +387,32 @@ public class SarifAnalyzer implements CodeAnalyzer {
                 continue;                                  // já suprimido na própria ferramenta
             }
             Finding f = toFinding(result, rules, spec, projectPath, run);
-            if (f != null && !qualityInIgnoredPath(f)) {
+            if (f != null && !qualityInIgnoredPath(f, projectPath)) {
                 out.add(f);
             }
         }
         return true;
     }
 
-    /** Achado de qualidade (não de segurança) em pasta ignorada, como testes: a ferramenta leu o projeto inteiro, o Sentinel não quer isso. */
-    private static boolean qualityInIgnoredPath(Finding f) {
+    /**
+     * Achado de qualidade (não de segurança) em pasta ignorada, como testes, ou em biblioteca de terceiros embutida
+     * (nome conhecido ou cabeçalho de licença externa): a ferramenta leu o projeto inteiro, o Sentinel não quer isso.
+     */
+    private static boolean qualityInIgnoredPath(Finding f, Path projectPath) {
         return f.getCategory() != Category.SECURITY
-                && (ExternalTools.inIgnoredDir(f.getFilePath()) || PathRole.of(f.getFilePath()) == PathRole.TEST);
+                && (ExternalTools.inIgnoredDir(f.getFilePath()) || PathRole.of(f.getFilePath()) == PathRole.TEST
+                || isThirdPartyFile(f.getFilePath(), projectPath));
+    }
+
+    private static boolean isThirdPartyFile(String rel, Path projectPath) {
+        if (rel == null || rel.isBlank() || projectPath == null) {
+            return false;
+        }
+        try {
+            return ExternalTools.hasThirdPartyBanner(projectPath.resolve(rel));
+        } catch (RuntimeException e) {
+            return false;                                  // caminho que não é de arquivo (ex.: "." do projeto)
+        }
     }
 
     private Finding toFinding(JsonNode result, Map<String, JsonNode> rules, ToolSpec spec, Path projectPath, AuditRun run) {
