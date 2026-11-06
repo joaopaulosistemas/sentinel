@@ -460,6 +460,7 @@ export function rodarComandoComTemplate (nome: string, execSync: any) {
 export function rodarComandoFixo (exec: any) {
   // ok: sentinel-node-exec-dinamico
   exec('git status', () => {})
+}
 
 // ---------- Mass assignment: corpo da requisição define papel ou saldo ----------
 export async function cadastrar (req: any, res: any) {
