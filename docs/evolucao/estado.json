@@ -1,16 +1,16 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 17,
-  "ultimoRepositorioTreino": "CSPF-Founder/JavaVulnerableLab",
-  "ultimaStack": "JAVA",
-  "branchAtual": "ciclo/estabilizacao-5",
+  "ultimaVolta": 18,
+  "ultimoRepositorioTreino": "logicalhacking/DVHMA",
+  "ultimaStack": "JAVASCRIPT",
+  "branchAtual": "ciclo/estabilizacao-6",
   "proximaBranch": null,
-  "voltasNaBranch": 4,
+  "voltasNaBranch": 1,
   "voltasSemGanhoSeguidas": 0,
   "limiteVoltasPorBranch": 6,
   "ultimoPrMesclado": "#142",
   "gabaritosValidacao": [],
-  "conjuntosSha256": "280b52b7e54bcf4bb934cc36493a84d652fccf3c84586671021af6e8e7370b36",
+  "conjuntosSha256": "3b25481f6313a6b6502bd764410b9433150b7c29b0f22194541f347b968d708d",
   "pendencias": [
     "Gabarito de validação por fonte pública (dvja, NodeGoat, dvna, nodejs-goof): nenhum existe ainda",
     "Volta dedicada a avaliar o Joern para JS/TS (decisão pendente desde a 12.65.0)",
@@ -20,6 +20,7 @@
     "Android sem regra para: sendBroadcast implícito com dados sensíveis (CWE-927), PendingIntent/redirect de Intent, log de objeto com credencial ou cartão (CWE-532, LogActivity do DIVA), readObject com efeito colateral, IntentService com caminho vindo de extra, credencial gravada em armazenamento externo (CWE-922, InsecureDataStorage4 do DIVA), arquivo em dataDir com setReadable(true)",
     "Volta 16 sem linha de Generalização completa (sem gabarito de validação por fonte pública, sem Benchmark local, sem amostra de 20 achados)",
     "Java em scriptlet de JSP (SQL em adminlogin.jsp, ProcessBuilder em ping.jsp, ObjectInputStream em preferences.jsp) não é analisado pelo Opengrep; upload sem validação (AvatarUpload) e JWT sem verificação de assinatura sem regra",
-    "Pedido do João (06/11): depois do merge da branch, revisão profunda dos YAML de regras em busca de conflitos entre regras, com relatório e propostas"
+    "Pedido do João (06/11): depois do merge da branch, revisão profunda dos YAML de regras em busca de conflitos entre regras, com relatório e propostas",
+    "Biblioteca embutida sem cabeçalho nem marca no nome (support.css, *.templates.xml do OpenUI5) segue inflando Stylelint/jscpd; <access origin=\"*\"> do Cordova (config.xml) sem regra"
   ]
 }
