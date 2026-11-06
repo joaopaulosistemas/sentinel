@@ -740,3 +740,11 @@ Verificado: testes das regras com Semgrep (core-security) e Opengrep, paridade d
 - **Efeito esperado:** Juice Shop (~34 CRITICAL) e wrongsecrets (~112 achados) perdem os achados de Terraform do Trivy; o restante não muda.
 
 Verificado: teste do Trivy atualizado (`ExternalScannersTest`). NÃO verificado: JUnit/Maven (só CI); nome exato da flag em `trivy fs` na versão da imagem; reauditoria de Juice Shop e wrongsecrets.
+
+## Dashboard 12.60.0 — Joern com frase própria no card "Ferramentas externas (SARIF)"
+
+- **Motivo:** o Joern é uma fonte SARIF (`joern-taint`), não um analisador; a pessoa não via se ele estava ativo, porque a imagem padrão é construída sem ele (`WITH_JOERN=false`).
+- **Mudança:** `SarifAnalyzer.Resumo` tira o Joern das listas gerais e escreve uma linha própria no fim da nota: "Joern (taint entre arquivos): ativo, rodou em N s com M achados" / "não instalado nesta imagem. Construa com WITH_JOERN=true para ligar" / "sem permissão…" / "não se aplica: o projeto não tem arquivos Java" / "falhou". O card passa a respeitar quebra de linha (`white-space: pre-line`). Sem mudança de contrato da API nem da contagem de analisadores.
+- **Não feito:** card separado do Joern (mudaria o contrato do progresso); estado "desligado no sistema" (o pacote desligado simplesmente não gera linha).
+
+Verificado: leitura do código. NÃO verificado: JUnit/Maven (só CI; `SarifAnalyzerTest.oJoernTemFraseProprianoResumo` é novo e não rodou); vitest/tipos do dashboard (sem `node_modules` aqui); tela real.
