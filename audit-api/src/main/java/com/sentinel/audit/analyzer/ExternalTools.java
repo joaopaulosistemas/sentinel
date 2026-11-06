@@ -161,8 +161,11 @@ final class ExternalTools {
             "^bootstrap[\\w.-]*\\.(js|css)$");
     private static final java.util.Set<String> ASSET_DIRS = java.util.Set.of("js", "css", "lib", "assets", "static", "public", "webapp");
     /** Pastas onde se guardam bibliotecas de terceiros dentro dos ativos web (ex.: static/plugins, static/js/libs). */
-    private static final java.util.Set<String> THIRD_PARTY_DIRS = java.util.Set.of("plugins", "libs", "vendor", "vendors", "third_party", "thirdparty");
+    private static final java.util.Set<String> THIRD_PARTY_DIRS = java.util.Set.of("plugins", "libs", "lib", "vendor", "vendors", "third_party", "third-party", "thirdparty");
     private static final java.util.Set<String> WEB_ROOT_DIRS = java.util.Set.of("static", "public", "webapp", "assets", "resources", "www");
+    /** Saída de build com hash no nome (chunk-0226s3f2.57e3ed6f.js, main.3f2a9c1b.css): arquivo gerado, não escrito à mão. */
+    private static final java.util.regex.Pattern HASHED_BUILD_NAME = java.util.regex.Pattern.compile(
+            "^[\\w-]+\\.[0-9a-f]{8,}\\.(js|mjs|css)$");
     private static final java.util.regex.Pattern WEB_EXT = java.util.regex.Pattern.compile("\\.(js|mjs|css|map)$");
 
     /**
@@ -185,7 +188,19 @@ final class ExternalTools {
                 }
             }
         }
+        if (HASHED_BUILD_NAME.matcher(name).matches() && underWebRoot(parts)) {
+            return true;
+        }
         return inThirdPartyAssetDir(parts, name);
+    }
+
+    private static boolean underWebRoot(String[] parts) {
+        for (int i = 0; i < parts.length - 1; i++) {
+            if (WEB_ROOT_DIRS.contains(parts[i])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -209,10 +224,10 @@ final class ExternalTools {
     }
 
     private static final java.util.regex.Pattern LICENSE_WORD = java.util.regex.Pattern.compile(
-            "(?i)@license|\\blicen[sc]ed? under\\b|\\b(mit|bsd|apache|gpl|lgpl|mpl|isc)\\b[\\w .-]{0,12}licen[sc]e|\\bmit\\b");
+            "(?i)@license|\\blicen[sc]ed? under\\b|\\blicensed to the apache\\b|\\bapache software foundation\\b|\\b(mit|bsd|apache|gpl|lgpl|mpl|isc)\\b[\\w .-]{0,12}licen[sc]e|\\bmit\\b");
     private static final java.util.regex.Pattern OUTSIDE_SIGN = java.util.regex.Pattern.compile(
             "(?i)https?://|@license|^/\\*!|\\bv?\\d+\\.\\d+\\.\\d+\\b");
-    private static final int BANNER_CHARS = 600;
+    private static final int BANNER_CHARS = 1200;
 
     /**
      * O arquivo começa com o comentário de uma biblioteca: licença (MIT, Apache, BSD, GPL...) e um sinal de origem
@@ -228,12 +243,23 @@ final class ExternalTools {
             int nl = h.indexOf('\n');
             h = nl < 0 ? "" : h.substring(nl + 1).stripLeading();
         }
-        if (!h.startsWith("/*")) {
+        String comment;
+        if (h.startsWith("//")) {                       // bloco de comentários de linha no topo (ex.: "// CodeMirror, copyright ... MIT license: https://...")
+            StringBuilder sb = new StringBuilder();
+            for (String line : h.substring(0, Math.min(h.length(), BANNER_CHARS)).split("\\R")) {
+                if (!line.stripLeading().startsWith("//")) {
+                    break;
+                }
+                sb.append(line).append('\n');
+            }
+            comment = sb.toString();
+        } else if (h.startsWith("/*")) {
+            h = h.substring(0, Math.min(h.length(), BANNER_CHARS));
+            int end = h.indexOf("*/");
+            comment = end < 0 ? h : h.substring(0, end);
+        } else {
             return false;
         }
-        h = h.substring(0, Math.min(h.length(), BANNER_CHARS));
-        int end = h.indexOf("*/");
-        String comment = end < 0 ? h : h.substring(0, end);
         return LICENSE_WORD.matcher(comment).find() && OUTSIDE_SIGN.matcher(comment).find();
     }
 
@@ -259,6 +285,46 @@ final class ExternalTools {
      */
     static boolean isOversizedBundle(String relPath, long bytes) {
         return relPath != null && bytes >= OVERSIZED_BUNDLE_BYTES && BUNDLE_EXT.matcher(relPath).find();
+    }
+
+    /** Máximo de arquivos de terceiros passados ao motor SAST como --exclude (limite do tamanho da linha de comando). */
+    static final int MAX_VENDORED_EXCLUDES = 1500;
+
+    /**
+     * Pacotes grandes, bibliotecas embutidas e arquivos com cabeçalho de terceiros, para o motor SAST excluir.
+     * O motor só excluía por nome; as mesmas regras de {@link #isVendoredLibrary} e {@link #hasThirdPartyBanner}
+     * já valiam para lint e métricas, mas o Opengrep seguia lendo layui, codemirror e afins.
+     */
+    static java.util.List<String> vendoredFiles(Path root) {
+        java.util.List<String> found = new java.util.ArrayList<>();
+        try {
+            java.nio.file.Files.walkFileTree(root, new java.nio.file.SimpleFileVisitor<>() {
+                @Override
+                public java.nio.file.FileVisitResult preVisitDirectory(Path dir, java.nio.file.attribute.BasicFileAttributes a) {
+                    boolean skip = !dir.equals(root)
+                            && CleanCodeAnalyzer.IGNORED_DIRS.contains(dir.getFileName().toString().toLowerCase(java.util.Locale.ROOT));
+                    return skip ? java.nio.file.FileVisitResult.SKIP_SUBTREE : java.nio.file.FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public java.nio.file.FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes a) {
+                    String rel = root.relativize(file).toString().replace('\\', '/');
+                    if (found.size() < MAX_VENDORED_EXCLUDES && a.isRegularFile() && BUNDLE_EXT.matcher(rel).find()
+                            && (isOversizedBundle(rel, a.size()) || isVendoredLibrary(rel) || hasThirdPartyBanner(file))) {
+                        found.add(rel);
+                    }
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public java.nio.file.FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            // sem a lista o motor apenas analisa mais arquivos
+        }
+        return found;
     }
 
     /** Caminhos relativos (com "/") dos pacotes grandes sob a raiz, para o motor SAST excluir. Pastas ignoradas são puladas. */

@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.exemplo">
+    <!-- ruleid: sentinel-android-manifest-allow-backup -->
+    <application android:allowBackup="true"
+        <!-- ruleid: sentinel-android-manifest-cleartext -->
+        android:usesCleartextTraffic="true">
+        <!-- ruleid: sentinel-android-manifest-exported -->
+        <activity android:name=".Envio" android:exported="true" />
+        <!-- ok: sentinel-android-manifest-exported -->
+        <activity android:name=".Interna" android:exported="false" />
+    </application>
+</manifest>

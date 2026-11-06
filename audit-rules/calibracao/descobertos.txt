@@ -23,3 +23,5 @@ yangzongzhuan/RuoYi-Vue-fast
 primefaces/sakai-ng
 microsoft/azure-devops-node-api
 zenato/puppeteer-renderer
+whgojp/JavaSecLab
+rewanthtammana/Damn-Vulnerable-Bank

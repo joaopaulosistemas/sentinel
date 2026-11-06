@@ -698,3 +698,45 @@ Verificado: leitura do log da auditoria e do código do repositório de treino. 
 - **Validação (dvja, NodeGoat):** sem mudança de código nas voltas 4 e 5, então as contagens (176 e 328) não têm motivo para mudar; não reauditei.
 
 Verificado: log da auditoria completa (execução 42148534934) e leitura de `GitleaksAnalyzer` e `FindingConfidence`. NÃO verificado: nova medição de dvja/NodeGoat; JUnit/Maven (nada de Java mudou).
+
+## Dashboard 12.56.0 — Ciclo, volta 6 (branch `ciclo/estabilizacao-3`): JavaSecLab (treino novo), bibliotecas embutidas no Opengrep
+
+- **Repositório novo:** whgojp/JavaSecLab (branch `i18n-bilingual`, JAVA, 888 estrelas, app Java de treino de segurança), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 30,52 e 11.274 achados (CRITICAL 8, HIGH 221). Opengrep 8.929, Stylelint 1.000. Os maiores arquivos de achados do Opengrep eram `static/js/codemirror.js` (835), `static/lib/layui/layui.js` (374, duas cópias), `ueditor/third-party/codemirror` (310), `chunk-*.57e3ed6f.js` (159), `canvas-tools*.js` (296): bibliotecas de terceiros. Só `sentinel-ts-igualdade-frouxa` e `sentinel-ts-var` somam ~7.400.
+- **Causa:** o Opengrep só excluía por nome/pasta fixos e por tamanho (>400 KB). A detecção por pasta, cabeçalho de licença e nome (12.51/12.52) valia só para lint e métricas.
+- **Mudança:** `ExternalTools.vendoredFiles` (usado pelo Opengrep) junta tamanho, `isVendoredLibrary` e cabeçalho de terceiros (limite de 1.500 exclusões). `isVendoredLibrary` agora também reconhece JS/CSS em `lib` e `third-party` sob pasta de ativos web e saída de build com hash no nome (`chunk-xxx.57e3ed6f.js`) sob pasta de ativos. Cabeçalho de terceiros vale também com comentários de linha `//` no topo (licença + endereço/versão).
+- **Limite:** `lib` sob `static`/`public`/`webapp`/`resources` conta como terceiros mesmo se o projeto guardar código próprio ali.
+- **Não feito:** achados reais do código Java do JavaSecLab (SQLi, XSS etc.) ainda não analisados um a um; fica para a próxima leitura.
+
+Verificado: programa `javac` com os caminhos do JavaSecLab, casos negativos e leitura de diretório temporário. NÃO verificado: JUnit/Maven (só CI); nova auditoria do JavaSecLab; contagem de dvja e NodeGoat depois da mudança (a conferir pelo CI).
+
+### Medições da volta 6 e 12.57.0
+
+- **JavaSecLab depois de 12.56.0:** nota 30,93 e 3.433 achados (era 30,52 e 11.274). Opengrep 8.929 → 1.843. A nota quase não mexe porque segurança já estava em ~0,8. ESLint foi de 27 para 493: o JavaSecLab ainda tem `lay-module/echarts/echarts.js` (cabeçalho Apache da ASF não era reconhecido); sem causa conclusiva para o resto da alta (a lista compacta do log é cortada, não dá para comparar arquivo a arquivo).
+- **12.57.0:** `hasThirdPartyBanner` reconhece "Licensed to the Apache Software Foundation" e olha 1.200 caracteres do topo (antes 600). Verificado por `javac` (cabeçalho ASF positivo; "Licensed to Acme" negativo).
+- **Validação (números do CI, sem ler código):** NodeGoat 328 achados (nota 46,86) e dvja 176 (nota 48,95), iguais às voltas anteriores (12.56.0 e 12.57.0, respectivamente). Treinos anteriores não reauditados.
+- **Branch `ciclo/estabilizacao-3`:** 1 volta com mudança; sem PR ainda.
+- NÃO verificado: JUnit/Maven (só CI, no PR); JavaSecLab com 12.57.0; achados reais de Java do JavaSecLab.
+
+## Dashboard 12.58.0 — Ciclo, volta 7 (branch `ciclo/estabilizacao-3`): Damn-Vulnerable-Bank (treino novo), pacote Android
+
+- **Repositório novo:** rewanthtammana/Damn-Vulnerable-Bank (branch `master`, JAVA, 767 estrelas, app Android Java + backend Node de treino), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 44,76 e 591 achados (CRITICAL 8, HIGH 47). Opengrep 169, ESLint 201, Trivy 82, PMD 41, Checkstyle 34. Todos os CRITICAL/HIGH de Trivy são CVE de dependência do `package-lock.json` (acertos).
+- **Análise (código lido, treino):** o Sentinel não tinha nenhuma regra de Android. Falsos negativos reais: URL do Intent carregada no WebView (`CurrencyRates.java`), token no logcat (`Log.d("accesstoken", accessToken)`), `allowBackup`/`usesCleartextTraffic`/`exported` no manifesto, `Sequelize.literal` com valor da requisição (`Balance/transfer.js`). Falso positivo/ruído: 129 `no-require-imports` do ESLint em JavaScript CommonJS.
+- **Mudança:** `core-security/rules/sentinel-android.yml` (6 regras gerais, testes e remediação); `Sequelize.literal` como ponto de risco de `sentinel-node-sql-injection`; ESLint padrão deixa de aplicar `no-require-imports` a `.js/.cjs/.jsx` (continua em `.ts`). Nos arquivos do próprio repositório de treino, as regras novas acham 7 pontos e 2 em `transfer.js`, nenhum falso positivo.
+- **Não feito:** cifra XOR caseira (`EncryptDecrypt`) e `jwt.verify` com segredo fixo curto não ganharam regra nova (o segundo já sai por `sentinel-api-jwt-chave-fixa-js`); achados de qualidade Java/PMD não mexidos.
+
+Verificado: testes das regras com Semgrep (core-security) e Opengrep, paridade dos dois motores (542 = 542), varredura do código de treino, ESLint rodado nos dois tipos de arquivo. NÃO verificado: nova auditoria do Damn-Vulnerable-Bank com 12.58.0; dvja e NodeGoat com 12.58.0 (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
+
+### Validação da volta 7 (números do CI, sem ler código)
+
+- **dvja:** 176 achados, nota 48,95: igual às voltas anteriores. **NodeGoat:** 278 achados, nota 47,14 (era 328 e 46,86); a queda de 50 vem do ESLint (`no-require-imports` em CommonJS), não de regra de segurança. Sem leitura do código para confirmar que nenhum achado de segurança sumiu; severidades CRITICAL 13, HIGH 56 conferidas só como contagem.
+- **Branch `ciclo/estabilizacao-3`:** 2 voltas, ambas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
+
+## Dashboard 12.59.0 — Terraform fora do Trivy (decisão aprovada pelo João em 2026-11-06)
+
+- **Decisão:** ignorar Terraform (`.tf`) no Trivy e no Checkov, pois o escopo do projeto já o exclui.
+- **Mudança:** `TrivyAnalyzer` passa `--skip-files **/*.tf,**/*.tf.json,**/*.tfvars`. O Checkov já rodava só com `--framework dockerfile kubernetes github_actions` (`market-tools/tools/infra.yml`), sem Terraform; nada a mudar ali. O Gitleaks continua lendo `.tf` (segredo em Terraform segue sendo achado).
+- **Efeito esperado:** Juice Shop (~34 CRITICAL) e wrongsecrets (~112 achados) perdem os achados de Terraform do Trivy; o restante não muda.
+
+Verificado: teste do Trivy atualizado (`ExternalScannersTest`). NÃO verificado: JUnit/Maven (só CI); nome exato da flag em `trivy fs` na versão da imagem; reauditoria de Juice Shop e wrongsecrets.

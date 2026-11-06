@@ -78,6 +78,11 @@ export default tseslint.config(
       "regexp/no-misleading-unicode-character": "warn",
     },
   },
+  // CommonJS em arquivo JavaScript é o padrão do Node (require/module.exports): a regra de imports só faz sentido em TypeScript
+  {
+    files: ["**/*.{js,cjs,jsx}"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
   // React
   {
     files: ["**/*.{tsx,jsx}"],
