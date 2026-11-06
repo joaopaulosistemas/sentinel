@@ -88,6 +88,20 @@ class DependencyExtractorTest {
     }
 
     @Test
+    void leGradleComNotacaoDeMapaEPluginDoSpringBoot() throws IOException {
+        write("build.gradle", "plugins {\n id 'org.springframework.boot' version '2.6.1'\n id 'java'\n"
+                + " id 'org.springframework.boot' version \"$bootVersion\"\n}\n"
+                + "dependencies {\n implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.14.1'\n"
+                + " compile(group: \"commons-io\", name: \"commons-io\", version: \"2.6\")\n"
+                + " implementation group: 'a', name: 'b', version: project.ver\n}");
+        List<Dependency> deps = DependencyExtractor.extract(dir);
+        assertTrue(has(deps, "Maven", "org.springframework.boot:spring-boot", "2.6.1"));
+        assertTrue(has(deps, "Maven", "org.apache.logging.log4j:log4j-core", "2.14.1"));
+        assertTrue(has(deps, "Maven", "commons-io:commons-io", "2.6"));
+        assertFalse(deps.stream().anyMatch(d -> d.name().equals("a:b")));
+    }
+
+    @Test
     void ignoraNodeModulesEPomMalFormado() throws IOException {
         write("node_modules/x/package.json", "{\"dependencies\":{\"lodash\":\"4.0.0\"}}");
         write("pom.xml", "<project><dependencies>");   // XML quebrado

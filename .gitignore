@@ -10,3 +10,4 @@ dist/
 audit-api/certs/*
 !audit-api/certs/README.md
 javac.*.args
+*.whl

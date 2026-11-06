@@ -741,6 +741,110 @@ Verificado: testes das regras com Semgrep (core-security) e Opengrep, paridade d
 
 Verificado: teste do Trivy atualizado (`ExternalScannersTest`). NÃO verificado: JUnit/Maven (só CI); nome exato da flag em `trivy fs` na versão da imagem; reauditoria de Juice Shop e wrongsecrets.
 
+## Dashboard 12.60.0 — Ciclo, volta 8 (branch `ciclo/estabilizacao-4`): Android-InsecureBankv2 (treino novo), armazenamento e chave fixa
+
+- **Repositório novo:** dineshshetty/Android-InsecureBankv2 (branch `master`, JAVA, 1.488 estrelas, app Android Java + servidor Python de treino), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 57,16 e 293 achados (HIGH 5, MEDIUM 49). Opengrep 136, PMD 85, Checkstyle 42. As regras Android da 12.58.0 acharam: URL do Intent no WebView (`ViewStatement`), log de senha (`DoLogin`), `exported` (7), `allowBackup` (3).
+- **Análise (código lido, treino):** falsos negativos: `MODE_WORLD_READABLE` em `getSharedPreferences` (`MyBroadCastReceiver`, que lê a senha cifrada) e chave AES escrita no código (`CryptoClass.key`). Falso positivo claro: nenhum (`sortOrder == ""` é bug real). Ruído de qualidade: `TODO` gerados pelo IDE (71 × `sentinel-comentario-pendencia`).
+- **Mudança:** `sentinel-android-modo-mundo` (MODE_WORLD_* em preferências, arquivos, diretório e banco), `sentinel-crypto-chave-fixa-no-codigo` (`SecretKeySpec` com literal e campo `String` de nome key/chave/secret/segredo com literal) e `sentinel-crypto-iv-fixo` (`new byte[n]` ou literal). Testes e remediação incluídos. No treino, a regra de modo-mundo acha 1 ponto e a de chave fixa 1, sem falso positivo.
+- **Não feito:** IV zerado vindo de campo `byte[] iv = {0,...}` (o motor não liga o campo ao `IvParameterSpec`); SQL injection por `selection` no ContentProvider exportado; escrita do extrato em armazenamento externo.
+
+Verificado: `semgrep --test` (Android 4/4, crypto 6/6), paridade Opengrep × Semgrep (553 = 553), varredura do código de treino. NÃO verificado: nova auditoria do InsecureBankv2 com 12.60.0; dvja e NodeGoat com 12.60.0 (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
+
+### Medições da volta 8 com 12.60.0 (números do CI)
+
+- **InsecureBankv2 depois:** nota 53,56 e 296 achados (era 57,16 e 293): +3 HIGH novos e verdadeiros (`modo-mundo` em `MyBroadCastReceiver:29`; `chave-fixa` em `CryptoClass:25` e em `wip-attackercode/ExploitAES/.../MainActivity:39`). A nota cai porque a auditoria passou a ver falhas reais; não é piora de qualidade das regras.
+- **Validação (só números):** dvja 176 achados, nota 48,95; NodeGoat 278 achados, nota 47,14: ambos iguais à volta 7. Treinos anteriores não reauditados.
+- **Branch `ciclo/estabilizacao-4`:** 1 volta com mudança; sem PR ainda.
+- NÃO verificado: JUnit/Maven (só no PR); treinos anteriores com 12.60.0.
+
+## Dashboard 12.61.0 — Ciclo, volta 9 (branch `ciclo/estabilizacao-4`): cr0hn/vulnerable-node (treino novo), regras Node de camada de dados
+
+- **Repositório novo:** cr0hn/vulnerable-node (branch `master`, JAVASCRIPT, 493 estrelas, loja Express/Postgres/Mongo de treino), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 48,24 e 252 achados (CRITICAL 1, HIGH 19). Opengrep 134 (a maioria qualidade/CSS). Acertos de segurança: path traversal, command injection, SSRF, open redirect, JWT/segredo padrão, eval, Gitleaks.
+- **Análise (código lido, treino):** falsos negativos reais: SQL montado por concatenação/template em `model/db.js` (a falha fica numa função que recebe o dado, longe da rota, e o motor não segue o dado entre funções); filtro Mongo com `req.body`/`req.query` cru (`routes/shop.js`); merge recursivo sem bloqueio de `__proto__` (`model/merge.js`); `new RegExp(req.body.pattern)` (`routes/tools.js`); XSS refletido em `res.send('<h1>' + dado)` (só nas sementes `sast/seeds`). Falso positivo claro: nenhum novo (o `<%- body %>` do njsscan em `layout.ejs` é o idioma do layout, não corrigido).
+- **Mudança:** 5 regras em `sentinel-node.yml`, com testes e remediação: `sentinel-node-sql-concatenado` (consulta com `+`/template no `query/execute/raw` de objeto de banco, fora de funções que recebem `req`, para não duplicar `sentinel-node-sql-injection`), `sentinel-node-nosql-operador` (req.body/req.query no filtro de find/update/delete, sem `where:` do Sequelize nem `String()`), `sentinel-node-prototype-pollution`, `sentinel-node-regexp-da-requisicao` e `sentinel-node-xss-refletido` (HTML literal + dado da requisição em `res.send`).
+- **Medido (depois, CI):** nota 47,65 e 264 achados (era 48,24 e 252): +12, todos conferidos no código (6 SQL, 2 NoSQL, 2 prototype pollution, 1 RegExp, 1 XSS). A nota cai porque a auditoria passou a ver falhas reais.
+- **Fora do repositório alvo:** nas fontes do Juice Shop (treino) as regras novas acham 2 pontos (`likeProductReviews.ts:25,43`, `findOne({_id: req.body.id})`), ambos verdadeiros; nenhum falso positivo.
+- **Validação (só números do CI):** NodeGoat 278 achados, nota 47,14 e dvja 176, nota 48,95: iguais à volta 8. As regras novas não acharam nada no NodeGoat (não dá para dizer, sem ler o código, se faltou ou não havia o que achar).
+- **Não feito:** função de dados que recebe o dado por parâmetro (`findOne(body)`, `new RegExp(pattern)`, `fetch(url)` nas sementes `sast/seeds`) continua sem alerta (limite do motor entre funções); `<%- %>` em EJS (precisa de regra `generic` com filtro de `body`/`include`); JWT de `config.js` já saía pela regra de segredo padrão.
+
+Verificado: `opengrep --test` e `semgrep --test` (75/75), paridade Opengrep × Semgrep (588 = 588), varredura de vulnerable-node e Juice Shop, auditorias no CI (vulnerable-node antes e depois, NodeGoat, dvja). NÃO verificado: JUnit/Maven (nada de Java mudou; roda no PR); Opengrep local 1.33.1 e não o 1.30.0 fixado no CI; treinos anteriores (WebGoat etc.) não reauditados; recall em código Node que ninguém leu além dos treinos.
+- **Branch `ciclo/estabilizacao-4`:** 2 voltas, ambas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
+
+## Dashboard 12.62.0 — Ciclo, volta 10 (branch `ciclo/estabilizacao-4`): skills/secure-code-game (treino novo), XXE, upload e exec dinâmico
+
+- **Repositório novo:** skills/secure-code-game (branch `main`, MIXED, 2.857 estrelas, jogo de treino de código seguro em JS, Python, Go e C), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 52,05 e 898 achados (CRITICAL 4, HIGH 35). Opengrep 704 (671 `ts-console-log`), ESLint 89, Trivy 53 (CVE de `package-lock.json`, acertos), Gitleaks 4 (`password.txt` de treino), njsscan 2 (Squirrelly sem escape, acerto). Python, Go e C ficam fora do escopo das regras (stack JAVA/JS).
+- **Análise (código JS lido, treino):** `Season-2/Level-3/code.js` tinha três falhas sem alerta de segurança: `libxmljs.parseXml(..., {replaceEntities: true})` (XXE), `path.join(__dirname, req.file.originalname)` gravado com `writeFileSync` (nome do arquivo enviado) e `exec(command)` com texto vindo do XML. Falso positivo claro de segurança: nenhum.
+- **Mudança:** `sentinel-node-xxe` reconhece `replaceEntities: true`; `sentinel-node-path-traversal` ganha `req.file.originalname` (upload multer) como origem; `sentinel-node-exec-dinamico` (WARNING, nova): `exec`/`execSync` com argumento que não é texto fixo, fora do que a regra de injeção já cobre. Testes e remediação incluídos.
+- **No treino:** secure-code-game acha XXE (1), upload (1) e 6 `exec` dinâmicos (1 em `Level-3/code.js`, 5 em `Season-4/bin/prodbot.js`, com `${porta}`/`${pid}` em `lsof`/`kill`: baixo risco, severidade WARNING); vulnerable-node acha mais 1 `exec` dinâmico real (`routes/extras.js:33`).
+- **Não feito:** achados de Python, Go e C do repositório; `console.log` em massa (671) é ruído de qualidade do conteúdo de treino, sem regra nova.
+
+Verificado: `opengrep --test` (76/76, v1.30.0), paridade Opengrep × Semgrep (602 = 602), varredura de secure-code-game e vulnerable-node. NÃO verificado: nova auditoria no CI com 12.62.0, dvja e NodeGoat com 12.62.0, JUnit/Maven (nada de Java mudou).
+
+### Medições da volta 10 com 12.62.0 (números do CI)
+
+- **secure-code-game depois:** nota 48,45 e 906 achados (era 52,05 e 898): +8, todos conferidos no código de treino (1 XXE, 1 upload, 6 `exec` dinâmico). A nota cai porque a auditoria passou a ver falhas reais.
+- **Validação (só números, sem ler código):** dvja 176 achados, nota 48,95 (igual). NodeGoat 279 achados, nota 46,87 (era 278 e 47,14): o +1 é um `sentinel-node-exec-dinamico` MEDIUM em `Gruntfile.js:165`; não li o arquivo, então não sei se é falso positivo (arquivo de build, WARNING). Nenhuma outra contagem mudou.
+- **Branch `ciclo/estabilizacao-4`:** 3 voltas, todas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
+- NÃO verificado: JUnit/Maven (só no PR); treinos anteriores com 12.62.0.
+
+## Dashboard 12.63.0 — Ciclo, volta 11 (branch `ciclo/estabilizacao-4`): christophetd/log4shell-vulnerable-app (treino novo), Gradle
+
+- **Repositório novo:** christophetd/log4shell-vulnerable-app (branch `main`, JAVA, 1.142 estrelas, app Spring Boot 2.6.1 com Log4j2 de propósito vulnerável), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 90,73 e 9 achados (HIGH 1: Trivy `DS-0002`, sem USER no Dockerfile). Acertos: `sentinel-log-injection` em `MainController.java:18` (a rota do log com o cabeçalho, o ponto do Log4Shell), Dockerfile sem USER/HEALTHCHECK.
+- **Falso negativo principal (sem correção):** nenhum CVE de dependência. O projeto é Gradle sem lockfile, o Log4j-core (CVE-2021-44228) entra só como dependência transitiva de `spring-boot-starter-log4j2`, e o Trivy só lê Gradle com `gradle.lockfile`. Dimensão dependências ficou em 100, o que é enganoso. No pipeline padrão o Trivy substitui o `OWASPDependencyAnalyzer`, então a leitura de `build.gradle` por OSV não entra nos achados.
+- **Mudança (pequena, geral):** `DependencyExtractor.fromGradle` passa a ler a notação de mapa (`group: 'x', name: 'y', version: 'z'`) e a versão fixa do plugin `org.springframework.boot` (como `org.springframework.boot:spring-boot`). Vale para SBOM e checagens de componente (usam o extrator); versões por variável continuam ignoradas. Teste novo em `DependencyExtractorTest`.
+- **Medido (depois, CI):** log4shell igual (nota 90,73, 9 achados): sem ganho de detecção, como esperado, porque o Trivy responde pelos CVEs.
+- **Não feito:** resolver dependência transitiva de Gradle sem lockfile (exigiria rodar o Gradle sobre código de terceiros, que não fazemos, ou um mapa BOM do Spring Boot, que seria sob medida); consultar OSV para manifestos que o Trivy não resolve (muda o desenho do pipeline). Fica como decisão futura.
+- **Validação (só números do CI):** dvja 176 achados, nota 48,95 e NodeGoat 279, nota 46,87: ambos iguais à volta 10.
+
+Verificado: programa `javac` com o extrator (4 coordenadas esperadas; versão por variável ignorada), auditoria do log4shell antes e depois no CI, dvja e NodeGoat no CI. NÃO verificado: JUnit/Maven (só no PR); SBOM do log4shell com a mudança.
+- **Branch `ciclo/estabilizacao-4`:** 4 voltas, todas com mudança; sem PR ainda (fecha com 6 voltas ou 2 sem mudança).
+
+## Dashboard 12.64.0 — Ciclo, volta 12 (branch `ciclo/estabilizacao-4`): OWASP/DVSA (treino novo), evento do AWS Lambda como origem
+
+- **Repositório novo:** OWASP/DVSA (branch `master`, JAVASCRIPT, 547 estrelas, app serverless de treino na AWS, Lambdas em Node e Python), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 41,99 e 727 achados (CRITICAL 25, HIGH 172). Trivy 349, ESLint 220, Opengrep 111 (quase tudo qualidade), Gitleaks 8 (chaves de exemplo em `template.yml`/`sls.yml`/bundle: acertos de padrão, sem lacuna). Python das Lambdas fica fora do escopo das regras.
+- **Falso negativo (código lido, treino):** `order-manager.js` faz `serialize.unserialize(event.body)` e `event.headers` (node-serialize, RCE) sem alerta; `admin_shell.js` faz `eval(cmd)` com `event.body.cmd` e só saiu como `eval-dinamico` (WARNING). As regras de desserialização e `eval` só viam `req`/`request` como origem, não o `event` do handler Lambda.
+- **Mudança:** `event.body`, `event.headers`, `event.queryStringParameters` e `event.pathParameters` (variável chamada `event`) passam a ser origem em `sentinel-node-desserializacao` e `sentinel-node-eval-requisicao`. Testes novos (positivo, seguro e `config.body` como negativo). No código do DVSA: `unserialize` (2 pontos) e `eval(cmd)` agora como ERROR.
+- **Não feito:** outras regras de injeção (exec, SQL, path) não ganharam a origem `event`; Python (Lambdas) sem regra.
+
+Verificado: `semgrep --test` (21/21; Semgrep 1.184, não o Opengrep) e varredura do código de treino. NÃO verificado: Opengrep nesta volta; nova auditoria do DVSA com 12.64.0 e dvja/NodeGoat (a conferir pelo CI); JUnit/Maven (nada de Java mudou).
+- **Branch `ciclo/estabilizacao-4`:** 5 voltas, todas com mudança; sem PR ainda.
+
+### Medições da volta 12 com 12.64.0 (números do CI)
+
+- **DVSA depois:** nota 41,7 e 730 achados (era 41,99 e 727): +3 HIGH de Opengrep (2 `sentinel-node-desserializacao` e 1 `sentinel-node-eval-requisicao`), conferidos no código de treino.
+- **Validação (só números, sem ler código):** dvja 176 achados, nota 48,95 (igual); NodeGoat 279, nota 46,87 (igual).
+- NÃO verificado: treinos anteriores com 12.64.0; JUnit/Maven (só no PR).
+
+## Dashboard 12.65.0 — Melhorias do laço (pedido do João): medição, gabarito e escopo fixo
+
+- **Escopo fixo (decisão do João):** Java, Spring, JavaScript, TypeScript, React, Vue, Angular, HTML, SCSS e CSS. Nada de Python, PHP, Go. Registrado em `.claude/agents/sentinel-ciclo.md`, com a regra de alternar a stack entre voltas.
+- **Medição automática:** `scripts/medir-volta.py` (`extrair`, `recall`, `comparar`) lê a lista completa de achados no log do job. `audit-rules/calibracao/gabaritos/` guarda as falhas conhecidas por repositório de treino; `baselines/` guarda as contagens por regra para detectar regressão (total +25 % ou regra que dobra). O critério de parada passa a ser ganho medido (recall que sobe ou falso positivo conferido que cai).
+- **Primeiro gabarito (cr0hn/vulnerable-node, 29 falhas lidas no código e em `sast/ground-truth.yaml`):** recall 22/29 (76 %) com 12.64.0; 25/29 (86 %) com 12.65.0.
+- **Regras novas (Node/EJS):** `sentinel-ejs-saida-sem-escape` (`<%- valor %>` em `*.ejs`, sem `body`, `include`, `partial`, `JSON.stringify`), `sentinel-node-mass-assignment` (corpo inteiro em `create/update/new Model`) e `sentinel-node-mass-assignment-campo` (papel/saldo/permissão recebendo `req.body.x`). Nas fontes do Juice Shop só `wallet.ts:27` (saldo vindo do corpo) acerta; uma versão com taint (descartada) gerava falso positivo em leituras de `balance`.
+- **Medido (CI, vulnerable-node):** 265 → 268 achados, nota 47,61 → 47,44; +2 EJS e +1 mass assignment, todos conferidos.
+- **Ainda perdidas (assumidas):** INSERT com `fields.role` em array de valores (`auth.js:55`) e três sementes que passam o dado por parâmetro de função (NoSQL, SSRF, ReDoS): limite do motor entre funções.
+- **Decisões pendentes (não feitas por tocarem em `.github/` ou por exigirem avaliação):** (1) permitir lista de repositórios no workflow `auditoria-completa.yml` para rodar treino, validação e regressão em paralelo; (2) volta dedicada a avaliar o Joern para JS/TS (dado entre funções) antes de decidir se compensa.
+- **Regressão de treinos anteriores:** ainda sem baseline (só vulnerable-node tem). Cada volta nova grava o baseline do repositório auditado; reauditar dois treinos antigos por mudança de regra passou a ser passo obrigatório do guia.
+
+Verificado: `semgrep --test` (79/79), paridade Opengrep × Semgrep (624 = 624), auditoria do vulnerable-node antes e depois no CI, recall pelo script. NÃO verificado: JUnit/Maven (nada de Java mudou); Opengrep local 1.33.1 e não o 1.30.0 do CI; regras novas em NodeGoat e dvja (a conferir pelo CI na próxima volta).
+
+## Dashboard 12.67.0 — Ciclo, volta 13 (branch `ciclo/estabilizacao-4`): BrightSec/brokencrystals (treino novo), decoradores do NestJS
+
+- **Repositório novo:** BrightSec/brokencrystals (branch `stable`, MIXED, 209 estrelas, NestJS + front-end React de treino), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 38,3 e 918 achados (CRITICAL 14, HIGH 184). Trivy 293 (CVE de dependência), Stylelint 230, Opengrep 192 (a maioria qualidade/CSS), Gitleaks 23.
+- **Falso negativo (código lido, treino):** as regras Node só viam `req`/`request`/`event` como origem; no NestJS o dado entra por `@Query()`/`@Body()`/`@Param()`. Ficaram sem alerta: redirecionamento aberto (`@Redirect()` devolvendo `{ url }`), `eval` do corpo em `/process_numbers` (saiu só como `eval-dinamico`, MEDIUM) e gravação de arquivo no caminho de `@Query('path')`.
+- **Mudança:** parâmetro com `@Query/@Body/@Param/@Headers` vira origem em `open-redirect`, `eval-requisicao`, `command-injection`, `path-traversal` e `ssrf`; `return { url }` em método `@Redirect()` é destino; `spawn/spawnSync/execFile/execFileSync` com o executável vindo da requisição entram como destino de `command-injection`. Testes novos (positivos, seguros e parâmetro sem decorador de origem).
+- **Medido (CI, depois):** nota 38,26 e 921 achados (+3: open-redirect, eval-requisicao, path-traversal, todos conferidos no código). Recall do gabarito (`gabaritos/BrightSec__brokencrystals.json`, amostra de 7 falhas lidas): 4/7 → 6/7. Baseline gravado.
+- **Não feito (lacunas assumidas):** `GET /spawn` (comando entra no controller e é usado em `AppService.launchCommand`, outro arquivo: limite do motor); SQL do `kid` do JWT (template string num arquivo, consulta em outro); LDAP injection; doT/SSTI; SQL e SSRF dentro de serviços Nest.
+- **Regressão (números do CI):** vulnerable-node 268 achados, nota 47,44, recall 25/29: iguais ao baseline. dvja 176 (nota 48,95) e NodeGoat 279 (nota 46,87): iguais à volta 12.
+- **Branch `ciclo/estabilizacao-4`:** 6 voltas (8 a 13), todas com mudança; PR aberto para main nesta volta.
+
+Verificado: `opengrep --test` (79/79, Opengrep 1.30.0), paridade Opengrep × Semgrep (641 = 641), varredura do código de treino (3 achados novos, todos verdadeiros), auditorias no CI. NÃO verificado: JUnit/Maven (nada de Java mudou; só no CI do PR); treinos que não são vulnerable-node com a 12.66.0; taint entre arquivos de serviços Nest.
 ## Dashboard 12.60.0 — Joern com frase própria no card "Ferramentas externas (SARIF)"
 
 - **Motivo:** o Joern é uma fonte SARIF (`joern-taint`), não um analisador; a pessoa não via se ele estava ativo, porque a imagem padrão é construída sem ele (`WITH_JOERN=false`).

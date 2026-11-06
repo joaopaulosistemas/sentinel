@@ -1,0 +1,14 @@
+<!-- Casos de teste de sentinel-ejs.yml -->
+<h1>Resultados para <%= consulta %></h1>
+<!-- ruleid: sentinel-ejs-saida-sem-escape -->
+<p><%- review.body %></p>
+<!-- ruleid: sentinel-ejs-saida-sem-escape -->
+<span><%- q %></span>
+<!-- ok: sentinel-ejs-saida-sem-escape -->
+<%- body %>
+<!-- ok: sentinel-ejs-saida-sem-escape -->
+<%- include('rodape') %>
+<!-- ok: sentinel-ejs-saida-sem-escape -->
+<script>const dados = <%- JSON.stringify(dados) %>;</script>
+<!-- ok: sentinel-ejs-saida-sem-escape -->
+<%- partial('menu') %>

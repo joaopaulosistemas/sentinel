@@ -1,0 +1,258 @@
+{
+ "_comentario": "Falhas conhecidas de cr0hn/vulnerable-node, lidas no código (treino) e em sast/ground-truth.yaml. Entradas sem regra hoje são lacunas assumidas.",
+ "repo": "cr0hn/vulnerable-node",
+ "falhas": [
+  {
+   "arquivo": "model/db.js",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection",
+    "sentinel-node-sql-concatenado"
+   ],
+   "linha": 14,
+   "nota": "login por concatenação"
+  },
+  {
+   "arquivo": "model/db.js",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection",
+    "sentinel-node-sql-concatenado"
+   ],
+   "linha": 26,
+   "nota": "busca ILIKE"
+  },
+  {
+   "arquivo": "model/db.js",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection",
+    "sentinel-node-sql-concatenado"
+   ],
+   "linha": 101,
+   "nota": "ORDER BY interpolado"
+  },
+  {
+   "arquivo": "routes/shop.js",
+   "cwe": "CWE-943",
+   "regras": [
+    "sentinel-node-nosql-operador",
+    "sentinel-node-nosql-where"
+   ],
+   "linha": 41
+  },
+  {
+   "arquivo": "routes/shop.js",
+   "cwe": "CWE-943",
+   "regras": [
+    "sentinel-node-nosql-operador",
+    "sentinel-node-nosql-where"
+   ],
+   "linha": 58
+  },
+  {
+   "arquivo": "model/merge.js",
+   "cwe": "CWE-1321",
+   "regras": [
+    "sentinel-node-prototype-pollution"
+   ],
+   "linha": 8
+  },
+  {
+   "arquivo": "routes/tools.js",
+   "cwe": "CWE-1333",
+   "regras": [
+    "sentinel-node-regexp-da-requisicao"
+   ],
+   "linha": 44
+  },
+  {
+   "arquivo": "routes/tools.js",
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-node-ssrf"
+   ],
+   "linha": 21
+  },
+  {
+   "arquivo": "routes/extras.js",
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ],
+   "linha": 17
+  },
+  {
+   "arquivo": "routes/extras.js",
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-command-injection"
+   ],
+   "linha": 33
+  },
+  {
+   "arquivo": "routes/auth.js",
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-node-open-redirect"
+   ],
+   "linha": 35
+  },
+  {
+   "arquivo": "config.js",
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-segredo-padrao-js"
+   ],
+   "linha": 9,
+   "nota": "segredo de sessão padrão"
+  },
+  {
+   "arquivo": "config.js",
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-segredo-padrao-js"
+   ],
+   "linha": 17,
+   "nota": "segredo JWT padrão"
+  },
+  {
+   "arquivo": "views/product_detail.ejs",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-ejs-saida-sem-escape"
+   ],
+   "linha": 71,
+   "nota": "<%- r.body %> (XSS armazenado)"
+  },
+  {
+   "arquivo": "views/products.ejs",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-ejs-saida-sem-escape"
+   ],
+   "linha": 14,
+   "nota": "<%- q %> (XSS refletido)"
+  },
+  {
+   "arquivo": "routes/auth.js",
+   "cwe": "CWE-915",
+   "regras": [
+    "sentinel-node-mass-assignment",
+    "sentinel-node-mass-assignment-campo"
+   ],
+   "linha": 55,
+   "nota": "cadastro grava role vindo do corpo (INSERT com array de valores); regra por campo não alcança"
+  },
+  {
+   "arquivo": "routes/account.js",
+   "cwe": "CWE-915",
+   "regras": [
+    "sentinel-node-mass-assignment",
+    "sentinel-node-mass-assignment-campo"
+   ],
+   "linha": 30,
+   "nota": "perfil copia role vindo do corpo"
+  },
+  {
+   "arquivo": "sast/seeds/sqli-concat.js",
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection",
+    "sentinel-node-sql-concatenado"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/nosql-operator.js",
+   "cwe": "CWE-943",
+   "regras": [
+    "sentinel-node-nosql-operador",
+    "sentinel-node-nosql-where"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/xss-raw-echo.js",
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-node-xss-refletido"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/path-traversal.js",
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/ssrf-fetch.js",
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-node-ssrf"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/eval-code.js",
+   "cwe": "CWE-95",
+   "regras": [
+    "sentinel-node-eval-requisicao",
+    "sentinel-node-eval-dinamico"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/crypto-weak.js",
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-node-hash-fraco"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/hardcoded-secret.js",
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/redos-nested.js",
+   "cwe": "CWE-1333",
+   "regras": [
+    "sentinel-node-regexp-da-requisicao"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/prototype-pollution.js",
+   "cwe": "CWE-1321",
+   "regras": [
+    "sentinel-node-prototype-pollution"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/open-redirect.js",
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-node-open-redirect"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  },
+  {
+   "arquivo": "sast/seeds/deserialization.js",
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-node-desserializacao",
+    "sentinel-node-command-injection"
+   ],
+   "nota": "semente do próprio repositório (sast/ground-truth.yaml)"
+  }
+ ]
+}

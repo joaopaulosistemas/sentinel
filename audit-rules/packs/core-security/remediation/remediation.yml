@@ -414,11 +414,20 @@
     - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
 
 - key: "sentinel-node-xxe"
-  summary: "Remova `noent: true` e rejeite documentos com DOCTYPE vindos de fora."
+  summary: "Remova `noent: true`/`replaceEntities: true` e rejeite documentos com DOCTYPE vindos de fora."
   before: "libxml.parseXml(dados, { noent: true })"
   after: "libxml.parseXml(dados, { noent: false, nonet: true })"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-exec-dinamico"
+  summary: "Troque `exec` por `execFile`/`spawn` com argumentos separados e valide cada valor contra uma lista de permissão."
+  before: "exec(comando, callback)"
+  after: |-
+    if (!COMANDOS_PERMITIDOS.has(nome)) throw new Error('comando não permitido')
+    execFile(nome, args, callback)
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html"
 
 - key: "sentinel-node-command-injection"
   summary: "Evite shell. Use `execFile`/`spawn` com cada argumento separado e valide o valor contra uma lista de permissão."
@@ -536,3 +545,83 @@
   after: "<activity android:name=\".Envio\" android:exported=\"false\" />"
   refs:
     - "https://developer.android.com/privacy-and-security/risks/android-exported"
+
+- key: "sentinel-android-modo-mundo"
+  summary: "Crie arquivos e preferências com MODE_PRIVATE; para compartilhar, use FileProvider ou ContentProvider com permissão."
+  before: "getSharedPreferences(\"prefs\", Context.MODE_WORLD_READABLE);"
+  after: "getSharedPreferences(\"prefs\", Context.MODE_PRIVATE);"
+  refs:
+    - "https://developer.android.com/privacy-and-security/risks/world-readable-files"
+
+- key: "sentinel-crypto-chave-fixa-no-codigo"
+  summary: "Não escreva a chave no código: use o Android Keystore, um KMS ou configuração externa."
+  before: "new SecretKeySpec(\"0123456789abcdef\".getBytes(), \"AES\");"
+  after: "SecretKey chave = (SecretKey) keyStore.getKey(\"alias\", null);"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/321.html"
+
+- key: "sentinel-crypto-iv-fixo"
+  summary: "Gere um IV aleatório por operação com SecureRandom e guarde-o junto do texto cifrado."
+  before: "new IvParameterSpec(new byte[16]);"
+  after: |-
+    byte[] iv = new byte[16];
+    new SecureRandom().nextBytes(iv);
+    new IvParameterSpec(iv);
+  refs:
+    - "https://cwe.mitre.org/data/definitions/329.html"
+
+- key: "sentinel-node-sql-concatenado"
+  summary: "Passe os valores como parâmetros do driver; para coluna ou ordem, escolha de uma lista fixa."
+  before: "pool.query(\"SELECT * FROM users WHERE name = '\" + nome + \"'\")"
+  after: "pool.query('SELECT * FROM users WHERE name = $1', [nome])"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html"
+
+- key: "sentinel-node-nosql-operador"
+  summary: "Converta o valor da requisição para texto antes de montar o filtro, para que objetos com operadores não passem."
+  before: "col.findOne({ email: req.body.email })"
+  after: "col.findOne({ email: String(req.body.email) })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-prototype-pollution"
+  summary: "Ignore as chaves __proto__, constructor e prototype ao mesclar objetos vindos de fora."
+  before: "for (const k of Object.keys(src)) { merge(dst[k], src[k]) }"
+  after: "for (const k of Object.keys(src)) { if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue; merge(dst[k], src[k]) }"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-regexp-da-requisicao"
+  summary: "Escape o texto do usuário antes de virar expressão regular, limite o tamanho ou use RE2."
+  before: "new RegExp(req.body.pattern)"
+  after: "new RegExp(escapeRegExp(req.body.pattern))"
+  refs:
+    - "https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS"
+
+- key: "sentinel-node-xss-refletido"
+  summary: "Escape o valor antes de colocá-lo no HTML ou use um motor de templates com escape automático."
+  before: "res.send('<h1>' + req.query.name + '</h1>')"
+  after: "res.send('<h1>' + escapeHtml(req.query.name) + '</h1>')"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-mass-assignment"
+  summary: "Escolha os campos permitidos um a um e defina papel, saldo e permissões só no servidor."
+  before: "Usuario.create(req.body)"
+  after: "Usuario.create({ nome: req.body.nome, email: req.body.email, role: 'cliente' })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
+
+- key: "sentinel-ejs-saida-sem-escape"
+  summary: "Troque `<%- valor %>` por `<%= valor %>`, que escapa o texto; deixe `<%-` só para HTML montado pelo servidor."
+  before: "<p><%- review.body %></p>"
+  after: "<p><%= review.body %></p>"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-mass-assignment-campo"
+  summary: "Defina papel, permissão e saldo só no servidor; nunca copie esses campos do corpo da requisição."
+  before: "req.session.role = req.body.role"
+  after: "req.session.role = usuarioDoBanco.role"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"

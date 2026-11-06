@@ -109,6 +109,22 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-either:
+              - pattern: $EV.body
+              - pattern: $EV.headers
+              - pattern: $EV.queryStringParameters
+              - pattern: $EV.pathParameters
+          - metavariable-regex:
+              metavariable: $EV
+              regex: ^event$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -166,6 +182,13 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -174,6 +197,13 @@ rules:
           - metavariable-regex:
               metavariable: $RES
               regex: ^(res|response)$
+          - focus-metavariable: $U
+      - patterns:
+          - pattern-inside: |
+              class $C { ... @Redirect(...) $M(...) {...} ... }
+          - pattern-either:
+              - pattern: 'return { url: $U, ... }'
+              - pattern: 'return { $U, ... }'
           - focus-metavariable: $U
     message: >
       Redirecionamento aberto (CWE-601): o destino vem da requisição. Aceite só caminhos do próprio site ou
@@ -205,6 +235,18 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern: $REQ.file.originalname
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -256,6 +298,13 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -308,8 +357,10 @@ rules:
     pattern-either:
       - pattern: '$L.parseXml($X, {..., noent: true, ...})'
       - pattern: '$L.parseXmlString($X, {..., noent: true, ...})'
+      - pattern: '$L.parseXml($X, {..., replaceEntities: true, ...})'
+      - pattern: '$L.parseXmlString($X, {..., replaceEntities: true, ...})'
     message: >
-      Entidades externas XML ligadas (`noent: true`, CWE-611): o parser lê arquivos locais e faz requisições a
+      Entidades externas XML ligadas (`noent: true` ou `replaceEntities: true`, CWE-611): o parser lê arquivos locais e faz requisições a
       pedido do documento. Remova a opção e rejeite DOCTYPE em XML vindo de fora.
     severity: ERROR
     languages: [javascript, typescript]
@@ -339,6 +390,13 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-inside: |
+              class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
+          - metavariable-regex:
+              metavariable: $DEC
+              regex: ^(Query|Body|Param|Headers)$
+          - focus-metavariable: $P
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -353,6 +411,13 @@ rules:
               metavariable: $CP
               regex: ^(child_process|childProcess|cp|shell)$
           - focus-metavariable: $C
+      - patterns:
+          - pattern-either:
+              - pattern: spawn($C, ...)
+              - pattern: spawnSync($C, ...)
+              - pattern: execFile($C, ...)
+              - pattern: execFileSync($C, ...)
+          - focus-metavariable: $C
     pattern-sanitizers:
       - pattern: shellEscape(...)
       - pattern: parseInt(...)
@@ -361,6 +426,35 @@ rules:
       Possível injeção de comando (CWE-78): dado da requisição vai para `exec`, que roda o texto em um shell.
       Use `execFile`/`spawn` com os argumentos separados (sem `shell: true`) e valide o valor contra uma lista de permissão.
     severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-exec-dinamico
+    patterns:
+      - pattern-either:
+          - pattern: exec($X, ...)
+          - pattern: execSync($X, ...)
+          - patterns:
+              - pattern-either:
+                  - pattern: $CP.exec($X, ...)
+                  - pattern: $CP.execSync($X, ...)
+              - metavariable-regex:
+                  metavariable: $CP
+                  regex: ^(child_process|childProcess|cp|shell)$
+      - pattern-not: $F("...", ...)
+      - pattern-not: $F(<... req ...>, ...)
+      - pattern-not: $F(<... request ...>, ...)
+      - pattern-not-inside: |
+          ({..., $P, ...}: Request, ...) => {...}
+    message: >
+      `exec` recebe um comando que não é texto fixo (CWE-78). O shell interpreta o texto inteiro; se qualquer parte vier
+      de arquivo, XML, banco ou outra camada, vira injeção de comando. Use `execFile`/`spawn` com os argumentos separados
+      e valide o valor contra uma lista de permissão.
+    severity: WARNING
     languages: [javascript, typescript]
     metadata:
       side: back
@@ -388,6 +482,15 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      - patterns:
+          - pattern-either:
+              - pattern: $EV.body
+              - pattern: $EV.headers
+              - pattern: $EV.queryStringParameters
+              - pattern: $EV.pathParameters
+          - metavariable-regex:
+              metavariable: $EV
+              regex: ^event$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -480,3 +583,269 @@ rules:
       category: security
       cwe: "CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)"
       owasp: A02:2021 - Cryptographic Failures
+
+  # --- Camada de dados e utilitários: a falha costuma estar numa função que recebe o dado já pronto,
+  # --- longe da rota; o motor não segue o dado entre funções, então estas regras olham o próprio padrão.
+
+  - id: sentinel-node-sql-concatenado
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: '"..." + $B'
+              - pattern: '$A + "..."'
+          - pattern-not: '"..." + "..."'
+      - pattern: '`...${$X}...`'
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB.query($Q, ...)
+              - pattern: $DB.execute($Q, ...)
+              - pattern: $DB.raw($Q, ...)
+              - pattern: $DB.unsafe($Q, ...)
+          - metavariable-regex:
+              metavariable: $DB
+              regex: (?i)^(.*\.)?(pool|db|client|conn|connection|knex|sequelize|database|pg|mysql|sqlite|trx|tx)\w*$
+          # funções que recebem a requisição já são cobertas por sentinel-node-sql-injection
+          - pattern-not-inside: 'function $F(..., req, ...) {...}'
+          - pattern-not-inside: 'function $F(..., request, ...) {...}'
+          - pattern-not-inside: '(..., req, ...) => {...}'
+          - pattern-not-inside: '(..., request, ...) => {...}'
+          - pattern-not-inside: '({..., $P, ...}: Request, ...) => {...}'
+          - focus-metavariable: $Q
+    message: >
+      SQL montado com concatenação ou template string (CWE-89): o texto da consulta recebe valor variável
+      e o driver não separa dado de comando. Use parâmetros (`$1`, `?`, `:nome`) e, para nome de coluna ou
+      ordem, escolha o valor de uma lista fixa.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-nosql-operador
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.body
+              - pattern: $REQ.query
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $C.find($Q, ...)
+              - pattern: $C.findOne($Q, ...)
+              - pattern: $C.findOneAndUpdate($Q, ...)
+              - pattern: $C.updateOne($Q, ...)
+              - pattern: $C.updateMany($Q, ...)
+              - pattern: $C.deleteOne($Q, ...)
+              - pattern: $C.deleteMany($Q, ...)
+              - pattern: $C.countDocuments($Q, ...)
+          - pattern-not: '$C.$M(($A) => ..., ...)'
+          - pattern-not: '$C.$M(function (...) {...}, ...)'
+          - pattern-not: '$C.$M({..., where: ..., ...}, ...)'
+          - focus-metavariable: $Q
+    pattern-sanitizers:
+      - pattern: String(...)
+      - pattern: Number(...)
+      - pattern: parseInt(...)
+      - pattern: $X.toString()
+      - pattern: '`...${...}...`'
+    message: >
+      Filtro de banco de documentos montado com dado da requisição (CWE-943): um objeto JSON como
+      `{"$ne": null}` ou `{"$gt": ""}` vira operador e muda a consulta. Converta o valor para texto
+      (`String(valor)`) ou valide o formato antes de consultar.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-prototype-pollution
+    patterns:
+      - pattern-either:
+          - pattern: |
+              function $F($T, $S) {
+                ...
+                $F($T[$K], $S[$K]);
+                ...
+              }
+          - pattern: |
+              const $F = ($T, $S) => {
+                ...
+                $F($T[$K], $S[$K]);
+                ...
+              }
+      - pattern-not: |
+          function $F($T, $S) {
+            ...
+            <... "__proto__" ...>
+            ...
+          }
+      - pattern-not: |
+          const $F = ($T, $S) => {
+            ...
+            <... "__proto__" ...>
+            ...
+          }
+    message: >
+      Mescla recursiva sem bloquear as chaves `__proto__`, `constructor` e `prototype` (CWE-1321): um JSON
+      como `{"__proto__": {"admin": true}}` altera `Object.prototype` e contamina todos os objetos. Ignore
+      essas chaves, use `Object.create(null)` ou uma biblioteca mantida e atualizada.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-1321: Improperly Controlled Modification of Object Prototype Attributes ('Prototype Pollution')"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-node-regexp-da-requisicao
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern: new RegExp($P, ...)
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i)^(_\.)?escape(Reg|Re)\w*$
+    message: >
+      Expressão regular criada com dado da requisição (CWE-1333 / CWE-185): o usuário escolhe o padrão e
+      um padrão com repetição aninhada (`^(\d+)*$`) trava o processo (ReDoS). Escape o texto antes de
+      montar a expressão, limite o tamanho ou use um motor sem retrocesso (RE2).
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-1333: Inefficient Regular Expression Complexity"
+      owasp: A04:2021 - Insecure Design
+
+  - id: sentinel-node-xss-refletido
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($H + $V)
+              - pattern: $RES.send($H + $V + $T)
+              - pattern: $RES.end($H + $V)
+              - pattern: $RES.write($H + $V)
+          - metavariable-regex:
+              metavariable: $H
+              regex: ^["'`]\s*<
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response)$
+          - focus-metavariable: $V
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($T)
+              - pattern: $RES.end($T)
+              - pattern: $RES.write($T)
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response)$
+          - metavariable-regex:
+              metavariable: $T
+              regex: ^`\s*<[\s\S]*\$\{
+          - focus-metavariable: $T
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i)^(.*\.)?(escape|escapeHtml|encode|encodeURIComponent|sanitize|sanitizeHtml|xss|purify|clean)\w*$
+      - pattern: parseInt(...)
+      - pattern: Number(...)
+    message: >
+      HTML montado com dado da requisição e devolvido na resposta (CWE-79): o navegador interpreta o que o
+      usuário enviou como marcação (XSS refletido). Escape o valor (`escape-html`, `he.encode`) ou use um
+      motor de templates com escape automático.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-mass-assignment
+    patterns:
+      - pattern-either:
+          - pattern: $M.create($REQ.body, ...)
+          - pattern: $M.update($REQ.body, ...)
+          - pattern: $M.updateOne($F, $REQ.body, ...)
+          - pattern: $M.findByIdAndUpdate($I, $REQ.body, ...)
+          - pattern: $M.findOneAndUpdate($F, $REQ.body, ...)
+          - pattern: new $M($REQ.body)
+          - pattern: Object.assign($X, $REQ.body)
+      - metavariable-regex:
+          metavariable: $REQ
+          regex: ^(req|request)$
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(?!Object$|JSON$|Array$|Math$|Promise$|RegExp$|Map$|Set$|Date$|Error$|URL$|Buffer$)(?:[A-Z]\w*|\w*[Mm]odel\w*|\w*[Rr]epo\w*)$
+    message: >
+      O corpo da requisição é gravado inteiro no modelo (CWE-915): quem envia `{"role": "admin"}` ou
+      `{"balance": 9999}` promove a si mesmo. Escolha os campos permitidos um a um (`{ nome, email }`) e
+      defina papel e saldo só no servidor.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+      owasp: A04:2021 - Insecure Design
+
+  - id: sentinel-node-mass-assignment-campo
+    patterns:
+      - pattern-either:
+          - pattern: $O.$P = $REQ.body.$Q
+          - pattern: $O.$P = $REQ.body.$Q || ...
+          - pattern: $O.$P = $REQ.body.$Q ?? ...
+          - pattern: '{..., $P: $REQ.body.$Q, ...}'
+      - metavariable-regex:
+          metavariable: $REQ
+          regex: ^(req|request)$
+      - metavariable-regex:
+          metavariable: $P
+          regex: ^(role|roles|isAdmin|is_admin|admin|permissions|balance|saldo|isStaff|is_staff)$
+    message: >
+      Campo privilegiado (papel, permissão ou saldo) recebe o valor enviado pelo cliente (CWE-915): quem
+      envia `{"role": "admin"}` promove a si mesmo. Defina esse campo só no servidor ou confira o valor
+      contra uma lista permitida.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+      owasp: A04:2021 - Insecure Design

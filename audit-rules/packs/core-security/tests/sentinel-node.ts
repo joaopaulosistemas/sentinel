@@ -222,6 +222,30 @@ export function carregarPerfilSeguro (req: any) {
   return JSON.parse(req.cookies.perfil)
 }
 
+export const handlerLambda = async (event: any) => {
+  // ruleid: sentinel-node-desserializacao
+  const corpo = serialize.unserialize(event.body)
+  // ruleid: sentinel-node-desserializacao
+  const cabecalhos = serialize.unserialize(event.headers)
+  return [corpo, cabecalhos]
+}
+
+export const handlerLambdaSeguro = async (event: any) => {
+  // ok: sentinel-node-desserializacao
+  return JSON.parse(event.body)
+}
+
+export const handlerLambdaEval = async (event: any) => {
+  const cmd = event.body.cmd
+  // ruleid: sentinel-node-eval-requisicao, sentinel-node-eval-dinamico
+  eval(cmd)
+}
+
+export const naoEhEvento = (config: any) => {
+  // ok: sentinel-node-desserializacao
+  return serialize.unserialize(config.body)
+}
+
 // ---------- cookie sem httpOnly ----------
 export function gravarCookie (res: any, token: string) {
   // ruleid: sentinel-node-cookie-sem-flags
@@ -280,4 +304,265 @@ export function sorteio () {
   // ok: sentinel-node-math-random-segredo
   const indice = Math.floor(Math.random() * 10)
   return indice
+}
+
+// ---------- SQL montado com texto e variável (camada de dados) ----------
+export function entrar (pool: any, usuario: string, senha: string) {
+  const q = "SELECT * FROM users WHERE username = '" + usuario + "' AND password = '" + senha + "'"
+  // ruleid: sentinel-node-sql-concatenado
+  return pool.query(q)
+}
+
+export function buscar (db: any, termo: string) {
+  // ruleid: sentinel-node-sql-concatenado
+  return db.query("SELECT * FROM products WHERE name ILIKE '%" + termo + "%'")
+}
+
+export function ordenar (pool: any, usuario: number, coluna: string) {
+  // ruleid: sentinel-node-sql-concatenado
+  return pool.query(`SELECT * FROM orders WHERE user_id = $1 ORDER BY ${coluna} DESC`, [usuario])
+}
+
+export function porId (pool: any, id: number) {
+  // ok: sentinel-node-sql-concatenado
+  return pool.query('SELECT * FROM users WHERE id = $1', [id])
+}
+
+export function fixo (pool: any) {
+  // ok: sentinel-node-sql-concatenado
+  return pool.query('SELECT * FROM ' + 'products ORDER BY id')
+}
+
+// ---------- NoSQL: corpo da requisição direto no filtro ----------
+export function filtrar (req: any, col: any) {
+  const filtro = { origem: req.body.tags }
+  // ruleid: sentinel-node-nosql-operador
+  return col.find(filtro).toArray()
+}
+
+export function filtrarGet (req: any, col: any) {
+  // ruleid: sentinel-node-nosql-operador
+  return col.findOne({ email: req.query.email })
+}
+
+export function filtrarComTexto (req: any, col: any) {
+  // ok: sentinel-node-nosql-operador
+  return col.find({ email: String(req.query.email) }).toArray()
+}
+
+export function listaLocal (itens: any[], id: number) {
+  // ok: sentinel-node-nosql-operador
+  return itens.find((i) => i.id === id)
+}
+
+// ---------- Prototype pollution: merge recursivo sem bloqueio de chave ----------
+// ruleid: sentinel-node-prototype-pollution
+function merge (target: any, source: any) {
+  for (const key of Object.keys(source)) {
+    if (typeof source[key] === 'object' && source[key] !== null) {
+      if (!target[key]) target[key] = {}
+      merge(target[key], source[key])
+    } else {
+      target[key] = source[key]
+    }
+  }
+  return target
+}
+
+// ok: sentinel-node-prototype-pollution
+function mergeSeguro (target: any, source: any) {
+  for (const key of Object.keys(source)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue
+    if (typeof source[key] === 'object' && source[key] !== null) {
+      if (!target[key]) target[key] = {}
+      mergeSeguro(target[key], source[key])
+    } else {
+      target[key] = source[key]
+    }
+  }
+  return target
+}
+
+// ---------- RegExp montada com dado da requisição (ReDoS) ----------
+export function testarPadrao (req: any) {
+  const padrao = req.body.pattern
+  // ruleid: sentinel-node-regexp-da-requisicao
+  const re = new RegExp(padrao)
+  return re.test('x')
+}
+
+export function testarEscapado (req: any) {
+  // ok: sentinel-node-regexp-da-requisicao
+  const re = new RegExp(escapeRegExp(req.query.q))
+  return re.test('x')
+}
+
+export function testarFixo () {
+  // ok: sentinel-node-regexp-da-requisicao
+  return new RegExp('^a+$').test('aaa')
+}
+declare function escapeRegExp (s: string): string
+
+// ---------- XSS refletido: HTML montado com dado da requisição ----------
+export function saudacao (req: any, res: any) {
+  const nome = req.query.name || 'visitante'
+  // ruleid: sentinel-node-xss-refletido
+  res.send('<h1>Olá ' + nome + '</h1>')
+}
+
+export function saudacaoTemplate (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.send(`<p>${req.params.nome}</p>`)
+}
+
+export function saudacaoEscapada (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send('<h1>Olá ' + escapeHtml(req.query.name) + '</h1>')
+}
+
+export function respostaTexto (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send('erro: ' + req.query.name)
+}
+declare function escapeHtml (s: string): string
+
+// ---------- volta 10: XXE com replaceEntities, nome de arquivo enviado e exec dinâmico ----------
+export function lerXmlReplaceEntities (libxml: any, dados: string) {
+  // ruleid: sentinel-node-xxe
+  return libxml.parseXml(dados, { replaceEntities: true, recover: true, nonet: false })
+}
+
+export function lerXmlReplaceDesligado (libxml: any, dados: string) {
+  // ok: sentinel-node-xxe
+  return libxml.parseXml(dados, { replaceEntities: false, nonet: true })
+}
+
+export function receberUpload (req: any, fs: any, path: any) {
+  // ruleid: sentinel-node-path-traversal
+  fs.writeFileSync(path.join(__dirname, req.file.originalname), req.file.buffer)
+}
+
+export function receberUploadSeguro (req: any, fs: any, path: any) {
+  // ok: sentinel-node-path-traversal
+  fs.writeFileSync(path.join(__dirname, path.basename(req.file.originalname)), req.file.buffer)
+}
+
+export function rodarComando (comando: string, exec: any) {
+  // ruleid: sentinel-node-exec-dinamico
+  exec(comando, () => {})
+}
+
+export function rodarComandoComTemplate (nome: string, execSync: any) {
+  // ruleid: sentinel-node-exec-dinamico
+  execSync(`git checkout ${nome}`)
+}
+
+export function rodarComandoFixo (exec: any) {
+  // ok: sentinel-node-exec-dinamico
+  exec('git status', () => {})
+}
+
+// ---------- Mass assignment: corpo da requisição define papel ou saldo ----------
+export async function cadastrar (req: any, res: any) {
+  // ruleid: sentinel-node-mass-assignment-campo
+  req.session.role = req.body.role || 'cliente'
+  res.send('ok')
+}
+
+export async function atualizar (req: any, res: any) {
+  // ruleid: sentinel-node-mass-assignment-campo
+  const usuario = { nome: 'x', isAdmin: req.body.isAdmin }
+  res.send(usuario)
+}
+
+export async function criarComTudo (req: any, Usuario: any) {
+  // ruleid: sentinel-node-mass-assignment
+  return Usuario.create(req.body)
+}
+
+export async function atualizarComTudo (req: any, Usuario: any) {
+  // ruleid: sentinel-node-mass-assignment
+  return Usuario.findByIdAndUpdate(req.params.id, req.body)
+}
+
+export async function cadastrarSeguro (req: any, Usuario: any) {
+  // ok: sentinel-node-mass-assignment
+  return Usuario.create({ nome: req.body.nome, email: req.body.email, role: 'cliente' })
+}
+
+export function apenasLeitura (req: any, carteira: any) {
+  // ok: sentinel-node-mass-assignment-campo
+  if (req.body.role === 'admin') return carteira.balance
+  return carteira.balance + req.body.nome
+}
+
+export function papelFixo (req: any) {
+  // ok: sentinel-node-mass-assignment
+  const papel = 'cliente'
+  return papel + req.body.nome
+}
+
+// ---------- NestJS: parâmetros decorados como origem ----------
+export class NestExemplo {
+  @Get('goto')
+  @Redirect()
+  async irPara (@Query('url') url: string) {
+    // ruleid: sentinel-node-open-redirect
+    return { url }
+  }
+
+  @Get('goto-fixo')
+  @Redirect()
+  async irParaFixo (@Query('url') url: string) {
+    // ok: sentinel-node-open-redirect
+    return { url: '/inicio' }
+  }
+
+  @Post('calcular')
+  async calcular (@Body() payload: { expressao: string }) {
+    // ruleid: sentinel-node-eval-requisicao, sentinel-node-eval-dinamico
+    return eval(payload.expressao)
+  }
+
+  @Post('calcular-fixo')
+  async calcularFixo (@Body() payload: { expressao: string }) {
+    // ok: sentinel-node-eval-requisicao
+    return eval('1 + 1')
+  }
+
+  @Get('rodar')
+  async rodar (@Query('cmd') cmd: string) {
+    // ruleid: sentinel-node-command-injection, sentinel-node-exec-dinamico
+    return execSync(cmd).toString()
+  }
+
+  @Get('rodar-spawn')
+  async rodarSpawn (@Query('cmd') cmd: string) {
+    // ruleid: sentinel-node-command-injection
+    return spawn(cmd, [])
+  }
+
+  @Get('rodar-ok')
+  async rodarOk (@Query('n') n: string) {
+    // ok: sentinel-node-command-injection
+    return spawn('ls', ['-la']).pid
+  }
+
+  @Get('arquivo')
+  async arquivo (@Query('path') caminho: string) {
+    // ruleid: sentinel-node-path-traversal
+    return fs.createReadStream(caminho)
+  }
+
+  @Get('buscar')
+  async buscar (@Query('url') alvo: string) {
+    // ruleid: sentinel-node-ssrf
+    return axios.get(alvo)
+  }
+
+  @Get('sem-decorador')
+  async semDecorador (@Inject() servico: string, valor: string) {
+    // ok: sentinel-node-eval-requisicao
+    return JSON.parse(servico)
+  }
 }

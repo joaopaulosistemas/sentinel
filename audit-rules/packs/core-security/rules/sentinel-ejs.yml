@@ -1,0 +1,17 @@
+# Modelos EJS. Casos de teste: tests/sentinel-ejs.ejs
+rules:
+  - id: sentinel-ejs-saida-sem-escape
+    pattern-regex: '<%-\s*(?!(?:body|include\b|partial\b|contentFor\b|layout\b|JSON\.stringify|[\w.]*(?:escape|sanitize|encode)\w*\())[\w.\[\]"'']+\s*-?%>'
+    message: >
+      `<%- valor %>` escreve o valor sem escapar (CWE-79): se ele vier do usuário, o navegador executa a marcação
+      (XSS). Use `<%= valor %>`, que escapa o texto, e deixe `<%-` só para HTML que o servidor mesmo montou.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.ejs"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection

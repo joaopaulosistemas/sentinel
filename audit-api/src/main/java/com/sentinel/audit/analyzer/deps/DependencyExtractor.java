@@ -49,6 +49,13 @@ public final class DependencyExtractor {
     private static final Pattern PROPERTY_REF = Pattern.compile("\\$\\{([^}]+)}");
     private static final Pattern GRADLE_COORD =
             Pattern.compile("[\"']([A-Za-z0-9_.\\-]+):([A-Za-z0-9_.\\-]+):([A-Za-z0-9_.\\-]+)[\"']");
+    /** Notação de mapa do Gradle: {@code group: 'x', name: 'y', version: 'z'}. */
+    private static final Pattern GRADLE_MAP = Pattern.compile(
+            "group\\s*[:=]\\s*[\"']([A-Za-z0-9_.\\-]+)[\"']\\s*,\\s*name\\s*[:=]\\s*[\"']([A-Za-z0-9_.\\-]+)[\"']"
+                    + "\\s*,\\s*version\\s*[:=]\\s*[\"']([A-Za-z0-9_.\\-]+)[\"']");
+    /** Plugin do Spring Boot com versão fixa: a versão do plugin é a do {@code spring-boot}. */
+    private static final Pattern GRADLE_BOOT_PLUGIN = Pattern.compile(
+            "id\\s*\\(?\\s*[\"']org\\.springframework\\.boot[\"']\\s*\\)?\\s*version\\s*[\"']([0-9][A-Za-z0-9_.\\-]*)[\"']");
     private static final Pattern PIP_PIN =
             Pattern.compile("^\\s*([A-Za-z0-9][A-Za-z0-9_.\\-]*)(?:\\[[^]]*])?\\s*==\\s*([A-Za-z0-9_.\\-+!]+)");
     private static final Pattern CSPROJ_REF = Pattern.compile(
@@ -256,9 +263,18 @@ public final class DependencyExtractor {
 
     static List<Dependency> fromGradle(Path file, String rel) throws IOException {
         List<Dependency> out = new ArrayList<>();
-        Matcher m = GRADLE_COORD.matcher(Files.readString(file, StandardCharsets.UTF_8));
+        String text = Files.readString(file, StandardCharsets.UTF_8);
+        Matcher m = GRADLE_COORD.matcher(text);
         while (m.find()) {
             out.add(new Dependency("Maven", m.group(1) + ":" + m.group(2), m.group(GRADLE_VERSION_GROUP), rel));
+        }
+        Matcher map = GRADLE_MAP.matcher(text);
+        while (map.find()) {
+            out.add(new Dependency("Maven", map.group(1) + ":" + map.group(2), map.group(GRADLE_VERSION_GROUP), rel));
+        }
+        Matcher boot = GRADLE_BOOT_PLUGIN.matcher(text);
+        while (boot.find()) {
+            out.add(new Dependency("Maven", "org.springframework.boot:spring-boot", boot.group(1), rel));
         }
         return out;
     }

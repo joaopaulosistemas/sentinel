@@ -25,3 +25,9 @@ microsoft/azure-devops-node-api
 zenato/puppeteer-renderer
 whgojp/JavaSecLab
 rewanthtammana/Damn-Vulnerable-Bank
+dineshshetty/Android-InsecureBankv2
+cr0hn/vulnerable-node
+skills/secure-code-game
+christophetd/log4shell-vulnerable-app
+OWASP/DVSA
+BrightSec/brokencrystals
