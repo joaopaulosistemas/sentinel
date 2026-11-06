@@ -25,3 +25,4 @@ microsoft/azure-devops-node-api
 zenato/puppeteer-renderer
 whgojp/JavaSecLab
 rewanthtammana/Damn-Vulnerable-Bank
+dineshshetty/Android-InsecureBankv2
