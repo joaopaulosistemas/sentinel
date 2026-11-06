@@ -5,19 +5,19 @@ import { PageShell } from '../../components/PageShell';
 import { ReauditPanel } from '../../components/ReauditPanel';
 import { useAudit } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
-import type { AuditRunResponse, SystemSummaryResponse } from '../../types';
+import type { IAuditRunResponse, ISystemSummaryResponse } from '../../types';
 import { findingsCrumbs } from './findingsRows';
 import { FindingsTab } from './FindingsTab';
 import { PageHeading, TabBar, type AbaId } from './FindingsParts';
 import { useFindingFilters } from './useFindingsPage';
 
 /** Sistema da auditoria aberta: pelo id, ou pelo nome quando a resposta ainda não traz o id. */
-function findAuditSystemId(audit: AuditRunResponse | undefined, systems: SystemSummaryResponse[]): number | undefined {
+function findAuditSystemId(audit: IAuditRunResponse | undefined, systems: ISystemSummaryResponse[]): number | undefined {
   return audit?.systemId ?? systems.find((s) => s.name === audit?.systemName)?.id;
 }
 
 /** Sistema em foco: o da auditoria aberta (vindo de "Ver todos os achados") ou o escolhido no filtro. */
-function useFocusedSystem(auditMode: boolean, audit: AuditRunResponse | undefined, systems: SystemSummaryResponse[] | undefined, filterSystemId: number | undefined) {
+function useFocusedSystem(auditMode: boolean, audit: IAuditRunResponse | undefined, systems: ISystemSummaryResponse[] | undefined, filterSystemId: number | undefined) {
   const auditSystemId = auditMode ? findAuditSystemId(audit, systems ?? []) : undefined;
   return { auditSystemId, activeSystemId: auditMode ? auditSystemId : filterSystemId };
 }

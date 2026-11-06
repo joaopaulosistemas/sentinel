@@ -1,7 +1,7 @@
-import type { AuditRunResponse, EngineConfig, EngineTuning, RuleAdjustment } from '../types';
+import type { IAuditRunResponse, IEngineConfig, IEngineTuning, IRuleAdjustment } from '../types';
 import { isNoopAdjustment } from './ruleCatalog';
 
-export type TuningSlice = Pick<EngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'> & { disableSides: Array<'back' | 'front'> };
+export type TuningSlice = Pick<IEngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'> & { disableSides: Array<'back' | 'front'> };
 
 /** Limite digitado: vazio vale "padrão do motor"; o resto precisa ser inteiro ≥ 1. */
 export function limitInvalid(value: string | undefined): boolean {
@@ -11,7 +11,7 @@ export function limitInvalid(value: string | undefined): boolean {
 }
 
 /** O que a tela edita (pacotes, limites, regras, lados desligados) na forma que o servidor guarda. */
-export function sliceOf(data: EngineConfig, packs: Record<string, boolean>, limits: Record<string, string>, rules: RuleAdjustment[], sidesOff: Array<'back' | 'front'> = []): TuningSlice {
+export function sliceOf(data: IEngineConfig, packs: Record<string, boolean>, limits: Record<string, string>, rules: IRuleAdjustment[], sidesOff: Array<'back' | 'front'> = []): TuningSlice {
   const enablePacks = data.packs.filter((p) => packs[p.id] && !p.inProfile).map((p) => p.id);
   const disablePacks = data.packs.filter((p) => !packs[p.id] && p.inProfile).map((p) => p.id);
   const thresholds: Record<string, number> = {};
@@ -21,18 +21,18 @@ export function sliceOf(data: EngineConfig, packs: Record<string, boolean>, limi
   return { enablePacks, disablePacks, thresholds, rules: rules.filter((r) => !isNoopAdjustment(r)), disableSides: [...sidesOff] };
 }
 
-const NO_ADJUSTMENT = (id: string): RuleAdjustment => ({ id, severity: null, disabled: false, shadow: null });
+const NO_ADJUSTMENT = (id: string): IRuleAdjustment => ({ id, severity: null, disabled: false, shadow: null });
 
-export function currentAdjustment(rules: RuleAdjustment[], id: string): RuleAdjustment {
+export function currentAdjustment(rules: IRuleAdjustment[], id: string): IRuleAdjustment {
   return rules.find((r) => r.id === id) ?? NO_ADJUSTMENT(id);
 }
 
-export function patchAdjustment(rules: RuleAdjustment[], id: string, patch: Partial<RuleAdjustment>): RuleAdjustment[] {
+export function patchAdjustment(rules: IRuleAdjustment[], id: string, patch: Partial<IRuleAdjustment>): IRuleAdjustment[] {
   return [...rules.filter((r) => r.id !== id), { ...currentAdjustment(rules, id), ...patch }];
 }
 
 /** Regra nova (id ou padrão com *) entra só observada; id inválido ou repetido não muda nada. */
-export function withNewRule(rules: RuleAdjustment[], typed: string): RuleAdjustment[] {
+export function withNewRule(rules: IRuleAdjustment[], typed: string): IRuleAdjustment[] {
   const id = typed.trim().toLowerCase();
   if (!id || !/^[a-z0-9_.*:/-]+$/.test(id) || rules.some((r) => r.id === id)) return rules;
   return [...rules, { id, severity: null, disabled: false, shadow: true }];
@@ -53,7 +53,7 @@ export function pickShown(picked: Set<string>, shownIds: string[], on: boolean):
 }
 
 /** Última auditoria concluída: dela vem o efeito de cada regra na nota. */
-export function latestCompleted(runs: unknown): AuditRunResponse | undefined {
-  const list = Array.isArray(runs) ? (runs as AuditRunResponse[]) : [];
+export function latestCompleted(runs: unknown): IAuditRunResponse | undefined {
+  const list = Array.isArray(runs) ? (runs as IAuditRunResponse[]) : [];
   return list.filter((r) => r.status === 'COMPLETED').sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())[0];
 }

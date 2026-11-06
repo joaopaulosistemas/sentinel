@@ -1,8 +1,8 @@
-import type { SystemSummaryResponse } from '../../types';
+import type { ISystemSummaryResponse } from '../../types';
 import {
   severityChoices,
   situationChoices,
-  type FilterChip,
+  type IFilterChip,
   type SeverityChoice,
   type SituationChoice,
 } from '../../utils/findingsView';
@@ -21,9 +21,9 @@ export const categoryOptions: Array<{ value: Category | ''; label: string }> = [
   { value: 'PERFORMANCE', label: 'Desempenho' },
 ];
 
-interface FiltersProps {
+interface IFiltersProps {
   auditMode: boolean;
-  systems: SystemSummaryResponse[] | undefined;
+  systems: ISystemSummaryResponse[] | undefined;
   currentSystemValue: string;
   onPickSystem: (id: number | undefined) => void;
   severity: SeverityChoice;
@@ -38,7 +38,7 @@ interface FiltersProps {
   lowHidden: number;
   showLow: boolean;
   onShowLow: (v: boolean) => void;
-  chips: FilterChip[];
+  chips: IFilterChip[];
   isDefault: boolean;
   onRestore: () => void;
 }
@@ -68,7 +68,7 @@ function SelectField({ id, text, strong, value, onChange, children }: {
   );
 }
 
-function SystemField({ systems, value, onPick }: { systems: SystemSummaryResponse[] | undefined; value: string; onPick: (id: number | undefined) => void }) {
+function SystemField({ systems, value, onPick }: { systems: ISystemSummaryResponse[] | undefined; value: string; onPick: (id: number | undefined) => void }) {
   return (
     <SelectField id="f-sis" text="Sistema" strong value={value} onChange={(v) => onPick(v === '' ? undefined : Number(v))}>
       <option value="">Todos os sistemas{systems ? ` (${systems.length})` : ''}</option>
@@ -89,7 +89,7 @@ function LowConfidenceToggle({ lowHidden, showLow, onShowLow }: { lowHidden: num
   );
 }
 
-function ActiveChips({ chips, isDefault, onRestore }: { chips: FilterChip[]; isDefault: boolean; onRestore: () => void }) {
+function ActiveChips({ chips, isDefault, onRestore }: { chips: IFilterChip[]; isDefault: boolean; onRestore: () => void }) {
   return (
     <div aria-label="Filtros ativos" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 13, color: 'var(--s-text-3)' }}>
       Filtros ativos:
@@ -111,7 +111,7 @@ function ActiveChips({ chips, isDefault, onRestore }: { chips: FilterChip[]; isD
 }
 
 /** Filtros da tela de achados: sistema, severidade, categoria, situação, baixa confiança e os filtros ativos. */
-export function FindingsFilters(p: FiltersProps) {
+export function FindingsFilters(p: IFiltersProps) {
   return (
     <section aria-label="Filtros" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(190px, 100%), 1fr))', gap: 14, alignItems: 'end' }}>
@@ -144,7 +144,7 @@ export function FindingsFilters(p: FiltersProps) {
   );
 }
 
-interface FooterProps {
+interface IFooterProps {
   text: string;
   page: number;
   pages: number;
@@ -154,7 +154,7 @@ interface FooterProps {
 }
 
 /** Rodapé da lista: texto de contagem, itens por página e navegação. */
-export function PaginationFooter({ text, page, pages, pageSize, onPage, onPageSize }: FooterProps) {
+export function PaginationFooter({ text, page, pages, pageSize, onPage, onPageSize }: IFooterProps) {
   return (
     <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--s-text-3)', borderTop: '1px solid var(--s-border)', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
       <span>{text}</span>

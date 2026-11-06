@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { McpCall, PendingAction } from '../types';
+import type { IMcpCall, IPendingAction } from '../types';
 import { callsSince, mcpCallEvents, mergeEvents, pendingCount } from './mcpActivity';
 
-const call = (tool: string, at: string, ok = true, detail: string | null = null): McpCall => ({ tool, ok, durationMs: 12, detail, at });
+const call = (tool: string, at: string, ok = true, detail: string | null = null): IMcpCall => ({ tool, ok, durationMs: 12, detail, at });
 
 describe('mcpActivity', () => {
   const started = '2026-10-26T10:00:00';
@@ -44,7 +44,7 @@ describe('mcpActivity', () => {
   });
 
   it('conta só os pedidos que esperam aprovação', () => {
-    const action = (status: PendingAction['status']): PendingAction => ({
+    const action = (status: IPendingAction['status']): IPendingAction => ({
       id: 1, kind: 'START_AUDIT', summary: 's', status, createdAt: '', expiresAt: '', decidedAt: null, resultNote: null, auditRunId: null,
     });
     expect(pendingCount([action('PENDING'), action('APPROVED'), action('PENDING'), action('EXPIRED')])).toBe(2);

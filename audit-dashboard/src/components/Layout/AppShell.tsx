@@ -18,7 +18,7 @@ import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { MENU_MIN, MENU_PADRAO, MENU_TRILHO, clampMenu, menuMaxFor, readMenuWidth, saveMenuWidth } from '../../utils/menuWidth';
 import { PALETTES, TEXT_SIZES, useThemeStore, type Palette, type TextSize } from '../../store/useThemeStore';
 
-interface AppShellProps {
+interface IAppShellProps {
   children: React.ReactNode;
 }
 
@@ -219,7 +219,7 @@ function isActiveRoute(item: MenuItem, pathname: string): boolean {
   return item.exata ? pathname === item.rota : pathname.startsWith(item.rota);
 }
 
-interface ShellMenuProps {
+interface IShellMenuProps {
   fixo: boolean;
   aberto: boolean;
   largura: number;
@@ -227,7 +227,7 @@ interface ShellMenuProps {
   onClose: () => void;
 }
 
-function ShellMenu({ fixo, aberto, largura, trilho, onClose }: ShellMenuProps) {
+function ShellMenu({ fixo, aberto, largura, trilho, onClose }: IShellMenuProps) {
   const location = useLocation();
   const pending = usePendingClaude().total;
   const className = fixo ? `sentinel-menu-redim${trilho ? ' sentinel-menu-trilho' : ''}` : undefined;
@@ -264,7 +264,7 @@ function MenuSeparator({ menu }: { menu: ReturnType<typeof useMenuLargura> }) {
 }
 
 /** Cabeçalho escuro no topo e a navegação principal fixa na lateral esquerda. */
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children }: IAppShellProps) {
   const location = useLocation();
   const dark = useThemeStore((st) => st.mode) === 'dark';
   const fixo = useMenuFixo();

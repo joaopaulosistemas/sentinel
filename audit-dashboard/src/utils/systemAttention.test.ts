@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { SystemSummaryResponse } from '../types';
+import type { ISystemSummaryResponse } from '../types';
 import { daysSinceAudit, isStale, systemsNeedingAttention } from './systemAttention';
 
 const NOW = Date.parse('2026-10-22T12:00:00Z');
 const day = (n: number) => new Date(NOW - n * 86_400_000).toISOString();
 
-const sys = (id: number, name: string, over: Partial<SystemSummaryResponse> = {}): SystemSummaryResponse => ({
+const sys = (id: number, name: string, over: Partial<ISystemSummaryResponse> = {}): ISystemSummaryResponse => ({
   id, name, stack: 'JAVA', team: 'T', lastAuditScore: 90, lastAuditDate: day(1), openCritical: 0, openHigh: 0, ...over,
 });
 

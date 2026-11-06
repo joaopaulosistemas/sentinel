@@ -14,7 +14,7 @@ import { PageShell } from '../../components/PageShell';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRuleQuality, useSystems } from '../../hooks/useSystems';
-import type { SystemSummaryResponse } from '../../types';
+import type { ISystemSummaryResponse } from '../../types';
 import { formatTrend, summarizeTeams } from '../../utils/ranking';
 import { TARGET_SCORE as TARGET, scoreColor as barColor, scoreTagType } from '../../utils/scoreBand';
 import { timeAgo } from '../../utils/timeAgo';
@@ -30,7 +30,7 @@ const sortOptions: Array<{ key: SortKey; label: string }> = [
 const trendColor = { up: 'var(--s-success-text)', down: 'var(--s-danger-text)', flat: 'var(--s-text-3)', none: 'var(--s-text-4)' } as const;
 
 
-type Cmp = (a: SystemSummaryResponse, b: SystemSummaryResponse) => number;
+type Cmp = (a: ISystemSummaryResponse, b: ISystemSummaryResponse) => number;
 
 const byName: Cmp = (a, b) => a.name.localeCompare(b.name);
 const byScore: Cmp = (a, b) => (b.lastAuditScore ?? -1) - (a.lastAuditScore ?? -1);
@@ -44,7 +44,7 @@ const sortChains: Record<SortKey, Cmp[]> = {
 };
 
 /** Ordem da lista: melhor nota primeiro, mais críticos primeiro, ou maior ganho de nota primeiro. Sem dado vai para o fim. */
-export function sortSystems(systems: SystemSummaryResponse[], by: SortKey): SystemSummaryResponse[] {
+export function sortSystems(systems: ISystemSummaryResponse[], by: SortKey): ISystemSummaryResponse[] {
   const chain = sortChains[by];
   return [...systems].sort((a, b) => {
     for (const cmp of chain) {
@@ -106,7 +106,7 @@ function ScoreBar({ score }: { score: number | null | undefined }) {
   );
 }
 
-function RankingRow({ system: s, position, onOpen }: { system: SystemSummaryResponse; position: number; onOpen: () => void }) {
+function RankingRow({ system: s, position, onOpen }: { system: ISystemSummaryResponse; position: number; onOpen: () => void }) {
   const trend = formatTrend(s.scoreDelta);
   const critical = s.openCritical ?? 0;
   return (
@@ -140,7 +140,7 @@ function RankingRow({ system: s, position, onOpen }: { system: SystemSummaryResp
   );
 }
 
-function RankingList({ ranking, onOpen }: { ranking: SystemSummaryResponse[]; onOpen: (id: number) => void }) {
+function RankingList({ ranking, onOpen }: { ranking: ISystemSummaryResponse[]; onOpen: (id: number) => void }) {
   return (
     <section aria-label="Sistemas por risco" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
       <div

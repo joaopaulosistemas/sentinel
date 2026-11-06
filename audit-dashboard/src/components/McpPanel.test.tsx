@@ -1,23 +1,23 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { McpConfig, SystemSummaryResponse } from '../types';
+import type { IMcpConfig, ISystemSummaryResponse } from '../types';
 import { McpPanel, connectCommand } from './McpPanel';
 
-const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as SystemSummaryResponse;
+const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as ISystemSummaryResponse;
 
 const tools = [
   { name: 'status_auditoria', description: 'Nota e situação', writes: false, enabled: true },
   { name: 'buscar_achados', description: 'Achados abertos', writes: false, enabled: true },
 ];
 
-function config(over: Partial<McpConfig> = {}): McpConfig {
+function config(over: Partial<IMcpConfig> = {}): IMcpConfig {
   return { enabled: false, hasKey: false, keyPrefix: null, keyCreatedAt: null, dataLevel: 'TITLES', tools, ...over };
 }
 
 let callList: unknown[] = [];
 
-function setup(initial: McpConfig) {
+function setup(initial: IMcpConfig) {
   let current = initial;
   const calls: Array<{ url: string; method: string; body?: string }> = [];
   vi.stubGlobal(

@@ -1,15 +1,15 @@
-import type { Category, FindingResponse, FindingsOverview, FindingStatus, Severity } from '../types';
+import type { Category, IFindingResponse, IFindingsOverview, FindingStatus, Severity } from '../types';
 
-export interface SystemGroup {
+export interface ISystemGroup {
   systemId: number;
   systemName: string;
   auditId: number;
-  findings: FindingResponse[];
+  findings: IFindingResponse[];
 }
 
 /** Agrupa os achados da página por sistema, mantendo a ordem em que cada sistema aparece primeiro. */
-export function groupBySystem(items: FindingsOverview['items']): SystemGroup[] {
-  const groups = new Map<number, SystemGroup>();
+export function groupBySystem(items: IFindingsOverview['items']): ISystemGroup[] {
+  const groups = new Map<number, ISystemGroup>();
   for (const item of items) {
     const group = groups.get(item.systemId);
     if (group) group.findings.push(item.finding);
@@ -86,14 +86,14 @@ export const situationChoices: Array<{
 export const DEFAULT_SEVERITY: SeverityChoice = 'critHigh';
 export const DEFAULT_SITUATION: SituationChoice = 'open';
 
-export interface FilterChip {
+export interface IFilterChip {
   key: 'system' | 'severity' | 'category' | 'situation';
   label: string;
   /** O sistema fica em azul; os demais, em cinza */
   tone: 'blue' | 'gray';
 }
 
-export interface ActiveFilters {
+export interface IActiveFilters {
   /** Nome do sistema escolhido; vazio = todos */
   systemName?: string;
   /** Mostrar o chip "Todos os sistemas" quando nenhum foi escolhido (só na visão de todos) */
@@ -104,8 +104,8 @@ export interface ActiveFilters {
 }
 
 /** Um chip por filtro ligado, na ordem da tela. Severidade "Todas" e situação "Todas" não geram chip. */
-export function activeFilterChips(f: ActiveFilters): FilterChip[] {
-  const chips: FilterChip[] = [];
+export function activeFilterChips(f: IActiveFilters): IFilterChip[] {
+  const chips: IFilterChip[] = [];
   if (f.showSystem) chips.push({ key: 'system', label: f.systemName || 'Todos os sistemas', tone: 'blue' });
   if (f.severity !== 'all') {
     chips.push({ key: 'severity', label: severityChoices.find((c) => c.id === f.severity)?.label ?? f.severity, tone: 'gray' });

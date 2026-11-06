@@ -1,23 +1,23 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AuditRunResponse, ScoreExplanation } from '../types';
+import type { IAuditRunResponse, IScoreExplanation } from '../types';
 import { ScoreExplanationPanel } from './ScoreExplanationPanel';
 
-const dims = (groups: ScoreExplanation['dimensions'][number]['groups']): ScoreExplanation['dimensions'] => [
+const dims = (groups: IScoreExplanation['dimensions'][number]['groups']): IScoreExplanation['dimensions'] => [
   { category: 'QUALITY', weight: 0.2, score: 60, penalty: 40, hidden: 2, groups },
   { category: 'SECURITY', weight: 0.3, score: 100, penalty: 0, hidden: 0, groups: [] },
 ];
 
-const real: ScoreExplanation = {
+const real: IScoreExplanation = {
   curve: 'suave', sizeFactor: 0.5, linesOfCode: 80000, overallBefore: 40, overall: 40, removedRules: [],
   dimensions: dims([{ ruleId: 'pmd-SystemPrintln', severity: 'MEDIUM', count: 39, raw: 195, counted: 20, capped: true }]),
 };
-const simulated: ScoreExplanation = { ...real, overall: 43.5, removedRules: ['pmd-SystemPrintln'], dimensions: dims([]) };
+const simulated: IScoreExplanation = { ...real, overall: 43.5, removedRules: ['pmd-SystemPrintln'], dimensions: dims([]) };
 
-function wrap(run: Partial<AuditRunResponse> = {}) {
+function wrap(run: Partial<IAuditRunResponse> = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const audit = { id: 7, status: 'COMPLETED', ...run } as AuditRunResponse;
+  const audit = { id: 7, status: 'COMPLETED', ...run } as IAuditRunResponse;
   return render(<QueryClientProvider client={client}><ScoreExplanationPanel run={audit} /></QueryClientProvider>);
 }
 

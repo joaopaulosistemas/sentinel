@@ -2,17 +2,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { SystemSummaryResponse } from '../../types';
+import type { ISystemSummaryResponse } from '../../types';
 import { OverviewPage } from './OverviewPage';
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
-const system = (over: Partial<SystemSummaryResponse>): SystemSummaryResponse => ({
+const system = (over: Partial<ISystemSummaryResponse>): ISystemSummaryResponse => ({
   id: 1, name: 'x', stack: 'JAVA', team: 'T', lastAuditScore: 90, lastAuditDate: daysAgo(1), openCritical: 0, openHigh: 0, ...over,
 });
 
 let pendingFor: (u: string) => unknown[] = () => [];
 
-function renderPage(systems: SystemSummaryResponse[], onCall?: (url: string, init?: RequestInit) => void) {
+function renderPage(systems: ISystemSummaryResponse[], onCall?: (url: string, init?: RequestInit) => void) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { SystemSummaryResponse } from '../../types';
+import type { ISystemSummaryResponse } from '../../types';
 import { formatTrend } from '../../utils/ranking';
 import { sortSystems } from './RankingPage';
 
-const sys = (id: number, name: string, score: number | null, critical: number): SystemSummaryResponse => ({
+const sys = (id: number, name: string, score: number | null, critical: number): ISystemSummaryResponse => ({
   id, name, stack: 'JAVA', team: 'T', lastAuditScore: score, lastAuditDate: null, openCritical: critical, openHigh: 0,
 });
 

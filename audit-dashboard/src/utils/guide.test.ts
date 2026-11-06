@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { GuideRule, GuideStack } from '../types';
+import type { IGuideRule, IGuideStack } from '../types';
 import { coverageOf, criteriaOf, filterRules, formatGrade, gradeOf, rulesOfStack } from './guide';
 
-function rule(over: Partial<GuideRule>): GuideRule {
+function rule(over: Partial<IGuideRule>): IGuideRule {
   return { id: 'sentinel-x', pack: 'core', title: 'Título', action: 'Faça', severity: 'media', cwe: '', before: '', after: '', ...over };
 }
 
-function stack(over: Partial<GuideStack> = {}): GuideStack {
+function stack(over: Partial<IGuideStack> = {}): IGuideStack {
   return {
     id: 'quarkus', name: 'Quarkus', kind: 'backend', summary: '', tools: [], gaps: [], commands: ['mvn verify'], commandsVerified: true,
     review: { docs: false, team: false, ai: false }, practices: [{ title: 'p', doIt: 'a', avoid: 'b' }], baseLanguage: false,

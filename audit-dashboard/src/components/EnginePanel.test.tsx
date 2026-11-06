@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { EngineConfig, SystemSummaryResponse } from '../types';
+import type { IEngineConfig, ISystemSummaryResponse } from '../types';
 import { EngineAnalyzersPanel, EngineRulesPanel, isNoop, mergeTuning, pathLines } from './EnginePanel';
 
-const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as SystemSummaryResponse;
+const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as ISystemSummaryResponse;
 
-function config(over: Partial<EngineConfig> = {}): EngineConfig {
+function config(over: Partial<IEngineConfig> = {}): IEngineConfig {
   return {
     profile: 'java-bancario',
     profileDescription: 'Regras para serviços Java',
@@ -27,7 +27,7 @@ function config(over: Partial<EngineConfig> = {}): EngineConfig {
   };
 }
 
-function setup(initial: EngineConfig, Panel = EngineRulesPanel, audits: unknown = [], onDirty?: (d: boolean) => void, plan: unknown = { scoreNow: 60, scoreIfCriticalFixed: 60, criticalCount: 0, items: [] }) {
+function setup(initial: IEngineConfig, Panel = EngineRulesPanel, audits: unknown = [], onDirty?: (d: boolean) => void, plan: unknown = { scoreNow: 60, scoreIfCriticalFixed: 60, criticalCount: 0, items: [] }) {
   const calls: Array<{ method: string; body?: string }> = [];
   vi.stubGlobal(
     'fetch',
@@ -272,7 +272,7 @@ describe('EnginePanel', () => {
   });
 
   describe('escopo por lado', () => {
-    const sided = (over: Partial<EngineConfig> = {}) =>
+    const sided = (over: Partial<IEngineConfig> = {}) =>
       config({
         packs: [
           { id: 'core-security', name: 'Segurança', description: null, inProfile: true, active: true },

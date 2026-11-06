@@ -1,4 +1,4 @@
-interface ScoreGaugeProps {
+interface IScoreGaugeProps {
   score: number | null;
   size?: 'sm' | 'lg';
 }
@@ -15,7 +15,7 @@ function getScoreLabel(score: number): string {
   return 'Bom';
 }
 
-export function ScoreGauge({ score, size = 'lg' }: ScoreGaugeProps) {
+export function ScoreGauge({ score, size = 'lg' }: IScoreGaugeProps) {
   if (score === null) {
     return (
       <div style={{ textAlign: 'center', color: 'var(--s-text-4)' }}>

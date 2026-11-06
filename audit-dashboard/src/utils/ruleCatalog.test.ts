@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { FixPlanItem } from '../types';
+import type { IFixPlanItem } from '../types';
 import { applyBulk, buildRuleRows, estimatedGain, filterRuleRows, shortRuleId } from './ruleCatalog';
 
-const plan = (ruleId: string, scoreGain: number): FixPlanItem => ({
+const plan = (ruleId: string, scoreGain: number): IFixPlanItem => ({
   ruleId, title: `t-${ruleId}`, severity: 'HIGH', category: 'SECURITY', occurrences: 2, scoreGain, exampleFile: null, exampleLine: null, howToFix: null,
 });
 

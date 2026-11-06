@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { PageShell } from '../../components/PageShell';
 import { RestartOverlay } from '../../components/RestartOverlay';
 import { useResetSetting, useRestartApi, useSaveSettings, useSettings } from '../../hooks/useSettings';
-import type { SettingView } from '../../types';
+import type { ISettingView } from '../../types';
 import {
   SETTINGS_SECTIONS,
   currentValue,
@@ -21,26 +21,26 @@ const mono = "'IBM Plex Mono', ui-monospace, monospace";
 /** Enquanto a API reinicia, pergunta de tempos em tempos se ela voltou. */
 const POLL_MS = 2000;
 
-interface Notice {
+interface INotice {
   kind: 'success' | 'error' | 'info';
   title: string;
   text?: string;
 }
 
-function SourceTag({ s }: { s: SettingView }) {
+function SourceTag({ s }: { s: ISettingView }) {
   const type = s.source === 'tela' ? 'blue' : 'gray';
   return <Tag type={type} size="sm">{`Origem: ${s.source}`}</Tag>;
 }
 
-interface RowProps {
-  s: SettingView;
+interface IRowProps {
+  s: ISettingView;
   value: string;
   onChange: (key: string, value: string) => void;
   onReset: (key: string) => void;
   showSection: boolean;
 }
 
-function Control({ s, value, onChange }: Pick<RowProps, 's' | 'value' | 'onChange'>) {
+function Control({ s, value, onChange }: Pick<IRowProps, 's' | 'value' | 'onChange'>) {
   const id = `setting-${s.key}`;
   if (!s.editable) {
     return (
@@ -91,7 +91,7 @@ function Control({ s, value, onChange }: Pick<RowProps, 's' | 'value' | 'onChang
   );
 }
 
-function SettingRow({ s, value, onChange, onReset, showSection }: RowProps) {
+function SettingRow({ s, value, onChange, onReset, showSection }: IRowProps) {
   const warn = s.key === 'ESLINT_CONFIG' ? eslintWarning(value) : null;
   const fromScreen = s.editable && (s.savedValue !== null || s.source === 'tela');
   return (
@@ -121,7 +121,7 @@ function SettingRow({ s, value, onChange, onReset, showSection }: RowProps) {
 }
 
 type SettingsQuery = ReturnType<typeof useSettings>;
-type SetNotice = (n: Notice | null) => void;
+type SetNotice = (n: INotice | null) => void;
 
 /** Reinício da API: pedido, espera pela volta (consultando a cada POLL_MS) e o aviso de tela cheia. */
 function useRestartFlow(setNotice: SetNotice) {
@@ -178,7 +178,7 @@ function useRestartFlow(setNotice: SetNotice) {
 }
 
 /** Rascunhos da tela: o que foi digitado, salvar, descartar e voltar ao valor do ambiente. */
-function useSettingsEditor(settings: SettingView[], setNotice: SetNotice) {
+function useSettingsEditor(settings: ISettingView[], setNotice: SetNotice) {
   const save = useSaveSettings();
   const reset = useResetSetting();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -217,16 +217,16 @@ function useSettingsEditor(settings: SettingView[], setNotice: SetNotice) {
   };
 }
 
-interface BannersProps {
+interface IBannersProps {
   query: SettingsQuery;
   restarting: boolean;
   restartRequired: boolean;
-  notice: Notice | null;
+  notice: INotice | null;
   onAskRestart: () => void;
   onCloseNotice: () => void;
 }
 
-function SettingsBanners({ query, restarting, restartRequired, notice, onAskRestart, onCloseNotice }: BannersProps) {
+function SettingsBanners({ query, restarting, restartRequired, notice, onAskRestart, onCloseNotice }: IBannersProps) {
   return (
     <>
       {query.isError && !restarting && (
@@ -252,7 +252,7 @@ function SettingsBanners({ query, restarting, restartRequired, notice, onAskRest
   );
 }
 
-function SectionNav({ settings, section, searching, onPick }: { settings: SettingView[]; section: string; searching: boolean; onPick: (id: string) => void }) {
+function SectionNav({ settings, section, searching, onPick }: { settings: ISettingView[]; section: string; searching: boolean; onPick: (id: string) => void }) {
   return (
     <nav aria-label="Seções de configuração" style={{ flex: '0 0 230px', display: 'flex', flexDirection: 'column', gap: 2 }}>
       {SETTINGS_SECTIONS.map((sec) => {
@@ -290,16 +290,16 @@ function SectionHeader({ searching, section, found }: { searching: boolean; sect
 
 const groupTitleStyle = { fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--s-text-3)', margin: '8px 0 0' } as const;
 
-interface SectionBodyProps {
+interface ISectionBodyProps {
   loading: boolean;
-  list: SettingView[];
+  list: ISettingView[];
   searching: boolean;
   drafts: Record<string, string>;
-  onChange: RowProps['onChange'];
-  onReset: RowProps['onReset'];
+  onChange: IRowProps['onChange'];
+  onReset: IRowProps['onReset'];
 }
 
-function SectionBody({ loading, list, searching, drafts, onChange, onReset }: SectionBodyProps) {
+function SectionBody({ loading, list, searching, drafts, onChange, onReset }: ISectionBodyProps) {
   if (loading) return <p>Carregando…</p>;
   if (list.length === 0) return <p style={{ padding: '16px 0' }}>Nenhuma configuração encontrada.</p>;
   return (
@@ -350,7 +350,7 @@ function RestartConfirm({ open, onClose, onConfirm }: { open: boolean; onClose: 
 
 /** Tela de Configurações: as variáveis de ambiente da instalação, explicadas e editáveis (quando é seguro). */
 export function SettingsPage() {
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notice, setNotice] = useState<INotice | null>(null);
   const flow = useRestartFlow(setNotice);
   const { query } = flow;
   const [section, setSection] = useState(SETTINGS_SECTIONS[0].id);

@@ -2,12 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AuditRunResponse } from '../types';
+import type { IAuditRunResponse } from '../types';
 import { AuditHistoryChart } from './AuditHistoryChart';
 
 const SCORE = { security: 0, quality: 0, architecture: 0, dependencies: 0, observability: 0 };
 
-function run(id: number, day: number, overall: number | null, extra: Partial<AuditRunResponse> = {}): AuditRunResponse {
+function run(id: number, day: number, overall: number | null, extra: Partial<IAuditRunResponse> = {}): IAuditRunResponse {
   const started = `2026-10-${String(day).padStart(2, '0')}T10:00:00`;
   return {
     id,
@@ -27,7 +27,7 @@ function Where() {
   return <span data-testid="onde">{useLocation().pathname}</span>;
 }
 
-function renderChart(history: AuditRunResponse[], currentId = 44) {
+function renderChart(history: IAuditRunResponse[], currentId = 44) {
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(history), { status: 200 })));
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

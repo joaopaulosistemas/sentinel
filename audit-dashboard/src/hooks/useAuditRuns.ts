@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { AuditRunResponse } from '../types';
+import type { IAuditRunResponse } from '../types';
 
 const POLL_MS = 3000;
 
-const isActive = (run: AuditRunResponse) => run.status === 'PENDING' || run.status === 'RUNNING';
+const isActive = (run: IAuditRunResponse) => run.status === 'PENDING' || run.status === 'RUNNING';
 
 export function useAuditRuns(systemId: number) {
   return useQuery({

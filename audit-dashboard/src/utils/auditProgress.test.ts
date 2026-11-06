@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AnalyzerProgress, AuditRunResponse } from '../types';
+import type { IAnalyzerProgress, IAuditRunResponse } from '../types';
 import {
   analyzerCounts,
   analyzerStatusLabel,
@@ -12,7 +12,7 @@ import {
   remainingSeconds,
 } from './auditProgress';
 
-const an = (name: string, status: AnalyzerProgress['status']): AnalyzerProgress => ({
+const an = (name: string, status: IAnalyzerProgress['status']): IAnalyzerProgress => ({
   name,
   status,
   findings: 0,
@@ -20,12 +20,12 @@ const an = (name: string, status: AnalyzerProgress['status']): AnalyzerProgress 
   note: null,
 });
 
-const running = (phase: NonNullable<AuditRunResponse['progress']>['phase'], analyzers: AnalyzerProgress[] = []) =>
-  ({ status: 'RUNNING', progress: { phase, analyzers, events: [] } }) as Pick<AuditRunResponse, 'status' | 'progress'>;
+const running = (phase: NonNullable<IAuditRunResponse['progress']>['phase'], analyzers: IAnalyzerProgress[] = []) =>
+  ({ status: 'RUNNING', progress: { phase, analyzers, events: [] } }) as Pick<IAuditRunResponse, 'status' | 'progress'>;
 
 describe('andamento da auditoria', () => {
   it('concluída tem todas as etapas prontas e 100%', () => {
-    const run = { status: 'COMPLETED', progress: null } as Pick<AuditRunResponse, 'status' | 'progress'>;
+    const run = { status: 'COMPLETED', progress: null } as Pick<IAuditRunResponse, 'status' | 'progress'>;
     expect(phaseIndex(run)).toBe(5);
     expect(progressPercent(run)).toBe(100);
   });
@@ -69,7 +69,7 @@ describe('andamento da auditoria', () => {
 });
 
 describe('estimativa de tempo', () => {
-  const done = (start: string, end: string | null, status: AuditRunResponse['status'] = 'COMPLETED') => ({
+  const done = (start: string, end: string | null, status: IAuditRunResponse['status'] = 'COMPLETED') => ({
     status,
     startedAt: start,
     completedAt: end,

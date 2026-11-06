@@ -1,15 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ClaudeReview, RuleProposalView, SystemSummaryResponse } from '../types';
+import type { IClaudeReview, IRuleProposalView, ISystemSummaryResponse } from '../types';
 import { ClaudeReviewPanel, pct } from './ClaudeReviewPanel';
 
 const systems = [
   { id: 7, name: 'conta-corrente-api' },
   { id: 8, name: 'portal-cooperado' },
-] as SystemSummaryResponse[];
+] as ISystemSummaryResponse[];
 
-function proposal(over: Partial<RuleProposalView> = {}): RuleProposalView {
+function proposal(over: Partial<IRuleProposalView> = {}): IRuleProposalView {
   return {
     id: 1, slug: 'sem-system-out', title: 'Sem System.out', rationale: 'Aparece em todo serviço', semgrepYaml: 'rules: []',
     stage: 'PROPOSED', stageLabel: 'Proposta', copiedFromId: null, sampleNote: null, observationStartedAt: null, decisionNote: null,
@@ -18,7 +18,7 @@ function proposal(over: Partial<RuleProposalView> = {}): RuleProposalView {
   };
 }
 
-function setup(initial: ClaudeReview) {
+function setup(initial: IClaudeReview) {
   const calls: Array<{ url: string; method: string; body?: string }> = [];
   vi.stubGlobal(
     'fetch',

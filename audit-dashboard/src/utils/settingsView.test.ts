@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SettingView } from '../types';
+import type { ISettingView } from '../types';
 import {
   SETTINGS_SECTIONS,
   currentValue,
@@ -13,7 +13,7 @@ import {
   shownValue,
 } from './settingsView';
 
-function setting(over: Partial<SettingView>): SettingView {
+function setting(over: Partial<ISettingView>): ISettingView {
   return {
     key: 'TRIVY_ENABLED', section: 'ferr', group: 'Trivy', label: 'Ligado', help: 'Dependências e infraestrutura', kind: 'bool', def: 'true',
     options: [], unit: '', min: 0, max: 0, editable: true, secret: false, value: 'true', savedValue: null, source: 'ambiente', pendingRestart: false, ...over,

@@ -6,14 +6,14 @@ import { api } from '../../api/client';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
 import { AnalyzerCard, EventLog, LoadingSourceCard, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
-import { PageShell, type Crumb } from '../../components/PageShell';
+import { PageShell, type ICrumb } from '../../components/PageShell';
 import { McpStatusStrip } from '../../components/McpStatusStrip';
 import { useMcpActivity } from '../../hooks/useMcpActivity';
 import { callsSince, mcpCallEvents, mergeEvents, pendingCount } from '../../utils/mcpActivity';
 import { CheckIcon, CrossIcon, DashIcon, SpinnerIcon } from '../../components/StatusIcons';
 import { ResultSteps } from '../../components/ResultSteps';
 import { useAuditStore } from '../../store/useAuditStore';
-import type { AnalyzerProgress, AuditProgress, AuditRunResponse } from '../../types';
+import type { IAnalyzerProgress, IAuditProgress, IAuditRunResponse } from '../../types';
 import { timeAgo } from '../../utils/timeAgo';
 import { reportUrl } from '../Reports/reportLinks';
 import {
@@ -36,7 +36,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || '';
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 const box = { background: 'var(--s-surface)', border: '1px solid var(--s-border)' } as const;
 
-type RunState = AuditRunResponse['status'];
+type RunState = IAuditRunResponse['status'];
 
 function RunSkeleton() {
   return (
@@ -84,14 +84,14 @@ function barColorFor(status: RunState): string {
   return status === 'COMPLETED' ? '#198038' : '#0f62fe';
 }
 
-interface Pill {
+interface IPill {
   bg: string;
   fg: string;
   label: string;
   icon: ReactNode;
 }
 
-function statusPill(status: RunState): Pill {
+function statusPill(status: RunState): IPill {
   if (status === 'COMPLETED') return { bg: '#a7f0ba', fg: '#044317', label: 'Concluída', icon: <CheckIcon size={12} color="#044317" /> };
   if (status === 'FAILED') return { bg: '#ffd7d9', fg: '#750e13', label: 'Falhou', icon: <CrossIcon size={12} color="#750e13" /> };
   if (status === 'CANCELLED') return { bg: 'var(--s-border)', fg: 'var(--s-text)', label: 'Cancelada', icon: <DashIcon size={12} color="var(--s-text)" /> };
@@ -105,7 +105,7 @@ function startTimeText(startedAt: string | null | undefined): string | null {
     : null;
 }
 
-function CompletedHeader({ run, seconds, onRerun }: { run: AuditRunResponse; seconds: number | null; onRerun: () => void }) {
+function CompletedHeader({ run, seconds, onRerun }: { run: IAuditRunResponse; seconds: number | null; onRerun: () => void }) {
   const sha = run.commitSha ? run.commitSha.slice(0, 7) : null;
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
@@ -128,16 +128,16 @@ function CompletedHeader({ run, seconds, onRerun }: { run: AuditRunResponse; sec
   );
 }
 
-interface RunHeaderProps {
-  run: AuditRunResponse;
-  pill: Pill;
+interface IRunHeaderProps {
+  run: IAuditRunResponse;
+  pill: IPill;
   startedAt: string | null;
   active: boolean;
   onCancel: () => void;
   onRerun: () => void;
 }
 
-function RunHeader({ run, pill, startedAt, active, onCancel, onRerun }: RunHeaderProps) {
+function RunHeader({ run, pill, startedAt, active, onCancel, onRerun }: IRunHeaderProps) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -169,7 +169,7 @@ function RunHeader({ run, pill, startedAt, active, onCancel, onRerun }: RunHeade
   );
 }
 
-interface ProgressSectionProps {
+interface IProgressSectionProps {
   phases: ReturnType<typeof phaseViews>;
   percent: number;
   stepText: string;
@@ -183,7 +183,7 @@ interface ProgressSectionProps {
   loading?: ReactNode;
 }
 
-function ProgressSection({ phases, percent, stepText, seconds, etaLabel, barColor, indeterminate = false, loading }: ProgressSectionProps) {
+function ProgressSection({ phases, percent, stepText, seconds, etaLabel, barColor, indeterminate = false, loading }: IProgressSectionProps) {
   return (
     <section aria-label="Andamento" style={{ ...box, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
       <PhaseStrip phases={phases} />
@@ -210,7 +210,7 @@ function ProgressSection({ phases, percent, stepText, seconds, etaLabel, barColo
   );
 }
 
-function AnalyzersSection({ analyzers, counts }: { analyzers: AnalyzerProgress[]; counts: { done: number; total: number } }) {
+function AnalyzersSection({ analyzers, counts }: { analyzers: IAnalyzerProgress[]; counts: { done: number; total: number } }) {
   return (
     <section aria-label="Analisadores" style={{ flex: '999 1 640px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
@@ -230,7 +230,7 @@ function AnalyzersSection({ analyzers, counts }: { analyzers: AnalyzerProgress[]
   );
 }
 
-function runCrumbsFor(run: AuditRunResponse): Crumb[] {
+function runCrumbsFor(run: IAuditRunResponse): ICrumb[] {
   return [
     { label: 'Início', to: '/' },
     { label: 'Sistemas', to: '/systems' },
@@ -240,7 +240,7 @@ function runCrumbsFor(run: AuditRunResponse): Crumb[] {
 }
 
 /** Aviso de auditoria que falhou ou foi cancelada. */
-function RunNotices({ run }: { run: AuditRunResponse }) {
+function RunNotices({ run }: { run: IAuditRunResponse }) {
   if (run.status === 'FAILED') {
     return <InlineNotification kind="error" title="A auditoria falhou" subtitle={run.errorMessage ?? 'Sem detalhes. Veja os registros da API.'} hideCloseButton />;
   }
@@ -257,7 +257,7 @@ function RunNotices({ run }: { run: AuditRunResponse }) {
   return null;
 }
 
-interface CancelModalProps {
+interface ICancelModalProps {
   open: boolean;
   pending: boolean;
   error: unknown;
@@ -266,7 +266,7 @@ interface CancelModalProps {
   onConfirm: () => void;
 }
 
-function CancelModal({ open, pending, error, isError, onClose, onConfirm }: CancelModalProps) {
+function CancelModal({ open, pending, error, isError, onClose, onConfirm }: ICancelModalProps) {
   return (
     <Modal
       danger
@@ -306,7 +306,7 @@ function useCancelAudit(id: number, onDone: () => void) {
 }
 
 /** Tempo restante estimado pela média das auditorias anteriores do mesmo sistema. */
-function etaLabelFor(run: AuditRunResponse, history: AuditRunResponse[], seconds: number | null): string | null {
+function etaLabelFor(run: IAuditRunResponse, history: IAuditRunResponse[], seconds: number | null): string | null {
   const average = averageDurationSeconds(history.filter((r) => r.id !== run.id));
   return etaText(remainingSeconds(seconds, average));
 }
@@ -314,7 +314,7 @@ function etaLabelFor(run: AuditRunResponse, history: AuditRunResponse[], seconds
 type McpActivity = ReturnType<typeof useMcpActivity>;
 
 /** O que o Claude (MCP) fez durante a auditoria: ligado ou não, chamadas e eventos para o registro. */
-function mcpViewOf(mcp: McpActivity, run: AuditRunResponse, progressEvents: AuditProgress['events']) {
+function mcpViewOf(mcp: McpActivity, run: IAuditRunResponse, progressEvents: IAuditProgress['events']) {
   const enabled = mcp.config.data?.enabled ?? null;
   return {
     enabled,
@@ -323,7 +323,7 @@ function mcpViewOf(mcp: McpActivity, run: AuditRunResponse, progressEvents: Audi
   };
 }
 
-function RerunModal({ run, open, onClose }: { run: AuditRunResponse; open: boolean; onClose: () => void }) {
+function RerunModal({ run, open, onClose }: { run: IAuditRunResponse; open: boolean; onClose: () => void }) {
   return (
     <StartAuditModal
       system={open ? { id: run.systemId ?? 0, name: run.systemName, scheduledBranch: run.branch } : null}
@@ -333,7 +333,7 @@ function RerunModal({ run, open, onClose }: { run: AuditRunResponse; open: boole
 }
 
 /** Auditoria concluída: cabeçalho, os passos do resultado e a reexecução. */
-function CompletedView({ run, seconds }: { run: AuditRunResponse; seconds: number | null }) {
+function CompletedView({ run, seconds }: { run: IAuditRunResponse; seconds: number | null }) {
   const navigate = useNavigate();
   const setSelectedAudit = useAuditStore((s) => s.setSelectedAudit);
   const [rerun, setRerun] = useState(false);
@@ -351,18 +351,18 @@ function CompletedView({ run, seconds }: { run: AuditRunResponse; seconds: numbe
 }
 
 type McpView = ReturnType<typeof mcpViewOf>;
-type AnalyzerList = NonNullable<AuditProgress['analyzers']>;
+type AnalyzerList = NonNullable<IAuditProgress['analyzers']>;
 
-interface ActivePanelsProps {
-  run: AuditRunResponse;
-  progress: AuditProgress | null;
+interface IActivePanelsProps {
+  run: IAuditRunResponse;
+  progress: IAuditProgress | null;
   analyzers: AnalyzerList;
   counts: ReturnType<typeof analyzerCounts>;
   events: McpView['events'];
 }
 
 /** Enquanto roda: as ferramentas de análise, o resultado parcial e o registro de eventos. */
-function ActivePanels({ run, progress, analyzers, counts, events }: ActivePanelsProps) {
+function ActivePanels({ run, progress, analyzers, counts, events }: IActivePanelsProps) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
       <AnalyzersSection analyzers={analyzers} counts={counts} />
@@ -375,16 +375,16 @@ function ActivePanels({ run, progress, analyzers, counts, events }: ActivePanels
   );
 }
 
-interface RunningViewProps {
-  run: AuditRunResponse;
-  progress: AuditProgress | null;
-  history: AuditRunResponse[] | undefined;
+interface IRunningViewProps {
+  run: IAuditRunResponse;
+  progress: IAuditProgress | null;
+  history: IAuditRunResponse[] | undefined;
   mcp: McpActivity;
   seconds: number | null;
 }
 
 /** Auditoria na fila, rodando, falha ou cancelada. */
-function RunningView({ run, progress, history, mcp, seconds }: RunningViewProps) {
+function RunningView({ run, progress, history, mcp, seconds }: IRunningViewProps) {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [rerun, setRerun] = useState(false);
   const cancel = useCancelAudit(run.id, () => setConfirmCancel(false));
@@ -444,7 +444,7 @@ export function AuditRunPage() {
   const id = Number(auditId);
   const { data: run, isLoading, error } = useAudit(id);
   const finished = run !== undefined && FINISHED.includes(run.status);
-  const lastProgress = useRef<AuditProgress | null>(null);
+  const lastProgress = useRef<IAuditProgress | null>(null);
   // Histórico do mesmo sistema: base da estimativa de tempo.
   const { data: history } = useAuditRuns(run?.systemId ?? 0);
   // O que o Claude (MCP) fez com este sistema desde que a auditoria começou. Só informação: não entra na nota.

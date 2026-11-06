@@ -1,7 +1,7 @@
 import { InlineNotification, Modal, Select, SelectItem, TextArea, TextInput } from '@carbon/react';
 import { useState } from 'react';
 import { useSuppressFinding, useSuppressFindings } from '../hooks/useLifecycle';
-import type { FindingResponse, SuppressionReason } from '../types';
+import type { IFindingResponse, SuppressionReason } from '../types';
 
 const reasonLabels: Record<SuppressionReason, string> = {
   FALSE_POSITIVE: 'Falso positivo (a ferramenta errou)',
@@ -9,17 +9,17 @@ const reasonLabels: Record<SuppressionReason, string> = {
   WONT_FIX: 'Não será corrigido (ex.: código em desativação)',
 };
 
-interface Props {
+interface IProps {
   /** Um ou mais findings; vazio = modal fechado. */
-  findings: FindingResponse[];
+  findings: IFindingResponse[];
   /** Achados visíveis na lista: dali saem os "parecidos" (mesma regra) que podem ser suprimidos junto. */
-  candidates?: FindingResponse[];
+  candidates?: IFindingResponse[];
   onClose: () => void;
 }
 
 /** Retira um finding do score, exigindo justificativa; opcionalmente com data de validade. */
 /** Mesma regra e ferramenta, ainda abertos e fora da seleção. */
-export function similarTo(selected: FindingResponse[], candidates: FindingResponse[]): FindingResponse[] {
+export function similarTo(selected: IFindingResponse[], candidates: IFindingResponse[]): IFindingResponse[] {
   const ids = new Set(selected.map((f) => f.id));
   const keys = new Set(selected.filter((f) => f.ruleId).map((f) => `${f.toolSource}|${f.ruleId}`));
   return candidates.filter((c) => !ids.has(c.id) && c.status !== 'SUPPRESSED' && c.ruleId && keys.has(`${c.toolSource}|${c.ruleId}`));
@@ -42,7 +42,7 @@ function primaryLabel(pending: boolean, bulk: boolean, total: number): string {
   return bulk ? `Suprimir ${total}` : 'Suprimir';
 }
 
-interface FieldsProps {
+interface IFieldsProps {
   similarCount: number;
   withSimilar: boolean;
   onWithSimilar: (v: boolean) => void;
@@ -56,7 +56,7 @@ interface FieldsProps {
   onExpires: (v: string) => void;
 }
 
-function SuppressFields(p: FieldsProps) {
+function SuppressFields(p: IFieldsProps) {
   const tooShort = p.justification.trim().length < 10;
   return (
     <>
@@ -135,7 +135,7 @@ function SuppressFeedback({ failures, mutation }: { failures: Array<{ findingId:
   );
 }
 
-export function SuppressModal({ findings, candidates = [], onClose }: Props) {
+export function SuppressModal({ findings, candidates = [], onClose }: IProps) {
   const single = useSuppressFinding();
   const batch = useSuppressFindings();
   const [withSimilar, setWithSimilar] = useState(false);

@@ -5,7 +5,7 @@ export type Category = 'SECURITY' | 'QUALITY' | 'ARCHITECTURE' | 'DEPENDENCY' | 
 export type FindingStatus = 'OPEN' | 'ACKNOWLEDGED' | 'FIXED' | 'SUPPRESSED';
 export type SuppressionReason = 'FALSE_POSITIVE' | 'ACCEPTED_RISK' | 'WONT_FIX';
 
-export interface RiskScoreDto {
+export interface IRiskScoreDto {
   overall: number;
   security: number;
   quality: number;
@@ -15,7 +15,7 @@ export interface RiskScoreDto {
   performance?: number | null;
 }
 
-export interface SystemSummaryResponse {
+export interface ISystemSummaryResponse {
   id: number;
   name: string;
   stack: Stack;
@@ -56,7 +56,7 @@ export interface SystemSummaryResponse {
   notifyPublicUrl?: string | null;
 }
 
-export interface SystemRequest {
+export interface ISystemRequest {
   name: string;
   description: string;
   /** Vazio/ausente quando a origem é pasta local */
@@ -84,7 +84,7 @@ export interface SystemRequest {
   notifyPublicUrl?: string;
 }
 
-export interface ProfileInfo {
+export interface IProfileInfo {
   id: string;
   name: string;
   description: string | null;
@@ -94,7 +94,7 @@ export interface ProfileInfo {
   thresholds: Record<string, number>;
 }
 
-export interface PackInfo {
+export interface IPackInfo {
   id: string;
   name: string;
   version: string;
@@ -104,33 +104,33 @@ export interface PackInfo {
   remediations: number;
 }
 
-export interface PacksResponse {
-  packs: PackInfo[];
-  profiles: ProfileInfo[];
+export interface IPacksResponse {
+  packs: IPackInfo[];
+  profiles: IProfileInfo[];
   rejected: Record<string, string[]>;
   warnings: string[];
   loadedAt: string;
 }
 
-export interface ScheduleRequest {
+export interface IScheduleRequest {
   auditIntervalHours: number;
   branch: string;
   auditOnPush: boolean;
 }
 
-export interface AuditRunResponse {
+export interface IAuditRunResponse {
   id: number;
   systemId?: number;
   systemName: string;
   branch: string;
   status: AuditStatus;
-  riskScore: RiskScoreDto | null;
+  riskScore: IRiskScoreDto | null;
   findingsSummary: Record<Severity, number>;
   startedAt: string;
   completedAt: string | null;
   errorMessage?: string | null;
   /** Só vem enquanto a auditoria está em execução */
-  progress?: AuditProgress | null;
+  progress?: IAuditProgress | null;
   triggeredBy?: string | null;
   profile?: string | null;
   commitSha?: string | null;
@@ -158,7 +158,7 @@ export type AnalyzerProgressStatus =
   | 'DESLIGADO'
   | 'SEM_EVIDENCIA';
 
-export interface AnalyzerProgress {
+export interface IAnalyzerProgress {
   name: string;
   status: AnalyzerProgressStatus;
   findings: number;
@@ -168,9 +168,9 @@ export interface AnalyzerProgress {
   description?: string | null;
 }
 
-export interface AuditProgress {
+export interface IAuditProgress {
   phase: AuditPhase;
-  analyzers: AnalyzerProgress[];
+  analyzers: IAnalyzerProgress[];
   events: Array<{ at: string; message: string }>;
   repoUrl?: string | null;
   filesRead?: number;
@@ -182,7 +182,7 @@ export interface AuditProgress {
   severities?: Partial<Record<Severity, number>>;
 }
 
-export interface FindingResponse {
+export interface IFindingResponse {
   id: number;
   category: Category;
   severity: Severity;
@@ -204,38 +204,38 @@ export interface FindingResponse {
   /** Quão provável é o achado ser real: ALTA confirmado/CVE, BAIXA em teste/exemplo/regra com muitos falsos positivos */
   confidence?: Confidence;
   confidenceReason?: string | null;
-  remediation?: Remediation | null;
+  remediation?: IRemediation | null;
 }
 
 export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
 
-export interface Remediation {
+export interface IRemediation {
   summary: string | null;
   before: string | null;
   after: string | null;
   references: string[];
 }
 
-export interface AuditFreshness {
+export interface IAuditFreshness {
   auditedCommit: string | null;
   currentCommit: string | null;
   /** true = a branch andou desde a auditoria; null = não deu para saber */
   stale: boolean | null;
 }
 
-export interface AuditDiff {
+export interface IAuditDiff {
   auditId: number;
   baseAuditId: number | null;
   hasBaseline: boolean;
   overall: number | null;
   baseOverall: number | null;
   scoreDelta: number | null;
-  newFindings: FindingResponse[];
-  resolvedFindings: FindingResponse[];
+  newFindings: IFindingResponse[];
+  resolvedFindings: IFindingResponse[];
   persistingCount: number;
 }
 
-export interface TrendPoint {
+export interface ITrendPoint {
   auditId: number;
   branch: string | null;
   completedAt: string | null;
@@ -249,7 +249,7 @@ export interface TrendPoint {
   findings: Record<Severity, number>;
 }
 
-export interface Suppression {
+export interface ISuppression {
   id: number;
   fingerprint: string;
   reason: SuppressionReason;
@@ -263,14 +263,14 @@ export interface Suppression {
   title: string | null;
 }
 
-export interface SuppressRequest {
+export interface ISuppressRequest {
   reason: SuppressionReason;
   justification: string;
   createdBy?: string;
   expiresAt?: string | null;
 }
 
-export interface RuleQuality {
+export interface IRuleQuality {
   ruleId: string;
   tool: string | null;
   total: number;
@@ -284,7 +284,7 @@ export interface RuleQuality {
 
 export type AreaState = 'CRITICO' | 'ATENCAO' | 'SEM_ACHADOS' | 'NAO_VERIFICADO';
 
-export interface DebtItem {
+export interface IDebtItem {
   id: string;
   problem: string;
   area: string;
@@ -301,7 +301,7 @@ export interface DebtItem {
   example: string | null;
 }
 
-export interface AreaReport {
+export interface IAreaReport {
   area: string;
   label: string;
   state: AreaState;
@@ -314,15 +314,15 @@ export interface AreaReport {
   notVerified: string[];
 }
 
-export interface RoadmapPhase {
+export interface IRoadmapPhase {
   number: number;
   name: string;
   goal: string;
   total: number;
-  items: DebtItem[];
+  items: IDebtItem[];
 }
 
-export interface AnalyzerRunInfo {
+export interface IAnalyzerRunInfo {
   name: string;
   status: string;
   findings: number;
@@ -330,7 +330,7 @@ export interface AnalyzerRunInfo {
   note: string | null;
 }
 
-export interface ProjectMapInfo {
+export interface IProjectMapInfo {
   languages: Record<string, number>;
   buildTools: string[];
   frameworks: string[];
@@ -349,26 +349,26 @@ export interface ProjectMapInfo {
   truncated: boolean;
 }
 
-export interface AuditInsights {
+export interface IAuditInsights {
   executiveSummary: string;
   verdict: string;
   bySeverity: Record<Severity, number>;
   activeFindings: number;
-  areas: AreaReport[];
-  debtTable: DebtItem[];
-  topProblems: DebtItem[];
-  topImprovements: DebtItem[];
-  quickWins: DebtItem[];
-  criticalRisks: DebtItem[];
-  roadmap: RoadmapPhase[];
+  areas: IAreaReport[];
+  debtTable: IDebtItem[];
+  topProblems: IDebtItem[];
+  topImprovements: IDebtItem[];
+  quickWins: IDebtItem[];
+  criticalRisks: IDebtItem[];
+  roadmap: IRoadmapPhase[];
   unverified: string[];
-  analyzers: AnalyzerRunInfo[];
-  projectMap: ProjectMapInfo | null;
+  analyzers: IAnalyzerRunInfo[];
+  projectMap: IProjectMapInfo | null;
 }
 
 // ---------------------------------------------------------------- plano de correção
 
-export interface FixPlanItem {
+export interface IFixPlanItem {
   ruleId: string | null;
   title: string;
   severity: Severity;
@@ -381,16 +381,16 @@ export interface FixPlanItem {
   howToFix: string | null;
 }
 
-export interface FixPlan {
+export interface IFixPlan {
   scoreNow: number;
   scoreIfCriticalFixed: number;
   criticalCount: number;
-  items: FixPlanItem[];
+  items: IFixPlanItem[];
 }
 
 // ---------------------------------------------------------------- explicação da nota
 
-export interface ScoreGroup {
+export interface IScoreGroup {
   ruleId: string;
   severity: Severity;
   count: number;
@@ -402,28 +402,28 @@ export interface ScoreGroup {
   capped: boolean;
 }
 
-export interface ScoreDimension {
+export interface IScoreDimension {
   category: Category;
   weight: number;
   score: number;
   penalty: number;
   hidden: number;
-  groups: ScoreGroup[];
+  groups: IScoreGroup[];
 }
 
-export interface ScoreExplanation {
+export interface IScoreExplanation {
   curve: string;
   sizeFactor: number;
   linesOfCode: number | null;
   overallBefore: number;
   overall: number;
   removedRules: string[];
-  dimensions: ScoreDimension[];
+  dimensions: IScoreDimension[];
 }
 
 // ---------------------------------------------------------------- achados de todos os sistemas
 
-export interface FindingsOverview {
+export interface IFindingsOverview {
   total: number;
   bySystem: Array<{
     systemId: number;
@@ -435,7 +435,7 @@ export interface FindingsOverview {
     high?: number;
     auditedAt?: string | null;
   }>;
-  items: Array<{ systemId: number; systemName: string; auditId: number; finding: FindingResponse }>;
+  items: Array<{ systemId: number; systemName: string; auditId: number; finding: IFindingResponse }>;
 }
 
 /** Resultado da verificação rápida de um repositório (sem clonar). */
@@ -443,7 +443,7 @@ export type SourceType = 'GIT_URL' | 'LOCAL_PATH';
 export type LocalSnapshot = 'COMMIT' | 'TREE';
 
 /** Resultado da verificação de uma pasta local */
-export interface PathCheck {
+export interface IPathCheck {
   ok: boolean;
   message: string | null;
   defaultBranch: string | null;
@@ -452,7 +452,7 @@ export interface PathCheck {
   uncommittedFiles: number | null;
 }
 
-export interface RepoCheck {
+export interface IRepoCheck {
   /** Arquivos versionados no repositório, quando deu para contar */
   fileCount?: number | null;
   reachable: boolean;
@@ -462,11 +462,11 @@ export interface RepoCheck {
   message: string | null;
 }
 
-export interface BatchSuppressRequest extends SuppressRequest {
+export interface IBatchSuppressRequest extends ISuppressRequest {
   findingIds: number[];
 }
 
-export interface BatchSuppressResponse {
+export interface IBatchSuppressResponse {
   requested: number;
   suppressed: number;
   failures: { findingId: number; message: string }[];
@@ -476,7 +476,7 @@ export interface BatchSuppressResponse {
 
 export type McpDataLevel = 'TITLES' | 'FILE_LINE' | 'SENSITIVE';
 
-export interface McpToolState {
+export interface IMcpToolState {
   name: string;
   description: string;
   /** true = a ferramenta muda algo; nenhuma ferramenta da fase atual escreve */
@@ -484,28 +484,28 @@ export interface McpToolState {
   enabled: boolean;
 }
 
-export interface McpConfig {
+export interface IMcpConfig {
   enabled: boolean;
   hasKey: boolean;
   keyPrefix: string | null;
   keyCreatedAt: string | null;
   dataLevel: McpDataLevel;
-  tools: McpToolState[];
+  tools: IMcpToolState[];
 }
 
-export interface McpConfigRequest {
+export interface IMcpConfigRequest {
   enabled?: boolean;
   dataLevel?: McpDataLevel;
   tools?: string[];
 }
 
 /** A chave completa só vem na resposta que a cria. */
-export interface McpNewKey {
+export interface IMcpNewKey {
   key: string;
   keyPrefix: string;
 }
 
-export interface McpCall {
+export interface IMcpCall {
   tool: string;
   ok: boolean;
   durationMs: number;
@@ -514,15 +514,15 @@ export interface McpCall {
 }
 
 /** Ajuste de uma regra de um sistema (por cima do perfil). */
-export interface RuleAdjustment {
+export interface IRuleAdjustment {
   id: string;
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' | null;
   disabled: boolean;
   shadow: boolean | null;
 }
 
-export interface EngineTuning {
-  rules: RuleAdjustment[];
+export interface IEngineTuning {
+  rules: IRuleAdjustment[];
   thresholds: Record<string, number>;
   enablePacks: string[];
   disablePacks: string[];
@@ -533,7 +533,7 @@ export interface EngineTuning {
   disableSides?: Array<'back' | 'front'>;
 }
 
-export interface EnginePackState {
+export interface IEnginePackState {
   id: string;
   name: string;
   description: string | null;
@@ -544,7 +544,7 @@ export interface EnginePackState {
 /** De que lado da aplicação uma regra ou analisador trata. "common" vale para os dois (Docker, Kubernetes, segredos). */
 export type EngineSide = 'back' | 'front' | 'common';
 
-export interface EngineAnalyzerState {
+export interface IEngineAnalyzerState {
   name: string;
   description: string;
   disabled: boolean;
@@ -552,22 +552,22 @@ export interface EngineAnalyzerState {
   side?: EngineSide;
 }
 
-export interface EngineThresholdState {
+export interface IEngineThresholdState {
   key: string;
   profileValue: number | null;
   override: number | null;
 }
 
-export interface EngineConfig {
+export interface IEngineConfig {
   profile: string;
   profileDescription: string | null;
   /** Quantos ajustes o sistema tem em relação ao perfil. */
   adjustments: number;
-  tuning: EngineTuning;
-  profileRules: RuleAdjustment[];
-  packs: EnginePackState[];
-  analyzers: EngineAnalyzerState[];
-  thresholds: EngineThresholdState[];
+  tuning: IEngineTuning;
+  profileRules: IRuleAdjustment[];
+  packs: IEnginePackState[];
+  analyzers: IEngineAnalyzerState[];
+  thresholds: IEngineThresholdState[];
   knownRules: Array<{ id: string; count: number }>;
   /** Regras declaradas nos pacotes (id, texto, pacote). Ausente em APIs antigas. */
   catalog?: Array<{ id: string; pack: string; message: string | null; severity: string | null; category: string | null; side?: EngineSide }>;
@@ -577,7 +577,7 @@ export type SuggestionStatus = 'OPEN' | 'ADDRESSED' | 'DISMISSED';
 
 export type RuleStage = 'PROPOSED' | 'REVIEWED' | 'SAMPLE_PASSED' | 'OBSERVING' | 'PROMOTED' | 'DISCARDED';
 
-export interface ReviewSuggestion {
+export interface IReviewSuggestion {
   id: number;
   title: string;
   detail: string | null;
@@ -588,14 +588,14 @@ export interface ReviewSuggestion {
   createdAt: string;
 }
 
-export interface RuleEvidence {
+export interface IRuleEvidence {
   hits: number;
   falsePositives: number;
   auditsSinceStart: number;
   precision: number;
 }
 
-export interface RuleProposalView {
+export interface IRuleProposalView {
   id: number;
   slug: string;
   title: string;
@@ -607,23 +607,23 @@ export interface RuleProposalView {
   sampleNote: string | null;
   observationStartedAt: string | null;
   decisionNote: string | null;
-  evidence: RuleEvidence;
+  evidence: IRuleEvidence;
   minPrecision: number;
   minHits: number;
   sharedEligible: boolean;
   runsInAudits: boolean;
 }
 
-export interface ClaudeReview {
+export interface IClaudeReview {
   openSuggestions: number;
-  suggestions: ReviewSuggestion[];
-  proposals: RuleProposalView[];
+  suggestions: IReviewSuggestion[];
+  proposals: IRuleProposalView[];
 }
 
 export type PendingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
 /** Pedido do Claude que só acontece se uma pessoa aprovar. */
-export interface PendingAction {
+export interface IPendingAction {
   id: number;
   kind: 'START_AUDIT' | 'SUPPRESS_FINDING';
   summary: string;
@@ -636,7 +636,7 @@ export interface PendingAction {
 }
 
 /** Quanto o Claude acerta, segundo o que as pessoas decidiram. Taxas são null enquanto não há decisão. */
-export interface ReviewMetrics {
+export interface IReviewMetrics {
   suggestionsTotal: number;
   suggestionsOpen: number;
   suggestionsAddressed: number;
@@ -650,14 +650,14 @@ export interface ReviewMetrics {
 }
 
 /** Opção de uma configuração de escolha (ex.: qual configuração do ESLint). */
-export interface SettingOption {
+export interface ISettingOption {
   value: string;
   label: string;
   sub: string;
 }
 
 /** Uma configuração da instalação, como a tela de Configurações a mostra. */
-export interface SettingView {
+export interface ISettingView {
   key: string;
   section: string;
   group: string;
@@ -665,7 +665,7 @@ export interface SettingView {
   help: string;
   kind: 'bool' | 'number' | 'text' | 'enum';
   def: string;
-  options: SettingOption[];
+  options: ISettingOption[];
   unit: string;
   min: number;
   max: number;
@@ -680,8 +680,8 @@ export interface SettingView {
   pendingRestart: boolean;
 }
 
-export interface SettingsResponse {
-  settings: SettingView[];
+export interface ISettingsResponse {
+  settings: ISettingView[];
   restartRequired: boolean;
 }
 
@@ -689,7 +689,7 @@ export interface SettingsResponse {
 
 export type GuideSeverity = 'alta' | 'media' | 'baixa';
 
-export interface GuideRule {
+export interface IGuideRule {
   id: string;
   pack: string;
   title: string;
@@ -700,13 +700,13 @@ export interface GuideRule {
   after: string;
 }
 
-export interface GuidePractice {
+export interface IGuidePractice {
   title: string;
   doIt: string;
   avoid: string;
 }
 
-export interface GuideStack {
+export interface IGuideStack {
   id: string;
   name: string;
   kind: 'backend' | 'frontend';
@@ -716,7 +716,7 @@ export interface GuideStack {
   commands: string[];
   commandsVerified: boolean;
   review: { docs: boolean; team: boolean; ai: boolean };
-  practices: GuidePractice[];
+  practices: IGuidePractice[];
   /** Linguagem base (Java, TypeScript): não tem regras próprias, só as herdadas da linguagem. */
   baseLanguage: boolean;
   ownRules: number;
@@ -724,9 +724,9 @@ export interface GuideStack {
   rules: Array<{ id: string; own: boolean }>;
 }
 
-export interface GuideResponse {
-  stacks: GuideStack[];
-  rules: GuideRule[];
+export interface IGuideResponse {
+  stacks: IGuideStack[];
+  rules: IGuideRule[];
   /** Commit, PR e revisão: vale para todas as tecnologias. */
-  process: GuidePractice[];
+  process: IGuidePractice[];
 }

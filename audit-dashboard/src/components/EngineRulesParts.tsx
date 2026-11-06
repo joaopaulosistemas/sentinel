@@ -1,8 +1,8 @@
 import { Button, Checkbox, InlineNotification } from '@carbon/react';
-import type { EngineConfig, RuleAdjustment } from '../types';
-import type { SidePack } from '../utils/ruleFamilies';
-import { isNoopAdjustment, type BulkAction, type RuleRow, type RuleScope } from '../utils/ruleCatalog';
-import { SIDE_NAME, limitSide, packsBySide, sideIsOff, sideOfRule, type FamilyTab } from '../utils/ruleFamilies';
+import type { IEngineConfig, IRuleAdjustment } from '../types';
+import type { ISidePack } from '../utils/ruleFamilies';
+import { isNoopAdjustment, type BulkAction, type IRuleRow, type RuleScope } from '../utils/ruleCatalog';
+import { SIDE_NAME, limitSide, packsBySide, sideIsOff, sideOfRule, type IFamilyTab } from '../utils/ruleFamilies';
 import { SideBadge } from './EngineScope';
 
 export const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -51,8 +51,8 @@ export function SaveBar({ pending, disabled, dirty, onSave }: { pending: boolean
   );
 }
 
-interface LimitsProps {
-  cfg: EngineConfig;
+interface ILimitsProps {
+  cfg: IEngineConfig;
   limits: Record<string, string>;
   setLimits: (l: Record<string, string>) => void;
   limitError: (key: string) => boolean;
@@ -67,7 +67,7 @@ const LIMITS_BOX: Record<'front' | 'both', { title: string; note: string }> = {
 };
 
 /** Limites de clean code que valem para um lado; some quando o perfil não traz nenhum deles. */
-function LimitsBox({ side, cfg, limits, setLimits, limitError }: LimitsProps & { side: 'front' | 'both' }) {
+function LimitsBox({ side, cfg, limits, setLimits, limitError }: ILimitsProps & { side: 'front' | 'both' }) {
   const items = cfg.thresholds.filter((t) => limitSide(t.key) === side);
   if (items.length === 0) return null;
   const text = LIMITS_BOX[side];
@@ -95,14 +95,14 @@ function LimitsBox({ side, cfg, limits, setLimits, limitError }: LimitsProps & {
   );
 }
 
-function packLabel(p: SidePack, off: boolean): string {
+function packLabel(p: ISidePack, off: boolean): string {
   const pk = p.pack;
   const others = p.others.map((o) => `${SIDE_NAME[o.side]}: ${o.count}`).join(', ');
   return `${pk.name || pk.id}${pk.inProfile ? '' : ' (fora do perfil)'}${p.count ? ` · ${p.count} ${p.count === 1 ? 'regra' : 'regras'}` : ''}${others ? ` · também em ${others}` : ''}${off ? ' · lado desligado' : ''}`;
 }
 
 /** Pacotes por lado (back-end, front-end, infra e comum); um pacote misto aparece nos dois lados. Os limites de clean code ficam no grupo a que valem. */
-export function PacksFieldset({ cfg, packs, setPacks, sidesOff, limits, setLimits, limitError }: LimitsProps & {
+export function PacksFieldset({ cfg, packs, setPacks, sidesOff, limits, setLimits, limitError }: ILimitsProps & {
   packs: Record<string, boolean>;
   setPacks: (p: Record<string, boolean>) => void;
   sidesOff: string[];
@@ -179,7 +179,7 @@ export function SideTabs({ counts, active, sidesOff, onPick }: { counts: Record<
 }
 
 /** Uma aba por família de regras (a categoria que a regra declara), com quantas regras tem. */
-export function FamilyTabs({ tabs, active, onPick }: { tabs: FamilyTab[]; active: string; onPick: (key: string) => void }) {
+export function FamilyTabs({ tabs, active, onPick }: { tabs: IFamilyTab[]; active: string; onPick: (key: string) => void }) {
   if (tabs.length < 2) return null;
   return (
     <div role="tablist" aria-label="Famílias de regras" style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--s-border)' }}>
@@ -209,7 +209,7 @@ export function FamilyTabs({ tabs, active, onPick }: { tabs: FamilyTab[]; active
   );
 }
 
-interface FilterProps {
+interface IFilterProps {
   text: string;
   scope: RuleScope;
   packFilter: string;
@@ -221,7 +221,7 @@ interface FilterProps {
   onPack: (v: string) => void;
 }
 
-export function RuleFilters({ text, scope, packFilter, packNames, count, onText, onScope, onPack }: FilterProps) {
+export function RuleFilters({ text, scope, packFilter, packNames, count, onText, onScope, onPack }: IFilterProps) {
   return (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
       <label style={labelStyle}>
@@ -274,7 +274,7 @@ export function BulkBar({ count, gain, bulk }: { count: number; gain: number; bu
         <select
           aria-label="Severidade em lote"
           value=""
-          onChange={(e) => e.target.value && bulk({ kind: 'severity', value: (e.target.value === 'perfil' ? null : e.target.value) as RuleAdjustment['severity'] })}
+          onChange={(e) => e.target.value && bulk({ kind: 'severity', value: (e.target.value === 'perfil' ? null : e.target.value) as IRuleAdjustment['severity'] })}
         >
           <option value="">escolher…</option>
           <option value="perfil">do perfil</option>
@@ -293,23 +293,23 @@ export function BulkBar({ count, gain, bulk }: { count: number; gain: number; bu
   );
 }
 
-function gainText(row: RuleRow): string {
+function gainText(row: IRuleRow): string {
   if (row.gain) return `+${row.gain.toFixed(1)}`;
   return row.count > 0 ? '—' : 'não apareceu';
 }
 
-interface RowProps {
-  row: RuleRow;
-  adjustment: RuleAdjustment;
+interface IRowProps {
+  row: IRuleRow;
+  adjustment: IRuleAdjustment;
   inProfile: boolean;
   selected: boolean;
   /** O lado da regra está desligado no escopo: a regra não roda e não se edita. */
   off: boolean;
   onSelect: (id: string, on: boolean) => void;
-  onChange: (id: string, patch: Partial<RuleAdjustment>) => void;
+  onChange: (id: string, patch: Partial<IRuleAdjustment>) => void;
 }
 
-function RuleIdentityCell({ row, inProfile, off }: { row: RuleRow; inProfile: boolean; off: boolean }) {
+function RuleIdentityCell({ row, inProfile, off }: { row: IRuleRow; inProfile: boolean; off: boolean }) {
   const origin = [row.pack, row.category, row.declared ? `declara ${row.declared}` : null].filter(Boolean);
   return (
     <td style={{ padding: '6px 8px', maxWidth: 520 }}>
@@ -327,14 +327,14 @@ function RuleIdentityCell({ row, inProfile, off }: { row: RuleRow; inProfile: bo
   );
 }
 
-function SeverityCell({ id, value, onChange, disabled }: { id: string; value: RuleAdjustment['severity']; onChange: RowProps['onChange']; disabled: boolean }) {
+function SeverityCell({ id, value, onChange, disabled }: { id: string; value: IRuleAdjustment['severity']; onChange: IRowProps['onChange']; disabled: boolean }) {
   return (
     <td style={cellStyle}>
       <select
         aria-label={`Severidade de ${id}`}
         disabled={disabled}
         value={value ?? ''}
-        onChange={(e) => onChange(id, { severity: (e.target.value || null) as RuleAdjustment['severity'] })}
+        onChange={(e) => onChange(id, { severity: (e.target.value || null) as IRuleAdjustment['severity'] })}
       >
         <option value="">do perfil</option>
         {SEVERITIES.map((sv) => (
@@ -345,7 +345,7 @@ function SeverityCell({ id, value, onChange, disabled }: { id: string; value: Ru
   );
 }
 
-function RuleTableRow({ row, adjustment: r, inProfile, selected, off, onSelect, onChange }: RowProps) {
+function RuleTableRow({ row, adjustment: r, inProfile, selected, off, onSelect, onChange }: IRowProps) {
   const id = row.id;
   return (
     <tr style={{ borderTop: '1px solid var(--s-border)', background: off ? 'var(--s-layer)' : isNoopAdjustment(r) ? undefined : 'var(--s-selected)', opacity: off ? 0.5 : 1 }}>
@@ -366,20 +366,20 @@ function RuleTableRow({ row, adjustment: r, inProfile, selected, off, onSelect, 
   );
 }
 
-interface TableProps {
-  rows: RuleRow[];
+interface ITableProps {
+  rows: IRuleRow[];
   allShownPicked: boolean;
   isPicked: (id: string) => boolean;
-  current: (id: string) => RuleAdjustment;
+  current: (id: string) => IRuleAdjustment;
   inProfile: (id: string) => boolean;
   /** O lado desta regra está desligado no escopo? */
-  isOff: (row: RuleRow) => boolean;
+  isOff: (row: IRuleRow) => boolean;
   onPickAll: (on: boolean) => void;
   onSelect: (id: string, on: boolean) => void;
-  onChange: (id: string, patch: Partial<RuleAdjustment>) => void;
+  onChange: (id: string, patch: Partial<IRuleAdjustment>) => void;
 }
 
-export function RulesTable({ rows, allShownPicked, isPicked, current, inProfile, isOff, onPickAll, onSelect, onChange }: TableProps) {
+export function RulesTable({ rows, allShownPicked, isPicked, current, inProfile, isOff, onPickAll, onSelect, onChange }: ITableProps) {
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>

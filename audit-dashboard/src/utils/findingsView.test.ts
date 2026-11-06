@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { FindingResponse } from '../types';
+import type { IFindingResponse } from '../types';
 import { activeFilterChips, footerText, groupBySystem } from './findingsView';
 
-const f = (id: number) => ({ id }) as FindingResponse;
+const f = (id: number) => ({ id }) as IFindingResponse;
 
 describe('findingsView', () => {
   it('agrupa por sistema na ordem da primeira aparição', () => {

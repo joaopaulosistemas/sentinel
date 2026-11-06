@@ -2,17 +2,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AuditRunResponse, FixPlan, McpCall, PendingAction } from '../../types';
+import type { IAuditRunResponse, IFixPlan, IMcpCall, IPendingAction } from '../../types';
 import { AuditRunPage } from './AuditRunPage';
 
 interface McpMock {
   enabled: boolean;
-  calls?: McpCall[];
-  pending?: Array<Partial<PendingAction>>;
+  calls?: IMcpCall[];
+  pending?: Array<Partial<IPendingAction>>;
 }
 
-function renderPage(run: Partial<AuditRunResponse>, plan?: FixPlan, history: Array<Partial<AuditRunResponse>> = [], mcp?: McpMock, insights?: { analyzers: unknown[] }) {
-  const full: AuditRunResponse = {
+function renderPage(run: Partial<IAuditRunResponse>, plan?: IFixPlan, history: Array<Partial<IAuditRunResponse>> = [], mcp?: McpMock, insights?: { analyzers: unknown[] }) {
+  const full: IAuditRunResponse = {
     id: 215,
     systemName: 'conta-corrente-api',
     branch: 'main',
@@ -159,7 +159,7 @@ describe('AuditRunPage', () => {
 
   it('o medidor da nota fica no veredito e o gráfico das últimas auditorias ocupa o lugar dele', async () => {
     const score = { security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 };
-    const past = (id: number, day: number, overall: number): Partial<AuditRunResponse> => ({
+    const past = (id: number, day: number, overall: number): Partial<IAuditRunResponse> => ({
       id, systemId: 7, status: 'COMPLETED', riskScore: { overall, ...score }, startedAt: `2026-10-${day}T10:00:00`, completedAt: `2026-10-${day}T10:04:00`,
     });
     renderPage(

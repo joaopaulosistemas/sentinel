@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { FindingResponse } from '../types';
+import type { IFindingResponse } from '../types';
 import { similarTo } from './SuppressModal';
 
-const f = (id: number, ruleId: string, status = 'OPEN', tool = 'Semgrep') => ({ id, ruleId, status, toolSource: tool }) as FindingResponse;
+const f = (id: number, ruleId: string, status = 'OPEN', tool = 'Semgrep') => ({ id, ruleId, status, toolSource: tool }) as IFindingResponse;
 
 describe('similarTo', () => {
   it('traz os abertos da mesma regra e ferramenta, fora da seleção', () => {

@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useRecentAudits } from '../hooks/useAuditRuns';
-import type { AuditRunResponse } from '../types';
+import type { IAuditRunResponse } from '../types';
 import { analyzerCounts, isActiveRun, phaseIndex, PHASES } from '../utils/auditProgress';
 import { scoreColor } from '../utils/systemAttention';
 import { timeAgo } from '../utils/timeAgo';
 import { SpinnerIcon } from './StatusIcons';
 
 /** "Na fila", "Clonando", "Analisando 4/12", "Pontuando" — onde a auditoria em andamento está. */
-export function stepText(run: AuditRunResponse): string {
+export function stepText(run: IAuditRunResponse): string {
   const i = phaseIndex(run);
   if (run.status === 'PENDING' || i === 0) return 'Na fila';
   if (i === 1) return 'Clonando';
@@ -20,7 +20,7 @@ export function stepText(run: AuditRunResponse): string {
 
 const cell = { padding: '12px 8px' } as const;
 
-function RunStatus({ run }: { run: AuditRunResponse }) {
+function RunStatus({ run }: { run: IAuditRunResponse }) {
   if (isActiveRun(run)) {
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--s-link)', fontWeight: 500 }}>
@@ -37,7 +37,7 @@ function RunStatus({ run }: { run: AuditRunResponse }) {
   return <span style={{ color, fontWeight: 500 }}>{text}</span>;
 }
 
-function RunRow({ run }: { run: AuditRunResponse }) {
+function RunRow({ run }: { run: IAuditRunResponse }) {
   const score = run.riskScore ? Math.round(run.riskScore.overall) : null;
   return (
     <tr style={{ borderBottom: '1px solid var(--s-border)', background: isActiveRun(run) ? 'var(--s-selected)' : 'var(--s-surface)' }}>
@@ -52,7 +52,7 @@ function RunRow({ run }: { run: AuditRunResponse }) {
   );
 }
 
-function RunsTable({ rows }: { rows: AuditRunResponse[] }) {
+function RunsTable({ rows }: { rows: IAuditRunResponse[] }) {
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
@@ -72,7 +72,7 @@ function RunsTable({ rows }: { rows: AuditRunResponse[] }) {
   );
 }
 
-function RecentBody({ loading, rows }: { loading: boolean; rows: AuditRunResponse[] }) {
+function RecentBody({ loading, rows }: { loading: boolean; rows: IAuditRunResponse[] }) {
   if (loading) return <p style={{ padding: '1rem', color: 'var(--s-text-3)' }}>Carregando…</p>;
   if (rows.length === 0) return <p style={{ padding: '1rem', color: 'var(--s-text-3)' }}>Nenhuma auditoria ainda. Inicie a primeira em um sistema.</p>;
   return <RunsTable rows={rows} />;

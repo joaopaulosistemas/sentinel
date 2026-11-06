@@ -2,19 +2,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PendingAction, SystemSummaryResponse } from '../types';
+import type { IPendingAction, ISystemSummaryResponse } from '../types';
 import { ReauditPanel, scoreChange } from './ReauditPanel';
 
-const systems = [{ id: 7, name: 'conta-corrente-api', scheduledBranch: 'main' }] as SystemSummaryResponse[];
+const systems = [{ id: 7, name: 'conta-corrente-api', scheduledBranch: 'main' }] as ISystemSummaryResponse[];
 
-function action(over: Partial<PendingAction> = {}): PendingAction {
+function action(over: Partial<IPendingAction> = {}): IPendingAction {
   return {
     id: 1, kind: 'START_AUDIT', summary: 'Iniciar uma auditoria de conta-corrente-api na branch main', status: 'PENDING',
     createdAt: '2026-10-24T10:00:00', expiresAt: '2026-10-24T11:00:00', decidedAt: null, resultNote: null, auditRunId: null, ...over,
   };
 }
 
-function setup(actions: PendingAction[]) {
+function setup(actions: IPendingAction[]) {
   const calls: Array<{ url: string; method: string }> = [];
   vi.stubGlobal(
     'fetch',

@@ -1,11 +1,11 @@
-import type { Crumb } from '../../components/PageShell';
-import type { AuditRunResponse, FindingResponse, FindingsOverview, Severity } from '../../types';
+import type { ICrumb } from '../../components/PageShell';
+import type { IAuditRunResponse, IFindingResponse, IFindingsOverview, Severity } from '../../types';
 import { suggestionFor } from '../../utils/claudeHint';
 
-type OverviewItem = FindingsOverview['items'][number];
+type OverviewItem = IFindingsOverview['items'][number];
 
-export interface RowsView {
-  rows: FindingResponse[];
+export interface IRowsView {
+  rows: IFindingResponse[];
   total: number;
   pages: number;
   /** Achados de baixa confiança ocultos agora (só no modo "uma auditoria"). */
@@ -14,15 +14,15 @@ export interface RowsView {
   lowTotal: number;
 }
 
-interface RowsInput {
+interface IRowsInput {
   auditMode: boolean;
   /** Achados da auditoria aberta (modo "uma auditoria"). */
-  single: FindingResponse[];
+  single: IFindingResponse[];
   severities: Severity[];
   showLow: boolean;
   page: number;
   pageSize: number;
-  overview: FindingsOverview | undefined;
+  overview: IFindingsOverview | undefined;
 }
 
 const pagesOf = (total: number, pageSize: number) => Math.max(1, Math.ceil(total / pageSize));
@@ -31,7 +31,7 @@ const pagesOf = (total: number, pageSize: number) => Math.max(1, Math.ceil(total
  * Linhas da página atual. Com várias auditorias a API já pagina; com uma só, a filtragem por várias severidades
  * (ex.: crítica e alta) e a ocultação de baixa confiança (teste, exemplo, regra com muitos falsos positivos) são feitas aqui.
  */
-export function pickRows({ auditMode, single, severities, showLow, page, pageSize, overview }: RowsInput): RowsView {
+export function pickRows({ auditMode, single, severities, showLow, page, pageSize, overview }: IRowsInput): IRowsView {
   if (!auditMode) {
     const total = overview?.total ?? 0;
     return { rows: overview?.items.map((i) => i.finding) ?? [], total, pages: pagesOf(total, pageSize), lowHidden: 0, lowTotal: 0 };
@@ -63,15 +63,15 @@ export function claudeNoteFinder(
   itemByFinding: Map<number, OverviewItem>,
   suggestionsBySystem: Map<number, Parameters<typeof suggestionFor>[1]>,
 ) {
-  return (f: FindingResponse) => {
+  return (f: IFindingResponse) => {
     const sid = auditMode ? auditSystemId : (systemId ?? itemByFinding.get(f.id)?.systemId);
     return sid === undefined ? undefined : suggestionFor(f, suggestionsBySystem.get(sid) ?? []);
   };
 }
 
-export function findingsCrumbs(auditMode: boolean, audit: AuditRunResponse | undefined, auditId: number): Crumb[] {
+export function findingsCrumbs(auditMode: boolean, audit: IAuditRunResponse | undefined, auditId: number): ICrumb[] {
   if (!auditMode) return [{ label: 'Início', to: '/' }, { label: 'Informações de Auditoria' }];
-  const system: Crumb[] = audit
+  const system: ICrumb[] = audit
     ? [{ label: audit.systemName, to: audit.systemId !== undefined ? `/systems/${audit.systemId}` : undefined }]
     : [];
   return [{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, ...system, { label: `Auditoria #${auditId}`, to: `/audits/${auditId}` }, { label: 'Achados' }];

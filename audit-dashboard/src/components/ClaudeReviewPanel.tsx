@@ -2,7 +2,7 @@ import { InlineNotification } from '@carbon/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../api/client';
-import type { ClaudeReview, RuleProposalView, SuggestionStatus, SystemSummaryResponse } from '../types';
+import type { IClaudeReview, IRuleProposalView, SuggestionStatus, ISystemSummaryResponse } from '../types';
 import { startLabel } from '../utils/timeAgo';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -45,7 +45,7 @@ function MetricsBox({ systemId }: { systemId: number }) {
 type Act = (path: string, body?: unknown) => void;
 const isClosed = (stage: string) => ['PROMOTED', 'DISCARDED'].includes(stage);
 
-function ProposalHeader({ p }: { p: RuleProposalView }) {
+function ProposalHeader({ p }: { p: IRuleProposalView }) {
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
@@ -68,7 +68,7 @@ function plural(n: number, one: string, many: string): string {
   return n === 1 ? one : many;
 }
 
-function ObservationBox({ p }: { p: RuleProposalView }) {
+function ObservationBox({ p }: { p: IRuleProposalView }) {
   const e = p.evidence;
   return (
     <div role="status" style={{ fontSize: 13, background: 'var(--s-layer)', padding: '8px 12px' }}>
@@ -79,7 +79,7 @@ function ObservationBox({ p }: { p: RuleProposalView }) {
   );
 }
 
-function ProposalNotes({ p }: { p: RuleProposalView }) {
+function ProposalNotes({ p }: { p: IRuleProposalView }) {
   return (
     <>
       {p.sampleNote && <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Teste de amostra: {p.sampleNote}</div>}
@@ -98,7 +98,7 @@ function StageButton({ label, danger, disabled, onClick }: { label: string; dang
   );
 }
 
-function CopyToSystem({ p, systems, systemId, act, busy }: { p: RuleProposalView; systems: SystemSummaryResponse[]; systemId: number; act: Act; busy: boolean }) {
+function CopyToSystem({ p, systems, systemId, act, busy }: { p: IRuleProposalView; systems: ISystemSummaryResponse[]; systemId: number; act: Act; busy: boolean }) {
   const [target, setTarget] = useState('');
   return (
     <>
@@ -113,7 +113,7 @@ function CopyToSystem({ p, systems, systemId, act, busy }: { p: RuleProposalView
   );
 }
 
-function ProposalActions({ p, note, systems, systemId, act, busy }: { p: RuleProposalView; note: string; systems: SystemSummaryResponse[]; systemId: number; act: Act; busy: boolean }) {
+function ProposalActions({ p, note, systems, systemId, act, busy }: { p: IRuleProposalView; note: string; systems: ISystemSummaryResponse[]; systemId: number; act: Act; busy: boolean }) {
   const path = (step: string) => `rules/${p.id}/${step}`;
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -133,8 +133,8 @@ function ProposalActions({ p, note, systems, systemId, act, busy }: { p: RulePro
 }
 
 function Proposal({ p, systems, systemId, act, busy }: {
-  p: RuleProposalView;
-  systems: SystemSummaryResponse[];
+  p: IRuleProposalView;
+  systems: ISystemSummaryResponse[];
   systemId: number;
   act: Act;
   busy: boolean;
@@ -160,7 +160,7 @@ function Proposal({ p, systems, systemId, act, busy }: {
 
 const STATUS_LABEL: Record<SuggestionStatus, string> = { OPEN: 'Aberta', ADDRESSED: 'Tratada', DISMISSED: 'Dispensada' };
 
-type Suggestion = ClaudeReview['suggestions'][number];
+type Suggestion = IClaudeReview['suggestions'][number];
 
 function SuggestionCard({ s, busy, onStatus }: { s: Suggestion; busy: boolean; onStatus: (status: SuggestionStatus) => void }) {
   const where = s.file ? `${s.file}${s.line ? `:${s.line}` : ''}` : null;
@@ -181,7 +181,7 @@ function SuggestionCard({ s, busy, onStatus }: { s: Suggestion; busy: boolean; o
   );
 }
 
-function SuggestionsSection({ data, busy, onStatus }: { data: ClaudeReview; busy: boolean; onStatus: (id: number, status: SuggestionStatus) => void }) {
+function SuggestionsSection({ data, busy, onStatus }: { data: IClaudeReview; busy: boolean; onStatus: (id: number, status: SuggestionStatus) => void }) {
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Sugestões ({data.openSuggestions} {plural(data.openSuggestions, 'aberta', 'abertas')})</h2>
@@ -196,7 +196,7 @@ function SuggestionsSection({ data, busy, onStatus }: { data: ClaudeReview; busy
   );
 }
 
-function ProposalsSection({ data, systems, systemId, act, busy }: { data: ClaudeReview; systems: SystemSummaryResponse[]; systemId: number; act: Act; busy: boolean }) {
+function ProposalsSection({ data, systems, systemId, act, busy }: { data: IClaudeReview; systems: ISystemSummaryResponse[]; systemId: number; act: Act; busy: boolean }) {
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Regras propostas</h2>
@@ -215,7 +215,7 @@ function ProposalsSection({ data, systems, systemId, act, busy }: { data: Claude
  * Aba "Revisão do Claude": o que o Claude sugeriu e as regras que propôs. Tudo aqui fica fora da nota; uma regra
  * só pesa nela depois de passar pelo funil e ser promovida por uma pessoa.
  */
-export function ClaudeReviewPanel({ systems, initialSystemId }: { systems: SystemSummaryResponse[]; initialSystemId?: number }) {
+export function ClaudeReviewPanel({ systems, initialSystemId }: { systems: ISystemSummaryResponse[]; initialSystemId?: number }) {
   const queryClient = useQueryClient();
   const [systemId, setSystemId] = useState<number | undefined>(initialSystemId ?? systems[0]?.id);
   const key = ['claude-review', systemId];

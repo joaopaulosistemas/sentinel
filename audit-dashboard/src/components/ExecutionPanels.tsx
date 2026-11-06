@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
-import type { AnalyzerProgress, AuditProgress, AuditRunResponse, Severity } from '../types';
-import { PHASES, clock, copyText, isSlowLoad, secondsBetween, shortRepo, type PhaseView } from '../utils/auditProgress';
+import type { IAnalyzerProgress, IAuditProgress, IAuditRunResponse, Severity } from '../types';
+import { PHASES, clock, copyText, isSlowLoad, secondsBetween, shortRepo, type IPhaseView } from '../utils/auditProgress';
 import { scoreColor } from '../utils/scoreBand';
 import { CheckIcon, ClockIcon, CrossIcon, DashIcon, SpinnerIcon } from './StatusIcons';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
 /** Cinco fases em linha: concluída (verde com check), ativa (azul com número) ou pendente (contorno). */
-export function PhaseStrip({ phases }: { phases: PhaseView[] }) {
+export function PhaseStrip({ phases }: { phases: IPhaseView[] }) {
   const style = {
     done: { bg: '#198038', fg: '#ffffff', border: '#198038', title: 'var(--s-text)' },
     active: { bg: '#0f62fe', fg: '#ffffff', border: 'var(--s-link)', title: '#0f62fe' },
@@ -40,7 +40,7 @@ export function PhaseStrip({ phases }: { phases: PhaseView[] }) {
 }
 
 /** Cartão de "carregando" da fila e do clone: diz o que está acontecendo, quanto já foi e avisa se demorar. */
-export function LoadingSourceCard({ progress, queued, seconds }: { progress: AuditProgress | null; queued: boolean; seconds: number | null }) {
+export function LoadingSourceCard({ progress, queued, seconds }: { progress: IAuditProgress | null; queued: boolean; seconds: number | null }) {
   const files = copyText(progress);
   const slow = isSlowLoad(seconds);
   const repo = shortRepo(progress?.repoUrl);
@@ -69,7 +69,7 @@ export function LoadingSourceCard({ progress, queued, seconds }: { progress: Aud
   );
 }
 
-interface StateView {
+interface IStateView {
   icon: ReactNode;
   accent: string;
   bar: string;
@@ -80,9 +80,9 @@ interface StateView {
 
 const MUTED = { accent: '#c6c6c6', bar: '#8d8d8d', width: 0 };
 
-const mutedState = (label: string, text: string): StateView => ({ icon: <DashIcon label={label} />, ...MUTED, text });
+const mutedState = (label: string, text: string): IStateView => ({ icon: <DashIcon label={label} />, ...MUTED, text });
 
-const STATES: Record<string, StateView> = {
+const STATES: Record<string, IStateView> = {
   PARCIAL: { icon: <DashIcon label="Parcial" color="#b28600" />, accent: '#f1c21b', bar: '#f1c21b', width: 100, text: 'parcial — resultado pode estar incompleto' },
   EXECUTANDO: { icon: <SpinnerIcon label="Executando" />, accent: '#0f62fe', bar: '#0f62fe', width: 45, text: 'executando', pulse: true },
   FALHOU: { icon: <CrossIcon label="Falhou" />, accent: '#da1e28', bar: '#da1e28', width: 100, text: 'falhou' },
@@ -95,15 +95,15 @@ const STATES: Record<string, StateView> = {
 
 const NO_EVIDENCE = mutedState('Sem evidência', 'sem evidência');
 
-function doneState(a: AnalyzerProgress): StateView {
+function doneState(a: IAnalyzerProgress): IStateView {
   const text = a.durationMs > 0 ? `concluído em ${Math.max(1, Math.round(a.durationMs / 1000))} s` : 'concluído';
   return { icon: <CheckIcon label="Concluído" />, accent: '#198038', bar: '#198038', width: 100, text };
 }
 
-const state = (a: AnalyzerProgress): StateView => (a.status === 'OK' ? doneState(a) : STATES[a.status] ?? NO_EVIDENCE);
+const state = (a: IAnalyzerProgress): IStateView => (a.status === 'OK' ? doneState(a) : STATES[a.status] ?? NO_EVIDENCE);
 
 /** Cartão de um analisador: nome, o que ele verifica, barra, achados e situação. */
-export function AnalyzerCard({ a }: { a: AnalyzerProgress }) {
+export function AnalyzerCard({ a }: { a: IAnalyzerProgress }) {
   const s = state(a);
   return (
     <li style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderTop: `3px solid ${s.accent}`, padding: '12px 14px',
@@ -146,7 +146,7 @@ function Totals({ files, lines }: { files: number; lines: number }) {
 }
 
 /** Nota final, a variação contra a auditoria anterior e a contagem de novos e resolvidos. */
-function FinalScore({ run, overall }: { run: AuditRunResponse; overall: number }) {
+function FinalScore({ run, overall }: { run: IAuditRunResponse; overall: number }) {
   const delta = run.scoreDelta ?? null;
   return (
     <div style={{ borderTop: '1px solid var(--s-border)', paddingTop: 14, display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
@@ -172,14 +172,14 @@ function PendingScore() {
 }
 
 /** Números do resultado: o final vem da auditoria concluída; antes disso, do progresso. */
-function resultNumbers(run: AuditRunResponse, progress: AuditProgress | null, finished: boolean) {
+function resultNumbers(run: IAuditRunResponse, progress: IAuditProgress | null, finished: boolean) {
   const counts = (id: Severity) => (finished ? run.findingsSummary?.[id] : progress?.severities?.[id]) ?? 0;
   const lines = (finished ? run.linesOfCode ?? progress?.linesOfCode : progress?.linesOfCode) ?? 0;
   return { counts, lines };
 }
 
 /** Contagem por severidade, arquivos e linhas; durante a execução os números crescem. */
-export function PartialResult({ run, progress }: { run: AuditRunResponse; progress: AuditProgress | null }) {
+export function PartialResult({ run, progress }: { run: IAuditRunResponse; progress: IAuditProgress | null }) {
   const finished = run.status === 'COMPLETED';
   const { counts, lines } = resultNumbers(run, progress, finished);
   const title = finished ? 'Resultado final' : 'Resultado parcial';
@@ -202,7 +202,7 @@ export function PartialResult({ run, progress }: { run: AuditRunResponse; progre
 }
 
 /** Eventos mais recentes primeiro, com o tempo decorrido desde o início. */
-export function EventLog({ startedAt, events }: { startedAt: string; events: AuditProgress['events'] }) {
+export function EventLog({ startedAt, events }: { startedAt: string; events: IAuditProgress['events'] }) {
   const rows = [...events].reverse().slice(0, 8);
   return (
     <section style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>

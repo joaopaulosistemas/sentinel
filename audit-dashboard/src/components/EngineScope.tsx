@@ -1,6 +1,6 @@
 import { Button, InlineNotification, Toggle } from '@carbon/react';
 import { useState } from 'react';
-import type { EngineConfig, EngineSide } from '../types';
+import type { IEngineConfig, EngineSide } from '../types';
 import { SIDE_NAME, packsBySide, presetOf, sideTotals, sidesOffOf, type ScopePreset } from '../utils/ruleFamilies';
 
 type OffSide = 'back' | 'front';
@@ -29,7 +29,7 @@ export function SideBadge({ side }: { side: EngineSide }) {
   return <span style={{ padding: '2px 8px', background: c.bg, color: c.fg, fontSize: 11, fontWeight: 600 }}>{text}</span>;
 }
 
-interface CardProps {
+interface ICardProps {
   side: OffSide;
   on: boolean;
   rules: number;
@@ -38,7 +38,7 @@ interface CardProps {
   onToggle: (on: boolean) => void;
 }
 
-function SideCard({ side, on, rules, packs, analyzers, onToggle }: CardProps) {
+function SideCard({ side, on, rules, packs, analyzers, onToggle }: ICardProps) {
   const name = SIDE_NAME[side];
   return (
     <div
@@ -66,14 +66,14 @@ function SideCard({ side, on, rules, packs, analyzers, onToggle }: CardProps) {
   );
 }
 
-interface Props {
-  cfg: EngineConfig;
+interface IProps {
+  cfg: IEngineConfig;
   sidesOff: string[];
   onChange: (next: OffSide[]) => void;
 }
 
 /** Escopo da auditoria: liga ou desliga o back-end ou o front-end do sistema de uma vez (regras, pacotes e analisadores do lado). */
-export function ScopeSection({ cfg, sidesOff, onChange }: Props) {
+export function ScopeSection({ cfg, sidesOff, onChange }: IProps) {
   const [refused, setRefused] = useState(false);
   const totals = sideTotals(cfg.catalog);
   const groups = packsBySide(cfg.packs, cfg.catalog);

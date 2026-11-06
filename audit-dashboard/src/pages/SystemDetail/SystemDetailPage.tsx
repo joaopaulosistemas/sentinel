@@ -5,14 +5,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { DiffSummary } from '../../components/DiffSummary';
 import { InsightsLimits, InsightsPanel } from '../../components/InsightsPanel';
-import { PageSection, SectionIndex, type IndexItem } from '../../components/PageSection';
+import { PageSection, SectionIndex, type IIndexItem } from '../../components/PageSection';
 import { CheckIcon, CrossIcon, DashIcon, SpinnerIcon } from '../../components/StatusIcons';
 import { SuppressionsList } from '../../components/SuppressionsList';
 import { TrendChart } from '../../components/TrendChart';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
 import { useInsights, useSuppressions } from '../../hooks/useLifecycle';
 import { useSystem } from '../../hooks/useSystems';
-import type { AuditRunResponse, Severity, Stack, SystemSummaryResponse } from '../../types';
+import type { IAuditRunResponse, Severity, Stack, ISystemSummaryResponse } from '../../types';
 import { analyzerCounts, PHASES, phaseIndex, progressPercent } from '../../utils/auditProgress';
 import { TARGET_SCORE, scoreColor as bandColor } from '../../utils/scoreBand';
 import { scoreColor } from '../../utils/systemAttention';
@@ -27,7 +27,7 @@ const stackLabels: Record<Stack, string> = {
   MIXED: 'Misto',
 };
 
-const dimensionLabels: Array<{ key: keyof NonNullable<AuditRunResponse['riskScore']>; label: string }> = [
+const dimensionLabels: Array<{ key: keyof NonNullable<IAuditRunResponse['riskScore']>; label: string }> = [
   { key: 'security', label: 'Segurança' },
   { key: 'quality', label: 'Qualidade' },
   { key: 'architecture', label: 'Arquitetura' },
@@ -53,7 +53,7 @@ const severityNames: Record<Severity, string> = {
 };
 
 /** Etapa atual de uma auditoria em andamento, com a contagem de analisadores durante a análise. */
-function stepLabel(run: AuditRunResponse): string {
+function stepLabel(run: IAuditRunResponse): string {
   const base = PHASES[Math.min(phaseIndex(run), PHASES.length - 1)].label;
   if (run.progress?.phase === 'ANALISE') {
     const { done, total } = analyzerCounts(run.progress.analyzers);
@@ -70,7 +70,7 @@ function truncated(message: string): string {
 }
 
 /** Estado da execução na tabela: andamento com barra, concluída, falhou ou cancelada. */
-function RunStatus({ run, active, pct }: { run: AuditRunResponse; active: boolean; pct: number }) {
+function RunStatus({ run, active, pct }: { run: IAuditRunResponse; active: boolean; pct: number }) {
   if (active) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -112,7 +112,7 @@ function RunStatus({ run, active, pct }: { run: AuditRunResponse; active: boolea
 }
 
 /** "252 (4 novos, 9 resolvidos)"; sem comparação mostra só o total. */
-function findingsText(run: AuditRunResponse): string {
+function findingsText(run: IAuditRunResponse): string {
   if (run.status === 'PENDING' || run.status === 'RUNNING') return 'calculando';
   if (run.status !== 'COMPLETED' || run.totalFindings === null || run.totalFindings === undefined) return '-';
   if (run.newFindings !== null && run.newFindings !== undefined && run.resolvedFindings !== null && run.resolvedFindings !== undefined) {
@@ -121,9 +121,9 @@ function findingsText(run: AuditRunResponse): string {
   return String(run.totalFindings);
 }
 
-const isActive = (run: AuditRunResponse) => run.status === 'PENDING' || run.status === 'RUNNING';
+const isActive = (run: IAuditRunResponse) => run.status === 'PENDING' || run.status === 'RUNNING';
 
-function StartedBanner({ started, onClose }: { started: AuditRunResponse; onClose: () => void }) {
+function StartedBanner({ started, onClose }: { started: IAuditRunResponse; onClose: () => void }) {
   return (
     <div role="status" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid var(--s-link)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
       <span>
@@ -139,7 +139,7 @@ function StartedBanner({ started, onClose }: { started: AuditRunResponse; onClos
   );
 }
 
-function SystemHeader({ system, onEdit, onNewAudit }: { system: SystemSummaryResponse; onEdit: () => void; onNewAudit: () => void }) {
+function SystemHeader({ system, onEdit, onNewAudit }: { system: ISystemSummaryResponse; onEdit: () => void; onNewAudit: () => void }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -160,7 +160,7 @@ function SystemHeader({ system, onEdit, onNewAudit }: { system: SystemSummaryRes
   );
 }
 
-function RunRow({ run }: { run: AuditRunResponse }) {
+function RunRow({ run }: { run: IAuditRunResponse }) {
   const active = isActive(run);
   const score = run.riskScore ? Math.round(run.riskScore.overall) : null;
   return (
@@ -179,7 +179,7 @@ function RunRow({ run }: { run: AuditRunResponse }) {
   );
 }
 
-function RunsBody({ loading, runs }: { loading: boolean; runs: AuditRunResponse[] }) {
+function RunsBody({ loading, runs }: { loading: boolean; runs: IAuditRunResponse[] }) {
   if (loading) return <SkeletonText lineCount={5} />;
   if (runs.length === 0) return <p style={{ color: 'var(--s-text-3)', margin: 0 }}>Nenhuma auditoria encontrada.</p>;
   return (
@@ -205,7 +205,7 @@ function RunsBody({ loading, runs }: { loading: boolean; runs: AuditRunResponse[
   );
 }
 
-function RunsSection({ loading, runs, live }: { loading: boolean; runs: AuditRunResponse[]; live: boolean }) {
+function RunsSection({ loading, runs, live }: { loading: boolean; runs: IAuditRunResponse[]; live: boolean }) {
   return (
     <PageSection
       id="auditorias"
@@ -256,7 +256,7 @@ function DimensionBar({ label, n }: { label: string; n: number | null }) {
   );
 }
 
-function DimensionBars({ riskScore }: { riskScore: AuditRunResponse['riskScore'] | undefined }) {
+function DimensionBars({ riskScore }: { riskScore: IAuditRunResponse['riskScore'] | undefined }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '14px 40px' }}>
       {dimensionLabels.map(({ key, label }) => {
@@ -268,7 +268,7 @@ function DimensionBars({ riskScore }: { riskScore: AuditRunResponse['riskScore']
 }
 
 /** Nota geral, as seis dimensões (com a meta marcada) e os achados por gravidade da última auditoria concluída. */
-function ScoreOverview({ latest, fallbackScore }: { latest: AuditRunResponse | undefined; fallbackScore: number | null }) {
+function ScoreOverview({ latest, fallbackScore }: { latest: IAuditRunResponse | undefined; fallbackScore: number | null }) {
   const overall = latest?.riskScore?.overall ?? fallbackScore;
   const shown = overall === null || overall === undefined ? null : Math.round(overall);
   const total = severityOrder.reduce((acc, sev) => acc + (latest?.findingsSummary[sev] ?? 0), 0);
@@ -289,7 +289,7 @@ function ScoreOverview({ latest, fallbackScore }: { latest: AuditRunResponse | u
 }
 
 /** Achados da última auditoria concluída, divididos por gravidade. */
-function SeverityBar({ run, total }: { run: AuditRunResponse; total: number }) {
+function SeverityBar({ run, total }: { run: IAuditRunResponse; total: number }) {
   return (
     <div aria-label="Resumo de achados por gravidade" style={{ marginTop: 28 }}>
       <div style={{ fontSize: 13, color: 'var(--s-text-2)', marginBottom: 6 }}>{total} {total === 1 ? 'achado' : 'achados'} por gravidade</div>
@@ -313,11 +313,11 @@ function SeverityBar({ run, total }: { run: AuditRunResponse; total: number }) {
   );
 }
 
-function newestCompleted(runs: AuditRunResponse[] | undefined): AuditRunResponse | undefined {
+function newestCompleted(runs: IAuditRunResponse[] | undefined): IAuditRunResponse | undefined {
   return runs?.filter((r) => r.status === 'COMPLETED').sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())[0];
 }
 
-function buildIndex(runCount: number, hasCompleted: boolean, debtCount?: number, suppressedCount = 0): IndexItem[] {
+function buildIndex(runCount: number, hasCompleted: boolean, debtCount?: number, suppressedCount = 0): IIndexItem[] {
   const hasInsights = debtCount !== undefined;
   return [
     { id: 'visao', label: 'Visão geral' },
@@ -341,16 +341,16 @@ function SystemNotFound({ error }: { error: unknown }) {
   );
 }
 
-interface DetailSectionsProps {
+interface IDetailSectionsProps {
   systemId: number;
-  latest: AuditRunResponse | undefined;
+  latest: IAuditRunResponse | undefined;
   fallbackScore: number | null;
   loadingRuns: boolean;
-  runs: AuditRunResponse[];
+  runs: IAuditRunResponse[];
   live: boolean;
 }
 
-function DetailSections({ systemId, latest, fallbackScore, loadingRuns, runs, live }: DetailSectionsProps) {
+function DetailSections({ systemId, latest, fallbackScore, loadingRuns, runs, live }: IDetailSectionsProps) {
   return (
     <div className="sentinel-secoes">
       <ScoreOverview latest={latest} fallbackScore={fallbackScore} />
@@ -370,7 +370,7 @@ export function SystemDetailPage() {
 
   const id = Number(systemId);
   const [starting, setStarting] = useState(false);
-  const [started, setStarted] = useState<AuditRunResponse | null>(null);
+  const [started, setStarted] = useState<IAuditRunResponse | null>(null);
   const { data: system, isLoading: loadingSystem, error: systemError } = useSystem(id);
   const { data: auditRuns, isLoading: loadingRuns } = useAuditRuns(id);
   // A auditoria concluída mais recente dá as notas e o parecer.

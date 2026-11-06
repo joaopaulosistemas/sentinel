@@ -5,7 +5,7 @@ import { useFixPlan } from '../hooks/useAuditRuns';
 import { useInsights } from '../hooks/useLifecycle';
 import { AuditHistoryChart } from './AuditHistoryChart';
 import { ScoreExplanationPanel } from './ScoreExplanationPanel';
-import type { AnalyzerRunInfo, AuditRunResponse, Category, Severity } from '../types';
+import type { IAnalyzerRunInfo, IAuditRunResponse, Category, Severity } from '../types';
 import { categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
 import { TARGET_SCORE, scoreColor } from '../utils/scoreBand';
 
@@ -45,7 +45,7 @@ const eyebrow = { fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em',
 type Plan = NonNullable<ReturnType<typeof useFixPlan>['data']>;
 type PlanItem = Plan['items'][number];
 
-function DeltaVsPrevious({ run }: { run: AuditRunResponse }) {
+function DeltaVsPrevious({ run }: { run: IAuditRunResponse }) {
   if (run.scoreDelta == null || run.previousAuditId == null) return null;
   return (
     <>
@@ -61,7 +61,7 @@ function DeltaVsPrevious({ run }: { run: AuditRunResponse }) {
 }
 
 /** Nota em medidor circular, com a meta marcada no anel e a distância dela logo abaixo. */
-function ScoreRing({ run, plan }: { run: AuditRunResponse; plan: Plan }) {
+function ScoreRing({ run, plan }: { run: IAuditRunResponse; plan: Plan }) {
   const score = Math.round(plan.scoreNow);
   const pct = Math.max(0, Math.min(100, score));
   const color = scoreColor(score);
@@ -87,7 +87,7 @@ function ScoreRing({ run, plan }: { run: AuditRunResponse; plan: Plan }) {
 }
 
 /** Etapa 1: o medidor da nota, o veredito em uma frase e o atalho para a lista de correções. */
-function VerdictSection({ run, plan }: { run: AuditRunResponse; plan: Plan }) {
+function VerdictSection({ run, plan }: { run: IAuditRunResponse; plan: Plan }) {
   const v = verdict(plan);
   return (
     <section
@@ -110,7 +110,7 @@ function VerdictSection({ run, plan }: { run: AuditRunResponse; plan: Plan }) {
 }
 
 /** Achados divididos por gravidade, numa barra e numa legenda com os números. */
-function SeverityCard({ run }: { run: AuditRunResponse }) {
+function SeverityCard({ run }: { run: IAuditRunResponse }) {
   const total = SEV_ORDER.reduce((acc, sev) => acc + (run.findingsSummary?.[sev] ?? 0), 0);
   return (
     <section aria-label="Achados por gravidade" style={{ ...box, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -147,12 +147,12 @@ function ChangeStat({ value, label, color }: { value: number; label: string; col
   );
 }
 
-function persistingCount(run: AuditRunResponse): number | null {
+function persistingCount(run: IAuditRunResponse): number | null {
   if (run.totalFindings == null) return null;
   return Math.max(0, run.totalFindings - (run.newFindings ?? 0));
 }
 
-function ChangesBody({ run }: { run: AuditRunResponse }) {
+function ChangesBody({ run }: { run: IAuditRunResponse }) {
   const persisting = persistingCount(run);
   const novos = run.newFindings ?? 0;
   return (
@@ -168,7 +168,7 @@ function ChangesBody({ run }: { run: AuditRunResponse }) {
 }
 
 /** O que mudou desde a auditoria anterior da mesma branch. */
-function ChangesCard({ run }: { run: AuditRunResponse }) {
+function ChangesCard({ run }: { run: IAuditRunResponse }) {
   const hasBase = run.previousAuditId != null && run.newFindings != null && run.resolvedFindings != null;
   return (
     <section aria-label="O que mudou" style={{ ...box, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -272,7 +272,7 @@ const TOOL_STATUS: Record<string, { text: string; color: string; ok: boolean }> 
   SUBSTITUIDO: { text: 'coberto por outro', color: 'var(--s-text-3)', ok: false },
 };
 
-function toolView(a: AnalyzerRunInfo) {
+function toolView(a: IAnalyzerRunInfo) {
   const known = TOOL_STATUS[a.status] ?? { text: 'sem evidência', color: 'var(--s-text-3)', ok: false };
   const seconds = a.durationMs > 0 ? ` em ${Math.max(1, Math.round(a.durationMs / 1000))} s` : '';
   return { ...known, text: a.status === 'OK' ? `concluído${seconds}` : known.text };
@@ -346,7 +346,7 @@ function FixItem({ item, position }: { item: PlanItem; position: number }) {
 }
 
 /** Etapa 3: o que corrigir primeiro, no máximo quatro itens (da categoria escolhida, se houver). */
-function FixSection({ run, plan, category, items, onOpenFindings }: { run: AuditRunResponse; plan: Plan; category: Category | null; items: PlanItem[]; onOpenFindings: () => void }) {
+function FixSection({ run, plan, category, items, onOpenFindings }: { run: IAuditRunResponse; plan: Plan; category: Category | null; items: PlanItem[]; onOpenFindings: () => void }) {
   return (
     <section id="criticos" aria-labelledby="etapa-3" style={box}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: '0.5rem' }}>
@@ -372,7 +372,7 @@ function FixSection({ run, plan, category, items, onOpenFindings }: { run: Audit
 }
 
 /** Resultado em três etapas, do geral para o detalhe: veredito, onde está o risco, o que corrigir primeiro. */
-export function ResultSteps({ run, onOpenFindings }: { run: AuditRunResponse; onOpenFindings: () => void }) {
+export function ResultSteps({ run, onOpenFindings }: { run: IAuditRunResponse; onOpenFindings: () => void }) {
   const { data: plan, isLoading, error } = useFixPlan(run.id, run.status === 'COMPLETED');
   const [category, setCategory] = useState<Category | null>(null);
 

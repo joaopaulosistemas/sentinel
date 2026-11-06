@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuditRuns } from '../hooks/useAuditRuns';
 import { useDiff } from '../hooks/useLifecycle';
-import type { PendingAction, SystemSummaryResponse } from '../types';
+import type { IPendingAction, ISystemSummaryResponse } from '../types';
 import { startLabel } from '../utils/timeAgo';
 import { StartAuditModal } from './StartAuditModal';
 
@@ -40,7 +40,7 @@ function Requests({ systemId }: { systemId: number }) {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
     },
   });
-  const items: PendingAction[] = list.data ?? [];
+  const items: IPendingAction[] = list.data ?? [];
   const waiting = items.filter((a) => a.status === 'PENDING').length;
 
   return (
@@ -111,7 +111,7 @@ function BeforeAfter({ systemId }: { systemId: number }) {
 /**
  * Aba "Reauditoria": pedidos do Claude esperando aprovação, reauditar agora e o antes e depois da última auditoria.
  */
-export function ReauditPanel({ systems, initialSystemId }: { systems: SystemSummaryResponse[]; initialSystemId?: number }) {
+export function ReauditPanel({ systems, initialSystemId }: { systems: ISystemSummaryResponse[]; initialSystemId?: number }) {
   const [systemId, setSystemId] = useState<number | undefined>(initialSystemId ?? systems[0]?.id);
   const [starting, setStarting] = useState(false);
   const system = systems.find((s) => s.id === systemId) ?? null;

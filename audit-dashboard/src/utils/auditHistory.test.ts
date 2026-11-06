@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { AuditRunResponse } from '../types';
+import type { IAuditRunResponse } from '../types';
 import { buildHistory, historySummary } from './auditHistory';
 
 const SCORE = { security: 0, quality: 0, architecture: 0, dependencies: 0, observability: 0 };
 
-function run(id: number, startedAt: string, extra: Partial<AuditRunResponse> = {}): AuditRunResponse {
+function run(id: number, startedAt: string, extra: Partial<IAuditRunResponse> = {}): IAuditRunResponse {
   return {
     id,
     systemName: 'frequency',
@@ -19,7 +19,7 @@ function run(id: number, startedAt: string, extra: Partial<AuditRunResponse> = {
 }
 
 const at = (day: number, hour = 10) => `2026-10-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00:00`;
-const withScore = (overall: number): Partial<AuditRunResponse> => ({ riskScore: { overall, ...SCORE } });
+const withScore = (overall: number): Partial<IAuditRunResponse> => ({ riskScore: { overall, ...SCORE } });
 
 describe('buildHistory', () => {
   it('ordena da mais antiga para a mais recente, venha a lista como vier', () => {

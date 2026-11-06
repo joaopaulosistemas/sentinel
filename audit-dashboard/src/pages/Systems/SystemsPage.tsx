@@ -9,7 +9,7 @@ import { McpPanel } from '../../components/McpPanel';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { usePacks } from '../../hooks/useLifecycle';
 import { useSystems } from '../../hooks/useSystems';
-import type { ProfileInfo, SystemSummaryResponse } from '../../types';
+import type { IProfileInfo, ISystemSummaryResponse } from '../../types';
 import {
   emptyForm,
   formFrom,
@@ -17,7 +17,7 @@ import {
   toRequest,
   toSchedule,
   validate,
-  type SystemFormValues,
+  type ISystemFormValues,
 } from './systemForm';
 import { SystemsTable } from './SystemsTable';
 import { SystemFormFields } from './SystemFormFields';
@@ -32,17 +32,17 @@ const TABS: ReadonlyArray<readonly [Tab, string]> = [
 ];
 
 /** O sistema já cadastrado que está sendo editado (nulo ao criar ou com o painel fechado). */
-function savedSystem(editing: SystemSummaryResponse | 'new' | null): SystemSummaryResponse | null {
+function savedSystem(editing: ISystemSummaryResponse | 'new' | null): ISystemSummaryResponse | null {
   return editing !== null && editing !== 'new' ? editing : null;
 }
 
-async function saveSystem(values: SystemFormValues, current: SystemSummaryResponse | null) {
+async function saveSystem(values: ISystemFormValues, current: ISystemSummaryResponse | null) {
   const body = toRequest(values);
   const system = current ? await api.updateSystem(current.id, body) : await api.createSystem(body);
   return scheduleChanged(values, current) ? api.updateSchedule(system.id, toSchedule(values)) : system;
 }
 
-function filterSystems(systems: SystemSummaryResponse[], query: string): SystemSummaryResponse[] {
+function filterSystems(systems: ISystemSummaryResponse[], query: string): ISystemSummaryResponse[] {
   const term = query.trim().toLowerCase();
   return [...systems]
     .filter((s) => term === '' || `${s.name} ${s.team} ${s.repoUrl ?? ''} ${s.localPath ?? ''}`.toLowerCase().includes(term))
@@ -57,14 +57,14 @@ function dirtyLabels(cadastro: boolean, engine: { motor: boolean; analisadores: 
   return labels;
 }
 
-interface SystemTabsProps {
+interface ISystemTabsProps {
   tab: Tab;
   onSelect: (tab: Tab) => void;
   isNew: boolean;
   dirty: Record<'cadastro' | 'motor' | 'analisadores', boolean>;
 }
 
-function SystemTabs({ tab, onSelect, isNew, dirty }: SystemTabsProps) {
+function SystemTabs({ tab, onSelect, isNew, dirty }: ISystemTabsProps) {
   return (
     <div role="tablist" aria-label="Seções do sistema" style={{ display: 'flex', borderBottom: '1px solid var(--s-border)', padding: '0 12px' }}>
       {TABS.map(([id, nome]) => {
@@ -222,8 +222,8 @@ function SearchBar({ query, onQuery }: { query: string; onQuery: (q: string) => 
   );
 }
 
-interface EditDialogProps {
-  editing: SystemSummaryResponse | 'new';
+interface IEditDialogProps {
+  editing: ISystemSummaryResponse | 'new';
   tab: Tab;
   visited: Tab[];
   cadastroDirty: boolean;
@@ -240,7 +240,7 @@ interface EditDialogProps {
   cadastro: ReactNode;
 }
 
-function DialogHeader({ editing, onClose }: { editing: SystemSummaryResponse | 'new'; onClose: () => void }) {
+function DialogHeader({ editing, onClose }: { editing: ISystemSummaryResponse | 'new'; onClose: () => void }) {
   const isNew = editing === 'new';
   return (
     <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
@@ -256,7 +256,7 @@ function DialogHeader({ editing, onClose }: { editing: SystemSummaryResponse | '
 }
 
 /** As abas do motor ficam montadas (só escondidas) depois da primeira visita; "Claude (MCP)" e "Cadastro" montam só quando ativas. */
-function DialogPanels(p: EditDialogProps & { editing: SystemSummaryResponse }) {
+function DialogPanels(p: IEditDialogProps & { editing: ISystemSummaryResponse }) {
   const { editing, tab, visited } = p;
   return (
     <>
@@ -276,7 +276,7 @@ function DialogPanels(p: EditDialogProps & { editing: SystemSummaryResponse }) {
 }
 
 /** Pop-up de cadastro e edição: abas, aviso de alteração sem salvar e o painel da aba ativa. */
-function EditDialog(p: EditDialogProps) {
+function EditDialog(p: IEditDialogProps) {
   const { editing, tab } = p;
   return (
     <div
@@ -307,14 +307,14 @@ function EditDialog(p: EditDialogProps) {
   );
 }
 
-interface DeleteMutation {
+interface IDeleteMutation {
   isPending: boolean;
   isError: boolean;
   error: unknown;
-  mutate: (target: SystemSummaryResponse) => void;
+  mutate: (target: ISystemSummaryResponse) => void;
 }
 
-function DeleteSystemModal({ target, remove, onClose }: { target: SystemSummaryResponse | null; remove: DeleteMutation; onClose: () => void }) {
+function DeleteSystemModal({ target, remove, onClose }: { target: ISystemSummaryResponse | null; remove: IDeleteMutation; onClose: () => void }) {
   return (
     <Modal
       open={target !== null}
@@ -366,7 +366,7 @@ function useLocalSourceEnabled(): boolean {
 function useRemoveSystem(onDone: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (target: SystemSummaryResponse) => api.deleteSystem(target.id),
+    mutationFn: (target: ISystemSummaryResponse) => api.deleteSystem(target.id),
     onSuccess: (_data, target) => {
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
       void queryClient.invalidateQueries({ queryKey: ['audits'] });
@@ -377,7 +377,7 @@ function useRemoveSystem(onDone: () => void) {
 }
 
 /** Confere o endereço (responde? qual a branch padrão?) e a pasta local, sem clonar. */
-function useSourceChecks(values: SystemFormValues, editing: SystemSummaryResponse | 'new' | null) {
+function useSourceChecks(values: ISystemFormValues, editing: ISystemSummaryResponse | 'new' | null) {
   const check = useMutation({
     mutationFn: () =>
       api.checkRepo(values.repoUrl.trim(), values.scheduledBranch.trim() || undefined, {
@@ -419,7 +419,7 @@ function useEngineDirty() {
 }
 
 /** Grava o cadastro (e o agendamento, se mudou); `onSaved` decide o que fazer depois. */
-function useSaveSystem(values: SystemFormValues, editing: SystemSummaryResponse | 'new' | null, onSaved: (system: SystemSummaryResponse, auditNow: boolean) => void) {
+function useSaveSystem(values: ISystemFormValues, editing: ISystemSummaryResponse | 'new' | null, onSaved: (system: ISystemSummaryResponse, auditNow: boolean) => void) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (vars: { auditNow: boolean }) => ({
@@ -437,7 +437,7 @@ function useSaveSystem(values: SystemFormValues, editing: SystemSummaryResponse 
  * "Editar sistema" na tela do sistema chega aqui com ?edit=ID: abre o painel desse sistema.
  * Com &tab=mcp (faixa do Claude na execução da auditoria), já abre na aba Claude (MCP).
  */
-function useOpenFromUrl(systems: SystemSummaryResponse[] | undefined, open: (s: SystemSummaryResponse) => void, setTab: (t: Tab) => void) {
+function useOpenFromUrl(systems: ISystemSummaryResponse[] | undefined, open: (s: ISystemSummaryResponse) => void, setTab: (t: Tab) => void) {
   const [params, setParams] = useSearchParams();
   const editId = params.get('edit');
   const editTab = params.get('tab');
@@ -455,16 +455,16 @@ function useOpenFromUrl(systems: SystemSummaryResponse[] | undefined, open: (s: 
 
 type FormFieldsProps = ComponentProps<typeof SystemFormFields>;
 
-interface CadastroTabProps extends Pick<FormFieldsProps, 'values' | 'setValues' | 'errors' | 'touched' | 'check' | 'checkPath' | 'localEnabled' | 'save'> {
+interface ICadastroTabProps extends Pick<FormFieldsProps, 'values' | 'setValues' | 'errors' | 'touched' | 'check' | 'checkPath' | 'localEnabled' | 'save'> {
   pending: boolean;
-  profiles: ProfileInfo[];
-  current: SystemSummaryResponse | null;
+  profiles: IProfileInfo[];
+  current: ISystemSummaryResponse | null;
   onCancel: () => void;
   onSave: (auditNow: boolean) => void;
 }
 
 /** Aba "Cadastro e Git": os campos e o rodapé com salvar. */
-function CadastroTab({ pending, profiles, current, onCancel, onSave, ...fields }: CadastroTabProps) {
+function CadastroTab({ pending, profiles, current, onCancel, onSave, ...fields }: ICadastroTabProps) {
   return (
     <>
       <SystemFormFields
@@ -481,16 +481,16 @@ function CadastroTab({ pending, profiles, current, onCancel, onSave, ...fields }
   );
 }
 
-interface ListSectionProps {
-  systems: SystemSummaryResponse[];
+interface IListSectionProps {
+  systems: ISystemSummaryResponse[];
   selectedId: number | null;
-  onAudit: (s: SystemSummaryResponse) => void;
-  onEdit: (s: SystemSummaryResponse) => void;
-  onDelete: (s: SystemSummaryResponse) => void;
+  onAudit: (s: ISystemSummaryResponse) => void;
+  onEdit: (s: ISystemSummaryResponse) => void;
+  onDelete: (s: ISystemSummaryResponse) => void;
 }
 
 /** Busca e a tabela de sistemas (ou o aviso de lista vazia). */
-function SystemsListSection({ systems, selectedId, onAudit, onEdit, onDelete }: ListSectionProps) {
+function SystemsListSection({ systems, selectedId, onAudit, onEdit, onDelete }: IListSectionProps) {
   const [query, setQuery] = useState('');
   const list = filterSystems(systems, query);
   return (
@@ -536,11 +536,11 @@ export function SystemsPage() {
   const { data: systems, isLoading, error } = useSystems();
   const { data: packs } = usePacks();
 
-  const [editing, setEditing] = useState<SystemSummaryResponse | 'new' | null>(null);
-  const [values, setValues] = useState<SystemFormValues>(emptyForm);
+  const [editing, setEditing] = useState<ISystemSummaryResponse | 'new' | null>(null);
+  const [values, setValues] = useState<ISystemFormValues>(emptyForm);
   const [touched, setTouched] = useState(false);
-  const [auditTarget, setAuditTarget] = useState<SystemSummaryResponse | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<SystemSummaryResponse | null>(null);
+  const [auditTarget, setAuditTarget] = useState<ISystemSummaryResponse | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ISystemSummaryResponse | null>(null);
   const [snapshot, setSnapshot] = useState('');
   const [confirmClose, setConfirmClose] = useState(false);
   const { tab, visited, setTab, resetTabs } = useEditorTabs();
@@ -555,7 +555,7 @@ export function SystemsPage() {
     if (auditNow) setAuditTarget(system);
   });
 
-  const open = (target: SystemSummaryResponse | 'new') => {
+  const open = (target: ISystemSummaryResponse | 'new') => {
     const initial = target === 'new' ? emptyForm : formFrom(target);
     setEditing(target);
     resetTabs();

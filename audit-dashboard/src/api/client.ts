@@ -1,38 +1,38 @@
 import type {
-  AuditDiff,
-  AuditFreshness,
-  AuditRunResponse,
-  AuditInsights,
-  PacksResponse,
+  IAuditDiff,
+  IAuditFreshness,
+  IAuditRunResponse,
+  IAuditInsights,
+  IPacksResponse,
   Category,
-  FindingResponse,
-  FindingsOverview,
-  FixPlan,
-  GuideResponse,
-  ScoreExplanation,
+  IFindingResponse,
+  IFindingsOverview,
+  IFixPlan,
+  IGuideResponse,
+  IScoreExplanation,
   FindingStatus,
   Severity,
-  PathCheck,
-  RepoCheck,
-  RuleQuality,
-  ClaudeReview,
-  EngineConfig,
-  PendingAction,
-  ReviewMetrics,
-  EngineTuning,
-  McpCall,
-  McpConfig,
-  McpConfigRequest,
-  McpNewKey,
-  ScheduleRequest,
-  SettingsResponse,
-  Suppression,
-  SuppressRequest,
-  BatchSuppressRequest,
-  BatchSuppressResponse,
-  SystemRequest,
-  SystemSummaryResponse,
-  TrendPoint,
+  IPathCheck,
+  IRepoCheck,
+  IRuleQuality,
+  IClaudeReview,
+  IEngineConfig,
+  IPendingAction,
+  IReviewMetrics,
+  IEngineTuning,
+  IMcpCall,
+  IMcpConfig,
+  IMcpConfigRequest,
+  IMcpNewKey,
+  IScheduleRequest,
+  ISettingsResponse,
+  ISuppression,
+  ISuppressRequest,
+  IBatchSuppressRequest,
+  IBatchSuppressResponse,
+  ISystemRequest,
+  ISystemSummaryResponse,
+  ITrendPoint,
 } from '../types';
 
 // URLs relativas: em dev o proxy do Vite e, em produção, o nginx encaminham /api para a API.
@@ -90,43 +90,43 @@ async function apiText(path: string): Promise<string> {
 }
 
 export const api = {
-  getGuide: () => apiFetch<GuideResponse>('/api/v1/guide'),
+  getGuide: () => apiFetch<IGuideResponse>('/api/v1/guide'),
 
   getGuideClaudeMd: (stackId: string) => apiText(`/api/v1/guide/${encodeURIComponent(stackId)}/claude-md`),
 
-  getSystems: () => apiFetch<SystemSummaryResponse[]>('/api/v1/systems'),
+  getSystems: () => apiFetch<ISystemSummaryResponse[]>('/api/v1/systems'),
 
   getSystem: (id: number) =>
-    apiFetch<SystemSummaryResponse>(`/api/v1/systems/${id}`),
+    apiFetch<ISystemSummaryResponse>(`/api/v1/systems/${id}`),
 
-  updateSchedule: (systemId: number, body: ScheduleRequest) =>
-    apiFetch<SystemSummaryResponse>(`/api/v1/systems/${systemId}/schedule`, {
+  updateSchedule: (systemId: number, body: IScheduleRequest) =>
+    apiFetch<ISystemSummaryResponse>(`/api/v1/systems/${systemId}/schedule`, {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
 
-  getPacks: () => apiFetch<PacksResponse>('/api/v1/packs'),
+  getPacks: () => apiFetch<IPacksResponse>('/api/v1/packs'),
 
-  getInsights: (auditId: number) => apiFetch<AuditInsights>(`/api/v1/audits/${auditId}/insights`),
+  getInsights: (auditId: number) => apiFetch<IAuditInsights>(`/api/v1/audits/${auditId}/insights`),
 
   updateProfile: (systemId: number, profile: string) =>
-    apiFetch<SystemSummaryResponse>(`/api/v1/systems/${systemId}/profile`, {
+    apiFetch<ISystemSummaryResponse>(`/api/v1/systems/${systemId}/profile`, {
       method: 'PUT',
       body: JSON.stringify({ profile }),
     }),
 
-  getRuleQuality: () => apiFetch<RuleQuality[]>('/api/v1/rules/quality'),
+  getRuleQuality: () => apiFetch<IRuleQuality[]>('/api/v1/rules/quality'),
 
   getAuditRuns: (systemId: number) =>
-    apiFetch<AuditRunResponse[]>(`/api/v1/systems/${systemId}/audits`),
+    apiFetch<IAuditRunResponse[]>(`/api/v1/systems/${systemId}/audits`),
 
-  getRecentAudits: (limit = 8) => apiFetch<AuditRunResponse[]>(`/api/v1/audits?limit=${limit}`),
+  getRecentAudits: (limit = 8) => apiFetch<IAuditRunResponse[]>(`/api/v1/audits?limit=${limit}`),
 
   cancelAudit: (id: number) =>
-    apiFetch<AuditRunResponse>(`/api/v1/audits/${id}/cancel`, { method: 'POST' }),
+    apiFetch<IAuditRunResponse>(`/api/v1/audits/${id}/cancel`, { method: 'POST' }),
 
   checkRepo: (repoUrl: string, branch?: string, access?: { systemId?: number; gitToken?: string; gitTokenHosts?: string }) =>
-    apiFetch<RepoCheck>('/api/v1/systems/check-repo', {
+    apiFetch<IRepoCheck>('/api/v1/systems/check-repo', {
       method: 'POST',
       body: JSON.stringify({
         repoUrl,
@@ -141,12 +141,12 @@ export const api = {
   getLocalSourceEnabled: () => apiFetch<{ enabled: boolean }>('/api/v1/systems/local-source'),
 
   checkPath: (path: string, branch?: string) =>
-    apiFetch<PathCheck>('/api/v1/systems/check-path', {
+    apiFetch<IPathCheck>('/api/v1/systems/check-path', {
       method: 'POST',
       body: JSON.stringify({ path, branch: branch || undefined }),
     }),
 
-  getAudit: (id: number) => apiFetch<AuditRunResponse>(`/api/v1/audits/${id}`),
+  getAudit: (id: number) => apiFetch<IAuditRunResponse>(`/api/v1/audits/${id}`),
 
   getFindings: (
     auditId: number,
@@ -168,12 +168,12 @@ export const api = {
         ).toString()
       : '';
     const url = `/api/v1/audits/${auditId}/findings${qs ? `?${qs}` : ''}`;
-    return apiFetch<FindingResponse[]>(url);
+    return apiFetch<IFindingResponse[]>(url);
   },
 
-  getFixPlan: (auditId: number) => apiFetch<FixPlan>(`/api/v1/audits/${auditId}/fix-plan`),
+  getFixPlan: (auditId: number) => apiFetch<IFixPlan>(`/api/v1/audits/${auditId}/fix-plan`),
   getScoreExplanation: (auditId: number, without: string[]) =>
-    apiFetch<ScoreExplanation>(`/api/v1/audits/${auditId}/score-explanation${without.length > 0 ? `?without=${encodeURIComponent(without.join(','))}` : ''}`),
+    apiFetch<IScoreExplanation>(`/api/v1/audits/${auditId}/score-explanation${without.length > 0 ? `?without=${encodeURIComponent(without.join(','))}` : ''}`),
 
   getFindingsOverview: (params: {
     systemId?: number;
@@ -192,27 +192,27 @@ export const api = {
       if (Array.isArray(v)) v.forEach((item) => qs.append(k, String(item)));
       else qs.append(k, String(v));
     }
-    return apiFetch<FindingsOverview>(`/api/v1/findings?${qs.toString()}`);
+    return apiFetch<IFindingsOverview>(`/api/v1/findings?${qs.toString()}`);
   },
 
-  getDiff: (auditId: number) => apiFetch<AuditDiff>(`/api/v1/audits/${auditId}/diff`),
+  getDiff: (auditId: number) => apiFetch<IAuditDiff>(`/api/v1/audits/${auditId}/diff`),
 
-  getFreshness: (auditId: number) => apiFetch<AuditFreshness>(`/api/v1/audits/${auditId}/freshness`),
+  getFreshness: (auditId: number) => apiFetch<IAuditFreshness>(`/api/v1/audits/${auditId}/freshness`),
 
   getTrend: (systemId: number, limit = 30) =>
-    apiFetch<TrendPoint[]>(`/api/v1/systems/${systemId}/trend?limit=${limit}`),
+    apiFetch<ITrendPoint[]>(`/api/v1/systems/${systemId}/trend?limit=${limit}`),
 
   getSuppressions: (systemId: number) =>
-    apiFetch<Suppression[]>(`/api/v1/systems/${systemId}/suppressions`),
+    apiFetch<ISuppression[]>(`/api/v1/systems/${systemId}/suppressions`),
 
-  suppressFinding: (findingId: number, body: SuppressRequest) =>
-    apiFetch<Suppression>(`/api/v1/findings/${findingId}/suppress`, {
+  suppressFinding: (findingId: number, body: ISuppressRequest) =>
+    apiFetch<ISuppression>(`/api/v1/findings/${findingId}/suppress`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
-  suppressFindings: (body: BatchSuppressRequest) =>
-    apiFetch<BatchSuppressResponse>('/api/v1/findings/suppress-batch', {
+  suppressFindings: (body: IBatchSuppressRequest) =>
+    apiFetch<IBatchSuppressResponse>('/api/v1/findings/suppress-batch', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
@@ -226,19 +226,19 @@ export const api = {
     /** Só como reserva: com login, a API grava quem está autenticado. */
     triggeredBy?: string;
   }) =>
-    apiFetch<AuditRunResponse>('/api/v1/audits', {
+    apiFetch<IAuditRunResponse>('/api/v1/audits', {
       method: 'POST',
       body: JSON.stringify({ triggeredBy: 'dashboard', ...body }),
     }),
 
-  createSystem: (body: SystemRequest) =>
-    apiFetch<SystemSummaryResponse>('/api/v1/systems', {
+  createSystem: (body: ISystemRequest) =>
+    apiFetch<ISystemSummaryResponse>('/api/v1/systems', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
-  updateSystem: (id: number, body: SystemRequest) =>
-    apiFetch<SystemSummaryResponse>(`/api/v1/systems/${id}`, {
+  updateSystem: (id: number, body: ISystemRequest) =>
+    apiFetch<ISystemSummaryResponse>(`/api/v1/systems/${id}`, {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
@@ -246,45 +246,45 @@ export const api = {
   deleteSystem: (id: number) => apiFetch<void>(`/api/v1/systems/${id}`, { method: 'DELETE' }),
 
   // Acesso do Claude (MCP) a um sistema. A chave só aparece na resposta que a cria.
-  getMcp: (systemId: number) => apiFetch<McpConfig>(`/api/v1/mcp-access/${systemId}`),
+  getMcp: (systemId: number) => apiFetch<IMcpConfig>(`/api/v1/mcp-access/${systemId}`),
 
-  updateMcp: (systemId: number, body: McpConfigRequest) =>
-    apiFetch<McpConfig>(`/api/v1/mcp-access/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
+  updateMcp: (systemId: number, body: IMcpConfigRequest) =>
+    apiFetch<IMcpConfig>(`/api/v1/mcp-access/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
 
-  newMcpKey: (systemId: number) => apiFetch<McpNewKey>(`/api/v1/mcp-access/${systemId}/key`, { method: 'POST' }),
+  newMcpKey: (systemId: number) => apiFetch<IMcpNewKey>(`/api/v1/mcp-access/${systemId}/key`, { method: 'POST' }),
 
   revokeMcpKey: (systemId: number) => apiFetch<void>(`/api/v1/mcp-access/${systemId}/key`, { method: 'DELETE' }),
 
-  getEngineConfig: (systemId: number) => apiFetch<EngineConfig>(`/api/v1/engine-config/${systemId}`),
+  getEngineConfig: (systemId: number) => apiFetch<IEngineConfig>(`/api/v1/engine-config/${systemId}`),
 
-  updateEngineConfig: (systemId: number, body: EngineTuning) =>
-    apiFetch<EngineConfig>(`/api/v1/engine-config/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
+  updateEngineConfig: (systemId: number, body: IEngineTuning) =>
+    apiFetch<IEngineConfig>(`/api/v1/engine-config/${systemId}`, { method: 'PUT', body: JSON.stringify(body) }),
 
-  getSettings: () => apiFetch<SettingsResponse>('/api/v1/settings'),
+  getSettings: () => apiFetch<ISettingsResponse>('/api/v1/settings'),
 
   /** Grava só as chaves informadas; valor null devolve a configuração ao ambiente. */
   saveSettings: (values: Record<string, string | null>) =>
-    apiFetch<SettingsResponse>('/api/v1/settings', { method: 'PUT', body: JSON.stringify({ values }) }),
+    apiFetch<ISettingsResponse>('/api/v1/settings', { method: 'PUT', body: JSON.stringify({ values }) }),
 
-  resetSetting: (key: string) => apiFetch<SettingsResponse>(`/api/v1/settings/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+  resetSetting: (key: string) => apiFetch<ISettingsResponse>(`/api/v1/settings/${encodeURIComponent(key)}`, { method: 'DELETE' }),
 
   restartApi: () => apiFetch<void>('/api/v1/settings/restart', { method: 'POST' }),
 
-  getReviewMetrics: (systemId: number) => apiFetch<ReviewMetrics>(`/api/v1/claude-review/${systemId}/metrics`),
+  getReviewMetrics: (systemId: number) => apiFetch<IReviewMetrics>(`/api/v1/claude-review/${systemId}/metrics`),
 
-  getClaudeReview: (systemId: number) => apiFetch<ClaudeReview>(`/api/v1/claude-review/${systemId}`),
+  getClaudeReview: (systemId: number) => apiFetch<IClaudeReview>(`/api/v1/claude-review/${systemId}`),
 
   reviewAction: (systemId: number, path: string, body?: unknown) =>
-    apiFetch<ClaudeReview>(`/api/v1/claude-review/${systemId}/${path}`, {
+    apiFetch<IClaudeReview>(`/api/v1/claude-review/${systemId}/${path}`, {
       method: 'POST',
       body: JSON.stringify(body ?? {}),
     }),
 
-  getPendingActions: (systemId: number) => apiFetch<PendingAction[]>(`/api/v1/pending-actions/${systemId}`),
+  getPendingActions: (systemId: number) => apiFetch<IPendingAction[]>(`/api/v1/pending-actions/${systemId}`),
 
   decidePendingAction: (systemId: number, actionId: number, decision: 'approve' | 'reject') =>
-    apiFetch<PendingAction[]>(`/api/v1/pending-actions/${systemId}/${actionId}/${decision}`, { method: 'POST', body: '{}' }),
+    apiFetch<IPendingAction[]>(`/api/v1/pending-actions/${systemId}/${actionId}/${decision}`, { method: 'POST', body: '{}' }),
 
   getMcpCalls: (systemId: number, limit = 20) =>
-    apiFetch<McpCall[]>(`/api/v1/mcp-access/${systemId}/calls?limit=${limit}`),
+    apiFetch<IMcpCall[]>(`/api/v1/mcp-access/${systemId}/calls?limit=${limit}`),
 };

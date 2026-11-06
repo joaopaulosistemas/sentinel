@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { EnginePackState } from '../types';
-import type { RuleRow } from './ruleCatalog';
+import type { IEnginePackState } from '../types';
+import type { IRuleRow } from './ruleCatalog';
 import { analyzersBySide, familyOf, familyTabs, groupPacks, hiddenAdjustedCount, limitSide, packsBySide, presetOf, rowsOfActivePacks, ruleCountByPack, sideIsOff, sideOfPack, sideOfRule, sideTotals, sidesOffOf } from './ruleFamilies';
 
-const pack = (id: string): EnginePackState => ({ id, name: id, description: null, inProfile: true, active: true });
-const row = (id: string, pack: string | null, category: string | null, count = 0): RuleRow => ({ id, title: null, pack, declared: null, category, count, gain: null, inProfile: false });
+const pack = (id: string): IEnginePackState => ({ id, name: id, description: null, inProfile: true, active: true });
+const row = (id: string, pack: string | null, category: string | null, count = 0): IRuleRow => ({ id, title: null, pack, declared: null, category, count, gain: null, inProfile: false });
 
 describe('ruleFamilies', () => {
   it('classifica os pacotes conhecidos por lado e manda o resto para transversais', () => {
