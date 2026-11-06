@@ -5,10 +5,12 @@
     "benchmark_owasp": "casos BenchmarkTest00001 a BenchmarkTest01370 (usados pelo desenvolvimento das regras Java de 2026-10-22)",
     "repositorios_fixos": [
       "WebGoat/WebGoat",
-      "juice-shop/juice-shop"
+      "juice-shop/juice-shop",
+      "whgojp/JavaSecLab"
     ],
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
-    "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu."
+    "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu.",
+    "_nota_javaseclab": "whgojp/JavaSecLab (app Java de treino de segurança, branch i18n-bilingual, stack JAVA) entrou em 2026-11-06 na volta 6 (ciclo/estabilizacao-3); treino."
   },
   "validacao": {
     "repositorios_fixos": [
