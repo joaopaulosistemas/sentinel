@@ -86,6 +86,9 @@ public class SarifAnalyzer implements CodeAnalyzer {
                     break;
                 }
             }
+            if (!policy.packs().isEmpty() && policy.packs().stream().noneMatch(p -> TOOLS_PACK_ID.equals(p.id()))) {
+                resumo.joernDesligado();
+            }
         }
         return new AnalyzerResult(findings, ANALYZER_NAME, Duration.between(start, Instant.now()), null, resumo.texto());
     }
@@ -125,6 +128,9 @@ public class SarifAnalyzer implements CodeAnalyzer {
     /** Identificador da fonte do Joern em {@code market-tools/tools/taint.yml}. */
     static final String JOERN_ID = "joern-taint";
 
+    /** Pacote que traz as ferramentas externas, entre elas o Joern. */
+    static final String TOOLS_PACK_ID = "market-tools";
+
     enum Situacao { RODOU, SEM_PERMISSAO, NAO_INSTALADA, SEM_ARQUIVOS, SEM_RESULTADO }
 
     /** Resumo, para a tela de acompanhamento, de quais ferramentas de comando rodaram e quais ficaram de fora. */
@@ -136,6 +142,13 @@ public class SarifAnalyzer implements CodeAnalyzer {
         private final List<String> falhou = new ArrayList<>();
         /** Situação do Joern em frase própria: é a ferramenta opcional, e a pessoa precisa ver se está ativa. */
         private String joern;
+
+        /** O pacote das ferramentas externas não está ativo neste sistema (fora do perfil ou desligado nos ajustes). */
+        void joernDesligado() {
+            if (joern == null) {
+                joern = "desligado neste sistema (o pacote " + TOOLS_PACK_ID + " está fora do perfil ou desligado nos ajustes).";
+            }
+        }
 
         void falhou(ToolSpec spec) {
             if (JOERN_ID.equals(spec.id())) {

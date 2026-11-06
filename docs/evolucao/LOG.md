@@ -748,3 +748,10 @@ Verificado: teste do Trivy atualizado (`ExternalScannersTest`). NÃO verificado:
 - **Não feito:** card separado do Joern (mudaria o contrato do progresso); estado "desligado no sistema" (o pacote desligado simplesmente não gera linha).
 
 Verificado: leitura do código. NÃO verificado: JUnit/Maven (só CI; `SarifAnalyzerTest.oJoernTemFraseProprianoResumo` é novo e não rodou); vitest/tipos do dashboard (sem `node_modules` aqui); tela real.
+
+## Dashboard 12.61.0 — Joern "desligado" no card SARIF
+
+- **Mudança:** quando nenhum pacote ativo do sistema se chama `market-tools` (fora do perfil ou desligado nos ajustes), a nota do card "Ferramentas externas (SARIF)" traz "Joern (taint entre arquivos): desligado neste sistema (…)". Antes o Joern simplesmente não aparecia.
+- **Limite:** só vale quando o sistema tem algum pacote ativo; sem nenhum pacote, não há nota.
+
+Verificado: leitura do código. NÃO verificado: JUnit (só CI; teste novo `semOPacoteDeFerramentasOJoernAparecePorDesligado`); tela real.
