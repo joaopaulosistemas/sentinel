@@ -634,3 +634,19 @@
   after: "req.session.role = usuarioDoBanco.role"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
+
+- key: "sentinel-android-provider-openfile-caminho"
+  summary: "No ContentProvider.openFile, resolva o caminho com getCanonicalPath() e confira que ele fica dentro da pasta permitida; proteja o provider com android:permission."
+  before: "File f = new File(base, uri.getLastPathSegment());"
+  after: "File f = new File(base, uri.getLastPathSegment()); if (!f.getCanonicalPath().startsWith(base.getCanonicalPath() + File.separator)) { throw new SecurityException(); }"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/22.html"
+    - "https://developer.android.com/privacy-and-security/risks/path-traversal"
+
+- key: "sentinel-android-classloader-armazenamento-externo"
+  summary: "Não carregue código de armazenamento externo: use o armazenamento interno somente leitura e confira hash/assinatura, ou inclua o código no APK."
+  before: "new DexClassLoader(\"/sdcard/updater.apk\", cache, null, parent);"
+  after: "new DexClassLoader(new File(context.getFilesDir(), \"plugin.apk\").getAbsolutePath(), cache, null, parent);"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/94.html"
+    - "https://developer.android.com/privacy-and-security/risks/dynamic-code-loading"

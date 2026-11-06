@@ -113,3 +113,84 @@ rules:
       category: security
       cwe: "CWE-732: Incorrect Permission Assignment for Critical Resource"
       owasp: M9 - Insecure Data Storage
+
+  - id: sentinel-android-provider-openfile-caminho
+    patterns:
+      - pattern-inside: |
+          ParcelFileDescriptor openFile(Uri $U, String $M) { ... }
+      - pattern-either:
+          - pattern: new File($D, $U.getLastPathSegment())
+          - pattern: new File($D, $U.getPath())
+          - pattern: new File($U.getPath())
+          - pattern: new File($D, $U.getPathSegments().get(...))
+          - pattern: new File($D, $U.getEncodedPath())
+      - pattern-not-inside: |
+          ParcelFileDescriptor openFile(Uri $U, String $M) {
+            ...
+            if (<... $X.getCanonicalPath() ...>) { ... }
+            ...
+          }
+      - pattern-not-inside: |
+          ParcelFileDescriptor openFile(Uri $U, String $M) {
+            ...
+            $T $V = $X.getCanonicalPath();
+            ...
+          }
+    message: >
+      ContentProvider.openFile monta o caminho do arquivo com o Uri recebido de outro app (CWE-22). Segmentos como
+      "..%2F" ou um caminho absoluto levam o provider a ler ou sobrescrever arquivos fora da pasta prevista, inclusive
+      os privados do app. Resolva o caminho com getCanonicalPath() e confira que ele começa pela pasta permitida (ou
+      use uma lista de nomes), e proteja o provider com android:permission.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp: M4 - Insufficient Input/Output Validation
+
+  - id: sentinel-android-classloader-armazenamento-externo
+    patterns:
+      - pattern-either:
+          - pattern: new DexClassLoader(...)
+          - pattern: new PathClassLoader(...)
+          - pattern: new InMemoryDexClassLoader(...)
+      - pattern-either:
+          - patterns:
+              - pattern-inside: |
+                  $R $M(...) {
+                    ...
+                    new File("$V");
+                    ...
+                  }
+              - metavariable-regex:
+                  metavariable: $V
+                  regex: '^/(sdcard|storage|mnt)\b.*'
+          - pattern-inside: |
+              $R $M(...) {
+                ...
+                Environment.getExternalStorageDirectory();
+                ...
+              }
+          - pattern-inside: |
+              $R $M(...) {
+                ...
+                $C.getExternalFilesDir(...);
+                ...
+              }
+          - pattern-inside: |
+              $R $M(...) {
+                ...
+                $C.getExternalCacheDir();
+                ...
+              }
+    message: >
+      Código carregado dinamicamente (DexClassLoader/PathClassLoader) de arquivo no armazenamento externo (CWE-94).
+      Qualquer app com permissão de escrita no cartão troca o arquivo e executa código no processo do seu app, com as
+      permissões dele. Guarde o código no armazenamento interno (getFilesDir, modo somente leitura), confira a
+      assinatura/hash antes de carregar e prefira não carregar código de fora do APK.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      owasp: M7 - Insufficient Binary Protections

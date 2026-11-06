@@ -42,4 +42,34 @@ class AndroidTeste extends android.app.Activity {
         // ok: sentinel-android-modo-mundo
         ctx.getSharedPreferences("prefs", 0);
     }
+
+    ParcelFileDescriptor openFile(Uri uri, String modo) throws java.io.FileNotFoundException {
+        // ruleid: sentinel-android-provider-openfile-caminho
+        File arquivo = new File(Environment.getExternalStorageDirectory(), uri.getLastPathSegment());
+        return ParcelFileDescriptor.open(arquivo, ParcelFileDescriptor.MODE_READ_WRITE);
+    }
+
+    static class Seguro {
+        ParcelFileDescriptor openFile(Uri uri, String modo) throws Exception {
+            File base = new File("/data/app/pub");
+            // ok: sentinel-android-provider-openfile-caminho
+            File arquivo = new File(base, uri.getLastPathSegment());
+            if (!arquivo.getCanonicalPath().startsWith(base.getCanonicalPath())) {
+                throw new SecurityException();
+            }
+            return ParcelFileDescriptor.open(arquivo, ParcelFileDescriptor.MODE_READ_ONLY);
+        }
+    }
+
+    void carregaCodigo(android.content.Context ctx) {
+        File apk = new File("/sdcard/updater.apk");
+        // ruleid: sentinel-android-classloader-armazenamento-externo
+        new DexClassLoader(apk.getAbsolutePath(), ctx.getCacheDir().getAbsolutePath(), null, ctx.getClassLoader());
+    }
+
+    void carregaCodigoInterno(android.content.Context ctx) {
+        File apk = new File(ctx.getFilesDir(), "plugin.apk");
+        // ok: sentinel-android-classloader-armazenamento-externo
+        new DexClassLoader(apk.getAbsolutePath(), ctx.getCacheDir().getAbsolutePath(), null, ctx.getClassLoader());
+    }
 }
