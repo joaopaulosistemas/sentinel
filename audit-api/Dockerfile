@@ -141,10 +141,9 @@ RUN apt-get update \
     && groupadd --system audit && useradd --system --gid audit --create-home audit
 ENV SEMGREP_SEND_METRICS=off SEMGREP_ENABLE_VERSION_CHECK=0 LC_ALL=C.UTF-8 TRIVY_CACHE_DIR=/home/audit/.cache/trivy
 WORKDIR /app
-COPY --from=build /build/audit-api/target/quarkus-app/ /app/
-COPY audit-rules/packs /app/audit-rules/packs
-COPY audit-rules/bin/sentinel-pack /usr/local/bin/sentinel-pack
-RUN chmod 755 /usr/local/bin/sentinel-pack
+# Ordem pensada para o cache: o que quase nunca muda (lint, npm install, CA) vem primeiro; o que muda a cada commit
+# (a aplicação compilada e os packs de regras) vem por último, logo antes do chown. Assim uma mudança de código
+# não refaz os npm install nem a importação do CA.
 COPY audit-rules/lint/eslint /opt/eslint
 COPY audit-rules/lint/stylelint /opt/stylelint
 COPY audit-rules/lint/jscpd /opt/jscpd
@@ -192,7 +191,14 @@ RUN set -eu; \
 # Remove as configurações inseguras: a imagem final volta a verificar SSL normalmente
 RUN rm -f /root/.curlrc /root/.npmrc /etc/pip.conf /etc/apt/apt.conf.d/99insecure \
     && (git config --system --unset-all http.sslVerify || true)
-RUN mkdir -p /tmp/sentinel-audit-clones /var/lib/sentinel && chown -R audit:audit /app /tmp/sentinel-audit-clones /var/lib/sentinel
+
+# Camadas que mudam a cada commit (devem ficar por último, depois de tudo que é caro de refazer)
+COPY --from=build /build/audit-api/target/quarkus-app/ /app/
+COPY audit-rules/packs /app/audit-rules/packs
+COPY audit-rules/bin/sentinel-pack /usr/local/bin/sentinel-pack
+RUN chmod 755 /usr/local/bin/sentinel-pack \
+    && mkdir -p /tmp/sentinel-audit-clones /var/lib/sentinel \
+    && chown -R audit:audit /app /tmp/sentinel-audit-clones /var/lib/sentinel
 USER audit
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
