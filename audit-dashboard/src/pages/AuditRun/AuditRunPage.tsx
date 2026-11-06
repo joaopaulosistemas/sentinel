@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
-import { AnalyzerCard, EventLog, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
+import { AnalyzerCard, EventLog, LoadingSourceCard, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
 import { PageShell, type Crumb } from '../../components/PageShell';
 import { McpStatusStrip } from '../../components/McpStatusStrip';
 import { useMcpActivity } from '../../hooks/useMcpActivity';
@@ -25,6 +25,7 @@ import {
   elapsedSeconds,
   etaText,
   formatDuration,
+  isLoadingSource,
   phaseIndex,
   phaseViews,
   progressPercent,
@@ -176,23 +177,34 @@ interface ProgressSectionProps {
   /** Texto da estimativa; nulo quando a auditoria não está em execução. */
   etaLabel: string | null;
   barColor: string;
+  /** Fila e clone: não há porcentagem real, então a barra anda sem número. */
+  indeterminate?: boolean;
+  /** Cartão de "carregando", mostrado só enquanto o código está sendo baixado ou copiado. */
+  loading?: ReactNode;
 }
 
-function ProgressSection({ phases, percent, stepText, seconds, etaLabel, barColor }: ProgressSectionProps) {
+function ProgressSection({ phases, percent, stepText, seconds, etaLabel, barColor, indeterminate = false, loading }: ProgressSectionProps) {
   return (
     <section aria-label="Andamento" style={{ ...box, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
       <PhaseStrip phases={phases} />
+      {loading}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, fontSize: 13 }}>
-          <span><strong style={{ fontWeight: 600 }}>{percent}%</strong> &nbsp;·&nbsp; {stepText}</span>
+          <span>{!indeterminate && <><strong style={{ fontWeight: 600 }}>{percent}%</strong> &nbsp;·&nbsp; </>}{stepText}</span>
           <span style={{ color: 'var(--s-text-3)' }}>
             {seconds !== null && <>Decorrido <span style={{ fontFamily: mono, color: 'var(--s-text)' }}>{clock(seconds)}</span></>}
             {etaLabel !== null && <> &nbsp;·&nbsp; <span title="Estimativa pela média das últimas auditorias deste sistema">{etaLabel}</span></>}
           </span>
         </div>
-        <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Progresso da auditoria" style={{ height: 8, background: 'var(--s-border)' }}>
-          <div style={{ height: 8, background: barColor, width: `${percent}%`, transition: 'width 300ms ease' }} />
-        </div>
+        {indeterminate ? (
+          <div role="progressbar" aria-label="Progresso da auditoria" className="sentinel-indeterminate" style={{ height: 8, background: 'var(--s-border)' }}>
+            <span style={{ background: barColor }} />
+          </div>
+        ) : (
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Progresso da auditoria" style={{ height: 8, background: 'var(--s-border)' }}>
+            <div style={{ height: 8, background: barColor, width: `${percent}%`, transition: 'width 300ms ease' }} />
+          </div>
+        )}
       </div>
     </section>
   );
@@ -381,6 +393,7 @@ function RunningView({ run, progress, history, mcp, seconds }: RunningViewProps)
   const counts = analyzerCounts(analyzers);
   const active = !FINISHED.includes(run.status);
   const etaLabel = active ? etaLabelFor(run, history ?? [], seconds) : null;
+  const loadingSource = isLoadingSource({ status: run.status, progress });
 
   return (
     <PageShell crumbs={runCrumbsFor(run)}>
@@ -400,6 +413,8 @@ function RunningView({ run, progress, history, mcp, seconds }: RunningViewProps)
         seconds={seconds}
         etaLabel={etaLabel}
         barColor={barColorFor(run.status)}
+        indeterminate={loadingSource}
+        loading={loadingSource ? <LoadingSourceCard progress={progress} queued={phaseIndex(run) === 0} seconds={seconds} /> : undefined}
       />
 
       {active && run.systemId !== undefined && (

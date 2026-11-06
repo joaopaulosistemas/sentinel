@@ -175,6 +175,9 @@ export interface AuditProgress {
   repoUrl?: string | null;
   filesRead?: number;
   linesOfCode?: number;
+  /** Arquivos já copiados e total, na cópia da pasta local (zero ou ausente: não se sabe) */
+  copyDone?: number;
+  copyTotal?: number;
   /** Achados parciais por severidade, já com o que as ferramentas concluídas encontraram */
   severities?: Partial<Record<Severity, number>>;
 }

@@ -2,6 +2,8 @@ package com.sentinel.audit.service;
 
 import com.sentinel.audit.model.LocalSnapshot;
 
+import org.jboss.logging.Logger;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +34,8 @@ import java.util.regex.Pattern;
  * </ul>
  */
 public final class LocalSource {
+
+    private static final Logger LOG = Logger.getLogger(LocalSource.class);
 
     private static final int BRANCH_MAX_CHARS = 255;
     private static final int OUTPUT_TAIL_CHARS = 600;
@@ -270,6 +274,22 @@ public final class LocalSource {
      */
     public Path snapshot(String relative, String branch, LocalSnapshot mode, Integer historyDepth, Path baseDir)
             throws IOException, InterruptedException {
+        return snapshot(relative, branch, mode, historyDepth, baseDir, CopyProgress.NONE);
+    }
+
+    /** Quem quer saber quantos arquivos já foram copiados (modo "como está agora"); chamado de tempos em tempos. */
+    @FunctionalInterface
+    public interface CopyProgress {
+        CopyProgress NONE = (done, total) -> { };
+
+        void report(long done, long total);
+    }
+
+    /** Intervalo, em arquivos, entre dois avisos de andamento da cópia. */
+    static final int PROGRESS_EVERY = 100;
+
+    public Path snapshot(String relative, String branch, LocalSnapshot mode, Integer historyDepth, Path baseDir,
+                         CopyProgress progress) throws IOException, InterruptedException {
         Path src = resolve(relative);
         validateBranch(branch);
         // Verificação leve (sem contar arquivos nem rodar "git status", lentos em repositório grande).
@@ -284,7 +304,7 @@ public final class LocalSource {
         Path target = baseDir.toAbsolutePath().normalize().resolve(UUID.randomUUID().toString()).normalize();
         try {
             if (mode == LocalSnapshot.TREE) {
-                copyWorkingTree(src, target);
+                copyWorkingTree(src, target, progress == null ? CopyProgress.NONE : progress);
             } else {
                 cloneCommit(src, branch, historyDepth, target);
             }
@@ -320,22 +340,37 @@ public final class LocalSource {
     }
 
     /** Copia só o que o git conhece (versionado e não versionado que não é ignorado): sem node_modules, target etc. */
-    private void copyWorkingTree(Path src, Path target) throws IOException, InterruptedException {
+    private void copyWorkingTree(Path src, Path target, CopyProgress progress) throws IOException, InterruptedException {
+        long started = System.nanoTime();
         Out list = git(src, "ls-files", "-z", "--cached", "--others", "--exclude-standard");
         if (list.exit() != 0) {
             throw new IllegalStateException("Não foi possível listar os arquivos da pasta: " + tail(list.text()));
         }
+        String[] files = list.text().split("\0");
+        long total = java.util.Arrays.stream(files).filter(f -> !f.isEmpty()).count();
+        LOG.infof("Pasta local: %d arquivos para copiar (listagem em %d ms)", total,
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
+        progress.report(0, total);
         Files.createDirectories(target);
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(Math.max(timeoutSeconds, 1));
-        for (String rel : list.text().split("\0")) {
+        long done = 0;
+        for (String rel : files) {
             if (rel.isEmpty()) {
                 continue;
             }
             if (System.nanoTime() > deadline) {
-                throw new IllegalStateException("A cópia da pasta excedeu o tempo limite de " + timeoutSeconds + "s");
+                throw new IllegalStateException("A cópia da pasta excedeu o tempo limite de " + timeoutSeconds
+                        + "s (" + done + " de " + total + " arquivos copiados)");
             }
             copyOne(src, target, rel);
+            done++;
+            if (done % PROGRESS_EVERY == 0) {
+                progress.report(done, total);
+            }
         }
+        progress.report(total, total);
+        LOG.infof("Pasta local copiada: %d arquivos em %d ms", total,
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
     }
 
     private static void copyOne(Path src, Path target, String rel) throws IOException {

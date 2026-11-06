@@ -79,6 +79,24 @@ describe('AuditRunPage', () => {
     expect(screen.getByText(/1 de 2 analisadores concluídos/)).toBeInTheDocument();
   });
 
+  it('no clone mostra o carregando, a barra sem porcentagem e o contador de arquivos', async () => {
+    renderPage({
+      progress: { phase: 'CLONE', analyzers: [], events: [], copyDone: 300, copyTotal: 830 },
+    });
+    const status = await screen.findByRole('status');
+    expect(within(status).getByText(/Copiando o código/)).toBeInTheDocument();
+    expect(within(status).getByText('300 de 830 arquivos')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Progresso da auditoria' })).not.toHaveAttribute('aria-valuenow');
+    expect(screen.getByRole('img', { name: 'Em andamento' })).toBeInTheDocument();
+  });
+
+  it('depois da análise começar o carregando some e a barra volta a ter porcentagem', async () => {
+    renderPage({ progress: { phase: 'ANALISE', analyzers: [], events: [] } });
+    await screen.findByRole('progressbar', { name: 'Progresso da auditoria' });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Progresso da auditoria' })).toHaveAttribute('aria-valuenow');
+  });
+
   it('concluída mostra veredito, categorias e o que corrigir primeiro', async () => {
     renderPage(
       {

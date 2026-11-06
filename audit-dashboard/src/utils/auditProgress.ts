@@ -81,6 +81,26 @@ export function formatDuration(totalSeconds: number): string {
   return m > 0 ? `${m} min ${String(s).padStart(2, '0')} s` : `${s} s`;
 }
 
+/** A auditoria ainda está na fila ou baixando/copiando o código: não há porcentagem real para mostrar. */
+export function isLoadingSource(run: Pick<AuditRunResponse, 'status' | 'progress'>): boolean {
+  return isActiveRun(run) && phaseIndex(run) <= 1;
+}
+
+/** "1.350 de 48.000 arquivos"; nulo quando o total da cópia ainda não é conhecido. */
+export function copyText(progress: AuditProgressLike | null | undefined): string | null {
+  const total = progress?.copyTotal ?? 0;
+  if (total <= 0) return null;
+  const done = Math.min(progress?.copyDone ?? 0, total);
+  return `${done.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} arquivos`;
+}
+
+type AuditProgressLike = NonNullable<AuditRunResponse['progress']>;
+
+/** Segundos depois dos quais o carregamento ganha o aviso de que está demorando. */
+export const SLOW_LOAD_SECONDS = 30;
+
+export const isSlowLoad = (seconds: number | null): boolean => seconds !== null && seconds >= SLOW_LOAD_SECONDS;
+
 export const isActiveRun = (run: Pick<AuditRunResponse, 'status'>) => run.status === 'PENDING' || run.status === 'RUNNING';
 
 /** Duração média, em segundos, das últimas auditorias concluídas (até 5); nulo se não houver nenhuma. */
@@ -145,7 +165,7 @@ export function phaseViews(
   const repo = shortRepo(run.progress?.repoUrl);
   const subs: Record<AuditPhase, string> = {
     FILA: 'aguardando vaga',
-    CLONE: repo ?? 'baixando o código',
+    CLONE: copyText(run.progress) ?? repo ?? 'baixando o código',
     ANALISE: counts.total > 0 ? `${counts.done} de ${counts.total} analisadores` : 'rodando as ferramentas',
     PONTUACAO: 'nota por dimensão',
     RELATORIO: 'insights e plano de ação',

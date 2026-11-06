@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { AnalyzerProgress, AuditProgress, AuditRunResponse, Severity } from '../types';
-import { PHASES, clock, secondsBetween, type PhaseView } from '../utils/auditProgress';
+import { PHASES, clock, copyText, isSlowLoad, secondsBetween, shortRepo, type PhaseView } from '../utils/auditProgress';
 import { scoreColor } from '../utils/scoreBand';
 import { CheckIcon, ClockIcon, CrossIcon, DashIcon, SpinnerIcon } from './StatusIcons';
 
@@ -23,7 +23,10 @@ export function PhaseStrip({ phases }: { phases: PhaseView[] }) {
             style={{ flex: '1 1 180px', minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: 10, paddingRight: 12 }}>
             <span style={{ flex: 'none', width: 28, height: 28, borderRadius: 14, display: 'inline-flex', alignItems: 'center',
               justifyContent: 'center', fontSize: 12, fontWeight: 600, background: c.bg, color: c.fg, border: `2px solid ${c.border}` }}>
-              {p.state === 'done' ? <CheckIcon size={14} color="#ffffff" strokeWidth={3.5} /> : p.state === 'failed' ? <CrossIcon size={14} color="#ffffff" /> : p.n}
+              {p.state === 'done' ? <CheckIcon size={14} color="#ffffff" strokeWidth={3.5} />
+                : p.state === 'failed' ? <CrossIcon size={14} color="#ffffff" />
+                : p.state === 'active' && (p.id === 'FILA' || p.id === 'CLONE') ? <SpinnerIcon size={16} color="#ffffff" label="Em andamento" />
+                : p.n}
             </span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
               <span style={{ fontWeight: 500, color: c.title }}>{p.name}</span>
@@ -33,6 +36,36 @@ export function PhaseStrip({ phases }: { phases: PhaseView[] }) {
         );
       })}
     </ol>
+  );
+}
+
+/** Cartão de "carregando" da fila e do clone: diz o que está acontecendo, quanto já foi e avisa se demorar. */
+export function LoadingSourceCard({ progress, queued, seconds }: { progress: AuditProgress | null; queued: boolean; seconds: number | null }) {
+  const files = copyText(progress);
+  const slow = isSlowLoad(seconds);
+  const repo = shortRepo(progress?.repoUrl);
+  const title = queued
+    ? 'Aguardando uma vaga para rodar…'
+    : files !== null
+      ? 'Copiando o código da pasta local…'
+      : 'Baixando o código do repositório…';
+  const color = slow ? '#b28600' : '#0f62fe';
+  return (
+    <div role="status" aria-live="polite" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 14px',
+      border: '1px solid var(--s-border)', borderLeft: `4px solid ${color}`, background: slow ? 'var(--s-warn-bg)' : 'var(--s-layer)' }}>
+      <SpinnerIcon size={22} color={color} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+        <strong className={slow ? undefined : 'sentinel-pulse'}>{title}</strong>
+        {repo !== null && <span style={{ fontSize: 12, color: 'var(--s-text-3)', overflowWrap: 'anywhere' }}>{repo}</span>}
+        {files !== null && <span style={{ fontFamily: mono, fontSize: 13 }}>{files}</span>}
+        {slow && (
+          <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
+            <strong>Está demorando mais que o normal.</strong> Pastas grandes ou em disco lento levam mais tempo. A auditoria
+            continua rodando; não feche esta tela nem reinicie a aplicação.
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
