@@ -321,7 +321,7 @@ final class ExternalTools {
                     return java.nio.file.FileVisitResult.CONTINUE;
                 }
             });
-        } catch (IOException e) {
+        } catch (IOException ignored) {
             // sem a lista o motor apenas analisa mais arquivos
         }
         return found;
@@ -353,7 +353,7 @@ final class ExternalTools {
                     return java.nio.file.FileVisitResult.CONTINUE;
                 }
             });
-        } catch (IOException e) {
+        } catch (IOException ignored) {
             // sem a lista o motor apenas analisa mais arquivos
         }
         return found;
