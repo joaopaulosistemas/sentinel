@@ -75,6 +75,14 @@ class CryptoCases {
     // ruleid: sentinel-crypto-chave-fixa-no-codigo
     String chaveAes = "uma chave escrita no codigo 123";
     String nome = "valor qualquer";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    static final String KEY_USER = "user_id";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    static final String SECRET_HEADER = "X-Secret";
+    // ok: sentinel-crypto-chave-fixa-no-codigo
+    static final String CHAVE_CONFIG = "app.crypto.key";
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    String segredoSimples = "supersecretkey";
     byte[] iv = new byte[16];
 
     void chaveFixa(String entrada) throws Exception {

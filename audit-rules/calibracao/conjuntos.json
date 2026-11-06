@@ -13,7 +13,10 @@
       "skills/secure-code-game",
       "christophetd/log4shell-vulnerable-app",
       "OWASP/DVSA",
-      "BrightSec/brokencrystals"
+      "BrightSec/brokencrystals",
+      "OWASP/wrongsecrets",
+      "JoyChou93/java-sec-code",
+      "OWASP/SecurityShepherd"
     ],
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
     "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu.",
@@ -23,7 +26,8 @@
     "_nota_secure_code_game": "skills/secure-code-game (jogo de treino de código seguro em JS, Python, Go e C, branch main, stack MIXED) entrou em 2026-11-06 na volta 10 (ciclo/estabilizacao-4); treino.",
     "_nota_log4shell": "christophetd/log4shell-vulnerable-app (app Spring Boot com Log4j vulnerável, branch main, stack JAVA) entrou em 2026-11-06 na volta 11 (ciclo/estabilizacao-4); treino.",
     "_nota_dvsa": "OWASP/DVSA (app serverless de treino em Node/AWS Lambda, branch master, MIXED) entrou em 2026-11-06 na volta 12 (ciclo/estabilizacao-4); treino.",
-    "_nota_brokencrystals": "BrightSec/brokencrystals (NestJS + front-end React de treino, branch stable, stack MIXED) entrou em 2026-11-06 na volta 13 (ciclo/estabilizacao-4); treino."
+    "_nota_brokencrystals": "BrightSec/brokencrystals (NestJS + front-end React de treino, branch stable, stack MIXED) entrou em 2026-11-06 na volta 13 (ciclo/estabilizacao-4); treino.",
+    "_nota_completude": "wrongsecrets, java-sec-code e SecurityShepherd foram lidos antes do ciclo e passam a constar aqui; scripts/verificar-separacao.py confere a separação no CI."
   },
   "validacao": {
     "repositorios_fixos": [

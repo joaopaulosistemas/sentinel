@@ -78,7 +78,11 @@ rules:
       owasp: M5 - Insecure Communication
 
   - id: sentinel-android-manifest-exported
-    pattern: 'android:exported="true"'
+    patterns:
+      - pattern: 'android:exported="true"'
+      # a activity de entrada (MAIN/LAUNCHER) precisa ser exportada desde o Android 12: não é achado
+      - pattern-not-inside: |
+          <activity ... android:exported="true" ...> ... android.intent.category.LAUNCHER ... </activity>
     message: >
       Componente exportado (exported=true): qualquer app do aparelho pode iniciá-lo com Intent própria (CWE-926).
       Exporte só o necessário, exija android:permission e valide os extras recebidos.
