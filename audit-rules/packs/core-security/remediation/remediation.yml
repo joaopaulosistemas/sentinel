@@ -604,3 +604,24 @@
   after: "res.send('<h1>' + escapeHtml(req.query.name) + '</h1>')"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-mass-assignment"
+  summary: "Escolha os campos permitidos um a um e defina papel, saldo e permissões só no servidor."
+  before: "Usuario.create(req.body)"
+  after: "Usuario.create({ nome: req.body.nome, email: req.body.email, role: 'cliente' })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
+
+- key: "sentinel-ejs-saida-sem-escape"
+  summary: "Troque `<%- valor %>` por `<%= valor %>`, que escapa o texto; deixe `<%-` só para HTML montado pelo servidor."
+  before: "<p><%- review.body %></p>"
+  after: "<p><%= review.body %></p>"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-mass-assignment-campo"
+  summary: "Defina papel, permissão e saldo só no servidor; nunca copie esses campos do corpo da requisição."
+  before: "req.session.role = req.body.role"
+  after: "req.session.role = usuarioDoBanco.role"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"

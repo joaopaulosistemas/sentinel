@@ -747,3 +747,56 @@ rules:
       category: security
       cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
       owasp: A03:2021 - Injection
+
+  - id: sentinel-node-mass-assignment
+    patterns:
+      - pattern-either:
+          - pattern: $M.create($REQ.body, ...)
+          - pattern: $M.update($REQ.body, ...)
+          - pattern: $M.updateOne($F, $REQ.body, ...)
+          - pattern: $M.findByIdAndUpdate($I, $REQ.body, ...)
+          - pattern: $M.findOneAndUpdate($F, $REQ.body, ...)
+          - pattern: new $M($REQ.body)
+          - pattern: Object.assign($X, $REQ.body)
+      - metavariable-regex:
+          metavariable: $REQ
+          regex: ^(req|request)$
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(?!Object$|JSON$|Array$|Math$|Promise$|RegExp$|Map$|Set$|Date$|Error$|URL$|Buffer$)(?:[A-Z]\w*|\w*[Mm]odel\w*|\w*[Rr]epo\w*)$
+    message: >
+      O corpo da requisição é gravado inteiro no modelo (CWE-915): quem envia `{"role": "admin"}` ou
+      `{"balance": 9999}` promove a si mesmo. Escolha os campos permitidos um a um (`{ nome, email }`) e
+      defina papel e saldo só no servidor.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+      owasp: A04:2021 - Insecure Design
+
+  - id: sentinel-node-mass-assignment-campo
+    patterns:
+      - pattern-either:
+          - pattern: $O.$P = $REQ.body.$Q
+          - pattern: $O.$P = $REQ.body.$Q || ...
+          - pattern: $O.$P = $REQ.body.$Q ?? ...
+          - pattern: '{..., $P: $REQ.body.$Q, ...}'
+      - metavariable-regex:
+          metavariable: $REQ
+          regex: ^(req|request)$
+      - metavariable-regex:
+          metavariable: $P
+          regex: ^(role|roles|isAdmin|is_admin|admin|permissions|balance|saldo|isStaff|is_staff)$
+    message: >
+      Campo privilegiado (papel, permissão ou saldo) recebe o valor enviado pelo cliente (CWE-915): quem
+      envia `{"role": "admin"}` promove a si mesmo. Defina esse campo só no servidor ou confira o valor
+      contra uma lista permitida.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+      owasp: A04:2021 - Insecure Design

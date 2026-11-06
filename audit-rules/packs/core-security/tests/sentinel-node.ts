@@ -460,4 +460,43 @@ export function rodarComandoComTemplate (nome: string, execSync: any) {
 export function rodarComandoFixo (exec: any) {
   // ok: sentinel-node-exec-dinamico
   exec('git status', () => {})
+
+// ---------- Mass assignment: corpo da requisição define papel ou saldo ----------
+export async function cadastrar (req: any, res: any) {
+  // ruleid: sentinel-node-mass-assignment-campo
+  req.session.role = req.body.role || 'cliente'
+  res.send('ok')
+}
+
+export async function atualizar (req: any, res: any) {
+  // ruleid: sentinel-node-mass-assignment-campo
+  const usuario = { nome: 'x', isAdmin: req.body.isAdmin }
+  res.send(usuario)
+}
+
+export async function criarComTudo (req: any, Usuario: any) {
+  // ruleid: sentinel-node-mass-assignment
+  return Usuario.create(req.body)
+}
+
+export async function atualizarComTudo (req: any, Usuario: any) {
+  // ruleid: sentinel-node-mass-assignment
+  return Usuario.findByIdAndUpdate(req.params.id, req.body)
+}
+
+export async function cadastrarSeguro (req: any, Usuario: any) {
+  // ok: sentinel-node-mass-assignment
+  return Usuario.create({ nome: req.body.nome, email: req.body.email, role: 'cliente' })
+}
+
+export function apenasLeitura (req: any, carteira: any) {
+  // ok: sentinel-node-mass-assignment-campo
+  if (req.body.role === 'admin') return carteira.balance
+  return carteira.balance + req.body.nome
+}
+
+export function papelFixo (req: any) {
+  // ok: sentinel-node-mass-assignment
+  const papel = 'cliente'
+  return papel + req.body.nome
 }
