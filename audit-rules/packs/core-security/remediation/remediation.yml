@@ -536,3 +536,27 @@
   after: "<activity android:name=\".Envio\" android:exported=\"false\" />"
   refs:
     - "https://developer.android.com/privacy-and-security/risks/android-exported"
+
+- key: "sentinel-android-modo-mundo"
+  summary: "Crie arquivos e preferências com MODE_PRIVATE; para compartilhar, use FileProvider ou ContentProvider com permissão."
+  before: "getSharedPreferences(\"prefs\", Context.MODE_WORLD_READABLE);"
+  after: "getSharedPreferences(\"prefs\", Context.MODE_PRIVATE);"
+  refs:
+    - "https://developer.android.com/privacy-and-security/risks/world-readable-files"
+
+- key: "sentinel-crypto-chave-fixa-no-codigo"
+  summary: "Não escreva a chave no código: use o Android Keystore, um KMS ou configuração externa."
+  before: "new SecretKeySpec(\"0123456789abcdef\".getBytes(), \"AES\");"
+  after: "SecretKey chave = (SecretKey) keyStore.getKey(\"alias\", null);"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/321.html"
+
+- key: "sentinel-crypto-iv-fixo"
+  summary: "Gere um IV aleatório por operação com SecureRandom e guarde-o junto do texto cifrado."
+  before: "new IvParameterSpec(new byte[16]);"
+  after: |-
+    byte[] iv = new byte[16];
+    new SecureRandom().nextBytes(iv);
+    new IvParameterSpec(iv);
+  refs:
+    - "https://cwe.mitre.org/data/definitions/329.html"

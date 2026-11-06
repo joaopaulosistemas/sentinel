@@ -31,4 +31,15 @@ class AndroidTeste extends android.app.Activity {
         // ok: sentinel-android-webview-javascript
         ajustes.setJavaScriptEnabled(false);
     }
+
+    void armazenamento(android.content.Context ctx) throws Exception {
+        // ruleid: sentinel-android-modo-mundo
+        ctx.getSharedPreferences("prefs", Context.MODE_WORLD_READABLE);
+        // ruleid: sentinel-android-modo-mundo
+        ctx.openFileOutput("a.txt", Context.MODE_WORLD_WRITEABLE);
+        // ok: sentinel-android-modo-mundo
+        ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE);
+        // ok: sentinel-android-modo-mundo
+        ctx.getSharedPreferences("prefs", 0);
+    }
 }

@@ -740,3 +740,13 @@ Verificado: testes das regras com Semgrep (core-security) e Opengrep, paridade d
 - **Efeito esperado:** Juice Shop (~34 CRITICAL) e wrongsecrets (~112 achados) perdem os achados de Terraform do Trivy; o restante não muda.
 
 Verificado: teste do Trivy atualizado (`ExternalScannersTest`). NÃO verificado: JUnit/Maven (só CI); nome exato da flag em `trivy fs` na versão da imagem; reauditoria de Juice Shop e wrongsecrets.
+
+## Dashboard 12.60.0 — Ciclo, volta 8 (branch `ciclo/estabilizacao-4`): Android-InsecureBankv2 (treino novo), armazenamento e chave fixa
+
+- **Repositório novo:** dineshshetty/Android-InsecureBankv2 (branch `master`, JAVA, 1.488 estrelas, app Android Java + servidor Python de treino), escolhido em 2026-11-06; ninguém o tinha lido nem auditado.
+- **Medido (antes):** nota 57,16 e 293 achados (HIGH 5, MEDIUM 49). Opengrep 136, PMD 85, Checkstyle 42. As regras Android da 12.58.0 acharam: URL do Intent no WebView (`ViewStatement`), log de senha (`DoLogin`), `exported` (7), `allowBackup` (3).
+- **Análise (código lido, treino):** falsos negativos: `MODE_WORLD_READABLE` em `getSharedPreferences` (`MyBroadCastReceiver`, que lê a senha cifrada) e chave AES escrita no código (`CryptoClass.key`). Falso positivo claro: nenhum (`sortOrder == ""` é bug real). Ruído de qualidade: `TODO` gerados pelo IDE (71 × `sentinel-comentario-pendencia`).
+- **Mudança:** `sentinel-android-modo-mundo` (MODE_WORLD_* em preferências, arquivos, diretório e banco), `sentinel-crypto-chave-fixa-no-codigo` (`SecretKeySpec` com literal e campo `String` de nome key/chave/secret/segredo com literal) e `sentinel-crypto-iv-fixo` (`new byte[n]` ou literal). Testes e remediação incluídos. No treino, a regra de modo-mundo acha 1 ponto e a de chave fixa 1, sem falso positivo.
+- **Não feito:** IV zerado vindo de campo `byte[] iv = {0,...}` (o motor não liga o campo ao `IvParameterSpec`); SQL injection por `selection` no ContentProvider exportado; escrita do extrato em armazenamento externo.
+
+Verificado: `semgrep --test` (Android 4/4, crypto 6/6), paridade Opengrep × Semgrep (553 = 553), varredura do código de treino. NÃO verificado: nova auditoria do InsecureBankv2 com 12.60.0; dvja e NodeGoat com 12.60.0 (a conferir pelo CI); JUnit/Maven (nada de Java mudou).

@@ -2,6 +2,8 @@ import java.io.ObjectInputStream;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 class CryptoCases {
 
@@ -68,5 +70,31 @@ class CryptoCases {
     Object lerDeParametro(ObjectInputStream entrada) throws Exception {
         // ruleid: sentinel-desserializacao-insegura
         return entrada.readObject();
+    }
+
+    // ruleid: sentinel-crypto-chave-fixa-no-codigo
+    String chaveAes = "uma chave escrita no codigo 123";
+    String nome = "valor qualquer";
+    byte[] iv = new byte[16];
+
+    void chaveFixa(String entrada) throws Exception {
+        // ruleid: sentinel-crypto-chave-fixa-no-codigo
+        new SecretKeySpec("0123456789abcdef".getBytes("UTF-8"), "AES");
+        new SecretKeySpec(chaveAes.getBytes("UTF-8"), "AES");
+        // ok: sentinel-crypto-chave-fixa-no-codigo
+        new SecretKeySpec(entrada.getBytes("UTF-8"), "AES");
+        // ok: sentinel-crypto-chave-fixa-no-codigo
+        nome.getBytes("UTF-8");
+    }
+
+    void ivFixo() {
+        // ruleid: sentinel-crypto-iv-fixo
+        new IvParameterSpec(new byte[16]);
+        // ruleid: sentinel-crypto-iv-fixo
+        new IvParameterSpec("1234567890123456".getBytes());
+        // ok: sentinel-crypto-iv-fixo
+        byte[] aleatorio = new byte[16];
+        new SecureRandom().nextBytes(aleatorio);
+        new IvParameterSpec(aleatorio);
     }
 }
