@@ -66,6 +66,9 @@ rules:
           - pattern: new RedirectView($X)
       - pattern-not: $R.sendRedirect("...")
       - pattern-not: new RedirectView("...")
+      # response.encodeURL("literal") só acrescenta o id de sessão a um destino fixo; o "url" no nome do método não é entrada do usuário
+      - pattern-not: $R.sendRedirect($E.encodeURL("..."))
+      - pattern-not: $R.sendRedirect($E.encodeRedirectURL("..."))
       - metavariable-regex:
           metavariable: $X
           regex: (?i).*(param|url|redirect|return|next|target|dest|uri).*
@@ -79,6 +82,30 @@ rules:
     metadata:
       category: security
       cwe: "CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"
+
+  - id: sentinel-forward-nao-validado
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getHeader(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: $D.getRequestDispatcher($X)
+          - focus-metavariable: $X
+    pattern-sanitizers:
+      - pattern: $E.encodeURL(...)
+    message: >
+      Encaminhamento interno (RequestDispatcher.forward/include) para um caminho que vem da requisição: o atacante
+      alcança páginas internas, como WEB-INF e telas de administração, sem passar pelo controle de acesso do
+      contêiner (CWE-552). Compare o destino com uma lista fixa de páginas permitidas.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-552: Files or Directories Accessible to External Parties"
+      owasp: A01:2021 - Broken Access Control
 
   - id: sentinel-jackson-default-typing
     pattern-either:

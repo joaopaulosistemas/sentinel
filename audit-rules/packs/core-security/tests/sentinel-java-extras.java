@@ -30,6 +30,26 @@ class Extras {
         resp.sendRedirect(redirectUrl);
         // ok: sentinel-open-redirect
         resp.sendRedirect("/home");
+        // ok: sentinel-open-redirect
+        resp.sendRedirect(resp.encodeURL("ForwardMe?location=/index.jsp"));
+        // ok: sentinel-open-redirect
+        resp.sendRedirect(resp.encodeRedirectURL("login.jsp?err=falhou"));
+        // ruleid: sentinel-open-redirect
+        resp.sendRedirect(resp.encodeURL(redirectUrl));
+    }
+
+    void encaminhar(HttpServletRequest req, HttpServletResponse resp) throws Exception {
+        String location = req.getParameter("location");
+        // ruleid: sentinel-forward-nao-validado
+        getServletContext().getRequestDispatcher(location).forward(req, resp);
+        String pagina = req.getParameter("p");
+        // ruleid: sentinel-forward-nao-validado
+        req.getRequestDispatcher("/paginas/" + pagina).forward(req, resp);
+        // ok: sentinel-forward-nao-validado
+        req.getRequestDispatcher("/vulnerability/avatar.jsp").forward(req, resp);
+        String fixo = "/index.jsp";
+        // ok: sentinel-forward-nao-validado
+        req.getRequestDispatcher(fixo).forward(req, resp);
     }
 
     void json(ObjectMapper mapper) {

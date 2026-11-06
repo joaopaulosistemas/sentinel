@@ -203,6 +203,16 @@
   effort: M
   regression-risk: MEDIUM
 
+- key: "sentinel-forward-nao-validado"
+  summary: "Mapeie o parâmetro para uma lista fixa de páginas internas; nunca repasse o texto recebido ao getRequestDispatcher."
+  before: "ctx.getRequestDispatcher(request.getParameter(\"location\")).forward(request, response)"
+  after: |-
+    Map<String, String> paginas = Map.of("inicio", "/index.jsp", "login", "/login.jsp");
+    String destino = paginas.getOrDefault(request.getParameter("location"), "/index.jsp");
+    ctx.getRequestDispatcher(destino).forward(request, response);
+  effort: S
+  regression-risk: LOW
+
 - key: "sentinel-open-redirect"
   summary: "Valide o destino contra uma lista de caminhos internos permitidos."
   before: "resp.sendRedirect(redirectUrl)"
