@@ -763,3 +763,11 @@ Verificado: leitura do código. NÃO verificado: JUnit (só CI; teste novo `semO
 - **Não feito (decisão de produto):** unificar os nomes "analisadores" e "Ferramentas de análise"; listar o estado das ferramentas nos relatórios PDF/HTML.
 
 Verificado: leitura do código. NÃO verificado: JUnit e vitest (só CI); tela real; o corte em 300 com uma auditoria real.
+
+## Dashboard 12.63.0 — Correções da autoauditoria #105 (commit 648d83a)
+
+- **Relatório:** nota 78,1; 0 CRITICAL/HIGH, 16 MEDIUM, 348 LOW (quase tudo estilo de qualidade).
+- **Corrigido:** (1) falso positivo da regra `sentinel-boas-java-recurso-sem-try-with-resources` em `DbConfigSource.java:92`: o código já usava try-with-resources, mas a regra só reconhecia cabeçalho com 1 recurso; agora reconhece 2, 3 e 4 (teste novo). (2) `ExternalTools.java:324/356` catch vazio (PMD): variável renomeada para `ignored`, comentário mantido. (3) `StartAuditModal.tsx:25`: erro de `checkPath` não é mais engolido por `.catch(() => undefined)`; virou `async/try/catch` com a razão escrita. (4) `ReportsPage.tsx:39`: histórico do localStorage é validado (itens sem `id`, `systemName`, `generatedAt` e `url` em texto são descartados). (5) CVE-2026-118764 (minimatch 10.2.6) em `audit-rules/lint/eslint`: `overrides` para minimatch 11.0.5; ESLint 9.39.5 com typescript-eslint e a config `eslint.padrao-ts` rodam normalmente.
+- **Não feito:** `client.ts:79` (`JSON.parse(...) as T` no cliente genérico): exige um esquema por endpoint (zod/valibot, dependência nova), decisão de design; God Object `SarifAnalyzer` e complexidade ciclomática (`EnginePanel` 18, `EngineScope` 11, `RuleSide.infer` 14, `SarifAnalyzer.registrar` 14): refatoração maior, sem teste de caracterização; os 348 LOW de estilo; achados de 100 a 304 do PDF (páginas 9 a 30) não lidos.
+
+Verificado: `opengrep --test` do pacote core-boas-praticas (8/8), `tsc --noEmit` e vitest do dashboard (312/312), ESLint com minimatch 11. NÃO verificado: JUnit/Maven (só CI; mudança Java é só nome de variável); nova auditoria do Sentinel; imagem Docker com o `package-lock.json` novo.
