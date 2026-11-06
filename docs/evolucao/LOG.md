@@ -688,3 +688,13 @@ Verificado: testes das regras (opengrep --test, 61 casos), programas `javac` par
 - **Fora do escopo declarado:** 112 achados de Terraform (`aws/`, `azure/`, `gcp/`) via Checkov e Trivy; decidir se o Sentinel deve ignorar `.tf` (hoje o escopo do projeto exclui Terraform, mas as ferramentas ainda leem).
 
 Verificado: leitura do log da auditoria e do código do repositório de treino. NÃO verificado: nada além disso.
+
+## Dashboard 12.55.0 — Ciclo, volta 5 (branch `ciclo/estabilizacao-2`): Juice Shop reauditado, estável
+
+- **Medido (Juice Shop, treino):** nota 47,7 e 1.958 achados (CRITICAL 20, HIGH 118). Na rodada 1 (12.47.0) eram 4.193 achados e nota 47,65. A nota quase não mexe porque a dimensão segurança já está em 0.
+- **Análise:** os CRITICAL são todos de Terraform (Trivy). Os HIGH de Opengrep são acertos do projeto (SQL injection, path traversal, `$where`, `eval`, JWT fixo, `bypassSecurityTrust*`), parte repetida em `data/static/codefixes` (variantes de correção do desafio). Os 57 do Gitleaks são HIGH, mas 4 em cada grande arquivo de `test/` já saem com confiança BAIXA no `FindingConfidence` (caminho de teste): não há lacuna ali.
+- **Mudança de código:** nenhuma. **Volta sem ganho** (2 de 2 seguidas, com a volta 4): o laço está estável.
+- **Decisão pendente (não tomada, muda a política de escopo):** ignorar `.tf` (Terraform) em Trivy e Checkov, que hoje leem arquivos que o escopo do projeto exclui (Juice Shop: ~34 CRITICAL; wrongsecrets: 112 achados). Também não escrevi regra para `data/static/codefixes`, por ser um padrão específico deste repositório.
+- **Validação (dvja, NodeGoat):** sem mudança de código nas voltas 4 e 5, então as contagens (176 e 328) não têm motivo para mudar; não reauditei.
+
+Verificado: log da auditoria completa (execução 42148534934) e leitura de `GitleaksAnalyzer` e `FindingConfidence`. NÃO verificado: nova medição de dvja/NodeGoat; JUnit/Maven (nada de Java mudou).
