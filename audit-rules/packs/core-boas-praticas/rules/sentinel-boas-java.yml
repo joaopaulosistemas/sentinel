@@ -12,6 +12,13 @@ rules:
           - pattern: $V = new ZipFile(...)
       - pattern-not-inside: |
           try ($RT $RV = ...) { ... }
+      # cabeçalho com 2, 3 ou 4 recursos (o Opengrep não aceita reticências na lista de recursos)
+      - pattern-not-inside: |
+          try ($RT $RV = ...; $RT2 $RV2 = ...) { ... }
+      - pattern-not-inside: |
+          try ($RT $RV = ...; $RT2 $RV2 = ...; $RT3 $RV3 = ...) { ... }
+      - pattern-not-inside: |
+          try ($RT $RV = ...; $RT2 $RV2 = ...; $RT3 $RV3 = ...; $RT4 $RV4 = ...) { ... }
     message: >
       Recurso aberto fora de try-with-resources. Se uma exceção acontecer antes do close(), o arquivo, o socket ou a conexão ficam abertos.
       Declare o recurso no try: try (var in = new FileInputStream(f)) { ... }.
