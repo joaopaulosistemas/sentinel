@@ -17,6 +17,13 @@ O Sentinel cobre só: Java, Spring, JavaScript, TypeScript, React, Vue, Angular,
 - `medir-volta.py recall medida.json audit-rules/calibracao/gabaritos/<dono>__<repo>.json` dá o recall contra as falhas conhecidas do repositório de TREINO. Crie o gabarito (arquivo, linha, CWE, regras aceitas) quando ler o código e atualize-o a cada volta; entrada sem regra é lacuna assumida e vale como meta.
 - `medir-volta.py comparar medida.json audit-rules/calibracao/baselines/<dono>__<repo>.json [--gravar]` mostra a diferença por regra contra a última medida. Falha se o total sobe mais de 25 % ou uma regra dobra: confira falso positivo antes de seguir.
 
+## Prova de generalização (obrigatória em toda volta)
+Recall do treino mede só o que as regras foram escritas para achar. Para saber se o Sentinel melhora de verdade, toda volta registra no LOG uma linha "Generalização" com estes três números:
+1. **Recall na validação.** Cada volta cria (ou amplia) o gabarito de UM repositório de validação (appsecco/dvja, OWASP/NodeGoat, appsecco/dvna, snyk-labs/nodejs-goof) em `audit-rules/calibracao/gabaritos/validacao/<dono>__<repo>.json`, a partir de fontes públicas que descrevem as falhas (README, tutorial, writeups do autor), nunca lendo o código. Cada entrada traz `fonte` (URL), `cwe`, `regras` aceitas e, quando a fonte diz, `arquivo`. Rode `recall` com ele. Não escreva regra olhando entrada desse gabarito: o número só vale se as regras vierem do treino.
+2. **Tendência do OWASP Benchmark.** Se a volta mudou regra Java, rode `scripts/benchmark-owasp.py --conjunto treino` e `--conjunto validacao` e anote recall e precisão. Queda de mais de 1 ponto na validação: investigue antes de seguir.
+3. **Amostra de falso positivo.** A cada 3 voltas, escolha um treino antigo, reaudite e leia 20 achados de segurança (Opengrep, severidade MEDIUM ou mais), classificando um a um. Registre verdadeiro/falso (ex.: 17/3). Só essa amostra autoriza falar em precisão.
+Um ganho só conta como melhoria quando o recall do treino sobe E nenhum dos três números piora. Se não houver gabarito de validação ainda, diga isso no LOG em vez de omitir a linha.
+
 ## O ciclo (uma rodada)
 1. **Escolher o alvo.** Repositório público com falhas conhecidas, do perfil pedido (Java/Spring, Angular, Node, Docker/K8s). Confira `audit-rules/calibracao/conjuntos.json`: repositório de treino pode ser lido; de validação só se olham números.
 2. **Auditar de verdade.** Dispare o workflow `Auditoria completa` e baixe o resultado:
