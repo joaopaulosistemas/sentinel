@@ -129,7 +129,8 @@ public class AuditOrchestrationService {
         progress.phase(auditRunId, AuditProgressTracker.CLONE,
                 (context.local() ? "Copiando a " : "Clonando ") + context.sourceLabel() + " (" + context.branch() + ")");
         return context.local()
-                ? ingestionService.snapshotLocal(context.localPath(), context.branch(), context.localSnapshot(), context.gitHistoryDepth())
+                ? ingestionService.snapshotLocal(context.localPath(), context.branch(), context.localSnapshot(), context.gitHistoryDepth(),
+                        (done, total) -> progress.copyProgress(auditRunId, done, total))
                 : ingestionService.cloneRepository(context.repoUrl(), context.branch(), context.gitToken(), context.gitTokenHosts(), context.gitHistoryDepth());
     }
 

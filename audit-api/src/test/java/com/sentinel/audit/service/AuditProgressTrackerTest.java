@@ -134,4 +134,28 @@ class AuditProgressTrackerTest {
         t.finish(1L);
         assertTrue(t.snapshot(1L).isEmpty());
     }
+
+    @Test
+    void acompanhaOAndamentoDaCopiaDaPastaLocal() {
+        AuditProgressTracker t = new AuditProgressTracker();
+        t.queued(9L);
+        assertEquals(0, t.snapshot(9L).orElseThrow().copyTotal());
+
+        t.phase(9L, AuditProgressTracker.CLONE, "Copiando a pasta local");
+        t.copyProgress(9L, 0, 830);
+        t.copyProgress(9L, 300, 830);
+
+        AuditProgressDto s = t.snapshot(9L).orElseThrow();
+        assertEquals(AuditProgressTracker.CLONE, s.phase());
+        assertEquals(300, s.copyDone());
+        assertEquals(830, s.copyTotal());
+    }
+
+    @Test
+    void andamentoDaCopiaDeUmaAuditoriaDesconhecidaEIgnorado() {
+        AuditProgressTracker t = new AuditProgressTracker();
+        t.copyProgress(404L, 1, 2);
+        t.copyProgress(null, 1, 2);
+        assertTrue(t.snapshot(404L).isEmpty());
+    }
 }

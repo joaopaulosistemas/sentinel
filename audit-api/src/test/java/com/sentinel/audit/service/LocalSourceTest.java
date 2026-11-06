@@ -259,6 +259,31 @@ class LocalSourceTest {
     }
 
     @Test
+    void copiaDaPastaComoEstaAvisaOAndamentoComTotalEFinal() throws Exception {
+        Path dir = repo("api");
+        sujar(dir);
+        List<long[]> avisos = new ArrayList<>();
+
+        source.snapshot("api", null, LocalSnapshot.TREE, null, work, (done, total) -> avisos.add(new long[] {done, total}));
+
+        assertFalse(avisos.isEmpty());
+        long[] primeiro = avisos.get(0);
+        long[] ultimo = avisos.get(avisos.size() - 1);
+        assertEquals(0, primeiro[0], "o primeiro aviso informa o total antes de copiar");
+        assertTrue(primeiro[1] >= 2, "App.java e Novo.java entram na contagem");
+        assertEquals(ultimo[1], ultimo[0], "o último aviso fecha a contagem");
+        assertEquals(primeiro[1], ultimo[1], "o total não muda durante a cópia");
+    }
+
+    @Test
+    void copiaDoCommitNaoAvisaAndamentoDeArquivos() throws Exception {
+        repo("api");
+        List<long[]> avisos = new ArrayList<>();
+        source.snapshot("api", null, LocalSnapshot.COMMIT, null, work, (done, total) -> avisos.add(new long[] {done, total}));
+        assertTrue(avisos.isEmpty());
+    }
+
+    @Test
     void copiaDaPastaComoEstaNaoSegueLinksSimbolicosNemFalhaComArquivoApagado() throws Exception {
         Path dir = repo("api");
         Path segredo = Files.writeString(tempDir.resolve("segredo.txt"), "senha");

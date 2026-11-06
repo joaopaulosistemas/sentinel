@@ -910,3 +910,13 @@ Verificado: `opengrep --test` do core-security (79/79), paridade dos motores (64
 - **Não feito:** dado entre arquivos (JSP -> servlet -> DBUtil) segue limite do motor; CSRF e controle de acesso por papel no AdminServlet sem regra; 21 `sentinel-ts-catch-vazio` e 1.000 Stylelint não lidos.
 
 Verificado: `opengrep --test` (core-security 80/80, core-persistencia 11/11, Opengrep 1.30.0), auditorias no CI antes e depois, achados removidos e criado lidos no código. NÃO verificado: paridade Opengrep x Semgrep (semgrep não instalado aqui; fica para o CI do PR); JUnit/Maven (nada de Java do produto mudou); **Generalização**: sem gabarito de validação por fonte pública nesta execução (sem acesso web), sem amostra de falso positivo de 20 achados, sem OWASP Benchmark local (regras Java mudaram; o job `benchmark` do CI do PR cobre o gate de 0,02);
+
+## Dashboard 12.69.0 — Indicador de carregamento na fila e no clone
+
+Problema: ao auditar pasta local no modo "como está agora", a tela ficava parada em "Copiando a pasta local" sem nenhum sinal de vida; a barra marcava 12% fixos e a API não registrava andamento nem quantos arquivos eram copiados.
+
+- API: `AuditProgressDto` ganhou `copyDone`/`copyTotal`; `LocalSource.copyWorkingTree` informa o total antes de copiar e o andamento a cada 100 arquivos, e registra no log a quantidade de arquivos e o tempo; a mensagem de estouro de tempo agora diz quantos arquivos foram copiados. O tracker espelha no banco no máximo uma vez por segundo (serve de batimento durante a cópia).
+- Dashboard: spinner na fase ativa (Fila/Clone), barra indeterminada sem porcentagem enquanto o código é baixado ou copiado, cartão "Copiando o código da pasta local… N de M arquivos" e aviso de lentidão depois de 30 s. Respeita "reduzir movimento".
+
+Verificado: `LocalSource` compilado com javac e rodado em repositório git real (avisos 0/250, 100/250, 200/250, 250/250; assinatura antiga preservada); `vitest` (318 testes), `tsc`.
+Não verificado: testes JUnit novos (`LocalSourceTest`, `AuditProgressTrackerTest`) — o Maven Central não é alcançável neste ambiente, ficam para o CI; tela real com a API rodando.

@@ -108,7 +108,7 @@ describe('estimativa de tempo', () => {
   });
 });
 
-import { clock, etaText, phaseViews, shortRepo } from './auditProgress';
+import { clock, copyText, etaText, isLoadingSource, isSlowLoad, phaseViews, shortRepo } from './auditProgress';
 
 describe('apoio à tela de execução', () => {
   it('clock formata mm:ss', () => {
@@ -141,5 +141,37 @@ describe('apoio à tela de execução', () => {
   it('na falha a fase corrente fica interrompida', () => {
     const v = phaseViews({ status: 'FAILED', progress: { phase: 'CLONE', analyzers: [], events: [] } }, { done: 0, total: 0 });
     expect(v[1].state).toBe('failed');
+  });
+});
+
+describe('carregamento do código (fila e clone)', () => {
+  it('só é "carregando" enquanto a auditoria está ativa e na fila ou no clone', () => {
+    expect(isLoadingSource({ status: 'PENDING', progress: null })).toBe(true);
+    expect(isLoadingSource({ status: 'RUNNING', progress: null })).toBe(true);
+    expect(isLoadingSource({ status: 'RUNNING', progress: { phase: 'CLONE', analyzers: [], events: [] } })).toBe(true);
+    expect(isLoadingSource({ status: 'RUNNING', progress: { phase: 'ANALISE', analyzers: [], events: [] } })).toBe(false);
+    expect(isLoadingSource({ status: 'FAILED', progress: { phase: 'CLONE', analyzers: [], events: [] } })).toBe(false);
+    expect(isLoadingSource({ status: 'COMPLETED', progress: null })).toBe(false);
+  });
+
+  it('copyText mostra o contador só quando o total é conhecido', () => {
+    expect(copyText(null)).toBeNull();
+    expect(copyText({ phase: 'CLONE', analyzers: [], events: [] })).toBeNull();
+    expect(copyText({ phase: 'CLONE', analyzers: [], events: [], copyDone: 0, copyTotal: 0 })).toBeNull();
+    expect(copyText({ phase: 'CLONE', analyzers: [], events: [], copyDone: 1350, copyTotal: 48000 })).toBe('1.350 de 48.000 arquivos');
+  });
+
+  it('avisa que está demorando depois de 30 s', () => {
+    expect(isSlowLoad(29)).toBe(false);
+    expect(isSlowLoad(30)).toBe(true);
+    expect(isSlowLoad(null)).toBe(false);
+  });
+
+  it('na fase de clone a legenda traz o andamento da cópia', () => {
+    const v = phaseViews(
+      { status: 'RUNNING', progress: { phase: 'CLONE', analyzers: [], events: [], copyDone: 100, copyTotal: 830 } },
+      { done: 0, total: 0 },
+    );
+    expect(v[1].sub).toBe('100 de 830 arquivos');
   });
 });
