@@ -54,7 +54,7 @@ rules:
       Lançar RuntimeException, Exception, Throwable ou Error genéricos obriga quem chama a capturar tudo para tratar
       um caso específico. Use uma exceção que diga o que houve (IllegalArgumentException, IllegalStateException,
       UncheckedIOException ou uma exceção do domínio).
-    severity: INFO
+    severity: WARNING
     languages: [java]
     paths:
       exclude: ["**/test/**"]

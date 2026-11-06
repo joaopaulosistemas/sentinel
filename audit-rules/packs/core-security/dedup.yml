@@ -1,0 +1,54 @@
+# Duas regras Sentinel que apontam o MESMO defeito na mesma linha pesariam duas vezes na nota. Aqui cada tópico lista
+# os ids em `order`, da regra mais específica (prova de origem na requisição, ou a mais grave) para a mais genérica:
+# fica o achado da primeira, com a maior severidade das duas e a nota "Também detectado por ...".
+# Só vale para regras da mesma ferramenta; o ruleId do que fica não muda (o fingerprint se mantém).
+
+- name: command-injection-java
+  order:
+    - "sentinel-command-injection-requisicao"
+    - "sentinel-command-injection-shell"
+    - "sentinel-command-injection"
+    - "sentinel-command-injection-variable"
+  max-lines: 1
+
+- name: node-command-injection
+  order:
+    - "sentinel-node-command-injection"
+    - "sentinel-node-exec-dinamico"
+  max-lines: 1
+
+- name: node-eval
+  order:
+    - "sentinel-node-eval-requisicao"
+    - "sentinel-node-eval-dinamico"
+  max-lines: 1
+
+- name: node-sql
+  order:
+    - "sentinel-node-sql-injection"
+    - "sentinel-node-sql-concatenado"
+  max-lines: 1
+
+- name: log-injection-java
+  order:
+    - "sentinel-log-injection"
+    - "sentinel-java-log-concatenado"
+  max-lines: 1
+
+- name: log-dado-sensivel-java
+  order:
+    - "sentinel-ee-log-dado-pessoal"
+    - "sentinel-log-dado-sensivel"
+  max-lines: 1
+
+- name: chave-fixa-java
+  order:
+    - "sentinel-crypto-chave-fixa-no-codigo"
+    - "sentinel-senha-fixa-no-codigo"
+  max-lines: 1
+
+- name: angular-xss-url
+  order:
+    - "sentinel-taint-html-parametro-url"
+    - "sentinel-ng-bypass-security"
+  max-lines: 1

@@ -13,6 +13,8 @@ rules:
     message: >
       Possível XSS (OWASP A03): saída não escapada em JSP via '<%= %>'.
       Use '<c:out value="${...}" />' ou JSTL fn:escapeXml para escapar o HTML.
+      Limite: '<%= path %>', '<%= request.getContextPath() %>' e '<%= esc(...) %>' são ignorados por nome; se a variável
+      'path' vier da requisição (e não do contexto da aplicação), o XSS não é apontado.
     severity: WARNING
     languages: [generic]
     metadata:

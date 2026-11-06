@@ -26,6 +26,13 @@ export function logs(): void {
 
   // ok: sentinel-ts-console-log
   console.error('falha real');
+
+  // ok: sentinel-ts-console-log
+  console.log(senhaDoUsuario);
+  // ok: sentinel-ts-console-log
+  console.debug(req.headers.authorization);
+  // ruleid: sentinel-ts-console-log
+  console.log('token inválido, tente de novo');
 }
 
 export function catches(): void {

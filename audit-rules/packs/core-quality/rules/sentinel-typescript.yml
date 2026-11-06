@@ -28,9 +28,13 @@ rules:
       category: quality
 
   - id: sentinel-ts-console-log
-    pattern-either:
-      - pattern: console.log(...)
-      - pattern: console.debug(...)
+    patterns:
+      - pattern-either:
+          - pattern: console.log(...)
+          - pattern: console.debug(...)
+      # o primeiro argumento que nomeia segredo (console.log(senha)) é da regra sentinel-log-segredo-js (core-security,
+      # WARNING): aqui não se repete o achado, porque o conselho de lá é remover o valor e não trocar por logger
+      - pattern-not-regex: 'console\.(?:log|debug)\(\s*[^''"`()]*(?:[Pp]ass(?:word|wd)|[Ss]enha|[Ss]ecret|[Tt]oken|[Aa]pi_?[Kk]ey|[Aa]uthorization|[Pp]rivate_?[Kk]ey|[Cc]redential)'
     message: >
       console.log esquecido no código: polui o console do usuário e pode expor dados. Use um logger com nível
       ou remova antes de publicar.

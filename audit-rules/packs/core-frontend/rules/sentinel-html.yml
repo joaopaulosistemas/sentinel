@@ -12,6 +12,8 @@ rules:
       exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
     metadata:
       category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
 
   - id: sentinel-html-script-http
     pattern-regex: '<script\b[^>]*\ssrc\s*=\s*["]http://'

@@ -163,4 +163,41 @@ class FindingDeduplicatorTest {
 
         assertEquals(5, FindingDeduplicator.apply(in).size());
     }
+
+    @Test
+    void duasRegrasDaMesmaFerramentaNaMesmaLinhaViramUmaComAMaiorSeveridade() {
+        Finding generica = f("Semgrep", "audit-rules.rules.sentinel-command-injection", "api/A.java", 28, Severity.HIGH);
+        Finding requisicao = f("Semgrep", "audit-rules.rules.sentinel-command-injection-requisicao", "api/A.java", 28, Severity.MEDIUM);
+
+        List<Finding> r = FindingDeduplicator.apply(List.of(generica, requisicao));
+
+        assertEquals(1, r.size());
+        assertSame(requisicao, r.get(0));                                      // fica a regra mais específica (1ª da ordem)
+        assertEquals(Severity.HIGH, requisicao.getSeverity());                 // com a maior severidade
+        assertEquals("audit-rules.rules.sentinel-command-injection-requisicao", requisicao.getRuleId());
+        assertTrue(requisicao.getDescription().contains("(audit-rules.rules.sentinel-command-injection)"));
+    }
+
+    @Test
+    void ordemDeRegrasDaMesmaFerramentaNaoJuntaOutraLinhaNemOutroArquivoNemRegraForaDoTopico() {
+        List<Finding> in = List.of(
+                f("Semgrep", "sentinel-command-injection", "api/A.java", 28, Severity.HIGH),
+                f("Semgrep", "sentinel-command-injection-requisicao", "api/A.java", 60, Severity.HIGH),   // outra linha
+                f("Semgrep", "sentinel-command-injection-requisicao", "api/B.java", 28, Severity.HIGH),   // outro arquivo
+                f("Semgrep", "sentinel-sql-injection", "api/A.java", 28, Severity.HIGH));                 // outro tópico
+
+        assertEquals(4, FindingDeduplicator.apply(in).size());
+    }
+
+    @Test
+    void tresRegrasDoMesmoTopicoFicamComAMaisEspecifica() {
+        Finding variavel = f("Semgrep", "sentinel-command-injection-variable", "A.java", 5, Severity.LOW);
+        Finding generica = f("Semgrep", "sentinel-command-injection", "A.java", 5, Severity.MEDIUM);
+        Finding shell = f("Semgrep", "sentinel-command-injection-shell", "A.java", 5, Severity.HIGH);
+
+        List<Finding> r = FindingDeduplicator.apply(List.of(variavel, generica, shell));
+
+        assertEquals(1, r.size());
+        assertSame(shell, r.get(0));
+    }
 }

@@ -24,6 +24,7 @@ rules:
       include: ["*Dockerfile*", "*.dockerfile"]
     metadata:
       category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
 
   - id: sentinel-docker-segredo-em-arg
     pattern-regex: '(?im)^\s*ARG\s+\w*(?:PASSWORD|SECRET|TOKEN|API_?KEY|PRIVATE_?KEY)\w*\s*=\s*[^\s$]+'

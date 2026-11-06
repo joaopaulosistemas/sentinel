@@ -445,16 +445,23 @@ public final class PackLoader {
             return out;
         }
         for (Map<String, Object> m : items(read(file, dir, errors), "dedup.yml", errors)) {
-            checkKeys(m, Set.of("name", "rules", "max-lines", "prefer"), "dedup.yml", errors);
+            checkKeys(m, Set.of("name", "rules", "order", "max-lines", "prefer"), "dedup.yml", errors);
             String name = Yamls.str(m, "name");
-            List<String> rules = Yamls.strings(m, "rules", errors, "dedup.yml");
+            // 'order' = regras da MESMA ferramenta, da mais específica para a mais genérica (substitui 'rules')
+            List<String> order = m.containsKey("order") ? Yamls.strings(m, "order", errors, "dedup.yml") : null;
+            List<String> rules = order != null ? order : Yamls.strings(m, "rules", errors, "dedup.yml");
             if (name == null || rules == null || rules.size() < 2) {
                 errors.add("dedup.yml: cada tópico precisa de 'name' e de ao menos 2 'rules' (as equivalentes)");
                 continue;
             }
             Set<String> lower = new HashSet<>();
-            rules.forEach(r -> lower.add(r.toLowerCase(Locale.ROOT)));
-            out.add(new DedupTopic(name, lower, Yamls.integer(m, "max-lines", 1, errors, "dedup.yml"), Yamls.str(m, "prefer")));
+            List<String> lowerOrder = new ArrayList<>();
+            rules.forEach(r -> {
+                lower.add(r.toLowerCase(Locale.ROOT));
+                lowerOrder.add(r.toLowerCase(Locale.ROOT));
+            });
+            out.add(new DedupTopic(name, lower, Yamls.integer(m, "max-lines", 1, errors, "dedup.yml"),
+                    Yamls.str(m, "prefer"), order != null ? lowerOrder : List.of()));
         }
         return out;
     }
