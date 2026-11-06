@@ -2,8 +2,10 @@ package com.sentinel.audit.pack;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
@@ -20,7 +22,7 @@ public final class GuideBook {
     public record Review(boolean docs, boolean team, boolean ai) {}
 
     public record Stack(String id, String name, String kind, String summary, List<String> languages, List<String> own,
-                        List<String> also, List<String> tools, List<String> gaps, List<String> commands,
+                        List<String> also, List<String> exclude, List<String> tools, List<String> gaps, List<String> commands,
                         boolean commandsVerified, Review review, List<Practice> practices) {}
 
     /** Regra de uma tecnologia; {@code own} é verdadeiro quando a regra é específica dela. */
@@ -79,7 +81,7 @@ public final class GuideBook {
         String id = Yamls.str(m, "id");
         Map<String, Object> review = Yamls.map(m.get("review"));
         return new Stack(id, orElse(Yamls.str(m, "name"), id), orElse(Yamls.str(m, "kind"), "backend"), orElse(Yamls.str(m, "summary"), ""),
-                strings(m, "languages", problems), strings(m, "own", problems), strings(m, "also", problems),
+                strings(m, "languages", problems), strings(m, "own", problems), strings(m, "also", problems), strings(m, "exclude", problems),
                 strings(m, "tools", problems), strings(m, "gaps", problems), strings(m, "commands", problems),
                 Yamls.bool(m, "commandsVerified", false),
                 new Review(review != null && Yamls.bool(review, "docs", false), review != null && Yamls.bool(review, "team", false),
@@ -118,7 +120,7 @@ public final class GuideBook {
         for (GuideCatalog.GuideRule r : rules) {
             if (matchesAny(r.id(), stack.own())) {
                 out.add(new StackRule(r, true));
-            } else if (matchesAny(r.id(), stack.also()) || (sharesLanguage(r, stack) && !ownedByOther(r, stack, all))) {
+            } else if (matchesAny(r.id(), stack.also()) || (sharesLanguage(r, stack) && !ownedByOther(r, stack, all) && !matchesAny(r.id(), stack.exclude()))) {
                 out.add(new StackRule(r, false));
             }
         }
@@ -220,8 +222,11 @@ public final class GuideBook {
 
     /** Seção das regras de severidade alta que não admitem exceção; some quando não há nenhuma. */
     private static void semExcecao(List<String> l, List<StackRule> rules) {
+        // Regras irmãs (ex.: a mesma falha em YAML e em .properties) têm o mesmo título: uma linha basta.
+        Set<String> titles = new HashSet<>();
         List<StackRule> high = rules.stream()
                 .filter(s -> "alta".equals(s.rule().severity()) && !s.rule().action().isEmpty())
+                .filter(s -> titles.add(s.rule().title()))
                 .limit(MAX_NO_EXCEPTION_RULES)
                 .toList();
         if (high.isEmpty()) {

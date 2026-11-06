@@ -27,6 +27,22 @@ class Arquivos {
             in.read();
         }
     }
+
+    void bomVariosRecursos(String url) throws Exception {
+        // ok: sentinel-boas-java-recurso-sem-try-with-resources
+        try (Connection c = DriverManager.getConnection(url);
+             Statement st = c.createStatement()) {
+            st.execute("select 1");
+        }
+    }
+
+    void bomSegundoRecurso(File f, File g) throws Exception {
+        try (InputStream a = new FileInputStream(f);
+             // ok: sentinel-boas-java-recurso-sem-try-with-resources
+             InputStream b = new FileInputStream(g)) {
+            b.read();
+        }
+    }
 }
 
 @RestController

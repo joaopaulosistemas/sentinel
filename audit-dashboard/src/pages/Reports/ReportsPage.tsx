@@ -34,9 +34,17 @@ const BASE_URL = import.meta.env.VITE_API_URL || '';
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 const ALL = 'all';
 
+function isHistoryEntry(v: unknown): v is ReportHistoryEntry {
+  if (typeof v !== 'object' || v === null) return false;
+  const e = v as Record<string, unknown>;
+  return ['id', 'systemName', 'generatedAt', 'url'].every((k) => typeof e[k] === 'string');
+}
+
+/** O histórico vem do localStorage (editável por fora): só entram itens com o formato esperado. */
 function loadHistory(): ReportHistoryEntry[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as ReportHistoryEntry[];
+    const dado: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+    return Array.isArray(dado) ? dado.filter(isHistoryEntry) : [];
   } catch {
     return [];
   }
