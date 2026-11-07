@@ -245,6 +245,10 @@ rules:
       - metavariable-regex:
           metavariable: $VAL
           regex: (?i)^(?!(bearer|authorization|jwt|token|password|senha|secret|apikey|api_key|passwd|pwd|username)$)(?!x-)(?!.*[:\s]$)(?!\$\{)(?!\w+(\.\w+)+$).+$
+      # frase de mensagem ao usuário (maiúscula inicial, 4+ palavras, pontuação final) não é credencial
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: ^(?![A-Z][^ ]* [^ ]* [^ ]* .*[.!?]$)
       - pattern-not: String $V = "";
     message: >
       Credencial escrita no código-fonte. Ela vai para o Git e para todo build. Leia de variável de ambiente, de
@@ -370,3 +374,44 @@ rules:
       category: security
       cwe: "CWE-470: Use of Externally-Controlled Input to Select Classes or Code ('Unsafe Reflection')"
       owasp: A03:2021 - Injection
+
+  - id: sentinel-ssrf-url-do-parametro
+    patterns:
+      - pattern-either:
+          - pattern: new java.net.URL($P).openConnection(...)
+          - pattern: new java.net.URL($P).openStream()
+          - pattern: new URL($P).openConnection(...)
+          - pattern: new URL($P).openStream()
+          - pattern: |
+              $T $U = new java.net.URL($P);
+              ...
+              $U.openConnection(...);
+          - pattern: |
+              $T $U = new URL($P);
+              ...
+              $U.openConnection(...);
+          - pattern: |
+              $T $U = new URL($P);
+              ...
+              $U.openStream();
+      - pattern-not-inside: |
+          if ($P.matches(...)) { ... }
+      - pattern-not-inside: |
+          if ($P.equals(...)) { ... }
+      - pattern-not-inside: |
+          if ($P.startsWith(...)) { ... }
+      - pattern-inside: |
+          $RET $M(..., String $P, ...) { ... }
+    message: >
+      Método que abre conexão para uma URL recebida inteira como parâmetro, sem validar o destino. Se algum chamador
+      passar texto vindo da requisição, é SSRF (acesso a serviços internos, metadados de nuvem, file:// e ftp://). A origem
+      costuma estar em outro arquivo, onde a análise de fluxo não alcança. Valide esquema e host contra uma lista de
+      permissão e bloqueie endereços internos (127.0.0.1, 10.x, 169.254.x).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/.mvn/**"]
+    metadata:
+      category: security
+      cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp: A10:2021 - Server-Side Request Forgery

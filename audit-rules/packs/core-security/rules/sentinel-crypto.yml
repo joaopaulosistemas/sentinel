@@ -139,6 +139,10 @@ rules:
           - metavariable-regex:
               metavariable: $V
               regex: '^(?![a-z0-9]+([._-][a-z0-9]+)+$)(?![A-Z][A-Za-z0-9]*(-[A-Za-z0-9]+)+$).{4,}$'
+          # frase de mensagem ao usuário (maiúscula inicial, 4+ palavras, pontuação final) não é chave
+          - metavariable-regex:
+              metavariable: $V
+              regex: '^(?![A-Z][^ ]* [^ ]* [^ ]* .*[.!?]$)'
           # constante CAMPO_KEY com palavra minúscula (EMAIL_KEY = "email") é o nome de uma chave de SharedPreferences ou Map, não segredo; nomes de cripto (SECRET, AES, MASTER, API...) continuam alertando
           - pattern-not-regex: 'String\s+(?![A-Z0-9_]*(?:SECRET|SEGREDO|CHAVE|AES|DES|RSA|HMAC|CRYPT|CIPHER|MASTER|PRIVATE|SIGN|SALT|TOKEN|API|PASSPHRASE))[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*_KEY\s*=\s*"[a-z]+(?:_[a-z]+)*"'
     message: >

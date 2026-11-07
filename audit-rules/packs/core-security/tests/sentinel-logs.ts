@@ -25,3 +25,16 @@ function seguro(token: string, tokens: string[], usuario: { id: number }) {
   // ok: sentinel-log-segredo-js
   meuObjeto.log(token);
 }
+
+function textoFixoMaisSegredo(token: string, mytoken: string, tokens: string[], usuario: { id: number }) {
+  // ruleid: sentinel-log-segredo-js
+  console.log('Access Token: ' + token);
+  // ruleid: sentinel-log-segredo-js
+  console.log('Refresh Token: ' + mytoken);
+  // ruleid: sentinel-log-segredo-js
+  console.log('TOKEN: ' + JSON.stringify(token));
+  // ok: sentinel-log-segredo-js
+  console.log('Token expirado para o usuario ' + usuario.id);
+  // ok: sentinel-log-segredo-js
+  console.log('Quantidade de tokens: ' + tokens.length);
+}

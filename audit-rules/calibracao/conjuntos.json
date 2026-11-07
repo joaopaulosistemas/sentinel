@@ -21,7 +21,13 @@
       "oversecured/ovaa",
       "payatu/diva-android",
       "CSPF-Founder/JavaVulnerableLab",
-      "logicalhacking/DVHMA"
+      "logicalhacking/DVHMA",
+      "Warxim/vucsa",
+      "snoopysecurity/dvws-node",
+      "tangxiaofeng7/SecExample",
+      "veracode-research/actuator-testbed",
+      "t0thkr1s/allsafe-android",
+      "koenbuyens/Vulnerable-OAuth-2.0-Applications"
     ],
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
     "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu.",
@@ -37,7 +43,13 @@
     "_nota_ovaa": "oversecured/ovaa (app Android Java vulnerável de treino, branch master, stack JAVA) entrou em 2026-11-06 na volta 15 (ciclo/estabilizacao-5); treino.",
     "_nota_diva": "payatu/diva-android (app Android Java de treino DIVA, branch master, stack JAVA) entrou em 2026-11-06 na volta 16 (ciclo/estabilizacao-5); treino.",
     "_nota_javavulnerablelab": "CSPF-Founder/JavaVulnerableLab (app web Java/JSP vulnerável de treino, branch master, stack JAVA) entrou em 2026-11-06 na volta 17 (ciclo/estabilizacao-5); treino.",
-    "_nota_dvhma": "logicalhacking/DVHMA (app híbrido Cordova + servidor Node de treino, branch master, stack JAVASCRIPT) entrou em 2026-11-06 na volta 18 (ciclo/estabilizacao-6); treino."
+    "_nota_dvhma": "logicalhacking/DVHMA (app híbrido Cordova + servidor Node de treino, branch master, stack JAVASCRIPT) entrou em 2026-11-06 na volta 18 (ciclo/estabilizacao-6); treino.",
+    "_nota_vucsa": "Warxim/vucsa (app cliente-servidor Java/JavaFX vulnerável de treino, não HTTP, branch main, stack JAVA) entrou em 2026-11-06 na volta 19 (ciclo/estabilizacao-7); treino.",
+    "_nota_dvws_node": "snoopysecurity/dvws-node (app Node/Express de treino com REST, SOAP e GraphQL, branch master, stack JAVASCRIPT) entrou em 2026-11-07 na volta 20 (ciclo/estabilizacao-7); treino.",
+    "_nota_secexample": "tangxiaofeng7/SecExample (laboratório Java web de vulnerabilidades, branch main, stack JAVA) entrou em 2026-11-07 na volta 21 (ciclo/estabilizacao-7); treino.",
+    "_nota_actuator": "veracode-research/actuator-testbed (app Spring Boot de teste com Actuators expostos, branch master, stack JAVA) entrou em 2026-11-07 na volta 22 (ciclo/estabilizacao-7); treino.",
+    "_nota_allsafe": "t0thkr1s/allsafe-android (app Android vulneravel de treino em Java e Kotlin, branch master, stack JAVA) entrou em 2026-11-07 na volta 23 (ciclo/estabilizacao-7); treino.",
+    "_nota_oauth": "koenbuyens/Vulnerable-OAuth-2.0-Applications (apps Node/Express de treino com OAuth 2.0 inseguro, branch master, stack JAVASCRIPT) entrou em 2026-11-07 na volta 24 (ciclo/estabilizacao-7); treino."
   },
   "validacao": {
     "repositorios_fixos": [

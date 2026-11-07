@@ -135,4 +135,31 @@ class AndroidTeste extends android.app.Activity {
         // ok: sentinel-android-prefs-senha-em-claro
         ed.putString("password_hint", usuario);
     }
+
+    void webviewArquivoETexto(WebView web, WebSettings cfg, android.widget.EditText campo, String fixo) {
+        // ruleid: sentinel-android-webview-acesso-arquivo
+        cfg.setAllowFileAccess(true);
+        // ruleid: sentinel-android-webview-acesso-arquivo
+        cfg.setAllowFileAccessFromFileURLs(true);
+        // ruleid: sentinel-android-webview-acesso-arquivo
+        cfg.setAllowUniversalAccessFromFileURLs(true);
+        // ok: sentinel-android-webview-acesso-arquivo
+        cfg.setAllowFileAccess(false);
+        // ok: sentinel-android-webview-acesso-arquivo
+        cfg.setAllowUniversalAccessFromFileURLs(false);
+
+        // ruleid: sentinel-android-webview-texto-da-tela
+        web.loadUrl(campo.getText().toString());
+        String conteudo = campo.getText().toString();
+        // ruleid: sentinel-android-webview-texto-da-tela
+        web.loadData(conteudo, "text/html", "UTF-8");
+        // ruleid: sentinel-android-webview-texto-da-tela
+        web.loadDataWithBaseURL(null, conteudo, "text/html", "UTF-8", null);
+        // ok: sentinel-android-webview-texto-da-tela
+        web.loadUrl("https://exemplo.com/ajuda");
+        // ok: sentinel-android-webview-texto-da-tela
+        web.loadUrl(fixo);
+        // ok: sentinel-android-webview-texto-da-tela
+        web.loadData("<p>ola</p>", "text/html", "UTF-8");
+    }
 }

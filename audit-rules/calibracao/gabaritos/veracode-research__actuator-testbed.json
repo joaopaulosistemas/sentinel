@@ -1,0 +1,9 @@
+{
+ "_comentario": "Falhas de veracode-research/actuator-testbed lidas no código (treino), volta 22. README: app de teste com Actuators do Spring Boot expostos. Gabarito escrito pelo mesmo agente que corrige: recall mede só o que li.",
+ "repo": "veracode-research/actuator-testbed",
+ "falhas": [
+  {"arquivo": "pom.xml", "linha": 12, "cwe": "CWE-200", "regras": ["sentinel-spring-boot1-actuator-aberto-por-padrao"]},
+  {"arquivo": "pom.xml", "linha": null, "cwe": "CWE-352", "regras": ["CVE-2018-10899"]},
+  {"arquivo": "pom.xml", "linha": null, "cwe": "CWE-1104", "regras": ["lacuna-sem-regra"]}
+ ]
+}

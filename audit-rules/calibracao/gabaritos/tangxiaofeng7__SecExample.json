@@ -1,0 +1,15 @@
+{
+ "_comentario": "Falhas de tangxiaofeng7/SecExample lidas no código (treino), volta 21. Entradas com lacuna-sem-regra são lacunas assumidas. Gabarito escrito pelo mesmo agente que corrige: recall mede só o que li.",
+ "repo": "tangxiaofeng7/SecExample",
+ "falhas": [
+  {"arquivo": "src/main/java/com/suyu/secexample/rce/controller/rcecontroller.java", "linha": 32, "cwe": "CWE-78", "regras": ["sentinel-command-injection-requisicao","sentinel-command-injection-variable"]},
+  {"arquivo": "src/main/resources/mapper/UserMapper.xml", "linha": 15, "cwe": "CWE-89", "regras": ["sentinel-mybatis-cifrao-sql"]},
+  {"arquivo": "src/main/java/com/suyu/secexample/ssrf/utils/HttpTool.java", "linha": 13, "cwe": "CWE-918", "regras": ["sentinel-ssrf-url-do-parametro"]},
+  {"arquivo": "src/main/java/com/suyu/secexample/cors/controller/corscontroller.java", "linha": 22, "cwe": "CWE-942", "regras": ["sentinel-crossorigin-aberto"]},
+  {"arquivo": "src/main/java/com/suyu/secexample/cors/controller/corscontroller.java", "linha": 33, "cwe": "CWE-942", "regras": ["sentinel-api-cors-wildcard"]},
+  {"arquivo": "src/main/java/com/suyu/secexample/messageecho/controller/messagecontroller.java", "linha": 21, "cwe": "CWE-330", "regras": ["sentinel-crypto-random-servidor"]},
+  {"arquivo": "pom.xml", "linha": null, "cwe": "CWE-502", "regras": ["CVE-2025-70974","CVE-2017-18349"]},
+  {"arquivo": "src/main/java/com/suyu/secexample/csrf/controller/csrfcontroller.java", "linha": 25, "cwe": "CWE-352", "regras": ["lacuna-sem-regra"]},
+  {"arquivo": "src/main/java/com/suyu/secexample/fastjson/controller/fastjsoncontroller.java", "linha": 22, "cwe": "CWE-502", "regras": ["lacuna-sem-regra"]}
+ ]
+}

@@ -163,6 +163,90 @@ rules:
       cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
       owasp: A03:2021 - Injection
 
+  - id: sentinel-node-function-dinamico
+    patterns:
+      - pattern: new Function(..., $X)
+      - pattern-not: new Function(..., "...")
+      - pattern-not: new Function(..., '...')
+      - pattern-not: new Function(..., `...`)
+    message: >
+      `new Function` com corpo que não é texto fixo (CWE-95): equivale a `eval`. Quem controla o texto executa código no
+      servidor, inclusive quando ele vem de um arquivo importado (YAML, JSON, planilha) ou do banco. Troque por
+      um avaliador de expressões com lista de operações permitidas.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-xpath-injection
+    patterns:
+      - pattern: $X.$M($E, ...)
+      - metavariable-regex:
+          metavariable: $X
+          regex: ^(xpath|xp|xpathLib)$
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(evaluate|select|select1|selectWithResolver|parse)$
+      - metavariable-regex:
+          metavariable: $E
+          regex: (?s).*(\$\{|\+)
+    message: >
+      Consulta XPath montada por concatenação ou interpolação (CWE-643): o valor do usuário vira parte da expressão e
+      muda o que ela seleciona (`' or '1'='1`). Use variáveis do XPath (`xpath.parse('//a[@n=$nome]')` com `variables`)
+      ou valide o valor contra uma lista de caracteres permitidos.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-643: Improper Neutralization of Data within XPath Expressions ('XPath Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-ldap-injection
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: const $V = $T
+              - pattern: let $V = $T
+              - pattern: var $V = $T
+              - pattern: $V = $T
+              - pattern: '{..., filter: $T, ...}'
+          - metavariable-regex:
+              metavariable: $T
+              regex: ^[`'"]\s*\([&|!(]*\s*\w[\w.-]*\s*[=~<>]
+          - focus-metavariable: $T
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i).*(escap|sanitiz|ldapEncode)
+    message: >
+      Filtro LDAP montado com dado da requisição (CWE-90): o usuário injeta `*`, `)(` ou `|` e muda a busca no
+      diretório. Escape o valor (RFC 4515: `\\28`, `\\29`, `\\2a`, `\\5c`, `\\00`) antes de interpolar, ou use filtro
+      parametrizado da biblioteca.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')"
+      owasp: A03:2021 - Injection
+
   - id: sentinel-node-open-redirect
     mode: taint
     pattern-sources:
@@ -247,6 +331,19 @@ rules:
               metavariable: $DEC
               regex: ^(Query|Body|Param|Headers)$
           - focus-metavariable: $P
+      - patterns:
+          # `function $F(...)` casa função, seta e async nos dois motores (Semgrep não casa `($A, $B, ...) => {...}`)
+          - pattern-inside: |
+              function $F($PARENT, $ARGS, ...) {...}
+          - pattern: $ARGS.$K
+          - metavariable-regex:
+              metavariable: $ARGS
+              regex: ^args$
+      - patterns:
+          - pattern: $J.decode(...)
+          - metavariable-regex:
+              metavariable: $J
+              regex: ^(jwt|jsonwebtoken)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -263,7 +360,7 @@ rules:
               - pattern: $FS.readdir($P, ...)
           - metavariable-regex:
               metavariable: $FS
-              regex: ^(res|response|fs|fsp|fs\.promises|promises)$
+              regex: ^(res|response|fs|fsp|fsPromise|fsPromises|fs\.promises|promises)$
           - focus-metavariable: $P
     pattern-sanitizers:
       - pattern: path.basename(...)
@@ -305,6 +402,19 @@ rules:
               metavariable: $DEC
               regex: ^(Query|Body|Param|Headers)$
           - focus-metavariable: $P
+      - patterns:
+          # `function $F(...)` casa função, seta e async nos dois motores (Semgrep não casa `($A, $B, ...) => {...}`)
+          - pattern-inside: |
+              function $F($PARENT, $ARGS, ...) {...}
+          - pattern: $ARGS.$K
+          - metavariable-regex:
+              metavariable: $ARGS
+              regex: ^args$
+      - patterns:
+          - pattern: $J.decode(...)
+          - metavariable-regex:
+              metavariable: $J
+              regex: ^(jwt|jsonwebtoken)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -552,9 +662,10 @@ rules:
       owasp: A07:2021 - Identification and Authentication Failures
 
   - id: sentinel-node-jwt-expiracao-ignorada
-    pattern: '$J.verify($TOKEN, $KEY, {..., ignoreExpiration: true, ...})'
+    pattern: '{..., ignoreExpiration: true, ...}'
     message: >
-      `ignoreExpiration: true` (CWE-613): token vencido continua valendo. Remova a opção e renove o token.
+      `ignoreExpiration: true` (CWE-613): token vencido continua valendo, inclusive quando as opções são montadas
+      numa constante e passadas depois a `jwt.verify`. Remova a opção e renove o token.
     severity: ERROR
     languages: [javascript, typescript]
     metadata:
@@ -563,16 +674,35 @@ rules:
       cwe: "CWE-613: Insufficient Session Expiration"
       owasp: A07:2021 - Identification and Authentication Failures
 
+  - id: sentinel-node-jwt-algoritmo-none
+    pattern-either:
+      - pattern: '{..., algorithms: [..., "none", ...], ...}'
+      - pattern: "{..., algorithms: [..., 'none', ...], ...}"
+      - pattern: '{..., algorithms: [..., "None", ...], ...}'
+    message: >
+      `algorithms` aceita `none` (CWE-347): um token sem assinatura passa na verificação e qualquer pessoa forja a
+      identidade. Liste só os algoritmos esperados (por exemplo `['HS256']`), nunca `none`.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      owasp: A07:2021 - Identification and Authentication Failures
+
   - id: sentinel-node-math-random-segredo
     patterns:
       - pattern-either:
           - pattern: $V = <... Math.random() ...>
           - pattern: const $V = <... Math.random() ...>
           - pattern: let $V = <... Math.random() ...>
+          - pattern: let $V = <... Math.random() ...> + $Y
+          - pattern: const $V = <... Math.random() ...> + $Y
+          - pattern: $V = <... Math.random() ...> + $Y
           - pattern: '$V: <... Math.random() ...>'
       - metavariable-regex:
           metavariable: $V
-          regex: (?i)(token|secret|senha|password|nonce|otp|salt|apikey|session|csrf)
+          regex: (?i)^(?:.*(?:token|secret|senha|password|nonce|apikey|csrf|authcode|verifier|jti).*|(?:otp|salt|session).*|code)$
     message: >
       `Math.random()` gerando valor de segurança (CWE-338): o resultado é previsível. Use
       `crypto.randomBytes(32).toString('hex')` ou `crypto.randomUUID()`.
@@ -849,3 +979,39 @@ rules:
       category: security
       cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
       owasp: A04:2021 - Insecure Design
+
+  - id: sentinel-node-session-secret-literal
+    patterns:
+      - pattern-either:
+          - pattern: '$S({..., secret: "...", ...})'
+          - pattern: '$S({..., secret: `...`, ...})'
+      - metavariable-regex:
+          metavariable: $S
+          regex: ^(session|expressSession|cookieSession|(\w+\.)?session)$
+    message: >
+      Segredo de sessão escrito no código (CWE-798). Quem lê o repositório consegue forjar o cookie de sessão.
+      Leia o valor de uma variável de ambiente ou de um cofre de segredos e use um valor longo e aleatório.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-node-nosql-where-concatenado
+    pattern-either:
+      - pattern-regex: |-
+          \$where[^\n]*['"]\s*\+\s*[A-Za-z_]
+      - pattern-regex: |-
+          \$where[^\n]*\$\{
+    message: >
+      Consulta `$where` do MongoDB montada por concatenação de texto (CWE-943): o conteúdo vira JavaScript executado no
+      banco. Troque por operadores de consulta (`{ campo: valor }`) e não monte JSON por texto.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp: A03:2021 - Injection

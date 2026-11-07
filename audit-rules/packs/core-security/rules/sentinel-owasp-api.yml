@@ -105,9 +105,26 @@ rules:
       - pattern: $RES.header("Access-Control-Allow-Origin", "*")
       - pattern: $RES.setHeader("Access-Control-Allow-Origin", "*")
       - pattern: $RES.set("Access-Control-Allow-Origin", "*")
+      - pattern: '{..., origin: true, credentials: true, ...}'
+      - pattern: '{..., credentials: true, origin: true, ...}'
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.get("origin"))
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.header("origin"))
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.get("origin"))
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.header("origin"))
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.get("origin"))
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.header("origin"))
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.get("Origin"))
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.header("Origin"))
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.get("Origin"))
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.header("Origin"))
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.get("Origin"))
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.header("Origin"))
     message: >
       CORS aberto para qualquer origem em Node/Nest/Express (OWASP API8 - Security Misconfiguration). `origin: true`
-      e a configuração padrão refletem a origem de quem chama, o que equivale ao curinga. Liste as origens permitidas.
+      e a configuração padrão refletem a origem de quem chama, o que equivale ao curinga; devolver a origem recebida no `Access-Control-Allow-Origin` faz o mesmo, e com `credentials: true` qualquer site lê respostas autenticadas. Liste as origens permitidas.
     severity: WARNING
     languages: [javascript, typescript]
     metadata:

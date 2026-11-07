@@ -48,7 +48,7 @@ export function consultaFixa () {
 export function avaliacoes (req: any) {
   const id = req.params.id
   // ruleid: sentinel-node-nosql-where
-  return db.reviews.find({ $where: 'this.product == ' + id })
+  return db.reviews.find({ $where: 'this.product == ' + id }) // nosemgrep: sentinel-node-nosql-where-concatenado
 }
 
 export function avaliacoesSeguro (req: any) {
@@ -565,4 +565,181 @@ export class NestExemplo {
     // ok: sentinel-node-eval-requisicao
     return JSON.parse(servico)
   }
+}
+
+// ---------- JWT: opções montadas à parte ----------
+export function opcoesJwtComNone () {
+  // ruleid: sentinel-node-jwt-algoritmo-none
+  const opcoes = { issuer: 'sentinel', algorithms: ['HS256', 'none'] }
+  return opcoes
+}
+
+export function opcoesJwtSemNone () {
+  // ok: sentinel-node-jwt-algoritmo-none
+  return { issuer: 'sentinel', algorithms: ['HS256', 'RS256'] }
+}
+
+export function verificarComNone (token: string, chave: string) {
+  // ruleid: sentinel-node-jwt-algoritmo-none
+  return jwt.verify(token, chave, { algorithms: ['none'] })
+}
+
+export function opcoesIgnorandoValidade () {
+  // ruleid: sentinel-node-jwt-expiracao-ignorada
+  const opcoes = { expiresIn: '2d', algorithms: ['HS256'], ignoreExpiration: true }
+  return opcoes
+}
+
+export function opcoesRespeitandoValidade () {
+  // ok: sentinel-node-jwt-expiracao-ignorada
+  return { expiresIn: '2d', algorithms: ['HS256'], ignoreExpiration: false }
+}
+
+// ---------- new Function com texto dinâmico ----------
+export function montarGancho (codigo: string) {
+  // ruleid: sentinel-node-function-dinamico
+  return new Function('require', 'process', codigo)
+}
+
+export function montarGanchoDeObjeto (lote: any) {
+  // ruleid: sentinel-node-function-dinamico
+  return new Function(lote.codigo)
+}
+
+export function somador () {
+  // ok: sentinel-node-function-dinamico
+  return new Function('a', 'b', 'return a + b')
+}
+
+// ---------- XPath com texto montado ----------
+export function buscarNoXml (req: any, doc: any) {
+  const valor = req.query.valor
+  // ruleid: sentinel-node-xpath-injection
+  return xpath.evaluate("//config/*[release/text()='" + valor + "']", doc, null, xpath.XPathResult.ANY_TYPE, null)
+}
+
+export function buscarNoXmlComTemplate (valor: string, doc: any) {
+  // ruleid: sentinel-node-xpath-injection
+  return xpath.select(`//usuario[@nome='${valor}']`, doc)
+}
+
+export function buscarNoXmlFixo (doc: any) {
+  // ok: sentinel-node-xpath-injection
+  return xpath.select('//usuario[@ativo="true"]', doc)
+}
+
+export function buscarNoXmlComVariavel (doc: any, variaveis: any) {
+  // ok: sentinel-node-xpath-injection
+  return xpath.parse('//usuario[@nome=$nome]').select({ node: doc, variables: variaveis })
+}
+
+// ---------- LDAP com filtro montado ----------
+export async function procurarNoDiretorio (req: any, diretorio: any) {
+  const usuario = req.query.user || ''
+  // ruleid: sentinel-node-ldap-injection
+  const filtro = `(&(objectClass=account)(|(uid=${usuario})(cn=servico)))`
+  return diretorio.search(filtro)
+}
+
+export async function procurarNoLdapjs (req: any, cliente: any) {
+  // ruleid: sentinel-node-ldap-injection
+  const opcoes = { filter: '(uid=' + req.body.uid + ')', scope: 'sub' }
+  return cliente.search('dc=exemplo,dc=com', opcoes)
+}
+
+export async function procurarNoDiretorioEscapado (req: any, diretorio: any) {
+  const usuario = escaparFiltroLdap(req.query.user || '')
+  // ok: sentinel-node-ldap-injection
+  const filtro = `(&(objectClass=account)(uid=${usuario}))`
+  return diretorio.search(filtro)
+}
+
+export function frase (req: any) {
+  // ok: sentinel-node-ldap-injection
+  const texto = `Olá (${req.query.nome})`
+  return texto
+}
+
+// ---------- caminho vindo de argumento GraphQL e de cabeçalho de JWT sem verificar ----------
+export const resolvers = {
+  Mutation: {
+    gravarArquivo: async (parent: any, args: any, context: any, info: any) => {
+      const destino = __dirname + '/../../public/uploads/' + context.user + '/' + args.filePath
+      // ruleid: sentinel-node-path-traversal
+      await fsPromise.writeFile(destino, args.fileContent)
+      return { destino }
+    },
+    gravarArquivoSeguro: async (parent: any, args: any, context: any, info: any) => {
+      const destino = __dirname + '/uploads/' + path.basename(args.filePath)
+      // ok: sentinel-node-path-traversal
+      await fsPromise.writeFile(destino, args.fileContent)
+      return { destino }
+    }
+  }
+}
+
+export function carregarChave (token: string) {
+  const cabecalho = jwt.decode(token, { complete: true })?.header
+  const caminho = path.resolve('/opt/chaves', cabecalho.kid)
+  // ruleid: sentinel-node-path-traversal
+  return fs.readFileSync(caminho)
+}
+
+export async function carregarJwks (token: string) {
+  const cabecalho = jwt.decode(token, { complete: true })?.header
+  const url = new URL(cabecalho.jku)
+  // ruleid: sentinel-node-ssrf
+  return fetch(url)
+}
+
+export function lerClaims (token: string) {
+  const claims = jwt.decode(token)
+  // ok: sentinel-node-path-traversal
+  return fs.readFileSync('/opt/dados/fixo.json', 'utf8') + String(claims)
+}
+
+// ---------- Segredos de sessão, código de autorização e $where montado por texto (volta 24) ----------
+export function codigos () {
+  // ruleid: sentinel-node-math-random-segredo
+  let code = Math.floor(Math.random() * (100000 - 1) + 1)
+  // ruleid: sentinel-node-math-random-segredo
+  const jti = Math.random().toString(36)
+  // ruleid: sentinel-node-math-random-segredo
+  let accesstoken = Math.floor(Math.random() * 99999) + ''
+  // ok: sentinel-node-math-random-segredo
+  const statusCode = Math.floor(Math.random() * 3)
+  return [code, jti, accesstoken, statusCode]
+}
+
+export function sessao (app: any, expressSession: any, config: any) {
+  // ruleid: sentinel-node-session-secret-literal
+  app.use(expressSession({
+    secret: 'changethistoconfigfile',
+    resave: false
+  }))
+  // ok: sentinel-node-session-secret-literal
+  app.use(expressSession({
+    secret: process.env.SESSION_SECRET,
+    resave: false
+  }))
+  // ok: sentinel-node-session-secret-literal
+  app.use(expressSession({
+    secret: config.session.secret
+  }))
+}
+
+export function refrescar (db: any, mytoken: string) {
+  // ruleid: sentinel-node-nosql-where-concatenado
+  const query = '{"$where": "function() { return this.token == ' + mytoken + '; }"}'
+  return db.collection('refreshtokens').find(JSON.parse(query))
+}
+
+export function buscarPorNome (db: any, nome: string) {
+  // ruleid: sentinel-node-nosql-where-concatenado
+  return db.collection('u').find({ $where: 'this.nome == "' + nome + '"' })
+}
+
+export function buscarFixo (db: any) {
+  // ok: sentinel-node-nosql-where-concatenado
+  return db.collection('u').find({ $where: 'this.ativo == true' })
 }

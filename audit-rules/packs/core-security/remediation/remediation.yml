@@ -485,6 +485,34 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
 
+- key: "sentinel-node-jwt-algoritmo-none"
+  summary: "Liste só algoritmos reais em `algorithms`; `none` aceita token sem assinatura."
+  before: "jwt.verify(token, chave, { algorithms: ['HS256', 'none'] })"
+  after: "jwt.verify(token, chave, { algorithms: ['HS256'] })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
+- key: "sentinel-node-function-dinamico"
+  summary: "Não construa função a partir de texto externo; use um avaliador de expressões com lista de operações."
+  before: "const gancho = new Function('require', 'process', codigo)"
+  after: "const gancho = operacoesPermitidas[nomeDaOperacao]"
+  refs:
+    - "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function"
+
+- key: "sentinel-node-xpath-injection"
+  summary: "Passe o valor como variável do XPath em vez de concatenar na expressão."
+  before: "xpath.select(\"//u[@n='\" + nome + \"']\", doc)"
+  after: "xpath.parse('//u[@n=$nome]').select({ node: doc, variables: { nome } })"
+  refs:
+    - "https://owasp.org/www-community/attacks/XPATH_Injection"
+
+- key: "sentinel-node-ldap-injection"
+  summary: "Escape o valor conforme a RFC 4515 antes de montar o filtro LDAP."
+  before: "const filtro = `(uid=${usuario})`"
+  after: "const filtro = `(uid=${escaparFiltroLdap(usuario)})`"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html"
+
 - key: "sentinel-node-math-random-segredo"
   summary: "Use um gerador criptográfico para tokens, senhas temporárias e segredos."
   before: "const token = Math.random().toString(36).slice(2)"
@@ -691,3 +719,27 @@
   refs:
     - "https://cwe.mitre.org/data/definitions/926.html"
     - "https://developer.android.com/privacy-and-security/risks/android-exported"
+
+- key: "sentinel-ssrf-url-do-parametro"
+  summary: "Valide esquema e host da URL contra uma lista de permissão antes de abrir a conexão."
+  before: "URL u = new URL(destino);\nu.openConnection();"
+  after: "URI uri = URI.create(destino);\nif (!List.of(\"https\").contains(uri.getScheme()) || !PERMITIDOS.contains(uri.getHost())) {\n    throw new IllegalArgumentException(\"destino não permitido\");\n}\nuri.toURL().openConnection();"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/918.html"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-node-session-secret-literal"
+  summary: "Leia o segredo de sessão de variável de ambiente ou cofre e use um valor longo e aleatório."
+  before: "app.use(session({ secret: 'changethistoconfigfile' }))"
+  after: "app.use(session({ secret: process.env.SESSION_SECRET }))"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+
+- key: "sentinel-node-nosql-where-concatenado"
+  summary: "Não monte `$where` por texto: use operadores de consulta com valores tipados."
+  before: "db.users.find({ $where: 'this.nome == \"' + nome + '\"' })"
+  after: "db.users.find({ nome: String(nome) })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
+

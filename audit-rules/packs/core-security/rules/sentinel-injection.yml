@@ -203,7 +203,21 @@ rules:
                   - pattern: Runtime.getRuntime().exec(new String[]{$SH, $FLAG, $CMD})
               - metavariable-regex:
                   metavariable: $FLAG
-                  regex: ^"(-c|/c)"$
+                  regex: ^"(-c|/[cC])"$
+          # vetor montado à parte e passado a um método (executeCommand(new String[]{"sh", "-c", "ping " + host})):
+          # interpretador de shell literal, "-c" ou "/C" e comando concatenado com valor variável
+          - patterns:
+              - pattern: new String[]{$SH, $FLAG, $CMD}
+              - pattern-not-inside: Runtime.getRuntime().exec(...)
+              - metavariable-regex:
+                  metavariable: $FLAG
+                  regex: ^"(-c|/[cC])"$
+              - metavariable-regex:
+                  metavariable: $SH
+                  regex: ^"((/usr)?/bin/)?((ba|z|da|k)?sh|cmd|cmd\.exe|powershell|powershell\.exe|pwsh)"$
+              - metavariable-regex:
+                  metavariable: $CMD
+                  regex: ^(?!"[^"]*"$).*\+.*$
           # interpretador e opção guardados em variáveis (escolha por sistema operacional): as duas precisam
           # parecer de shell, para não pegar new ProcessBuilder("git", flag, valor)
           - patterns:

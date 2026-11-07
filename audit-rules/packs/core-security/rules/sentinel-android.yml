@@ -52,6 +52,46 @@ rules:
       cwe: "CWE-79: Cross-site Scripting"
       owasp: M4 - Insufficient Input/Output Validation
 
+  - id: sentinel-android-webview-acesso-arquivo
+    pattern-either:
+      - pattern: $S.setAllowFileAccess(true)
+      - pattern: $S.setAllowFileAccessFromFileURLs(true)
+      - pattern: $S.setAllowUniversalAccessFromFileURLs(true)
+    message: >
+      WebView com acesso a arquivos local habilitado (CWE-200/CWE-922). Com JavaScript ligado, uma página carregada
+      pode ler arquivos do app (file://) e mandá-los para fora. Deixe setAllowFileAccess(false) e, se precisar de
+      arquivos do APK, use WebViewAssetLoader em vez de file://.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor"
+      owasp: M8 - Security Misconfiguration
+
+  - id: sentinel-android-webview-texto-da-tela
+    mode: taint
+    pattern-sources:
+      - pattern: (android.widget.EditText $E).getText().toString()
+      - pattern: (EditText $E).getText().toString()
+      - pattern: (TextInputEditText $E).getText().toString()
+    pattern-sinks:
+      - pattern: $W.loadUrl($X, ...)
+        focus-metavariable: $X
+      - pattern: $W.loadData($X, ...)
+        focus-metavariable: $X
+      - pattern: $W.loadDataWithBaseURL($B, $X, ...)
+        focus-metavariable: $X
+    message: >
+      Texto digitado na tela carregado direto no WebView (CWE-79/CWE-601). Quem digita (ou um preenchimento automático
+      malicioso) escolhe a página ou o HTML que roda dentro do app, com JavaScript e sessões dele. Valide esquema e
+      host contra uma lista de permissão e nunca monte HTML a partir do texto sem escapar.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting"
+      owasp: M4 - Insufficient Input/Output Validation
+
   - id: sentinel-android-manifest-allow-backup
     pattern: 'android:allowBackup="true"'
     message: >
@@ -225,7 +265,7 @@ rules:
       um ContentProvider, quem controla a entrada altera a consulta e lê ou apaga dados de outros registros. Use
       parâmetros (?) com o array de argumentos: rawQuery(sql, args), db.delete(tabela, "id = ?", args).
     severity: WARNING
-    languages: [java]
+    languages: [java, kotlin]
     metadata:
       category: security
       cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"

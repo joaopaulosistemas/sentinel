@@ -5,6 +5,20 @@
   effort: S
   regression-risk: LOW
 
+- key: "sentinel-spring-actuator-boot1-sem-seguranca"
+  summary: "Remova a liberação dos endpoints sensíveis do Actuator (Spring Boot 1.x) e proteja-os com autenticação."
+  before: "management.security.enabled=false"
+  after: "management.security.enabled=true"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-spring-boot1-actuator-aberto-por-padrao"
+  summary: "Atualize o Spring Boot para uma versão suportada e proteja o Actuator com Spring Security."
+  before: "spring-boot-starter-parent 1.4.x + spring-boot-starter-actuator (env, heapdump e jolokia abertos)"
+  after: "spring-boot-starter-parent 3.x + management.endpoints.web.exposure.include=health,info"
+  effort: M
+  regression-risk: MEDIUM
+
 - key: "sentinel-spring-h2-console"
   summary: "Desligue o console do H2 fora do perfil de desenvolvimento local."
   before: "spring.h2.console.enabled=true"
