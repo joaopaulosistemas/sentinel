@@ -659,3 +659,41 @@ export function frase (req: any) {
   const texto = `Olá (${req.query.nome})`
   return texto
 }
+
+// ---------- caminho vindo de argumento GraphQL e de cabeçalho de JWT sem verificar ----------
+export const resolvers = {
+  Mutation: {
+    gravarArquivo: async (parent: any, args: any, context: any, info: any) => {
+      const destino = __dirname + '/../../public/uploads/' + context.user + '/' + args.filePath
+      // ruleid: sentinel-node-path-traversal
+      await fsPromise.writeFile(destino, args.fileContent)
+      return { destino }
+    },
+    gravarArquivoSeguro: async (parent: any, args: any, context: any, info: any) => {
+      const destino = __dirname + '/uploads/' + path.basename(args.filePath)
+      // ok: sentinel-node-path-traversal
+      await fsPromise.writeFile(destino, args.fileContent)
+      return { destino }
+    }
+  }
+}
+
+export function carregarChave (token: string) {
+  const cabecalho = jwt.decode(token, { complete: true })?.header
+  const caminho = path.resolve('/opt/chaves', cabecalho.kid)
+  // ruleid: sentinel-node-path-traversal
+  return fs.readFileSync(caminho)
+}
+
+export async function carregarJwks (token: string) {
+  const cabecalho = jwt.decode(token, { complete: true })?.header
+  const url = new URL(cabecalho.jku)
+  // ruleid: sentinel-node-ssrf
+  return fetch(url)
+}
+
+export function lerClaims (token: string) {
+  const claims = jwt.decode(token)
+  // ok: sentinel-node-path-traversal
+  return fs.readFileSync('/opt/dados/fixo.json', 'utf8') + String(claims)
+}
