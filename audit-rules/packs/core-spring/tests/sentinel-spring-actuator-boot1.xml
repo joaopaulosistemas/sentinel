@@ -1,0 +1,43 @@
+<project>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <!-- ruleid: sentinel-spring-boot1-actuator-aberto-por-padrao -->
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <!--<version>2.0.5.RELEASE</version>-->
+        <version>1.4.7.RELEASE</version>
+    </parent>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+    </dependencies>
+</project>
+<project>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <!-- ok: sentinel-spring-boot1-actuator-aberto-por-padrao -->
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.18</version>
+    </parent>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+    </dependencies>
+</project>
+<project>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <!-- ok: sentinel-spring-boot1-actuator-aberto-por-padrao -->
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>1.4.7.RELEASE</version>
+    </parent>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+    </dependencies>
+</project>

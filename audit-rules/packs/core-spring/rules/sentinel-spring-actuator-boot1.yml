@@ -1,0 +1,31 @@
+# Actuator aberto no Spring Boot 1.x. Casos de teste: tests/sentinel-spring-actuator-boot1.properties e .xml
+rules:
+  - id: sentinel-spring-actuator-boot1-sem-seguranca
+    pattern-regex: '(?m)^[ \t]*(?:management\.security\.enabled|endpoints\.sensitive|endpoints\.(?:env|heapdump|beans|configprops|trace|dump|mappings|autoconfig|loggers|jolokia|restart|shutdown)\.sensitive)[ \t]*[=:][ \t]*false[ \t]*$'
+    message: >
+      No Spring Boot 1.x esta linha liberta os endpoints sensíveis do Actuator (env, heapdump, trace, jolokia, restart)
+      sem autenticação; env e heapdump entregam senhas e chaves. Remova a linha, deixe management.security.enabled=true
+      e/ou proteja /actuator com Spring Security.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-200: Exposure of Sensitive Information"
+
+  - id: sentinel-spring-boot1-actuator-aberto-por-padrao
+    pattern-regex: '(?s)<artifactId>spring-boot-starter-parent</artifactId>(?:\s*<!--.*?-->)*\s*<version>1\.[0-4]\.\d+[^<]*</version>.*<artifactId>spring-boot-starter-actuator</artifactId>'
+    message: >
+      Spring Boot 1.0 a 1.4 com spring-boot-starter-actuator expõe env, heapdump, trace e jolokia sem autenticação por
+      padrão (sem configuração nenhuma). Atualize para uma versão suportada e proteja o Actuator
+      (management.security.enabled=true ou Spring Security).
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.xml"]
+      exclude: ["**/node_modules/**", "**/target/**"]
+    metadata:
+      category: security
+      cwe: "CWE-200: Exposure of Sensitive Information"
