@@ -743,3 +743,20 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
 
+
+- key: "sentinel-node-prisma-raw-unsafe"
+  summary: "Não monte o SQL do Prisma com template string ou concatenação: use a tag Prisma.sql ($queryRaw) ou argumentos posicionais."
+  before: "await prisma.$queryRawUnsafe(`SELECT * FROM products WHERE name LIKE '%${q}%'`)"
+  after: |-
+    await prisma.$queryRaw(Prisma.sql`SELECT * FROM products WHERE name LIKE ${'%' + q + '%'}`)
+  refs:
+    - "https://www.prisma.io/docs/orm/prisma-client/using-raw-sql/raw-queries#sql-injection"
+    - "https://owasp.org/www-community/attacks/SQL_Injection"
+
+- key: "sentinel-node-sqlite-sql-dinamico"
+  summary: "Use db.prepare com parâmetros (?) em vez de montar o SQL do better-sqlite3 com texto; db.exec não aceita parâmetros."
+  before: "db.exec(`SELECT * FROM reviews WHERE author = '${autor}'`)"
+  after: |-
+    const linhas = db.prepare('SELECT * FROM reviews WHERE author = ?').all(autor)
+  refs:
+    - "https://owasp.org/www-community/attacks/SQL_Injection"

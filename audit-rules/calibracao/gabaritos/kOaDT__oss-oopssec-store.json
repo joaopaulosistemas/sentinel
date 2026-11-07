@@ -1,0 +1,127 @@
+{
+ "_comentario": "Falhas de kOaDT/oss-oopssec-store lidas no codigo (treino), volta 25. Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li. Nomes de regras aceitas sao palpite ate o resultado do CI.",
+ "repo": "kOaDT/oss-oopssec-store",
+ "falhas": [
+  {
+   "arquivo": "app/api/orders/search/route.ts",
+   "linha": 58,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-prisma-raw-unsafe",
+    "sentinel-node-sqlite-sql-dinamico"
+   ],
+   "nota": "$queryRawUnsafe com query montada por template (status do filtro)"
+  },
+  {
+   "arquivo": "app/api/products/search/route.ts",
+   "linha": 55,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-prisma-raw-unsafe",
+    "sentinel-node-sqlite-sql-dinamico"
+   ],
+   "nota": "$queryRawUnsafe com busca interpolada"
+  },
+  {
+   "arquivo": "app/api/tracking/route.ts",
+   "linha": 54,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-prisma-raw-unsafe",
+    "sentinel-node-sqlite-sql-dinamico"
+   ],
+   "nota": "$queryRawUnsafe com X-Forwarded-For interpolado"
+  },
+  {
+   "arquivo": "app/api/admin/reviews/route.ts",
+   "linha": 79,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-prisma-raw-unsafe",
+    "sentinel-node-sqlite-sql-dinamico"
+   ],
+   "nota": "better-sqlite3 db.exec com filtro de autor interpolado"
+  },
+  {
+   "arquivo": "app/api/admin/suppliers/import-order/route.ts",
+   "linha": 21,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-node-xxe"
+   ],
+   "nota": "libxmljs parseXmlString noent:true dtdload:true"
+  },
+  {
+   "arquivo": "app/api/support/route.ts",
+   "linha": 16,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-node-ssrf"
+   ],
+   "nota": "fetch(screenshotUrl) vindo do corpo"
+  },
+  {
+   "arquivo": "app/api/files/route.ts",
+   "linha": 53,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ],
+   "nota": "readFile(join(baseDir, file)) com file da query"
+  },
+  {
+   "arquivo": "app/profile/ProfileClient.tsx",
+   "linha": 411,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ],
+   "nota": "bio do usuario em dangerouslySetInnerHTML"
+  },
+  {
+   "arquivo": "app/products/[id]/ProductDetailClient.tsx",
+   "linha": 55,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-inner-html"
+   ],
+   "nota": "review.content em innerHTML"
+  },
+  {
+   "arquivo": "app/admin/analytics/AnalyticsClient.tsx",
+   "linha": 334,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ],
+   "nota": "visit.ip (cabecalho) em dangerouslySetInnerHTML"
+  },
+  {
+   "arquivo": "app/support/SupportForm.tsx",
+   "linha": 103,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ],
+   "nota": "screenshotContent buscado de URL em dangerouslySetInnerHTML"
+  },
+  {
+   "arquivo": "lib/server-auth.ts",
+   "linha": 15,
+   "cwe": "CWE-328",
+   "regras": [
+    "sentinel-node-hash-fraco"
+   ],
+   "nota": "hash MD5 de senha"
+  },
+  {
+   "arquivo": "lib/server-auth.ts",
+   "linha": 12,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-segredo-padrao-js"
+   ],
+   "nota": "JWT_SECRET com fallback 'secret'"
+  }
+ ]
+}

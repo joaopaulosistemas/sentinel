@@ -53,6 +53,63 @@ rules:
       cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
       owasp: A03:2021 - Injection
 
+  - id: sentinel-node-prisma-raw-unsafe
+    mode: taint
+    pattern-sources:
+      - pattern: |
+          `...${$X}...`
+      - patterns:
+          - pattern: $A + $B
+          - pattern-not: |
+              "..." + "..."
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $PRISMA.$queryRawUnsafe($Q, ...)
+              - pattern: $PRISMA.$executeRawUnsafe($Q, ...)
+          - focus-metavariable: $Q
+    message: >
+      Possível SQL injection (CWE-89): `$queryRawUnsafe`/`$executeRawUnsafe` do Prisma recebe um texto montado por
+      template string ou concatenação. Use `$queryRaw` com a tag `Prisma.sql` (valores viram parâmetros) ou passe os
+      valores como argumentos posicionais (`$1`, `?`).
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-node-sqlite-sql-dinamico
+    mode: taint
+    pattern-sources:
+      - pattern: |
+          `...${$X}...`
+      - patterns:
+          - pattern: $A + $B
+          - pattern-not: |
+              "..." + "..."
+    pattern-sinks:
+      - patterns:
+          - pattern-inside: |
+              $DB = new Database(...)
+              ...
+          - pattern-either:
+              - pattern: $DB.exec($Q)
+              - pattern: $DB.prepare($Q)
+          - focus-metavariable: $Q
+    message: >
+      Possível SQL injection (CWE-89): o texto da consulta do better-sqlite3 é montado por template string ou
+      concatenação. Use `db.prepare("... WHERE campo = ?").all(valor)` com parâmetros; `db.exec` executa várias
+      instruções de uma vez e não aceita parâmetros.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
   - id: sentinel-node-nosql-where
     mode: taint
     pattern-sources:
@@ -304,6 +361,35 @@ rules:
     mode: taint
     pattern-sources:
       - patterns:
+          # Next.js (App Router): parâmetro lido de `new URL(request.url).searchParams` (não vale para `useSearchParams()` do navegador)
+          - pattern-inside: |
+              const { searchParams } = new URL($REQ.url)
+              ...
+          - pattern: searchParams.get(...)
+      - patterns:
+          # Next.js: `request.nextUrl.searchParams.get(...)` e corpo lido com `await request.json()/text()/formData()`
+          - pattern-either:
+              - pattern: $REQ.nextUrl.searchParams.get(...)
+              - pattern: await $REQ.json()
+              - pattern: await $REQ.text()
+              - pattern: await $REQ.formData()
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+      - patterns:
+          # Next.js: resultado `.data` de um validador que recebe a requisição (`parseBody(request, schema)`, `parseQuery(searchParams, schema)`)
+          - pattern-either:
+              - pattern-inside: |
+                  $P = await $F($REQ, ...)
+                  ...
+              - pattern-inside: |
+                  $P = $F($REQ, ...)
+                  ...
+          - pattern: $P.data
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request|searchParams)$
+      - patterns:
           - pattern-inside: |
               ({..., $P, ...}: Request, ...) => {...}
           - metavariable-regex:
@@ -362,6 +448,17 @@ rules:
               metavariable: $FS
               regex: ^(res|response|fs|fsp|fsPromise|fsPromises|fs\.promises|promises)$
           - focus-metavariable: $P
+      - patterns:
+          # importação nomeada (`import { readFile } from "fs/promises"`)
+          - pattern-either:
+              - pattern: readFile($P, ...)
+              - pattern: readFileSync($P, ...)
+              - pattern: createReadStream($P, ...)
+              - pattern: writeFile($P, ...)
+              - pattern: writeFileSync($P, ...)
+              - pattern: unlink($P, ...)
+              - pattern: readdir($P, ...)
+          - focus-metavariable: $P
     pattern-sanitizers:
       - pattern: path.basename(...)
       - pattern: $X.replace(...)
@@ -379,6 +476,35 @@ rules:
   - id: sentinel-node-ssrf
     mode: taint
     pattern-sources:
+      - patterns:
+          # Next.js (App Router): parâmetro lido de `new URL(request.url).searchParams` (não vale para `useSearchParams()` do navegador)
+          - pattern-inside: |
+              const { searchParams } = new URL($REQ.url)
+              ...
+          - pattern: searchParams.get(...)
+      - patterns:
+          # Next.js: `request.nextUrl.searchParams.get(...)` e corpo lido com `await request.json()/text()/formData()`
+          - pattern-either:
+              - pattern: $REQ.nextUrl.searchParams.get(...)
+              - pattern: await $REQ.json()
+              - pattern: await $REQ.text()
+              - pattern: await $REQ.formData()
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+      - patterns:
+          # Next.js: resultado `.data` de um validador que recebe a requisição (`parseBody(request, schema)`, `parseQuery(searchParams, schema)`)
+          - pattern-either:
+              - pattern-inside: |
+                  $P = await $F($REQ, ...)
+                  ...
+              - pattern-inside: |
+                  $P = $F($REQ, ...)
+                  ...
+          - pattern: $P.data
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request|searchParams)$
       - patterns:
           - pattern-inside: |
               ({..., $P, ...}: Request, ...) => {...}
