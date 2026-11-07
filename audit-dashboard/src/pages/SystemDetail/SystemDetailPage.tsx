@@ -1,7 +1,7 @@
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { PageShell } from '../../components/PageShell';
-import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { DiffSummary } from '../../components/DiffSummary';
 import { EvidencePanel } from '../../components/EvidencePanel';
@@ -390,6 +390,7 @@ function DetailSections({ systemId, systemName, onNewAudit, latest, fallbackScor
 export function SystemDetailPage() {
   const { systemId } = useParams<{ systemId: string }>();
   const navigate = useNavigate();
+  const { hash } = useLocation();
 
   const id = Number(systemId);
   const [starting, setStarting] = useState(false);
@@ -400,6 +401,12 @@ export function SystemDetailPage() {
   const latestCompleted = newestCompleted(auditRuns);
   const insights = useInsights(latestCompleted?.id);
   const suppressions = useSuppressions(id);
+
+  // Link de fora (ex.: do resultado da auditoria) para uma seção: o roteador não rola sozinho até o trecho.
+  useEffect(() => {
+    if (loadingSystem || !hash) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView?.();
+  }, [loadingSystem, hash]);
 
   if (loadingSystem) return (
     <div style={{ padding: '2rem' }}>
