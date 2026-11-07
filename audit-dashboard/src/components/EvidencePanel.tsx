@@ -1,5 +1,7 @@
 import { ActionableNotification, Button, InlineNotification, Tag } from '@carbon/react';
 import { CheckmarkFilled, Upload, WarningAlt } from '@carbon/icons-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../api/client';
 import { useId, useRef, useState, type DragEvent } from 'react';
 import {
   EVIDENCE_TYPES,
@@ -22,6 +24,7 @@ interface IAccepted {
   modified: number;
   /** Quando o arquivo foi para outro tipo que o da linha em que foi solto */
   note?: string;
+  file?: File;
 }
 
 interface IRejected {
@@ -51,13 +54,27 @@ export interface ILastEvidenceRun {
 }
 
 interface IEvidencePanelProps {
+  systemId: number;
   systemName: string;
   lastRun?: ILastEvidenceRun;
   onAudit: () => void;
 }
 
-export function EvidencePanel({ systemName, lastRun, onAudit }: IEvidencePanelProps) {
+export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvidencePanelProps) {
+  const queryClient = useQueryClient();
+  const server = useQuery({ queryKey: ['system-evidence', systemId], queryFn: () => api.getSystemEvidence(systemId) });
   const [delivered, setDelivered] = useState(false);
+  const deliver = useMutation({
+    mutationFn: async () => {
+      const files = Object.values(slots).filter((v): v is IAccepted => !!v?.file).map((v) => v.file as File);
+      for (const f of files) await api.putSystemEvidence(systemId, f);
+      return files.length;
+    },
+    onSuccess: () => {
+      setDelivered(true);
+      void queryClient.invalidateQueries({ queryKey: ['system-evidence', systemId] });
+    },
+  });
   const [slots, setSlots] = useState<Partial<Record<EvidenceKind, IAccepted>>>({});
   const [rejected, setRejected] = useState<IRejected[]>([]);
   const [open, setOpen] = useState<EvidenceKind | null>(null);
@@ -84,6 +101,7 @@ export function EvidencePanel({ systemName, lastRun, onAudit }: IEvidencePanelPr
         name: file.name,
         size: file.size,
         modified: file.lastModified,
+        file,
         note: moved ? `Era para "${wanted.title}", mas o conteúdo é de "${found.title}"; ficou no lugar certo.` : undefined,
       };
     }
@@ -111,7 +129,7 @@ export function EvidencePanel({ systemName, lastRun, onAudit }: IEvidencePanelPr
       id="evidencias"
       title="Evidências de execução"
       hint="Consulta lenta, índice sobrando e vazamento de memória só aparecem com dados de execução. O Sentinel não se conecta ao seu banco: você gera os arquivos uma vez e entrega aqui."
-      aside={<Tag type="purple" size="sm">Protótipo</Tag>}
+      aside={server.data?.files.length ? <Tag type="green" size="sm">{server.data.files.length} no servidor</Tag> : undefined}
     >
       <div
         role="status"
@@ -227,9 +245,15 @@ export function EvidencePanel({ systemName, lastRun, onAudit }: IEvidencePanelPr
       })}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-        <Button kind="primary" disabled={coverage.received === 0 || delivered} onClick={() => setDelivered(true)}>Entregar ao Sentinel</Button>
+        <Button kind="primary" disabled={coverage.received === 0 || delivered || deliver.isPending || server.data?.enabled === false} onClick={() => deliver.mutate()}>{deliver.isPending ? 'Entregando…' : 'Entregar ao Sentinel'}</Button>
         <span style={{ fontSize: 13, color: 'var(--s-text-3)', flex: '1 1 320px' }}>
-          Protótipo: a conferência e os avisos já funcionam no navegador. O botão só simula a entrega; gravar na pasta do sistema depende de um endpoint novo na API, que ainda não existe (hoje a pasta é montada à mão, <code>evidencias/&lt;sistema&gt;</code>).
+          {server.data?.enabled === false
+            ? 'Este servidor não tem a pasta de evidências configurada (SENTINEL_EVIDENCE_DIR); peça ao administrador.'
+            : delivered
+              ? 'Entregue. Vale a partir da próxima auditoria deste sistema.'
+              : deliver.isError
+                ? `Não foi possível entregar: ${(deliver.error as Error).message}`
+                : 'Os arquivos são gravados na pasta do sistema no servidor e lidos na próxima auditoria.'}
         </span>
       </div>
     </PageSection>

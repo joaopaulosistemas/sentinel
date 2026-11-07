@@ -377,6 +377,7 @@ function DetailSections({ systemId, systemName, onNewAudit, latest, fallbackScor
       <InsightsPanel auditId={latest?.id} />
       <TrendChart systemId={systemId} />
       <EvidencePanel
+        systemId={systemId}
         systemName={systemName}
         onAudit={onNewAudit}
         lastRun={latest ? { id: latest.id, startedAt: latest.startedAt, status: evidenceStatus } : undefined}
