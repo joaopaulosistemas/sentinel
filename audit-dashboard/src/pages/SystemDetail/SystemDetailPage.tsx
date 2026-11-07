@@ -1,9 +1,10 @@
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { PageShell } from '../../components/PageShell';
-import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { DiffSummary } from '../../components/DiffSummary';
+import { EvidencePanel } from '../../components/EvidencePanel';
 import { InsightsLimits, InsightsPanel } from '../../components/InsightsPanel';
 import { PageSection, SectionIndex, type IIndexItem } from '../../components/PageSection';
 import { CheckIcon, CrossIcon, DashIcon, SpinnerIcon } from '../../components/StatusIcons';
@@ -338,6 +339,7 @@ function buildIndex({ runCount, hasCompleted, debtCount, suppressedCount = 0 }: 
     ...(hasCompleted ? [{ id: 'mudou', label: 'O que mudou' }, { id: 'parecer', label: 'Parecer' }] : []),
     ...(hasInsights ? [{ id: 'plano', label: 'O que corrigir', badge: String(debtCount) }] : []),
     { id: 'tendencia', label: 'Evolução da nota' },
+    { id: 'evidencias', label: 'Evidências' },
     ...(hasInsights ? [{ id: 'limites', label: 'Limites e mapa' }] : []),
     ...(suppressedCount > 0 ? [{ id: 'suprimidos', label: 'Suprimidos', badge: String(suppressedCount) }] : []),
   ];
@@ -356,6 +358,8 @@ function SystemNotFound({ error }: { error: unknown }) {
 
 interface IDetailSectionsProps {
   systemId: number;
+  systemName: string;
+  onNewAudit: () => void;
   latest: IAuditRunResponse | undefined;
   fallbackScore: number | null;
   loadingRuns: boolean;
@@ -363,7 +367,8 @@ interface IDetailSectionsProps {
   live: boolean;
 }
 
-function DetailSections({ systemId, latest, fallbackScore, loadingRuns, runs, live }: IDetailSectionsProps) {
+function DetailSections({ systemId, systemName, onNewAudit, latest, fallbackScore, loadingRuns, runs, live }: IDetailSectionsProps) {
+  const evidenceStatus = useInsights(latest?.id).data?.analyzers?.find((a) => a.name === 'Evidências')?.status;
   return (
     <div className="sentinel-secoes">
       <ScoreOverview latest={latest} fallbackScore={fallbackScore} />
@@ -371,6 +376,12 @@ function DetailSections({ systemId, latest, fallbackScore, loadingRuns, runs, li
       {latest && <DiffSummary auditId={latest.id} />}
       <InsightsPanel auditId={latest?.id} />
       <TrendChart systemId={systemId} />
+      <EvidencePanel
+        systemId={systemId}
+        systemName={systemName}
+        onAudit={onNewAudit}
+        lastRun={latest ? { id: latest.id, startedAt: latest.startedAt, status: evidenceStatus } : undefined}
+      />
       <InsightsLimits auditId={latest?.id} />
       <SuppressionsList systemId={systemId} />
     </div>
@@ -380,6 +391,7 @@ function DetailSections({ systemId, latest, fallbackScore, loadingRuns, runs, li
 export function SystemDetailPage() {
   const { systemId } = useParams<{ systemId: string }>();
   const navigate = useNavigate();
+  const { hash } = useLocation();
 
   const id = Number(systemId);
   const [starting, setStarting] = useState(false);
@@ -390,6 +402,12 @@ export function SystemDetailPage() {
   const latestCompleted = newestCompleted(auditRuns);
   const insights = useInsights(latestCompleted?.id);
   const suppressions = useSuppressions(id);
+
+  // Link de fora (ex.: do resultado da auditoria) para uma seção: o roteador não rola sozinho até o trecho.
+  useEffect(() => {
+    if (loadingSystem || !hash) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView?.();
+  }, [loadingSystem, hash]);
 
   if (loadingSystem) return (
     <div style={{ padding: '2rem' }}>
@@ -410,6 +428,8 @@ export function SystemDetailPage() {
         <SectionIndex items={index} />
         <DetailSections
           systemId={id}
+          systemName={system.name}
+          onNewAudit={() => setStarting(true)}
           latest={latestCompleted}
           fallbackScore={system.lastAuditScore ?? null}
           loadingRuns={loadingRuns}

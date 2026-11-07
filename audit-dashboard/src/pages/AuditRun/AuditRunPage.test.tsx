@@ -210,6 +210,31 @@ describe('AuditRunPage', () => {
     expect(within(tools).getByText('1 achado')).toBeInTheDocument();
   });
 
+  it('sem evidências a auditoria avisa que a parte de execução não foi verificada e leva à seção do sistema', async () => {
+    renderPage(
+      { systemId: 3, status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } },
+      { plan: { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] }, insights: { analyzers: [
+        { name: 'Semgrep', status: 'OK', findings: 61, durationMs: 4200, note: null },
+        { name: 'Evidências', status: 'SEM_EVIDENCIA', findings: 0, durationMs: 0, note: null },
+      ] } });
+    const tools = await screen.findByRole('region', { name: 'Ferramentas de análise' });
+    expect(within(tools).getByText('A parte de execução não foi verificada.')).toBeInTheDocument();
+    expect(within(tools).getByText('sem evidências entregues')).toBeInTheDocument();
+    expect(within(tools).getByRole('link', { name: 'Entregar evidências e auditar de novo' })).toHaveAttribute('href', '/systems/3#evidencias');
+    expect(within(tools).getByRole('link', { name: 'Entregar evidências' })).toHaveAttribute('href', '/systems/3#evidencias');
+  });
+
+  it('com evidências usadas não há aviso, só o atalho para ver as evidências do sistema', async () => {
+    renderPage(
+      { systemId: 3, status: 'COMPLETED', completedAt: '2026-10-22T10:04:12', riskScore: { overall: 63, security: 50, quality: 70, architecture: 66, dependencies: 52, observability: 80 } },
+      { plan: { scoreNow: 63, scoreIfCriticalFixed: 63, criticalCount: 0, items: [] }, insights: { analyzers: [
+        { name: 'Evidências', status: 'OK', findings: 5, durationMs: 1200, note: null },
+      ] } });
+    const tools = await screen.findByRole('region', { name: 'Ferramentas de análise' });
+    expect(within(tools).queryByText('A parte de execução não foi verificada.')).not.toBeInTheDocument();
+    expect(within(tools).getByRole('link', { name: 'Ver evidências do sistema' })).toHaveAttribute('href', '/systems/3#evidencias');
+  });
+
   it('falha mostra o motivo', async () => {
     renderPage({ status: 'FAILED', errorMessage: 'IllegalStateException: repositório inacessível' });
     expect(await screen.findByText(/repositório inacessível/)).toBeInTheDocument();

@@ -196,6 +196,16 @@ export const api = {
     return apiFetch<IFindingResponse[]>(url);
   },
 
+  getSystemEvidence: (systemId: number) =>
+    apiFetch<{ enabled: boolean; files: Array<{ name: string; sizeBytes: number; modifiedAt: string }> }>(`/api/v1/systems/${systemId}/evidence`),
+  /** Entrega um arquivo de evidência; vale a partir da próxima auditoria. */
+  putSystemEvidence: (systemId: number, file: File) =>
+    apiFetch<{ name: string; sizeBytes: number }>(`/api/v1/systems/${systemId}/evidence/${encodeURIComponent(file.name)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: file,
+    }),
+
   getFixPlan: (auditId: number) => apiFetch<IFixPlan>(`/api/v1/audits/${auditId}/fix-plan`),
   getScoreExplanation: (auditId: number, without: string[]) =>
     apiFetch<IScoreExplanation>(`/api/v1/audits/${auditId}/score-explanation${without.length > 0 ? `?without=${encodeURIComponent(without.join(','))}` : ''}`),

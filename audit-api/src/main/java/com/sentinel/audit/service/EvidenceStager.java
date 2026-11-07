@@ -60,7 +60,7 @@ public class EvidenceStager {
     }
 
     /** A pasta de evidências do sistema (pelo nome ou pelo nome do repositório), sem sair da raiz. */
-    private static Path findSource(Path root, String systemName, String repoUrl) {
+    static Path findSource(Path root, String systemName, String repoUrl) {
         for (String candidate : List.of(slug(systemName), slug(repoName(repoUrl)))) {
             if (candidate.isEmpty()) {
                 continue;
