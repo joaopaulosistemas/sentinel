@@ -492,6 +492,27 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
 
+- key: "sentinel-node-function-dinamico"
+  summary: "Não construa função a partir de texto externo; use um avaliador de expressões com lista de operações."
+  before: "const gancho = new Function('require', 'process', codigo)"
+  after: "const gancho = operacoesPermitidas[nomeDaOperacao]"
+  refs:
+    - "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function"
+
+- key: "sentinel-node-xpath-injection"
+  summary: "Passe o valor como variável do XPath em vez de concatenar na expressão."
+  before: "xpath.select(\"//u[@n='\" + nome + \"']\", doc)"
+  after: "xpath.parse('//u[@n=$nome]').select({ node: doc, variables: { nome } })"
+  refs:
+    - "https://owasp.org/www-community/attacks/XPATH_Injection"
+
+- key: "sentinel-node-ldap-injection"
+  summary: "Escape o valor conforme a RFC 4515 antes de montar o filtro LDAP."
+  before: "const filtro = `(uid=${usuario})`"
+  after: "const filtro = `(uid=${escaparFiltroLdap(usuario)})`"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html"
+
 - key: "sentinel-node-math-random-segredo"
   summary: "Use um gerador criptográfico para tokens, senhas temporárias e segredos."
   before: "const token = Math.random().toString(36).slice(2)"

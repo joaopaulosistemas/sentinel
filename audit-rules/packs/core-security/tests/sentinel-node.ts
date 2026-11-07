@@ -594,3 +594,68 @@ export function opcoesRespeitandoValidade () {
   // ok: sentinel-node-jwt-expiracao-ignorada
   return { expiresIn: '2d', algorithms: ['HS256'], ignoreExpiration: false }
 }
+
+// ---------- new Function com texto dinâmico ----------
+export function montarGancho (codigo: string) {
+  // ruleid: sentinel-node-function-dinamico
+  return new Function('require', 'process', codigo)
+}
+
+export function montarGanchoDeObjeto (lote: any) {
+  // ruleid: sentinel-node-function-dinamico
+  return new Function(lote.codigo)
+}
+
+export function somador () {
+  // ok: sentinel-node-function-dinamico
+  return new Function('a', 'b', 'return a + b')
+}
+
+// ---------- XPath com texto montado ----------
+export function buscarNoXml (req: any, doc: any) {
+  const valor = req.query.valor
+  // ruleid: sentinel-node-xpath-injection
+  return xpath.evaluate("//config/*[release/text()='" + valor + "']", doc, null, xpath.XPathResult.ANY_TYPE, null)
+}
+
+export function buscarNoXmlComTemplate (valor: string, doc: any) {
+  // ruleid: sentinel-node-xpath-injection
+  return xpath.select(`//usuario[@nome='${valor}']`, doc)
+}
+
+export function buscarNoXmlFixo (doc: any) {
+  // ok: sentinel-node-xpath-injection
+  return xpath.select('//usuario[@ativo="true"]', doc)
+}
+
+export function buscarNoXmlComVariavel (doc: any, variaveis: any) {
+  // ok: sentinel-node-xpath-injection
+  return xpath.parse('//usuario[@nome=$nome]').select({ node: doc, variables: variaveis })
+}
+
+// ---------- LDAP com filtro montado ----------
+export async function procurarNoDiretorio (req: any, diretorio: any) {
+  const usuario = req.query.user || ''
+  // ruleid: sentinel-node-ldap-injection
+  const filtro = `(&(objectClass=account)(|(uid=${usuario})(cn=servico)))`
+  return diretorio.search(filtro)
+}
+
+export async function procurarNoLdapjs (req: any, cliente: any) {
+  // ruleid: sentinel-node-ldap-injection
+  const opcoes = { filter: '(uid=' + req.body.uid + ')', scope: 'sub' }
+  return cliente.search('dc=exemplo,dc=com', opcoes)
+}
+
+export async function procurarNoDiretorioEscapado (req: any, diretorio: any) {
+  const usuario = escaparFiltroLdap(req.query.user || '')
+  // ok: sentinel-node-ldap-injection
+  const filtro = `(&(objectClass=account)(uid=${usuario}))`
+  return diretorio.search(filtro)
+}
+
+export function frase (req: any) {
+  // ok: sentinel-node-ldap-injection
+  const texto = `Olá (${req.query.nome})`
+  return texto
+}
