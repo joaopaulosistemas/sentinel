@@ -294,6 +294,26 @@ class EvidenceTest {
     }
 
     @Test
+    void notaDaAuditoriaDizQuaisArquivosForamLidosEQuaisFicaramDeFora() throws Exception {
+        Path ev = Files.createDirectories(dir.resolve(".sentinel/evidence"));
+        Files.writeString(ev.resolve("schema.sql"), DUMP);
+        Files.writeString(ev.resolve("pg_stat_statements.csv"), STATEMENTS);
+        Files.writeString(ev.resolve("notas.md"), "nada a ver");
+
+        String note = new EvidenceAnalyzer().analyze(dir, RUN).infoNote();
+
+        assertEquals("leu 2: pg_stat_statements.csv, schema.sql; ignorou 1: notas.md (tipo não reconhecido)", note);
+    }
+
+    @Test
+    void notaDaAuditoriaSemArquivoIgnoradoNaoFalaDeIgnorados() throws Exception {
+        Path ev = Files.createDirectories(dir.resolve(".sentinel/evidence"));
+        Files.writeString(ev.resolve("schema.sql"), DUMP);
+
+        assertEquals("leu 1: schema.sql", new EvidenceAnalyzer().analyze(dir, RUN).infoNote());
+    }
+
+    @Test
     void semPastaDeEvidenciasNaoHaNada() throws Exception {
         Path vazio = Files.createDirectories(dir.resolve("vazio"));
         EvidenceAnalyzer a = new EvidenceAnalyzer();

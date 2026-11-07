@@ -75,20 +75,51 @@ public class EvidenceAnalyzer implements CodeAnalyzer {
             return new AnalyzerResult(findings, NAME, Duration.between(start, Instant.now()));
         }
         LazyPackages packages = new LazyPackages(projectPath);
+        List<String> read = new ArrayList<>();
+        List<String> skipped = new ArrayList<>();
         try (Stream<Path> files = Files.list(dir)) {
             for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
                 String rel = DIR + "/" + file.getFileName();
+                String fileName = file.getFileName().toString();
                 try {
+                    String why = skipReason(file, fileName);
+                    if (why != null) {
+                        skipped.add(fileName + " (" + why + ")");
+                        continue;
+                    }
                     findings.addAll(checkEvidence(file, rel, auditRun, packages));
+                    read.add(fileName);
                 } catch (IOException | RuntimeException e) {
                     LOG.warnf("Não foi possível analisar a evidência %s: %s", rel, e.getMessage());
+                    skipped.add(fileName + " (não foi possível ler)");
                 }
             }
         } catch (IOException e) {
             LOG.warnf("Não foi possível listar %s: %s", DIR, e.getMessage());
         }
         LOG.infof("Evidências: %d findings", findings.size());
-        return new AnalyzerResult(findings, NAME, Duration.between(start, Instant.now()));
+        return new AnalyzerResult(findings, NAME, Duration.between(start, Instant.now()), null, usageNote(read, skipped));
+    }
+
+    /** Por que o arquivo nem é lido; nulo se ele deve ser analisado. */
+    private static String skipReason(Path file, String fileName) throws IOException {
+        if (Files.size(file) > MAX_FILE_BYTES) {
+            return "maior que " + MAX_FILE_BYTES / BYTES_PER_MB + " MB";
+        }
+        return EvidenceKind.of(fileName.toLowerCase(Locale.ROOT)) == EvidenceKind.OTHER ? "tipo não reconhecido" : null;
+    }
+
+    /** Resumo mostrado na tela da auditoria: o que foi lido e o que ficou de fora, para a pessoa saber o que valeu. */
+    private static String usageNote(List<String> read, List<String> skipped) {
+        StringBuilder sb = new StringBuilder();
+        if (!read.isEmpty()) {
+            sb.append("leu ").append(read.size()).append(": ").append(String.join(", ", read));
+        }
+        if (!skipped.isEmpty()) {
+            sb.append(sb.length() > 0 ? "; " : "").append("ignorou ").append(skipped.size()).append(": ")
+                    .append(String.join(", ", skipped));
+        }
+        return sb.length() == 0 ? null : sb.toString();
     }
 
     /** Escolhe a verificação pelo tipo do arquivo de evidência (SQL, CSV, plano JSON, cobertura, histograma de heap). */
