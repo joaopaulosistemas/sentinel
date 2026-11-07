@@ -1,0 +1,16 @@
+{
+ "_comentario": "Falhas de t0thkr1s/allsafe-android lidas no codigo (treino), volta 23. App Android de treino (Java e Kotlin). Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li.",
+ "repo": "t0thkr1s/allsafe-android",
+ "falhas": [
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/challenges/WeakCryptography.java", "linha": 30, "cwe": "CWE-321", "regras": ["sentinel-crypto-chave-fixa-no-codigo"]},
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/challenges/ObjectSerialization.java", "linha": 68, "cwe": "CWE-502", "regras": ["sentinel-desserializacao-insegura"]},
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/challenges/InsecureLogging.java", "linha": 30, "cwe": "CWE-532", "regras": ["sentinel-android-log-segredo"]},
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/challenges/InsecureSharedPreferences.java", "linha": 39, "cwe": "CWE-312", "regras": ["sentinel-android-prefs-senha-em-claro"]},
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/challenges/VulnerableWebView.java", "linha": 41, "cwe": "CWE-79", "regras": ["sentinel-android-webview-texto-da-tela"]},
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/challenges/SQLInjection.kt", "linha": 30, "cwe": "CWE-89", "regras": ["sentinel-android-sqlite-concatenado"]},
+  {"arquivo": "app/src/main/AndroidManifest.xml", "linha": 29, "cwe": "CWE-926", "regras": ["sentinel-android-manifest-exported"]},
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/challenges/HardcodedCredentials.kt", "linha": 51, "cwe": "CWE-798", "regras": ["lacuna-sem-regra"]},
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/ArbitraryCodeExecution.kt", "linha": 42, "cwe": "CWE-94", "regras": ["lacuna-sem-regra"]},
+  {"arquivo": "app/src/main/java/infosecadventures/allsafe/challenges/NoteReceiver.java", "linha": 28, "cwe": "CWE-798", "regras": ["lacuna-sem-regra"]}
+ ]
+}
