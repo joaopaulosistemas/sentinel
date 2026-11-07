@@ -368,7 +368,7 @@ interface IDetailSectionsProps {
 }
 
 function DetailSections({ systemId, systemName, onNewAudit, latest, fallbackScore, loadingRuns, runs, live }: IDetailSectionsProps) {
-  const evidenceStatus = useInsights(latest?.id).data?.analyzers.find((a) => a.name === 'Evidências')?.status;
+  const evidenceStatus = useInsights(latest?.id).data?.analyzers?.find((a) => a.name === 'Evidências')?.status;
   return (
     <div className="sentinel-secoes">
       <ScoreOverview latest={latest} fallbackScore={fallbackScore} />
