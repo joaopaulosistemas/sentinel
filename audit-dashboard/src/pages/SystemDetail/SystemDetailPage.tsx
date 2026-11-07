@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { DiffSummary } from '../../components/DiffSummary';
+import { EvidencePanel } from '../../components/EvidencePanel';
 import { InsightsLimits, InsightsPanel } from '../../components/InsightsPanel';
 import { PageSection, SectionIndex, type IIndexItem } from '../../components/PageSection';
 import { CheckIcon, CrossIcon, DashIcon, SpinnerIcon } from '../../components/StatusIcons';
@@ -338,6 +339,7 @@ function buildIndex({ runCount, hasCompleted, debtCount, suppressedCount = 0 }: 
     ...(hasCompleted ? [{ id: 'mudou', label: 'O que mudou' }, { id: 'parecer', label: 'Parecer' }] : []),
     ...(hasInsights ? [{ id: 'plano', label: 'O que corrigir', badge: String(debtCount) }] : []),
     { id: 'tendencia', label: 'Evolução da nota' },
+    { id: 'evidencias', label: 'Evidências' },
     ...(hasInsights ? [{ id: 'limites', label: 'Limites e mapa' }] : []),
     ...(suppressedCount > 0 ? [{ id: 'suprimidos', label: 'Suprimidos', badge: String(suppressedCount) }] : []),
   ];
@@ -356,6 +358,7 @@ function SystemNotFound({ error }: { error: unknown }) {
 
 interface IDetailSectionsProps {
   systemId: number;
+  systemName: string;
   latest: IAuditRunResponse | undefined;
   fallbackScore: number | null;
   loadingRuns: boolean;
@@ -363,7 +366,7 @@ interface IDetailSectionsProps {
   live: boolean;
 }
 
-function DetailSections({ systemId, latest, fallbackScore, loadingRuns, runs, live }: IDetailSectionsProps) {
+function DetailSections({ systemId, systemName, latest, fallbackScore, loadingRuns, runs, live }: IDetailSectionsProps) {
   return (
     <div className="sentinel-secoes">
       <ScoreOverview latest={latest} fallbackScore={fallbackScore} />
@@ -371,6 +374,7 @@ function DetailSections({ systemId, latest, fallbackScore, loadingRuns, runs, li
       {latest && <DiffSummary auditId={latest.id} />}
       <InsightsPanel auditId={latest?.id} />
       <TrendChart systemId={systemId} />
+      <EvidencePanel systemName={systemName} />
       <InsightsLimits auditId={latest?.id} />
       <SuppressionsList systemId={systemId} />
     </div>
@@ -410,6 +414,7 @@ export function SystemDetailPage() {
         <SectionIndex items={index} />
         <DetailSections
           systemId={id}
+          systemName={system.name}
           latest={latestCompleted}
           fallbackScore={system.lastAuditScore ?? null}
           loadingRuns={loadingRuns}
