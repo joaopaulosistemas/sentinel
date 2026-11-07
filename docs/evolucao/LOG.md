@@ -1087,3 +1087,11 @@ Complemento da volta 24 (no PR #150): o CI achou duas falhas e foram corrigidas.
 - **Não feito (lacunas no gabarito):** segredo de JWT e MD5 já pegos; lógica de controle de acesso, IDOR e flags não entram em gabarito de padrão; Spectral/ESLint seguem dominando o total.
 
 Verificado: `opengrep --test` core-security 98/98 (Opengrep 1.30.0, SHA-256 conferido); varredura local do alvo; auditorias no CI antes e depois; dvja e NodeGoat pelos números do CI. NÃO verificado: paridade Opengrep x Semgrep (semgrep não instalado aqui; fica para o CI do PR); explicação da queda de 0,73 na nota do dvja; gabarito de validação por fonte pública (inexistente); amostra de 20 achados (volta 25 não é a da contagem de 3 desde a última registrada); JUnit (nada de Java mudou); Benchmark OWASP (nenhuma regra Java mudou).
+
+## Gabarito de validação (sem versão nova, branch `ciclo/estabilizacao-9`): bnematzadeh/vulnerable-rest-api
+
+- **O que foi feito:** o primeiro gabarito de validação por fonte pública, a pedido do João. O repositório entrou em `validacao` de `conjuntos.json`; só o README foi lido (13 itens: OWASP API Top 10 2023 mais Injection, Web Cache Deception e redefinição de senha fraca) e o código não foi aberto. Fonte de cada item: README do repositório e a página do OWASP API Top 10 2023. dvja (README sem lista de falhas; `docs/` recusada pelo robots) e NodeGoat (tutorial inacessível) seguem sem gabarito.
+- **Medido (CI, só números):** 352 achados, nota 55,61. **Recall de validação 0/13 = 0 %** (Wilson 0 a 23 %). Quase todos os itens são falhas lógicas de API (autorização, consumo de recursos, inventário) sem padrão sintático; só SSRF e Injection teriam regra, e nenhuma disparou. Não ajustei regra nem lista de regras aceitas depois de ver o resultado.
+- **Correção do gabarito:** o `recall` conta como acerto qualquer achado quando a entrada não tem arquivo nem regras; por isso as entradas lógicas usam `lacuna-sem-regra`. A primeira medição (11/13) estava inflada por isso e foi descartada.
+
+Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verificado: se o código tem SSRF ou injeção que as regras deveriam achar (o código não foi lido, por regra); gabarito de dvja/NodeGoat/dvna/goof.
