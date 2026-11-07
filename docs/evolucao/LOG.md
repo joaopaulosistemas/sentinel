@@ -1007,3 +1007,15 @@ Verificado: testes das regras com Opengrep 1.33.1 (31/31) e as duas regras sobre
 - **Regressão (números do CI):** dvja 176 achados, nota 48,95: igual à volta 19. NodeGoat 279 achados, nota 46,87: igual à volta 19. Treinos antigos não reauditados.
 
 Verificado: `opengrep --test` core-security 91/91 (rodado em /tmp com Opengrep 1.30.0); Opengrep local sobre o código do treino confirmou cada achado novo antes do CI; auditorias no CI antes e depois; dvja igual. NÃO verificado: paridade Opengrep x Semgrep; Benchmark OWASP (as regras Java não mudaram, mas `sentinel-node-*` não entram nele); recall em gabarito de validação (nenhum existe); amostra de 20 achados (não é volta múltipla de 3 desde a última); ganho de generalização fora do treino além de dvja/NodeGoat.
+
+## Dashboard 12.76.0 — Ciclo, volta 21 (branch `ciclo/estabilizacao-7`): tangxiaofeng7/SecExample (treino novo), SSRF em método auxiliar
+
+- **Repositório novo:** tangxiaofeng7/SecExample (laboratório Java/Spring de vulnerabilidades, branch `main`, JAVA, 23 arquivos Java), escolhido em 2026-11-07 como o de mais estrelas (483) ainda não lido nem auditado entre os Java de treino (a volta anterior foi Node).
+- **Medido antes (CI):** 200 achados, nota 50,96, Opengrep 34. Recall do gabarito de treino (9 falhas lidas no código): **6/9 = 67 %** (Wilson 35 a 88 %).
+- **Falso negativo corrigido (regra geral, teste primeiro, `opengrep --test` core-security 92/92):** SSRF em método auxiliar que faz `new URL(param).openConnection()/openStream()` com o próprio parâmetro (a origem fica em outro arquivo e o taint não alcança). Regra `sentinel-ssrf-url-do-parametro` (WARNING), com exceção para `.mvn/` e para parâmetro validado por `matches/equals/startsWith`; remediation incluída.
+- **Detecção nova:** 1 achado conferido (HttpTool.java:13, verdadeiro positivo). Ruído removido: 0. Na checagem local nos treinos JoyChou93/java-sec-code (3 achados, utilitários de requisição HTTP, plausíveis) e WebGoat (0 depois da exceção de validação) não surgiu falso positivo evidente.
+- **Depois (CI):** 201 achados, nota 50,64, recall **7/9 = 78 %** (Wilson 45 a 94 %). Gabarito escrito pelo mesmo agente que corrige: mede só o que li.
+- **Não feito (lacunas no gabarito):** CSRF sem proteção (sem Spring Security) e `JSON.parseObject` de `@RequestBody` com fastjson 1.2.24 (o Trivy já acusa os CVE críticos; regra de código geraria falso positivo em versões seguras).
+- **Regressão (números do CI):** dvja 176 achados, nota 48,95 e NodeGoat 279, nota 46,87: iguais à volta 20. Treinos antigos não reauditados (só Opengrep local em java-sec-code e WebGoat).
+
+Verificado: `opengrep --test` core-security 92/92 (Opengrep 1.30.0, em /tmp); achados novos conferidos no código; auditorias no CI antes e depois; dvja e NodeGoat iguais. NÃO verificado: paridade Opengrep x Semgrep (fica para o CI do PR); Benchmark OWASP (regra nova é WARNING de método auxiliar, não rodado); recall em gabarito de validação (nenhum existe); amostra de 20 achados (não é volta múltipla de 3 desde a última); JUnit (nada de Java do produto mudou).
