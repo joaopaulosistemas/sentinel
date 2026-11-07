@@ -552,15 +552,32 @@ rules:
       owasp: A07:2021 - Identification and Authentication Failures
 
   - id: sentinel-node-jwt-expiracao-ignorada
-    pattern: '$J.verify($TOKEN, $KEY, {..., ignoreExpiration: true, ...})'
+    pattern: '{..., ignoreExpiration: true, ...}'
     message: >
-      `ignoreExpiration: true` (CWE-613): token vencido continua valendo. Remova a opção e renove o token.
+      `ignoreExpiration: true` (CWE-613): token vencido continua valendo, inclusive quando as opções são montadas
+      numa constante e passadas depois a `jwt.verify`. Remova a opção e renove o token.
     severity: ERROR
     languages: [javascript, typescript]
     metadata:
       side: back
       category: security
       cwe: "CWE-613: Insufficient Session Expiration"
+      owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-node-jwt-algoritmo-none
+    pattern-either:
+      - pattern: '{..., algorithms: [..., "none", ...], ...}'
+      - pattern: "{..., algorithms: [..., 'none', ...], ...}"
+      - pattern: '{..., algorithms: [..., "None", ...], ...}'
+    message: >
+      `algorithms` aceita `none` (CWE-347): um token sem assinatura passa na verificação e qualquer pessoa forja a
+      identidade. Liste só os algoritmos esperados (por exemplo `['HS256']`), nunca `none`.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
       owasp: A07:2021 - Identification and Authentication Failures
 
   - id: sentinel-node-math-random-segredo

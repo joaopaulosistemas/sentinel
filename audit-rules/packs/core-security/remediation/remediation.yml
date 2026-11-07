@@ -485,6 +485,13 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
 
+- key: "sentinel-node-jwt-algoritmo-none"
+  summary: "Liste só algoritmos reais em `algorithms`; `none` aceita token sem assinatura."
+  before: "jwt.verify(token, chave, { algorithms: ['HS256', 'none'] })"
+  after: "jwt.verify(token, chave, { algorithms: ['HS256'] })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
 - key: "sentinel-node-math-random-segredo"
   summary: "Use um gerador criptográfico para tokens, senhas temporárias e segredos."
   before: "const token = Math.random().toString(36).slice(2)"

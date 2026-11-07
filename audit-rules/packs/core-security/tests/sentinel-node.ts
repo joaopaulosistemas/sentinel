@@ -566,3 +566,31 @@ export class NestExemplo {
     return JSON.parse(servico)
   }
 }
+
+// ---------- JWT: opções montadas à parte ----------
+export function opcoesJwtComNone () {
+  // ruleid: sentinel-node-jwt-algoritmo-none
+  const opcoes = { issuer: 'sentinel', algorithms: ['HS256', 'none'] }
+  return opcoes
+}
+
+export function opcoesJwtSemNone () {
+  // ok: sentinel-node-jwt-algoritmo-none
+  return { issuer: 'sentinel', algorithms: ['HS256', 'RS256'] }
+}
+
+export function verificarComNone (token: string, chave: string) {
+  // ruleid: sentinel-node-jwt-algoritmo-none
+  return jwt.verify(token, chave, { algorithms: ['none'] })
+}
+
+export function opcoesIgnorandoValidade () {
+  // ruleid: sentinel-node-jwt-expiracao-ignorada
+  const opcoes = { expiresIn: '2d', algorithms: ['HS256'], ignoreExpiration: true }
+  return opcoes
+}
+
+export function opcoesRespeitandoValidade () {
+  // ok: sentinel-node-jwt-expiracao-ignorada
+  return { expiresIn: '2d', algorithms: ['HS256'], ignoreExpiration: false }
+}
