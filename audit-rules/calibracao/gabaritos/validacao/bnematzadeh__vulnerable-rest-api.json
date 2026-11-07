@@ -1,35 +1,47 @@
 {
- "_comentario": "Gabarito de VALIDACAO montado so do README publico (lista de 13 itens, sem arquivo, linha nem CWE); o codigo nao foi lido. Falhas de logica de API (sem regras aceitas) sao lacunas assumidas: o recall tende a ser baixo e e honesto. Nao escreva regra olhando estas entradas.",
+ "_comentario": "Gabarito de VALIDACAO montado so do README publico (lista de 13 itens, sem arquivo, linha nem CWE); o codigo nao foi lido. Falhas de logica de API (sem regras aceitas) sao lacunas assumidas: o recall tende a ser baixo e e honesto. Nao escreva regra olhando estas entradas. Entrada com 'lacuna-sem-regra' e falha logica sem padrao sintatico (nenhuma regra a aceitar): conta como perdida. Entrada sem regras contaria como acerto por qualquer achado.",
  "repo": "bnematzadeh/vulnerable-rest-api",
  "falhas": [
   {
    "categoria": "API1:2023 Broken Object Level Authorization",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
    "categoria": "API2:2023 Broken Authentication",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
    "categoria": "API3:2023 Broken Object Property Level Authorization",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
    "categoria": "API4:2023 Unrestricted Resource Consumption",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
    "categoria": "API5:2023 Broken Function Level Authorization",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
    "categoria": "API6:2023 Unrestricted Access to Sensitive Business Flows",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
@@ -41,17 +53,23 @@
   },
   {
    "categoria": "API8:2023 Security Misconfiguration",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
    "categoria": "API9:2023 Improper Inventory Management",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
    "categoria": "API10:2023 Unsafe Consumption of APIs",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
@@ -66,12 +84,16 @@
   },
   {
    "categoria": "Bonus: Web Cache Deception",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   },
   {
    "categoria": "Bonus: Weak Implementation of Reset Password (Account Takeover)",
-   "regras": [],
+   "regras": [
+    "lacuna-sem-regra"
+   ],
    "fonte": "https://github.com/bnematzadeh/vulnerable-rest-api (README); https://owasp.org/API-Security/editions/2023/en/0x11-t10/"
   }
  ]
