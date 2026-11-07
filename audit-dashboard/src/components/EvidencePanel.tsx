@@ -129,7 +129,7 @@ export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvide
       id="evidencias"
       title="Evidências de execução"
       hint="Consulta lenta, índice sobrando e vazamento de memória só aparecem com dados de execução. O Sentinel não se conecta ao seu banco: você gera os arquivos uma vez e entrega aqui."
-      aside={server.data?.files.length ? <Tag type="green" size="sm">{server.data.files.length} no servidor</Tag> : undefined}
+      aside={server.data?.files?.length ? <Tag type="green" size="sm">{server.data.files.length} no servidor</Tag> : undefined}
     >
       <div
         role="status"
