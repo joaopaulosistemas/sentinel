@@ -64,3 +64,20 @@ function responder(res: any) {
   // ok: sentinel-api-cors-aberto-js
   res.setHeader('Access-Control-Allow-Origin', 'https://portal.exemplo.com.br');
 }
+
+// ---------- CORS: opções em constante e origem refletida ----------
+// ruleid: sentinel-api-cors-aberto-js
+const opcoesCorsRefletindo = { origin: true, credentials: true, optionsSuccessStatus: 200 };
+// ok: sentinel-api-cors-aberto-js
+const opcoesCorsFechadas = { origin: ['https://portal.exemplo.com.br'], credentials: true };
+
+function refletirOrigem(req: any, res: any) {
+  // ruleid: sentinel-api-cors-aberto-js
+  res.header('Access-Control-Allow-Origin', req.get('origin'));
+  // ruleid: sentinel-api-cors-aberto-js
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  // ruleid: sentinel-api-cors-aberto-js
+  res.set('Access-Control-Allow-Origin', req.header('Origin'));
+  // ok: sentinel-api-cors-aberto-js
+  res.header('Access-Control-Allow-Origin', origemConferida(req.get('origin')));
+}
