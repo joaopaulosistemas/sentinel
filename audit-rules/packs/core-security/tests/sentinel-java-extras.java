@@ -236,4 +236,48 @@ class SenhaComparadaComLiteral {
         // ok: sentinel-classloader-define-classe
         java.lang.reflect.Method m = ClassLoader.class.getDeclaredMethod("getPackages");
     }
+
+    // SSRF em método auxiliar: o destino é o próprio parâmetro do método (a origem fica em outro arquivo)
+    static Object buscarUrl(String destino) throws Exception {
+        // ruleid: sentinel-ssrf-url-do-parametro
+        java.net.URLConnection c = new java.net.URL(destino).openConnection();
+        return c.getInputStream();
+    }
+
+    static Object buscarUrlStream(String destino) throws Exception {
+        // ruleid: sentinel-ssrf-url-do-parametro
+        return new URL(destino).openStream();
+    }
+
+    static Object urlFixa() throws Exception {
+        // ok: sentinel-ssrf-url-do-parametro
+        return new java.net.URL("https://api.exemplo.com/v1").openConnection();
+    }
+
+    static Object urlComHostFixo(String caminho) throws Exception {
+        // ok: sentinel-ssrf-url-do-parametro
+        return new java.net.URL("https://api.exemplo.com/" + caminho).openConnection();
+    }
+
+    static Object buscarUrlEmVariavel(String requestUrl) throws Exception {
+        // ruleid: sentinel-ssrf-url-do-parametro
+        URL url = new URL(requestUrl);
+        URLConnection conexao = url.openConnection();
+        return conexao.getInputStream();
+    }
+
+    static Object urlEmVariavelFixa(String nome) throws Exception {
+        // ok: sentinel-ssrf-url-do-parametro
+        URL url = new URL("https://api.exemplo.com/fixo");
+        URLConnection conexao = url.openConnection();
+        return conexao.getInputStream();
+    }
+
+    static Object urlValidadaPorExpressao(String url) throws Exception {
+        if (url.matches("https://api\\.exemplo\\.com/.*")) {
+            // ok: sentinel-ssrf-url-do-parametro
+            return new URL(url).openStream();
+        }
+        return null;
+    }
 }

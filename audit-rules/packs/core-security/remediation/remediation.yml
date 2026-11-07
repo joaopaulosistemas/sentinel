@@ -719,3 +719,12 @@
   refs:
     - "https://cwe.mitre.org/data/definitions/926.html"
     - "https://developer.android.com/privacy-and-security/risks/android-exported"
+
+- key: "sentinel-ssrf-url-do-parametro"
+  summary: "Valide esquema e host da URL contra uma lista de permissão antes de abrir a conexão."
+  before: "URL u = new URL(destino);\nu.openConnection();"
+  after: "URI uri = URI.create(destino);\nif (!List.of(\"https\").contains(uri.getScheme()) || !PERMITIDOS.contains(uri.getHost())) {\n    throw new IllegalArgumentException(\"destino não permitido\");\n}\nuri.toURL().openConnection();"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/918.html"
+  effort: S
+  regression-risk: LOW
