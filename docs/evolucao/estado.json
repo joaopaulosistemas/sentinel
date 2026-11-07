@@ -3,16 +3,17 @@
   "ultimaVolta": 25,
   "ultimoRepositorioTreino": "kOaDT/oss-oopssec-store",
   "ultimaStack": "JAVASCRIPT",
-  "branchAtual": "ciclo/estabilizacao-8",
+  "branchAtual": "ciclo/estabilizacao-9",
   "proximaBranch": null,
-  "voltasNaBranch": 1,
+  "voltasNaBranch": 0,
   "voltasSemGanhoSeguidas": 0,
   "limiteVoltasPorBranch": 6,
-  "ultimoPrMesclado": "#150",
-  "gabaritosValidacao": [],
-  "conjuntosSha256": "1245192892f381bf18f6716a9d561a8dbc25e5c14d11c974f66c39cedfb41427",
+  "ultimoPrMesclado": "#151",
+  "gabaritosValidacao": [
+    "bnematzadeh/vulnerable-rest-api"
+  ],
+  "conjuntosSha256": "ac64cfd14da715f9c9d91941c855f1480de4fe665c7df740e128eab3bacaf50c",
   "pendencias": [
-    "Gabarito de validação por fonte pública (dvja, NodeGoat, dvna, nodejs-goof): nenhum existe ainda",
     "Volta dedicada a avaliar o Joern para JS/TS (decisão pendente desde a 12.65.0)",
     "Aplicar no GitHub a proteção de .github/agente/protecao-main.json (exige o João)",
     "Gabaritos e baselines dos treinos antigos (só vulnerable-node e brokencrystals têm)",
@@ -28,6 +29,7 @@
     "OAuth-2.0-Applications: redirect/escopo/expiração de código OAuth, segredos sem hash em modelo Mongoose, IDOR/enumeração e segredo em config.json sem regra; sentinel-node-math-random-segredo reporta duas vezes a mesma linha; 2 achados novos no NodeGoat (281 vs 279) não conferidos",
     "Ligar scripts/verificar-regras.py ao CI (exige mexer em .github/, decisão do João)",
     "Fontes de taint Java copiadas em ~10 regras (item G do relatório de conflitos) e peso do estilo (tsp-*, cct-*) na nota (item I, decisão de produto)",
-    "oss-oopssec-store: nota do dvja 48,22 vs 48,95 da volta 24 com contagem igual (176), causa não investigada; lógica de acesso/IDOR sem regra"
+    "oss-oopssec-store: nota do dvja 48,22 vs 48,95 da volta 24 com contagem igual (176), causa não investigada; lógica de acesso/IDOR sem regra",
+    "Gabarito de validação: só bnematzadeh/vulnerable-rest-api (README, 13 itens); dvja/NodeGoat/dvna/nodejs-goof seguem sem fonte pública acessível (robots/erro); próximo: lições do terracotta-bank"
   ]
 }
