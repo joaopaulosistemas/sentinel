@@ -265,7 +265,7 @@ rules:
       um ContentProvider, quem controla a entrada altera a consulta e lê ou apaga dados de outros registros. Use
       parâmetros (?) com o array de argumentos: rawQuery(sql, args), db.delete(tabela, "id = ?", args).
     severity: WARNING
-    languages: [java]
+    languages: [java, kotlin]
     metadata:
       category: security
       cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
