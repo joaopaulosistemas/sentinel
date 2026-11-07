@@ -47,7 +47,7 @@ export function consultaFixa () {
 // ---------- NoSQL $where ----------
 export function avaliacoes (req: any) {
   const id = req.params.id
-  // ruleid: sentinel-node-nosql-where
+  // ruleid: sentinel-node-nosql-where, sentinel-node-nosql-where-concatenado
   return db.reviews.find({ $where: 'this.product == ' + id })
 }
 
@@ -696,4 +696,50 @@ export function lerClaims (token: string) {
   const claims = jwt.decode(token)
   // ok: sentinel-node-path-traversal
   return fs.readFileSync('/opt/dados/fixo.json', 'utf8') + String(claims)
+}
+
+// ---------- Segredos de sessão, código de autorização e $where montado por texto (volta 24) ----------
+export function codigos () {
+  // ruleid: sentinel-node-math-random-segredo
+  let code = Math.floor(Math.random() * (100000 - 1) + 1)
+  // ruleid: sentinel-node-math-random-segredo
+  const jti = Math.random().toString(36)
+  // ruleid: sentinel-node-math-random-segredo
+  let accesstoken = Math.floor(Math.random() * 99999) + ''
+  // ok: sentinel-node-math-random-segredo
+  const statusCode = Math.floor(Math.random() * 3)
+  return [code, jti, accesstoken, statusCode]
+}
+
+export function sessao (app: any, expressSession: any, config: any) {
+  // ruleid: sentinel-node-session-secret-literal
+  app.use(expressSession({
+    secret: 'changethistoconfigfile',
+    resave: false
+  }))
+  // ok: sentinel-node-session-secret-literal
+  app.use(expressSession({
+    secret: process.env.SESSION_SECRET,
+    resave: false
+  }))
+  // ok: sentinel-node-session-secret-literal
+  app.use(expressSession({
+    secret: config.session.secret
+  }))
+}
+
+export function refrescar (db: any, mytoken: string) {
+  // ruleid: sentinel-node-nosql-where-concatenado
+  const query = '{"$where": "function() { return this.token == ' + mytoken + '; }"}'
+  return db.collection('refreshtokens').find(JSON.parse(query))
+}
+
+export function buscarPorNome (db: any, nome: string) {
+  // ruleid: sentinel-node-nosql-where-concatenado
+  return db.collection('u').find({ $where: 'this.nome == "' + nome + '"' })
+}
+
+export function buscarFixo (db: any) {
+  // ok: sentinel-node-nosql-where-concatenado
+  return db.collection('u').find({ $where: 'this.ativo == true' })
 }

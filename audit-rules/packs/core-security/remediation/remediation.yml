@@ -728,3 +728,18 @@
     - "https://cwe.mitre.org/data/definitions/918.html"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-node-session-secret-literal"
+  summary: "Leia o segredo de sessão de variável de ambiente ou cofre e use um valor longo e aleatório."
+  before: "app.use(session({ secret: 'changethistoconfigfile' }))"
+  after: "app.use(session({ secret: process.env.SESSION_SECRET }))"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+
+- key: "sentinel-node-nosql-where-concatenado"
+  summary: "Não monte `$where` por texto: use operadores de consulta com valores tipados."
+  before: "db.users.find({ $where: 'this.nome == \"' + nome + '\"' })"
+  after: "db.users.find({ nome: String(nome) })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
+

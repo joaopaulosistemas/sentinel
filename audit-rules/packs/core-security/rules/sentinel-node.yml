@@ -708,10 +708,13 @@ rules:
           - pattern: $V = <... Math.random() ...>
           - pattern: const $V = <... Math.random() ...>
           - pattern: let $V = <... Math.random() ...>
+          - pattern: let $V = <... Math.random() ...> + $Y
+          - pattern: const $V = <... Math.random() ...> + $Y
+          - pattern: $V = <... Math.random() ...> + $Y
           - pattern: '$V: <... Math.random() ...>'
       - metavariable-regex:
           metavariable: $V
-          regex: (?i)(token|secret|senha|password|nonce|otp|salt|apikey|session|csrf)
+          regex: (?i)^(?:.*(?:token|secret|senha|password|nonce|apikey|csrf|authcode|verifier|jti).*|(?:otp|salt|session).*|code)$
     message: >
       `Math.random()` gerando valor de segurança (CWE-338): o resultado é previsível. Use
       `crypto.randomBytes(32).toString('hex')` ou `crypto.randomUUID()`.
@@ -988,3 +991,39 @@ rules:
       category: security
       cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
       owasp: A04:2021 - Insecure Design
+
+  - id: sentinel-node-session-secret-literal
+    patterns:
+      - pattern-either:
+          - pattern: '$S({..., secret: "...", ...})'
+          - pattern: '$S({..., secret: `...`, ...})'
+      - metavariable-regex:
+          metavariable: $S
+          regex: ^(session|expressSession|cookieSession|(\w+\.)?session)$
+    message: >
+      Segredo de sessão escrito no código (CWE-798). Quem lê o repositório consegue forjar o cookie de sessão.
+      Leia o valor de uma variável de ambiente ou de um cofre de segredos e use um valor longo e aleatório.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-node-nosql-where-concatenado
+    pattern-either:
+      - pattern-regex: |-
+          \$where[^\n]*['"]\s*\+\s*[A-Za-z_]
+      - pattern-regex: |-
+          \$where[^\n]*\$\{
+    message: >
+      Consulta `$where` do MongoDB montada por concatenação de texto (CWE-943): o conteúdo vira JavaScript executado no
+      banco. Troque por operadores de consulta (`{ campo: valor }`) e não monte JSON por texto.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp: A03:2021 - Injection

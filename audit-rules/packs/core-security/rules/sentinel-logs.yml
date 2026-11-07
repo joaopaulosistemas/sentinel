@@ -8,6 +8,11 @@ rules:
                   metavariable: $ARG
                   regex: "^[^'\"`]*(?:[Pp]ass(?:word|wd)|[Ss]enha|[Ss]ecret|[Tt]oken|[Aa]pi_?[Kk]ey|[Aa]uthorization|[Pp]rivate_?[Kk]ey|[Cc]redential|PASSWORD|SECRET|TOKEN|API_?KEY)(?![a-z])"
           - patterns:
+              - pattern: $LOGGER.$M(..., "..." + $TXT, ...)
+              - metavariable-regex:
+                  metavariable: $TXT
+                  regex: ".*(?:[Pp]ass(?:word|wd)|[Ss]enha|[Ss]ecret|[Tt]oken|[Aa]pi_?[Kk]ey|[Aa]uthorization|[Pp]rivate_?[Kk]ey|[Cc]redential|PASSWORD|SECRET|TOKEN|API_?KEY)(?![a-z])"
+          - patterns:
               - pattern: $LOGGER.$M(..., `...${$INTERP}...`, ...)
               - metavariable-regex:
                   metavariable: $INTERP
