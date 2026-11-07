@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_FILE_BYTES, classifyEvidence, evidenceCoverage } from './evidenceFiles';
+import { MAX_FILE_BYTES, classifyEvidence, evidenceAgeDays, evidenceCoverage, isStaleEvidence } from './evidenceFiles';
 
 describe('classifyEvidence', () => {
   it('reconhece a estrutura do banco', () => {
@@ -43,5 +43,17 @@ describe('evidenceCoverage', () => {
     expect(c.total).toBe(8);
     expect(c.byArea.find((a) => a.area === 'Memória')).toMatchObject({ received: 0, total: 1 });
     expect(c.missing.map((m) => m.kind)).not.toContain('schema');
+  });
+});
+
+describe('idade da evidência', () => {
+  const now = Date.UTC(2026, 10, 7);
+  it('conta dias inteiros e marca como velha depois de 30', () => {
+    expect(evidenceAgeDays(now - 3 * 86_400_000, now)).toBe(3);
+    expect(isStaleEvidence(now - 30 * 86_400_000, now)).toBe(false);
+    expect(isStaleEvidence(now - 31 * 86_400_000, now)).toBe(true);
+  });
+  it('arquivo com data no futuro não dá idade negativa', () => {
+    expect(evidenceAgeDays(now + 86_400_000, now)).toBe(0);
   });
 });

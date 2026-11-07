@@ -160,3 +160,13 @@ export function evidenceCoverage(kinds: Iterable<EvidenceKind>): IEvidenceCovera
     missing: EVIDENCE_TYPES.filter((t) => !got.has(t.kind)),
   };
 }
+
+/** Estatísticas do banco valem para um período: depois disto o arquivo pode já não representar o uso atual. */
+export const STALE_DAYS = 30;
+
+/** Idade do arquivo em dias inteiros (data de modificação do arquivo no computador de quem entrega). */
+export function evidenceAgeDays(lastModified: number, now: number = Date.now()): number {
+  return Math.max(0, Math.floor((now - lastModified) / 86_400_000));
+}
+
+export const isStaleEvidence = (lastModified: number, now: number = Date.now()): boolean => evidenceAgeDays(lastModified, now) > STALE_DAYS;

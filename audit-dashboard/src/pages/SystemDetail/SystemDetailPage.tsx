@@ -359,6 +359,7 @@ function SystemNotFound({ error }: { error: unknown }) {
 interface IDetailSectionsProps {
   systemId: number;
   systemName: string;
+  onNewAudit: () => void;
   latest: IAuditRunResponse | undefined;
   fallbackScore: number | null;
   loadingRuns: boolean;
@@ -366,7 +367,8 @@ interface IDetailSectionsProps {
   live: boolean;
 }
 
-function DetailSections({ systemId, systemName, latest, fallbackScore, loadingRuns, runs, live }: IDetailSectionsProps) {
+function DetailSections({ systemId, systemName, onNewAudit, latest, fallbackScore, loadingRuns, runs, live }: IDetailSectionsProps) {
+  const evidenceStatus = useInsights(latest?.id).data?.analyzers.find((a) => a.name === 'Evidências')?.status;
   return (
     <div className="sentinel-secoes">
       <ScoreOverview latest={latest} fallbackScore={fallbackScore} />
@@ -374,7 +376,11 @@ function DetailSections({ systemId, systemName, latest, fallbackScore, loadingRu
       {latest && <DiffSummary auditId={latest.id} />}
       <InsightsPanel auditId={latest?.id} />
       <TrendChart systemId={systemId} />
-      <EvidencePanel systemName={systemName} />
+      <EvidencePanel
+        systemName={systemName}
+        onAudit={onNewAudit}
+        lastRun={latest ? { id: latest.id, startedAt: latest.startedAt, status: evidenceStatus } : undefined}
+      />
       <InsightsLimits auditId={latest?.id} />
       <SuppressionsList systemId={systemId} />
     </div>
@@ -415,6 +421,7 @@ export function SystemDetailPage() {
         <DetailSections
           systemId={id}
           systemName={system.name}
+          onNewAudit={() => setStarting(true)}
           latest={latestCompleted}
           fallbackScore={system.lastAuditScore ?? null}
           loadingRuns={loadingRuns}

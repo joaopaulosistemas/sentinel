@@ -1,4 +1,4 @@
-import { Button, InlineNotification, Tag } from '@carbon/react';
+import { ActionableNotification, Button, InlineNotification, Tag } from '@carbon/react';
 import { CheckmarkFilled, Upload, WarningAlt } from '@carbon/icons-react';
 import { useId, useRef, useState, type DragEvent } from 'react';
 import {
@@ -6,7 +6,10 @@ import {
   MAX_FILES,
   SNIFF_BYTES,
   classifyEvidence,
+  evidenceAgeDays,
   evidenceCoverage,
+  isStaleEvidence,
+  STALE_DAYS,
   type EvidenceKind,
   type IEvidenceType,
 } from '../utils/evidenceFiles';
@@ -15,6 +18,8 @@ import { PageSection } from './PageSection';
 interface IAccepted {
   name: string;
   size: number;
+  /** Data de modificação do arquivo (ms), para avisar de estatística velha */
+  modified: number;
   /** Quando o arquivo foi para outro tipo que o da linha em que foi solto */
   note?: string;
 }
@@ -38,7 +43,21 @@ async function readHead(file: File): Promise<string> {
 }
 
 /** Seção "Evidências" da página do sistema: guia de o que entregar, valida cada arquivo e recusa o resto. */
-export function EvidencePanel({ systemName }: { systemName: string }) {
+export interface ILastEvidenceRun {
+  id: number;
+  startedAt: string;
+  /** Estado do Analisador de Evidências naquela auditoria; ausente = não se sabe */
+  status?: string;
+}
+
+interface IEvidencePanelProps {
+  systemName: string;
+  lastRun?: ILastEvidenceRun;
+  onAudit: () => void;
+}
+
+export function EvidencePanel({ systemName, lastRun, onAudit }: IEvidencePanelProps) {
+  const [delivered, setDelivered] = useState(false);
   const [slots, setSlots] = useState<Partial<Record<EvidenceKind, IAccepted>>>({});
   const [rejected, setRejected] = useState<IRejected[]>([]);
   const [open, setOpen] = useState<EvidenceKind | null>(null);
@@ -64,11 +83,13 @@ export function EvidencePanel({ systemName }: { systemName: string }) {
       next[verdict.kind] = {
         name: file.name,
         size: file.size,
+        modified: file.lastModified,
         note: moved ? `Era para "${wanted.title}", mas o conteúdo é de "${found.title}"; ficou no lugar certo.` : undefined,
       };
     }
     setSlots(next);
     setRejected(refused);
+    setDelivered(false);
   }
 
   function pick(target: EvidenceKind | null) {
@@ -82,6 +103,7 @@ export function EvidencePanel({ systemName }: { systemName: string }) {
     void receive(Array.from(e.dataTransfer.files), null);
   }
 
+  const stale = Object.values(slots).filter((s): s is IAccepted => !!s && isStaleEvidence(s.modified));
   const pct = Math.round((coverage.received / coverage.total) * 100);
 
   return (
@@ -107,6 +129,31 @@ export function EvidencePanel({ systemName }: { systemName: string }) {
           <div style={{ height: 8, background: 'var(--s-border)' }}><div style={{ height: 8, width: `${pct}%`, background: 'var(--s-primary)' }} /></div>
         </div>
       </div>
+
+      <LastRunLine lastRun={lastRun} />
+      {stale.length > 0 && (
+        <InlineNotification
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          title="Evidências antigas"
+          subtitle={`${stale.map((s) => `${s.name} (${evidenceAgeDays(s.modified)} dias)`).join(', ')}: passam de ${STALE_DAYS} dias. As estatísticas do banco valem para um período; gere de novo se o uso mudou.`}
+          style={{ maxWidth: 'none', marginBottom: 12 }}
+        />
+      )}
+      {delivered && (
+        <ActionableNotification
+          kind="info"
+          lowContrast
+          hideCloseButton
+          inline
+          title="Evidências novas"
+          subtitle="Elas valem a partir da próxima auditoria; a última não muda."
+          actionButtonLabel="Auditar agora com estas evidências"
+          onActionButtonClick={onAudit}
+          style={{ maxWidth: 'none', marginBottom: 12 }}
+        />
+      )}
 
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -180,9 +227,9 @@ export function EvidencePanel({ systemName }: { systemName: string }) {
       })}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-        <Button kind="primary" disabled>Entregar ao Sentinel</Button>
+        <Button kind="primary" disabled={coverage.received === 0 || delivered} onClick={() => setDelivered(true)}>Entregar ao Sentinel</Button>
         <span style={{ fontSize: 13, color: 'var(--s-text-3)', flex: '1 1 320px' }}>
-          Protótipo: a conferência dos arquivos já funciona aqui no navegador. A entrega para a pasta do sistema depende de um endpoint novo na API, que ainda não existe; hoje a pasta é montada à mão (<code>evidencias/&lt;sistema&gt;</code>).
+          Protótipo: a conferência e os avisos já funcionam no navegador. O botão só simula a entrega; gravar na pasta do sistema depende de um endpoint novo na API, que ainda não existe (hoje a pasta é montada à mão, <code>evidencias/&lt;sistema&gt;</code>).
         </span>
       </div>
     </PageSection>
@@ -230,5 +277,18 @@ function EvidenceRow({ type, accepted, expanded, panelId, onToggle, onPick, onRe
         </div>
       )}
     </li>
+  );
+}
+
+/** O que a última auditoria fez com as evidências, tirado do estado do Analisador de Evidências. */
+function LastRunLine({ lastRun }: { lastRun: ILastEvidenceRun | undefined }) {
+  if (!lastRun) return <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma auditoria concluída ainda. Entregar as evidências antes da primeira já a deixa completa.</p>;
+  const usou = lastRun.status === 'OK';
+  const sem = lastRun.status === 'SEM_EVIDENCIA';
+  const when = new Date(lastRun.startedAt).toLocaleDateString('pt-BR');
+  return (
+    <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--s-text-3)' }}>
+      Auditoria #{lastRun.id} ({when}): {usou ? 'usou evidências.' : sem ? 'rodou sem evidências; a parte de execução ficou não verificada.' : 'estado do Analisador de Evidências não informado.'}
+    </p>
   );
 }
