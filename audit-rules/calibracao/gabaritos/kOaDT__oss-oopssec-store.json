@@ -4,11 +4,11 @@
  "falhas": [
   {
    "arquivo": "app/api/orders/search/route.ts",
-   "linha": 52,
+   "linha": 58,
    "cwe": "CWE-89",
    "regras": [
     "sentinel-node-prisma-raw-unsafe",
-    "sentinel-node-sql-injection"
+    "sentinel-node-sqlite-sql-dinamico"
    ],
    "nota": "$queryRawUnsafe com query montada por template (status do filtro)"
   },
@@ -18,7 +18,7 @@
    "cwe": "CWE-89",
    "regras": [
     "sentinel-node-prisma-raw-unsafe",
-    "sentinel-node-sql-injection"
+    "sentinel-node-sqlite-sql-dinamico"
    ],
    "nota": "$queryRawUnsafe com busca interpolada"
   },
@@ -28,7 +28,7 @@
    "cwe": "CWE-89",
    "regras": [
     "sentinel-node-prisma-raw-unsafe",
-    "sentinel-node-sql-injection"
+    "sentinel-node-sqlite-sql-dinamico"
    ],
    "nota": "$queryRawUnsafe com X-Forwarded-For interpolado"
   },
@@ -37,7 +37,8 @@
    "linha": 79,
    "cwe": "CWE-89",
    "regras": [
-    "sentinel-node-sql-injection"
+    "sentinel-node-prisma-raw-unsafe",
+    "sentinel-node-sqlite-sql-dinamico"
    ],
    "nota": "better-sqlite3 db.exec com filtro de autor interpolado"
   },
