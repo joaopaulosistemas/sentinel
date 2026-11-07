@@ -1,7 +1,7 @@
 import { InlineNotification, SkeletonText, Tag } from '@carbon/react';
 import { useState } from 'react';
 import { useInsights } from '../hooks/useLifecycle';
-import type { AreaState, DebtItem, Severity } from '../types';
+import type { AreaState, IDebtItem, Severity } from '../types';
 import { PageSection } from './PageSection';
 
 type TagType = 'red' | 'magenta' | 'blue' | 'green' | 'gray' | 'warm-gray';
@@ -13,7 +13,7 @@ const stateConfig: Record<AreaState, { label: string; type: TagType; color: stri
   NAO_VERIFICADO: { label: 'Não verificado', type: 'gray', color: 'var(--s-text-4)' },
 };
 
-const priorityType: Record<DebtItem['priority'], TagType> = {
+const priorityType: Record<IDebtItem['priority'], TagType> = {
   P0: 'red',
   P1: 'magenta',
   P2: 'blue',
@@ -40,7 +40,7 @@ function SubTitle({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
-function DebtTable({ items, limit }: { items: DebtItem[]; limit?: number }) {
+function DebtTable({ items, limit }: { items: IDebtItem[]; limit?: number }) {
   const shown = limit ? items.slice(0, limit) : items;
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -163,7 +163,7 @@ function Roadmap({ phases }: { phases: Insights['roadmap'] }) {
   );
 }
 
-function FixPlan({ data }: { data: Insights }) {
+function IFixPlan({ data }: { data: Insights }) {
   return (
     <PageSection id="plano" title="O que corrigir" hint="Quick wins primeiro; depois a dívida técnica, um problema por linha, agrupado por regra.">
       {data.quickWins.length > 0 && (
@@ -202,7 +202,7 @@ export function InsightsPanel({ auditId }: { auditId: number | undefined }) {
         {error && <LoadErrorNotice error={error} />}
         {data && <VerdictBlock data={data} />}
       </PageSection>
-      {data && <FixPlan data={data} />}
+      {data && <IFixPlan data={data} />}
     </>
   );
 }

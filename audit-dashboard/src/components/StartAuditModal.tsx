@@ -3,19 +3,19 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { AuditRunResponse } from '../types';
+import type { IAuditRunResponse, IPathCheck } from '../types';
 
-interface Props {
+interface IProps {
   system: { id: number; name: string; scheduledBranch?: string | null; sourceType?: 'GIT_URL' | 'LOCAL_PATH' | null; localPath?: string | null } | null;
   onClose: () => void;
   /** Se informado, a tela continua onde está (a auditoria aparece na lista); sem isto, vai para o acompanhamento. */
-  onStarted?: (run: AuditRunResponse) => void;
+  onStarted?: (run: IAuditRunResponse) => void;
 }
 
-type AuditTarget = NonNullable<Props['system']>;
+type AuditTarget = NonNullable<IProps['system']>;
 
 /** Branch inicial: a agendada (ou main); em pasta local, cai na branch atual da pasta se "main" não existir lá. */
-function useInitialBranch(system: Props['system'], setBranch: (b: string) => void): void {
+function useInitialBranch(system: IProps['system'], setBranch: (b: string) => void): void {
   useEffect(() => {
     if (!system) return;
     setBranch(system.scheduledBranch || 'main');
@@ -24,8 +24,8 @@ function useInitialBranch(system: Props['system'], setBranch: (b: string) => voi
     let ativo = true;
     const usarBranchAtual = async () => {
       try {
-        const c = await api.checkPath(system.localPath as string, system.scheduledBranch || 'main');
-        if (ativo && c.ok && c.branchFound === false && c.defaultBranch) setBranch(c.defaultBranch);
+        const check = await api.checkPath(system.localPath as string, system.scheduledBranch || 'main');
+        if (ativo && shouldFallBackToCurrentBranch(check)) setBranch(check.defaultBranch);
       } catch {
         // Sem a checagem a branch fica a agendada (ou main) e a pessoa ainda pode editar o campo.
       }
@@ -37,12 +37,20 @@ function useInitialBranch(system: Props['system'], setBranch: (b: string) => voi
   }, [system, setBranch]);
 }
 
+/** A pasta é válida, a branch pedida não existe nela e a pasta informou a sua branch atual. */
+export function shouldFallBackToCurrentBranch(check: IPathCheck): check is IPathCheck & { defaultBranch: string } {
+  const folderIsValid = check.ok;
+  const requestedBranchMissing = check.branchFound === false;
+  const hasCurrentBranch = !!check.defaultBranch;
+  return folderIsValid && requestedBranchMissing && hasCurrentBranch;
+}
+
 function isLocalWithPath(system: AuditTarget): boolean {
   return system.sourceType === 'LOCAL_PATH' && !!system.localPath;
 }
 
 /** Pede o branch, dispara a auditoria e leva para o acompanhamento. */
-export function StartAuditModal({ system, onClose, onStarted }: Props) {
+export function StartAuditModal({ system, onClose, onStarted }: IProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [branch, setBranch] = useState('main');

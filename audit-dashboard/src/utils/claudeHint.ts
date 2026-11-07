@@ -1,4 +1,4 @@
-import type { FindingResponse, ReviewSuggestion } from '../types';
+import type { IFindingResponse, IReviewSuggestion } from '../types';
 import { shortRuleId } from './ruleCatalog';
 
 const samePath = (a: string, b: string) => {
@@ -11,7 +11,7 @@ const samePath = (a: string, b: string) => {
  * Sugestão aberta do Claude que fala deste achado: mesma regra e, quando a sugestão informa, mesmo arquivo e mesma linha.
  * Sem regra, a sugestão não aponta para um achado só (então não casa).
  */
-export function suggestionFor(finding: FindingResponse, suggestions: ReviewSuggestion[]): ReviewSuggestion | undefined {
+export function suggestionFor(finding: IFindingResponse, suggestions: IReviewSuggestion[]): IReviewSuggestion | undefined {
   if (!finding.ruleId) return undefined;
   return suggestions.find(
     (s) =>

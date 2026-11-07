@@ -18,12 +18,6 @@ public record AuditProgressDto(String phase, List<AnalyzerProgress> analyzers, L
         this(phase, analyzers, events, null, 0, 0, Map.of(), 0, 0);
     }
 
-    /** Sem o andamento da cópia (a cópia só existe para pasta local no modo "como está agora"). */
-    public AuditProgressDto(String phase, List<AnalyzerProgress> analyzers, List<Event> events,
-                            String repoUrl, long filesRead, long linesOfCode, Map<String, Integer> severities) {
-        this(phase, analyzers, events, repoUrl, filesRead, linesOfCode, severities, 0, 0);
-    }
-
     /** @param description o que o analisador faz, em uma linha */
     public record AnalyzerProgress(String name, String status, int findings, long durationMs, String note, String description) {
 

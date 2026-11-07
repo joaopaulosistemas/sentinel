@@ -1,6 +1,6 @@
 import { Search, Tag } from '@carbon/react';
 import { useState } from 'react';
-import type { GuidePractice, GuideRule, GuideStack } from '../../types';
+import type { IGuidePractice, IGuideRule, IGuideStack } from '../../types';
 import { SEVERITY_LABEL, coverageOf, criteriaOf, filterRules, formatGrade, gradeOf, type SeverityFilter } from '../../utils/guide';
 
 const card = { background: 'var(--s-surface)', border: '1px solid var(--s-border)', padding: '1rem 1.25rem' } as const;
@@ -31,7 +31,7 @@ function PillButton({ on, onClick, children }: { on: boolean; onClick: () => voi
   );
 }
 
-export function StackPicker({ stacks, current, onPick }: { stacks: GuideStack[]; current: string; onPick: (id: string) => void }) {
+export function StackPicker({ stacks, current, onPick }: { stacks: IGuideStack[]; current: string; onPick: (id: string) => void }) {
   return (
     <div role="group" aria-label="Tecnologia" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
       {stacks.map((s) => (
@@ -62,7 +62,7 @@ function Stat({ label, value, note, color }: { label: string; value: string; not
   );
 }
 
-export function SummaryCards({ stack }: { stack: GuideStack }) {
+export function SummaryCards({ stack }: { stack: IGuideStack }) {
   const coverage = coverageOf(stack);
   const grade = gradeOf(criteriaOf(stack));
   const scope = stack.baseLanguage ? 'linguagem base' : `${stack.ownRules} específicas`;
@@ -81,7 +81,7 @@ export function SummaryCards({ stack }: { stack: GuideStack }) {
   );
 }
 
-export function PracticeGrid({ stack }: { stack: GuideStack }) {
+export function PracticeGrid({ stack }: { stack: IGuideStack }) {
   return (
     <section aria-labelledby="guia-praticas" style={{ ...card, display: 'grid', gap: 12 }}>
       <h2 id="guia-praticas" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>Boas práticas de {stack.name}</h2>
@@ -96,7 +96,7 @@ export function PracticeGrid({ stack }: { stack: GuideStack }) {
 }
 
 /** Commit, PR e revisão: iguais para todas as tecnologias. */
-export function ProcessSection({ process }: { process: GuidePractice[] }) {
+export function ProcessSection({ process }: { process: IGuidePractice[] }) {
   if (process.length === 0) return null;
   return (
     <section aria-labelledby="guia-processo" style={{ ...card, display: 'grid', gap: 12 }}>
@@ -112,7 +112,7 @@ export function ProcessSection({ process }: { process: GuidePractice[] }) {
   );
 }
 
-function Practice({ practice }: { practice: GuidePractice }) {
+function Practice({ practice }: { practice: IGuidePractice }) {
   return (
     <article style={{ border: '1px solid var(--s-border)', padding: '0.75rem 1rem', display: 'grid', gap: 6 }}>
       <h3 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 600 }}>{practice.title}</h3>
@@ -122,7 +122,7 @@ function Practice({ practice }: { practice: GuidePractice }) {
   );
 }
 
-export function GapsNotice({ stack }: { stack: GuideStack }) {
+export function GapsNotice({ stack }: { stack: IGuideStack }) {
   if (stack.gaps.length === 0) return null;
   return (
     <section aria-labelledby="guia-lacunas" style={{ ...card, background: 'var(--s-warn-bg)' }}>
@@ -136,7 +136,7 @@ export function GapsNotice({ stack }: { stack: GuideStack }) {
   );
 }
 
-function RuleRow({ rule, open, onToggle }: { rule: GuideRule & { own: boolean }; open: boolean; onToggle: () => void }) {
+function IRuleRow({ rule, open, onToggle }: { rule: IGuideRule & { own: boolean }; open: boolean; onToggle: () => void }) {
   return (
     <li style={{ border: '1px solid var(--s-border)' }}>
       <button
@@ -155,7 +155,7 @@ function RuleRow({ rule, open, onToggle }: { rule: GuideRule & { own: boolean };
   );
 }
 
-function RuleDetail({ rule }: { rule: GuideRule }) {
+function RuleDetail({ rule }: { rule: IGuideRule }) {
   return (
     <div style={{ padding: '0 0.875rem 0.875rem', display: 'grid', gap: 8 }}>
       <p style={{ margin: 0, fontSize: '0.875rem' }}><strong>O que fazer.</strong> {rule.action || 'Veja a mensagem da regra no relatório da auditoria.'}</p>
@@ -181,12 +181,12 @@ function CodeBlock({ label, code }: { label: string; code: string }) {
 
 const SEVERITIES: SeverityFilter[] = ['todas', 'alta', 'media', 'baixa'];
 
-export function RulesList({ rules }: { rules: Array<GuideRule & { own: boolean }> }) {
+export function RulesList({ rules }: { rules: Array<IGuideRule & { own: boolean }> }) {
   const [severity, setSeverity] = useState<SeverityFilter>('todas');
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
-  const shown = filterRules(rules, severity, query);
+  const shown = filterRules(rules, { severity, query });
   const count = (s: SeverityFilter) => (s === 'todas' ? rules.length : rules.filter((r) => r.severity === s).length);
   return (
     <section aria-labelledby="guia-regras" style={{ ...card, display: 'grid', gap: 12 }}>
@@ -201,7 +201,7 @@ export function RulesList({ rules }: { rules: Array<GuideRule & { own: boolean }
       </div>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
         {shown.slice(0, limit).map((r) => (
-          <RuleRow key={r.id} rule={r} open={open === r.id} onToggle={() => setOpen(open === r.id ? '' : r.id)} />
+          <IRuleRow key={r.id} rule={r} open={open === r.id} onToggle={() => setOpen(open === r.id ? '' : r.id)} />
         ))}
       </ul>
       {shown.length === 0 && <p style={muted}>Nenhuma regra com esse filtro. Limpe a busca ou escolha outra severidade.</p>}
@@ -212,7 +212,7 @@ export function RulesList({ rules }: { rules: Array<GuideRule & { own: boolean }
   );
 }
 
-export function GradePanel({ stack }: { stack: GuideStack }) {
+export function GradePanel({ stack }: { stack: IGuideStack }) {
   const criteria = criteriaOf(stack);
   return (
     <section aria-labelledby="guia-nota" style={{ ...card, display: 'grid', gap: 12 }}>

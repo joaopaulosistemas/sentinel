@@ -4,21 +4,21 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SystemsPage } from './SystemsPage';
 
-const sys = (id: number, name: string, auditCount: number) => ({
+const sys = ({ id, name, auditCount }: { id: number; name: string; auditCount: number }) => ({
   id, name, stack: 'JAVA', team: 'Core', lastAuditScore: auditCount ? 80 : null, lastAuditDate: auditCount ? '2026-10-20T10:00:00' : null,
   openCritical: 0, openHigh: 0, auditCount, repoUrl: `https://github.com/org/${name}`,
 });
 
-function renderPage(systems = [sys(1, 'com-auditoria', 3), sys(2, 'sem-auditoria', 0)]) {
+function renderPage(systems = [sys({ id: 1, name: 'com-auditoria', auditCount: 3 }), sys({ id: 2, name: 'sem-auditoria', auditCount: 0 })]) {
   const calls: Array<{ url: string; method: string }> = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
+      const requestUrl = String(url);
       const method = init?.method ?? 'GET';
-      calls.push({ url: u, method });
+      calls.push({ url: requestUrl, method });
       if (method === 'DELETE') return new Response(null, { status: 204 });
-      if (u.includes('/packs')) return new Response(JSON.stringify({ packs: [], profiles: [] }), { status: 200 });
+      if (requestUrl.includes('/packs')) return new Response(JSON.stringify({ packs: [], profiles: [] }), { status: 200 });
       return new Response(JSON.stringify(systems), { status: 200 });
     }),
   );

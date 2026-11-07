@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 /** Um nível do caminho. Sem `to`, é a tela atual (último nível). */
-export interface Crumb {
+export interface ICrumb {
   label: string;
   to?: string;
 }
@@ -15,7 +15,7 @@ export const TRAIL_HEIGHT = 16;
  * Espaçamento: 22 px do cabeçalho (48 px) até o caminho, 8 px até o título, 24 px do título até o conteúdo.
  * Toda tela informa o seu caminho, começando em "Início".
  */
-export function PageShell({ crumbs, children }: { crumbs: Crumb[]; children: ReactNode }) {
+export function PageShell({ crumbs, children }: { crumbs: ICrumb[]; children: ReactNode }) {
   return (
     <div className="sentinel-page">
       <div data-testid="page-trail" style={{ minHeight: TRAIL_HEIGHT, marginBottom: -16 }}>
@@ -27,7 +27,7 @@ export function PageShell({ crumbs, children }: { crumbs: Crumb[]; children: Rea
 }
 
 /** Caminho (breadcrumb) no estilo das telas de detalhe. */
-export function Breadcrumb({ items }: { items: Crumb[] }) {
+export function Breadcrumb({ items }: { items: ICrumb[] }) {
   return (
     <nav aria-label="Caminho" style={{ fontSize: 12, lineHeight: '16px', color: 'var(--s-text-3)' }}>
       {items.map((c, i) => (

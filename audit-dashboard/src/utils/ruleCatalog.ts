@@ -1,14 +1,14 @@
-import type { EngineConfig, EngineSide, FixPlanItem, RuleAdjustment } from '../types';
+import type { IEngineConfig, EngineSide, IFixPlanItem, IRuleAdjustment } from '../types';
 
 /** Id curto da regra: o que vem depois do último ponto, em minúsculas. É assim que o motor casa os ajustes. */
 export const shortRuleId = (id: string): string => id.toLowerCase().slice(id.lastIndexOf('.') + 1);
 
 /** Regra sem nenhum efeito não é ajuste. */
-export function isNoopAdjustment(r: RuleAdjustment): boolean {
+export function isNoopAdjustment(r: IRuleAdjustment): boolean {
   return r.severity === null && !r.disabled && r.shadow === null;
 }
 
-export interface RuleRow {
+export interface IRuleRow {
   id: string;
   title: string | null;
   pack: string | null;
@@ -25,18 +25,18 @@ export interface RuleRow {
   side?: EngineSide;
 }
 
-export interface RuleSources {
-  catalog: EngineConfig['catalog'];
-  known: EngineConfig['knownRules'];
-  profileRules: RuleAdjustment[];
-  adjusted: RuleAdjustment[];
-  plan: FixPlanItem[];
+export interface IRuleSources {
+  catalog: IEngineConfig['catalog'];
+  known: IEngineConfig['knownRules'];
+  profileRules: IRuleAdjustment[];
+  adjusted: IRuleAdjustment[];
+  plan: IFixPlanItem[];
 }
 
 /** Junta catálogo dos pacotes, regras vistas na última auditoria, ajustes e plano de correção numa lista só. */
-export function buildRuleRows({ catalog = [], known, profileRules, adjusted, plan }: RuleSources): RuleRow[] {
-  const rows = new Map<string, RuleRow>();
-  const ensure = (id: string): RuleRow => ensureRow(rows, id);
+export function buildRuleRows({ catalog = [], known, profileRules, adjusted, plan }: IRuleSources): IRuleRow[] {
+  const rows = new Map<string, IRuleRow>();
+  const ensure = (id: string): IRuleRow => ensureRow(rows, id);
 
   applyCatalog(catalog, ensure);
   for (const k of known) {
@@ -48,7 +48,7 @@ export function buildRuleRows({ catalog = [], known, profileRules, adjusted, pla
   return [...rows.values()];
 }
 
-function ensureRow(rows: Map<string, RuleRow>, id: string): RuleRow {
+function ensureRow(rows: Map<string, IRuleRow>, id: string): IRuleRow {
   const key = shortRuleId(id);
   let row = rows.get(key);
   if (!row) {
@@ -58,7 +58,7 @@ function ensureRow(rows: Map<string, RuleRow>, id: string): RuleRow {
   return row;
 }
 
-function applyCatalog(catalog: NonNullable<RuleSources['catalog']>, ensure: (id: string) => RuleRow): void {
+function applyCatalog(catalog: NonNullable<IRuleSources['catalog']>, ensure: (id: string) => IRuleRow): void {
   for (const c of catalog) {
     const row = ensure(c.id);
     row.title = c.message ?? row.title;
@@ -69,7 +69,7 @@ function applyCatalog(catalog: NonNullable<RuleSources['catalog']>, ensure: (id:
   }
 }
 
-function applyPlan(plan: FixPlanItem[], ensure: (id: string) => RuleRow): void {
+function applyPlan(plan: IFixPlanItem[], ensure: (id: string) => IRuleRow): void {
   for (const item of plan) {
     if (!item.ruleId) continue;
     const row = ensure(item.ruleId);
@@ -80,22 +80,28 @@ function applyPlan(plan: FixPlanItem[], ensure: (id: string) => RuleRow): void {
 
 export type RuleScope = 'all' | 'seen' | 'adjusted';
 
-export interface RuleFilter {
+export interface IRuleFilter {
   query: string;
   scope: RuleScope;
   pack: string;
 }
 
+export interface IFilterRuleRowsInput {
+  rows: IRuleRow[];
+  filter: IRuleFilter;
+  adjustedIds: Set<string>;
+}
+
 /** Filtra por texto (id, texto da regra, pacote), por escopo (todas, vistas na última auditoria, ajustadas) e por pacote. */
-export function filterRuleRows(rows: RuleRow[], filter: RuleFilter, adjustedIds: Set<string>): RuleRow[] {
-  const q = filter.query.trim().toLowerCase();
+export function filterRuleRows({ rows, filter, adjustedIds }: IFilterRuleRowsInput): IRuleRow[] {
+  const query = filter.query.trim().toLowerCase();
   return rows
     .filter((r) => {
       if (filter.scope === 'seen' && r.count === 0) return false;
       if (filter.scope === 'adjusted' && !adjustedIds.has(r.id)) return false;
       if (filter.pack !== '' && r.pack !== filter.pack) return false;
-      if (q === '') return true;
-      return `${r.id} ${r.title ?? ''} ${r.pack ?? ''} ${r.category ?? ''}`.toLowerCase().includes(q);
+      if (query === '') return true;
+      return `${r.id} ${r.title ?? ''} ${r.pack ?? ''} ${r.category ?? ''}`.toLowerCase().includes(query);
     })
     .sort((a, b) => Number(adjustedIds.has(b.id)) - Number(adjustedIds.has(a.id)) || b.count - a.count || a.id.localeCompare(b.id));
 }
@@ -103,14 +109,20 @@ export function filterRuleRows(rows: RuleRow[], filter: RuleFilter, adjustedIds:
 export type BulkAction =
   | { kind: 'shadow'; on: boolean }
   | { kind: 'disable'; on: boolean }
-  | { kind: 'severity'; value: RuleAdjustment['severity'] }
+  | { kind: 'severity'; value: IRuleAdjustment['severity'] }
   | { kind: 'reset' };
 
 /** Aplica uma ação a várias regras de uma vez; devolve a lista nova de ajustes (sem os que não têm efeito). */
-export function applyBulk(current: RuleAdjustment[], ids: string[], action: BulkAction): RuleAdjustment[] {
+export interface IApplyBulkInput {
+  current: IRuleAdjustment[];
+  ids: string[];
+  action: BulkAction;
+}
+
+export function applyBulk({ current, ids, action }: IApplyBulkInput): IRuleAdjustment[] {
   const byId = new Map(current.map((r) => [r.id, r]));
   for (const id of ids) {
-    const base: RuleAdjustment = byId.get(id) ?? { id, severity: null, disabled: false, shadow: null };
+    const base: IRuleAdjustment = byId.get(id) ?? { id, severity: null, disabled: false, shadow: null };
     let next = base;
     if (action.kind === 'shadow') next = { ...base, shadow: action.on ? true : null };
     else if (action.kind === 'disable') next = { ...base, disabled: action.on };
@@ -122,7 +134,7 @@ export function applyBulk(current: RuleAdjustment[], ids: string[], action: Bulk
 }
 
 /** Soma do ganho estimado das regras escolhidas. É uma estimativa: ganhos de regras diferentes podem se sobrepor. */
-export function estimatedGain(rows: RuleRow[], ids: string[]): number {
+export function estimatedGain(rows: IRuleRow[], ids: string[]): number {
   const wanted = new Set(ids);
   return rows.filter((r) => wanted.has(r.id)).reduce((sum, r) => sum + (r.gain ?? 0), 0);
 }

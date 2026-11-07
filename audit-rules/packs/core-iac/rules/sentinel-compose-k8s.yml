@@ -48,7 +48,7 @@ rules:
     message: >
       Possível segredo escrito direto no arquivo do Compose. Use variável do .env (${VARIAVEL}) ou secrets e
       mantenha o .env fora do Git.
-    severity: WARNING
+    severity: ERROR
     languages: [regex]
     paths:
       include: ["docker-compose*.yml", "docker-compose*.yaml", "compose*.yml", "compose*.yaml"]
@@ -139,3 +139,4 @@ rules:
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       category: security
+      cwe: "CWE-1357: Reliance on Insufficiently Trustworthy Component"

@@ -1,13 +1,13 @@
 import { DataTableSkeleton, InlineNotification } from '@carbon/react';
 import { Link } from 'react-router-dom';
-import { FindingsTable, type FindingOrigin } from '../../components/FindingsTable';
-import type { FindingResponse, FindingsOverview } from '../../types';
+import { FindingsTable, type IFindingOrigin } from '../../components/FindingsTable';
+import type { IFindingResponse, IFindingsOverview } from '../../types';
 import { groupBySystem } from '../../utils/findingsView';
 import { startLabel } from '../../utils/timeAgo';
 import { stackShort } from '../Systems/systemForm';
 import { edgeColor } from './findingsRows';
 
-type OverviewItem = FindingsOverview['items'][number];
+type OverviewItem = IFindingsOverview['items'][number];
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
@@ -68,7 +68,7 @@ export function PageHeading({ auditMode, auditId, systemName }: { auditMode: boo
   );
 }
 
-export function SystemSummaryCards({ summary }: { summary: FindingsOverview['bySystem'] }) {
+export function SystemSummaryCards({ summary }: { summary: IFindingsOverview['bySystem'] }) {
   return (
     <section aria-label="Resumo por sistema" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 12 }}>
       {summary.map((s) => (
@@ -91,13 +91,15 @@ export function SystemSummaryCards({ summary }: { summary: FindingsOverview['byS
   );
 }
 
+interface IOriginFinderInput {
+  itemByFinding: Map<number, OverviewItem>;
+  stackByName: Map<number, string | null | undefined>;
+  open: (item: OverviewItem) => void;
+}
+
 /** Monta, para cada achado da visão geral, o sistema de onde ele vem (nome, stack e atalho para abrir o sistema). */
-export function originFinder(
-  itemByFinding: Map<number, OverviewItem>,
-  stackByName: Map<number, string | null | undefined>,
-  open: (item: OverviewItem) => void,
-) {
-  return (f: FindingResponse): FindingOrigin | undefined => {
+export function originFinder({ itemByFinding, stackByName, open }: IOriginFinderInput) {
+  return (f: IFindingResponse): IFindingOrigin | undefined => {
     const hit = itemByFinding.get(f.id);
     if (!hit) return undefined;
     const stack = stackByName.get(hit.systemId);
@@ -111,9 +113,9 @@ export function originFinder(
 }
 
 type OriginOf = ReturnType<typeof originFinder> | undefined;
-type NoteOf = (f: FindingResponse) => ReturnType<typeof import('../../utils/claudeHint').suggestionFor>;
+type NoteOf = (f: IFindingResponse) => ReturnType<typeof import('../../utils/claudeHint').suggestionFor>;
 
-interface ListBodyProps {
+interface IListBodyProps {
   loading: boolean;
   error: unknown;
   total: number;
@@ -121,7 +123,7 @@ interface ListBodyProps {
   auditId: number;
   auditSystemName: string | undefined;
   grouped: boolean;
-  rows: FindingResponse[];
+  rows: IFindingResponse[];
   items: OverviewItem[];
   systemOf: OriginOf;
   claudeNoteOf: NoteOf;
@@ -152,7 +154,7 @@ function EmptyList({ auditMode }: { auditMode: boolean }) {
   );
 }
 
-function GroupedTables({ items, systemOf, claudeNoteOf }: Pick<ListBodyProps, 'items' | 'systemOf' | 'claudeNoteOf'>) {
+function GroupedTables({ items, systemOf, claudeNoteOf }: Pick<IListBodyProps, 'items' | 'systemOf' | 'claudeNoteOf'>) {
   return (
     <div style={{ display: 'grid', gap: 24, padding: '16px 0 0' }}>
       {groupBySystem(items).map((g) => (
@@ -171,7 +173,7 @@ function GroupedTables({ items, systemOf, claudeNoteOf }: Pick<ListBodyProps, 'i
 }
 
 /** Corpo da lista: carregando, erro, vazio, agrupado por sistema ou tabela única. */
-export function FindingsListBody(p: ListBodyProps) {
+export function FindingsListBody(p: IListBodyProps) {
   if (p.loading) return <Padded><DataTableSkeleton columnCount={6} rowCount={8} /></Padded>;
   if (p.error) return <ListError error={p.error} />;
   if (p.total === 0) return <EmptyList auditMode={p.auditMode} />;
@@ -187,8 +189,8 @@ export function FindingsListBody(p: ListBodyProps) {
   );
 }
 
-interface ResolvedProps {
-  resolved: FindingResponse[];
+interface IResolvedProps {
+  resolved: IFindingResponse[];
   open: boolean;
   onToggle: () => void;
   systemName: string | undefined;
@@ -196,7 +198,7 @@ interface ResolvedProps {
   claudeNoteOf: NoteOf;
 }
 
-export function ResolvedSection({ resolved, open, onToggle, systemName, auditId, claudeNoteOf }: ResolvedProps) {
+export function ResolvedSection({ resolved, open, onToggle, systemName, auditId, claudeNoteOf }: IResolvedProps) {
   return (
     <section aria-label="Resolvidos">
       <button

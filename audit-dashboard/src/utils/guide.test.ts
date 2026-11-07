@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { GuideRule, GuideStack } from '../types';
+import type { IGuideRule, IGuideStack } from '../types';
 import { coverageOf, criteriaOf, filterRules, formatGrade, gradeOf, rulesOfStack } from './guide';
 
-function rule(over: Partial<GuideRule>): GuideRule {
+function rule(over: Partial<IGuideRule>): IGuideRule {
   return { id: 'sentinel-x', pack: 'core', title: 'Título', action: 'Faça', severity: 'media', cwe: '', before: '', after: '', ...over };
 }
 
-function stack(over: Partial<GuideStack> = {}): GuideStack {
+function stack(over: Partial<IGuideStack> = {}): IGuideStack {
   return {
     id: 'quarkus', name: 'Quarkus', kind: 'backend', summary: '', tools: [], gaps: [], commands: ['mvn verify'], commandsVerified: true,
     review: { docs: false, team: false, ai: false }, practices: [{ title: 'p', doIt: 'a', avoid: 'b' }], baseLanguage: false,
@@ -28,15 +28,15 @@ describe('filterRules', () => {
     rule({ id: 'r3', title: 'Gama', severity: 'alta', action: 'use parâmetros' }),
   ];
   it('ordena do mais grave para o menos grave e, no empate, por título', () => {
-    expect(filterRules(rules, 'todas', '').map((r) => r.id)).toEqual(['r2', 'r3', 'r1']);
+    expect(filterRules(rules, { severity: 'todas', query: '' }).map((r) => r.id)).toEqual(['r2', 'r3', 'r1']);
   });
   it('filtra por severidade', () => {
-    expect(filterRules(rules, 'baixa', '').map((r) => r.id)).toEqual(['r1']);
+    expect(filterRules(rules, { severity: 'baixa', query: '' }).map((r) => r.id)).toEqual(['r1']);
   });
   it('busca no título, no id, no CWE e na ação, sem diferenciar maiúsculas', () => {
-    expect(filterRules(rules, 'todas', 'cwe-79').map((r) => r.id)).toEqual(['r2']);
-    expect(filterRules(rules, 'todas', 'PARÂMETROS').map((r) => r.id)).toEqual(['r3']);
-    expect(filterRules(rules, 'todas', 'r1').map((r) => r.id)).toEqual(['r1']);
+    expect(filterRules(rules, { severity: 'todas', query: 'cwe-79' }).map((r) => r.id)).toEqual(['r2']);
+    expect(filterRules(rules, { severity: 'todas', query: 'PARÂMETROS' }).map((r) => r.id)).toEqual(['r3']);
+    expect(filterRules(rules, { severity: 'todas', query: 'r1' }).map((r) => r.id)).toEqual(['r1']);
   });
 });
 

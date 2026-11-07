@@ -1,7 +1,7 @@
 import { Tag } from '@carbon/react';
 import type { Severity } from '../types';
 
-interface RiskBadgeProps {
+interface IRiskBadgeProps {
   severity: Severity;
 }
 
@@ -23,7 +23,7 @@ const severityLabels: Record<Severity, string> = {
   INFO: 'Info',
 };
 
-export function RiskBadge({ severity }: RiskBadgeProps) {
+export function RiskBadge({ severity }: IRiskBadgeProps) {
   return (
     <Tag type={severityTagTypes[severity]} size="sm">
       {severityLabels[severity]}

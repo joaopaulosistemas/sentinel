@@ -8,14 +8,14 @@ function renderPage() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
-      const u = String(url);
-      if (u === '/api/v1/systems/2/audits') {
+      const requestUrl = String(url);
+      if (requestUrl === '/api/v1/systems/2/audits') {
         return new Response(
           JSON.stringify([{ id: 214, systemId: 2, systemName: 'portal', branch: 'main', status: 'COMPLETED', riskScore: { overall: 62 }, findingsSummary: {}, startedAt: '2026-10-16T09:00:00', completedAt: '2026-10-16T09:10:00' }]),
           { status: 200 },
         );
       }
-      if (u === '/api/v1/systems/3/audits') return new Response('[]', { status: 200 });
+      if (requestUrl === '/api/v1/systems/3/audits') return new Response('[]', { status: 200 });
       return new Response(
         JSON.stringify([
           { id: 2, name: 'portal', stack: 'JAVA', team: 'T', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 },

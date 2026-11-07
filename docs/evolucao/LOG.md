@@ -968,6 +968,25 @@ Problema: auditoria TREE de pasta em volume lento falhou com "A cópia da pasta 
 Verificado: `LocalSource` compilado com javac e rodado em 3000 arquivos em 20 pastas (todos copiados, link para /etc não copiado, contagem 3001/3001).
 Não verificado: ganho real em volume lento (aqui o disco é rápido); JUnit novo (`copiaDaPastaComoEstaCopiaTodosOsArquivosDeUmaArvoreGrande`) fica para o CI.
 
+## Dashboard 12.73.0 — Conflitos entre regras (revisão pedida pelo João, opção 1 para o limite de parâmetros)
+
+- **Origem:** revisão dos 285 YAML de regras e rodada de todos os pacotes sobre JavaVulnerableLab, java-sec-code, vulnerable-node e juice-shop (achados de regras diferentes na mesma linha).
+- **Limite de parâmetros:** `sentinel-cct-parametros-demais` passa de "mais de 2" para "mais de 5" (igual ao CleanCode e ao guia CLAUDE.md); testes e `clean-code-labs42.md` alinhados. Fecha a decisão aberta desde a 12.64.0.
+- **Duplicata na mesma linha:** `dedup.yml` ganha o campo `order` (regras da MESMA ferramenta, da mais específica para a genérica); `FindingDeduplicator` mantém o achado da primeira, com a maior severidade e a nota da outra, sem mudar o `ruleId`. Oito tópicos em `core-security/dedup.yml`: command injection Java (4 regras), command injection/eval/SQL do Node, log injection, log de dado sensível, chave fixa e XSS Angular por URL.
+- **Consistência:** CWE nas 4 regras de segurança que não tinham; `compose-segredo-em-env` e `android-segredo-literal-comparado` em ERROR (como as irmãs de Docker e Java); `cert-throw-generico` em WARNING como a regra corporativa; `ts-console-log` não repete o achado quando o primeiro argumento nomeia segredo (fica `log-segredo-js`); limite da exceção `path` do XSS-JSP escrito na mensagem.
+- **Critério:** `docs/referencia/severidade-das-regras.md` e `scripts/verificar-regras.py` (ids únicos, CWE em segurança, ids do `order` existentes).
+- **Não feito:** ligar o script ao CI (`.github/`, decisão do João); unificar as fontes de taint copiadas em ~10 regras; peso do estilo na nota (decisão de produto); `sql-injection` × `sql-select-estrela` ficam separados de propósito (segurança × estilo).
+
+Verificado: `opengrep --test` ts-clean-code-labs42 21/21, core-quality 41/41, core-security 87/87, core-iac 11/11; `verificar-regras.py` (285 regras, 0 problemas); lógica de `mergeSameTool` com javac contra classes de apoio (3 cenários: mesmo ponto, 3 regras, outra linha/arquivo/tópico). NÃO verificado: JUnit/Maven (só no CI; `FindingDeduplicatorTest` com 3 testes novos e leitura real do `dedup.yml` por `PackLoader`); paridade Opengrep × Semgrep; efeito na nota de dvja e NodeGoat (a dedup reduz contagens; conferir nos números do CI).
+## Dashboard 12.70.0 — Correção dos achados da autoauditoria #123
+
+- **Origem:** relatório técnico da auditoria #123 do próprio Sentinel (1 HIGH, 14 MEDIUM, 355 LOW).
+- **Medido:** as regras do Sentinel rodadas localmente sobre `audit-dashboard/src` e `audit-api/src/main` davam 323 achados do Opengrep; depois, 10 (todos já suprimidos em `.sentinel.yml` com motivo).
+- **Dashboard:** 136 interfaces com prefixo `I`; funções com mais de 2 parâmetros e parâmetros booleanos viraram objeto tipado ou funções separadas; nomes de uma letra, números mágicos, condições compostas e marcadores de seção corrigidos. 39 testes novos ou adaptados (318 → 357).
+- **API (Java):** `LocalSource` e `SarifAnalyzer` divididos (`WorkingTreeCopier`, `SarifResumo`, `SarifExecucao`), `AuditRunViews` e `FindingRefinement` para reduzir fan-out, complexidade de `copyOne`, `infer` e `registrar`, imports `.*` expandidos, leitura de recurso com limite, `GitLog` e `RuleYaml` contra duplicação. `McpGateService`: `"snt_"` é o prefixo público da chave, não segredo; constante renomeada e documentada (mudar o valor invalidaria chaves emitidas).
+- **Não feito:** validação real do `JSON.parse` em `client.ts` (exige esquema zod/valibot por endpoint, dependência nova); `TooManyFields`/`ExcessivePublicCount` em `Finding` e `AuditedSystem` (mexe em schema); `CouplingBetweenObjects` em 7 classes; `ImmutableField` em entidades JPA (falso positivo); "31% dos commits fora do padrão" (histórico do Git).
+- **Verificado:** `tsc --noEmit` limpo, 357 testes do dashboard, Opengrep local, `javac` e execução isolada do `WorkingTreeCopier`.
+- **NÃO verificado:** JUnit, Checkstyle e PMD (sem Maven Central aqui; só no CI); fan-out e coupling por contagem manual; CSS `leitura.css` no navegador.
 ## Dashboard 12.73.0 — Ciclo, volta 18 (branch `ciclo/estabilizacao-6`): logicalhacking/DVHMA (treino novo), SAST inteiro sumia por limite de `--exclude`
 
 - **Repositório novo:** logicalhacking/DVHMA (app híbrido Cordova com plugins Android em Java e OpenUI5 embutido, branch `master`, JAVASCRIPT), escolhido em 2026-11-06 por busca de repositório de treino com mais estrelas ainda não lido (274 estrelas, 12 MB); ninguém o tinha lido nem auditado. Não foi a opção Java (allsafe-android) para alternar a stack depois de quatro voltas Java.

@@ -2,28 +2,28 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PendingAction, SystemSummaryResponse } from '../types';
+import type { IPendingAction, ISystemSummaryResponse } from '../types';
 import { ReauditPanel, scoreChange } from './ReauditPanel';
 
-const systems = [{ id: 7, name: 'conta-corrente-api', scheduledBranch: 'main' }] as SystemSummaryResponse[];
+const systems = [{ id: 7, name: 'conta-corrente-api', scheduledBranch: 'main' }] as ISystemSummaryResponse[];
 
-function action(over: Partial<PendingAction> = {}): PendingAction {
+function action(over: Partial<IPendingAction> = {}): IPendingAction {
   return {
     id: 1, kind: 'START_AUDIT', summary: 'Iniciar uma auditoria de conta-corrente-api na branch main', status: 'PENDING',
     createdAt: '2026-10-24T10:00:00', expiresAt: '2026-10-24T11:00:00', decidedAt: null, resultNote: null, auditRunId: null, ...over,
   };
 }
 
-function setup(actions: PendingAction[]) {
+function setup(actions: IPendingAction[]) {
   const calls: Array<{ url: string; method: string }> = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
-      calls.push({ url: u, method: init?.method ?? 'GET' });
-      if (u.includes('/pending-actions/') && init?.method === 'POST') return new Response(JSON.stringify([action({ status: 'APPROVED', resultNote: 'Auditoria #9 iniciada.', auditRunId: 9 })]), { status: 200 });
-      if (u.includes('/pending-actions/')) return new Response(JSON.stringify(actions), { status: 200 });
-      if (u.includes('/audits')) return new Response('[]', { status: 200 });
+      const requestUrl = String(url);
+      calls.push({ url: requestUrl, method: init?.method ?? 'GET' });
+      if (requestUrl.includes('/pending-actions/') && init?.method === 'POST') return new Response(JSON.stringify([action({ status: 'APPROVED', resultNote: 'Auditoria #9 iniciada.', auditRunId: 9 })]), { status: 200 });
+      if (requestUrl.includes('/pending-actions/')) return new Response(JSON.stringify(actions), { status: 200 });
+      if (requestUrl.includes('/audits')) return new Response('[]', { status: 200 });
       return new Response('{}', { status: 200 });
     }),
   );

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuditRuns } from '../hooks/useAuditRuns';
 import { useDiff } from '../hooks/useLifecycle';
-import type { PendingAction, SystemSummaryResponse } from '../types';
+import type { IPendingAction, ISystemSummaryResponse } from '../types';
 import { startLabel } from '../utils/timeAgo';
 import { StartAuditModal } from './StartAuditModal';
 
@@ -33,14 +33,14 @@ function Requests({ systemId }: { systemId: number }) {
   const key = ['pending-actions', systemId];
   const list = useQuery({ queryKey: key, queryFn: () => api.getPendingActions(systemId), refetchInterval: 15_000 });
   const decide = useMutation({
-    mutationFn: (v: { id: number; decision: 'approve' | 'reject' }) => api.decidePendingAction(systemId, v.id, v.decision),
+    mutationFn: (v: { id: number; decision: 'approve' | 'reject' }) => api.decidePendingAction({ systemId, actionId: v.id, decision: v.decision }),
     onSuccess: (data) => {
       queryClient.setQueryData(key, data);
       void queryClient.invalidateQueries({ queryKey: ['auditRuns'] });
       void queryClient.invalidateQueries({ queryKey: ['systems'] });
     },
   });
-  const items: PendingAction[] = list.data ?? [];
+  const items: IPendingAction[] = list.data ?? [];
   const waiting = items.filter((a) => a.status === 'PENDING').length;
 
   return (
@@ -79,27 +79,27 @@ function BeforeAfter({ systemId }: { systemId: number }) {
   const completed = (runs.data ?? []).filter((r) => r.status === 'COMPLETED');
   const latest = completed[0];
   const diff = useDiff(latest?.id);
-  const d = diff.data;
+  const comparison = diff.data;
 
   return (
     <section aria-label="Antes e depois" style={{ display: 'grid', gap: 8 }}>
       <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Antes e depois</h2>
       {!latest ? (
         <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Ainda não há auditoria concluída.</span>
-      ) : !d || !d.hasBaseline ? (
+      ) : !comparison || !comparison.hasBaseline ? (
         <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>A última auditoria (#{latest.id}) é a primeira: ainda não há com o que comparar.</span>
       ) : (
         <div style={{ border: '1px solid var(--s-border)', background: 'var(--s-surface)', padding: 14, display: 'grid', gap: 6 }}>
           <div>
-            Auditoria <Link to={`/audits/${latest.id}`}>#{latest.id}</Link> contra #{d.baseAuditId}: nota <strong>{scoreChange(d.baseOverall, d.overall)}</strong>
+            Auditoria <Link to={`/audits/${latest.id}`}>#{latest.id}</Link> contra #{comparison.baseAuditId}: nota <strong>{scoreChange(comparison.baseOverall, comparison.overall)}</strong>
           </div>
           <div style={{ fontSize: 13, color: 'var(--s-text-2)' }}>
-            {d.resolvedFindings.length} resolvidos · {d.newFindings.length} novos · {d.persistingCount} continuam
+            {comparison.resolvedFindings.length} resolvidos · {comparison.newFindings.length} novos · {comparison.persistingCount} continuam
           </div>
-          {d.resolvedFindings.slice(0, 5).map((f) => (
+          {comparison.resolvedFindings.slice(0, 5).map((f) => (
             <div key={`r${f.id}`} style={{ fontSize: 12, color: 'var(--s-success-text)' }}>resolvido: {f.title}</div>
           ))}
-          {d.newFindings.slice(0, 5).map((f) => (
+          {comparison.newFindings.slice(0, 5).map((f) => (
             <div key={`n${f.id}`} style={{ fontSize: 12, color: 'var(--s-danger-text)' }}>novo: {f.title}</div>
           ))}
         </div>
@@ -111,7 +111,7 @@ function BeforeAfter({ systemId }: { systemId: number }) {
 /**
  * Aba "Reauditoria": pedidos do Claude esperando aprovação, reauditar agora e o antes e depois da última auditoria.
  */
-export function ReauditPanel({ systems, initialSystemId }: { systems: SystemSummaryResponse[]; initialSystemId?: number }) {
+export function ReauditPanel({ systems, initialSystemId }: { systems: ISystemSummaryResponse[]; initialSystemId?: number }) {
   const [systemId, setSystemId] = useState<number | undefined>(initialSystemId ?? systems[0]?.id);
   const [starting, setStarting] = useState(false);
   const system = systems.find((s) => s.id === systemId) ?? null;

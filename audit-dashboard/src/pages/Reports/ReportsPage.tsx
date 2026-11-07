@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { PageShell } from '../../components/PageShell';
 import { SpinnerIcon } from '../../components/StatusIcons';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
-import type { AuditRunResponse, SystemSummaryResponse } from '../../types';
+import type { IAuditRunResponse, ISystemSummaryResponse } from '../../types';
 import { useSystems } from '../../hooks/useSystems';
 import { whenLabel } from '../../utils/timeAgo';
 import {
@@ -16,7 +16,7 @@ import {
   reportTypes,
 } from './reportLinks';
 
-interface ReportHistoryEntry {
+interface IReportHistoryEntry {
   id: string;
   /** Nome pronto ("Executivo · 30 dias"); entradas antigas não têm e são montadas a partir dos campos abaixo */
   title?: string;
@@ -34,14 +34,14 @@ const BASE_URL = import.meta.env.VITE_API_URL || '';
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 const ALL = 'all';
 
-function isHistoryEntry(v: unknown): v is ReportHistoryEntry {
+function isHistoryEntry(v: unknown): v is IReportHistoryEntry {
   if (typeof v !== 'object' || v === null) return false;
-  const e = v as Record<string, unknown>;
-  return ['id', 'systemName', 'generatedAt', 'url'].every((k) => typeof e[k] === 'string');
+  const entry = v as Record<string, unknown>;
+  return ['id', 'systemName', 'generatedAt', 'url'].every((k) => typeof entry[k] === 'string');
 }
 
 /** O histórico vem do localStorage (editável por fora): só entram itens com o formato esperado. */
-function loadHistory(): ReportHistoryEntry[] {
+function loadHistory(): IReportHistoryEntry[] {
   try {
     const dado: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
     return Array.isArray(dado) ? dado.filter(isHistoryEntry) : [];
@@ -50,7 +50,7 @@ function loadHistory(): ReportHistoryEntry[] {
   }
 }
 
-function saveHistory(entries: ReportHistoryEntry[]): void {
+function saveHistory(entries: IReportHistoryEntry[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   } catch {
@@ -59,26 +59,25 @@ function saveHistory(entries: ReportHistoryEntry[]): void {
 }
 
 const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--s-text-3)' } as const;
-const choice = (active: boolean) =>
-  ({
-    all: 'unset',
-    boxSizing: 'border-box',
-    cursor: 'pointer',
-    padding: '10px 12px',
-    border: `1px solid ${active ? '#0f62fe' : 'var(--s-border)'}`,
-    background: active ? 'var(--s-selected)' : 'var(--s-surface)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-  }) as const;
+const choiceBase = {
+  all: 'unset',
+  boxSizing: 'border-box',
+  cursor: 'pointer',
+  padding: '10px 12px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2,
+} as const;
+const choiceIdle = { ...choiceBase, border: '1px solid var(--s-border)', background: 'var(--s-surface)' } as const;
+const choiceActive = { ...choiceBase, border: '1px solid #0f62fe', background: 'var(--s-selected)' } as const;
 const select = { height: 40, padding: '0 12px', border: '1px solid var(--s-border-strong)', background: 'var(--s-surface)', font: 'inherit', fontSize: 14 } as const;
 
 function formatName(f?: ReportFormat): string {
   return f === 'sbom' ? 'SBOM' : f === 'csv' ? 'CSV' : (f ?? 'html').toUpperCase();
 }
 
-function entryTitle(e: ReportHistoryEntry): string {
-  return e.title ?? reportTitle(e.type ?? 'tecnico', e.days ?? 0, e.auditId ?? null);
+function entryTitle(e: IReportHistoryEntry): string {
+  return e.title ?? reportTitle({ type: e.type ?? 'tecnico', days: e.days ?? 0, auditId: e.auditId ?? null });
 }
 
 
@@ -89,7 +88,7 @@ function TypeStep({ type, onPick }: { type: ReportType; onPick: (t: ReportType) 
     <div style={stepColumn}>
       <span style={eyebrow}>1 · Tipo</span>
       {reportTypes.map((t) => (
-        <button key={t.id} type="button" aria-pressed={type === t.id} onClick={() => onPick(t.id)} style={choice(type === t.id)}>
+        <button key={t.id} type="button" aria-pressed={type === t.id} onClick={() => onPick(t.id)} style={type === t.id ? choiceActive : choiceIdle}>
           <span style={{ fontWeight: 600 }}>{t.label}</span>
           <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{t.hint}</span>
         </button>
@@ -98,17 +97,17 @@ function TypeStep({ type, onPick }: { type: ReportType; onPick: (t: ReportType) 
   );
 }
 
-interface SystemStepProps {
-  systems: SystemSummaryResponse[];
+interface ISystemStepProps {
+  systems: ISystemSummaryResponse[];
   scope: string;
   days: ReportPeriod;
-  latest: AuditRunResponse | undefined;
+  latest: IAuditRunResponse | undefined;
   noAudit: boolean;
   onScope: (v: string) => void;
   onDays: (v: ReportPeriod) => void;
 }
 
-function SystemStep({ systems, scope, days, latest, noAudit, onScope, onDays }: SystemStepProps) {
+function SystemStep({ systems, scope, days, latest, noAudit, onScope, onDays }: ISystemStepProps) {
   return (
     <div style={stepColumn}>
       <span style={eyebrow}>2 · Sistema</span>
@@ -148,7 +147,7 @@ function SystemStep({ systems, scope, days, latest, noAudit, onScope, onDays }: 
   );
 }
 
-interface FormatStepProps {
+interface IFormatStepProps {
   formats: ReturnType<typeof formatsFor>;
   format: ReportFormat;
   url: string | null;
@@ -157,12 +156,12 @@ interface FormatStepProps {
   onGenerate: () => void;
 }
 
-function FormatStep({ formats, format, url, waiting, onFormat, onGenerate }: FormatStepProps) {
+function FormatStep({ formats, format, url, waiting, onFormat, onGenerate }: IFormatStepProps) {
   return (
     <div style={stepColumn}>
       <span style={eyebrow}>3 · Formato</span>
       {formats.map((f) => (
-        <button key={f.id} type="button" aria-pressed={format === f.id} onClick={() => onFormat(f.id)} style={{ ...choice(format === f.id), fontWeight: 500 }}>
+        <button key={f.id} type="button" aria-pressed={format === f.id} onClick={() => onFormat(f.id)} style={{ ...(format === f.id ? choiceActive : choiceIdle), fontWeight: 500 }}>
           {f.label}
         </button>
       ))}
@@ -191,7 +190,7 @@ function FormatStep({ formats, format, url, waiting, onFormat, onGenerate }: For
   );
 }
 
-function HistoryRow({ entry: e, fresh }: { entry: ReportHistoryEntry; fresh: boolean }) {
+function HistoryRow({ entry: e, fresh }: { entry: IReportHistoryEntry; fresh: boolean }) {
   return (
     <div
       className="sentinel-linha-hover"
@@ -216,7 +215,7 @@ function HistoryRow({ entry: e, fresh }: { entry: ReportHistoryEntry; fresh: boo
   );
 }
 
-function HistorySection({ history, justAdded, onClear }: { history: ReportHistoryEntry[]; justAdded: string | null; onClear: () => void }) {
+function HistorySection({ history, justAdded, onClear }: { history: IReportHistoryEntry[]; justAdded: string | null; onClear: () => void }) {
   return (
     <section aria-label="Relatórios gerados" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -238,9 +237,9 @@ function HistorySection({ history, justAdded, onClear }: { history: ReportHistor
 
 /** A lista de relatórios gerados fica neste navegador (no máximo 50). */
 function useReportHistory() {
-  const [history, setHistory] = useState<ReportHistoryEntry[]>(loadHistory);
+  const [history, setHistory] = useState<IReportHistoryEntry[]>(loadHistory);
   const [justAdded, setJustAdded] = useState<string | null>(null);
-  const add = (entry: ReportHistoryEntry) => {
+  const add = (entry: IReportHistoryEntry) => {
     const updated = [entry, ...history].slice(0, 50);
     setHistory(updated);
     saveHistory(updated);
@@ -255,7 +254,13 @@ function useReportHistory() {
 }
 
 /** O SBOM some quando deixa de valer (tipo ou escopo mudaram): o formato volta para PDF. */
-function useFormatFallback(formats: ReturnType<typeof formatsFor>, format: ReportFormat, setFormat: (f: ReportFormat) => void) {
+interface IFormatFallbackInput {
+  formats: ReturnType<typeof formatsFor>;
+  format: ReportFormat;
+  setFormat: (f: ReportFormat) => void;
+}
+
+function useFormatFallback({ formats, format, setFormat }: IFormatFallbackInput) {
   useEffect(() => {
     if (!formats.some((f) => f.id === format)) setFormat('pdf');
   }, [formats, format, setFormat]);
@@ -281,7 +286,7 @@ export function ReportsPage() {
   const { systemId, latest, loadingRuns } = useReportTarget(scope);
   const auditId = latest?.id ?? null;
   const formats = formatsFor(type, systemId !== null);
-  useFormatFallback(formats, format, setFormat);
+  useFormatFallback({ formats, format, setFormat });
 
   const url = chosenReportUrl(BASE_URL, { systemId, auditId, type, format, days });
 
@@ -290,7 +295,7 @@ export function ReportsPage() {
     window.open(url, '_blank', 'noreferrer');
     reports.add({
       id: `${scope}-${type}-${format}-${Date.now()}`,
-      title: reportTitle(type, days, auditId),
+      title: reportTitle({ type, days, auditId }),
       systemName: systems?.find((s) => s.id === systemId)?.name ?? 'Todos os sistemas',
       auditId: latest?.id,
       format,

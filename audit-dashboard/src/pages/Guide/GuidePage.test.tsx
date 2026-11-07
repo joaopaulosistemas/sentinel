@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 import * as matchers from 'vitest-axe/matchers';
-import type { GuideResponse } from '../../types';
+import type { IGuideResponse } from '../../types';
 import { GuidePage } from './GuidePage';
 
 expect.extend(matchers);
@@ -15,7 +15,7 @@ declare module 'vitest' {
   }
 }
 
-const GUIDE: GuideResponse = {
+const GUIDE: IGuideResponse = {
   process: [{ title: 'Primeira linha que diz o que mudou', doIt: 'tipo(escopo): descrição.', avoid: 'wip.' }],
   stacks: [
     {

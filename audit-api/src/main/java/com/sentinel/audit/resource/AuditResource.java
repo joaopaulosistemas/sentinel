@@ -1,13 +1,8 @@
 package com.sentinel.audit.resource;
 
 import jakarta.annotation.security.PermitAll;
-import com.sentinel.audit.service.AuditRunMapper;
 import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.CreateAuditRequest;
-import com.sentinel.audit.model.AuditRun;
-import com.sentinel.audit.service.AuditOrchestrationService;
-import com.sentinel.audit.service.AuditRequestService;
-import com.sentinel.audit.service.RunCatalog;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
@@ -27,7 +22,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Endpoint REST para execução e consulta de auditorias.
@@ -40,24 +34,11 @@ import java.util.stream.Collectors;
 @Tag(name = "Audits", description = "Execução e consulta de auditorias de código")
 public class AuditResource {
 
-    private static final int MAX_PAGE_SIZE = 50;
-
-
-    @Inject
-    AuditRunMapper runMapper;
-
-
     /** Meta de nota da organização, a mesma usada pelo dashboard. */
     static final double TARGET_SCORE = 75;
 
     @Inject
-    RunCatalog runCatalog;
-
-    @Inject
-    AuditRequestService requestService;
-
-    @Inject
-    AuditOrchestrationService orchestration;
+    AuditRunViews runViews;
 
     @Inject
     AuditStatusViews statusViews;
@@ -80,9 +61,9 @@ public class AuditResource {
     @Transactional
     @Operation(summary = "Criar auditoria", description = "Dispara uma nova execução de auditoria de forma assíncrona")
     public Response createAudit(@Valid CreateAuditRequest request) {
-        AuditRun run = requestService.request(request.getSystemId(), request.getBranch(), request.getBaseRef(), actor(request.getTriggeredBy()));
-
-        return Response.accepted(runMapper.toResponse(run)).build();
+        AuditRunResponse created = runViews.request(request.getSystemId(), request.getBranch(), request.getBaseRef(),
+                actor(request.getTriggeredBy()));
+        return Response.accepted(created).build();
     }
 
     /** Quem pediu: o usuário autenticado, se houver; senão o que o cliente informou; senão "dashboard". */
@@ -100,8 +81,7 @@ public class AuditResource {
     @GET
     @Operation(summary = "Listar auditorias recentes", description = "Últimas auditorias de todos os sistemas, da mais nova para a mais antiga")
     public List<AuditRunResponse> listRecent(@QueryParam("limit") @DefaultValue("8") int limit) {
-        int size = Math.max(1, Math.min(limit, MAX_PAGE_SIZE));
-        return runCatalog.recent(size).stream().map(runMapper::toResponse).collect(Collectors.toList());
+        return runViews.recent(limit);
     }
 
     /**
@@ -111,13 +91,7 @@ public class AuditResource {
     @Path("/{id}/cancel")
     @Operation(summary = "Cancelar auditoria", description = "Interrompe uma auditoria pendente ou em execução; 409 se ela já terminou")
     public Response cancel(@PathParam("id") Long id) {
-        AuditRun run = runCatalog.require(id);
-        if (!orchestration.cancel(run.getId())) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(java.util.Map.of("message", "A auditoria já terminou e não pode ser cancelada"))
-                    .build();
-        }
-        return Response.accepted(runMapper.toResponse(runCatalog.findOrNull(id))).build();
+        return runViews.cancel(id);
     }
 
     /**
@@ -127,7 +101,6 @@ public class AuditResource {
     @Path("/{id}")
     @Operation(summary = "Buscar auditoria", description = "Retorna o estado atual de uma execução de auditoria")
     public AuditRunResponse getAudit(@PathParam("id") Long id) {
-        AuditRun run = runCatalog.require(id);
-        return runMapper.toResponse(run, true);
+        return runViews.detail(id);
     }
 }

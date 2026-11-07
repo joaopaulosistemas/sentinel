@@ -7,48 +7,55 @@ import { RecentAudits } from '../../components/RecentAudits';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { useRecentAudits } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
-import type { AuditRunResponse, SystemSummaryResponse } from '../../types';
+import type { IAuditRunResponse, ISystemSummaryResponse } from '../../types';
 import { isActiveRun } from '../../utils/auditProgress';
 import { STALE_DAYS, attentionRows, isStale, scoreColor } from '../../utils/systemAttention';
 
 const names = (list: string[]) => (list.length <= 2 ? list.join(', ') : `${list.slice(0, 2).join(', ')} e mais ${list.length - 2}`);
 
-interface Kpi {
+interface IKpi {
   label: string;
   value: number | string;
   color: string;
   note: string;
 }
 
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+const plural = (count: number, forms: { one: string; many: string }) => (count === 1 ? forms.one : forms.many);
+const systemsWord = { one: 'sistema', many: 'sistemas' };
 
-function averageDelta(list: SystemSummaryResponse[]): number | null {
+function averageDelta(list: ISystemSummaryResponse[]): number | null {
   const deltas = list.map((s) => s.scoreDelta).filter((d): d is number => d != null);
   return deltas.length > 0 ? Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length) : null;
 }
 
-function averageScore(list: SystemSummaryResponse[]): number | null {
+function averageScore(list: ISystemSummaryResponse[]): number | null {
   const scores = list.map((s) => s.lastAuditScore).filter((s): s is number => s !== null);
   return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
 }
 
 function averageNote(avgDelta: number | null, total: number): string {
   if (avgDelta !== null && avgDelta !== 0) return `${avgDelta > 0 ? '+' : ''}${avgDelta} desde a auditoria anterior`;
-  return `${total} ${plural(total, 'sistema', 'sistemas')}`;
+  return `${total} ${plural(total, systemsWord)}`;
 }
 
-function criticalKpi(list: SystemSummaryResponse[]): Kpi {
+function criticalKpi(list: ISystemSummaryResponse[]): IKpi {
   const criticalSystems = list.filter((s) => s.openCritical > 0);
   const totalCritical = list.reduce((acc, s) => acc + s.openCritical, 0);
   return {
     label: 'Achados críticos abertos',
     value: totalCritical,
     color: totalCritical > 0 ? 'var(--s-danger-text)' : 'var(--s-success-text)',
-    note: totalCritical > 0 ? `em ${criticalSystems.length} ${plural(criticalSystems.length, 'sistema', 'sistemas')}` : 'nenhum em aberto',
+    note: totalCritical > 0 ? `em ${criticalSystems.length} ${plural(criticalSystems.length, systemsWord)}` : 'nenhum em aberto',
   };
 }
 
-function buildKpis(list: SystemSummaryResponse[], recent: AuditRunResponse[], now: number): Kpi[] {
+interface IKpiInput {
+  list: ISystemSummaryResponse[];
+  recent: IAuditRunResponse[];
+  now: number;
+}
+
+function buildKpis({ list, recent, now }: IKpiInput): IKpi[] {
   const avg = averageScore(list);
   const runningRuns = recent.filter(isActiveRun);
   const staleSystems = list.filter((s) => isStale(s, now));
@@ -73,8 +80,8 @@ function buildKpis(list: SystemSummaryResponse[], recent: AuditRunResponse[], no
 const noticeBox = { background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderLeft: '4px solid var(--s-link)', padding: '12px 16px' } as const;
 
 function OverviewHeader({ list, picked, onPick, onStart }: {
-  list: SystemSummaryResponse[];
-  picked: SystemSummaryResponse | null;
+  list: ISystemSummaryResponse[];
+  picked: ISystemSummaryResponse | null;
   onPick: (id: string) => void;
   onStart: () => void;
 }) {
@@ -113,7 +120,7 @@ function OverviewHeader({ list, picked, onPick, onStart }: {
   );
 }
 
-function StartedNotice({ run }: { run: AuditRunResponse }) {
+function StartedNotice({ run }: { run: IAuditRunResponse }) {
   return (
     <div role="status" style={{ ...noticeBox, display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
       <span>
@@ -142,7 +149,7 @@ function PendingClaudeNotice({ pending }: { pending: ReturnType<typeof usePendin
   );
 }
 
-function KpiGrid({ kpis }: { kpis: Kpi[] }) {
+function KpiGrid({ kpis }: { kpis: IKpi[] }) {
   return (
     <section aria-label="Indicadores" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 1, background: 'var(--s-border)', border: '1px solid var(--s-border)' }}>
       {kpis.map((k) => (
@@ -187,11 +194,11 @@ function AttentionList({ rows }: { rows: ReturnType<typeof attentionRows> }) {
 
 /** O aviso de auditoria iniciada some sozinho; a auditoria continua na lista de baixo. */
 function useStartedNotice() {
-  const [started, setStarted] = useState<AuditRunResponse | null>(null);
+  const [started, setStarted] = useState<IAuditRunResponse | null>(null);
   useEffect(() => {
     if (!started) return undefined;
-    const t = setTimeout(() => setStarted(null), 10_000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setStarted(null), 10_000);
+    return () => clearTimeout(timer);
   }, [started]);
   return [started, setStarted] as const;
 }
@@ -213,9 +220,9 @@ export function OverviewPage() {
   const [pickedId, setPickedId] = useState('');
   const [started, setStarted] = useStartedNotice();
   const pendingClaude = usePendingClaude();
-  const [startTarget, setStartTarget] = useState<SystemSummaryResponse | null>(null);
+  const [startTarget, setStartTarget] = useState<ISystemSummaryResponse | null>(null);
 
-  const list: SystemSummaryResponse[] = systems ?? [];
+  const list: ISystemSummaryResponse[] = systems ?? [];
   const picked = list.find((s) => String(s.id) === pickedId) ?? list[0] ?? null;
 
   if (isLoading) return <DataTableSkeleton columnCount={4} rowCount={5} />;
@@ -227,7 +234,7 @@ export function OverviewPage() {
       <OverviewHeader list={list} picked={picked} onPick={setPickedId} onStart={() => picked && setStartTarget(picked)} />
       {started && <StartedNotice run={started} />}
       <PendingClaudeNotice pending={pendingClaude} />
-      <KpiGrid kpis={buildKpis(list, recent ?? [], now)} />
+      <KpiGrid kpis={buildKpis({ list, recent: recent ?? [], now })} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))', gap: 24, alignItems: 'start' }}>
         <AttentionList rows={attentionRows(list, now)} />
         <RecentAudits />

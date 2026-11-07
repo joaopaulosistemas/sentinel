@@ -32,7 +32,7 @@ export function PageSection({
   );
 }
 
-export interface IndexItem {
+export interface IIndexItem {
   id: string;
   label: string;
   badge?: string;
@@ -60,7 +60,7 @@ function useActiveSection(ids: string[]): [string, (id: string) => void] {
 }
 
 /** Índice fixo ao lado: mostra onde a pessoa está e leva direto a cada seção. */
-export function SectionIndex({ items, label = 'Nesta página' }: { items: IndexItem[]; label?: string }) {
+export function SectionIndex({ items, label = 'Nesta página' }: { items: IIndexItem[]; label?: string }) {
   const [active, setActive] = useActiveSection(items.map((i) => i.id));
   return (
     <nav aria-label={label} className="sentinel-indice">

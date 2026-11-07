@@ -28,32 +28,38 @@ export function formatsFor(type: ReportType, singleSystem = true): typeof report
 }
 
 /** Endereço do relatório. Relativo por padrão, como o resto do dashboard (o nginx/proxy encaminha /api). */
-export function reportUrl(
-  base: string,
-  auditId: number,
-  format: ReportFormat,
-  opts: { type?: ReportType; days?: ReportPeriod } = {},
-): string {
-  const f = reportFormats.find((r) => r.id === format) ?? reportFormats[0];
-  const url = `${base}/api/v1/audits/${auditId}/${f.path}`;
-  if (f.id !== 'html' && f.id !== 'pdf') return url;
+export interface IReportUrlInput {
+  base: string;
+  auditId: number;
+  format: ReportFormat;
+  type?: ReportType;
+  days?: ReportPeriod;
+}
+
+export function reportUrl({ base, auditId, format, type, days }: IReportUrlInput): string {
+  const reportFormat = reportFormats.find((r) => r.id === format) ?? reportFormats[0];
+  const url = `${base}/api/v1/audits/${auditId}/${reportFormat.path}`;
+  if (reportFormat.id !== 'html' && reportFormat.id !== 'pdf') return url;
   const params = new URLSearchParams();
-  if (opts.type && opts.type !== 'tecnico') params.set('type', opts.type);
-  if (opts.type === 'comparativo' && opts.days) params.set('days', String(opts.days));
+  if (type && type !== 'tecnico') params.set('type', type);
+  if (type === 'comparativo' && days) params.set('days', String(days));
   const qs = params.toString();
   return qs ? `${url}?${qs}` : url;
 }
 
 /** Relatório de todos os sistemas (ou de um só, quando a planilha não é do técnico). */
-export function portfolioUrl(
-  base: string,
-  type: ReportType,
-  format: Exclude<ReportFormat, 'sbom'>,
-  opts: { days?: ReportPeriod; systemId?: number } = {},
-): string {
+export interface IPortfolioUrlInput {
+  base: string;
+  type: ReportType;
+  format: Exclude<ReportFormat, 'sbom'>;
+  days?: ReportPeriod;
+  systemId?: number;
+}
+
+export function portfolioUrl({ base, type, format, days, systemId }: IPortfolioUrlInput): string {
   const params = new URLSearchParams({ type, format });
-  if (opts.days) params.set('days', String(opts.days));
-  if (opts.systemId) params.set('systemId', String(opts.systemId));
+  if (days) params.set('days', String(days));
+  if (systemId) params.set('systemId', String(systemId));
   return `${base}/api/v1/reports/portfolio?${params.toString()}`;
 }
 
@@ -67,16 +73,16 @@ export function chosenReportUrl(
 ): string | null {
   const { systemId, auditId, type, format, days } = choice;
   if (systemId === null) {
-    return format === 'sbom' ? null : portfolioUrl(base, type, format, { days });
+    return format === 'sbom' ? null : portfolioUrl({ base, type, format, days });
   }
-  if (format === 'csv' && type !== 'tecnico') return portfolioUrl(base, type, 'csv', { days, systemId });
-  return auditId ? reportUrl(base, auditId, format, { type, days }) : null;
+  if (format === 'csv' && type !== 'tecnico') return portfolioUrl({ base, type, format: 'csv', days, systemId });
+  return auditId ? reportUrl({ base, auditId, format, type, days }) : null;
 }
 
 const periodNames: Record<ReportPeriod, string> = { 7: '7 dias', 30: '30 dias', 90: 'trimestre', 0: 'todo o histórico' };
 
 /** Nome do relatório na lista: "Executivo · 30 dias", "Técnico · auditoria #214". */
-export function reportTitle(type: ReportType, days: ReportPeriod, auditId: number | null): string {
+export function reportTitle({ type, days, auditId }: { type: ReportType; days: ReportPeriod; auditId: number | null }): string {
   const label = reportTypes.find((t) => t.id === type)?.label ?? 'Técnico';
   if (type === 'tecnico') return `${label} · ${auditId ? `auditoria #${auditId}` : 'últimas auditorias'}`;
   return `${label} · ${periodNames[days]}`;

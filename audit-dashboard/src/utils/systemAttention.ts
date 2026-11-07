@@ -1,11 +1,11 @@
-import type { SystemSummaryResponse } from '../types';
+import type { ISystemSummaryResponse } from '../types';
 import { TARGET_SCORE, scoreColor as bandColor } from './scoreBand';
 
 /** Depois de quantos dias sem auditar um sistema passa a pedir atenção. */
 export const STALE_DAYS = 5;
 
-export interface AttentionItem {
-  system: SystemSummaryResponse;
+export interface IAttentionItem {
+  system: ISystemSummaryResponse;
   reasons: string[];
   /** Quanto maior, mais urgente; usado só para ordenar. */
   weight: number;
@@ -14,20 +14,20 @@ export interface AttentionItem {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Dias desde a última auditoria concluída; nulo se nunca foi auditado. */
-export function daysSinceAudit(system: Pick<SystemSummaryResponse, 'lastAuditDate'>, now: number): number | null {
+export function daysSinceAudit(system: Pick<ISystemSummaryResponse, 'lastAuditDate'>, now: number): number | null {
   if (!system.lastAuditDate) return null;
-  const t = Date.parse(system.lastAuditDate);
-  return Number.isNaN(t) ? null : Math.max(0, Math.floor((now - t) / DAY_MS));
+  const auditTimestamp = Date.parse(system.lastAuditDate);
+  return Number.isNaN(auditTimestamp) ? null : Math.max(0, Math.floor((now - auditTimestamp) / DAY_MS));
 }
 
-export const isStale = (system: SystemSummaryResponse, now: number) => {
+export const isStale = (system: ISystemSummaryResponse, now: number) => {
   const days = daysSinceAudit(system, now);
   return days === null || days > STALE_DAYS;
 };
 
 /** Sistemas que pedem uma ação, do mais urgente ao menos: críticos abertos, nota abaixo da meta, auditoria antiga. */
-export function systemsNeedingAttention(systems: SystemSummaryResponse[], now: number): AttentionItem[] {
-  const items: AttentionItem[] = [];
+export function systemsNeedingAttention(systems: ISystemSummaryResponse[], now: number): IAttentionItem[] {
+  const items: IAttentionItem[] = [];
   for (const system of systems) {
     const reasons: string[] = [];
     let weight = 0;
@@ -52,8 +52,8 @@ export function systemsNeedingAttention(systems: SystemSummaryResponse[], now: n
   return items.sort((a, b) => b.weight - a.weight || a.system.name.localeCompare(b.system.name));
 }
 
-export interface AttentionRow {
-  system: SystemSummaryResponse;
+export interface IAttentionRow {
+  system: ISystemSummaryResponse;
   /** Nulo quando nunca foi auditado */
   score: number | null;
   reason: string;
@@ -64,13 +64,19 @@ const points = (n: number) => `${n} ${n === 1 ? 'ponto' : 'pontos'}`;
 /** Cor da nota: ver `scoreBand` (régua única). */
 export const scoreColor = (n: number | null) => bandColor(n);
 
-function attentionReason(system: SystemSummaryResponse, lastScore: number | null, now: number): string {
-  if (lastScore === null) return 'nunca auditado';
-  const critical = system.openCritical > 0 ? `${system.openCritical} ${system.openCritical === 1 ? 'crítico' : 'críticos'}` : 'Sem críticos';
-  return `${critical} · ${auditDetail(system, lastScore, now)}`;
+interface IAuditContext {
+  system: ISystemSummaryResponse;
+  now: number;
 }
 
-function auditDetail(system: SystemSummaryResponse, lastScore: number, now: number): string {
+function attentionReason({ system, now }: IAuditContext): string {
+  const lastScore = system.lastAuditScore;
+  if (lastScore === null) return 'nunca auditado';
+  const critical = system.openCritical > 0 ? `${system.openCritical} ${system.openCritical === 1 ? 'crítico' : 'críticos'}` : 'Sem críticos';
+  return `${critical} · ${auditDetail({ system, now }, lastScore)}`;
+}
+
+function auditDetail({ system, now }: IAuditContext, lastScore: number): string {
   const days = daysSinceAudit(system, now);
   if (days !== null && days > STALE_DAYS) return `não é auditado há ${days} dias`;
   const delta = system.scoreDelta == null ? 0 : Math.round(system.scoreDelta);
@@ -82,12 +88,12 @@ function auditDetail(system: SystemSummaryResponse, lastScore: number, now: numb
  * Todos os sistemas do menor para o maior nota (nunca auditados primeiro), cada um com o motivo em uma linha:
  * críticos abertos, e depois o dado mais relevante (auditoria velha, variação da nota ou meta).
  */
-export function attentionRows(systems: SystemSummaryResponse[], now: number): AttentionRow[] {
+export function attentionRows(systems: ISystemSummaryResponse[], now: number): IAttentionRow[] {
   return systems
-    .map((system): AttentionRow => ({
+    .map((system): IAttentionRow => ({
       system,
       score: system.lastAuditScore === null ? null : Math.round(system.lastAuditScore),
-      reason: attentionReason(system, system.lastAuditScore, now),
+      reason: attentionReason({ system, now }),
     }))
     .sort((a, b) => (a.score ?? -1) - (b.score ?? -1) || a.system.name.localeCompare(b.system.name));
 }

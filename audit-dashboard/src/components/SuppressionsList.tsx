@@ -9,17 +9,17 @@ const reasonLabels: Record<SuppressionReason, string> = {
   WONT_FIX: 'Não será corrigido',
 };
 
-type Suppression = NonNullable<ReturnType<typeof useSuppressions>['data']>[number];
+type ISuppression = NonNullable<ReturnType<typeof useSuppressions>['data']>[number];
 
 function dateLabel(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR');
 }
 
-function validityLabel(s: Suppression): string {
+function validityLabel(s: ISuppression): string {
   return s.expiresAt ? ` · válido até ${dateLabel(s.expiresAt)}` : ' · sem prazo';
 }
 
-function SuppressionRow({ s, disabled, onReopen }: { s: Suppression; disabled: boolean; onReopen: () => void }) {
+function SuppressionRow({ s, disabled, onReopen }: { s: ISuppression; disabled: boolean; onReopen: () => void }) {
   return (
     <div
       className="sentinel-linha-hover"

@@ -8,7 +8,7 @@
   "voltasNaBranch": 6,
   "voltasSemGanhoSeguidas": 0,
   "limiteVoltasPorBranch": 6,
-  "ultimoPrMesclado": "#142",
+  "ultimoPrMesclado": "#149",
   "gabaritosValidacao": [],
   "conjuntosSha256": "67414a4ba70567666469fcd08b38e6c168b7cb1b46cbd6ce584668e00f41a3e7",
   "pendencias": [
@@ -20,12 +20,13 @@
     "Android sem regra para: sendBroadcast implícito com dados sensíveis (CWE-927), PendingIntent/redirect de Intent, log de objeto com credencial ou cartão (CWE-532, LogActivity do DIVA), readObject com efeito colateral, IntentService com caminho vindo de extra, credencial gravada em armazenamento externo (CWE-922, InsecureDataStorage4 do DIVA), arquivo em dataDir com setReadable(true)",
     "Volta 16 sem linha de Generalização completa (sem gabarito de validação por fonte pública, sem Benchmark local, sem amostra de 20 achados)",
     "Java em scriptlet de JSP (SQL em adminlogin.jsp, ProcessBuilder em ping.jsp, ObjectInputStream em preferences.jsp) não é analisado pelo Opengrep; upload sem validação (AvatarUpload) e JWT sem verificação de assinatura sem regra",
-    "Pedido do João (06/11): depois do merge da branch, revisão profunda dos YAML de regras em busca de conflitos entre regras, com relatório e propostas",
     "Biblioteca embutida sem cabeçalho nem marca no nome (support.css, *.templates.xml do OpenUI5) segue inflando Stylelint/jscpd; <access origin=\"*\"> do Cordova (config.xml) sem regra",
     "vucsa: IDOR em leitura de documento por id (CWE-639), enumeração de usuário por status distinto (CWE-204) e papel de acesso vertical fixo (CWE-269) sem regra: falhas lógicas, fora do alcance de padrão sintático; hash de senha SHA-256 sem salt sem regra",
     "dvws-node: XXE por parser XML próprio (vulnerable-xml.js, xmldom + entidades resolvidas à mão) e SSRF em callback de XML-RPC (needle.get(params.toString())) sem regra; IDOR, rate limit, introspecção/batching GraphQL são falhas lógicas fora do alcance de padrão",
     "SecExample: CSRF sem proteção (sem Spring Security) e fastjson JSON.parseObject em @RequestBody sem regra de código (versão vulnerável só pelo Trivy, CVE); gabarito vale como meta",
     "allsafe-android: DexClassLoader e credencial literal em Kotlin (regras são de sintaxe Java), token fixo em addQueryParameter, FLAG_SECURE ausente sem regra",
-    "OAuth-2.0-Applications: redirect/escopo/expiração de código OAuth, segredos sem hash em modelo Mongoose, IDOR/enumeração e segredo em config.json sem regra; sentinel-node-math-random-segredo reporta duas vezes a mesma linha; 2 achados novos no NodeGoat (281 vs 279) não conferidos"
+    "OAuth-2.0-Applications: redirect/escopo/expiração de código OAuth, segredos sem hash em modelo Mongoose, IDOR/enumeração e segredo em config.json sem regra; sentinel-node-math-random-segredo reporta duas vezes a mesma linha; 2 achados novos no NodeGoat (281 vs 279) não conferidos",
+    "Ligar scripts/verificar-regras.py ao CI (exige mexer em .github/, decisão do João)",
+    "Fontes de taint Java copiadas em ~10 regras (item G do relatório de conflitos) e peso do estilo (tsp-*, cct-*) na nota (item I, decisão de produto)"
   ]
 }

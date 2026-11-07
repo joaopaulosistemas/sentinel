@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import type { McpCall } from '../types';
+import type { IMcpCall } from '../types';
 import { McpStatusStrip } from './McpStatusStrip';
 
-const call = (tool: string, ok = true): McpCall => ({ tool, ok, durationMs: 9, detail: ok ? null : 'chave inválida', at: new Date().toISOString().slice(0, 19) });
+const call = (tool: string, ok = true): IMcpCall => ({ tool, ok, durationMs: 9, detail: ok ? null : 'chave inválida', at: new Date().toISOString().slice(0, 19) });
 
 function strip(props: Partial<Parameters<typeof McpStatusStrip>[0]>) {
   return render(

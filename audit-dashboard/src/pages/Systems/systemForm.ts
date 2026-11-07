@@ -1,4 +1,4 @@
-import type { LocalSnapshot, ScheduleRequest, SourceType, Stack, SystemRequest, SystemSummaryResponse } from '../../types';
+import type { LocalSnapshot, IScheduleRequest, SourceType, Stack, ISystemRequest, ISystemSummaryResponse } from '../../types';
 
 export const stackOptions: Array<{ value: Stack; label: string }> = [
   { value: 'JAVA', label: 'Java' },
@@ -9,7 +9,7 @@ export const stackOptions: Array<{ value: Stack; label: string }> = [
   { value: 'MIXED', label: 'Misto' },
 ];
 
-export interface SystemFormValues {
+export interface ISystemFormValues {
   name: string;
   sourceType: SourceType;
   repoUrl: string;
@@ -46,7 +46,7 @@ export interface SystemFormValues {
   notifyPublicUrl: string;
 }
 
-export const emptyForm: SystemFormValues = {
+export const emptyForm: ISystemFormValues = {
   name: '',
   sourceType: 'GIT_URL',
   repoUrl: '',
@@ -73,13 +73,13 @@ export const emptyForm: SystemFormValues = {
   notifyPublicUrl: '',
 };
 
-type FormPart<K extends keyof SystemFormValues> = Pick<SystemFormValues, K>;
+type FormPart<K extends keyof ISystemFormValues> = Pick<ISystemFormValues, K>;
 
-export function formFrom(system: SystemSummaryResponse): SystemFormValues {
+export function formFrom(system: ISystemSummaryResponse): ISystemFormValues {
   return { ...identityFrom(system), ...scheduleFrom(system), ...gitFrom(system), ...notifyFrom(system) };
 }
 
-function identityFrom(system: SystemSummaryResponse): FormPart<
+function identityFrom(system: ISystemSummaryResponse): FormPart<
   'name' | 'sourceType' | 'repoUrl' | 'localPath' | 'localSnapshot' | 'stack' | 'team' | 'description' | 'profile'
 > {
   return {
@@ -95,7 +95,7 @@ function identityFrom(system: SystemSummaryResponse): FormPart<
   };
 }
 
-function scheduleFrom(system: SystemSummaryResponse): FormPart<'auditIntervalHours' | 'scheduledBranch' | 'auditOnPush'> {
+function scheduleFrom(system: ISystemSummaryResponse): FormPart<'auditIntervalHours' | 'scheduledBranch' | 'auditOnPush'> {
   return {
     auditIntervalHours: system.auditIntervalHours ?? 0,
     scheduledBranch: system.scheduledBranch ?? '',
@@ -105,7 +105,7 @@ function scheduleFrom(system: SystemSummaryResponse): FormPart<'auditIntervalHou
 
 /** Segredos nunca voltam da API: os campos de digitação começam vazios. */
 function gitFrom(
-  system: SystemSummaryResponse,
+  system: ISystemSummaryResponse,
 ): FormPart<'gitToken' | 'gitTokenHosts' | 'clearGitToken' | 'gitHistoryDepth' | 'webhookSecret' | 'clearWebhookSecret'> {
   return {
     gitToken: '',
@@ -118,7 +118,7 @@ function gitFrom(
 }
 
 function notifyFrom(
-  system: SystemSummaryResponse,
+  system: ISystemSummaryResponse,
 ): FormPart<'notifyUrl' | 'clearNotifyUrl' | 'notifyFormat' | 'notifyMinScoreDrop' | 'notifyMinSeverity' | 'notifyPublicUrl'> {
   return {
     notifyUrl: '',
@@ -138,7 +138,7 @@ function isRepoUrl(value: string): boolean {
   return REPO_URL_PADRAO.test(value) || REPO_URL_COM_PORTA.test(value);
 }
 
-export interface FormErrors {
+export interface IFormErrors {
   name?: string;
   repoUrl?: string;
   localPath?: string;
@@ -168,17 +168,21 @@ function isWebhookUrl(value: string): boolean {
 
 export const BRANCH_NAME = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 export const MAX_INTERVAL_HOURS = 720;
+const MAX_NAME_LENGTH = 255;
+const MAX_LOCAL_PATH_LENGTH = 500;
+const MAX_GIT_HISTORY_DEPTH = 5000;
+const MAX_SCORE_DROP = 100;
 
 function validateName(name: string): string | undefined {
   if (name.trim() === '') return 'Informe o nome do sistema';
-  if (name.length > 255) return 'No máximo 255 caracteres';
+  if (name.length > MAX_NAME_LENGTH) return 'No máximo 255 caracteres';
   return undefined;
 }
 
 function validateLocalPath(raw: string): string | undefined {
   const path = raw.trim();
   if (path === '') return 'Informe a pasta do projeto';
-  if (path.length > 500) return 'No máximo 500 caracteres';
+  if (path.length > MAX_LOCAL_PATH_LENGTH) return 'No máximo 500 caracteres';
   if (path.split(/[\\/]/).includes('..')) return 'Não use ".." no caminho';
   return undefined;
 }
@@ -190,40 +194,52 @@ function validateRepoUrl(raw: string): string | undefined {
   return undefined;
 }
 
-function outOfRange(value: number, max: number, integer: boolean): boolean {
+interface IRangeCheck {
+  value: number;
+  max: number;
+  integer: boolean;
+}
+
+function outOfRange({ value, max, integer }: IRangeCheck): boolean {
   return (integer && !Number.isInteger(value)) || !Number.isFinite(value) || value < 0 || value > max;
 }
 
-function validateOptional(raw: string, isValid: (value: string) => boolean, message: string): string | undefined {
+interface IOptionalCheck {
+  raw: string;
+  isValid: (value: string) => boolean;
+  message: string;
+}
+
+function validateOptional({ raw, isValid, message }: IOptionalCheck): string | undefined {
   const value = raw.trim();
   return value !== '' && !isValid(value) ? message : undefined;
 }
 
-function validateSchedule(values: SystemFormValues): FormErrors {
+function validateSchedule(values: ISystemFormValues): IFormErrors {
   return {
-    scheduledBranch: validateOptional(values.scheduledBranch, (v) => BRANCH_NAME.test(v), 'Nome de branch inválido'),
-    auditIntervalHours: outOfRange(values.auditIntervalHours, MAX_INTERVAL_HOURS, true)
+    scheduledBranch: validateOptional({ raw: values.scheduledBranch, isValid: (v) => BRANCH_NAME.test(v), message: 'Nome de branch inválido' }),
+    auditIntervalHours: outOfRange({ value: values.auditIntervalHours, max: MAX_INTERVAL_HOURS, integer: true })
       ? `Use um número de 0 a ${MAX_INTERVAL_HOURS} horas`
       : undefined,
-    gitTokenHosts: validateOptional(
-      values.gitTokenHosts,
-      isHostList,
-      'Use nomes de host separados por vírgula, por exemplo github.com, git.empresa.com',
-    ),
-    gitHistoryDepth: outOfRange(values.gitHistoryDepth, 5000, true) ? 'Use um número inteiro de 0 a 5000' : undefined,
+    gitTokenHosts: validateOptional({
+      raw: values.gitTokenHosts,
+      isValid: isHostList,
+      message: 'Use nomes de host separados por vírgula, por exemplo github.com, git.empresa.com',
+    }),
+    gitHistoryDepth: outOfRange({ value: values.gitHistoryDepth, max: MAX_GIT_HISTORY_DEPTH, integer: true }) ? 'Use um número inteiro de 0 a 5000' : undefined,
   };
 }
 
-function validateNotify(values: SystemFormValues): FormErrors {
+function validateNotify(values: ISystemFormValues): IFormErrors {
   return {
-    notifyUrl: validateOptional(values.notifyUrl, isWebhookUrl, 'Use o endereço https:// do webhook do Teams ou do Slack'),
-    notifyMinScoreDrop: outOfRange(values.notifyMinScoreDrop, 100, false) ? 'Use um número de 0 a 100' : undefined,
-    notifyPublicUrl: validateOptional(values.notifyPublicUrl, (v) => /^https?:\/\/\S+$/.test(v), 'Use um endereço http:// ou https://'),
+    notifyUrl: validateOptional({ raw: values.notifyUrl, isValid: isWebhookUrl, message: 'Use o endereço https:// do webhook do Teams ou do Slack' }),
+    notifyMinScoreDrop: outOfRange({ value: values.notifyMinScoreDrop, max: MAX_SCORE_DROP, integer: false }) ? 'Use um número de 0 a 100' : undefined,
+    notifyPublicUrl: validateOptional({ raw: values.notifyPublicUrl, isValid: (v) => /^https?:\/\/\S+$/.test(v), message: 'Use um endereço http:// ou https://' }),
   };
 }
 
-export function validate(values: SystemFormValues): FormErrors {
-  const all: FormErrors = {
+export function validate(values: ISystemFormValues): IFormErrors {
+  const all: IFormErrors = {
     name: validateName(values.name),
     ...(values.sourceType === 'LOCAL_PATH'
       ? { localPath: validateLocalPath(values.localPath) }
@@ -232,7 +248,7 @@ export function validate(values: SystemFormValues): FormErrors {
     ...validateNotify(values),
   };
   // só as chaves com erro (os testes e a tela usam toEqual({}) / chave ausente)
-  return Object.fromEntries(Object.entries(all).filter(([, message]) => message !== undefined)) as FormErrors;
+  return Object.fromEntries(Object.entries(all).filter(([, message]) => message !== undefined)) as IFormErrors;
 }
 
 export const notifyFormats = [
@@ -248,13 +264,13 @@ export const notifySeverities = [
   { value: 'LOW', label: 'Baixa' },
 ];
 
-export function toRequest(values: SystemFormValues): SystemRequest {
+export function toRequest(values: ISystemFormValues): ISystemRequest {
   return { ...requestIdentity(values), ...requestGit(values), ...requestNotify(values) };
 }
 
 function requestIdentity(
-  values: SystemFormValues,
-): Pick<SystemRequest, 'name' | 'description' | 'stack' | 'team'> & Partial<SystemRequest> {
+  values: ISystemFormValues,
+): Pick<ISystemRequest, 'name' | 'description' | 'stack' | 'team'> & Partial<ISystemRequest> {
   const local = values.sourceType === 'LOCAL_PATH';
   return {
     name: values.name.trim(),
@@ -270,7 +286,7 @@ function requestIdentity(
 }
 
 /** Segredo digitado agora é enviado; "limpar" só vale se nada novo foi digitado. */
-function requestGit(values: SystemFormValues): Partial<SystemRequest> {
+function requestGit(values: ISystemFormValues): Partial<ISystemRequest> {
   const token = values.gitToken.trim();
   const secret = values.webhookSecret.trim();
   return {
@@ -283,7 +299,7 @@ function requestGit(values: SystemFormValues): Partial<SystemRequest> {
   };
 }
 
-function requestNotify(values: SystemFormValues): Partial<SystemRequest> {
+function requestNotify(values: ISystemFormValues): Partial<ISystemRequest> {
   const url = values.notifyUrl.trim();
   return {
     ...(url ? { notifyUrl: url } : {}),
@@ -295,7 +311,7 @@ function requestNotify(values: SystemFormValues): Partial<SystemRequest> {
   };
 }
 
-export function toSchedule(values: SystemFormValues): ScheduleRequest {
+export function toSchedule(values: ISystemFormValues): IScheduleRequest {
   return {
     auditIntervalHours: values.auditIntervalHours,
     branch: values.scheduledBranch.trim(),
@@ -312,7 +328,7 @@ export function newWebhookSecret(): string {
 }
 
 /** O agendamento só precisa ser enviado se mudou (ou se o sistema é novo e foi configurado). */
-export function scheduleChanged(values: SystemFormValues, system: SystemSummaryResponse | null): boolean {
+export function scheduleChanged(values: ISystemFormValues, system: ISystemSummaryResponse | null): boolean {
   if (system === null) return values.auditIntervalHours > 0 || values.scheduledBranch.trim() !== '' || values.auditOnPush;
   return (
     values.auditIntervalHours !== (system.auditIntervalHours ?? 0) ||
@@ -322,7 +338,7 @@ export function scheduleChanged(values: SystemFormValues, system: SystemSummaryR
 }
 
 /** Texto curto do agendamento para a lista: "a cada 24 h · main · push", "a cada push · main" ou "manual". */
-export function scheduleText(s: Pick<SystemSummaryResponse, 'auditIntervalHours' | 'scheduledBranch' | 'auditOnPush'>): string {
+export function scheduleText(s: Pick<ISystemSummaryResponse, 'auditIntervalHours' | 'scheduledBranch' | 'auditOnPush'>): string {
   const parts: string[] = [];
   if (s.auditIntervalHours) parts.push(`a cada ${s.auditIntervalHours} h`);
   else if (s.auditOnPush) parts.push('a cada push');
@@ -333,7 +349,7 @@ export function scheduleText(s: Pick<SystemSummaryResponse, 'auditIntervalHours'
 }
 
 /** Texto de origem na lista: "org/repo" ou "pasta: caminho". */
-export function sourceText(s: Pick<SystemSummaryResponse, 'sourceType' | 'repoUrl' | 'localPath'>): string {
+export function sourceText(s: Pick<ISystemSummaryResponse, 'sourceType' | 'repoUrl' | 'localPath'>): string {
   return s.sourceType === 'LOCAL_PATH' ? `pasta: ${s.localPath ?? ''}` : repoSlug(s.repoUrl);
 }
 

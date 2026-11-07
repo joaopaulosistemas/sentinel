@@ -27,12 +27,6 @@ public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer>
 
     public static final SystemTuning EMPTY = new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), Set.of(), Set.of());
 
-    /** Sem lados desligados (forma que existia antes do campo {@code disableSides}). */
-    public SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer> thresholds, Set<String> enablePacks,
-                        Set<String> disablePacks, Set<String> disableAnalyzers, Set<String> ignorePaths) {
-        this(rules, thresholds, enablePacks, disablePacks, disableAnalyzers, ignorePaths, Set.of());
-    }
-
     /** Sem caminhos ignorados (forma que existia antes do campo {@code ignorePaths}). */
     public SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer> thresholds, Set<String> enablePacks,
                         Set<String> disablePacks, Set<String> disableAnalyzers) {

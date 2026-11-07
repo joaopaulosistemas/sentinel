@@ -1,21 +1,24 @@
-interface ScoreGaugeProps {
+interface IScoreGaugeProps {
   score: number | null;
   size?: 'sm' | 'lg';
 }
 
+const CRITICAL_SCORE_LIMIT = 40;
+const REGULAR_SCORE_LIMIT = 70;
+
 function getScoreColor(score: number): string {
-  if (score < 40) return '#da1e28'; // red-60
-  if (score < 70) return '#f1c21b'; // yellow-30
+  if (score < CRITICAL_SCORE_LIMIT) return '#da1e28'; // red-60
+  if (score < REGULAR_SCORE_LIMIT) return '#f1c21b'; // yellow-30
   return '#24a148'; // green-50
 }
 
 function getScoreLabel(score: number): string {
-  if (score < 40) return 'Crítico';
-  if (score < 70) return 'Regular';
+  if (score < CRITICAL_SCORE_LIMIT) return 'Crítico';
+  if (score < REGULAR_SCORE_LIMIT) return 'Regular';
   return 'Bom';
 }
 
-export function ScoreGauge({ score, size = 'lg' }: ScoreGaugeProps) {
+export function ScoreGauge({ score, size = 'lg' }: IScoreGaugeProps) {
   if (score === null) {
     return (
       <div style={{ textAlign: 'center', color: 'var(--s-text-4)' }}>

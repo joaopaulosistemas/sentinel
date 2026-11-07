@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { AuditRunResponse } from '../types';
+import type { IAuditRunResponse } from '../types';
 
 const POLL_MS = 3000;
 
-const isActive = (run: AuditRunResponse) => run.status === 'PENDING' || run.status === 'RUNNING';
+const isActive = (run: IAuditRunResponse) => run.status === 'PENDING' || run.status === 'RUNNING';
 
 export function useAuditRuns(systemId: number) {
   return useQuery({
@@ -34,7 +34,13 @@ export function useAudit(id: number) {
   });
 }
 
-export function useScoreExplanation(auditId: number, enabled: boolean, without: string[]) {
+interface IScoreExplanationInput {
+  auditId: number;
+  enabled: boolean;
+  without: string[];
+}
+
+export function useScoreExplanation({ auditId, enabled, without }: IScoreExplanationInput) {
   return useQuery({
     queryKey: ['scoreExplanation', auditId, without],
     queryFn: () => api.getScoreExplanation(auditId, without),
@@ -43,7 +49,12 @@ export function useScoreExplanation(auditId: number, enabled: boolean, without: 
   });
 }
 
-export function useFixPlan(auditId: number, enabled: boolean) {
+interface IFixPlanInput {
+  auditId: number;
+  enabled: boolean;
+}
+
+export function useFixPlan({ auditId, enabled }: IFixPlanInput) {
   return useQuery({
     queryKey: ['fixPlan', auditId],
     queryFn: () => api.getFixPlan(auditId),

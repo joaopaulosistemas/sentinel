@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import type { EnginePackState } from '../types';
-import type { RuleRow } from './ruleCatalog';
+import type { IEnginePackState } from '../types';
+import type { IRuleRow } from './ruleCatalog';
 import { analyzersBySide, familyOf, familyTabs, groupPacks, hiddenAdjustedCount, limitSide, packsBySide, presetOf, rowsOfActivePacks, ruleCountByPack, sideIsOff, sideOfPack, sideOfRule, sideTotals, sidesOffOf } from './ruleFamilies';
 
-const pack = (id: string): EnginePackState => ({ id, name: id, description: null, inProfile: true, active: true });
-const row = (id: string, pack: string | null, category: string | null, count = 0): RuleRow => ({ id, title: null, pack, declared: null, category, count, gain: null, inProfile: false });
+const pack = (id: string): IEnginePackState => ({ id, name: id, description: null, inProfile: true, active: true });
+interface IRowFields {
+  id: string;
+  pack: string | null;
+  category: string | null;
+  count?: number;
+}
+const row = ({ id, pack, category, count = 0 }: IRowFields): IRuleRow => ({ id, title: null, pack, declared: null, category, count, gain: null, inProfile: false });
 
 describe('ruleFamilies', () => {
   it('classifica os pacotes conhecidos por lado e manda o resto para transversais', () => {
@@ -36,7 +42,7 @@ describe('ruleFamilies', () => {
   });
 
   it('monta uma aba por família, na ordem do peso na nota e com "Sem família" no fim', () => {
-    const rows = [row('a', 'p', 'quality', 2), row('b', 'p', null), row('c', 'p', 'security'), row('d', 'p', 'security', 1), row('e', 'p', 'zeta')];
+    const rows = [row({ id: 'a', pack: 'p', category: 'quality', count: 2 }), row({ id: 'b', pack: 'p', category: null }), row({ id: 'c', pack: 'p', category: 'security' }), row({ id: 'd', pack: 'p', category: 'security', count: 1 }), row({ id: 'e', pack: 'p', category: 'zeta' })];
     const tabs = familyTabs(rows, new Set(['c']));
     expect(tabs.map((t) => t.key)).toEqual(['security', 'quality', 'zeta', 'none']);
     expect(tabs[0]).toMatchObject({ name: 'Segurança', total: 2, seen: 1, adjusted: 1 });
@@ -44,14 +50,14 @@ describe('ruleFamilies', () => {
   });
 
   it('esconde as regras de pacote desligado, mas mantém as sem pacote ou de pacote desconhecido', () => {
-    const rows = [row('a', 'on', 'quality'), row('b', 'off', 'quality'), row('c', null, null), row('d', 'fora-da-lista', null)];
+    const rows = [row({ id: 'a', pack: 'on', category: 'quality' }), row({ id: 'b', pack: 'off', category: 'quality' }), row({ id: 'c', pack: null, category: null }), row({ id: 'd', pack: 'fora-da-lista', category: null })];
     const packs = { on: true, off: false };
     expect(rowsOfActivePacks(rows, packs).map((r) => r.id)).toEqual(['a', 'c', 'd']);
-    expect(hiddenAdjustedCount(rows, packs, new Set(['b', 'a']))).toBe(1);
+    expect(hiddenAdjustedCount({ rows, packs, adjustedIds: new Set(['b', 'a']) })).toBe(1);
   });
 
   describe('lado da regra', () => {
-    const c = (id: string, packId: string, side?: 'back' | 'front' | 'common') => ({ id, pack: packId, message: null, severity: null, category: null, side });
+    const c = ({ id, packId, side }: { id: string; packId: string; side?: 'back' | 'front' | 'common' }) => ({ id, pack: packId, message: null, severity: null, category: null, side });
 
     it('usa o lado da API e, sem ele, o do pacote', () => {
       expect(sideOfRule({ side: 'front', pack: 'core-security' })).toBe('front');
@@ -61,12 +67,12 @@ describe('ruleFamilies', () => {
     });
 
     it('conta as regras por lado', () => {
-      expect(sideTotals([c('a', 'p', 'back'), c('b', 'p', 'back'), c('c', 'q', 'front'), c('d', 'r', 'common')])).toEqual({ back: 2, front: 1, common: 1 });
+      expect(sideTotals([c({ id: 'a', packId: 'p', side: 'back' }), c({ id: 'b', packId: 'p', side: 'back' }), c({ id: 'c', packId: 'q', side: 'front' }), c({ id: 'd', packId: 'r', side: 'common' })])).toEqual({ back: 2, front: 1, common: 1 });
       expect(sideTotals(undefined)).toEqual({ back: 0, front: 0, common: 0 });
     });
 
     it('um pacote misto aparece nos dois lados com a contagem de cada um', () => {
-      const catalog = [c('a', 'core-security', 'back'), c('b', 'core-security', 'back'), c('c', 'core-security', 'front'), c('d', 'core-iac', 'common')];
+      const catalog = [c({ id: 'a', packId: 'core-security', side: 'back' }), c({ id: 'b', packId: 'core-security', side: 'back' }), c({ id: 'c', packId: 'core-security', side: 'front' }), c({ id: 'd', packId: 'core-iac', side: 'common' })];
       const groups = packsBySide([pack('core-security'), pack('core-iac')], catalog);
       expect(groups.map((g) => g.title)).toEqual(['Back-end', 'Front-end', 'Infra e comum']);
       expect(groups[0].packs[0]).toMatchObject({ count: 2, others: [{ side: 'front', count: 1 }] });

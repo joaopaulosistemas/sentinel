@@ -4,18 +4,22 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SystemsPage } from './SystemsPage';
 
-function renderPage(check: unknown, systems: unknown[] = [], url = '/') {
+function isMcpCallsUrl(requestUrl: string): boolean {
+  return requestUrl.includes('/mcp-access/') && requestUrl.includes('/calls');
+}
+
+function renderPage(check: unknown, { systems = [], url = '/' }: { systems?: unknown[]; url?: string } = {}) {
   const calls: Array<{ url: string; method: string; body?: string }> = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
-      calls.push({ url: u, method: init?.method ?? 'GET', body: init?.body as string | undefined });
-      if (u.endsWith('/check-repo')) return new Response(JSON.stringify(check), { status: 200 });
-      if (u.includes('/mcp-access/') && u.includes('/calls')) return new Response('[]', { status: 200 });
-      if (u.includes('/mcp-access/')) return new Response(JSON.stringify({ enabled: false, hasKey: false, keyPrefix: null, keyCreatedAt: null, dataLevel: 'TITLES', tools: [] }), { status: 200 });
-      if (u.includes('/packs')) return new Response(JSON.stringify({ packs: [], profiles: [] }), { status: 200 });
-      if (u.endsWith('/schedule')) return new Response(JSON.stringify({ id: 7, name: 'api', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 }), { status: 200 });
+      const requestUrl = String(url);
+      calls.push({ url: requestUrl, method: init?.method ?? 'GET', body: init?.body as string | undefined });
+      if (requestUrl.endsWith('/check-repo')) return new Response(JSON.stringify(check), { status: 200 });
+      if (isMcpCallsUrl(requestUrl)) return new Response('[]', { status: 200 });
+      if (requestUrl.includes('/mcp-access/')) return new Response(JSON.stringify({ enabled: false, hasKey: false, keyPrefix: null, keyCreatedAt: null, dataLevel: 'TITLES', tools: [] }), { status: 200 });
+      if (requestUrl.includes('/packs')) return new Response(JSON.stringify({ packs: [], profiles: [] }), { status: 200 });
+      if (requestUrl.endsWith('/schedule')) return new Response(JSON.stringify({ id: 7, name: 'api', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 }), { status: 200 });
       if ((init?.method ?? 'GET') === 'POST') return new Response(JSON.stringify({ id: 7, name: 'api', stack: 'JAVA', team: '', lastAuditScore: null, lastAuditDate: null, openCritical: 0, openHigh: 0 }), { status: 201 });
       return new Response(JSON.stringify(systems), { status: 200 });
     }),
@@ -72,29 +76,21 @@ describe('SystemsPage', () => {
   });
 
   it('?edit=ID&tab=mcp abre o cadastro direto na aba Claude (MCP)', async () => {
-    renderPage(
-      {},
-      [{ id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true }],
-      '/systems?edit=3&tab=mcp',
-    );
+    renderPage({}, { systems: [{ id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true }], url: '/systems?edit=3&tab=mcp' });
     expect(await screen.findByRole('dialog', { name: 'Editar sistema' })).toBeInTheDocument();
     expect(await screen.findByLabelText('Permitir consulta pelo Claude (MCP)')).toBeInTheDocument();
   });
 
   it('?edit=ID sem tab abre na aba de cadastro', async () => {
-    renderPage(
-      {},
-      [{ id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true }],
-      '/systems?edit=3',
-    );
+    renderPage({}, { systems: [{ id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true }], url: '/systems?edit=3' });
     expect(await screen.findByLabelText(/Nome do sistema/)).toHaveValue('conta-corrente-api');
     expect(screen.queryByLabelText('Permitir consulta pelo Claude (MCP)')).not.toBeInTheDocument();
   });
 
   it('Editar abre o cadastro em pop-up, com a linha destacada, e fechar some com ele', async () => {
-    renderPage({}, [
+    renderPage({}, { systems: [
       { id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true },
-    ]);
+    ] });
     expect(await screen.findByText('acme/conta-corrente')).toBeInTheDocument();
     expect(screen.getByText('a cada 24 h · main · push')).toBeInTheDocument();
     expect(screen.queryByLabelText('Editar sistema')).not.toBeInTheDocument();
@@ -115,9 +111,9 @@ describe('SystemsPage', () => {
   });
 
   it('pede confirmação ao fechar com alterações não salvas', async () => {
-    renderPage({}, [
+    renderPage({}, { systems: [
       { id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true },
-    ]);
+    ] });
     fireEvent.click(await screen.findByRole('button', { name: 'Editar' }));
     await screen.findByRole('dialog', { name: 'Editar sistema' });
     fireEvent.change(screen.getByLabelText(/Nome do sistema/), { target: { value: 'outro-nome' } });
@@ -160,10 +156,10 @@ describe('SystemsPage', () => {
   });
 
   it('ao editar, token e segredos salvos não aparecem e podem ser mantidos ou removidos', async () => {
-    const calls = renderPage({}, [
+    const calls = renderPage({}, { systems: [
       { id: 4, name: 'conta', stack: 'JAVA', team: 'T', lastAuditScore: 80, lastAuditDate: null, openCritical: 0, openHigh: 0,
         repoUrl: 'https://github.com/org/conta', gitTokenSet: true, gitTokenHosts: 'github.com', webhookSecretSet: true, auditOnPush: true, notifyUrlSet: true },
-    ]);
+    ] });
     fireEvent.click(await screen.findByRole('button', { name: /Editar/ }));
     expect(await screen.findByLabelText(/Token Git/)).toHaveValue('');
     expect(screen.getByPlaceholderText('Token salvo. Deixe vazio para manter')).toBeInTheDocument();
@@ -178,9 +174,9 @@ describe('SystemsPage', () => {
   });
 
   it('a aba Claude (MCP) fica bloqueada num sistema novo e abre no sistema já salvo', async () => {
-    renderPage({}, [
+    renderPage({}, { systems: [
       { id: 4, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 },
-    ]);
+    ] });
     fireEvent.click(await screen.findByRole('button', { name: 'Novo sistema' }));
     expect(await screen.findByRole('tab', { name: 'Claude (MCP)' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
