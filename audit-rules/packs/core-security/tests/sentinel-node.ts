@@ -743,3 +743,103 @@ export function buscarFixo (db: any) {
   // ok: sentinel-node-nosql-where-concatenado
   return db.collection('u').find({ $where: 'this.ativo == true' })
 }
+
+// ---------- Next.js (App Router) e Prisma ----------
+declare const Database: any
+declare const prisma: any
+declare const baseDir: string
+declare function readFile (p: string, ...a: any[]): Promise<any>
+declare function join (...a: string[]): string
+declare function parseBody (r: any, s: any): Promise<any>
+
+export async function buscaProdutos (request: any) {
+  const { searchParams } = new URL(request.url)
+  const q = searchParams.get('q')
+  const sql = `SELECT * FROM products WHERE name LIKE '%${q}%'`
+  // ruleid: sentinel-node-prisma-raw-unsafe
+  return prisma.$queryRawUnsafe(sql)
+}
+
+export async function apagarPorId (id: string) {
+  // ruleid: sentinel-node-prisma-raw-unsafe
+  await prisma.$executeRawUnsafe('DELETE FROM t WHERE id = ' + id)
+}
+
+export async function consultaFixa (id: string) {
+  // ok: sentinel-node-prisma-raw-unsafe
+  await prisma.$queryRawUnsafe('SELECT 1')
+  // ok: sentinel-node-prisma-raw-unsafe
+  return prisma.$queryRawUnsafe('SELECT * FROM t WHERE id = $1', id)
+}
+
+export function filtrarAutor (autor: string) {
+  const db = new Database('x.db')
+  const consulta = `SELECT * FROM reviews WHERE author = '${autor}'`
+  // ruleid: sentinel-node-sqlite-sql-dinamico
+  db.exec(consulta)
+  // ruleid: sentinel-node-sqlite-sql-dinamico
+  return db.prepare(`SELECT * FROM reviews WHERE author = '${autor}'`).all()
+}
+
+export function filtrarAutorSeguro (autor: string) {
+  const db = new Database('x.db')
+  // ok: sentinel-node-sqlite-sql-dinamico
+  return db.prepare('SELECT * FROM reviews WHERE author = ?').all(autor)
+}
+
+export async function lerArquivoNext (request: any) {
+  const { searchParams } = new URL(request.url)
+  const file = searchParams.get('file')
+  // ruleid: sentinel-node-path-traversal
+  return readFile(join(baseDir, file))
+}
+
+export async function lerArquivoBody (request: any) {
+  const corpo = await request.json()
+  // ruleid: sentinel-node-path-traversal
+  return readFile(join(baseDir, corpo.nome))
+}
+
+export async function lerArquivoFixoNext () {
+  // ok: sentinel-node-path-traversal
+  return readFile(join(baseDir, 'leia-me.txt'))
+}
+
+export async function capturaTela (request: any) {
+  const parsed = await parseBody(request, {})
+  const { screenshotUrl } = parsed.data
+  // ruleid: sentinel-node-ssrf
+  const r = await fetch(screenshotUrl)
+  return r.text()
+}
+
+export async function capturaFixa () {
+  // ok: sentinel-node-ssrf
+  const r = await fetch('https://api.exemplo.com/status')
+  return r.text()
+}
+
+declare function parseQuery (s: any, schema: any): any
+declare function useSearchParams (): any
+
+export async function lerArquivoValidado (request: any) {
+  const { searchParams } = new URL(request.url)
+  const parsed = parseQuery(searchParams, {})
+  const file = parsed.data.file
+  // ruleid: sentinel-node-path-traversal
+  return readFile(join(baseDir, file))
+}
+
+export function loginNavegador () {
+  const params = useSearchParams()
+  const token = params.get('token')
+  // ok: sentinel-node-ssrf
+  return fetch(`/api/auth/login?token=${token}`)
+}
+
+export function loginNavegador2 () {
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token')
+  // ok: sentinel-node-ssrf
+  return fetch(`/api/auth/login?token=${token}`)
+}
