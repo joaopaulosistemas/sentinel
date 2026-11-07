@@ -1,0 +1,134 @@
+{
+ "_comentario": "Falhas de koenbuyens/Vulnerable-OAuth-2.0-Applications lidas no codigo (treino), volta 24; o proprio codigo marca cada falha com comentario 'vulnerability:'/'insecure:'. Entrada com lacuna-sem-regra e lacuna assumida (falha logica de OAuth/controle de acesso sem padrao sintatico). Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li. Nomes de regras aceitas sao palpite ate o resultado do CI.",
+ "repo": "koenbuyens/Vulnerable-OAuth-2.0-Applications",
+ "falhas": [
+  {
+   "arquivo": "insecureapplication/gallery/controllers/oauthcontroller.js",
+   "linha": 86,
+   "cwe": "CWE-338",
+   "regras": [
+    "sentinel-node-math-random-segredo"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/controllers/oauthcontroller.js",
+   "linha": 139,
+   "cwe": "CWE-338",
+   "regras": [
+    "sentinel-node-math-random-segredo"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/controllers/oauthcontroller.js",
+   "linha": 142,
+   "cwe": "CWE-338",
+   "regras": [
+    "sentinel-node-math-random-segredo"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/controllers/oauthcontroller.js",
+   "linha": 205,
+   "cwe": "CWE-943",
+   "regras": [
+    "sentinel-node-nosql-where-concatenado"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/controllers/oauthcontroller.js",
+   "linha": 141,
+   "cwe": "CWE-532",
+   "regras": [
+    "sentinel-log-segredo-js"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/middlewares/auth.js",
+   "linha": 75,
+   "cwe": "CWE-532",
+   "regras": [
+    "sentinel-log-segredo-js"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/config/config.json",
+   "linha": 3,
+   "cwe": "CWE-798",
+   "regras": [
+    "lacuna-sem-regra"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/attacker/app.js",
+   "linha": 16,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/photoprint/app.js",
+   "linha": 16,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/controllers/oauthcontroller.js",
+   "linha": 272,
+   "cwe": "CWE-601",
+   "regras": [
+    "lacuna-sem-regra"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/controllers/usercontroller.js",
+   "linha": 72,
+   "cwe": "CWE-915",
+   "regras": [
+    "sentinel-node-mass-assignment"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/models/client.js",
+   "linha": 14,
+   "cwe": "CWE-256",
+   "regras": [
+    "lacuna-sem-regra"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/routes/users.js",
+   "linha": 27,
+   "cwe": "CWE-639",
+   "regras": [
+    "lacuna-sem-regra"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/routes/index.js",
+   "linha": 25,
+   "cwe": "CWE-204",
+   "regras": [
+    "lacuna-sem-regra"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/controllers/oauthcontroller.js",
+   "linha": 118,
+   "cwe": "CWE-613",
+   "regras": [
+    "lacuna-sem-regra"
+   ]
+  },
+  {
+   "arquivo": "insecureapplication/gallery/controllers/oauthcontroller.js",
+   "linha": 200,
+   "cwe": "CWE-338",
+   "regras": [
+    "sentinel-node-math-random-segredo"
+   ]
+  }
+ ]
+}

@@ -41,3 +41,4 @@ snoopysecurity/dvws-node
 tangxiaofeng7/SecExample
 veracode-research/actuator-testbed
 t0thkr1s/allsafe-android
+koenbuyens/Vulnerable-OAuth-2.0-Applications
