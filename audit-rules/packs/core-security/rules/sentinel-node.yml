@@ -332,15 +332,9 @@ rules:
               regex: ^(Query|Body|Param|Headers)$
           - focus-metavariable: $P
       - patterns:
-          - pattern-either:
-              - pattern-inside: |
-                  ($PARENT, $ARGS, ...) => {...}
-              - pattern-inside: |
-                  async ($PARENT, $ARGS, ...) => {...}
-              - pattern-inside: |
-                  function ($PARENT, $ARGS, ...) {...}
-              - pattern-inside: |
-                  async function ($PARENT, $ARGS, ...) {...}
+          # `function $F(...)` casa função, seta e async nos dois motores (Semgrep não casa `($A, $B, ...) => {...}`)
+          - pattern-inside: |
+              function $F($PARENT, $ARGS, ...) {...}
           - pattern: $ARGS.$K
           - metavariable-regex:
               metavariable: $ARGS
@@ -409,15 +403,9 @@ rules:
               regex: ^(Query|Body|Param|Headers)$
           - focus-metavariable: $P
       - patterns:
-          - pattern-either:
-              - pattern-inside: |
-                  ($PARENT, $ARGS, ...) => {...}
-              - pattern-inside: |
-                  async ($PARENT, $ARGS, ...) => {...}
-              - pattern-inside: |
-                  function ($PARENT, $ARGS, ...) {...}
-              - pattern-inside: |
-                  async function ($PARENT, $ARGS, ...) {...}
+          # `function $F(...)` casa função, seta e async nos dois motores (Semgrep não casa `($A, $B, ...) => {...}`)
+          - pattern-inside: |
+              function $F($PARENT, $ARGS, ...) {...}
           - pattern: $ARGS.$K
           - metavariable-regex:
               metavariable: $ARGS

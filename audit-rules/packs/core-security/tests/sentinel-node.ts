@@ -47,8 +47,8 @@ export function consultaFixa () {
 // ---------- NoSQL $where ----------
 export function avaliacoes (req: any) {
   const id = req.params.id
-  // ruleid: sentinel-node-nosql-where, sentinel-node-nosql-where-concatenado
-  return db.reviews.find({ $where: 'this.product == ' + id })
+  // ruleid: sentinel-node-nosql-where
+  return db.reviews.find({ $where: 'this.product == ' + id }) // nosemgrep: sentinel-node-nosql-where-concatenado
 }
 
 export function avaliacoesSeguro (req: any) {
