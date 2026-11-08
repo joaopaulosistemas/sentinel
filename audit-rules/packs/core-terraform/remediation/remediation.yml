@@ -1,0 +1,27 @@
+- key: "tf-s3-acl-publica"
+  summary: "Deixe o bucket privado e exponha conteúdo só por CloudFront com acesso restrito."
+  before: "acl = \"public-read\""
+  after: "acl = \"private\""
+  refs:
+    - "https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html"
+
+- key: "tf-sg-aberto-ao-mundo"
+  summary: "Restrinja a entrada ao CIDR de quem precisa acessar."
+  before: "cidr_blocks = [\"0.0.0.0/0\"]"
+  after: "cidr_blocks = [var.rede_interna_cidr]"
+  refs:
+    - "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+
+- key: "tf-rds-sem-criptografia"
+  summary: "Ligue a criptografia do armazenamento."
+  before: "storage_encrypted = false"
+  after: "storage_encrypted = true"
+  refs:
+    - "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html"
+
+- key: "tf-senha-no-codigo"
+  summary: "Não grave senha no .tf: use variável sensível ou deixe o RDS gerenciar a senha."
+  before: "password = \"hunter2\""
+  after: "manage_master_user_password = true"
+  refs:
+    - "https://developer.hashicorp.com/terraform/language/values/variables#suppressing-values-in-cli-output"

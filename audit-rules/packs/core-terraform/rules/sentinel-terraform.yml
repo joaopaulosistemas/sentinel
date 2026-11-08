@@ -1,0 +1,87 @@
+# Riscos de configuração em Terraform (AWS). Protótipo: poucas regras, de alta confiança.
+rules:
+  - id: sentinel-tf-s3-acl-publica
+    pattern-either:
+      - pattern: |
+          resource "aws_s3_bucket" "$N" {
+            ...
+            acl = "public-read"
+            ...
+          }
+      - pattern: |
+          resource "aws_s3_bucket" "$N" {
+            ...
+            acl = "public-read-write"
+            ...
+          }
+      - pattern: |
+          resource "aws_s3_bucket_acl" "$N" {
+            ...
+            acl = "public-read"
+            ...
+          }
+    message: >
+      Bucket S3 com ACL pública: qualquer pessoa na internet lê (ou grava) os objetos. Use acl privada e,
+      se precisar expor conteúdo, passe por CloudFront com acesso restrito.
+    severity: ERROR
+    languages: [terraform]
+    metadata:
+      category: security
+      cwe: "CWE-732: Incorrect Permission Assignment for Critical Resource"
+
+  - id: sentinel-tf-sg-aberto-ao-mundo
+    pattern: |
+      resource "aws_security_group" "$N" {
+        ...
+        ingress {
+          ...
+          cidr_blocks = ["0.0.0.0/0"]
+          ...
+        }
+        ...
+      }
+    message: >
+      Regra de entrada do security group aberta para 0.0.0.0/0. Restrinja ao CIDR de quem precisa
+      acessar (VPN, balanceador, rede interna).
+    severity: ERROR
+    languages: [terraform]
+    metadata:
+      category: security
+      cwe: "CWE-284: Improper Access Control"
+
+  - id: sentinel-tf-rds-sem-criptografia
+    patterns:
+      - pattern: |
+          resource "aws_db_instance" "$N" {
+            ...
+            storage_encrypted = false
+            ...
+          }
+    message: >
+      Banco RDS com armazenamento sem criptografia. Ligue storage_encrypted (e informe uma chave KMS,
+      se a política exigir).
+    severity: ERROR
+    languages: [terraform]
+    metadata:
+      category: security
+      cwe: "CWE-311: Missing Encryption of Sensitive Data"
+
+  - id: sentinel-tf-senha-no-codigo
+    patterns:
+      - pattern: |
+          resource "aws_db_instance" "$N" {
+            ...
+            password = "$SENHA"
+            ...
+          }
+      - metavariable-regex:
+          metavariable: $SENHA
+          regex: ^.+$
+    message: >
+      Senha do banco gravada no arquivo .tf (e, depois, no estado do Terraform). Receba por variável
+      sensível, gerenciador de segredos ou manage_master_user_password.
+    severity: ERROR
+    languages: [terraform]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"

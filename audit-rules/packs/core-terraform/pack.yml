@@ -1,0 +1,7 @@
+id: core-terraform
+name: "Terraform (protótipo)"
+version: 0.1.0
+description: "Terraform/HCL: buckets públicos, firewall aberto ao mundo, banco sem criptografia e segredo gravado no código. Protótipo: desligado por padrão; o Sentinel ainda trata Terraform como fora do escopo."
+author: Sentinel
+languages: [terraform]
+enabled-by-default: false
