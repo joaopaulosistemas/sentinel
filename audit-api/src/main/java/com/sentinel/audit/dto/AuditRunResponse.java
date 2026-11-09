@@ -3,6 +3,7 @@ package com.sentinel.audit.dto;
 import com.sentinel.audit.model.AuditStatus;
 import com.sentinel.audit.model.Severity;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,6 +13,8 @@ import java.util.Map;
  * @param profile Perfil de regras do sistema (o efetivo, "default" quando não há).
  * @param totalFindings Achados ativos (sem os suprimidos).
  * @param newFindings Novos desde a auditoria anterior; nulo quando não há anterior ou não foi calculado.
+ * @param incomplete Verdadeiro quando algum analisador falhou ou terminou parcialmente: a nota pode estar otimista.
+ * @param incompleteReasons Quais analisadores comprometeram o resultado (vazio quando completo).
  * @param resolvedFindings Resolvidos desde a auditoria anterior; nulo quando não há anterior ou não foi calculado.
  */
 public record AuditRunResponse(
@@ -35,5 +38,7 @@ public record AuditRunResponse(
         Integer newFindings,
         Integer resolvedFindings,
         Long previousAuditId,
-        Double scoreDelta) {
+        Double scoreDelta,
+        boolean incomplete,
+        List<String> incompleteReasons) {
 }

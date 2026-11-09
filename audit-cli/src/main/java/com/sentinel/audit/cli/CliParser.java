@@ -12,7 +12,8 @@ final class CliParser {
           + "       [--fail-on-score-drop <pontos>  reprova se a nota cair mais que isso desde a auditoria anterior]\n"
           + "       [--sarif <arquivo>] [--junit <arquivo>] [--json <arquivo>] [--repo <url> (informativo)]\n"
           + "       [--base-ref <branch-base>  audita só o que mudou em relação a ele (modo PR)]\n"
-          + "       [--pr-comment <arquivo.md>  grava o resumo em Markdown para comentar no PR]";
+          + "       [--pr-comment <arquivo.md>  grava o resumo em Markdown para comentar no PR]\n"
+          + "       [--allow-incomplete  aceita auditoria em que algum analisador falhou (padrão: sai com código 4)]";
 
 
     private CliParser() {
@@ -26,6 +27,11 @@ final class CliParser {
 
         for (int i = 0; i < args.length; i += 2) {
             String flag = args[i];
+            if (flag.equals("--allow-incomplete")) {
+                result.allowIncomplete = true;
+                i--; // opção sem valor: avança só um argumento
+                continue;
+            }
             if (flag.equals("--help") || flag.equals("-h")) {
                 throw new IllegalArgumentException("Ajuda:");
             }

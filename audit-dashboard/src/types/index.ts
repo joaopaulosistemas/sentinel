@@ -142,6 +142,9 @@ export interface IAuditRunResponse {
   resolvedFindings?: number | null;
   previousAuditId?: number | null;
   scoreDelta?: number | null;
+  /** Algum analisador falhou ou terminou pela metade: a nota pode estar otimista */
+  incomplete?: boolean;
+  incompleteReasons?: string[];
 }
 
 export type AuditPhase = 'FILA' | 'CLONE' | 'ANALISE' | 'PONTUACAO' | 'RELATORIO';

@@ -46,6 +46,7 @@ public class AuditCli {
 
     private static final int CONNECT_TIMEOUT_SECONDS = 30;
     private static final int EXIT_TIMEOUT = 3;
+    private static final int EXIT_INCOMPLETE = 4;
     private static final int HTTP_OK = 200;
     private static final int HTTP_ACCEPTED = 202;
     static final int RANK_CRITICAL = 5;
@@ -86,7 +87,8 @@ public class AuditCli {
      * Executa o fluxo completo: cria auditoria → polling → imprime resumo → retorna exit code.
      *
      * @param args argumentos parseados
-     * @return exit code (0 = sucesso, 1 = abaixo do threshold, 2 = falha, 3 = timeout)
+     * @return exit code (0 = sucesso, 1 = abaixo do threshold, 2 = falha, 3 = timeout,
+     *         4 = resultado incompleto: algum analisador falhou e não foi usado {@code --allow-incomplete})
      */
     public int run(CliArgs args) {
         try {
@@ -123,6 +125,10 @@ public class AuditCli {
             if (failed) {
                 return 1;
             }
+            if (!args.allowIncomplete && finalResult.path("incomplete").asBoolean(false)) {
+                reportIncomplete(finalResult);
+                return EXIT_INCOMPLETE;
+            }
 
             System.out.println("\nAuditoria concluída com sucesso.");
             return 0;
@@ -131,6 +137,13 @@ public class AuditCli {
             System.err.println("Erro ao executar auditoria: " + e.getMessage());
             return 2;
         }
+    }
+
+    /** A nota de uma auditoria incompleta pode estar otimista: por padrão ela não passa no gate. */
+    private static void reportIncomplete(JsonNode finalResult) {
+        System.err.println("\nFALHA: resultado INCOMPLETO; a nota pode estar mais alta do que a realidade.");
+        finalResult.path("incompleteReasons").forEach(r -> System.err.println("  - " + r.asText()));
+        System.err.println("Corrija os analisadores ou use --allow-incomplete para aceitar.");
     }
 
     private static void printHeader(CliArgs args) {
@@ -440,5 +453,6 @@ public class AuditCli {
         String jsonFile;
         String baseRef;
         String prCommentFile;
+        boolean allowIncomplete;
     }
 }

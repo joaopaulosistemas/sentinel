@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { IAnalyzerProgress, IAuditProgress, IAuditRunResponse, Severity } from '../types';
 import { PHASES, clock, copyText, isSlowLoad, secondsBetween, shortRepo, type IPhaseView } from '../utils/auditProgress';
 import { scoreColor } from '../utils/scoreBand';
+import { IncompleteNotice } from './IncompleteNotice';
 import { CheckIcon, ClockIcon, CrossIcon, DashIcon, SpinnerIcon } from './StatusIcons';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -159,6 +160,9 @@ function FinalScore({ run, overall }: { run: IAuditRunResponse; overall: number 
         )}
         {has(run.newFindings) && has(run.resolvedFindings) && ` · ${run.newFindings} novos, ${run.resolvedFindings} resolvidos`}
       </span>
+      <div style={{ flexBasis: '100%' }}>
+        <IncompleteNotice incomplete={run.incomplete} reasons={run.incompleteReasons} />
+      </div>
     </div>
   );
 }

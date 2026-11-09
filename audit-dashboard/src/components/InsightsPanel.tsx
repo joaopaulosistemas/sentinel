@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useInsights } from '../hooks/useLifecycle';
 import type { AreaState, IDebtItem, Severity } from '../types';
 import { PageSection } from './PageSection';
+import { ProjectLimitsSection } from './ProjectLimits';
 
 type TagType = 'red' | 'magenta' | 'blue' | 'green' | 'gray' | 'warm-gray';
 
@@ -211,34 +212,5 @@ export function InsightsPanel({ auditId }: { auditId: number | undefined }) {
 export function InsightsLimits({ auditId }: { auditId: number | undefined }) {
   const { data } = useInsights(auditId);
   if (auditId === undefined || !data) return null;
-  const map = data.projectMap;
-  return (
-    <PageSection id="limites" title="Limites e mapa do projeto">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: 40 }}>
-        <div>
-          <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 600 }}>Não foi possível verificar</h3>
-          <p style={{ margin: '0 0 12px', color: 'var(--s-text-3)', fontSize: 13 }}>Análise estática não alcança estes pontos. Não os trate como aprovados.</p>
-          <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--s-text-2)', fontSize: 13 }}>
-            {data.unverified.map((u) => (
-              <li key={u}>{u}</li>
-            ))}
-          </ul>
-        </div>
-        {map && (
-          <div>
-            <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>Mapa do projeto</h3>
-            <p style={{ fontSize: 13, margin: 0 }}>
-              {Object.entries(map.languages)
-                .map(([l, n]) => `${l} (${n})`)
-                .join(', ') || 'Nenhuma linguagem reconhecida'}
-              {' · '}
-              {map.sourceFiles} arquivos de código, {map.testFiles} de teste
-              {map.frameworks.length > 0 ? ` · ${map.frameworks.join(', ')}` : ''}
-              {map.buildTools.length > 0 ? ` · build: ${map.buildTools.join(', ')}` : ''}
-            </p>
-          </div>
-        )}
-      </div>
-    </PageSection>
-  );
+  return <ProjectLimitsSection unverified={data.unverified} map={data.projectMap} />;
 }
