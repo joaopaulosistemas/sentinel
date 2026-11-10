@@ -4,7 +4,10 @@ import com.sentinel.audit.model.AuditedSystem;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import jakarta.persistence.LockModeType;
+
 import java.util.List;
+import java.util.Optional;
 import java.util.Locale;
 
 /**
@@ -33,6 +36,14 @@ public class AuditedSystemRepository implements PanacheRepository<AuditedSystem>
             params[i] = "%" + names.get(i).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
         }
         return list(where.toString(), params);
+    }
+
+    /**
+     * Busca o sistema travando a linha até o fim da transação: duas requisições de auditoria para o mesmo sistema
+     * (mesmo em instâncias diferentes da API) passam uma de cada vez pela checagem "já tem auditoria em andamento".
+     */
+    public Optional<AuditedSystem> lockById(Long id) {
+        return Optional.ofNullable(findById(id, LockModeType.PESSIMISTIC_WRITE));
     }
 
     /** Último trecho do caminho, sem ".git": "github.com/org/repo.git" vira "repo". */

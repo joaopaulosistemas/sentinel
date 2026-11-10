@@ -284,9 +284,9 @@ public class CleanCodeAnalyzer implements CodeAnalyzer {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 if (isCandidate(file, attrs)
-                        && !ExternalTools.isVendoredLibrary(root.relativize(file).toString())
-                        && !ExternalTools.isOversizedBundle(root.relativize(file).toString(), attrs.size())
-                        && !ExternalTools.hasThirdPartyBanner(file)
+                        && !VendoredCode.isVendoredLibrary(root.relativize(file).toString())
+                        && !VendoredCode.isOversizedBundle(root.relativize(file).toString(), attrs.size())
+                        && !VendoredCode.hasThirdPartyBanner(file)
                         && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
                     files.add(file);
                 }

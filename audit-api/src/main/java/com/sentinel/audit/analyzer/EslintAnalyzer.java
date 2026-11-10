@@ -139,7 +139,7 @@ public class EslintAnalyzer implements CodeAnalyzer {
 
     private static void collectFile(JsonNode file, Path projectPath, AuditRun auditRun, List<Finding> out) {
         String rel = ExternalTools.relativize(projectPath, file.path("filePath").asText(""));
-        if (ExternalTools.inIgnoredDir(rel) || ExternalTools.hasThirdPartyBanner(projectPath.resolve(rel))) {
+        if (ExternalTools.inIgnoredDir(rel) || VendoredCode.hasThirdPartyBanner(projectPath.resolve(rel))) {
             return;
         }
         for (JsonNode m : file.path("messages")) {

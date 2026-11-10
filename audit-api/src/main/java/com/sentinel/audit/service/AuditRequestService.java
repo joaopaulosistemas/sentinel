@@ -47,12 +47,12 @@ public class AuditRequestService {
     public AuditRun request(Long systemId, String branch, String baseRef, String triggeredBy) {
         // Uma auditoria por sistema de cada vez, em qualquer branch: duas juntas clonam, analisam e gravam o mesmo
         // sistema ao mesmo tempo, e a segunda compara contra uma base que a primeira ainda não terminou.
+        AuditedSystem system = systemRepository.lockById(systemId)
+                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + systemId));
         activeRun(systemId, LocalDateTime.now()).ifPresent(active -> {
             throw new ClientErrorException("Este sistema já tem a auditoria #" + active.getId() + " em andamento ("
                     + active.getBranch() + "). Aguarde ela terminar ou cancele para iniciar outra.", Response.Status.CONFLICT);
         });
-        AuditedSystem system = systemRepository.findByIdOptional(systemId)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + systemId));
         AuditRun run = new AuditRun();
         run.setSystem(system);
         run.setBranch(branch);
@@ -71,6 +71,10 @@ public class AuditRequestService {
      */
     @Transactional
     public Optional<AuditRun> requestIfIdle(Long systemId, String branch, String triggeredBy) {
+        // Trava a linha do sistema antes de olhar: sem isso, dois pushes simultâneos veem "livre" e criam duas.
+        if (systemRepository.lockById(systemId).isEmpty()) {
+            return Optional.empty();
+        }
         if (activeRun(systemId, LocalDateTime.now()).isPresent()) {
             return Optional.empty();
         }

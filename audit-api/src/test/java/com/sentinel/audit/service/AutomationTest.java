@@ -61,6 +61,9 @@ class AutomationTest {
         AuditedSystemRepository systemRepo = new AuditedSystemRepository() {
             @Override public List<AuditedSystem> listAll() { return systems; }
             @Override public List<AuditedSystem> candidatesByRepo(List<String> repos) { return systems; }
+            @Override public java.util.Optional<AuditedSystem> lockById(Long id) {
+                return systems.stream().filter(x -> id.equals(x.getId())).findFirst();
+            }
         };
         AuditRunRepository runRepo = new AuditRunRepository() {
             @Override public List<AuditRun> findActive() {
@@ -232,6 +235,18 @@ class AutomationTest {
                 jakarta.ws.rs.ClientErrorException.class, () -> realRequestService.request(1L, "develop", null, "dashboard"));
         assertEquals(409, e.getResponse().getStatus());
         assertTrue(e.getMessage().contains("#" + ativa.getId()), e.getMessage());
+    }
+
+    @Test
+    void requestIfIdle_sistemaInexistenteNaoCria() {
+        assertTrue(realRequestService.requestIfIdle(99L, "main", "webhook").isEmpty());
+    }
+
+    @Test
+    void requestIfIdle_comAuditoriaAtivaNaoCriaOutra() {
+        AuditedSystem a = system(1, "https://github.com/org/a.git", true, null, null);
+        run(a, "main", AuditStatus.RUNNING, LocalDateTime.now());
+        assertTrue(realRequestService.requestIfIdle(1L, "develop", "webhook").isEmpty());
     }
 
     @Test

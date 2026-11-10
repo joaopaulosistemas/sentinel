@@ -19,6 +19,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -46,13 +47,13 @@ public class AuditFindingsResource {
     @GET
     @Path("/{id}/findings")
     @Operation(summary = "Listar findings", description = "Retorna os findings de uma auditoria com filtros opcionais")
-    public List<FindingResponse> getFindings(@PathParam("id") Long id, @BeanParam FindingsQuery q) {
+    public Response getFindings(@PathParam("id") Long id, @BeanParam FindingsQuery q) {
 
         runCatalog.require(id);
 
         List<Finding> findings = findingCatalog.byRun(id);
 
-        return findings.stream()
+        List<FindingResponse> filtered = findings.stream()
                 .filter(f -> q.severity == null || f.getSeverity() == q.severity)
                 .filter(f -> q.category == null || f.getCategory() == q.category)
                 .filter(f -> q.status == null || f.getStatus() == q.status)
@@ -61,6 +62,10 @@ public class AuditFindingsResource {
                 .filter(f -> !q.onlyNew || Boolean.TRUE.equals(f.getIsNew()))
                 .map(FindingMapper::toResponse)
                 .collect(Collectors.toList());
+        // limit/offset são opcionais; sem eles a resposta é a lista inteira, como antes.
+        return Response.ok(Page.slice(filtered, q.limit, q.offset))
+                .header("X-Total-Count", filtered.size())
+                .build();
     }
 
     /** Filtros opcionais de {@link #getFindings}. */
@@ -74,6 +79,10 @@ public class AuditFindingsResource {
         @QueryParam("includeSuppressed")
         @DefaultValue("false")
         public boolean includeSuppressed;
+        @QueryParam("limit")
+        public Integer limit;
+        @QueryParam("offset")
+        public Integer offset;
         @QueryParam("onlyNew")
         @DefaultValue("false")
         public boolean onlyNew;
