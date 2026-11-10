@@ -258,7 +258,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             command.add("--exclude");
             command.add(pattern);
         }
-        for (String bundle : ExternalTools.vendoredFiles(projectPath)) {
+        for (String bundle : VendoredCode.vendoredFiles(projectPath)) {
             command.add("--exclude");
             command.add(bundle);
         }

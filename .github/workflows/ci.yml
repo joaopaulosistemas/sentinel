@@ -89,12 +89,21 @@ jobs:
       - run: bash scripts/instalar-opengrep.sh
       - name: Compilar e testar
         run: bash scripts/ci-anotar.sh "Maven" mvn -B -ntp verify
+      - name: Medir a cobertura do Sentinel (falha abaixo de COBERTURA_MINIMA)
+        env:
+          COBERTURA_MINIMA: "70"
+        run: |
+          x="$(ls audit-api/target/jacoco-report-total/jacoco.xml 2>/dev/null | head -1)"
+          [ -n "$x" ] || { echo "::error title=Cobertura::jacoco.xml não foi gerado"; exit 1; }
+          python3 scripts/conferir-cobertura.py "$x" "$COBERTURA_MINIMA"
       - name: Publicar a cobertura (JaCoCo)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: cobertura-jacoco
-          path: audit-api/target/jacoco-report
+          path: |
+            audit-api/target/jacoco-report
+            audit-api/target/jacoco-report-total
           if-no-files-found: ignore
 
   regras:
