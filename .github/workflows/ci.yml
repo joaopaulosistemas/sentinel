@@ -98,7 +98,7 @@ jobs:
           python3 scripts/conferir-cobertura.py "$x" "$COBERTURA_MINIMA"
       - name: Publicar a cobertura (JaCoCo)
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cobertura-jacoco
           path: |
@@ -294,7 +294,7 @@ jobs:
         run: bash scripts/e2e.sh
       - name: Publicar o esquema criado pelo Hibernate
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: esquema-postgres
           path: ${{ runner.temp }}/schema.sql
@@ -346,7 +346,7 @@ jobs:
           if [ -n "$id" ]; then gh run download "$id" -R "$GITHUB_REPOSITORY" -n calibracao-historico -D anterior || echo "sem histórico anterior"; else echo "sem execução anterior"; fi
       - name: Comparar e conferir as verdades conhecidas
         run: python3 scripts/comparar-calibracao.py calibracao-saida anterior audit-rules/calibracao/esperado.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: calibracao-historico
