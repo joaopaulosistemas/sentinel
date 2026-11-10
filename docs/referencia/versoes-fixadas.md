@@ -23,7 +23,7 @@ As ferramentas externas rodam em versões **fixadas** (com SHA-256 quando são b
 ## Decisões em aberto
 
 1. **Hadolint (GPL-3.0): decidido.** A imagem publicada não distribui mais o binário (`WITH_HADOLINT=false` por padrão). O analisador continua no pacote `market-tools` e roda quando o `hadolint` está no `PATH` (instalação própria ou build com `--build-arg WITH_HADOLINT=true`; nesse caso as obrigações da GPL passam a ser de quem distribui essa imagem). As regras de Dockerfile do `core-iac` e o Checkov cobrem o essencial sem ele. Este documento não substitui parecer jurídico.
-2. **Gitleaks ou Betterleaks como padrão.** Os dois estão na imagem; o Betterleaks (1.10.0) fica desligado até alguém medir os achados dele contra os do Gitleaks nos repositórios de calibração. Dono: a definir.
+2. **Gitleaks ou Betterleaks como padrão: decidido, Gitleaks segue padrão.** Medição de 2026-11-10 (histórico `--depth 200`, achados únicos por regra+arquivo+segredo, como o `SecretReportParser` conta): NodeGoat 4 contra 18, WebGoat 23 contra 38, angular-realworld 2 contra 5, petclinic 0 contra 1, juice-shop 68 contra 729. Jwt e chave privada saem iguais nos dois. O Betterleaks acrescenta `generic-password` (687 dos 729 do juice-shop, quase todos em testes e i18n) e `mongodb-connection-string` (4 achados reais no NodeGoat); o Gitleaks tem mais `generic-api-key` (juice-shop 46 contra 20). Ou seja, mais cobertura de senha e string de conexão, ao custo de muito ruído em fixtures. Reavaliar quando o `generic-password` do Betterleaks tiver tratamento para caminhos de teste.
 
 ## O que a narrativa pode e não pode afirmar
 
