@@ -17,6 +17,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-352: Cross-Site Request Forgery (CSRF)"
+      owasp: A01:2021 - Broken Access Control
 
   - id: sentinel-spring-requestbody-sem-valid
     pattern-regex: '(?<!@Valid )(?<!@Validated )@RequestBody\b(?!\s+@Valid)(?!\s+@Validated)'
@@ -31,6 +32,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-20: Improper Input Validation"
+      owasp: A03:2021 - Injection
 
   - id: sentinel-spring-permitall-geral
     pattern-regex: '\.anyRequest\(\)\s*\.permitAll\(\)'
@@ -45,6 +47,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-862: Missing Authorization"
+      owasp: A01:2021 - Broken Access Control
 
   - id: sentinel-spring-frameoptions-desligado
     pattern-regex: 'frameOptions\s*\(\s*\)\s*\.\s*disable\s*\(|frameOptions\s*\(\s*\w+\s*->\s*\w+\s*\.\s*disable\s*\(|headers\s*\(\s*\w+\s*->\s*\w+\s*\.\s*frameOptions\s*\(\s*\w+\s*->\s*\w+\s*\.\s*disable'
@@ -59,6 +62,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-1021: Improper Restriction of Rendered UI Layers"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-spring-fetch-eager
     pattern-regex: 'fetch\s*=\s*FetchType\.EAGER'

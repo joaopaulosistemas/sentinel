@@ -13,6 +13,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-79: Cross-site Scripting"
+      owasp: A03:2021 - Injection
 
   - id: sentinel-react-componente-classe
     pattern-regex: 'class\s+\w+\s+extends\s+(?:React\.)?(?:Pure)?Component\b'

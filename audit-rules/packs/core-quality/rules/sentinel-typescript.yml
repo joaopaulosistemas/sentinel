@@ -165,3 +165,4 @@ rules:
     metadata:
       category: security
       cwe: "CWE-922: Insecure Storage of Sensitive Information"
+      owasp: A02:2021 - Cryptographic Failures

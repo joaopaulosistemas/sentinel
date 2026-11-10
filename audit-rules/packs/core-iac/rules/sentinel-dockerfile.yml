@@ -10,6 +10,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-1104: Use of Unmaintained Third Party Components"
+      owasp: A06:2021 - Vulnerable and Outdated Components
 
   - id: sentinel-docker-add-url
     pattern-regex: (?im)^\s*ADD\s+(--\S+\s+)*https?://
@@ -24,6 +25,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-494: Download of Code Without Integrity Check"
+      owasp: A08:2021 - Software and Data Integrity Failures
 
   - id: sentinel-docker-curl-pipe-shell
     pattern-regex: (?i)^\s*RUN\s+.*\b(curl|wget)\b[^\n|]*\|\s*(sudo\s+)?(ba)?sh\b
@@ -38,6 +40,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-494: Download of Code Without Integrity Check"
+      owasp: A08:2021 - Software and Data Integrity Failures
 
   - id: sentinel-docker-segredo-em-env
     pattern-regex: (?i)^\s*(ENV|ARG)\s+\w*(PASSWORD|SECRET|TOKEN|API_?KEY)\w*(\s*=\s*|\s+)["']?[^\s$"'][^\s"']{3,}
@@ -53,3 +56,4 @@ rules:
     metadata:
       category: security
       cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures

@@ -16,3 +16,4 @@ rules:
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
+      owasp: A05:2021 - Security Misconfiguration
