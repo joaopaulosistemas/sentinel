@@ -20,7 +20,7 @@ Repositório Git / pasta local
 | **Segurança** | SAST com Opengrep (regras próprias em pacotes), segredos (regex, Gitleaks, histórico do Git), dependências (Trivy ou OSV), IaC, taint entre arquivos em Java com Joern (opcional) |
 | **Qualidade** | Clean code (função longa, complexidade, aninhamento), PMD, ESLint, Stylelint, duplicação (jscpd) |
 | **Arquitetura** | Camadas, ciclos de dependência, God Object, regras declarativas por projeto (`architecture.yml`) |
-| **Dados e infra** | SQL (SQLFluff, Squawk), Dockerfile (Hadolint), Kubernetes (kube-linter, kube-score), Terraform (Checkov) |
+| **Dados e infra** | SQL (SQLFluff, Squawk), Dockerfile (Hadolint), Kubernetes (kube-linter, kube-score), GitHub Actions (Checkov); Terraform fica fora do escopo |
 | **Higiene do projeto** | README, testes, CI, lockfile, `.env` versionado |
 
 Escopo de tecnologias: Java, Spring Boot, Quarkus, Angular, React, Vue, TypeScript, JavaScript, HTML, CSS/SCSS, Docker, Kubernetes e SQL.
@@ -31,7 +31,7 @@ Escopo de tecnologias: Java, Spring Boot, Quarkus, Angular, React, Vue, TypeScri
 
 ## Pacotes de regras
 
-16 pacotes declarativos em `audit-rules/packs` (mais de 270 regras próprias), 13 ferramentas externas via SARIF e 9 perfis. Pacotes novos entram sem compilar nada. Veja [pacotes e perfis](docs/referencia/pacotes-de-regras.md). O pacote [`ts-clean-code-labs42`](docs/padrao-typescript/clean-code-labs42.md) traz 21 regras do guia clean-code-typescript (opt-in).
+16 pacotes declarativos em `audit-rules/packs` (298 regras próprias), 12 ferramentas de mercado via SARIF (mais o Joern, opcional) e 9 perfis. Pacotes novos entram sem compilar nada. Veja [pacotes e perfis](docs/referencia/pacotes-de-regras.md). O pacote [`ts-clean-code-labs42`](docs/padrao-typescript/clean-code-labs42.md) traz 21 regras do guia clean-code-typescript (opt-in).
 
 ## Começando
 

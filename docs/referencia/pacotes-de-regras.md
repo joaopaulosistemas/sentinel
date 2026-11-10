@@ -28,7 +28,7 @@ semgrep --test --config audit-rules/packs/core-quality/rules audit-rules/packs/c
 ## Pacotes de regras, perfis e arquitetura (plug and play)
 
 As regras não ficam mais no código: são **pacotes** (pastas com um `pack.yml`) que você adiciona, atualiza ou remove sem recompilar.
-Vêm prontos em `audit-rules/packs/`: `core-security` (82 regras Semgrep, 23 delas para backend Node/Express), `core-spring` (16, Spring Boot e JPA), `core-persistencia` (12: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
+Vêm prontos em `audit-rules/packs/`: `core-security` (101 regras Semgrep, 31 delas para backend Node/Express), `core-spring` (18, Spring Boot e JPA), `core-persistencia` (13: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
 `core-quality` (41, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (29: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
 
 ### Estrutura de um pacote
@@ -156,7 +156,7 @@ O Sentinel analisa **Angular, TypeScript, JavaScript, React, HTML, CSS, SCSS, Ja
 | Java | PMD, **Checkstyle** (bugs prováveis, tamanho e complexidade); regras Semgrep de segurança (injeção, criptografia, OWASP API, XSS, **XXE, SpEL, redirect aberto, desserialização do Jackson, Zip Slip, dado sensível no log, senha fixa, cookie sem Secure**), clean code e integrações |
 | SQL / Banco | **Squawk** (migrations do Postgres: índice sem `CONCURRENTLY`, mudança de tipo, `NOT NULL`, `int` em vez de `bigint`...) e **SQLFluff** (estilo, dialeto Postgres) em `db/migration`, `migrations`, `db/changelog`; regras Semgrep `sentinel-sql-*` e `sentinel-jpa-*` (pacote `core-persistencia`) nas consultas dentro do código Java |
 | Memória | regras Semgrep `sentinel-mem-*`: `ThreadLocal` sem `remove()`, coleção estática, cache sem limite, executor sem `shutdown`, `new Thread`, leitura total de arquivo; no front, `setInterval`, `addEventListener`, `subscribe()` e `useEffect` sem limpeza |
-| Spring Boot / JPA | pacote `core-spring` (16 regras): Actuator exposto, console H2, senha em properties, `ddl-auto`, `open-in-view`, `@RequestMapping` sem método, `@RequestBody` sem `@Valid`, `permitAll()` geral, `frameOptions` desligado, `FetchType.EAGER`, `@Data` em entidade; `@CrossOrigin` aberto |
+| Spring Boot / JPA | pacote `core-spring` (18 regras): Actuator exposto, console H2, senha em properties, `ddl-auto`, `open-in-view`, `@RequestMapping` sem método, `@RequestBody` sem `@Valid`, `permitAll()` geral, `frameOptions` desligado, `FetchType.EAGER`, `@Data` em entidade; `@CrossOrigin` aberto |
 | TypeScript / JavaScript | ESLint com `typescript-eslint`, `security`, `no-unsanitized`, `sonarjs`, **`promise` e `regexp` (ReDoS)**; regras Semgrep `sentinel-ts-*`; njsscan |
 | Angular | `angular-eslint` no código e nos **templates** (acessibilidade incluída); regras `sentinel-ng-*` (bypassSecurityTrust, nativeElement, `::ng-deep`, `*ngFor` sem `trackBy`, método no template) |
 | React | `react`, `react-hooks` e `jsx-a11y`; regras `sentinel-react-*` |

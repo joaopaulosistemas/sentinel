@@ -302,6 +302,10 @@ jobs:
       - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - name: Conferir a fonte única da versão
         run: python3 scripts/sincronizar-versao.py --check
+      - name: Conferir os números da documentação
+        run: |
+          python3 -m unittest scripts/test_conferir_numeros.py
+          python3 scripts/conferir-numeros.py
       - name: Validar o chart Helm
         run: |
           if ! (helm lint deploy/helm/sentinel --set secrets.dbPassword=ci && helm template sentinel deploy/helm/sentinel --set secrets.dbPassword=ci > /dev/null) > helm.log 2>&1; then
