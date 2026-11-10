@@ -60,6 +60,7 @@ class AutomationTest {
     void setUp() {
         AuditedSystemRepository systemRepo = new AuditedSystemRepository() {
             @Override public List<AuditedSystem> listAll() { return systems; }
+            @Override public List<AuditedSystem> candidatesByRepo(List<String> repos) { return systems; }
         };
         AuditRunRepository runRepo = new AuditRunRepository() {
             @Override public List<AuditRun> findActive() {
