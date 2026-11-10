@@ -11,3 +11,6 @@ audit-api/certs/*
 !audit-api/certs/README.md
 javac.*.args
 *.whl
+
+# Cache Maven do Trivy (scripts/aquecer-cache-maven.sh): por máquina, não versiona
+.m2-cache/
