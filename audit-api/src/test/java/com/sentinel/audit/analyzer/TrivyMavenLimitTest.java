@@ -34,4 +34,12 @@ class TrivyMavenLimitTest {
         assertFalse(TrivyAnalyzer.limiteDoMaven(stderr("x509: certificate signed by unknown authority")));
         assertFalse(TrivyAnalyzer.limiteDoMaven(dir.resolve("nao-existe.txt")));
     }
+
+    @Test
+    void avisoDeCacheParcialApontaOScriptQuePopulaOCache() {
+        String nota = TrivyAnalyzer.NOTA_CACHE_LOCAL;
+        assertTrue(nota.contains("scripts/aquecer-cache-maven.sh"));
+        assertTrue(nota.contains("M2_HOST_DIR"));
+        assertFalse(nota.contains("monte um volume"));
+    }
 }

@@ -83,6 +83,11 @@ public class TrivyAnalyzer implements CodeAnalyzer {
         });
     }
 
+    /** Aviso de cobertura parcial quando a varredura teve de repetir só com o cache Maven local. */
+    static final String NOTA_CACHE_LOCAL = "dependências Maven resolvidas só pelo cache local (o Maven Central "
+            + "limitou as requisições); para cobertura completa rode `scripts/aquecer-cache-maven.sh "
+            + "<pasta-do-projeto>` e aponte M2_HOST_DIR (.env) para o mesmo cache";
+
     /** Código de saída da varredura e, se foi preciso repetir sem rede, a nota de cobertura parcial. */
     private record Scan(int code, String note) { }
 
@@ -95,8 +100,7 @@ public class TrivyAnalyzer implements CodeAnalyzer {
             LOG.warn("Trivy: repositório Maven limitou as requisições; repetindo com --offline-scan");
             code = executar(exe, projectPath, report, stderr, true);
             if (code == 0) {
-                note = "dependências Maven resolvidas só pelo cache local (o Maven Central limitou as requisições); "
-                        + "para cobertura completa rode `mvn dependency:resolve` antes ou monte um volume em ~/.m2";
+                note = NOTA_CACHE_LOCAL;
             }
         }
         return new Scan(code, note);
