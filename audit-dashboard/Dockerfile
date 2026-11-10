@@ -5,7 +5,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM docker.io/nginxinc/nginx-unprivileged:1.27-alpine
+FROM docker.io/nginxinc/nginx-unprivileged:1.31-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 # O entrypoint oficial do nginx aplica envsubst em /etc/nginx/templates/*.template
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
