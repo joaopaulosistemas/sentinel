@@ -63,12 +63,14 @@ public class SystemEvidenceResource {
     @Operation(summary = "Remover uma evidência")
     public Response delete(@PathParam("id") Long id, @PathParam("name") String name) {
         AuditedSystem s = systemCatalog.require(id);
+        boolean removed;
         try {
-            if (!library.delete(s.getName(), s.getRepoUrl(), name)) {
-                throw new NotFoundException("Evidência não encontrada");
-            }
+            removed = library.delete(s.getName(), s.getRepoUrl(), name);
         } catch (IllegalArgumentException e) {
             return error(Response.Status.BAD_REQUEST, e.getMessage());
+        }
+        if (!removed) {
+            throw new NotFoundException("Evidência não encontrada");
         }
         return Response.noContent().build();
     }

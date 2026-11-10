@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -46,15 +47,13 @@ public class EvidenceLibrary {
                 return List.of();
             }
             try (Stream<Path> files = Files.list(source)) {
-                return files.filter(f -> Files.isRegularFile(f, LinkOption.NOFOLLOW_LINKS)).sorted().map(f -> {
-                    try {
-                        return new EvidenceFile(f.getFileName().toString(), Files.size(f), Files.getLastModifiedTime(f).toInstant());
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                }).toList();
+                List<EvidenceFile> found = new ArrayList<>();
+                for (Path f : files.filter(x -> Files.isRegularFile(x, LinkOption.NOFOLLOW_LINKS)).sorted().toList()) {
+                    found.add(new EvidenceFile(f.getFileName().toString(), Files.size(f), Files.getLastModifiedTime(f).toInstant()));
+                }
+                return found;
             }
-        } catch (IOException | UncheckedIOException e) {
+        } catch (IOException e) {
             return List.of();
         }
     }
@@ -109,17 +108,21 @@ public class EvidenceLibrary {
         }
     }
 
+    /** Maior nome de arquivo aceito, em caracteres. */
+    private static final int MAX_NAME_LENGTH = 150;
+
     private long copyLimited(InputStream in, Path out) throws IOException {
         long total = 0;
         byte[] buf = new byte[64 * 1024];
         try (var os = Files.newOutputStream(out)) {
-            int n;
-            while ((n = in.read(buf)) > 0) {
+            int n = in.read(buf);
+            while (n > 0) {
                 total += n;
                 if (total > maxFileBytes) {
                     throw new IllegalArgumentException("Arquivo acima do limite de " + (maxFileBytes / (1024 * 1024)) + " MB");
                 }
                 os.write(buf, 0, n);
+                n = in.read(buf);
             }
         }
         return total;
@@ -127,7 +130,7 @@ public class EvidenceLibrary {
 
     private static String validName(String fileName) {
         String n = fileName == null ? "" : fileName.strip();
-        if (n.isEmpty() || n.startsWith(".") || n.length() > 150 || n.matches(".*[/\\\\\\p{Cntrl}].*")) {
+        if (n.isEmpty() || n.startsWith(".") || n.length() > MAX_NAME_LENGTH || n.matches(".*[/\\\\\\p{Cntrl}].*")) {
             throw new IllegalArgumentException("Nome de arquivo inválido");
         }
         return n;

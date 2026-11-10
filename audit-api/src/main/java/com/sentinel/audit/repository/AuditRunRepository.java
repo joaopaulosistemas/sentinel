@@ -23,6 +23,14 @@ public class AuditRunRepository implements PanacheRepository<AuditRun> {
         return list("system.id = ?1 ORDER BY startedAt DESC", systemId);
     }
 
+    /** As execuções de vários sistemas numa consulta só (evita uma consulta por sistema), da mais nova para a mais antiga. */
+    public List<AuditRun> findBySystemIds(java.util.Collection<Long> systemIds) {
+        if (systemIds.isEmpty()) {
+            return List.of();
+        }
+        return list("system.id in ?1 ORDER BY startedAt DESC", systemIds);
+    }
+
     /** As {@code limit} execuções mais recentes do sistema, sem carregar o histórico inteiro. */
     public List<AuditRun> findBySystemId(Long systemId, int limit) {
         return find("system.id = ?1 ORDER BY startedAt DESC", systemId).page(0, limit).list();

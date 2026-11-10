@@ -392,6 +392,44 @@ function analyzersDirty({ cfg, off, paths }: { cfg: IEngineConfig | undefined; o
 const MAX_IGNORED_PATHS = 50;
 
 /** Aba "Analisadores": quais ferramentas rodam neste sistema e quais caminhos ficam fora da auditoria. */
+function SidesOffNotice({ sidesOff }: { sidesOff: string[] }) {
+  return (
+    <div role="status" style={{ padding: '10px 14px', background: 'var(--s-selected)', borderLeft: '3px solid #0f62fe', fontSize: 13 }}>
+      Com o escopo atual, os analisadores {sidesOff.includes('front') ? 'do front-end' : 'do back-end'} ficam desligados e só voltam se o lado for religado na aba Motor de regras.
+    </div>
+  );
+}
+
+interface IAnalyzerGroupProps {
+  group: ReturnType<typeof analyzersBySide>[number];
+  sidesOff: string[];
+  off: string[];
+  onToggle: (t: { name: string; runs: boolean }) => void;
+}
+
+function AnalyzerGroup({ group: g, sidesOff, off, onToggle }: IAnalyzerGroupProps) {
+  const sideOff = sideIsOff(g.side, sidesOff);
+  const running = g.items.filter((a) => !sideOff && !off.includes(a.name)).length;
+  return (
+    <div role="group" aria-label={g.title} style={{ display: 'grid', gap: 8, opacity: sideOff ? 0.5 : 1 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)', paddingBottom: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
+        <SideBadge side={g.side} /> {g.title} <span style={{ fontWeight: 400 }}>· {running} de {g.items.length} ligados{sideOff ? ' · desligado pelo escopo' : ''}</span>
+      </div>
+      {g.items.map((a) => (
+        <Checkbox
+          key={a.name}
+          id={`eng-an-${a.name}`}
+          labelText={a.name}
+          helperText={a.description}
+          checked={!sideOff && !off.includes(a.name)}
+          disabled={sideOff}
+          onChange={(_, { checked }) => onToggle({ name: a.name, runs: checked })}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function EngineAnalyzersPanel({ system, onDirtyChange }: IPanelProps) {
   const { query, save } = useEngine(system.id);
   const cfg = query.data;
@@ -431,33 +469,10 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: IPanelProps) {
       <Header cfg={cfg} busy={save.isPending} onReset={() => save.mutate(empty, { onSuccess: syncSaved })} />
       <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 12 }}>
         <legend style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Analisadores</legend>
-        {sidesOff.length > 0 && (
-          <div role="status" style={{ padding: '10px 14px', background: 'var(--s-selected)', borderLeft: '3px solid #0f62fe', fontSize: 13 }}>
-            Com o escopo atual, os analisadores {sidesOff.includes('front') ? 'do front-end' : 'do back-end'} ficam desligados e só voltam se o lado for religado na aba Motor de regras.
-          </div>
-        )}
-        {analyzersBySide(cfg.analyzers).map((g) => {
-          const sideOff = sideIsOff(g.side, sidesOff);
-          const running = g.items.filter((a) => !sideOff && !off.includes(a.name)).length;
-          return (
-            <div key={g.side} role="group" aria-label={g.title} style={{ display: 'grid', gap: 8, opacity: sideOff ? 0.5 : 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)', paddingBottom: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
-                <SideBadge side={g.side} /> {g.title} <span style={{ fontWeight: 400 }}>· {running} de {g.items.length} ligados{sideOff ? ' · desligado pelo escopo' : ''}</span>
-              </div>
-              {g.items.map((a) => (
-                <Checkbox
-                  key={a.name}
-                  id={`eng-an-${a.name}`}
-                  labelText={a.name}
-                  helperText={a.description}
-                  checked={!sideOff && !off.includes(a.name)}
-                  disabled={sideOff}
-                  onChange={(_, { checked }) => toggle({ name: a.name, runs: checked })}
-                />
-              ))}
-            </div>
-          );
-        })}
+        {sidesOff.length > 0 && <SidesOffNotice sidesOff={sidesOff} />}
+        {analyzersBySide(cfg.analyzers).map((g) => (
+          <AnalyzerGroup key={g.side} group={g} sidesOff={sidesOff} off={off} onToggle={toggle} />
+        ))}
       </fieldset>
       <TextArea
         id="eng-ignore-paths"

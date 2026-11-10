@@ -62,6 +62,7 @@ final class SarifResumo {
             case NAO_INSTALADA -> naoInstaladas.add(nome);
             case SEM_RESULTADO -> semResultado.add(nome);
             case SEM_ARQUIVOS -> { /* não se aplica a este projeto: não entra no resumo */ }
+            default -> { /* situação nova: ainda não entra no resumo */ }
         }
     }
 

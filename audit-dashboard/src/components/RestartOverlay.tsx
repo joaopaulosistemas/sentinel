@@ -64,7 +64,7 @@ function useFocusOnMount(box: React.RefObject<HTMLDivElement>): void {
 }
 
 /** Mantém o Tab dentro do aviso: nada do que está por trás pode ser acionado pelo teclado. */
-function trapTab(e: React.KeyboardEvent<HTMLDivElement>, box: HTMLDivElement | null): void {
+function trapTab(e: KeyboardEvent, box: HTMLDivElement | null): void {
   const focaveis = Array.from(box?.querySelectorAll<HTMLElement>('button:not([disabled])') ?? []);
   if (focaveis.length === 0) {
     e.preventDefault();
@@ -144,10 +144,17 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: IProps) {
   useBodyScrollLock();
   useFocusOnMount(box);
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape' && timedOut) onClose();
-    else if (e.key === 'Tab') trapTab(e, box.current);
-  };
+  // Teclado tratado por ouvinte nativo: um onKeyDown no JSX de um diálogo é lido como "elemento não interativo com evento".
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && timedOut) onClose();
+      else if (e.key === 'Tab') trapTab(e, el);
+    };
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [timedOut, onClose]);
 
   const titulo = timedOut ? 'A API está demorando para voltar' : 'Reiniciando a API';
 
@@ -156,7 +163,6 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: IProps) {
       data-testid="restart-overlay"
       style={{ position: 'fixed', inset: 0, zIndex: 9500, background: 'rgba(22, 22, 22, 0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
-      { }
       <div
         ref={box}
         role="alertdialog"
@@ -164,7 +170,6 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: IProps) {
         aria-labelledby="restart-overlay-title"
         aria-describedby="restart-overlay-desc"
         tabIndex={-1}
-        onKeyDown={onKeyDown}
         style={{ width: '100%', maxWidth: 560, maxHeight: '100%', overflowY: 'auto', background: 'var(--s-surface)', color: 'var(--s-text-2)', border: '1px solid var(--s-border)', borderTop: `4px solid ${timedOut ? '#f1c21b' : '#0f62fe'}`, padding: 32, outline: 'none' }}
       >
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 16 }}>

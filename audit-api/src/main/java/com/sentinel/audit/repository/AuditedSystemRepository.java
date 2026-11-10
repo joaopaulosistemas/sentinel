@@ -16,6 +16,8 @@ import java.util.Locale;
 @ApplicationScoped
 public class AuditedSystemRepository implements PanacheRepository<AuditedSystem> {
 
+    private static final String GIT_SUFFIX = ".git";
+
     /**
      * Pré-filtro no banco para o webhook: só sistemas cujo endereço contém o nome do repositório de algum dos
      * endereços recebidos. A comparação exata (esquema, credencial, ".git") continua em Java; isto só evita
@@ -50,6 +52,6 @@ public class AuditedSystemRepository implements PanacheRepository<AuditedSystem>
     static String repoName(String normalized) {
         String n = normalized == null ? "" : normalized.toLowerCase(Locale.ROOT);
         n = n.substring(n.lastIndexOf('/') + 1);
-        return n.endsWith(".git") ? n.substring(0, n.length() - 4) : n;
+        return n.endsWith(GIT_SUFFIX) ? n.substring(0, n.length() - GIT_SUFFIX.length()) : n;
     }
 }

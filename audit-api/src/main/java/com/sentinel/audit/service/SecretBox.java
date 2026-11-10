@@ -92,7 +92,7 @@ public class SecretBox {
             return new String(c.doFinal(all, GCM_IV_BYTES, all.length - GCM_IV_BYTES), StandardCharsets.UTF_8);
         } catch (Exception e) {
             // Sem este aviso, trocar SECRETS_KEY/API_KEY faria os tokens salvos "sumirem" sem nenhum rastro.
-            LOG.warn("Não foi possível decifrar um segredo salvo: valor corrompido ou SECRETS_KEY/API_KEY mudou desde que foi gravado");
+            LOG.warn("Falha ao decifrar um valor protegido: o dado está corrompido ou a chave de cifragem mudou desde a gravação");
             return null;
         }
     }

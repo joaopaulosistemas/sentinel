@@ -21,15 +21,19 @@ final class AuditSlots {
 
     /** Espera uma vaga, conferindo a cada meio segundo se o usuário cancelou a auditoria. */
     void acquire(Long auditRunId, BooleanSupplier cancelled) {
+        boolean got = false;
+        boolean wasCancelled = false;
         try {
-            while (!permits.tryAcquire(POLL_MILLIS, TimeUnit.MILLISECONDS)) {
-                if (cancelled.getAsBoolean()) {
-                    throw new AuditCancelledException(auditRunId);
-                }
+            while (!got && !wasCancelled) {
+                got = permits.tryAcquire(POLL_MILLIS, TimeUnit.MILLISECONDS);
+                wasCancelled = !got && cancelled.getAsBoolean();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrompido esperando vaga para a auditoria " + auditRunId, e);
+        }
+        if (wasCancelled) {
+            throw new AuditCancelledException(auditRunId);
         }
         if (cancelled.getAsBoolean()) {
             permits.release();

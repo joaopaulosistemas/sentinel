@@ -25,11 +25,12 @@ final class CliParser {
         result.branch  = "main";
         result.apiUrl  = "http://localhost:8080";
 
-        for (int i = 0; i < args.length; i += 2) {
+        int i = 0;
+        while (i < args.length) {
             String flag = args[i];
             if (flag.equals("--allow-incomplete")) {
                 result.allowIncomplete = true;
-                i--; // opção sem valor: avança só um argumento
+                i++;   // opção sem valor: avança só um argumento
                 continue;
             }
             if (flag.equals("--help") || flag.equals("-h")) {
@@ -42,6 +43,7 @@ final class CliParser {
                 throw new IllegalArgumentException("O parâmetro " + flag + " precisa de um valor");
             }
             applyFlag(result, flag, args[i + 1]);
+            i += 2;
         }
         return validated(result);
     }
