@@ -15,7 +15,16 @@ def comandos(caminho):
         if not c or c.startswith(("SET ", "SELECT pg_catalog")) or "flyway_schema_history" in c or c.startswith("\\"):
             continue
         saida.add(c)
-    return saida
+    return {_normaliza(c) for c in saida}
+
+
+def _normaliza(comando):
+    """O pg_dump escreve o mesmo CHECK de enum de dois jeitos (ANY (ARRAY[...]) ou ANY ((ARRAY[...])::text[])).
+    Reduz cada CHECK à coluna e aos valores, que é o que importa."""
+    def reduz(m):
+        valores = ",".join(sorted(re.findall(r"'([^']*)'", m.group(3))))
+        return "CONSTRAINT %s CHECK (%s IN (%s))" % (m.group(1), m.group(2), valores)
+    return re.sub(r"CONSTRAINT (\w+) CHECK \(\(\((\w+)\)::text = ANY (.*?\]\)?(?:::text\[\])?\))\)\)", reduz, comando)
 
 
 def main():
