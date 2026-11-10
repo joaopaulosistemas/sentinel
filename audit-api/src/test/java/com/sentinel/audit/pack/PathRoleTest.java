@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.sentinel.audit.pack.PathRole.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PathRoleTest {
 
@@ -59,8 +60,33 @@ class PathRoleTest {
 
     @Test
     void pastaItQueNaoESrcItContinuaProducao() {
-        assertEquals(PRODUCTION, PathRole.of("src/main/resources/i18n/it/mensagens.ts"));
+        // "it" (italiano) não é teste de integração do Maven; a pasta i18n é de tradução
+        assertEquals(LOCALIZATION, PathRole.of("src/main/resources/i18n/it/mensagens.ts"));
         assertEquals(PRODUCTION, PathRole.of("src/item/Pedido.java"));
         assertEquals(PRODUCTION, PathRole.of("it/Pedido.java"));
+    }
+
+    @Test
+    void arquivosDeTraducaoNaoSaoProducao() {
+        assertEquals(LOCALIZATION, PathRole.of("frontend/src/assets/i18n/pt_BR.json"));
+        assertEquals(LOCALIZATION, PathRole.of("src/main/resources/i18n/messages_es.properties"));
+        assertEquals(LOCALIZATION, PathRole.of("src/main/resources/messages.properties"));
+        assertEquals(LOCALIZATION, PathRole.of("src/main/resources/messages_pt_BR.properties"));
+        assertEquals(LOCALIZATION, PathRole.of("app/locales/en/common.json"));
+        assertTrue(LOCALIZATION.isNonProduction());
+        assertEquals("arquivo de tradução (textos da interface)", LOCALIZATION.describe());
+    }
+
+    @Test
+    void nomeParecidoNaoViraTraducao() {
+        assertEquals(PRODUCTION, PathRole.of("src/main/resources/messagesender.properties"));
+        assertEquals(PRODUCTION, PathRole.of("src/main/java/app/LocaleService.java"));
+        assertEquals(PRODUCTION, PathRole.of("src/main/resources/application.properties"));
+    }
+
+    @Test
+    void testeEGeradoTemPrioridadeSobreTraducao() {
+        assertEquals(TEST, PathRole.of("src/test/resources/i18n/messages.properties"));
+        assertEquals(GENERATED, PathRole.of("dist/i18n/en.json"));
     }
 }
