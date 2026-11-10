@@ -5,3 +5,5 @@
 .git
 quarkus-startup.log
 evidencias
+
+.m2-cache/
