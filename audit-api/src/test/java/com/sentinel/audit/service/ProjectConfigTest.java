@@ -141,6 +141,16 @@ class ProjectConfigTest {
     }
 
     @Test
+    void isExcludedUsaOsMesmosPadroesDoExclude() {
+        ProjectConfig config = ProjectConfig.parse(ARQUIVO);
+        assertTrue(config.isExcluded("audit-rules/packs/core-security/tests/x.java"));
+        assertTrue(config.isExcluded("./docs/guia/a.md"));
+        assertTrue(config.isExcluded("\\docs\\a.md"));
+        assertFalse(config.isExcluded("src/main/java/Real.java"));
+        assertFalse(ProjectConfig.empty().isExcluded("docs/a.md"));
+    }
+
+    @Test
     void arquivoInvalidoNuncaLancaExcecao() {
         assertFalse(ProjectConfig.parse("a: [1, 2").isEmpty());
         assertEquals(1, ProjectConfig.parse("- a\n- b").apply(List.of(), HOJE).problems().size());
