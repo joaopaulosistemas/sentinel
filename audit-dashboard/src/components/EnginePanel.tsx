@@ -263,10 +263,8 @@ function rulesView({ cfg, allRows, packs, rules, input }: IRulesViewArgs) {
   return { packRows, tabs, activeFamily, packNames, filtered, packsNote, sideCounts };
 }
 
-/** Aba "Motor de regras": pacotes, limites e regras deste sistema, por cima do perfil. A nota continua sendo do motor. */
-export function EngineRulesPanel({ system, onDirtyChange }: IPanelProps) {
-  const { query, save } = useEngine(system.id);
-  const cfg = query.data;
+/** O rascunho da aba: tudo o que a pessoa edita antes de salvar, sincronizado com o que veio do servidor. */
+function useRulesDraft({ cfg, plan, onDirtyChange }: { cfg: IEngineConfig | undefined; plan: ReturnType<typeof useFixPlanItems>; onDirtyChange: IPanelProps['onDirtyChange'] }) {
   const [packs, setPacks] = useState<Record<string, boolean>>({});
   const [limits, setLimits] = useState<Record<string, string>>({});
   const [rules, setRules] = useState<IRuleAdjustment[]>([]);
@@ -279,7 +277,6 @@ export function EngineRulesPanel({ system, onDirtyChange }: IPanelProps) {
   const [sidesOff, setSidesOff] = useState<Array<'back' | 'front'>>([]);
   const [visible, setVisible] = useState(PAGE);
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const plan = useFixPlanItems(system.id);
 
   const syncFrom = (data: IEngineConfig) => {
     setPacks(Object.fromEntries(data.packs.map((p) => [p.id, p.active])));
@@ -309,6 +306,24 @@ export function EngineRulesPanel({ system, onDirtyChange }: IPanelProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [cfg, rules, plan.data],
   );
+
+  return {
+    packs, setPacks, limits, setLimits, rules, setRules, newRule, setNewRule, text, setText, scope, setScope,
+    packFilter, setPackFilter, family, setFamily, sideTab, setSideTab, sidesOff, setSidesOff, visible, setVisible,
+    picked, setPicked, dirty, allRows, syncFrom,
+  };
+}
+
+/** Aba "Motor de regras": pacotes, limites e regras deste sistema, por cima do perfil. A nota continua sendo do motor. */
+export function EngineRulesPanel({ system, onDirtyChange }: IPanelProps) {
+  const { query, save } = useEngine(system.id);
+  const cfg = query.data;
+  const plan = useFixPlanItems(system.id);
+  const {
+    packs, setPacks, limits, setLimits, rules, setRules, newRule, setNewRule, text, setText, scope, setScope,
+    packFilter, setPackFilter, family, setFamily, sideTab, setSideTab, sidesOff, setSidesOff, visible, setVisible,
+    picked, setPicked, dirty, allRows, syncFrom,
+  } = useRulesDraft({ cfg, plan, onDirtyChange });
 
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;
@@ -430,9 +445,8 @@ function AnalyzerGroup({ group: g, sidesOff, off, onToggle }: IAnalyzerGroupProp
   );
 }
 
-export function EngineAnalyzersPanel({ system, onDirtyChange }: IPanelProps) {
-  const { query, save } = useEngine(system.id);
-  const cfg = query.data;
+/** O rascunho da aba de analisadores (o que está desligado e os caminhos ignorados), sincronizado com o servidor. */
+function useAnalyzersDraft({ cfg, onDirtyChange }: { cfg: IEngineConfig | undefined; onDirtyChange: IPanelProps['onDirtyChange'] }) {
   const [off, setOff] = useState<string[]>([]);
   const [pathsText, setPathsText] = useState('');
   const paths = pathLines(pathsText);
@@ -453,6 +467,14 @@ export function EngineAnalyzersPanel({ system, onDirtyChange }: IPanelProps) {
       syncSaved(cfg);
     }
   }, [cfg]);
+
+  return { off, setOff, pathsText, setPathsText, paths, dirty, syncSaved };
+}
+
+export function EngineAnalyzersPanel({ system, onDirtyChange }: IPanelProps) {
+  const { query, save } = useEngine(system.id);
+  const cfg = query.data;
+  const { off, setOff, pathsText, setPathsText, paths, dirty, syncSaved } = useAnalyzersDraft({ cfg, onDirtyChange });
 
   if (query.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (query.isError || !cfg) return <LoadError error={query.error} />;

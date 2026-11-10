@@ -5,7 +5,7 @@ import { timeAgo } from '../utils/timeAgo';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
-export interface IMcpStatusStripProps {
+interface IMcpStatusStripProps {
   systemId: number;
   /** null enquanto a configuração do sistema não chegou: nada é mostrado até saber. */
   enabled: boolean | null;

@@ -1,6 +1,6 @@
 import type { ISettingView } from '../types';
 
-export interface ISettingsSection {
+interface ISettingsSection {
   id: string;
   label: string;
   hint: string;
@@ -15,7 +15,7 @@ export const SETTINGS_SECTIONS: ISettingsSection[] = [
   { id: 'bd', label: 'Banco de dados', hint: 'Somente leitura: mudam no ambiente da instalação.' },
 ];
 
-export interface ISettingsGroup {
+interface ISettingsGroup {
   group: string;
   items: ISettingView[];
 }
@@ -44,7 +44,7 @@ export function pendingChanges(settings: ISettingView[], drafts: Record<string, 
   return out;
 }
 
-export interface IFilterSettingsInput {
+interface IFilterSettingsInput {
   settings: ISettingView[];
   section: string;
   query: string;

@@ -15,7 +15,7 @@ export const reportPeriods: Array<{ id: ReportPeriod; label: string }> = [
   { id: 0, label: 'Todo o histórico' },
 ];
 
-export const reportFormats: Array<{ id: ReportFormat; label: string; hint: string; path: string }> = [
+const reportFormats: Array<{ id: ReportFormat; label: string; hint: string; path: string }> = [
   { id: 'pdf', label: 'PDF', hint: 'Arquivo pronto para anexar e arquivar', path: 'report.pdf' },
   { id: 'html', label: 'HTML', hint: 'Para ler na tela e compartilhar o link', path: 'report' },
   { id: 'csv', label: 'Planilha (CSV)', hint: 'Para abrir no Excel', path: 'findings.csv' },
@@ -28,7 +28,7 @@ export function formatsFor(type: ReportType, singleSystem = true): typeof report
 }
 
 /** Endereço do relatório. Relativo por padrão, como o resto do dashboard (o nginx/proxy encaminha /api). */
-export interface IReportUrlInput {
+interface IReportUrlInput {
   base: string;
   auditId: number;
   format: ReportFormat;
@@ -48,7 +48,7 @@ export function reportUrl({ base, auditId, format, type, days }: IReportUrlInput
 }
 
 /** Relatório de todos os sistemas (ou de um só, quando a planilha não é do técnico). */
-export interface IPortfolioUrlInput {
+interface IPortfolioUrlInput {
   base: string;
   type: ReportType;
   format: Exclude<ReportFormat, 'sbom'>;

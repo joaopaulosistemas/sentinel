@@ -1,6 +1,6 @@
 import type { Category, IFindingResponse, IFindingsOverview, FindingStatus, Severity } from '../types';
 
-export interface ISystemGroup {
+interface ISystemGroup {
   systemId: number;
   systemName: string;
   auditId: number;
@@ -78,7 +78,7 @@ export interface IFilterChip {
   tone: 'blue' | 'gray';
 }
 
-export interface IActiveFilters {
+interface IActiveFilters {
   /** Nome do sistema escolhido; vazio = todos */
   systemName?: string;
   /** Mostrar o chip "Todos os sistemas" quando nenhum foi escolhido (só na visão de todos) */
@@ -128,7 +128,7 @@ export interface IShowLowChange {
   visible: boolean;
 }
 
-export interface IFooterTextInput {
+interface IFooterTextInput {
   shown: number;
   total: number;
   situation: SituationChoice;

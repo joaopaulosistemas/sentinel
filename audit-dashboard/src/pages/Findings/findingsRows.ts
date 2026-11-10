@@ -4,7 +4,7 @@ import { suggestionFor } from '../../utils/claudeHint';
 
 type OverviewItem = IFindingsOverview['items'][number];
 
-export interface IRowsView {
+interface IRowsView {
   rows: IFindingResponse[];
   total: number;
   pages: number;
@@ -48,19 +48,19 @@ export function pickRows({ auditMode, single, severities, showLow, page, pageSiz
   };
 }
 
-export interface IReviewScope {
+interface IReviewScope {
   auditMode: boolean;
   auditSystemId: number | undefined;
   systemId: number | undefined;
   items: OverviewItem[];
 }
 
-export interface IClaudeNoteScope extends Omit<IReviewScope, 'items'> {
+interface IClaudeNoteScope extends Omit<IReviewScope, 'items'> {
   itemByFinding: Map<number, OverviewItem>;
   suggestionsBySystem: Map<number, Parameters<typeof suggestionFor>[1]>;
 }
 
-export interface ICrumbsScope {
+interface ICrumbsScope {
   auditMode: boolean;
   audit: IAuditRunResponse | undefined;
   auditId: number;

@@ -25,7 +25,7 @@ export interface IRuleRow {
   side?: EngineSide;
 }
 
-export interface IRuleSources {
+interface IRuleSources {
   catalog: IEngineConfig['catalog'];
   known: IEngineConfig['knownRules'];
   profileRules: IRuleAdjustment[];
@@ -86,7 +86,7 @@ interface IRuleFilter {
   pack: string;
 }
 
-export interface IFilterRuleRowsInput {
+interface IFilterRuleRowsInput {
   rows: IRuleRow[];
   filter: IRuleFilter;
   adjustedIds: Set<string>;
@@ -113,7 +113,7 @@ export type BulkAction =
   | { kind: 'reset' };
 
 /** Aplica uma ação a várias regras de uma vez; devolve a lista nova de ajustes (sem os que não têm efeito). */
-export interface IApplyBulkInput {
+interface IApplyBulkInput {
   current: IRuleAdjustment[];
   ids: string[];
   action: BulkAction;

@@ -181,10 +181,11 @@ public class PmdAnalyzer implements CodeAnalyzer {
      * ({@code .sentinel.yml}) não contam; se todos forem desses, devolve {@code null} (nada ficou sem análise).
      */
     static String recoverableNote(String json, Path projectPath, Predicate<String> excluded) {
-        List<String> unread = unreadFiles(json, projectPath, excluded);
-        if (unread == null) {
+        java.util.Optional<List<String>> listed = unreadFiles(json, projectPath, excluded);
+        if (listed.isEmpty()) {
             return "o PMD não conseguiu analisar alguns arquivos; os demais foram analisados";
         }
+        List<String> unread = listed.get();
         if (unread.isEmpty()) {
             return null;
         }
@@ -194,12 +195,12 @@ public class PmdAnalyzer implements CodeAnalyzer {
                 + "; os demais foram analisados";
     }
 
-    /** "caminho (TipoDoErro)" de cada erro de processamento fora dos excluídos; nulo se o JSON não lista nenhum. */
-    private static List<String> unreadFiles(String json, Path projectPath, Predicate<String> excluded) {
+    /** "caminho (TipoDoErro)" de cada erro de processamento fora dos excluídos; vazio se o JSON não lista nenhum (ou não lê). */
+    private static java.util.Optional<List<String>> unreadFiles(String json, Path projectPath, Predicate<String> excluded) {
         try {
             JsonNode errors = MAPPER.readTree(json).path("processingErrors");
             if (errors.isEmpty()) {
-                return null;
+                return java.util.Optional.empty();
             }
             List<String> out = new ArrayList<>();
             for (JsonNode e : errors) {
@@ -208,9 +209,9 @@ public class PmdAnalyzer implements CodeAnalyzer {
                     out.add(file + " (" + errorType(e.path("message").asText("")) + ")");
                 }
             }
-            return out;
+            return java.util.Optional.of(out);
         } catch (Exception e) {
-            return null;
+            return java.util.Optional.empty();
         }
     }
 

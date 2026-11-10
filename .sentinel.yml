@@ -108,6 +108,47 @@ suppress:
     path: "audit-api/src/main/java/com/sentinel/audit/resource/FindingResource.java"
     reason: "classe de parâmetros do @BeanParam: o framework exige a anotação no campo; verificado no build do Quarkus 3.33"
 
+  # Migrations que mexem em bancos criados antes do Flyway. Não dá para editar nem renomear: o Flyway confere o
+  # checksum e a descrição de cada migration já aplicada, e a edição quebraria bancos existentes.
+  - rule: "sentinel-sqlnorma-constraint-fora-do-padrao"
+    path: "audit-api/src/main/resources/db/migration/V2__ajustes_de_bancos_antigos.sql"
+    reason: "remove CHECKs com os nomes que o Hibernate gerou (audit_run_status_check, finding_category_check); o nome a apagar é o do banco, não escolha do time"
+  - rule: "squawk-require-concurrent-index-deletion"
+    path: "audit-api/src/main/resources/db/migration/V3__remove_indice_redundante.sql"
+    reason: "índice de uma tabela pequena de supressões, sem tráfego que o bloqueio de um DROP INDEX atrapalhe; a migration já foi aplicada e não pode mudar (checksum do Flyway)"
+
+  # --- Achados da auditoria #134: decisões de projeto, cada uma com o motivo ---
+  # Entidades JPA: os campos precisam ser não finais (o Hibernate os preenche por reflexão) e guardam as colunas da tabela.
+  - rule: "pmd-ImmutableField"
+    path: "audit-api/src/main/java/com/sentinel/audit/review/*.java"
+    reason: "campo de entidade JPA: o Hibernate preenche por reflexão, não pode ser final"
+  - rule: "pmd-TooManyFields"
+    path: "audit-api/src/main/java/com/sentinel/audit/model/*.java"
+    reason: "uma entidade tem um campo por coluna da tabela; dividir criaria joins sem ganho (AuditRun, Finding, AuditedSystem)"
+  - rule: "pmd-ExcessivePublicCount"
+    path: "audit-api/src/main/java/com/sentinel/audit/model/AuditedSystem.java"
+    reason: "entidade com getters e setters de cada coluna"
+  # Record com construtor compacto: reatribuir o parâmetro é como se normaliza o campo (igual a SystemTuning).
+  - rule: "pmd-UnusedAssignment"
+    path: "audit-api/src/main/java/com/sentinel/audit/pack/DedupTopic.java"
+    reason: "construtor compacto de record: reatribuir o parâmetro é a forma de normalizar o campo; o PMD não entende isso"
+  # Classes de orquestração e carga de pacotes ligam muitos tipos por natureza; medido no relatório #134 (21 a 30 tipos).
+  - rule: "pmd-CouplingBetweenObjects"
+    path: "audit-api/src/main/java/com/sentinel/audit/**"
+    reason: "classes de orquestração e carga de pacotes conhecem vários tipos de propósito; partir só espalharia as dependências"
+  - rule: "checkstyle-ClassFanOutComplexity"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/AnalyzerRunner.java"
+    reason: "executor dos analisadores: referencia cada um por tipo (26 contra o limite de 25)"
+  - rule: "checkstyle-ClassFanOutComplexity"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/AuditOrchestrationService.java"
+    reason: "orquestra o fluxo da auditoria (27 contra o limite de 25); as etapas já estão em classes próprias"
+  - rule: "jscpd-*"
+    path: "audit-api/src/main/java/com/sentinel/audit/resource/SystemHistoryResource.java"
+    reason: "o trecho repetido é só o bloco de imports e a anotação de cabeçalho, sem lógica duplicada"
+  - rule: "jscpd-*"
+    path: "audit-api/src/main/java/com/sentinel/audit/settings/SettingsResource.java"
+    reason: "o trecho repetido é só o bloco de imports e a anotação de cabeçalho, sem lógica duplicada"
+
   # O jscpd conta listas de import iguais como trecho duplicado; import não é lógica repetida.
   # O local do achado é o segundo arquivo da dupla.
   - rule: "jscpd-*"

@@ -77,7 +77,7 @@ export const MAX_FILES = 50;
 /** Quanto do início de cada arquivo é lido para reconhecer o formato. */
 export const SNIFF_BYTES = 4096;
 
-export type EvidenceVerdict =
+type EvidenceVerdict =
   | { ok: true; kind: EvidenceKind; note?: string }
   | { ok: false; reason: string; hint: string };
 
@@ -99,34 +99,56 @@ function csvKind(head: string): EvidenceKind | null {
 
 const recusa = (reason: string, hint: string): EvidenceVerdict => ({ ok: false, reason, hint });
 
+type EvidenceCheck = (head: string) => EvidenceVerdict;
+
+const checkSql: EvidenceCheck = (head) => {
+  if (/\binsert\s+into\b|^\s*copy\s+\S+\s+(\(|from)/im.test(head)) {
+    return recusa('O .sql contém dados (INSERT ou COPY).', 'Gere só a estrutura: pg_dump --schema-only.');
+  }
+  return /\bcreate\s+(table|index|unique\s+index)\b/i.test(head)
+    ? { ok: true, kind: 'schema' }
+    : recusa('O .sql não tem CREATE TABLE nem CREATE INDEX no começo.', 'Use a saída de pg_dump --schema-only.');
+};
+
+const checkCsv: EvidenceCheck = (head) => {
+  const kind = csvKind(head);
+  return kind
+    ? { ok: true, kind }
+    : recusa('Cabeçalho do CSV não é de pg_stat_statements, pg_stat_user_tables nem pg_stat_user_indexes.', 'Gere com ./coletar-evidencias.sh; as colunas precisam estar na primeira linha.');
+};
+
+const checkJson: EvidenceCheck = (head) =>
+  /^\s*[[{]/.test(head) && /"Plan"/.test(head)
+    ? { ok: true, kind: 'explain' }
+    : recusa('O JSON não é um plano do PostgreSQL (não tem "Plan").', 'Use EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON).');
+
+const checkXml: EvidenceCheck = (head) =>
+  /<report[\s>]/.test(head) ? { ok: true, kind: 'jacoco' } : recusa('O XML não é um relatório do JaCoCo (falta <report>).', 'Envie o jacoco.xml gerado pelo seu CI.');
+
+const checkLcov: EvidenceCheck = (head) =>
+  /^SF:/m.test(head) ? { ok: true, kind: 'lcov' } : recusa('O arquivo não está no formato lcov (falta SF:).', 'Gere com jest --coverage no formato lcov.');
+
+const checkHeap: EvidenceCheck = (head) =>
+  /num\s+#instances\s+#bytes/i.test(head) ? { ok: true, kind: 'heap' } : recusa('O texto não é um histograma de memória da JVM.', 'Use jcmd <pid> GC.class_histogram.');
+
+/** Cada tipo de arquivo aceito, na ordem em que o nome é testado. */
+const CHECKS_BY_NAME: Array<[(name: string) => boolean, EvidenceCheck]> = [
+  [(n) => n.endsWith('.sql'), checkSql],
+  [(n) => n.endsWith('.csv'), checkCsv],
+  [(n) => n.endsWith('.json'), checkJson],
+  [(n) => n.endsWith('.xml'), checkXml],
+  [(n) => n.endsWith('.info') || n.startsWith('lcov'), checkLcov],
+  [(n) => n.endsWith('.txt') || n.endsWith('.histo'), checkHeap],
+];
+
+function extensionOf(name: string): string {
+  return name.includes('.') ? name.slice(name.lastIndexOf('.')) : 'sem extensão';
+}
+
 function byExtension(name: string, head: string): EvidenceVerdict {
-  if (name.endsWith('.sql')) {
-    if (/\binsert\s+into\b|^\s*copy\s+\S+\s+(\(|from)/im.test(head)) {
-      return recusa('O .sql contém dados (INSERT ou COPY).', 'Gere só a estrutura: pg_dump --schema-only.');
-    }
-    return /\bcreate\s+(table|index|unique\s+index)\b/i.test(head)
-      ? { ok: true, kind: 'schema' }
-      : recusa('O .sql não tem CREATE TABLE nem CREATE INDEX no começo.', 'Use a saída de pg_dump --schema-only.');
-  }
-  if (name.endsWith('.csv')) {
-    const kind = csvKind(head);
-    return kind ? { ok: true, kind } : recusa('Cabeçalho do CSV não é de pg_stat_statements, pg_stat_user_tables nem pg_stat_user_indexes.', 'Gere com ./coletar-evidencias.sh; as colunas precisam estar na primeira linha.');
-  }
-  if (name.endsWith('.json')) {
-    return /^\s*[[{]/.test(head) && /"Plan"/.test(head)
-      ? { ok: true, kind: 'explain' }
-      : recusa('O JSON não é um plano do PostgreSQL (não tem "Plan").', 'Use EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON).');
-  }
-  if (name.endsWith('.xml')) {
-    return /<report[\s>]/.test(head) ? { ok: true, kind: 'jacoco' } : recusa('O XML não é um relatório do JaCoCo (falta <report>).', 'Envie o jacoco.xml gerado pelo seu CI.');
-  }
-  if (name.endsWith('.info') || name.startsWith('lcov')) {
-    return /^SF:/m.test(head) ? { ok: true, kind: 'lcov' } : recusa('O arquivo não está no formato lcov (falta SF:).', 'Gere com jest --coverage no formato lcov.');
-  }
-  if (name.endsWith('.txt') || name.endsWith('.histo')) {
-    return /num\s+#instances\s+#bytes/i.test(head) ? { ok: true, kind: 'heap' } : recusa('O texto não é um histograma de memória da JVM.', 'Use jcmd <pid> GC.class_histogram.');
-  }
-  return recusa(`Tipo de arquivo não aceito (${name.includes('.') ? name.slice(name.lastIndexOf('.')) : 'sem extensão'}).`, 'Aceitos: .sql, .csv, .json, .xml, .info e .txt, no formato da lista ao lado.');
+  const match = CHECKS_BY_NAME.find(([matches]) => matches(name));
+  if (match) return match[1](head);
+  return recusa(`Tipo de arquivo não aceito (${extensionOf(name)}).`, 'Aceitos: .sql, .csv, .json, .xml, .info e .txt, no formato da lista ao lado.');
 }
 
 /** Reconhece um arquivo pelo nome, tamanho e começo do conteúdo; recusa o que o Sentinel ignoraria. */
@@ -139,7 +161,7 @@ export function classifyEvidence(fileName: string, size: number, head: string): 
   return byExtension(name, head.slice(0, SNIFF_BYTES));
 }
 
-export interface IEvidenceCoverage {
+interface IEvidenceCoverage {
   received: number;
   total: number;
   byArea: Array<{ area: EvidenceArea; received: number; total: number }>;

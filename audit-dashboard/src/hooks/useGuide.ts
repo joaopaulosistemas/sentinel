@@ -10,7 +10,7 @@ export function useGuide() {
 }
 
 /** CLAUDE.md da tecnologia, gerado pela API a partir das regras e das boas práticas. */
-export interface IGuideClaudeMdOptions {
+interface IGuideClaudeMdOptions {
   stackId: string;
   enabled: boolean;
 }

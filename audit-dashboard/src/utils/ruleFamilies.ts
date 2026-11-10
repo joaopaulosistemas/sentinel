@@ -2,7 +2,7 @@ import type { IEngineAnalyzerState, IEngineConfig, IEnginePackState, EngineSide 
 import type { IRuleRow } from './ruleCatalog';
 
 /** De que lado da aplicação o pacote trata. "both" cobre o que serve aos dois e os pacotes que não conhecemos. */
-export type PackSide = 'back' | 'front' | 'both';
+type PackSide = 'back' | 'front' | 'both';
 
 const SIDE_OF_PACK: Record<string, PackSide> = {
   'core-quarkus': 'back',
@@ -23,7 +23,7 @@ export function sideOfPack(id: string): PackSide {
   return SIDE_OF_PACK[id] ?? 'both';
 }
 
-export interface IPackGroup {
+interface IPackGroup {
   side: PackSide;
   title: string;
   packs: IEnginePackState[];
@@ -146,7 +146,7 @@ export interface ISidePack {
   others: Array<{ side: EngineSide; count: number }>;
 }
 
-export interface ISideGroup {
+interface ISideGroup {
   side: EngineSide;
   title: string;
   packs: ISidePack[];

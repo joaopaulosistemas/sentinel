@@ -74,7 +74,7 @@ function useMenuFixo(): boolean {
 
 
 /** Para onde a tecla leva a largura do menu; `null` = a tecla não é do separador. */
-export interface ITeclaMenu {
+interface ITeclaMenu {
   key: string;
   shift: boolean;
   atual: number;

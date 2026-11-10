@@ -110,33 +110,37 @@ public class AuditCli {
             }
 
             printSummary(finalResult);
-
-            JsonNode findings = null;
-            if (needsFindings(args)) {
-                findings = fetchFindings(args, auditRunId);
-                writeReports(args, findings, auditRunId);
-            }
-
-            // Todas as verificações rodam (cada uma explica sua falha); basta uma para reprovar.
-            boolean failed = failedBelowScore(args, finalResult);
-            failed |= failedOnFindings(args, findings);
-            failed |= failedOnNewFindings(args, auditRunId);
-            failed |= failedOnScoreDrop(args, auditRunId);
-            if (failed) {
-                return 1;
-            }
-            if (!args.allowIncomplete && finalResult.path("incomplete").asBoolean(false)) {
-                reportIncomplete(finalResult);
-                return EXIT_INCOMPLETE;
-            }
-
-            System.out.println("\nAuditoria concluída com sucesso.");
-            return 0;
+            return verdict(args, finalResult, auditRunId);
 
         } catch (Exception e) {
             System.err.println("Erro ao executar auditoria: " + e.getMessage());
             return 2;
         }
+    }
+
+    /** Aplica os critérios de aprovação (nota, achados, queda, incompleto) e devolve o código de saída. */
+    private int verdict(CliArgs args, JsonNode finalResult, long auditRunId) throws Exception {
+        JsonNode findings = null;
+        if (needsFindings(args)) {
+            findings = fetchFindings(args, auditRunId);
+            writeReports(args, findings, auditRunId);
+        }
+
+        // Todas as verificações rodam (cada uma explica sua falha); basta uma para reprovar.
+        boolean failed = failedBelowScore(args, finalResult);
+        failed |= failedOnFindings(args, findings);
+        failed |= failedOnNewFindings(args, auditRunId);
+        failed |= failedOnScoreDrop(args, auditRunId);
+        if (failed) {
+            return 1;
+        }
+        if (!args.allowIncomplete && finalResult.path("incomplete").asBoolean(false)) {
+            reportIncomplete(finalResult);
+            return EXIT_INCOMPLETE;
+        }
+
+        System.out.println("\nAuditoria concluída com sucesso.");
+        return 0;
     }
 
     /** A nota de uma auditoria incompleta pode estar otimista: por padrão ela não passa no gate. */

@@ -37,7 +37,7 @@ import type {
 
 // URLs relativas: em dev o proxy do Vite e, em produção, o nginx encaminham /api para a API.
 // VITE_API_URL só é necessário se a API estiver em outro host (e então exige CORS).
-export interface ICheckRepoParams {
+interface ICheckRepoParams {
   repoUrl: string;
   branch?: string;
   systemId?: number;
@@ -45,13 +45,13 @@ export interface ICheckRepoParams {
   gitTokenHosts?: string;
 }
 
-export interface IReviewActionParams {
+interface IReviewActionParams {
   systemId: number;
   path: string;
   body?: unknown;
 }
 
-export interface IDecidePendingActionParams {
+interface IDecidePendingActionParams {
   systemId: number;
   actionId: number;
   decision: 'approve' | 'reject';

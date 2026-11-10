@@ -173,14 +173,24 @@ export function phaseViews(
     RELATORIO: 'insights e plano de ação',
   };
   return PHASES.map((p, i) => {
-    const state: IPhaseView['state'] =
-      i < index ? 'done' : i === index ? (failed ? 'failed' : 'active') : 'pending';
-    return {
-      n: i + 1,
-      id: p.id,
-      name: p.label,
-      state,
-      sub: state === 'done' ? 'concluído' : state === 'pending' ? 'pendente' : state === 'failed' ? 'interrompida' : subs[p.id],
-    };
+    const state = phaseState(i, index, failed);
+    return { n: i + 1, id: p.id, name: p.label, state, sub: phaseSub(state, subs[p.id]) };
   });
+}
+
+function phaseState(i: number, current: number, failed: boolean): IPhaseView['state'] {
+  if (i < current) return 'done';
+  if (i > current) return 'pending';
+  return failed ? 'failed' : 'active';
+}
+
+const PHASE_SUB_BY_STATE: Partial<Record<IPhaseView['state'], string>> = {
+  done: 'concluído',
+  pending: 'pendente',
+  failed: 'interrompida',
+};
+
+/** Fase ativa mostra o texto de apoio; as demais, o estado em palavras. */
+function phaseSub(state: IPhaseView['state'], activeText: string): string {
+  return PHASE_SUB_BY_STATE[state] ?? activeText;
 }
