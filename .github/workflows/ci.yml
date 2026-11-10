@@ -144,6 +144,13 @@ jobs:
       # motores devolvem exatamente os mesmos achados (e que nenhuma regra deixou de ser lida pelo Opengrep).
       - name: Opengrep e Semgrep devolvem os mesmos achados
         run: python3 scripts/paridade-motores.py
+      # O ESLint da imagem (audit-rules/lint/eslint) usa overrides de dependência; sem este passo, um override que
+      # quebra um plugin só aparece em produção, como ESLint saindo com código 2 e resultado vazio.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: ESLint e plugins rodam com o package-lock.json
+        run: bash scripts/verificar-eslint-plugins.sh
 
   benchmark:
     name: OWASP Benchmark (recall e precisão)

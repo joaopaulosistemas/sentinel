@@ -100,8 +100,9 @@ services:
       - audit_clones:/tmp/sentinel-audit-clones
       # Chave que cifra os tokens cadastrados na tela quando SECRETS_KEY/API_KEY estão vazias. Faça backup junto com o banco.
       - audit_secrets:/var/lib/sentinel
-      # Evidências offline: ./evidencias/<nome-do-sistema>/ (somente leitura). Veja docs/evidencias/README.md
-      - ${EVIDENCE_HOST_DIR:-./evidencias}:/evidence:ro
+      # Evidências offline: ./evidencias/<nome-do-sistema>/ (leitura e escrita: a tela de evidências envia e apaga arquivos
+      # por aqui; com :ro o envio falha com "Read-only file system"). Veja docs/evidencias/README.md
+      - ${EVIDENCE_HOST_DIR:-./evidencias}:/evidence
       # Projetos locais (somente leitura). Só são usados com SENTINEL_LOCAL_ROOT=/projects. Veja docs/pasta-local/README.md
       - ${PROJECTS_HOST_DIR:-./projetos}:/projects:ro
       # Cache Maven do host (somente leitura) para o Trivy resolver POMs pai/BOMs sem ir ao Maven Central, que bloqueia o IP
