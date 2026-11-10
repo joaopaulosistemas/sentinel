@@ -5,7 +5,7 @@
   "dependencies": {
     "dependency-cruiser": "18.7.2",
     "squawk-cli": "2.61.0",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "@stoplight/spectral-cli": "6.17.1"
   },
   "overrides": {
