@@ -1150,3 +1150,9 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Por quê:** na conferência manual dos 18 `generic-password` do Betterleaks fora de teste e tradução, 4 eram falso positivo: `password:hover` em CSS e texto de tutorial em HTML. Os outros 14 eram senhas fixas de verdade (código, seed de banco, compose).
 - **Mudança:** em `FindingConfidence`, achado `*-generic-password` em `.css/.scss/.sass/.less/.html/.htm/.md/.rst/.adoc/.txt` sai com confiança baixa e explicação. Em `.java`, `.js`, `.yml` etc. continua média; outras regras (chave AWS em HTML) não são afetadas. Vale para Gitleaks e Betterleaks.
 - **Limite:** um segredo real colado num `.html` ou `.md` com essa regra também é rebaixado (continua listado). Os testes JUnit rodam no CI; aqui só conferi a lógica por leitura.
+
+## Segunda medição Gitleaks × Betterleaks, só caminho de produção (sem versão nova)
+
+- **Resultado:** achados únicos em produção, Gitleaks 30 contra Betterleaks 71 nos cinco repositórios. Excedente do Betterleaks: 17 `generic-password` e 2 `mongodb-connection-string`.
+- **Conferência manual** dos 18 `generic-password` fora de teste e tradução: 14 senhas fixas reais (código, seed de banco, compose), 4 falsos positivos (CSS `password:hover`, texto de tutorial em HTML). Amostra pequena, em repositórios propositalmente vulneráveis; não generaliza para código de empresa.
+- **Decisão mantida:** Gitleaks padrão, Betterleaks opt-in (a 2.x vai quebrar a CLI e o JSON).
