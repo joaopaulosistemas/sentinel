@@ -5,7 +5,7 @@
 # Com INSECURE_SSL=true (padrão), a verificação de certificado é DESLIGADA apenas durante o build
 # (Maven, apt, curl, pip, npm e git). As configurações inseguras são removidas ao final, então a
 # imagem pronta não carrega nada disso. Para voltar ao normal: --build-arg INSECURE_SSL=false
-FROM docker.io/maven:3.9-eclipse-temurin-21-alpine AS build
+FROM docker.io/maven:3.9-eclipse-temurin-26-alpine AS build
 ARG INSECURE_SSL=true
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
