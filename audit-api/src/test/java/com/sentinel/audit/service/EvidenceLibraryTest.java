@@ -32,6 +32,15 @@ class EvidenceLibraryTest {
     }
 
     @Test
+    void salvarDevolveOHorarioDoArquivoGravado() throws Exception {
+        var salvo = lib.save("s", null, "schema.sql", in("create table t(a int);"));
+        Path gravado = root.resolve("s").resolve("schema.sql");
+        assertTrue(Files.isRegularFile(gravado));
+        assertEquals(22, salvo.sizeBytes());
+        assertEquals(Files.getLastModifiedTime(gravado).toInstant(), salvo.modifiedAt());
+    }
+
+    @Test
     void salvaListaERemoveNaPastaDoSistema() throws Exception {
         lib.save("Sistema de Câmbio", "https://x/y.git", "schema.sql", in("create table t(a int);"));
         assertTrue(Files.isRegularFile(root.resolve("sistema-de-cambio").resolve("schema.sql")));

@@ -81,8 +81,11 @@ public class EvidenceLibrary {
             Path tmp = Files.createTempFile(dir, ".envio-", ".tmp");
             try {
                 long copied = copyLimited(body, tmp);
+                // O horário é lido antes de mover: o rename preserva a data, e em pasta montada do Windows (/mnt/c, 9p)
+                // consultar o destino logo após o rename pode falhar com NoSuchFileException, mesmo com o arquivo gravado.
+                Instant modified = Files.getLastModifiedTime(tmp).toInstant();
                 Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
-                return new EvidenceFile(name, copied, Files.getLastModifiedTime(target).toInstant());
+                return new EvidenceFile(name, copied, modified);
             } finally {
                 Files.deleteIfExists(tmp);
             }
