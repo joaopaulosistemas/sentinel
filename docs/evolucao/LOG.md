@@ -1144,3 +1144,9 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Causa:** o analisador roda `eslint .`; num repositório sem nenhum `.ts/.tsx/.js/.jsx/.mjs/.html` (só Java, CSS, Markdown), o ESLint 10 levanta `AllFilesIgnoredError` e sai com 2, que o Sentinel trata como falha de execução.
 - **Correção:** `--no-error-on-unmatched-pattern` no comando. Com ela o ESLint sai 0 e escreve `[]`.
 - **Verificado:** reproduzido com o ESLint 10.14.0 real em três projetos: só `.css`/`.md` (exit 2 sem a flag, exit 0 e `[]` com ela), só `.html`/`.java` e um com `.js`/`.ts` (continua achando os mesmos 5 problemas, exit 1). O Stylelint já usava `--allow-empty-input`. Testes JUnit (um novo e uma asserção acrescentada) rodam no CI.
+
+## `generic-password` em CSS, HTML e texto tem confiança baixa (sem versão nova)
+
+- **Por quê:** na conferência manual dos 18 `generic-password` do Betterleaks fora de teste e tradução, 4 eram falso positivo: `password:hover` em CSS e texto de tutorial em HTML. Os outros 14 eram senhas fixas de verdade (código, seed de banco, compose).
+- **Mudança:** em `FindingConfidence`, achado `*-generic-password` em `.css/.scss/.sass/.less/.html/.htm/.md/.rst/.adoc/.txt` sai com confiança baixa e explicação. Em `.java`, `.js`, `.yml` etc. continua média; outras regras (chave AWS em HTML) não são afetadas. Vale para Gitleaks e Betterleaks.
+- **Limite:** um segredo real colado num `.html` ou `.md` com essa regra também é rebaixado (continua listado). Os testes JUnit rodam no CI; aqui só conferi a lógica por leitura.
