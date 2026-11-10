@@ -12,12 +12,15 @@ public enum PathRole {
     TEST,
     DOCS,
     FIXTURE,
+    LOCALIZATION,
     GENERATED;
 
     private static final Set<String> TEST_DIRS = Set.of("test", "tests", "__tests__", "spec", "specs", "e2e", "integration-tests", "integrationtest", "integration-test");
     private static final Set<String> DOC_DIRS = Set.of("docs", "doc", "documentation", "wiki");
     private static final Set<String> FIXTURE_DIRS = Set.of("fixtures", "__fixtures__", "testdata", "test-data", "mocks", "__mocks__",
             "examples", "example", "samples", "sample", "demo", "demos");
+    /** Textos traduzidos da interface: "password" aqui é o rótulo de um campo, não uma credencial. */
+    private static final Set<String> LOCALIZATION_DIRS = Set.of("i18n", "l10n", "locales", "locale", "translations");
     private static final Set<String> GENERATED_DIRS = Set.of("generated", "target", "build", "dist", "node_modules",
             "vendor", ".next", ".gradle", "third_party", "thirdparty", "opensource");
 
@@ -32,6 +35,7 @@ public enum PathRole {
             case TEST -> "arquivo de teste";
             case DOCS -> "documentação";
             case FIXTURE -> "arquivo de exemplo ou dado de teste";
+            case LOCALIZATION -> "arquivo de tradução (textos da interface)";
             case GENERATED -> "código gerado ou dependência baixada";
             case PRODUCTION -> "código de produção";
         };
@@ -56,6 +60,8 @@ public enum PathRole {
             role = FIXTURE;
         } else if (inDirs(parts, TEST_DIRS) || isMavenIt(parts) || isTestFile(file)) {
             role = TEST;
+        } else if (inDirs(parts, LOCALIZATION_DIRS) || isMessageBundle(file)) {
+            role = LOCALIZATION;
         } else if (inDirs(parts, DOC_DIRS) || isTopLevelDoc(parts, file)) {
             role = DOCS;
         }
@@ -80,6 +86,12 @@ public enum PathRole {
             }
         }
         return false;
+    }
+
+    /** {@code messages.properties} e {@code messages_pt_BR.properties}: pacotes de mensagens do Spring e do Java. */
+    private static boolean isMessageBundle(String file) {
+        return file.startsWith("messages") && file.endsWith(".properties")
+                && (file.length() == "messages.properties".length() || file.charAt("messages".length()) == '_');
     }
 
     private static boolean isTestFile(String file) {
