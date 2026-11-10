@@ -8,7 +8,7 @@ export interface ICrumb {
 }
 
 /** Altura da linha do caminho; é a mesma em todas as telas, para o título ficar sempre na mesma altura. */
-export const TRAIL_HEIGHT = 16;
+const TRAIL_HEIGHT = 16;
 
 /**
  * Moldura padrão das telas: mesma margem, mesma largura e o caminho (breadcrumb) acima do título.
@@ -27,7 +27,7 @@ export function PageShell({ crumbs, children }: { crumbs: ICrumb[]; children: Re
 }
 
 /** Caminho (breadcrumb) no estilo das telas de detalhe. */
-export function Breadcrumb({ items }: { items: ICrumb[] }) {
+function Breadcrumb({ items }: { items: ICrumb[] }) {
   return (
     <nav aria-label="Caminho" style={{ fontSize: 12, lineHeight: '16px', color: 'var(--s-text-3)' }}>
       {items.map((c, i) => (

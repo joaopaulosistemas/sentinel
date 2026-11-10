@@ -2,8 +2,8 @@
 export const MENU_PADRAO = 256;
 export const MENU_MIN = 200;
 export const MENU_TRILHO = 48;
-export const MENU_SNAP = 140;
-export const MENU_MAX = 480;
+const MENU_SNAP = 140;
+const MENU_MAX = 480;
 export const MENU_CHAVE = 'sentinel.menu-largura';
 
 /** Maior largura permitida: 480 px e, no máximo, 40% da janela (nunca abaixo do mínimo). */

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { IBatchSuppressRequest, IScheduleRequest, ISuppressRequest } from '../types';
+import type { IBatchSuppressRequest, ISuppressRequest } from '../types';
 
 export function useTrend(systemId: number) {
   return useQuery({
@@ -42,7 +42,7 @@ function useInvalidateLifecycle() {
   const qc = useQueryClient();
   return () => {
     for (const key of ['findings', 'audit', 'auditRuns', 'systems', 'trend', 'diff', 'suppressions', 'ruleQuality']) {
-      qc.invalidateQueries({ queryKey: [key] });
+      void qc.invalidateQueries({ queryKey: [key] });
     }
   };
 }
@@ -84,27 +84,4 @@ export function useInsights(auditId: number | undefined) {
 
 export function usePacks() {
   return useQuery({ queryKey: ['packs'], queryFn: () => api.getPacks(), staleTime: 60_000 });
-}
-
-export function useUpdateProfile() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ systemId, profile }: { systemId: number; profile: string }) => api.updateProfile(systemId, profile),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['systems'] });
-      qc.invalidateQueries({ queryKey: ['system'] });
-    },
-  });
-}
-
-export function useUpdateSchedule() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ systemId, body }: { systemId: number; body: IScheduleRequest }) =>
-      api.updateSchedule(systemId, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['systems'] });
-      qc.invalidateQueries({ queryKey: ['system'] });
-    },
-  });
 }

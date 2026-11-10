@@ -18,28 +18,13 @@ export function groupBySystem(items: IFindingsOverview['items']): ISystemGroup[]
   return [...groups.values()];
 }
 
-export const severityLabels: Record<Severity, string> = {
-  CRITICAL: 'Crítico',
-  HIGH: 'Alto',
-  MEDIUM: 'Médio',
-  LOW: 'Baixo',
-  INFO: 'Info',
-};
-
-export const categoryLabels: Record<Category, string> = {
+const categoryLabels: Record<Category, string> = {
   SECURITY: 'Segurança',
   QUALITY: 'Qualidade',
   ARCHITECTURE: 'Arquitetura',
   DEPENDENCY: 'Dependências',
   OBSERVABILITY: 'Observabilidade',
   PERFORMANCE: 'Desempenho',
-};
-
-export const statusLabels: Record<FindingStatus, string> = {
-  OPEN: 'Aberto',
-  ACKNOWLEDGED: 'Reconhecido',
-  FIXED: 'Resolvido',
-  SUPPRESSED: 'Suprimido',
 };
 
 /** Cores da pílula de severidade (fundo e texto), iguais em tabelas e resumos. */
@@ -118,7 +103,7 @@ export function activeFilterChips(f: IActiveFilters): IFilterChip[] {
 }
 
 /** "críticos e altos", "críticos"... usado no rodapé ("142 abertos (críticos e altos)"). */
-export function severityPhrase(choice: SeverityChoice): string {
+function severityPhrase(choice: SeverityChoice): string {
   switch (choice) {
     case 'critHigh':
       return 'críticos e altos';

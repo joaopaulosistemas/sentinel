@@ -7,7 +7,7 @@ const card = { background: 'var(--s-surface)', border: '1px solid var(--s-border
 const muted = { color: 'var(--s-text-3)', fontSize: '0.875rem' } as const;
 
 /** Salva o texto como arquivo; fora do navegador (ou se o download for bloqueado) não faz nada. */
-export function downloadText(name: string, text: string): void {
+function downloadText(name: string, text: string): void {
   try {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown' }));

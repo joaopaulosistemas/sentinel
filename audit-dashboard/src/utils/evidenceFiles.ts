@@ -5,7 +5,7 @@
 
 export type EvidenceKind = 'schema' | 'statements' | 'tables' | 'indexes' | 'explain' | 'jacoco' | 'lcov' | 'heap';
 
-export type EvidenceArea = 'Banco de dados' | 'Testes' | 'Memória';
+type EvidenceArea = 'Banco de dados' | 'Testes' | 'Memória';
 
 export interface IEvidenceType {
   kind: EvidenceKind;

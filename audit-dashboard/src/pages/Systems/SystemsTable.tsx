@@ -39,7 +39,7 @@ function RowActions({ system: s, onAudit, onEdit, onDelete }: Omit<IRowProps, 's
         disabled={!audits}
         title={audits ? 'Ver as auditorias deste sistema' : 'Este sistema ainda não tem auditorias'}
         aria-label={`Auditorias de ${s.name}`}
-        onClick={() => navigate(`/systems/${s.id}`)}
+        onClick={() => void navigate(`/systems/${s.id}`)}
         style={{ ...actionButton, color: audits ? 'var(--s-link)' : 'var(--s-disabled)', cursor: audits ? 'pointer' : 'not-allowed' }}
       >
         <ListIcon />
@@ -69,7 +69,7 @@ function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: IRowProps
       <td style={{ padding: '12px 16px', minWidth: 0 }}>
         <button
           type="button"
-          onClick={() => navigate(`/systems/${s.id}`)}
+          onClick={() => void navigate(`/systems/${s.id}`)}
           style={{ background: 'none', border: 0, padding: 0, color: 'var(--s-text)', cursor: 'pointer', fontWeight: 500, fontSize: 'inherit', textAlign: 'left' }}
         >
           {s.name}

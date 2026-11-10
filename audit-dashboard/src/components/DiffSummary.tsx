@@ -45,7 +45,7 @@ export function DiffSummary({ auditId }: { auditId: number }) {
               </Tag>
             )}
             {data.newFindings.length > 0 && (
-              <Button kind="tertiary" size="sm" onClick={() => navigate(`/findings?auditId=${auditId}&onlyNew=1`)}>
+              <Button kind="tertiary" size="sm" onClick={() => void navigate(`/findings?auditId=${auditId}&onlyNew=1`)}>
                 Ver só os novos
               </Button>
             )}

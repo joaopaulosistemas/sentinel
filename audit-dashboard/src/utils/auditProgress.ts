@@ -99,7 +99,7 @@ export function copyText(progress: AuditProgressLike | null | undefined): string
 type AuditProgressLike = NonNullable<IAuditRunResponse['progress']>;
 
 /** Segundos depois dos quais o carregamento ganha o aviso de que está demorando. */
-export const SLOW_LOAD_SECONDS = 30;
+const SLOW_LOAD_SECONDS = 30;
 
 export const isSlowLoad = (seconds: number | null): boolean => seconds !== null && seconds >= SLOW_LOAD_SECONDS;
 

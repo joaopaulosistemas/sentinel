@@ -68,7 +68,7 @@ export function StartAuditModal({ system, onClose, onStarted }: IProps) {
       mutation.reset();
       onClose();
       if (onStarted) onStarted(run);
-      else navigate(`/audits/${run.id}`);
+      else void navigate(`/audits/${run.id}`);
       void vars;
     },
   });

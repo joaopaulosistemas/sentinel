@@ -422,7 +422,7 @@ export function SystemDetailPage() {
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, { label: system.name }]}>
       {started && <StartedBanner started={started} onClose={() => setStarted(null)} />}
-      <SystemHeader system={system} onEdit={() => navigate(`/systems?edit=${system.id}`)} onNewAudit={() => setStarting(true)} />
+      <SystemHeader system={system} onEdit={() => void navigate(`/systems?edit=${system.id}`)} onNewAudit={() => setStarting(true)} />
       <StartAuditModal system={starting ? system : null} onClose={() => setStarting(false)} onStarted={setStarted} />
       <div className="sentinel-com-indice">
         <SectionIndex items={index} />

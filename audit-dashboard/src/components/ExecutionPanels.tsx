@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { IAnalyzerProgress, IAuditProgress, IAuditRunResponse, Severity } from '../types';
-import { PHASES, clock, copyText, isSlowLoad, secondsBetween, shortRepo, type IPhaseView } from '../utils/auditProgress';
+import { clock, copyText, isSlowLoad, secondsBetween, shortRepo, type IPhaseView } from '../utils/auditProgress';
 import { scoreColor } from '../utils/scoreBand';
 import { IncompleteNotice } from './IncompleteNotice';
 import { CheckIcon, ClockIcon, CrossIcon, DashIcon, SpinnerIcon } from './StatusIcons';
@@ -227,4 +227,3 @@ export function EventLog({ startedAt, events }: { startedAt: string; events: IAu
   );
 }
 
-export { PHASES };

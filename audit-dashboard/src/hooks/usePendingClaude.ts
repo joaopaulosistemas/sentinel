@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import type { IPendingAction, ISystemSummaryResponse } from '../types';
 import { useSystems } from './useSystems';
 
-export interface IPendingBySystem {
+interface IPendingBySystem {
   system: ISystemSummaryResponse;
   count: number;
   actions: IPendingAction[];

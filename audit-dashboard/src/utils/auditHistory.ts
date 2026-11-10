@@ -2,10 +2,10 @@ import type { IAuditRunResponse } from '../types';
 import { scoreBand, type ScoreBand } from './scoreBand';
 
 /** Quantas auditorias o gráfico mostra: as mais recentes do sistema. */
-export const HISTORY_SIZE = 10;
+const HISTORY_SIZE = 10;
 
 /** O que a coluna representa: nota, falha, cancelamento ou auditoria ainda em andamento. */
-export type HistoryKind = 'scored' | 'failed' | 'cancelled' | 'active';
+type HistoryKind = 'scored' | 'failed' | 'cancelled' | 'active';
 
 export interface IHistoryPoint {
   id: number;

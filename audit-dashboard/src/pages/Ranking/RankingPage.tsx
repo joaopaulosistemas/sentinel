@@ -283,7 +283,7 @@ export function RankingPage() {
         </div>
         <SortToggle sortBy={sortBy} onChange={setSortBy} />
       </div>
-      <RankingList ranking={sortSystems(systems, sortBy)} onOpen={(id) => navigate(`/systems/${id}`)} />
+      <RankingList ranking={sortSystems(systems, sortBy)} onOpen={(id) => void navigate(`/systems/${id}`)} />
       <TeamsTable teams={summarizeTeams(systems)} />
       <RuleQualityTile rules={rules} />
     </PageShell>

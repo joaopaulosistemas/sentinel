@@ -37,7 +37,7 @@ function ThemeIcon({ dark }: { dark: boolean }) {
 }
 
 /** Logo: escudo com um olho (o "vigia" do Sentinel). */
-export function SentinelLogo({ size = 24 }: { size?: number }) {
+function SentinelLogo({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
       <path d="M16 2.5 4.5 6.8v8.2c0 7.2 4.9 12.4 11.5 14.5 6.6-2.1 11.5-7.3 11.5-14.5V6.8z" fill="#4589ff" />
@@ -167,7 +167,7 @@ function ShellHeader({ fixo, aberto, onToggleMenu }: { fixo: boolean; aberto: bo
       <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem' }}>
         <SentinelLogo />
       </span>
-      <HeaderName href="#" prefix="Sentinel" style={{ paddingLeft: '0.5rem' }} onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/'); }}>
+      <HeaderName href="#" prefix="Sentinel" style={{ paddingLeft: '0.5rem' }} onClick={(e: React.MouseEvent) => { e.preventDefault(); void navigate('/'); }}>
         Audit Tool
       </HeaderName>
       <span className="sentinel-hide-narrow" style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
@@ -209,7 +209,7 @@ function MenuLink({ item, active, trilho, pending }: { item: MenuItem; active: b
       isActive={active}
       onClick={(e: React.MouseEvent) => {
         e.preventDefault();
-        navigate(item.rota);
+        void navigate(item.rota);
       }}
     >
       <span className="sentinel-menu-rotulo" title={trilho ? item.nome : undefined}>{item.nome}</span>
@@ -260,7 +260,7 @@ function MenuSeparator({ menu }: { menu: ReturnType<typeof useMenuLargura> }) {
       aria-valuenow={menu.largura}
       aria-valuemin={MENU_TRILHO}
       aria-valuemax={menuMaxFor(window.innerWidth)}
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+       
       tabIndex={0}
       className={`sentinel-menu-divisor${menu.arrastando ? ' sentinel-menu-divisor--ativo' : ''}`}
       style={{ left: menu.largura - 3 }}

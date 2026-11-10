@@ -11,7 +11,7 @@ type OverviewItem = IFindingsOverview['items'][number];
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
-export const ABAS = [
+const ABAS = [
   { id: 'achados', nome: 'Achados e nota' },
   { id: 'revisao', nome: 'Revisão do Claude' },
   { id: 'reauditoria', nome: 'Reauditoria' },
