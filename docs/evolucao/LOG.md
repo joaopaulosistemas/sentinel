@@ -1161,3 +1161,9 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 
 - **Por quê:** o Dependabot propôs `stylelint-config-standard-scss` 17 e Stylelint 18 em PRs separados, que não instalam (ERESOLVE). O `-standard-scss` 17 exige Stylelint `^17`, e o `-standard` 41 exige o 18; por isso o conjunto coerente é Stylelint 17.16.0, `-standard-scss` 17.0.0 e `-standard` 40.0.0.
 - **Verificado:** `npm ci` com o lock novo no npm 11; mesma amostra SCSS com a `stylelintrc.json` e o `sarif-formatter.cjs` da imagem: 16.12 e 17.16 dão os mesmos 4 achados (regra e linha) e o SARIF sai igual. Stylelint 17 pede Node 20.19+, a imagem usa o 24.
+
+## OpenPDF 3.0.5 (sem versão nova)
+
+- **Por quê:** a 2.0.3 era antiga e o PR do Dependabot (#195) não compilava: a 3.0 trocou o pacote `com.lowagie` por `org.openpdf` e removeu o antigo.
+- **Mudança:** imports de `PdfReportService` para `org.openpdf.text.*`; `openpdf` 3.0.5 no `pom.xml`. A API usada (Document, Paragraph, PdfPTable, PdfWriter, FontFactory) não mudou de nome.
+- **Verificado:** só pelo CI (compilação e `PdfReportServiceTest`, que gera o PDF); Maven não roda neste ambiente.
