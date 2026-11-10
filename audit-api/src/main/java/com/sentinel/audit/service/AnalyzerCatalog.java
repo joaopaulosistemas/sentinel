@@ -10,6 +10,7 @@ public final class AnalyzerCatalog {
             Map.entry("Secrets", "Segredos no código · regex nos arquivos"),
             Map.entry("Secrets-History", "Segredos no histórico · últimos commits do Git"),
             Map.entry("Gitleaks", "Segredos e histórico"),
+            Map.entry("Betterleaks", "Segredos e histórico · sucessor do Gitleaks (opt-in)"),
             Map.entry("Trivy", "Dependências · SCA e IaC"),
             Map.entry("OWASP-Dependency", "Dependências · base OWASP"),
             Map.entry("Architecture", "Estrutura e camadas"),
@@ -39,7 +40,7 @@ public final class AnalyzerCatalog {
 
     /** Nomes dos analisadores conhecidos, na ordem de exibição. */
     public static java.util.List<String> names() {
-        return java.util.List.of("Opengrep", "Secrets", "Secrets-History", "Gitleaks", "Trivy", "OWASP-Dependency",
+        return java.util.List.of("Opengrep", "Secrets", "Secrets-History", "Gitleaks", "Betterleaks", "Trivy", "OWASP-Dependency",
                 "Architecture", "Arquitetura (pacotes)", "CleanCode", "PMD", "ESLint", "Higiene do projeto", "SARIF", "Evidências",
                 "Ciclos de dependência", "Duplicação", "Pontos quentes", "Código morto", "Mensagens de commit");
     }

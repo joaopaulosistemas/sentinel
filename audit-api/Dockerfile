@@ -52,6 +52,12 @@ ARG WITH_GITLEAKS=true
 ARG GITLEAKS_VERSION=8.30.1
 ARG GITLEAKS_SHA256_AMD64=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
 ARG GITLEAKS_SHA256_ARM64=e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080
+# Betterleaks (sucessor do Gitleaks, MIT): série 1.x, que mantém a linha de comando e o relatório do Gitleaks; a 2.x ainda é candidata.
+# Fica instalado mas só roda com BETTERLEAKS_ENABLED=true (aí substitui o Gitleaks). --build-arg WITH_BETTERLEAKS=false tira da imagem.
+ARG WITH_BETTERLEAKS=true
+ARG BETTERLEAKS_VERSION=1.10.0
+ARG BETTERLEAKS_SHA256_AMD64=9d9ad503cd5d80d18a939352266c3fcca52f10da9b83cd5cfe646989b13940fe
+ARG BETTERLEAKS_SHA256_ARM64=3d7585cbe4f947aef6e31662f65beb5b43b104381a691b6b81b157ebfbb0c02d
 # PMD (lint Java, precisa só do JRE que a imagem já tem) e ESLint (lint TypeScript, precisa de Node 20.19+ (a imagem usa o 22, LTS), por isso
 # vem ligado porque a stack é Angular/React/TypeScript: --build-arg WITH_ESLINT=false tira o Node 22, o ESLint e o Stylelint).
 ARG WITH_PMD=true
@@ -114,6 +120,11 @@ RUN apt-get update \
          if [ "$(uname -m)" = "aarch64" ]; then ARCH=arm64; sha="$GITLEAKS_SHA256_ARM64"; else ARCH=x64; sha="$GITLEAKS_SHA256_AMD64"; fi \
          && fetch /tmp/gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz" "$sha" \
          && tar -xz -C /usr/local/bin -f /tmp/gitleaks.tgz gitleaks && rm /tmp/gitleaks.tgz; \
+       fi \
+    && if [ "$WITH_BETTERLEAKS" = "true" ]; then \
+         if [ "$(uname -m)" = "aarch64" ]; then ARCH=arm64; sha="$BETTERLEAKS_SHA256_ARM64"; else ARCH=x64; sha="$BETTERLEAKS_SHA256_AMD64"; fi \
+         && fetch /tmp/betterleaks.tgz "https://github.com/betterleaks/betterleaks/releases/download/v${BETTERLEAKS_VERSION}/betterleaks_${BETTERLEAKS_VERSION}_linux_${ARCH}.tar.gz" "$sha" \
+         && tar -xz -C /usr/local/bin -f /tmp/betterleaks.tgz betterleaks && rm /tmp/betterleaks.tgz; \
        fi \
     && if [ "$WITH_PMD" = "true" ]; then \
          apt-get install -y --no-install-recommends unzip \

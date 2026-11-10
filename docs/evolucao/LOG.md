@@ -1113,3 +1113,12 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Node 22** na imagem (ESLint 10 pede 20.19+; o 20 está fora de suporte).
 - **Guarda:** `scripts/verificar-eslint-plugins.sh` agora exige também o achado de `react/jsx-key`, para o plugin de React não voltar a quebrar sem ninguém ver.
 - **Verificado:** mesma amostra (TSX, TS e template Angular) nas configs `eslint.config.mjs` e `eslint.google-angular.config.mjs`, ESLint 9 contra 10: 22 e 28 achados, os mesmos pares regra/linha nos dois; `padrao-ts` roda sem erro no 10; `npm ci --omit=dev` e `npm audit` do pacote; `verificar-eslint-plugins.sh` passa. NÃO verificado: a build da imagem Docker (Gitleaks 8.30.1 e Node 22 só rodam na CI), `Stylelint` no Node 22 e os testes Java do `EslintAnalyzer`.
+
+## Betterleaks 1.10.0 como segundo motor de segredos (opt-in, sem versão nova)
+
+- **Por quê:** o Gitleaks só recebe correções de segurança e o autor passou a manter o Betterleaks como sucessor.
+- **Versão:** a série **1.x** (1.10.0). A 2.x ainda só tem candidatas (`v2.0.0-rc.7`) e muda a linha de comando (`git`/`fs`, `-o`), remove os relatórios SARIF/CSV, troca o JSON e deixa de carregar config sozinho; entra quando houver versão final.
+- **Mudança:** `BetterleaksAnalyzer` (id de regra `betterleaks-<regra>`), desligado por padrão (`BETTERLEAKS_ENABLED=false`); ligado e com o executável no PATH, substitui o Gitleaks e os analisadores internos de segredos (sem achado duplicado). `SecretReportParser` agora é o leitor comum dos dois (o Betterleaks 1.x escreve a mesma lista do Gitleaks). Imagem: `WITH_BETTERLEAKS=true` instala o binário com SHA-256 (amd64/arm64) do `checksums.txt` oficial.
+- **Segurança:** nunca passa `--unsafe-auto-load-config` (config do projeto auditado) nem `--validation` (consulta ao provedor da credencial); relatório temporário com o segredo é apagado, como no Gitleaks.
+- **Verificado:** o binário 1.10.0 baixado, com SHA-256 conferido, rodado num repositório de teste: `dir` e `git` com caminho absoluto, `--exit-code 0`, relatório JSON (lista com `RuleID`, `File`, `Commit`, `Secret`) e `[]` quando não há segredo. NÃO verificado: compilação e testes Java (`BetterleaksAnalyzerTest`, `ExternalScannersTest`) e a build da imagem, que só rodam na CI; e a **qualidade** dos achados contra o Gitleaks (por isso fica desligado).
+

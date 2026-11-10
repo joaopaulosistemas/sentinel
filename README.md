@@ -17,7 +17,7 @@ Repositório Git / pasta local
 
 | Área | O que é analisado |
 |---|---|
-| **Segurança** | SAST com Opengrep (regras próprias em pacotes), segredos (regex, Gitleaks, histórico do Git), dependências (Trivy ou OSV), IaC, taint entre arquivos em Java com Joern (opcional) |
+| **Segurança** | SAST com Opengrep (regras próprias em pacotes), segredos (regex, Gitleaks ou Betterleaks, histórico do Git), dependências (Trivy ou OSV), IaC, taint entre arquivos em Java com Joern (opcional) |
 | **Qualidade** | Clean code (função longa, complexidade, aninhamento), PMD, ESLint, Stylelint, duplicação (jscpd) |
 | **Arquitetura** | Camadas, ciclos de dependência, God Object, regras declarativas por projeto (`architecture.yml`) |
 | **Dados e infra** | SQL (SQLFluff, Squawk), Dockerfile (Hadolint), Kubernetes (kube-linter, kube-score), GitHub Actions (Checkov); Terraform fica fora do escopo |

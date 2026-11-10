@@ -53,7 +53,7 @@ public final class InsightsBuilder {
     private static final Map<AuditArea, Set<String>> COVERAGE = new EnumMap<>(AuditArea.class);
 
     static {
-        COVERAGE.put(AuditArea.SECURITY, Set.of("Opengrep", "Semgrep", "Secrets", "Gitleaks", "Trivy", "OWASP-Dependency", "Higiene do projeto"));
+        COVERAGE.put(AuditArea.SECURITY, Set.of("Opengrep", "Semgrep", "Secrets", "Gitleaks", "Betterleaks", "Trivy", "OWASP-Dependency", "Higiene do projeto"));
         COVERAGE.put(AuditArea.ARCHITECTURE, Set.of("Architecture", "Arquitetura (pacotes)"));
         COVERAGE.put(AuditArea.CODE_QUALITY, Set.of("CleanCode", "Opengrep", "Semgrep", "PMD", "ESLint"));
         COVERAGE.put(AuditArea.TESTING, Set.of("Higiene do projeto"));

@@ -13,7 +13,8 @@ As ferramentas externas rodam em versões **fixadas** (com SHA-256 quando são b
 | Ferramenta | Versão fixada | Situação | Ação |
 |---|---|---|---|
 | ESLint | 10.14.0 | Linha atual (a 9.x saiu de suporte em 2026-08-06). `eslint-plugin-react` e `eslint-plugin-jsx-a11y` não declaram suporte ao 10 e rodam com `fixupPluginRules` (`@eslint/compat`) | Acompanhar versões novas desses dois plugins e tirar o adaptador quando declararem suporte |
-| Gitleaks | 8.30.1 | Última 8.x (2026-03-21); o autor lançou o Betterleaks como sucessor e a manutenção do Gitleaks tende a só correções | Decidir se o Betterleaks (MIT, substituto direto) entra como alternativa |
+| Gitleaks | 8.30.1 | Última 8.x (2026-03-21); o autor lançou o Betterleaks como sucessor e a manutenção do Gitleaks tende a só correções | Segue como padrão; só correções de segurança upstream |
+| Betterleaks | 1.10.0 | Sucessor do Gitleaks (MIT), pelo mesmo autor. A série 1.x mantém a linha de comando e o relatório do Gitleaks; a **2.x ainda só tem versões candidatas** (rc.7) e muda comandos, flags e o JSON | Opt-in (`BETTERLEAKS_ENABLED=true`). Migrar para a 2.x quando sair a versão final; medir contra o Gitleaks antes de torná-lo padrão |
 | Node (imagem) | 22 | LTS; o ESLint 10 pede 20.19+ | Sem pendência |
 | Hadolint | 2.12.0 | Licença GPL-3.0 | Decisão em aberto (abaixo) |
 | Opengrep | 1.30.0 | LGPL-2.1 | Sem pendência |
@@ -22,7 +23,7 @@ As ferramentas externas rodam em versões **fixadas** (com SHA-256 quando são b
 ## Decisões em aberto
 
 1. **Hadolint (GPL-3.0) dentro da imagem.** O Sentinel só executa o binário como processo separado e não o incorpora ao código, mas a imagem Docker publicada **distribui** esse binário. Quem distribuir a imagem precisa cumprir as obrigações da GPL para ele (aviso de licença e oferta do código-fonte) ou trocar a ferramenta. O parecer jurídico é de quem responde pela distribuição; este documento não o substitui. Dono: a definir. Alternativa técnica: manter o Hadolint como opcional (`WITH_MARKET_TOOLS=false`) na imagem pública.
-2. **Gitleaks: continuar, migrar ou oferecer os dois.** Depende da linha do Gitleaks na tabela acima. Dono: a definir.
+2. **Gitleaks ou Betterleaks como padrão.** Os dois estão na imagem; o Betterleaks (1.10.0) fica desligado até alguém medir os achados dele contra os do Gitleaks nos repositórios de calibração. Dono: a definir.
 
 ## O que a narrativa pode e não pode afirmar
 

@@ -207,6 +207,8 @@ public final class SettingsCatalog {
         l.add(num(new Head("TRIVY_TIMEOUT_SECONDS", p + "trivy.timeout-seconds", FERR, "Trivy", "Tempo limite", "Segundos antes de encerrar."), "900", TIMEOUT_MIN, TIMEOUT_MAX, "s"));
         l.add(bool(new Head("GITLEAKS_ENABLED", p + "gitleaks.enabled", FERR, "Gitleaks", "Ligado", "Procura segredos no código e no histórico."), true));
         l.add(num(new Head("GITLEAKS_TIMEOUT_SECONDS", p + "gitleaks.timeout-seconds", FERR, "Gitleaks", "Tempo limite", "Segundos antes de encerrar."), "600", TIMEOUT_MIN, TIMEOUT_MAX, "s"));
+        l.add(bool(new Head("BETTERLEAKS_ENABLED", p + "betterleaks.enabled", FERR, "Betterleaks", "Ligado", "Sucessor do Gitleaks (série 1.x). Ligado, substitui o Gitleaks; precisa do executável na imagem (WITH_BETTERLEAKS)."), false));
+        l.add(num(new Head("BETTERLEAKS_TIMEOUT_SECONDS", p + "betterleaks.timeout-seconds", FERR, "Betterleaks", "Tempo limite", "Segundos antes de encerrar."), "600", TIMEOUT_MIN, TIMEOUT_MAX, "s"));
         l.add(bool(new Head("OSV_ENABLED", p + "osv.enabled", FERR, "Dependências (OSV.dev)", "Ligado", "Só nome e versão dos pacotes são enviados. Em rede fechada, desligue ou use um espelho interno."), true));
         l.add(text(new Head("OSV_URL", p + "osv.url", FERR, "Dependências (OSV.dev)", "Endereço", "Troque por um espelho interno se precisar."), "https://api.osv.dev"));
         l.add(num(new Head("OSV_TIMEOUT", p + "osv.timeout-seconds", FERR, "Dependências (OSV.dev)", "Tempo limite", "Segundos por consulta."), "20", 1, CURTO_MAX, "s"));
