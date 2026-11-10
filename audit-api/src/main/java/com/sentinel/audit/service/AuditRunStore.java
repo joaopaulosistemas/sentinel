@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.insights.AuditCompleteness;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditStatus;
 import com.sentinel.audit.model.Finding;
@@ -74,6 +75,15 @@ public class AuditRunStore {
         AuditRun run = auditRunRepository.findById(auditRunId);
         if (run != null) {
             run.setContextJson(json);
+        }
+    }
+
+    @Transactional
+    void storeCompleteness(Long auditRunId, AuditCompleteness.Result completeness) {
+        AuditRun run = auditRunRepository.findById(auditRunId);
+        if (run != null) {
+            run.setIncomplete(completeness.incomplete());
+            run.setIncompleteReasons(completeness.incomplete() ? String.join("\n", completeness.reasons()) : null);
         }
     }
 

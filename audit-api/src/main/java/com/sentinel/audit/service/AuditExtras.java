@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.analyzer.deps.DependencyExtractor;
 import com.sentinel.audit.analyzer.deps.SbomWriter;
 import com.sentinel.audit.insights.AnalyzerRunInfo;
+import com.sentinel.audit.insights.AuditCompleteness;
 import com.sentinel.audit.insights.AuditContextData;
 import com.sentinel.audit.insights.ProjectMap;
 import com.sentinel.audit.insights.ProjectProfiler;
@@ -35,6 +36,13 @@ final class AuditExtras {
 
     /** Mapa do projeto e situação dos analisadores: alimentam os insights; se falhar, a auditoria continua COMPLETED. */
     static void saveContext(AuditRunStore store, Long auditRunId, Path projectPath, List<AnalyzerRunInfo> runs) {
+        // A completude vem só da situação dos analisadores e é gravada primeiro: se o mapa do projeto falhar,
+        // uma auditoria incompleta não pode passar por completa.
+        try {
+            store.storeCompleteness(auditRunId, AuditCompleteness.of(new AuditContextData(null, runs)));
+        } catch (Exception e) {
+            LOG.warnf("Não foi possível gravar a completude da auditoria %d: %s", auditRunId, e.getMessage());
+        }
         try {
             ProjectMap map = ProjectProfiler.profile(projectPath);
             store.storeContext(auditRunId, new ObjectMapper().writeValueAsString(new AuditContextData(map, runs)));

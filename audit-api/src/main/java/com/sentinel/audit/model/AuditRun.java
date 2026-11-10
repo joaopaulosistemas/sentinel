@@ -80,6 +80,14 @@ public class AuditRun {
     @Column(name = "context_json", columnDefinition = "TEXT")
     private String contextJson;
 
+    /** Algum analisador falhou ou terminou pela metade: a nota pode estar otimista. Nulo em auditorias antigas. */
+    @Column(name = "incomplete")
+    private Boolean incomplete;
+
+    /** Um analisador por linha (ex.: "trivy: falhou"); vazio quando a auditoria está completa. */
+    @Column(name = "incomplete_reasons", length = 1000)
+    private String incompleteReasons;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "system_id", nullable = false)
     private AuditedSystem system;
@@ -96,6 +104,22 @@ public class AuditRun {
 
     public void setSbomJson(String sbomJson) {
         this.sbomJson = sbomJson;
+    }
+
+    public boolean isIncomplete() {
+        return Boolean.TRUE.equals(incomplete);
+    }
+
+    public void setIncomplete(Boolean incomplete) {
+        this.incomplete = incomplete;
+    }
+
+    public List<String> getIncompleteReasonList() {
+        return incompleteReasons == null || incompleteReasons.isBlank() ? List.of() : List.of(incompleteReasons.split("\n"));
+    }
+
+    public void setIncompleteReasons(String incompleteReasons) {
+        this.incompleteReasons = incompleteReasons;
     }
 
     public String getContextJson() {

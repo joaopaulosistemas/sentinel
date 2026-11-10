@@ -3,7 +3,6 @@ package com.sentinel.audit.service;
 import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.AuditProgressDto;
 import com.sentinel.audit.dto.AuditRunResponse;
-import com.sentinel.audit.insights.AuditCompleteness;
 import com.sentinel.audit.dto.RiskScoreDto;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditStatus;
@@ -42,7 +41,6 @@ public class AuditRunMapper {
         AuditProgressDto progress = running ? progressTracker.snapshot(run.getId()).orElse(null) : null;
         AuditDiffResponse diff = withDiff && run.getStatus() == AuditStatus.COMPLETED ? comparison(run) : null;
         boolean compared = diff != null && diff.hasBaseline();
-        var completeness = AuditCompleteness.of(InsightsService.parseContext(run.getContextJson()));
         return new AuditRunResponse(
                 run.getId(), run.getSystem().getId(), run.getSystem().getName(), run.getBranch(), run.getBaseRef(),
                 run.getStatus(), scoreOf(run), summary, run.getStartedAt(), run.getCompletedAt(), run.getErrorMessage(),
@@ -52,7 +50,7 @@ public class AuditRunMapper {
                 compared ? diff.resolvedFindings().size() : null,
                 compared ? diff.baseAuditId() : null,
                 compared ? diff.scoreDelta() : null,
-                completeness.incomplete(), completeness.reasons());
+                run.isIncomplete(), run.getIncompleteReasonList());
     }
 
     private static RiskScoreDto scoreOf(AuditRun run) {
