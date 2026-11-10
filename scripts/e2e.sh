@@ -86,6 +86,9 @@ for ep in report sbom insights findings; do
   code="$(curl -sS -o /dev/null -w '%{http_code}' "${H[@]}" "$API/api/v1/audits/$aid/$ep")"
   [ "$code" = "200" ] || falhar "GET /audits/$aid/$ep devolveu HTTP $code"
 done
+# Regressão: o contexto gravado (mapa do projeto e analisadores) precisa voltar nos insights.
+n_analisadores="$(curl -sS "${H[@]}" "$API/api/v1/audits/$aid/insights" | python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("analyzers") or []))')"
+[ "$n_analisadores" -gt 0 ] || falhar "Os insights da auditoria $aid vieram sem a lista de analisadores"
 sem_chave="$(curl -sS -o /dev/null -w '%{http_code}' "$API/api/v1/systems")"
 [ "$sem_chave" = "401" ] || falhar "Sem chave de API o acesso deveria dar 401, deu $sem_chave"
 

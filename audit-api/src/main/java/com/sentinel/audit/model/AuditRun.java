@@ -1,6 +1,5 @@
 package com.sentinel.audit.model;
 
-import jakarta.persistence.Basic;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -74,12 +73,10 @@ public class AuditRun {
     private String errorMessage;
 
     /** SBOM CycloneDX (JSON) das dependências encontradas nesta auditoria. */
-    @Basic(fetch = FetchType.LAZY)
     @Column(name = "sbom_json", columnDefinition = "TEXT")
     private String sbomJson;
 
     /** Mapa do projeto e situação dos analisadores (JSON), usados para montar os insights. */
-    @Basic(fetch = FetchType.LAZY)
     @Column(name = "context_json", columnDefinition = "TEXT")
     private String contextJson;
 
