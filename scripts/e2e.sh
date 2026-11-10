@@ -15,7 +15,12 @@ falhar() {
   local r="$msg%0A--- API ---%0A$(printf '%s' "$logs" | grep -E "ERROR|WARN|Exception|falhou" | tail -12)"
   r="${r//$'\n'/%0A}"
   echo "::error title=Teste ponta a ponta falhou::${r:0:3500}"
-  docker rm -f sentinel-e2e-api sentinel-e2e-db >/dev/null 2>&1
+  # Esquema que o Hibernate criou (só se E2E_SCHEMA_OUT estiver definido): base da migração V1 do Flyway
+if [ -n "${E2E_SCHEMA_OUT:-}" ]; then
+  docker exec sentinel-e2e-db pg_dump -U sentinel_audit -s --no-owner --no-privileges sentinel_audit > "$E2E_SCHEMA_OUT" \
+    || echo "::warning title=Esquema::pg_dump falhou"
+fi
+docker rm -f sentinel-e2e-api sentinel-e2e-db >/dev/null 2>&1
   exit 1
 }
 
@@ -88,4 +93,9 @@ cors="$(curl -sS -i -X OPTIONS "$API/api/v1/systems" -H "Origin: http://localhos
 [ -n "$cors" ] || falhar "CORS desligado: o preflight não devolveu Access-Control-Allow-Origin"
 
 echo "::notice title=Teste ponta a ponta::auditoria $aid concluída com $total achados e nota $score; relatório, SBOM, insights e findings responderam 200; sem chave devolve 401"
+# Esquema que o Hibernate criou (só se E2E_SCHEMA_OUT estiver definido): base da migração V1 do Flyway
+if [ -n "${E2E_SCHEMA_OUT:-}" ]; then
+  docker exec sentinel-e2e-db pg_dump -U sentinel_audit -s --no-owner --no-privileges sentinel_audit > "$E2E_SCHEMA_OUT" \
+    || echo "::warning title=Esquema::pg_dump falhou"
+fi
 docker rm -f sentinel-e2e-api sentinel-e2e-db >/dev/null 2>&1
