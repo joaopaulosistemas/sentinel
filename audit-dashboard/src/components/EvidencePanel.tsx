@@ -122,7 +122,6 @@ export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvide
   }
 
   const stale = Object.values(slots).filter((s): s is IAccepted => !!s && isStaleEvidence(s.modified));
-  const pct = Math.round((coverage.received / coverage.total) * 100);
 
   return (
     <PageSection
@@ -131,24 +130,45 @@ export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvide
       hint="Consulta lenta, índice sobrando e vazamento de memória só aparecem com dados de execução. O Sentinel não se conecta ao seu banco: você gera os arquivos uma vez e entrega aqui."
       aside={server.data?.files?.length ? <Tag type="green" size="sm">{server.data.files.length} no servidor</Tag> : undefined}
     >
-      <div
-        role="status"
-        style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 32px', alignItems: 'center', padding: '16px 20px', background: coverage.received === coverage.total ? 'var(--s-good-bg)' : 'var(--s-warn-bg)', marginBottom: 20 }}
-      >
-        <div style={{ flex: '1 1 320px' }}>
-          <strong style={{ fontSize: 15 }}>{coverage.received} de {coverage.total} tipos de evidência recebidos para {systemName}</strong>
-          <div style={{ fontSize: 13, color: 'var(--s-text-2)', marginTop: 2 }}>
-            {coverage.received === coverage.total
-              ? 'Tudo o que o Analisador de Evidências lê foi entregue.'
-              : `O que os ${coverage.total - coverage.received} tipos faltantes cobririam não será verificado na próxima auditoria. Isso não é erro: sem o arquivo, o Sentinel não afirma nada sobre aquela área.`}
-          </div>
-        </div>
-        <div style={{ flex: '0 1 220px', minWidth: 160 }} aria-hidden="true">
-          <div style={{ height: 8, background: 'var(--s-border)' }}><div style={{ height: 8, width: `${pct}%`, background: 'var(--s-primary)' }} /></div>
+      <CoverageBanner coverage={coverage} systemName={systemName} />
+      <LastRunLine lastRun={lastRun} />
+      <EvidenceNotices stale={stale} delivered={delivered} onAudit={onAudit} />
+      <DropZone dragging={dragging} setDragging={setDragging} onDrop={onDrop} inputRef={inputRef} onPick={() => pick(null)} onFiles={(files) => void receive(files, targetRef.current)} />
+      <RejectedList rejected={rejected} />
+      <AreaLists coverage={coverage} slots={slots} open={open} setOpen={setOpen} baseId={baseId} onPick={pick} onRemove={(kind) => setSlots((cur) => { const n = { ...cur }; delete n[kind]; return n; })} />
+      <DeliverBar disabled={coverage.received === 0 || delivered || deliver.isPending || server.data?.enabled === false} enabled={server.data?.enabled !== false} pending={deliver.isPending} delivered={delivered} error={deliver.isError ? (deliver.error as Error).message : null} onDeliver={() => deliver.mutate()} />
+    </PageSection>
+  );
+}
+
+type Coverage = ReturnType<typeof evidenceCoverage>;
+
+function CoverageBanner({ coverage, systemName }: { coverage: Coverage; systemName: string }) {
+  const complete = coverage.received === coverage.total;
+  const pct = Math.round((coverage.received / coverage.total) * 100);
+  return (
+    <div
+      role="status"
+      style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 32px', alignItems: 'center', padding: '16px 20px', background: complete ? 'var(--s-good-bg)' : 'var(--s-warn-bg)', marginBottom: 20 }}
+    >
+      <div style={{ flex: '1 1 320px' }}>
+        <strong style={{ fontSize: 15 }}>{coverage.received} de {coverage.total} tipos de evidência recebidos para {systemName}</strong>
+        <div style={{ fontSize: 13, color: 'var(--s-text-2)', marginTop: 2 }}>
+          {complete
+            ? 'Tudo o que o Analisador de Evidências lê foi entregue.'
+            : `O que os ${coverage.total - coverage.received} tipos faltantes cobririam não será verificado na próxima auditoria. Isso não é erro: sem o arquivo, o Sentinel não afirma nada sobre aquela área.`}
         </div>
       </div>
+      <div style={{ flex: '0 1 220px', minWidth: 160 }} aria-hidden="true">
+        <div style={{ height: 8, background: 'var(--s-border)' }}><div style={{ height: 8, width: `${pct}%`, background: 'var(--s-primary)' }} /></div>
+      </div>
+    </div>
+  );
+}
 
-      <LastRunLine lastRun={lastRun} />
+function EvidenceNotices({ stale, delivered, onAudit }: { stale: IAccepted[]; delivered: boolean; onAudit: () => void }) {
+  return (
+    <>
       {stale.length > 0 && (
         <InlineNotification
           kind="warning"
@@ -172,53 +192,85 @@ export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvide
           style={{ maxWidth: 'none', marginBottom: 12 }}
         />
       )}
+    </>
+  );
+}
 
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        style={{ border: `2px dashed ${dragging ? 'var(--s-primary)' : 'var(--s-border-strong)'}`, background: dragging ? 'var(--s-selected)' : 'var(--s-surface)', padding: '20px 24px', display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginBottom: 20 }}
-      >
-        <Upload size={28} aria-hidden="true" />
-        <div style={{ flex: '1 1 320px' }}>
-          <div style={{ fontWeight: 600 }}>Solte aqui os arquivos de evidência</div>
-          <div style={{ fontSize: 13, color: 'var(--s-text-3)' }}>
-            O Sentinel confere o conteúdo de cada um e coloca no tipo certo. Aceitos: .sql, .csv, .json, .xml, .info e .txt, até 200 MB cada e {MAX_FILES} por sistema. O resto é recusado com o motivo.
-          </div>
+interface IDropZoneProps {
+  dragging: boolean;
+  setDragging: (v: boolean) => void;
+  onDrop: (e: DragEvent<HTMLDivElement>) => void;
+  inputRef: React.RefObject<HTMLInputElement>;
+  onPick: () => void;
+  onFiles: (files: File[]) => void;
+}
+
+function DropZone({ dragging, setDragging, onDrop, inputRef, onPick, onFiles }: IDropZoneProps) {
+  return (
+    <div
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={onDrop}
+      style={{ border: `2px dashed ${dragging ? 'var(--s-primary)' : 'var(--s-border-strong)'}`, background: dragging ? 'var(--s-selected)' : 'var(--s-surface)', padding: '20px 24px', display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginBottom: 20 }}
+    >
+      <Upload size={28} aria-hidden="true" />
+      <div style={{ flex: '1 1 320px' }}>
+        <div style={{ fontWeight: 600 }}>Solte aqui os arquivos de evidência</div>
+        <div style={{ fontSize: 13, color: 'var(--s-text-3)' }}>
+          O Sentinel confere o conteúdo de cada um e coloca no tipo certo. Aceitos: .sql, .csv, .json, .xml, .info e .txt, até 200 MB cada e {MAX_FILES} por sistema. O resto é recusado com o motivo.
         </div>
-        <Button kind="tertiary" size="md" onClick={() => pick(null)}>Escolher arquivos</Button>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept={ACCEPT}
-          aria-label="Escolher arquivos de evidência"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? []);
-            e.target.value = '';
-            void receive(files, targetRef.current);
-          }}
-        />
       </div>
+      <Button kind="tertiary" size="md" onClick={onPick}>Escolher arquivos</Button>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={ACCEPT}
+        aria-label="Escolher arquivos de evidência"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = '';
+          onFiles(files);
+        }}
+      />
+    </div>
+  );
+}
 
-      {rejected.length > 0 && (
-        <InlineNotification
-          kind="warning"
-          lowContrast
-          hideCloseButton
-          title={`${rejected.length} ${rejected.length === 1 ? 'arquivo recusado' : 'arquivos recusados'}`}
-          subtitle="Estes não serão usados."
-          style={{ maxWidth: 'none', marginBottom: 12 }}
-        >
-          <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13 }}>
-            {rejected.map((r) => (
-              <li key={r.name}><strong>{r.name}:</strong> {r.reason} {r.hint}</li>
-            ))}
-          </ul>
-        </InlineNotification>
-      )}
+function RejectedList({ rejected }: { rejected: IRejected[] }) {
+  if (rejected.length === 0) return null;
+  return (
+    <InlineNotification
+      kind="warning"
+      lowContrast
+      hideCloseButton
+      title={`${rejected.length} ${rejected.length === 1 ? 'arquivo recusado' : 'arquivos recusados'}`}
+      subtitle="Estes não serão usados."
+      style={{ maxWidth: 'none', marginBottom: 12 }}
+    >
+      <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13 }}>
+        {rejected.map((r) => (
+          <li key={r.name}><strong>{r.name}:</strong> {r.reason} {r.hint}</li>
+        ))}
+      </ul>
+    </InlineNotification>
+  );
+}
 
+interface IAreaListsProps {
+  coverage: Coverage;
+  slots: Partial<Record<EvidenceKind, IAccepted>>;
+  open: EvidenceKind | null;
+  setOpen: (k: EvidenceKind | null) => void;
+  baseId: string;
+  onPick: (k: EvidenceKind) => void;
+  onRemove: (k: EvidenceKind) => void;
+}
+
+function AreaLists({ coverage, slots, open, setOpen, baseId, onPick, onRemove }: IAreaListsProps) {
+  return (
+    <>
       {(['Banco de dados', 'Testes', 'Memória'] as const).map((area) => {
         const cov = coverage.byArea.find((a) => a.area === area)!;
         return (
@@ -235,28 +287,40 @@ export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvide
                   expanded={open === t.kind}
                   panelId={`${baseId}-${t.kind}`}
                   onToggle={() => setOpen(open === t.kind ? null : t.kind)}
-                  onPick={() => pick(t.kind)}
-                  onRemove={() => setSlots((s) => { const n = { ...s }; delete n[t.kind]; return n; })}
+                  onPick={() => onPick(t.kind)}
+                  onRemove={() => onRemove(t.kind)}
                 />
               ))}
             </ul>
           </div>
         );
       })}
+    </>
+  );
+}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-        <Button kind="primary" disabled={coverage.received === 0 || delivered || deliver.isPending || server.data?.enabled === false} onClick={() => deliver.mutate()}>{deliver.isPending ? 'Entregando…' : 'Entregar ao Sentinel'}</Button>
-        <span style={{ fontSize: 13, color: 'var(--s-text-3)', flex: '1 1 320px' }}>
-          {server.data?.enabled === false
-            ? 'Este servidor não tem a pasta de evidências configurada (SENTINEL_EVIDENCE_DIR); peça ao administrador.'
-            : delivered
-              ? 'Entregue. Vale a partir da próxima auditoria deste sistema.'
-              : deliver.isError
-                ? `Não foi possível entregar: ${(deliver.error as Error).message}`
-                : 'Os arquivos são gravados na pasta do sistema no servidor e lidos na próxima auditoria.'}
-        </span>
-      </div>
-    </PageSection>
+interface IDeliverBarProps {
+  disabled: boolean;
+  enabled: boolean;
+  pending: boolean;
+  delivered: boolean;
+  error: string | null;
+  onDeliver: () => void;
+}
+
+function deliverMessage({ enabled, delivered, error }: Pick<IDeliverBarProps, 'enabled' | 'delivered' | 'error'>): string {
+  if (!enabled) return 'Este servidor não tem a pasta de evidências configurada (SENTINEL_EVIDENCE_DIR); peça ao administrador.';
+  if (delivered) return 'Entregue. Vale a partir da próxima auditoria deste sistema.';
+  if (error) return `Não foi possível entregar: ${error}`;
+  return 'Os arquivos são gravados na pasta do sistema no servidor e lidos na próxima auditoria.';
+}
+
+function DeliverBar(props: IDeliverBarProps) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+      <Button kind="primary" disabled={props.disabled} onClick={props.onDeliver}>{props.pending ? 'Entregando…' : 'Entregar ao Sentinel'}</Button>
+      <span style={{ fontSize: 13, color: 'var(--s-text-3)', flex: '1 1 320px' }}>{deliverMessage(props)}</span>
+    </div>
   );
 }
 

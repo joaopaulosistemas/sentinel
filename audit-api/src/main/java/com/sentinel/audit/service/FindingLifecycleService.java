@@ -110,11 +110,9 @@ public class FindingLifecycleService {
 
     /** Já estava na auditoria anterior? Dependências também são reconhecidas pela identidade do formato antigo. */
     private static boolean existedBefore(Finding f, Baseline baseline) {
-        if (baseline.previousFingerprints().contains(f.getFingerprint())) {
-            return true;
-        }
-        return f.getCategory() == Category.DEPENDENCY
-                && baseline.previousFingerprints().contains(Fingerprints.legacyDependency(f));
+        return baseline.previousFingerprints().contains(f.getFingerprint())
+                || (f.getCategory() == Category.DEPENDENCY
+                        && baseline.previousFingerprints().contains(Fingerprints.legacyDependency(f)));
     }
 
     /** Findings que contam para o score (tudo menos os suprimidos). */

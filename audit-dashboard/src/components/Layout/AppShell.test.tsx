@@ -62,7 +62,7 @@ describe('AppShell', () => {
   it('tem um divisor acessível que muda a largura com o teclado e guarda a escolha', () => {
     telaLarga();
     render(<Wrap><MemoryRouter><AppShell><p>x</p></AppShell></MemoryRouter></Wrap>);
-    const sep = screen.getByRole('separator', { name: 'Largura do menu' });
+    const sep = screen.getByRole('slider', { name: 'Largura do menu' });
     expect(sep).toHaveAttribute('aria-valuenow', '256');
     fireEvent.keyDown(sep, { key: 'ArrowRight' });
     expect(sep).toHaveAttribute('aria-valuenow', '272');
@@ -78,11 +78,11 @@ describe('AppShell', () => {
     telaLarga();
     window.localStorage.setItem('sentinel.menu-largura', '320');
     render(<Wrap><MemoryRouter><AppShell><p>x</p></AppShell></MemoryRouter></Wrap>);
-    expect(screen.getByRole('separator', { name: 'Largura do menu' })).toHaveAttribute('aria-valuenow', '320');
+    expect(screen.getByRole('slider', { name: 'Largura do menu' })).toHaveAttribute('aria-valuenow', '320');
   });
 
   it('em tela estreita não mostra o divisor', () => {
     render(<Wrap><MemoryRouter><AppShell><p>x</p></AppShell></MemoryRouter></Wrap>);
-    expect(screen.queryByRole('separator', { name: 'Largura do menu' })).toBeNull();
+    expect(screen.queryByRole('slider', { name: 'Largura do menu' })).toBeNull();
   });
 });

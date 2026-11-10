@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Confere que o esquema do banco depois da subida da API (Flyway + Hibernate) é igual ao V1 do Flyway.
 Se o Hibernate ainda precisou criar ou alterar algo, falta uma migração: o script lista a diferença e sai com 1.
-Uso: conferir-esquema.py <pg_dump.sql> <V1__baseline.sql>"""
+Uso: conferir-esquema.py <pg_dump.sql> <V1__baseline.sql> [V2.sql V3.sql ...]
+As migrações depois do V1 só entram pelo que mudam no esquema: hoje, DROP INDEX."""
 import re
 import sys
 
@@ -28,10 +29,15 @@ def _normaliza(comando):
 
 
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         print(__doc__)
         return 2
     banco, v1 = comandos(sys.argv[1]), comandos(sys.argv[2])
+    for extra in sys.argv[3:]:
+        for c in comandos(extra):
+            m = re.match(r"DROP INDEX (?:IF EXISTS )?(?:public\.)?(\w+)$", c)
+            if m:
+                v1 = {x for x in v1 if not re.match(r"CREATE (?:UNIQUE )?INDEX %s ON " % m.group(1), x)}
     so_banco, so_v1 = sorted(banco - v1), sorted(v1 - banco)
     for c in so_banco:
         print("Só no banco (falta migração):", c[:300])

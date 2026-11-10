@@ -10,6 +10,8 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -42,9 +44,14 @@ public class AuditRetentionJob {
             return;
         }
         int removed = 0;
-        for (AuditedSystem system : systemRepository.listAll()) {
-            List<AuditRun> expired = AuditRetention.expired(auditRunRepository.findBySystemId(system.getId()),
-                    keep, days, LocalDateTime.now());
+        List<AuditedSystem> systems = systemRepository.listAll();
+        // Uma consulta para todos os sistemas, agrupada aqui, em vez de uma consulta por sistema.
+        Map<Long, List<AuditRun>> bySystem = auditRunRepository
+                .findBySystemIds(systems.stream().map(AuditedSystem::getId).toList()).stream()
+                .collect(Collectors.groupingBy(r -> r.getSystem().getId()));
+        LocalDateTime now = LocalDateTime.now();
+        for (List<AuditRun> runs : bySystem.values()) {
+            List<AuditRun> expired = AuditRetention.expired(runs, keep, days, now);
             expired.forEach(auditRunRepository::delete);
             removed += expired.size();
         }

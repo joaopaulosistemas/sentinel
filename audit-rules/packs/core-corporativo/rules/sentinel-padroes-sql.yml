@@ -9,6 +9,8 @@ rules:
     languages: [regex]
     paths:
       include: ["*.sql"]
+      # baseline gerado do esquema (pg_dump/Hibernate) e evidências entregues: os nomes vêm da ferramenta, não do time
+      exclude: ["**/*baseline*.sql", "**/.sentinel/**"]
     metadata:
       category: quality
   - id: sentinel-sqlnorma-indice-fora-do-padrao
@@ -19,6 +21,8 @@ rules:
     languages: [regex]
     paths:
       include: ["*.sql"]
+      # baseline gerado do esquema (pg_dump/Hibernate) e evidências entregues: os nomes vêm da ferramenta, não do time
+      exclude: ["**/*baseline*.sql", "**/.sentinel/**"]
     metadata:
       category: quality
   - id: sentinel-sqlnorma-trigger-fora-do-padrao
@@ -30,6 +34,8 @@ rules:
     languages: [regex]
     paths:
       include: ["*.sql"]
+      # baseline gerado do esquema (pg_dump/Hibernate) e evidências entregues: os nomes vêm da ferramenta, não do time
+      exclude: ["**/*baseline*.sql", "**/.sentinel/**"]
     metadata:
       category: quality
   - id: sentinel-sql-select-estrela-arquivo

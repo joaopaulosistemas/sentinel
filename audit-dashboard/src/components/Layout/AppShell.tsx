@@ -254,13 +254,12 @@ function ShellMenu({ fixo, aberto, largura, trilho, onClose }: IShellMenuProps) 
 function MenuSeparator({ menu }: { menu: ReturnType<typeof useMenuLargura> }) {
   return (
     <div
-      role="separator"
+      role="slider"
       aria-orientation="vertical"
       aria-label="Largura do menu"
       aria-valuenow={menu.largura}
       aria-valuemin={MENU_TRILHO}
       aria-valuemax={menuMaxFor(window.innerWidth)}
-       
       tabIndex={0}
       className={`sentinel-menu-divisor${menu.arrastando ? ' sentinel-menu-divisor--ativo' : ''}`}
       style={{ left: menu.largura - 3 }}

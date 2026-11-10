@@ -8,7 +8,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
@@ -24,9 +23,9 @@ import java.time.LocalDateTime;
  * Guarda quem decidiu, por quê e até quando.
  */
 @Entity
+// Sem índice só em system_id: a restrição unique (system_id, fingerprint) já o cobre.
 @Table(name = "finding_suppression",
-        uniqueConstraints = @UniqueConstraint(name = "uk_suppression_system_fp", columnNames = {"system_id", "fingerprint"}),
-        indexes = @Index(name = "idx_suppression_system", columnList = "system_id"))
+        uniqueConstraints = @UniqueConstraint(name = "uk_suppression_system_fp", columnNames = {"system_id", "fingerprint"}))
 public class FindingSuppression {
 
     @Id

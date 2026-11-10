@@ -248,6 +248,35 @@ function toolView(a: IAnalyzerRunInfo) {
   return { ...known, text: a.status === 'OK' ? `concluído${seconds}` : known.text };
 }
 
+function MissingEvidenceNotice({ link }: { link: string | undefined }) {
+  return (
+    <div role="status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', alignItems: 'center', background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
+      <span style={{ flex: '1 1 320px' }}>
+        <strong>A parte de execução não foi verificada.</strong> Sem evidências, o Sentinel não afirma nada sobre consulta lenta, índice sobrando, cobertura de testes e memória.
+      </span>
+      {link && <Link to={link}>Entregar evidências e auditar de novo</Link>}
+    </div>
+  );
+}
+
+function ToolItem({ tool: t, semEvidencias, verEvidencias }: { tool: IAnalyzerRunInfo; semEvidencias: boolean; verEvidencias: string | undefined }) {
+  const isEvidence = t.name === EVIDENCE_TOOL;
+  const view = isEvidence && semEvidencias ? { ...toolView(t), text: 'sem evidências entregues', color: 'var(--s-warn-text)' } : toolView(t);
+  return (
+    <li className="sentinel-linha-hover" title={t.note ?? undefined} style={{ borderLeft: `4px solid ${view.color}`, padding: '6px 12px', borderRadius: 4 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+        <strong style={{ fontWeight: 600 }}>{t.name}</strong>
+        <span style={{ fontSize: 13, color: 'var(--s-text-2)' }}>{t.findings} {t.findings === 1 ? 'achado' : 'achados'}</span>
+      </div>
+      <div style={{ fontSize: 12, color: view.color }}>{view.text}</div>
+      {t.note && <div style={{ fontSize: 12, color: 'var(--s-text-3)', whiteSpace: 'pre-line', overflowWrap: 'anywhere', marginTop: 4 }}>{t.note}</div>}
+      {isEvidence && verEvidencias && (
+        <Link to={verEvidencias} style={{ fontSize: 12, display: 'inline-block', marginTop: 4 }}>{semEvidencias ? 'Entregar evidências' : 'Ver evidências do sistema'}</Link>
+      )}
+    </li>
+  );
+}
+
 /** Ferramentas de análise que rodaram nesta auditoria: situação, achados e tempo de cada uma. */
 function ToolsSection({ runId, systemId }: { runId: number; systemId?: number }) {
   const { data } = useInsights(runId);
@@ -263,31 +292,9 @@ function ToolsSection({ runId, systemId }: { runId: number; systemId?: number })
         <span style={{ fontSize: 16, fontWeight: 600 }}>Ferramentas de análise</span>
         <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>{done} de {tools.length} concluídas</span>
       </div>
-      {semEvidencias && (
-        <div role="status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', alignItems: 'center', background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
-          <span style={{ flex: '1 1 320px' }}>
-            <strong>A parte de execução não foi verificada.</strong> Sem evidências, o Sentinel não afirma nada sobre consulta lenta, índice sobrando, cobertura de testes e memória.
-          </span>
-          {verEvidencias && <Link to={verEvidencias}>Entregar evidências e auditar de novo</Link>}
-        </div>
-      )}
+      {semEvidencias && <MissingEvidenceNotice link={verEvidencias} />}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))', gap: 12 }}>
-        {tools.map((t) => {
-          const view = t.name === EVIDENCE_TOOL && semEvidencias ? { ...toolView(t), text: 'sem evidências entregues', color: 'var(--s-warn-text)' } : toolView(t);
-          return (
-            <li key={t.name} className="sentinel-linha-hover" title={t.note ?? undefined} style={{ borderLeft: `4px solid ${view.color}`, padding: '6px 12px', borderRadius: 4 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                <strong style={{ fontWeight: 600 }}>{t.name}</strong>
-                <span style={{ fontSize: 13, color: 'var(--s-text-2)' }}>{t.findings} {t.findings === 1 ? 'achado' : 'achados'}</span>
-              </div>
-              <div style={{ fontSize: 12, color: view.color }}>{view.text}</div>
-              {t.note && <div style={{ fontSize: 12, color: 'var(--s-text-3)', whiteSpace: 'pre-line', overflowWrap: 'anywhere', marginTop: 4 }}>{t.note}</div>}
-              {t.name === EVIDENCE_TOOL && verEvidencias && (
-                <Link to={verEvidencias} style={{ fontSize: 12, display: 'inline-block', marginTop: 4 }}>{semEvidencias ? 'Entregar evidências' : 'Ver evidências do sistema'}</Link>
-              )}
-            </li>
-          );
-        })}
+        {tools.map((t) => <ToolItem key={t.name} tool={t} semEvidencias={semEvidencias} verEvidencias={verEvidencias} />)}
       </ul>
     </section>
   );

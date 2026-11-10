@@ -50,7 +50,8 @@ if (modo === "squawk") {
   // regras exigidas só por política de ambiente (timeouts, idempotência) geram ruído em migrations de Flyway/Liquibase
   const excluir = process.env.SQUAWK_EXCLUDE || "prefer-robust-stmts,require-lock-timeout,require-statement-timeout";
   const bin = join(aqui, "node_modules", ".bin", "squawk");
-  const lista = arquivos.filter((a) => a.toLowerCase().endsWith(".sql"));
+  // Baseline (esquema inteiro gerado por pg_dump/Hibernate) roda só em banco vazio: as regras do Squawk são para migrations em banco com dados.
+  const lista = arquivos.filter((a) => a.toLowerCase().endsWith(".sql") && !/baseline/i.test(a));
   for (let i = 0; i < lista.length; i += 100) {
     const saida = rodar(bin, ["--reporter", "json", "--exclude", excluir, ...lista.slice(i, i + 100)]);
     let itens = [];
