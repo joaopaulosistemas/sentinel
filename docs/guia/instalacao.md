@@ -18,7 +18,7 @@ docker compose up -d --build
 
 - **Painel:** http://localhost:3000 · **API:** http://localhost:8080 (Swagger só em modo dev).
 - O Compose expõe tudo apenas em `127.0.0.1`. O painel injeta a `API_KEY` no proxy (nginx), então a chave não vai para o navegador.
-- **Ferramentas na imagem da API** (build args, todos no `.env.example` ou em `docker-compose.yml`): `WITH_OPENGREP`, `WITH_TRIVY`, `WITH_GITLEAKS`, `WITH_PMD`, `WITH_ESLINT` e `WITH_MARKET_TOOLS` vêm ligados; `WITH_SEMGREP` e `WITH_JOERN` (taint entre arquivos, cerca de 2 GB a mais) vêm desligados. Exemplo: `docker compose build --build-arg WITH_JOERN=true audit-api`.
+- **Ferramentas na imagem da API** (build args, todos no `.env.example` ou em `docker-compose.yml`): `WITH_OPENGREP`, `WITH_TRIVY`, `WITH_GITLEAKS`, `WITH_BETTERLEAKS` (instalado, mas só roda com `BETTERLEAKS_ENABLED=true`), `WITH_PMD`, `WITH_ESLINT` e `WITH_MARKET_TOOLS` vêm ligados; `WITH_SEMGREP` e `WITH_JOERN` (taint entre arquivos, cerca de 2 GB a mais) vêm desligados. Exemplo: `docker compose build --build-arg WITH_JOERN=true audit-api`.
 - **Rede com inspeção SSL:** coloque o CA raiz da empresa (`.crt`, PEM) em `audit-api/certs/` antes do build. Proxy: `HTTP_PROXY`, `HTTPS_PROXY` e `NO_PROXY` no `.env`.
 - **Só o banco** (para a API em modo dev): `docker compose up -d postgres` (porta local 5433).
 

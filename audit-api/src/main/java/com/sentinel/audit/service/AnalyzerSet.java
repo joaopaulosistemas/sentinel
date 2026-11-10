@@ -5,6 +5,7 @@ import com.sentinel.audit.analyzer.ArchitecturePolicyAnalyzer;
 import com.sentinel.audit.analyzer.CleanCodeAnalyzer;
 import com.sentinel.audit.analyzer.CodeAnalyzer;
 import com.sentinel.audit.analyzer.EslintAnalyzer;
+import com.sentinel.audit.analyzer.BetterleaksAnalyzer;
 import com.sentinel.audit.analyzer.GitleaksAnalyzer;
 import com.sentinel.audit.analyzer.HistorySecretsAnalyzer;
 import com.sentinel.audit.analyzer.HygieneAnalyzer;
@@ -47,6 +48,9 @@ public class AnalyzerSet {
     GitleaksAnalyzer gitleaksAnalyzer;
 
     @Inject
+    BetterleaksAnalyzer betterleaksAnalyzer;
+
+    @Inject
     ArchitectureAnalyzer architectureAnalyzer;
 
     @Inject
@@ -80,7 +84,7 @@ public class AnalyzerSet {
     List<CodeAnalyzer> all() {
         return Stream.concat(Stream.of(
                 semgrepAnalyzer, dependencyAnalyzer, architectureAnalyzer, secretsAnalyzer, historyAnalyzer,
-                trivyAnalyzer, gitleaksAnalyzer, cleanCodeAnalyzer,
+                trivyAnalyzer, gitleaksAnalyzer, betterleaksAnalyzer, cleanCodeAnalyzer,
                 pmdAnalyzer, eslintAnalyzer, sarifAnalyzer, architecturePolicyAnalyzer, hygieneAnalyzer,
                 evidenceAnalyzer),
                 structuralAnalyzers == null ? Stream.<CodeAnalyzer>empty() : structuralAnalyzers.all().stream())

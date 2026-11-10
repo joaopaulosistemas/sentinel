@@ -2,6 +2,7 @@
 // Stack coberta: TypeScript, JavaScript, Angular (código e templates), React, e as armadilhas de segurança de JS.
 import tseslint from "typescript-eslint";
 import angular from "angular-eslint";
+import { fixupPluginRules } from "@eslint/compat";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
@@ -86,7 +87,8 @@ export default tseslint.config(
   // React
   {
     files: ["**/*.{tsx,jsx}"],
-    plugins: { react, "react-hooks": reactHooks, "jsx-a11y": jsxA11y },
+    // react e jsx-a11y ainda não declaram suporte ao ESLint 10 (usam context.getFilename e similares): fixupPluginRules devolve essas APIs.
+    plugins: { react: fixupPluginRules(react), "react-hooks": reactHooks, "jsx-a11y": fixupPluginRules(jsxA11y) },
     settings: { react: { version: "detect" } },
     rules: {
       ...react.configs.recommended.rules,

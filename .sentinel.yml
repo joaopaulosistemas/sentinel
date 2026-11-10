@@ -26,6 +26,9 @@ suppress:
   - rule: "gitleaks-*"
     path: "audit-api/src/test/**"
     reason: "segredos de mentira usados como caso de teste dos analisadores de segredo"
+  - rule: "betterleaks-*"
+    path: "audit-api/src/test/**"
+    reason: "segredos de mentira usados como caso de teste dos analisadores de segredo"
 
   # Estas funções devolvem null de propósito: é o sinal de "valor inválido", que o chamador trata
   # (decisão registrada em docs/evolucao/LOG.md, 12.23.1). Trocar por coleção vazia esconderia o erro.

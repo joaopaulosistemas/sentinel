@@ -49,11 +49,17 @@ ARG SEMGREP_VERSION=1.172.0
 # internos equivalentes. Imagem menor/sem rede na build: --build-arg WITH_TRIVY=false --build-arg WITH_GITLEAKS=false
 ARG WITH_TRIVY=true
 ARG WITH_GITLEAKS=true
-ARG GITLEAKS_VERSION=8.21.2
-ARG GITLEAKS_SHA256_AMD64=5bc41815076e6ed6ef8fbecc9d9b75bcae31f39029ceb55da08086315316e3ba
-ARG GITLEAKS_SHA256_ARM64=654c935542c89f565aabe7bf7c6c500830f116c114f0aeb509d2460c1ac2e6da
-# PMD (lint Java, precisa só do JRE que a imagem já tem) e ESLint (lint TypeScript, precisa de Node 18+, por isso
-# vem ligado porque a stack é Angular/React/TypeScript: --build-arg WITH_ESLINT=false tira o Node 20, o ESLint e o Stylelint).
+ARG GITLEAKS_VERSION=8.30.1
+ARG GITLEAKS_SHA256_AMD64=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+ARG GITLEAKS_SHA256_ARM64=e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080
+# Betterleaks (sucessor do Gitleaks, MIT): série 1.x, que mantém a linha de comando e o relatório do Gitleaks; a 2.x ainda é candidata.
+# Fica instalado mas só roda com BETTERLEAKS_ENABLED=true (aí substitui o Gitleaks). --build-arg WITH_BETTERLEAKS=false tira da imagem.
+ARG WITH_BETTERLEAKS=true
+ARG BETTERLEAKS_VERSION=1.10.0
+ARG BETTERLEAKS_SHA256_AMD64=9d9ad503cd5d80d18a939352266c3fcca52f10da9b83cd5cfe646989b13940fe
+ARG BETTERLEAKS_SHA256_ARM64=3d7585cbe4f947aef6e31662f65beb5b43b104381a691b6b81b157ebfbb0c02d
+# PMD (lint Java, precisa só do JRE que a imagem já tem) e ESLint (lint TypeScript, precisa de Node 20.19+ (a imagem usa o 22, LTS), por isso
+# vem ligado porque a stack é Angular/React/TypeScript: --build-arg WITH_ESLINT=false tira o Node 22, o ESLint e o Stylelint).
 ARG WITH_PMD=true
 ARG PMD_VERSION=7.7.0
 ARG PMD_SHA256=be8bf68f6c1d66984bd9645a93e631b78a1c2f42f5f0f8719082fead67553940
@@ -115,6 +121,11 @@ RUN apt-get update \
          && fetch /tmp/gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz" "$sha" \
          && tar -xz -C /usr/local/bin -f /tmp/gitleaks.tgz gitleaks && rm /tmp/gitleaks.tgz; \
        fi \
+    && if [ "$WITH_BETTERLEAKS" = "true" ]; then \
+         if [ "$(uname -m)" = "aarch64" ]; then ARCH=arm64; sha="$BETTERLEAKS_SHA256_ARM64"; else ARCH=x64; sha="$BETTERLEAKS_SHA256_AMD64"; fi \
+         && fetch /tmp/betterleaks.tgz "https://github.com/betterleaks/betterleaks/releases/download/v${BETTERLEAKS_VERSION}/betterleaks_${BETTERLEAKS_VERSION}_linux_${ARCH}.tar.gz" "$sha" \
+         && tar -xz -C /usr/local/bin -f /tmp/betterleaks.tgz betterleaks && rm /tmp/betterleaks.tgz; \
+       fi \
     && if [ "$WITH_PMD" = "true" ]; then \
          apt-get install -y --no-install-recommends unzip \
          && fetch /tmp/pmd.zip "https://github.com/pmd/pmd/releases/download/pmd_releases%2F${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip" "$PMD_SHA256" \
@@ -150,7 +161,7 @@ RUN apt-get update \
          && mkdir -p /opt/joern && unzip -q /tmp/joern-cli.zip -d /opt/joern && rm /tmp/joern-cli.zip; \
        fi \
     && if [ "$WITH_ESLINT" = "true" ]; then \
-         curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+         curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
          && apt-get install -y --no-install-recommends nodejs; \
        fi \
     && rm -rf /var/lib/apt/lists/* \
