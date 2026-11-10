@@ -81,9 +81,15 @@ final class ExternalTools {
         pb.redirectOutput(stdoutFile == null ? ProcessBuilder.Redirect.DISCARD : ProcessBuilder.Redirect.to(stdoutFile.toFile()));
         pb.redirectError(stderrFile == null ? ProcessBuilder.Redirect.DISCARD : ProcessBuilder.Redirect.to(stderrFile.toFile()));
         Process process = pb.start();
-        if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-            process.destroyForcibly();
-            return -1;
+        try {
+            if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+                ProcessTree.destroy(process);
+                return -1;
+            }
+        } catch (InterruptedException e) {
+            // auditoria cancelada: a ferramenta (e o que ela iniciou) não pode continuar rodando sem ninguém esperando
+            ProcessTree.destroy(process);
+            throw e;
         }
         return process.exitValue();
     }

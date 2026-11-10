@@ -224,7 +224,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             Process process = pb.start();
 
             if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-                process.destroyForcibly();
+                ProcessTree.destroy(process);
                 LOG.warnf("%s excedeu o tempo limite de %ds e foi encerrado", engine.displayName(), timeoutSeconds);
                 return new SemgrepRun(null, ExternalTools.falha(-1, timeoutSeconds, null));
             }

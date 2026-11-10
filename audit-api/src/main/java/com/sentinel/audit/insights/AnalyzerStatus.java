@@ -13,6 +13,8 @@ public enum AnalyzerStatus {
     SUBSTITUIDO(false),
     /** Desligado por ajuste do sistema. */
     DESLIGADO(false),
+    /** O analisador precisa de arquivos de evidência que o projeto não tem. */
+    SEM_EVIDENCIA(false),
     /** Não se aplica à stack do projeto. */
     NAO_SUPORTADO(false),
     /** Valor não reconhecido: tratado como incompleto por segurança. */

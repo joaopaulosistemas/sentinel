@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.analyzer.ProcessTree;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -77,7 +78,7 @@ final class RemoteProbe {
         ingestion.configureEnvironment(pb.environment(), probe.tokenToSend());
         Process process = pb.start();
         if (!process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-            process.destroyForcibly();
+            ProcessTree.destroy(process);
             return new IngestionService.RepoCheck(false, null, null, "O repositório não respondeu em " + CHECK_TIMEOUT_SECONDS + "s");
         }
         String output = Files.readString(logFile, StandardCharsets.UTF_8);
@@ -111,7 +112,7 @@ final class RemoteProbe {
             ingestion.configureEnvironment(pb.environment(), token);
             Process cloneProc = pb.start();
             if (!cloneProc.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS) || cloneProc.exitValue() != 0) {
-                cloneProc.destroyForcibly();
+                ProcessTree.destroy(cloneProc);
                 return null;
             }
             Process ls = new ProcessBuilder("git", "-C", dir.toString(), "ls-tree", "-r", "--name-only", "HEAD")
@@ -157,7 +158,7 @@ final class RemoteProbe {
             Process process = pb.start();
             boolean finished = process.waitFor(CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (!finished) {
-                process.destroyForcibly();
+                ProcessTree.destroy(process);
             }
             return finished && process.exitValue() == 0
                     ? parseRefSha(Files.readString(logFile, StandardCharsets.UTF_8), branch) : null;
