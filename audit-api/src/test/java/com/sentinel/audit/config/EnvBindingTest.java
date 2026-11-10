@@ -25,7 +25,9 @@ class EnvBindingTest {
 
     /** Variáveis lidas por outra via que não application.properties (infra do contêiner/Quarkus). */
     private static final Set<String> FORA_DO_PROPERTIES = Set.of(
-            "JAVA_TOOL_OPTIONS");
+            "JAVA_TOOL_OPTIONS",
+            // O executável do Trivy lê direto do ambiente herdado pelo processo filho; a API não precisa conhecê-la.
+            "TRIVY_SKIP_DB_UPDATE");
 
     private static Path raiz() {
         Path p = Path.of(System.getProperty("user.dir")).toAbsolutePath();
