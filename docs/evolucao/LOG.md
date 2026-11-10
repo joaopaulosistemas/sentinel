@@ -1175,3 +1175,9 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Ajustes de código:** `React.RefObject<T | null>` em dois componentes (tipo do React 19); `manualChunks` do `vite.config.ts` passou de objeto para função (o Rolldown do Vite 8 não aceita o objeto; os pacotes `carbon`, `charts` e `react` seguem separados); `let next: IRuleAdjustment` em `applyBulk` (regra nova `no-useless-assignment` do ESLint 10).
 - **Decisão:** o `react-hooks` 7 trouxe regras do compilador do React (`refs`, `purity`, `set-state-in-effect`) que apontam 8 pontos em componentes; mantive só as duas regras da série 5 (`rules-of-hooks`, `exhaustive-deps`). Tratar essas 8 fica para um PR próprio.
 - **Verificado:** `tsc`, `vite build`, `eslint src --max-warnings 0`, `vitest run` (58 arquivos, 389 testes) e `npm ci` no npm 11. **Não verificado:** os testes e2e (Playwright) e o dashboard no navegador.
+
+## Dependabot: ignorar majors que já decidimos adiar (sem versão nova)
+
+- **Por quê:** a primeira rodada abriu 26 PRs, entre eles TypeScript 7 (sem API programática: o `dependency-cruiser` analisa 0 módulos e o typescript-eslint não roda) e saltos de major das imagens base.
+- **Mudança:** `ignore` de major para `typescript` em `lint/eslint` e `lint/extras`, e para `node`, `maven` e `eclipse-temurin` nas imagens (major de runtime só à mão). Minor e patch continuam automáticos.
+- **Reavaliar:** TypeScript quando sair o 7.1 com a API.

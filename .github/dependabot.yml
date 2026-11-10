@@ -25,6 +25,10 @@ updates:
     directory: /audit-rules/lint/eslint
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 3
+    ignore:
+      # TypeScript 7 não tem API programática (vem no 7.1): typescript-eslint, dependency-cruiser e o Angular não rodam nele.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       minor-patch: { update-types: [minor, patch] }
   - package-ecosystem: npm
@@ -39,12 +43,32 @@ updates:
     directory: /audit-rules/lint/extras
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 3
+    ignore:
+      # TypeScript 7 não tem API programática (vem no 7.1): typescript-eslint, dependency-cruiser e o Angular não rodam nele.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directory: /audit-api
     schedule: { interval: weekly, day: monday }
+    ignore:
+      # Major de imagem base muda o runtime: só à mão e só LTS (o Java 26 e o Node 27 não são LTS), depois de validar a imagem.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+      - dependency-name: maven
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directory: /audit-dashboard
     schedule: { interval: weekly, day: monday }
+    ignore:
+      # Major de imagem base muda o runtime: só à mão e só LTS (o Java 26 e o Node 27 não são LTS), depois de validar a imagem.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+      - dependency-name: maven
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }
