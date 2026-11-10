@@ -28,7 +28,7 @@ jobs:
       imagens: ${{ steps.f.outputs.imagens }}
       joern: ${{ steps.f.outputs.joern }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
       # Só em PR: pula o que a mudança não toca. Push na main, agenda e execução manual rodam tudo
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
       # Falha se regra citar repositório de validação, se houver gabarito de validação sem fonte,
@@ -72,13 +72,13 @@ jobs:
       SEMGREP_SEND_METRICS: "off"
       LC_ALL: C.UTF-8
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
           cache: pip
@@ -89,6 +89,13 @@ jobs:
       - run: bash scripts/instalar-opengrep.sh
       - name: Compilar e testar
         run: bash scripts/ci-anotar.sh "Maven" mvn -B -ntp verify
+      - name: Publicar a cobertura (JaCoCo)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cobertura-jacoco
+          path: audit-api/target/jacoco-report
+          if-no-files-found: ignore
 
   regras:
     name: Testes Semgrep dos pacotes
@@ -100,8 +107,8 @@ jobs:
       SEMGREP_SEND_METRICS: "off"
       LC_ALL: C.UTF-8
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
           cache: pip
@@ -154,7 +161,7 @@ jobs:
     env:
       LC_ALL: C.UTF-8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: bash scripts/instalar-opengrep.sh
       - name: Clonar o OWASP Benchmark (só leitura; gabarito em audit-rules/calibracao/benchmark)
         run: git clone --depth 1 https://github.com/OWASP-Benchmark/BenchmarkJava /tmp/BenchmarkJava
@@ -183,8 +190,8 @@ jobs:
       run:
         working-directory: audit-dashboard
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: npm
@@ -206,14 +213,14 @@ jobs:
       JOERN_VERSION: v4.0.583
       JOERN_SHA256: 74e072163b7f1fc1a371a265ca6f1a94a54507eb20bb831babb288d40f4d278e
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
           distribution: temurin
           java-version: "21"
       - name: Cache do Joern
         id: cache-joern
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: /opt/joern
           key: joern-${{ env.JOERN_VERSION }}
@@ -233,16 +240,16 @@ jobs:
     if: needs.mudancas.outputs.imagens == 'true'
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Cache das camadas da API
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: /tmp/buildx-api
           key: buildx-api-${{ hashFiles('audit-api/Dockerfile', 'pom.xml', 'audit-api/pom.xml', 'audit-cli/pom.xml', 'audit-rules/pom.xml') }}
           restore-keys: buildx-api-
       - name: Cache das camadas do dashboard
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: /tmp/buildx-dash
           key: buildx-dash-${{ hashFiles('audit-dashboard/Dockerfile', 'audit-dashboard/package-lock.json') }}
@@ -267,7 +274,7 @@ jobs:
           [ -d /tmp/buildx-dash-novo ] && rm -rf /tmp/buildx-dash && mv /tmp/buildx-dash-novo /tmp/buildx-dash || true
       - name: Teste ponta a ponta (API + Postgres + auditoria real)
         run: bash scripts/e2e.sh
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - name: Validar o chart Helm
         run: |
           if ! (helm lint deploy/helm/sentinel --set secrets.dbPassword=ci && helm template sentinel deploy/helm/sentinel --set secrets.dbPassword=ci > /dev/null) > helm.log 2>&1; then
@@ -287,10 +294,10 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Cache das camadas da API (só leitura; quem grava é o job de imagens)
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: /tmp/buildx-api
           key: buildx-api-${{ hashFiles('audit-api/Dockerfile', 'pom.xml', 'audit-api/pom.xml', 'audit-cli/pom.xml', 'audit-rules/pom.xml') }}
@@ -308,7 +315,7 @@ jobs:
           if [ -n "$id" ]; then gh run download "$id" -R "$GITHUB_REPOSITORY" -n calibracao-historico -D anterior || echo "sem histórico anterior"; else echo "sem execução anterior"; fi
       - name: Comparar e conferir as verdades conhecidas
         run: python3 scripts/comparar-calibracao.py calibracao-saida anterior audit-rules/calibracao/esperado.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: calibracao-historico
