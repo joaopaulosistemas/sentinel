@@ -35,7 +35,31 @@ interface IRejected {
 
 const ACCEPT = '.sql,.csv,.json,.xml,.info,.txt,.histo';
 
-const sizeLabel = (bytes: number) => (bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+const BYTES_PER_KB = 1024;
+const BYTES_PER_MB = BYTES_PER_KB * BYTES_PER_KB;
+
+const sizeLabel = (bytes: number) =>
+  bytes >= BYTES_PER_MB ? `${(bytes / BYTES_PER_MB).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / BYTES_PER_KB))} KB`;
+
+/** O arquivo aceito no lugar do tipo que o conteúdo é; avisa quando o usuário o soltou em outro tipo. */
+function acceptedSlot(file: File, kind: EvidenceKind, target: EvidenceKind | null): IAccepted {
+  const found = EVIDENCE_TYPES.find((t) => t.kind === kind)!;
+  const wanted = target ? EVIDENCE_TYPES.find((t) => t.kind === target) : null;
+  const moved = wanted && wanted.kind !== kind;
+  return {
+    name: file.name,
+    size: file.size,
+    modified: file.lastModified,
+    file,
+    note: moved ? `Era para "${wanted.title}", mas o conteúdo é de "${found.title}"; ficou no lugar certo.` : undefined,
+  };
+}
+
+function withoutSlot(slots: Partial<Record<EvidenceKind, IAccepted>>, kind: EvidenceKind) {
+  const remaining = { ...slots };
+  delete remaining[kind];
+  return remaining;
+}
 
 async function readHead(file: File): Promise<string> {
   try {
@@ -94,16 +118,7 @@ export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvide
         refused.push({ name: file.name, reason: verdict.reason, hint: verdict.hint });
         continue;
       }
-      const found = EVIDENCE_TYPES.find((t) => t.kind === verdict.kind)!;
-      const wanted = target ? EVIDENCE_TYPES.find((t) => t.kind === target) : null;
-      const moved = wanted && wanted.kind !== verdict.kind;
-      next[verdict.kind] = {
-        name: file.name,
-        size: file.size,
-        modified: file.lastModified,
-        file,
-        note: moved ? `Era para "${wanted.title}", mas o conteúdo é de "${found.title}"; ficou no lugar certo.` : undefined,
-      };
+      next[verdict.kind] = acceptedSlot(file, verdict.kind, target);
     }
     setSlots(next);
     setRejected(refused);
@@ -135,7 +150,7 @@ export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvide
       <EvidenceNotices stale={stale} delivered={delivered} onAudit={onAudit} />
       <DropZone dragging={dragging} setDragging={setDragging} onDrop={onDrop} inputRef={inputRef} onPick={() => pick(null)} onFiles={(files) => void receive(files, targetRef.current)} />
       <RejectedList rejected={rejected} />
-      <AreaLists coverage={coverage} slots={slots} open={open} setOpen={setOpen} baseId={baseId} onPick={pick} onRemove={(kind) => setSlots((cur) => { const n = { ...cur }; delete n[kind]; return n; })} />
+      <AreaLists coverage={coverage} slots={slots} open={open} setOpen={setOpen} baseId={baseId} onPick={pick} onRemove={(kind) => setSlots((cur) => withoutSlot(cur, kind))} />
       <DeliverBar disabled={coverage.received === 0 || delivered || deliver.isPending || server.data?.enabled === false} enabled={server.data?.enabled !== false} pending={deliver.isPending} delivered={delivered} error={deliver.isError ? (deliver.error as Error).message : null} onDeliver={() => deliver.mutate()} />
     </PageSection>
   );

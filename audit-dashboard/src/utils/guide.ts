@@ -43,7 +43,7 @@ export function coverageOf(stack: IGuideStack): Coverage {
   return { label: 'Só regras gerais', tone: 'bad' };
 }
 
-export interface ICriterion {
+interface ICriterion {
   title: string;
   points: number;
   done: boolean;

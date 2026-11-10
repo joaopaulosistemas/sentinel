@@ -1,7 +1,5 @@
 package com.sentinel.audit.analyzer;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -100,37 +98,47 @@ final class VendoredCode {
         if (head == null) {
             return false;
         }
-        String h = head.stripLeading();
-        if (h.startsWith("@charset")) {
-            int nl = h.indexOf('\n');
-            h = nl < 0 ? "" : h.substring(nl + 1).stripLeading();
-        }
-        String comment;
-        if (h.startsWith("//")) {                       // bloco de comentários de linha no topo (ex.: "// CodeMirror, copyright ... MIT license: https://...")
-            StringBuilder sb = new StringBuilder();
-            for (String line : h.substring(0, Math.min(h.length(), BANNER_CHARS)).split("\\R")) {
-                if (!line.stripLeading().startsWith("//")) {
-                    break;
-                }
-                sb.append(line).append('\n');
-            }
-            comment = sb.toString();
-        } else if (h.startsWith("/*")) {
-            h = h.substring(0, Math.min(h.length(), BANNER_CHARS));
-            int end = h.indexOf("*/");
-            comment = end < 0 ? h : h.substring(0, end);
-        } else if (preservedBannerAfterPrelude(h) != null) {   // pacote otimizado: uma ou duas linhas de código e só então o /*! da licença
-            comment = preservedBannerAfterPrelude(h);
-        } else {
-            return false;
-        }
-        if (!LICENSE_WORD.matcher(comment).find()) {
+        String comment = bannerComment(withoutCharset(head.stripLeading()));
+        if (comment == null || !LICENSE_WORD.matcher(comment).find()) {
             return false;
         }
         // O endereço do texto da licença (Apache 2.0, GPL...) vem em todo arquivo licenciado, inclusive o do próprio projeto:
         // sozinho não prova origem externa. A Fundação Apache (ASF) continua valendo como sinal próprio.
         String semUrlDeLicenca = LICENSE_TEXT_URL.matcher(comment).replaceAll(" ");
         return OUTSIDE_SIGN.matcher(semUrlDeLicenca).find() || ASF_NAME.matcher(comment).find();
+    }
+
+    /** Tira a linha {@code @charset} que pode abrir um CSS, para o comentário de licença ser o primeiro texto. */
+    private static String withoutCharset(String h) {
+        if (!h.startsWith("@charset")) {
+            return h;
+        }
+        int nl = h.indexOf('\n');
+        return nl < 0 ? "" : h.substring(nl + 1).stripLeading();
+    }
+
+    /** O comentário de abertura do arquivo (de linha, de bloco ou {@code /*!} depois de um prefácio curto); nulo se não houver. */
+    private static String bannerComment(String h) {
+        if (h.startsWith("//")) {                       // bloco de comentários de linha no topo (ex.: "// CodeMirror, copyright ... MIT license: https://...")
+            return lineCommentBlock(h);
+        }
+        if (h.startsWith("/*")) {
+            String start = h.substring(0, Math.min(h.length(), BANNER_CHARS));
+            int end = start.indexOf("*/");
+            return end < 0 ? start : start.substring(0, end);
+        }
+        return preservedBannerAfterPrelude(h);          // pacote otimizado: uma ou duas linhas de código e só então o /*! da licença
+    }
+
+    private static String lineCommentBlock(String h) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : h.substring(0, Math.min(h.length(), BANNER_CHARS)).split("\\R")) {
+            if (!line.stripLeading().startsWith("//")) {
+                break;
+            }
+            sb.append(line).append('\n');
+        }
+        return sb.toString();
     }
 
     /** Quantos caracteres de código podem vir antes do comentário {@code /*!} de licença (ex.: {@code window["x"]=true; try {}). */

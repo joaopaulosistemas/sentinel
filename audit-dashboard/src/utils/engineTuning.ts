@@ -1,7 +1,7 @@
 import type { IAuditRunResponse, IEngineConfig, IEngineTuning, IRuleAdjustment } from '../types';
 import { isNoopAdjustment } from './ruleCatalog';
 
-export type TuningSlice = Pick<IEngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'> & { disableSides: Array<'back' | 'front'> };
+type TuningSlice = Pick<IEngineTuning, 'enablePacks' | 'disablePacks' | 'thresholds' | 'rules'> & { disableSides: Array<'back' | 'front'> };
 
 /** Limite digitado: vazio vale "padrão do motor"; o resto precisa ser inteiro ≥ 1. */
 export function limitInvalid(value: string | undefined): boolean {
@@ -11,7 +11,7 @@ export function limitInvalid(value: string | undefined): boolean {
 }
 
 /** O que a tela edita (pacotes, limites, regras, lados desligados) na forma que o servidor guarda. */
-export interface ISliceInput {
+interface ISliceInput {
   data: IEngineConfig;
   packs: Record<string, boolean>;
   limits: Record<string, string>;
@@ -35,7 +35,7 @@ export function currentAdjustment(rules: IRuleAdjustment[], id: string): IRuleAd
   return rules.find((r) => r.id === id) ?? NO_ADJUSTMENT(id);
 }
 
-export interface IPatchAdjustmentInput {
+interface IPatchAdjustmentInput {
   rules: IRuleAdjustment[];
   id: string;
   patch: Partial<IRuleAdjustment>;

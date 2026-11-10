@@ -138,7 +138,7 @@ function isRepoUrl(value: string): boolean {
   return REPO_URL_PADRAO.test(value) || REPO_URL_COM_PORTA.test(value);
 }
 
-export interface IFormErrors {
+interface IFormErrors {
   name?: string;
   repoUrl?: string;
   localPath?: string;

@@ -59,8 +59,9 @@ final class WorkingTreeCopier {
         try (ExecutorService pool = Executors.newFixedThreadPool(COPY_THREADS)) {
             try {
                 List<Future<Void>> pending = new ArrayList<>(files.size());
+                CopyRun run = new CopyRun(deadline, timeoutSeconds, done, total, progress);
                 for (String rel : files) {
-                    pending.add(pool.submit(task(rel, deadline, timeoutSeconds, done, total, progress)));
+                    pending.add(pool.submit(task(rel, run)));
                 }
                 awaitAll(pending, pool);
             } finally {
@@ -69,17 +70,19 @@ final class WorkingTreeCopier {
         }
     }
 
-    private Callable<Void> task(String rel, long deadline, long timeoutSeconds, AtomicLong done, long total,
-                                LocalSource.CopyProgress progress) {
+    /** O que cada cópia individual precisa saber do lote: prazo, contagem e quem avisar do progresso. */
+    private record CopyRun(long deadline, long timeoutSeconds, AtomicLong done, long total, LocalSource.CopyProgress progress) { }
+
+    private Callable<Void> task(String rel, CopyRun run) {
         return () -> {
-            if (System.nanoTime() > deadline) {
-                throw new IllegalStateException("A cópia da pasta excedeu o tempo limite de " + timeoutSeconds
-                        + "s (" + done.get() + " de " + total + " arquivos copiados)");
+            if (System.nanoTime() > run.deadline()) {
+                throw new IllegalStateException("A cópia da pasta excedeu o tempo limite de " + run.timeoutSeconds()
+                        + "s (" + run.done().get() + " de " + run.total() + " arquivos copiados)");
             }
             copyOne(rel);
-            long n = done.incrementAndGet();
+            long n = run.done().incrementAndGet();
             if (n % PROGRESS_EVERY == 0) {
-                progress.report(n, total);
+                run.progress().report(n, run.total());
             }
             return null;
         };

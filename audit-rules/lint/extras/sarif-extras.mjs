@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 const aqui = dirname(fileURLToPath(import.meta.url));
 const [, , modo, ...arquivos] = process.argv;
 const BUF = 128 * 1024 * 1024;
+// SQL gerado do esquema (pg_dump/Hibernate) e scripts derivados dele: os nomes e tipos vêm da ferramenta, não do time.
+const SQL_GERADO = /baseline|completa_bancos_antigos/i;
 const posix = (p) => p.split("\\").join("/").replace(/^\.\//, "");
 
 function rodar(cmd, args) {
@@ -51,7 +53,8 @@ if (modo === "squawk") {
   const excluir = process.env.SQUAWK_EXCLUDE || "prefer-robust-stmts,require-lock-timeout,require-statement-timeout";
   const bin = join(aqui, "node_modules", ".bin", "squawk");
   // Baseline (esquema inteiro gerado por pg_dump/Hibernate) roda só em banco vazio: as regras do Squawk são para migrations em banco com dados.
-  const lista = arquivos.filter((a) => a.toLowerCase().endsWith(".sql") && !/baseline/i.test(a));
+  // O mesmo vale para o script que completa bancos antigos: ele é gerado do baseline (mesmos tipos de coluna, só com IF NOT EXISTS).
+  const lista = arquivos.filter((a) => a.toLowerCase().endsWith(".sql") && !SQL_GERADO.test(a));
   for (let i = 0; i < lista.length; i += 100) {
     const saida = rodar(bin, ["--reporter", "json", "--exclude", excluir, ...lista.slice(i, i + 100)]);
     let itens = [];
@@ -64,7 +67,7 @@ if (modo === "squawk") {
   ferramenta = "SQLFluff";
   url = "https://sqlfluff.com";
   const dialeto = process.env.SQLFLUFF_DIALECT || "postgres";
-  const lista = arquivos.filter((a) => a.toLowerCase().endsWith(".sql"));
+  const lista = arquivos.filter((a) => a.toLowerCase().endsWith(".sql") && !SQL_GERADO.test(a));
   for (let i = 0; i < lista.length; i += 100) {
     const saida = rodar("sqlfluff", ["lint", "--format", "json", "--dialect", dialeto, "--config", join(aqui, "sqlfluff.cfg"), "--nocolor", ...lista.slice(i, i + 100)]);
     let itens = [];

@@ -4,7 +4,7 @@ import { TARGET_SCORE, scoreColor as bandColor } from './scoreBand';
 /** Depois de quantos dias sem auditar um sistema passa a pedir atenção. */
 export const STALE_DAYS = 5;
 
-export interface IAttentionItem {
+interface IAttentionItem {
   system: ISystemSummaryResponse;
   reasons: string[];
   /** Quanto maior, mais urgente; usado só para ordenar. */

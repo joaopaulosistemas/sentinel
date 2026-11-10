@@ -3,4 +3,4 @@ name: sentinel
 description: Sentinel Audit Tool — API, dashboard e (opcionalmente) PostgreSQL
 type: application
 version: 0.1.0
-appVersion: "12.81.0"
+appVersion: "12.82.0"

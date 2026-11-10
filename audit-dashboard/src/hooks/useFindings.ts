@@ -18,7 +18,7 @@ export function useFindings(auditId: number, filter?: IFindingsFilter) {
   });
 }
 
-export interface IOverviewFilter extends Omit<IFindingsFilter, 'severity'> {
+interface IOverviewFilter extends Omit<IFindingsFilter, 'severity'> {
   severity?: Severity[];
   systemId?: number;
   limit: number;

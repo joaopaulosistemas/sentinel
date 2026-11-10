@@ -19,7 +19,7 @@ import { formatTrend, summarizeTeams } from '../../utils/ranking';
 import { TARGET_SCORE as TARGET, scoreColor as barColor, scoreTagType } from '../../utils/scoreBand';
 import { timeAgo } from '../../utils/timeAgo';
 
-export type SortKey = 'nota' | 'criticos' | 'tendencia';
+type SortKey = 'nota' | 'criticos' | 'tendencia';
 
 const sortOptions: Array<{ key: SortKey; label: string }> = [
   { key: 'nota', label: 'Nota' },

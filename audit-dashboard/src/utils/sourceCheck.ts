@@ -1,5 +1,5 @@
 /** Estado mínimo de uma conferência (mutação) de repositório ou pasta. */
-export interface ICheckState {
+interface ICheckState {
   data?: unknown;
   isPending: boolean;
 }

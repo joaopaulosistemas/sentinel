@@ -1,6 +1,6 @@
 import type { ISystemSummaryResponse } from '../types';
 
-export interface ITeamSummary {
+interface ITeamSummary {
   team: string;
   systems: number;
   audited: number;
@@ -83,7 +83,7 @@ function compareTeams(a: ITeamSummary, b: ITeamSummary): number {
   );
 }
 
-export interface ITrend {
+interface ITrend {
   text: string;
   tone: 'up' | 'down' | 'flat' | 'none';
 }

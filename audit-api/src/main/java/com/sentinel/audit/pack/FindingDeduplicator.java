@@ -43,23 +43,10 @@ public final class FindingDeduplicator {
         List<Finding> removed = new ArrayList<>();
         Set<Finding> removedSameTool = Collections.newSetFromMap(new IdentityHashMap<>());
         for (DedupTopic topic : rules) {
-            if (!topic.order().isEmpty()) {
+            if (topic.order().isEmpty()) {
+                mergeCrossTool(findings, rules, topic, removed);
+            } else {
                 mergeSameTool(findings, topic, removedSameTool);
-                continue;
-            }
-            List<Finding> inTopic = findings.stream().filter(f -> topicOf(f, rules) == topic).toList();
-            for (Finding candidate : inTopic) {
-                if (removed.contains(candidate) || isPreferred(candidate, topic)) {
-                    continue;
-                }
-                Finding anchor = inTopic.stream()
-                        .filter(a -> isPreferred(a, topic) && !removed.contains(a))
-                        .filter(a -> sameFile(a, candidate) && near(a, candidate, topic.maxLines()))
-                        .findFirst().orElse(null);
-                if (anchor != null) {
-                    merge(anchor, candidate);
-                    removed.add(candidate);
-                }
             }
         }
         List<Finding> result = new ArrayList<>(findings.size());
@@ -69,6 +56,24 @@ public final class FindingDeduplicator {
             }
         }
         return result;
+    }
+
+    /** O mesmo problema visto por ferramentas diferentes: fica o achado da ferramenta preferida do tópico. */
+    private static void mergeCrossTool(List<Finding> findings, List<DedupTopic> rules, DedupTopic topic, List<Finding> removed) {
+        List<Finding> inTopic = findings.stream().filter(f -> topicOf(f, rules) == topic).toList();
+        for (Finding candidate : inTopic) {
+            if (removed.contains(candidate) || isPreferred(candidate, topic)) {
+                continue;
+            }
+            Finding anchor = inTopic.stream()
+                    .filter(a -> isPreferred(a, topic) && !removed.contains(a))
+                    .filter(a -> sameFile(a, candidate) && near(a, candidate, topic.maxLines()))
+                    .findFirst().orElse(null);
+            if (anchor != null) {
+                merge(anchor, candidate);
+                removed.add(candidate);
+            }
+        }
     }
 
     /**
@@ -81,21 +86,34 @@ public final class FindingDeduplicator {
             if (rc < 0 || removed.contains(candidate)) {
                 continue;
             }
-            Finding anchor = null;
-            for (Finding a : findings) {
-                int ra = rank(a, topic);
-                if (a != candidate && ra >= 0 && ra < rc && !removed.contains(a)
-                        && com.sentinel.audit.analyzer.SastEngine.sameTool(a.getToolSource(), candidate.getToolSource())
-                        && sameFile(a, candidate) && near(a, candidate, topic.maxLines())
-                        && (anchor == null || ra < rank(anchor, topic))) {
-                    anchor = a;
-                }
-            }
+            Finding anchor = sameToolAnchor(findings, candidate, rc, topic, removed);
             if (anchor != null) {
                 merge(anchor, candidate);
                 removed.add(candidate);
             }
         }
+    }
+
+    /** Entre as regras que vêm antes da do candidato, a mais prioritária da mesma ferramenta, arquivo e região; nulo se não há. */
+    private static Finding sameToolAnchor(List<Finding> findings, Finding candidate, int rc, DedupTopic topic, Set<Finding> removed) {
+        Finding anchor = null;
+        for (Finding a : findings) {
+            int ra = rank(a, topic);
+            if (isEarlierRule(a, candidate, ra, rc, removed) && sameSpot(a, candidate, topic)
+                    && (anchor == null || ra < rank(anchor, topic))) {
+                anchor = a;
+            }
+        }
+        return anchor;
+    }
+
+    private static boolean isEarlierRule(Finding a, Finding candidate, int ra, int rc, Set<Finding> removed) {
+        return a != candidate && ra >= 0 && ra < rc && !removed.contains(a);
+    }
+
+    private static boolean sameSpot(Finding a, Finding b, DedupTopic topic) {
+        return com.sentinel.audit.analyzer.SastEngine.sameTool(a.getToolSource(), b.getToolSource())
+                && sameFile(a, b) && near(a, b, topic.maxLines());
     }
 
     /** Posição da regra do achado em {@code order} (-1 se não consta); compara o id inteiro ou o sufixo após o último ponto. */

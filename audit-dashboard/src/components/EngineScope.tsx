@@ -66,6 +66,32 @@ function SideCard({ side, on, rules, packs, analyzers, onToggle }: ICardProps) {
   );
 }
 
+interface ICommonCardProps {
+  rules: number;
+  packs: number;
+  analyzers: number;
+}
+
+/** Infra e comum nunca desliga: o cartão só mostra quanto vale para qualquer linguagem. */
+function CommonCard({ rules, packs, analyzers }: ICommonCardProps) {
+  return (
+    <div role="group" aria-label="Escopo Infra e comum" style={{ padding: 16, display: 'grid', gap: 10, border: '1px solid var(--s-border)', background: 'var(--s-header-row)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><SideBadge side="common" /><strong style={{ fontSize: 15 }}>Infra e comum</strong></span>
+        <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>sempre ligado</span>
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--s-text-2)' }}>Docker, Kubernetes e as regras que valem para qualquer linguagem. Segredos, dependências e Git são analisadores comuns.</div>
+      <div style={{ display: 'flex', gap: 16, fontSize: 13, flexWrap: 'wrap' }}>
+        <span><strong>{rules}</strong> regras</span>
+        <span><strong>{packs}</strong> pacotes</span>
+        <span><strong>{analyzers}</strong> analisadores</span>
+      </div>
+    </div>
+  );
+}
+
+type ScopeSide = OffSide | 'common';
+
 interface IProps {
   cfg: IEngineConfig;
   sidesOff: string[];
@@ -77,8 +103,8 @@ export function ScopeSection({ cfg, sidesOff, onChange }: IProps) {
   const [refused, setRefused] = useState(false);
   const totals = sideTotals(cfg.catalog);
   const groups = packsBySide(cfg.packs, cfg.catalog);
-  const packsOf = (side: OffSide) => groups.find((g) => g.side === side)?.packs.length ?? 0;
-  const analyzersOf = (side: OffSide) => cfg.analyzers.filter((a) => a.side === side).length;
+  const packsOf = (side: ScopeSide) => groups.find((g) => g.side === side)?.packs.length ?? 0;
+  const analyzersOf = (side: ScopeSide) => cfg.analyzers.filter((a) => (a.side ?? 'common') === side).length;
   const preset = presetOf(sidesOff);
   const apply = (next: OffSide[]) => {
     setRefused(false);
@@ -117,18 +143,7 @@ export function ScopeSection({ cfg, sidesOff, onChange }: IProps) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
         <SideCard side="back" on={!sidesOff.includes('back')} rules={totals.back} packs={packsOf('back')} analyzers={analyzersOf('back')} onToggle={(on) => (on ? turnSideOn('back') : turnSideOff('back'))} />
         <SideCard side="front" on={!sidesOff.includes('front')} rules={totals.front} packs={packsOf('front')} analyzers={analyzersOf('front')} onToggle={(on) => (on ? turnSideOn('front') : turnSideOff('front'))} />
-        <div role="group" aria-label="Escopo Infra e comum" style={{ padding: 16, display: 'grid', gap: 10, border: '1px solid var(--s-border)', background: 'var(--s-header-row)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><SideBadge side="common" /><strong style={{ fontSize: 15 }}>Infra e comum</strong></span>
-            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>sempre ligado</span>
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--s-text-2)' }}>Docker, Kubernetes e as regras que valem para qualquer linguagem. Segredos, dependências e Git são analisadores comuns.</div>
-          <div style={{ display: 'flex', gap: 16, fontSize: 13, flexWrap: 'wrap' }}>
-            <span><strong>{totals.common}</strong> regras</span>
-            <span><strong>{groups.find((g) => g.side === 'common')?.packs.length ?? 0}</strong> pacotes</span>
-            <span><strong>{cfg.analyzers.filter((a) => (a.side ?? 'common') === 'common').length}</strong> analisadores</span>
-          </div>
-        </div>
+        <CommonCard rules={totals.common} packs={packsOf('common')} analyzers={analyzersOf('common')} />
       </div>
 
       {refused && (
