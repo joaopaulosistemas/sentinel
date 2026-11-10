@@ -280,7 +280,16 @@ jobs:
           [ -d /tmp/buildx-api-novo ] && rm -rf /tmp/buildx-api && mv /tmp/buildx-api-novo /tmp/buildx-api || true
           [ -d /tmp/buildx-dash-novo ] && rm -rf /tmp/buildx-dash && mv /tmp/buildx-dash-novo /tmp/buildx-dash || true
       - name: Teste ponta a ponta (API + Postgres + auditoria real)
+        env:
+          E2E_SCHEMA_OUT: ${{ runner.temp }}/schema.sql
         run: bash scripts/e2e.sh
+      - name: Publicar o esquema criado pelo Hibernate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: esquema-postgres
+          path: ${{ runner.temp }}/schema.sql
+          if-no-files-found: ignore
       - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - name: Conferir a fonte única da versão
         run: python3 scripts/sincronizar-versao.py --check

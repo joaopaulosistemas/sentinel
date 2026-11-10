@@ -71,14 +71,16 @@ public class SystemHistoryResource {
     }
 
     /**
-     * Lista todas as execuções de auditoria de um sistema.
+     * Lista as execuções de auditoria mais recentes de um sistema.
      */
     @GET
     @Path("/{id}/audits")
-    @Operation(summary = "Listar auditorias do sistema", description = "Retorna todas as execuções de auditoria de um sistema")
-    public List<AuditRunResponse> listAudits(@PathParam("id") Long id) {
+    @Operation(summary = "Listar auditorias do sistema",
+            description = "Retorna as execuções mais recentes de um sistema (limit, de 1 a 500; padrão 100). A comparação com a anterior vem só nas 10 mais novas")
+    public List<AuditRunResponse> listAudits(@PathParam("id") Long id,
+                                             @QueryParam("limit") @DefaultValue("100") int limit) {
         systemCatalog.require(id);
 
-        return views.audits(id);
+        return views.audits(id, AuditListLimit.clamp(limit));
     }
 }

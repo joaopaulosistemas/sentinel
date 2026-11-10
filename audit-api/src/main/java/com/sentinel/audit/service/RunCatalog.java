@@ -44,6 +44,11 @@ public class RunCatalog {
         return repository.findBySystemId(systemId);
     }
 
+    /** As {@code limit} auditorias mais recentes do sistema. */
+    public List<AuditRun> bySystem(Long systemId, int limit) {
+        return repository.findBySystemId(systemId, limit);
+    }
+
     /** Auditorias concluídas mais recentes do sistema (a mais nova primeiro). */
     public List<AuditRun> latestCompleted(Long systemId, int limit) {
         return repository.findLatestCompleted(systemId, limit);

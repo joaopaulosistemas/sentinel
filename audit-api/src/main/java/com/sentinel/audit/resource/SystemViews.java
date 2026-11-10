@@ -37,10 +37,13 @@ public class SystemViews {
     @Inject
     FindingLifecycleService lifecycleService;
 
-    List<AuditRunResponse> audits(Long systemId) {
-        return runCatalog.bySystem(systemId).stream()
-                .map(r -> runMapper.toResponse(r, true))
-                .collect(Collectors.toList());
+    List<AuditRunResponse> audits(Long systemId, int limit) {
+        List<AuditRun> runs = runCatalog.bySystem(systemId, limit);
+        List<AuditRunResponse> out = new java.util.ArrayList<>(runs.size());
+        for (int i = 0; i < runs.size(); i++) {
+            out.add(runMapper.toResponse(runs.get(i), AuditListLimit.withDiff(i)));
+        }
+        return out;
     }
 
     List<TrendPoint> trend(Long systemId, int limit) {
