@@ -17,6 +17,7 @@ As ferramentas externas rodam em versões **fixadas** (com SHA-256 quando são b
 | Betterleaks | 1.10.0 | Sucessor do Gitleaks (MIT), pelo mesmo autor. A série 1.x mantém a linha de comando e o relatório do Gitleaks; a **2.x ainda só tem versões candidatas** (rc.7) e muda comandos, flags e o JSON | Opt-in (`BETTERLEAKS_ENABLED=true`). Migrar para a 2.x quando sair a versão final; medir contra o Gitleaks antes de torná-lo padrão |
 | Node (imagem e CI) | 24 | LTS ativo (fim de vida em 2028-04-30); o 22 sai de suporte em 2027-04-30 e o ESLint 10 pede 20.19+ | Avaliar o 26 quando virar LTS ativo e o ecossistema acompanhar |
 | Hadolint | 2.12.0 | Licença GPL-3.0; **fora da imagem publicada**, opt-in com `WITH_HADOLINT=true` | Decidido (abaixo) |
+| Stylelint | 17.16.0 | Com `stylelint-config-standard-scss` 17 e `-standard` 40, que exigem Stylelint 17; o 18 só entra quando o `-standard-scss` aceitar | Subir junto com as configs |
 | Opengrep | 1.30.0 | LGPL-2.1 | Sem pendência |
 | Checkov | 3.4.3 | Roda só em Dockerfile, Kubernetes e GitHub Actions; Terraform fica fora (ver LOG) | Sem pendência |
 

@@ -1156,3 +1156,8 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Resultado:** achados únicos em produção, Gitleaks 30 contra Betterleaks 71 nos cinco repositórios. Excedente do Betterleaks: 17 `generic-password` e 2 `mongodb-connection-string`.
 - **Conferência manual** dos 18 `generic-password` fora de teste e tradução: 14 senhas fixas reais (código, seed de banco, compose), 4 falsos positivos (CSS `password:hover`, texto de tutorial em HTML). Amostra pequena, em repositórios propositalmente vulneráveis; não generaliza para código de empresa.
 - **Decisão mantida:** Gitleaks padrão, Betterleaks opt-in (a 2.x vai quebrar a CLI e o JSON).
+
+## Stylelint 17.16.0 com as configs 17/40 (sem versão nova)
+
+- **Por quê:** o Dependabot propôs `stylelint-config-standard-scss` 17 e Stylelint 18 em PRs separados, que não instalam (ERESOLVE). O `-standard-scss` 17 exige Stylelint `^17`, e o `-standard` 41 exige o 18; por isso o conjunto coerente é Stylelint 17.16.0, `-standard-scss` 17.0.0 e `-standard` 40.0.0.
+- **Verificado:** `npm ci` com o lock novo no npm 11; mesma amostra SCSS com a `stylelintrc.json` e o `sarif-formatter.cjs` da imagem: 16.12 e 17.16 dão os mesmos 4 achados (regra e linha) e o SARIF sai igual. Stylelint 17 pede Node 20.19+, a imagem usa o 24.
