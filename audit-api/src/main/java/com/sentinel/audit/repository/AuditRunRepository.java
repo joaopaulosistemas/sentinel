@@ -23,6 +23,11 @@ public class AuditRunRepository implements PanacheRepository<AuditRun> {
         return list("system.id = ?1 ORDER BY startedAt DESC", systemId);
     }
 
+    /** As {@code limit} execuções mais recentes do sistema, sem carregar o histórico inteiro. */
+    public List<AuditRun> findBySystemId(Long systemId, int limit) {
+        return find("system.id = ?1 ORDER BY startedAt DESC", systemId).page(0, limit).list();
+    }
+
     /** Auditoria COMPLETA e CONCLUÍDA imediatamente anterior (mesmo sistema e branch; auditorias de PR nunca servem de base) à de id {@code beforeId}. */
     public AuditRun findPreviousCompleted(Long systemId, String branch, Long beforeId) {
         if (branch == null) {
