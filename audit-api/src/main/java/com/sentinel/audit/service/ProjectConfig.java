@@ -307,6 +307,11 @@ public final class ProjectConfig {
         return excludes.isEmpty() && suppressions.isEmpty() && problems.isEmpty();
     }
 
+    /** Diz se o caminho (relativo à raiz do projeto) cai em algum {@code exclude}. */
+    public boolean isExcluded(String path) {
+        return matchesAny(excludes, normalize(path));
+    }
+
     public List<Suppression> suppressions() {
         return suppressions;
     }

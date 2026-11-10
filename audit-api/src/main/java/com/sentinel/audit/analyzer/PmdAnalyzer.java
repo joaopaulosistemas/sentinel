@@ -8,6 +8,7 @@ import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.model.Stack;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Lint de código Java com o PMD (boas práticas, propensão a erro e design).
@@ -100,6 +102,10 @@ public class PmdAnalyzer implements CodeAnalyzer {
     /** Substituível em testes. */
     String pathEnv = System.getenv("PATH");
 
+    /** O que o {@code .sentinel.yml} exclui: erro do PMD nesses arquivos não torna a auditoria parcial. */
+    @Inject
+    ProjectExclusions exclusions = ProjectExclusions.NONE;
+
     @Override
     public boolean isAvailable() {
         return enabled && ExternalTools.find("pmd", pathEnv) != null;
@@ -148,8 +154,10 @@ public class PmdAnalyzer implements CodeAnalyzer {
         if (code == EXIT_RECOVERABLE_ERRORS) {
             // Código 5: o PMD não conseguiu ler/analisar alguns arquivos (sintaxe nova, arquivo gerado etc.),
             // mas o relatório com o resto está completo. Aproveita os achados e avisa em vez de descartar tudo.
-            partial = recoverableNote(json);
-            LOG.warnf("PMD %s", partial);
+            partial = recoverableNote(json, projectPath, exclusions.forProject(projectPath));
+            if (partial != null) {
+                LOG.warnf("PMD %s", partial);
+            }
         }
         return new ToolRun.Outcome(found, partial);
     }
@@ -165,10 +173,52 @@ public class PmdAnalyzer implements CodeAnalyzer {
                 "--no-cache", "--no-progress", "--no-fail-on-violation");
     }
 
-    private static String recoverableNote(String json) {
-        int n = processingErrors(json);
-        return "o PMD não conseguiu analisar " + (n > 0 ? n + " arquivo(s)" : "alguns arquivos")
+    /** Quantos arquivos o aviso cita pelo nome; o resto vira "e mais N". */
+    private static final int NOTE_FILES = 3;
+
+    /**
+     * Aviso de cobertura parcial: cita os arquivos que o PMD não leu. Erros em arquivos que o projeto exclui
+     * ({@code .sentinel.yml}) não contam; se todos forem desses, devolve {@code null} (nada ficou sem análise).
+     */
+    static String recoverableNote(String json, Path projectPath, Predicate<String> excluded) {
+        List<String> unread = unreadFiles(json, projectPath, excluded);
+        if (unread == null) {
+            return "o PMD não conseguiu analisar alguns arquivos; os demais foram analisados";
+        }
+        if (unread.isEmpty()) {
+            return null;
+        }
+        String shown = String.join(", ", unread.subList(0, Math.min(NOTE_FILES, unread.size())));
+        String more = unread.size() > NOTE_FILES ? " e mais " + (unread.size() - NOTE_FILES) : "";
+        return "o PMD não conseguiu analisar " + unread.size() + " arquivo(s): " + shown + more
                 + "; os demais foram analisados";
+    }
+
+    /** "caminho (TipoDoErro)" de cada erro de processamento fora dos excluídos; nulo se o JSON não lista nenhum. */
+    private static List<String> unreadFiles(String json, Path projectPath, Predicate<String> excluded) {
+        try {
+            JsonNode errors = MAPPER.readTree(json).path("processingErrors");
+            if (errors.isEmpty()) {
+                return null;
+            }
+            List<String> out = new ArrayList<>();
+            for (JsonNode e : errors) {
+                String file = ExternalTools.relativize(projectPath, e.path("filename").asText(""));
+                if (!excluded.test(file)) {
+                    out.add(file + " (" + errorType(e.path("message").asText("")) + ")");
+                }
+            }
+            return out;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** "ParseException: ..." vira "ParseException"; mensagem sem esse formato vira "erro de leitura". */
+    private static String errorType(String message) {
+        int colon = message.indexOf(':');
+        String type = colon > 0 ? message.substring(0, colon).trim() : "";
+        return type.isEmpty() || type.contains(" ") ? "erro de leitura" : type;
     }
 
     /** Código de saída 5 do PMD 7: houve erros recuperáveis (arquivo não analisável), mas o relatório foi gravado. */
