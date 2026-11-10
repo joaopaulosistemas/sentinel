@@ -69,6 +69,8 @@ services:
       OSV_URL: ${OSV_URL:-https://api.osv.dev}
       TRIVY_ENABLED: ${TRIVY_ENABLED:-true}
       TRIVY_SCANNERS: ${TRIVY_SCANNERS:-vuln,misconfig}
+      # Rede fechada: true, com a base do Trivy já no cache. O Trivy lê esta variável sozinho.
+      TRIVY_SKIP_DB_UPDATE: ${TRIVY_SKIP_DB_UPDATE:-false}
       SENTINEL_EVIDENCE_DIR: /evidence
       # Pasta local como origem do sistema: desligada se vazio. Para ligar, use SENTINEL_LOCAL_ROOT=/projects
       SENTINEL_LOCAL_ROOT: ${SENTINEL_LOCAL_ROOT:-}
