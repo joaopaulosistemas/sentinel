@@ -15,6 +15,15 @@ spec:
           image: {{ .Values.dashboard.image | quote }}
           ports:
             - containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /index.html, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /index.html, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources: {{- toYaml .Values.dashboard.resources | nindent 12 }}
           env:
             - { name: API_UPSTREAM, value: "http://{{ .Release.Name }}-api:8080" }
             - { name: API_KEY, valueFrom: { secretKeyRef: { name: {{ include "sentinel.secretName" . }}, key: API_KEY, optional: true } } }

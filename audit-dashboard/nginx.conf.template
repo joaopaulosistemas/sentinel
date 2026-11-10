@@ -4,6 +4,20 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Compressão do que é texto (o bundle JS/CSS é o maior download da tela)
+    gzip on;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_vary on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    # Cabeçalhos de segurança. 'always' vale também nas respostas de erro.
+    # Carbon e o app usam estilos inline; por isso style-src permite 'unsafe-inline' (scripts não).
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
     # SPA fallback — todas as rotas vão para index.html
     location / {
         try_files $uri $uri/ /index.html;
@@ -34,10 +48,15 @@ server {
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options "nosniff" always;
     }
 
     # index.html nunca em cache, para pegar novas versões
     location = /index.html {
         add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
     }
 }

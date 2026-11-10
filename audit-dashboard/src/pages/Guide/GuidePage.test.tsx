@@ -2,18 +2,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { axe } from 'vitest-axe';
-import * as matchers from 'vitest-axe/matchers';
 import type { IGuideResponse } from '../../types';
 import { GuidePage } from './GuidePage';
-
-expect.extend(matchers);
-
-declare module 'vitest' {
-  interface Assertion {
-    toHaveNoViolations(): void;
-  }
-}
+import { expectNoAxeViolations } from '../../test/axe';
 
 const GUIDE: IGuideResponse = {
   process: [{ title: 'Primeira linha que diz o que mudou', doIt: 'tipo(escopo): descrição.', avoid: 'wip.' }],
@@ -108,6 +99,6 @@ describe('GuidePage', () => {
   it('não tem violações de acessibilidade', async () => {
     const container = renderPage();
     await screen.findByText('Acesso declarado');
-    expect(await axe(container)).toHaveNoViolations();
+    await expectNoAxeViolations(container);
   });
 });

@@ -11,6 +11,18 @@ const apiKey = process.env.API_KEY;
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Bibliotecas grandes e estáveis em pacotes separados: o navegador as mantém em cache entre versões do app.
+        manualChunks: {
+          carbon: ['@carbon/react', '@carbon/icons-react'],
+          charts: ['recharts'],
+          react: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+        },
+      },
+    },
+  },
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   test: {
     environment: 'jsdom',

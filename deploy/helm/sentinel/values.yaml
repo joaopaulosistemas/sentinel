@@ -4,13 +4,16 @@ api:
   replicas: 1                             # >1 exige o agendador desligado em todas menos uma réplica (ver README)
   resources:
     requests: { cpu: 500m, memory: 1Gi }
-    limits: { memory: 3Gi }
+    limits: { cpu: "2", memory: 3Gi }     # sem limite de CPU, as ferramentas externas de uma auditoria podem tomar o nó todo
   cloneVolumeSize: 5Gi
   env: {}                                 # variáveis extras (OSV_ENABLED, TRIVY_ENABLED, CLEANCODE_*, ...)
 
 dashboard:
   image: sentinel-audit-dashboard:12.15.0   # idem; a imagem roda como usuário sem privilégios na porta 8080
   replicas: 1
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 250m, memory: 128Mi }
 
 # Segredos. Prefira existingSecret (criado por você/External Secrets) a colocar valores aqui.
 secrets:
@@ -40,6 +43,7 @@ packs:
 
 ingress:
   enabled: false
+  allowWithoutLogin: false                # só true se outra camada (VPN, proxy autenticador) já protege o acesso
   className: ""
   host: sentinel.exemplo.com
   tls: { enabled: false, secretName: "" }
