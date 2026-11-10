@@ -97,7 +97,7 @@ public class WebhookService {
     /** Sistemas cujo repositório é um dos endereços e que têm segredo de webhook cadastrado. */
     public List<AuditedSystem> withSecret(List<String> repoUrls) {
         List<String> wanted = repoUrls.stream().map(WebhookService::normalizeRepo).toList();
-        return systemRepository.listAll().stream()
+        return systemRepository.candidatesByRepo(wanted).stream()
                 .filter(s -> !s.isLocalSource() && s.hasWebhookSecret() && wanted.contains(normalizeRepo(s.getRepoUrl())))
                 .toList();
     }
@@ -135,7 +135,7 @@ public class WebhookService {
     public int trigger(Push push, String source, java.util.Set<Long> allowedIds) {
         List<String> wanted = push.repoUrls().stream().map(WebhookService::normalizeRepo).toList();
         int started = 0;
-        for (AuditedSystem system : systemRepository.listAll()) {
+        for (AuditedSystem system : systemRepository.candidatesByRepo(wanted)) {
             if (allowedIds != null && !allowedIds.contains(system.getId())) {
                 continue;
             }
