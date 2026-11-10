@@ -105,6 +105,10 @@ public final class FindingConfidence {
             return new Verdict(Confidence.LOW, "O projeto autentica as rotas num ponto só (" + globalAuth + "), que esta regra não enxerga. "
                     + "Confirme se há rota pública fora dessa barreira.");
         }
+        if (isPasswordWordInMarkup(f)) {
+            return new Verdict(Confidence.LOW, "A palavra \"password\" aparece em folha de estilo, página ou texto (como seletor, rótulo ou explicação), "
+                    + "não como valor de credencial.");
+        }
         if (f.getCategory() == Category.SECURITY && looksLikeExample(f.getCodeSnippet())) {
             return new Verdict(Confidence.LOW, "O valor parece de exemplo (texto como 'example', 'changeme' ou 'xxxx').");
         }
@@ -140,6 +144,17 @@ public final class FindingConfidence {
             return "";
         }
         return RuleQualityService.normalize(f);
+    }
+
+    /** Extensões em que o motor de segredos confunde o termo "password" (seletor {@code :hover}, rótulo, tutorial) com credencial. */
+    private static final Set<String> MARKUP_EXTENSIONS = Set.of(".css", ".scss", ".sass", ".less", ".html", ".htm", ".md", ".rst", ".adoc", ".txt");
+
+    /** Achado de {@code generic-password} (Gitleaks ou Betterleaks) em CSS, HTML ou texto: quase sempre falso positivo. */
+    static boolean isPasswordWordInMarkup(Finding f) {
+        String rule = f.getRuleId() == null ? "" : f.getRuleId().toLowerCase(Locale.ROOT);
+        String path = f.getFilePath() == null ? "" : f.getFilePath().toLowerCase(Locale.ROOT);
+        return f.getCategory() == Category.SECURITY && rule.endsWith("generic-password")
+                && MARKUP_EXTENSIONS.stream().anyMatch(path::endsWith);
     }
 
     static boolean looksLikeExample(String snippet) {

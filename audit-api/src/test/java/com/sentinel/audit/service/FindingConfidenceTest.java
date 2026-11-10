@@ -148,4 +148,25 @@ class FindingConfidenceTest {
         FindingConfidence.assessAll(List.of(outraRegra), Map.of(), "filtro X");
         assertNotEquals(Confidence.LOW, outraRegra.getConfidence());
     }
+
+    @Test
+    void passwordGenericoEmCssHtmlOuTextoTemBaixaConfiancaMasEmCodigoNao() {
+        for (String file : List.of("src/main/resources/lessons/challenge6.css", "app/views/tutorial/a2.html", "notas/senhas-de-exemplo.txt")) {
+            Finding m = f(Category.SECURITY, "Betterleaks", file, 3);
+            m.setRuleId("betterleaks-generic-password");
+            assess(m, Map.of());
+            assertEquals(Confidence.LOW, m.getConfidence(), file);
+            assertTrue(m.getConfidenceReason().contains("folha de estilo"), file);
+        }
+        for (String file : List.of("src/main/java/app/DefaultUserInitializer.java", "artifacts/db-reset.js", "docker-compose.yml")) {
+            Finding c = f(Category.SECURITY, "Betterleaks", file, 3);
+            c.setRuleId("betterleaks-generic-password");
+            assess(c, Map.of());
+            assertEquals(Confidence.MEDIUM, c.getConfidence(), "senha fixa em código segue valendo: " + file);
+        }
+        Finding outra = f(Category.SECURITY, "Gitleaks", "public/index.html", 3);
+        outra.setRuleId("gitleaks-aws-access-token");
+        assess(outra, Map.of());
+        assertEquals(Confidence.MEDIUM, outra.getConfidence(), "só o generic-password é rebaixado; chave AWS em HTML continua");
+    }
 }
