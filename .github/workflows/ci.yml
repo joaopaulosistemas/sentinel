@@ -93,7 +93,7 @@ jobs:
         env:
           COBERTURA_MINIMA: "0"
         run: |
-          x="$(ls audit-api/target/jacoco-report/jacoco.xml audit-api/target/site/jacoco/jacoco.xml 2>/dev/null | head -1)"
+          x="$(ls audit-api/target/jacoco-report-total/jacoco.xml 2>/dev/null | head -1)"
           [ -n "$x" ] || { echo "::error title=Cobertura::jacoco.xml não foi gerado"; exit 1; }
           python3 scripts/conferir-cobertura.py "$x" "$COBERTURA_MINIMA"
       - name: Publicar a cobertura (JaCoCo)
@@ -101,7 +101,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: cobertura-jacoco
-          path: audit-api/target/jacoco-report
+          path: |
+            audit-api/target/jacoco-report
+            audit-api/target/jacoco-report-total
           if-no-files-found: ignore
 
   regras:
