@@ -1137,3 +1137,10 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Mudança:** `PathRole.LOCALIZATION` (pastas `i18n`, `l10n`, `locales`, `locale`, `translations` e `messages.properties`/`messages_xx.properties`), tratado como não produção: confiança baixa com a explicação "arquivo de tradução". Teste, gerado e exemplo têm prioridade sobre ele. `messagesender.properties` e `LocaleService.java` seguem como produção.
 - **Efeito colateral aceito:** `src/main/resources/i18n/it/*.ts` passou de produção a tradução (o teste antigo só garantia que o `it` italiano não virasse teste de integração, e continua garantindo).
 - **Verificado:** o comportamento de `PathRole.of` nos casos acima com `javac` na classe real; os testes JUnit (`PathRoleTest`, 3 novos) rodam no CI, não aqui.
+
+## ESLint não falha mais em repositório sem arquivo lintável (sem versão nova)
+
+- **Sintoma:** "ESLint terminou com código 2 … check file patterns in your config file … 0 achados, parcial".
+- **Causa:** o analisador roda `eslint .`; num repositório sem nenhum `.ts/.tsx/.js/.jsx/.mjs/.html` (só Java, CSS, Markdown), o ESLint 10 levanta `AllFilesIgnoredError` e sai com 2, que o Sentinel trata como falha de execução.
+- **Correção:** `--no-error-on-unmatched-pattern` no comando. Com ela o ESLint sai 0 e escreve `[]`.
+- **Verificado:** reproduzido com o ESLint 10.14.0 real em três projetos: só `.css`/`.md` (exit 2 sem a flag, exit 0 e `[]` com ela), só `.html`/`.java` e um com `.js`/`.ts` (continua achando os mesmos 5 problemas, exit 1). O Stylelint já usava `--allow-empty-input`. Testes JUnit (um novo e uma asserção acrescentada) rodam no CI.

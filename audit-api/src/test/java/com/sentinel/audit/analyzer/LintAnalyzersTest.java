@@ -228,7 +228,28 @@ class LintAnalyzersTest {
         assertTrue(used.contains("--no-config-lookup"), "config do repositório é código: nunca carregar: " + used);
         assertTrue(used.contains("-c " + config), used);
         assertTrue(used.contains("**/node_modules/**") && used.contains("**/*.d.ts"), used);
+        assertTrue(used.contains("--no-error-on-unmatched-pattern"), "projeto sem arquivo lintável não pode virar erro: " + used);
         assertEquals(project.toString(), Files.readString(cwd).trim(), "ESLint usa o diretório atual como raiz");
+    }
+
+    @Test
+    void eslintEmProjetoSemArquivoLintavelNaoEParcial() throws Exception {
+        Path bin = Files.createTempDirectory("fakebin");
+        Path project = Files.createTempDirectory("proj").toRealPath();
+        Path config = Files.createTempFile("eslint.config", ".mjs");
+        // o ESLint real, com a flag, sai 0 e escreve "[]" quando só há Java, CSS ou Markdown no repositório
+        fakeBin(bin, "eslint", "while [ $# -gt 0 ]; do if [ \"$1\" = \"-o\" ]; then R=\"$2\"; fi; shift; done\necho '[]' > \"$R\"\nexit 0");
+        EslintAnalyzer e = new EslintAnalyzer();
+        e.enabled = true;
+        e.timeoutSeconds = 30;
+        e.maxFindings = 500;
+        e.configPath = config.toString();
+        e.pathEnv = bin.toString();
+
+        AnalyzerResult r = e.analyze(project, run());
+
+        assertTrue(r.findings().isEmpty());
+        assertNull(r.partialNote(), "sem arquivo lintável não é falha nem resultado incompleto");
     }
 
     @Test

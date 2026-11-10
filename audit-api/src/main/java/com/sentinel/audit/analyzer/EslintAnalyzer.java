@@ -86,7 +86,10 @@ public class EslintAnalyzer implements CodeAnalyzer {
 
     private List<String> command(Path exe, Path report) {
         List<String> cmd = new ArrayList<>(List.of(exe.toString(), "--no-config-lookup", "-c", configPath,
-                "-f", "json", "-o", report.toString(), "--no-warn-ignored"));
+                "-f", "json", "-o", report.toString(), "--no-warn-ignored",
+                // repositório sem nenhum .ts/.js/.html (só Java, CSS, Markdown): sem a flag o ESLint 10 sai com código 2
+                // ("all of the files matching the glob pattern '.' are ignored") e o resultado vira "parcial" à toa
+                "--no-error-on-unmatched-pattern"));
         for (String dir : CleanCodeAnalyzer.IGNORED_DIRS) {
             cmd.add("--ignore-pattern");
             cmd.add("**/" + dir + "/**");
