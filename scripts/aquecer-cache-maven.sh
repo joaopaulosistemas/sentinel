@@ -40,7 +40,8 @@ if [ "${INSECURE_SSL:-false}" = "true" ]; then
   OPTS+=("-Daether.connector.https.securityMode=insecure" "-Dmaven.wagon.http.ssl.insecure=true"
          "-Dmaven.wagon.http.ssl.allowall=true" "-Dmaven.wagon.http.ssl.ignore.validity.dates=true")
 fi
-MVN=(mvn -B -ntp -fae -Dmaven.repo.local=/m2 dependency:resolve)
+# -U: sem ele o Maven não repete o que falhou (429) e grava como .lastUpdated; o retry abaixo ficaria inútil
+MVN=(mvn -B -ntp -U -fae -Dmaven.repo.local=/m2 dependency:resolve)
 
 ENVS=(-e HOME=/tmp -e "MAVEN_OPTS=${OPTS[*]:-}")
 for v in HTTPS_PROXY HTTP_PROXY NO_PROXY; do
