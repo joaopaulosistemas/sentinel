@@ -1,0 +1,50 @@
+# Atualização automática das dependências: um PR por ecossistema, no máximo 5 abertos por vez.
+# As versões fixadas das ferramentas na imagem (Gitleaks, Betterleaks, PMD, Opengrep, Checkov...) ficam em ARG no Dockerfile
+# com SHA-256 e são revisadas à mão (docs/referencia/versoes-fixadas.md); o Dependabot cuida do que tem manifesto.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /audit-api
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      minor-patch: { update-types: [minor, patch] }
+  - package-ecosystem: maven
+    directory: /audit-cli
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      minor-patch: { update-types: [minor, patch] }
+  - package-ecosystem: npm
+    directory: /audit-dashboard
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      minor-patch: { update-types: [minor, patch] }
+  - package-ecosystem: npm
+    directory: /audit-rules/lint/eslint
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      minor-patch: { update-types: [minor, patch] }
+  - package-ecosystem: npm
+    directory: /audit-rules/lint/stylelint
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+  - package-ecosystem: npm
+    directory: /audit-rules/lint/jscpd
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+  - package-ecosystem: npm
+    directory: /audit-rules/lint/extras
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+  - package-ecosystem: docker
+    directory: /audit-api
+    schedule: { interval: weekly, day: monday }
+  - package-ecosystem: docker
+    directory: /audit-dashboard
+    schedule: { interval: weekly, day: monday }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }

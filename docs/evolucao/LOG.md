@@ -1122,3 +1122,11 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Segurança:** nunca passa `--unsafe-auto-load-config` (config do projeto auditado) nem `--validation` (consulta ao provedor da credencial); relatório temporário com o segredo é apagado, como no Gitleaks.
 - **Verificado:** o binário 1.10.0 baixado, com SHA-256 conferido, rodado num repositório de teste: `dir` e `git` com caminho absoluto, `--exit-code 0`, relatório JSON (lista com `RuleID`, `File`, `Commit`, `Secret`) e `[]` quando não há segredo. NÃO verificado: compilação e testes Java (`BetterleaksAnalyzerTest`, `ExternalScannersTest`) e a build da imagem, que só rodam na CI; e a **qualidade** dos achados contra o Gitleaks (por isso fica desligado).
 
+
+## Node 24, Hadolint fora da imagem pública e Dependabot (sem versão nova)
+
+- **Node 24** na imagem e no CI (era 22 na imagem e 20/22 no CI). O 24 é o LTS ativo até 2028-04-30; o 22 sai de suporte em 2027-04-30 e o 20 já saiu.
+- **Hadolint (GPL-3.0)** deixa de ir na imagem publicada: `WITH_HADOLINT=false` por padrão (`docker-compose.yml`, `.env.example`). O analisador segue no pacote `market-tools` e roda se o `hadolint` estiver no `PATH`. Decisão em aberto virou decidida em `docs/referencia/versoes-fixadas.md`.
+- **Dependabot** (`.github/dependabot.yml`): Maven (api e cli), npm (dashboard e as quatro pastas de lint), Docker e GitHub Actions, semanal, minor/patch agrupados. As ferramentas fixadas por ARG com SHA-256 continuam revisadas à mão.
+- **Verificado:** ESLint 10.14.0, Stylelint 16.12.0, jscpd e extras instalam com `npm install --omit=dev` e rodam no Node 24.22.2; `scripts/verificar-eslint-plugins.sh` passa nele. **Não verificado aqui:** o build da imagem (nodesource e Docker não acessíveis neste ambiente); fica para o CI.
+- **Gitleaks 8.30.1 contra Betterleaks 1.10.0 (medido):** em cinco repositórios públicos (NodeGoat, WebGoat, angular-realworld, petclinic, juice-shop), achados únicos 4/23/2/0/68 contra 18/38/5/1/729. O excedente do Betterleaks é `generic-password` (ruído em testes e i18n, 694 de 729 no juice-shop em teste ou i18n) mais `mongodb-connection-string` (real). Decisão: Gitleaks segue padrão, Betterleaks opt-in. Limite da medição: sem rotulagem manual achado a achado; é contagem e classificação por caminho.

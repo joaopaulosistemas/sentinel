@@ -58,15 +58,18 @@ ARG WITH_BETTERLEAKS=true
 ARG BETTERLEAKS_VERSION=1.10.0
 ARG BETTERLEAKS_SHA256_AMD64=9d9ad503cd5d80d18a939352266c3fcca52f10da9b83cd5cfe646989b13940fe
 ARG BETTERLEAKS_SHA256_ARM64=3d7585cbe4f947aef6e31662f65beb5b43b104381a691b6b81b157ebfbb0c02d
-# PMD (lint Java, precisa só do JRE que a imagem já tem) e ESLint (lint TypeScript, precisa de Node 20.19+ (a imagem usa o 22, LTS), por isso
-# vem ligado porque a stack é Angular/React/TypeScript: --build-arg WITH_ESLINT=false tira o Node 22, o ESLint e o Stylelint).
+# PMD (lint Java, precisa só do JRE que a imagem já tem) e ESLint (lint TypeScript, precisa de Node 20.19+ (a imagem usa o 24, LTS ativo), por isso
+# vem ligado porque a stack é Angular/React/TypeScript: --build-arg WITH_ESLINT=false tira o Node 24, o ESLint e o Stylelint).
 ARG WITH_PMD=true
 ARG PMD_VERSION=7.7.0
 ARG PMD_SHA256=be8bf68f6c1d66984bd9645a93e631b78a1c2f42f5f0f8719082fead67553940
 ARG WITH_ESLINT=true
-# Analisadores de mercado do pacote market-tools: njsscan, Checkov e SQLFluff (cada um em venv próprio), Hadolint e kube-linter
-# (binários) e Stylelint (CSS/SCSS, precisa do Node: vem junto com WITH_ESLINT). --build-arg WITH_MARKET_TOOLS=false
+# Analisadores de mercado do pacote market-tools: njsscan, Checkov e SQLFluff (cada um em venv próprio), kube-linter e
+# kube-score (binários) e Stylelint (CSS/SCSS, precisa do Node: vem junto com WITH_ESLINT). --build-arg WITH_MARKET_TOOLS=false
 # deixa a imagem menor.
+# Hadolint (lint de Dockerfile) é GPL-3.0: a imagem publicada NÃO o distribui. Quem fizer o build para uso próprio liga com
+# --build-arg WITH_HADOLINT=true (ver docs/referencia/versoes-fixadas.md).
+ARG WITH_HADOLINT=false
 ARG HADOLINT_VERSION=2.12.0
 ARG HADOLINT_SHA256_AMD64=56de6d5e5ec427e17b74fa48d51271c7fc0d61244bf5c90e828aab8362d55010
 ARG HADOLINT_SHA256_ARM64=5798551bf19f33951881f15eb238f90aef023f11e7ec7e9f4c37961cb87c5df6
@@ -145,8 +148,10 @@ RUN apt-get update \
             else \
               HL_ARCH=x86_64; HL_SHA="$HADOLINT_SHA256_AMD64"; KL_SUFFIX=; KL_SHA="$KUBE_LINTER_SHA256_AMD64"; KS_ARCH=amd64; KS_SHA="$KUBE_SCORE_SHA256_AMD64"; \
             fi \
-         && fetch /usr/local/bin/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-${HL_ARCH}" "$HL_SHA" \
-         && chmod 755 /usr/local/bin/hadolint \
+         && if [ "$WITH_HADOLINT" = "true" ]; then \
+              fetch /usr/local/bin/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-${HL_ARCH}" "$HL_SHA" \
+              && chmod 755 /usr/local/bin/hadolint; \
+            fi \
          && fetch /tmp/kube-linter.tgz "https://github.com/stackrox/kube-linter/releases/download/v${KUBE_LINTER_VERSION}/kube-linter-linux${KL_SUFFIX}.tar.gz" "$KL_SHA" \
          && tar -xz -C /usr/local/bin -f /tmp/kube-linter.tgz kube-linter && rm /tmp/kube-linter.tgz \
          && fetch /tmp/kube-score.tgz "https://github.com/zegl/kube-score/releases/download/v${KUBE_SCORE_VERSION}/kube-score_${KUBE_SCORE_VERSION}_linux_${KS_ARCH}.tar.gz" "$KS_SHA" \
@@ -161,7 +166,7 @@ RUN apt-get update \
          && mkdir -p /opt/joern && unzip -q /tmp/joern-cli.zip -d /opt/joern && rm /tmp/joern-cli.zip; \
        fi \
     && if [ "$WITH_ESLINT" = "true" ]; then \
-         curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+         curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
          && apt-get install -y --no-install-recommends nodejs; \
        fi \
     && rm -rf /var/lib/apt/lists/* \
