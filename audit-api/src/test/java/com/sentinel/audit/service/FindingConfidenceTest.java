@@ -151,7 +151,7 @@ class FindingConfidenceTest {
 
     @Test
     void passwordGenericoEmCssHtmlOuTextoTemBaixaConfiancaMasEmCodigoNao() {
-        for (String file : List.of("src/main/resources/lessons/challenge6.css", "app/views/tutorial/a2.html", "docs/guia.txt")) {
+        for (String file : List.of("src/main/resources/lessons/challenge6.css", "app/views/tutorial/a2.html", "notas/senhas-de-exemplo.txt")) {
             Finding m = f(Category.SECURITY, "Betterleaks", file, 3);
             m.setRuleId("betterleaks-generic-password");
             assess(m, Map.of());
