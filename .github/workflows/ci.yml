@@ -89,9 +89,9 @@ jobs:
       - run: bash scripts/instalar-opengrep.sh
       - name: Compilar e testar
         run: bash scripts/ci-anotar.sh "Maven" mvn -B -ntp verify
-      - name: Medir a cobertura do Sentinel (mínimo em COBERTURA_MINIMA; 0 só informa)
+      - name: Medir a cobertura do Sentinel (falha abaixo de COBERTURA_MINIMA)
         env:
-          COBERTURA_MINIMA: "0"
+          COBERTURA_MINIMA: "70"
         run: |
           x="$(ls audit-api/target/jacoco-report-total/jacoco.xml 2>/dev/null | head -1)"
           [ -n "$x" ] || { echo "::error title=Cobertura::jacoco.xml não foi gerado"; exit 1; }
