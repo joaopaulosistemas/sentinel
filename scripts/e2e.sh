@@ -97,6 +97,7 @@ echo "::notice title=Teste ponta a ponta::auditoria $aid concluída com $total a
 if [ -n "${E2E_SCHEMA_OUT:-}" ]; then
   docker exec sentinel-e2e-db pg_dump -U sentinel_audit -s --no-owner --no-privileges sentinel_audit > "$E2E_SCHEMA_OUT" \
     || echo "::warning title=Esquema::pg_dump falhou"
-  echo "=====SCHEMA-BEGIN====="; cat "$E2E_SCHEMA_OUT"; echo "=====SCHEMA-END====="
+  python3 scripts/conferir-esquema.py "$E2E_SCHEMA_OUT" audit-api/src/main/resources/db/migration/V1__baseline.sql \
+    || { echo "::error title=Esquema::o banco difere do V1 do Flyway; falta uma migração"; docker rm -f sentinel-e2e-api sentinel-e2e-db >/dev/null 2>&1; exit 1; }
 fi
 docker rm -f sentinel-e2e-api sentinel-e2e-db >/dev/null 2>&1
