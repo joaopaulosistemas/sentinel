@@ -28,6 +28,14 @@ def main():
         print("Só no banco (falta migração):", c[:300])
     for c in so_v1:
         print("Só no V1:", c[:300])
+    # Detalhe por coluna, para achar rápido o que difere dentro de uma tabela.
+    for c in so_banco:
+        m = re.match(r"CREATE TABLE (\S+) \((.*)\)$", c)
+        par = next((v for v in so_v1 if v.startswith("CREATE TABLE %s " % m.group(1))), None) if m else None
+        if m and par:
+            a = [x.strip() for x in m.group(2).split(", ")]
+            b = [x.strip() for x in re.match(r"CREATE TABLE \S+ \((.*)\)$", par).group(1).split(", ")]
+            print("  %s: só no banco=%s | só no V1=%s | ordem igual=%s" % (m.group(1), [x for x in a if x not in b], [x for x in b if x not in a], [x for x in a if x in b] == [x for x in b if x in a]))
     return 1 if so_banco or so_v1 else 0
 
 
