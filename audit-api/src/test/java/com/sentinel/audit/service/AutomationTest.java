@@ -29,6 +29,8 @@ class AutomationTest {
     private final List<String> requested = new ArrayList<>();   // "id|branch|origem"
 
     private AuditRequestService requestService;
+    /** O serviço de verdade (só com o repositório de auditorias simulado), para testar a regra de bloqueio. */
+    private AuditRequestService realRequestService;
     private WebhookService webhook;
 
     private AuditedSystem system(long id, String repo, Boolean onPush, Integer hours, String branch) {
@@ -90,6 +92,10 @@ class AutomationTest {
         };
         requestService.systemRepository = systemRepo;
         requestService.auditRunRepository = runRepo;
+
+        realRequestService = new AuditRequestService();
+        realRequestService.systemRepository = systemRepo;
+        realRequestService.auditRunRepository = runRepo;
 
         webhook = new WebhookService();
         webhook.systemRepository = systemRepo;
@@ -206,6 +212,35 @@ class AutomationTest {
         run(s, "main", AuditStatus.RUNNING, LocalDateTime.now().minusHours(5));    // ficou presa
 
         assertEquals(1, webhook.trigger(new WebhookService.Push(List.of("https://github.com/org/repo"), "main"), "webhook-github"));
+    }
+
+    @Test
+    void pushEmOutraBranchTambemEsperaAAuditoriaDoMesmoSistema() {
+        AuditedSystem s = system(1, "https://github.com/org/repo.git", true, null, "develop");
+        run(s, "main", AuditStatus.RUNNING, LocalDateTime.now().minusMinutes(5));
+
+        assertEquals(0, webhook.trigger(new WebhookService.Push(List.of("https://github.com/org/repo"), "develop"), "webhook-github"));
+    }
+
+    @Test
+    void pedidoManualDeSistemaComAuditoriaEmAndamentoRecebe409() {
+        AuditedSystem s = system(1, "https://github.com/org/repo.git", true, null, null);
+        AuditRun ativa = run(s, "main", AuditStatus.PENDING, LocalDateTime.now());
+
+        jakarta.ws.rs.ClientErrorException e = org.junit.jupiter.api.Assertions.assertThrows(
+                jakarta.ws.rs.ClientErrorException.class, () -> realRequestService.request(1L, "develop", null, "dashboard"));
+        assertEquals(409, e.getResponse().getStatus());
+        assertTrue(e.getMessage().contains("#" + ativa.getId()), e.getMessage());
+    }
+
+    @Test
+    void auditoriaDeOutroSistemaNaoBloqueia() {
+        AuditedSystem a = system(1, "https://github.com/org/a.git", true, null, null);
+        AuditedSystem b = system(2, "https://github.com/org/b.git", true, null, null);
+        run(a, "main", AuditStatus.RUNNING, LocalDateTime.now());
+
+        assertTrue(realRequestService.activeRun(b.getId(), LocalDateTime.now()).isEmpty());
+        assertTrue(realRequestService.activeRun(a.getId(), LocalDateTime.now()).isPresent());
     }
 
     // ------------------------------------------------------------------ agendador

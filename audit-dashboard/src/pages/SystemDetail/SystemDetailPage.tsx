@@ -394,7 +394,8 @@ export function SystemDetailPage() {
   const { hash } = useLocation();
 
   const id = Number(systemId);
-  const [starting, setStarting] = useState(false);
+  // 'aviso': fica na página e mostra o banner no topo; 'seguir': vai direto para o acompanhamento (início pelas evidências, lá embaixo).
+  const [starting, setStarting] = useState<'aviso' | 'seguir' | null>(null);
   const [started, setStarted] = useState<IAuditRunResponse | null>(null);
   const { data: system, isLoading: loadingSystem, error: systemError } = useSystem(id);
   const { data: auditRuns, isLoading: loadingRuns } = useAuditRuns(id);
@@ -422,14 +423,14 @@ export function SystemDetailPage() {
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Sistemas', to: '/systems' }, { label: system.name }]}>
       {started && <StartedBanner started={started} onClose={() => setStarted(null)} />}
-      <SystemHeader system={system} onEdit={() => void navigate(`/systems?edit=${system.id}`)} onNewAudit={() => setStarting(true)} />
-      <StartAuditModal system={starting ? system : null} onClose={() => setStarting(false)} onStarted={setStarted} />
+      <SystemHeader system={system} onEdit={() => void navigate(`/systems?edit=${system.id}`)} onNewAudit={() => setStarting('aviso')} />
+      <StartAuditModal system={starting ? system : null} onClose={() => setStarting(null)} onStarted={setStarted} follow={starting === 'seguir'} />
       <div className="sentinel-com-indice">
         <SectionIndex items={index} />
         <DetailSections
           systemId={id}
           systemName={system.name}
-          onNewAudit={() => setStarting(true)}
+          onNewAudit={() => setStarting('seguir')}
           latest={latestCompleted}
           fallbackScore={system.lastAuditScore ?? null}
           loadingRuns={loadingRuns}
