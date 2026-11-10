@@ -59,12 +59,12 @@ public class ApiKeyFilter implements ContainerRequestFilter {
     }
 
     /** Saúde, webhooks e MCP não usam a API key global. */
-    private static boolean isOpenPath(String path) {
+    static boolean isOpenPath(String path) {
         if (path == null) {
             return false;
         }
         String normalized = path.replaceAll("^/+", "");
-        return normalized.startsWith(HEALTH_PATH) || normalized.startsWith(WEBHOOK_PATH) || normalized.startsWith(MCP_PATH);
+        return normalized.equals(HEALTH_PATH) || normalized.startsWith(HEALTH_PATH + "/") || normalized.startsWith(WEBHOOK_PATH) || normalized.startsWith(MCP_PATH);
     }
 
     /** A chave enviada: cabeçalho {@code X-API-Key} ou {@code Authorization: Bearer}; nulo se não veio. */
