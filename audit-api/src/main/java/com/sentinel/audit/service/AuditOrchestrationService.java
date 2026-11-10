@@ -146,46 +146,17 @@ public class AuditOrchestrationService {
                 : ingestionService.cloneRepository(context.repoUrl(), context.branch(), context.gitToken(), context.gitTokenHosts(), context.gitHistoryDepth());
     }
 
+    /** O que a execução de uma auditoria precisa liberar no fim, aconteça o que acontecer. */
+    private static final class RunState {
+        Path clonedPath;
+        AuditPolicy policy;
+        boolean holdingSlot;
+    }
+
     private void executeAudit(Long auditRunId) {
-        Path clonedPath = null;
-        AuditPolicy policy = null;
-        boolean holdingSlot = false;
+        RunState state = new RunState();
         try {
-            slots().acquire(auditRunId, () -> progress.isCancelRequested(auditRunId));
-            holdingSlot = true;
-            AuditContext context = store.markRunning(auditRunId);
-            progress.queued(auditRunId);
-            checkNotCancelled(auditRunId);
-            clonedPath = fetchSource(auditRunId, context);
-            checkNotCancelled(auditRunId);
-            SourceSizer.Stats sizing = SourceSizer.stats(clonedPath);
-            String commitSha = ingestionService.headCommit(clonedPath);
-            progress.sourceStats(auditRunId, context.sourceLabel(), sizing.files(), sizing.lines());
-            evidenceStager.stage(context.systemName(), context.local() ? context.localPath() : context.repoUrl(), clonedPath);
-
-            // Referência leve apenas para os analisadores vincularem os findings;
-            // o vínculo definitivo com a entidade gerenciada é refeito ao persistir.
-            AuditRun runRef = new AuditRun();
-            runRef.setId(auditRunId);
-
-            policy = policies.forAudit(context.profile(), context.systemId());
-            progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
-            AnalyzerRunner.Analysis analysis = new AnalyzerRunner(analyzerSet, progress, executor)
-                    .run(clonedPath, runRef, context.stack(), policy);
-            checkNotCancelled(auditRunId);
-            List<Finding> allFindings = new FindingRefinement(store, progress, ingestionService)
-                    .refine(auditRunId, context, clonedPath, analysis, policy);
-            long linesOfCode = sizing.lines();
-            RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(allFindings), linesOfCode);
-            progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
-            store.persistResultsAndComplete(auditRunId, allFindings, riskScore, linesOfCode, commitSha);
-            AuditExtras.saveSbom(store, auditRunId, context, clonedPath);
-            AuditExtras.saveContext(store, auditRunId, clonedPath, analysis.runs());
-
-            LOG.infof("Auditoria %d concluída: %d findings, score %s",
-                    auditRunId, allFindings.size(), riskScore.getOverall());
-            store.notifySafely(auditRunId);
-
+            runPipeline(auditRunId, state);
         } catch (AuditCancelledException e) {
             LOG.infof("Auditoria %d cancelada pelo usuário", auditRunId);
             store.markCancelled(auditRunId);
@@ -195,15 +166,65 @@ public class AuditOrchestrationService {
             store.notifySafely(auditRunId);
             throw new IllegalStateException("Auditoria " + auditRunId + " falhou", e);
         } finally {
-            if (holdingSlot) {
-                slots().release();
-            }
-            progress.finish(auditRunId);
-            policies.cleanup(policy);
-            if (clonedPath != null) {
-                ingestionService.cleanupDirectory(clonedPath);
-            }
+            release(auditRunId, state);
         }
+    }
+
+    private void release(Long auditRunId, RunState state) {
+        if (state.holdingSlot) {
+            slots().release();
+        }
+        progress.finish(auditRunId);
+        policies.cleanup(state.policy);
+        if (state.clonedPath != null) {
+            ingestionService.cleanupDirectory(state.clonedPath);
+        }
+    }
+
+    private void runPipeline(Long auditRunId, RunState state) throws Exception {
+        slots().acquire(auditRunId, () -> progress.isCancelRequested(auditRunId));
+        state.holdingSlot = true;
+        AuditContext context = store.markRunning(auditRunId);
+        progress.queued(auditRunId);
+        checkNotCancelled(auditRunId);
+        state.clonedPath = fetchSource(auditRunId, context);
+        checkNotCancelled(auditRunId);
+        Path clonedPath = state.clonedPath;
+        SourceSizer.Stats sizing = SourceSizer.stats(clonedPath);
+        String commitSha = ingestionService.headCommit(clonedPath);
+        progress.sourceStats(auditRunId, context.sourceLabel(), sizing.files(), sizing.lines());
+        evidenceStager.stage(context.systemName(), context.local() ? context.localPath() : context.repoUrl(), clonedPath);
+
+        // Referência leve apenas para os analisadores vincularem os findings;
+        // o vínculo definitivo com a entidade gerenciada é refeito ao persistir.
+        AuditRun runRef = new AuditRun();
+        runRef.setId(auditRunId);
+
+        state.policy = policies.forAudit(context.profile(), context.systemId());
+        progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
+        AnalyzerRunner.Analysis analysis = new AnalyzerRunner(analyzerSet, progress, executor)
+                .run(clonedPath, runRef, context.stack(), state.policy);
+        checkNotCancelled(auditRunId);
+        List<Finding> allFindings = new FindingRefinement(store, progress, ingestionService)
+                .refine(auditRunId, context, clonedPath, analysis, state.policy);
+        persistAndNotify(auditRunId, new AuditResult(context, clonedPath, sizing, commitSha, analysis, allFindings));
+    }
+
+    /** O que a auditoria produziu, pronto para gravar: achados, nota, SBOM e contexto. */
+    private record AuditResult(AuditContext context, Path clonedPath, SourceSizer.Stats sizing, String commitSha,
+                               AnalyzerRunner.Analysis analysis, List<Finding> findings) { }
+
+    private void persistAndNotify(Long auditRunId, AuditResult result) {
+        long linesOfCode = result.sizing().lines();
+        RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(result.findings()), linesOfCode);
+        progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
+        store.persistResultsAndComplete(auditRunId, result.findings(), riskScore, linesOfCode, result.commitSha());
+        AuditExtras.saveSbom(store, auditRunId, result.context(), result.clonedPath());
+        AuditExtras.saveContext(store, auditRunId, result.clonedPath(), result.analysis().runs());
+
+        LOG.infof("Auditoria %d concluída: %d findings, score %s",
+                auditRunId, result.findings().size(), riskScore.getOverall());
+        store.notifySafely(auditRunId);
     }
 
     private void checkNotCancelled(Long auditRunId) {
