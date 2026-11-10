@@ -123,7 +123,7 @@ export function applyBulk({ current, ids, action }: IApplyBulkInput): IRuleAdjus
   const byId = new Map(current.map((r) => [r.id, r]));
   for (const id of ids) {
     const base: IRuleAdjustment = byId.get(id) ?? { id, severity: null, disabled: false, shadow: null };
-    let next = base;
+    let next: IRuleAdjustment;
     if (action.kind === 'shadow') next = { ...base, shadow: action.on ? true : null };
     else if (action.kind === 'disable') next = { ...base, disabled: action.on };
     else if (action.kind === 'severity') next = { ...base, severity: action.value };

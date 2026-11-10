@@ -1167,3 +1167,11 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Por quê:** a 2.0.3 era antiga e o PR do Dependabot (#195) não compilava: a 3.0 trocou o pacote `com.lowagie` por `org.openpdf` e removeu o antigo.
 - **Mudança:** imports de `PdfReportService` para `org.openpdf.text.*`; `openpdf` 3.0.5 no `pom.xml`. A API usada (Document, Paragraph, PdfPTable, PdfWriter, FontFactory) não mudou de nome.
 - **Verificado:** só pelo CI (compilação e `PdfReportServiceTest`, que gera o PDF); Maven não roda neste ambiente.
+
+## Dashboard: React 19, Vite 8 e ESLint 10 (sem versão nova)
+
+- **Por quê:** os PRs do Dependabot (#199, #201, #202) não instalavam sozinhos: React 19 exige `@types/react-dom` 19, o Vite 8 exige `@vitejs/plugin-react` 6, e o `@eslint/js` 10 exige ESLint 10.
+- **Mudança:** `react`/`react-dom` 19.3.1 e tipos 19.3.0; `vite` 8.3.7 com `@vitejs/plugin-react` 6.3.0; `eslint` 10.14.0, `@eslint/js` 10.0.1 e `eslint-plugin-react-hooks` 7.1.1. `eslint-plugin-jsx-a11y` (só declara suporte até o ESLint 9) roda com `overrides` do npm.
+- **Ajustes de código:** `React.RefObject<T | null>` em dois componentes (tipo do React 19); `manualChunks` do `vite.config.ts` passou de objeto para função (o Rolldown do Vite 8 não aceita o objeto; os pacotes `carbon`, `charts` e `react` seguem separados); `let next: IRuleAdjustment` em `applyBulk` (regra nova `no-useless-assignment` do ESLint 10).
+- **Decisão:** o `react-hooks` 7 trouxe regras do compilador do React (`refs`, `purity`, `set-state-in-effect`) que apontam 8 pontos em componentes; mantive só as duas regras da série 5 (`rules-of-hooks`, `exhaustive-deps`). Tratar essas 8 fica para um PR próprio.
+- **Verificado:** `tsc`, `vite build`, `eslint src --max-warnings 0`, `vitest run` (58 arquivos, 389 testes) e `npm ci` no npm 11. **Não verificado:** os testes e2e (Playwright) e o dashboard no navegador.

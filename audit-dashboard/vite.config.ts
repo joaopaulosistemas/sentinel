@@ -15,10 +15,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Bibliotecas grandes e estáveis em pacotes separados: o navegador as mantém em cache entre versões do app.
-        manualChunks: {
-          carbon: ['@carbon/react', '@carbon/icons-react'],
-          charts: ['recharts'],
-          react: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+        // Função, não objeto: o Rolldown (Vite 8) não aceita o objeto do Rollup. A ordem importa: "react" vem por último
+        // porque "react-router-dom" e "@tanstack/react-query" têm "react" no caminho.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('/@carbon/')) return 'carbon';
+          if (id.includes('/recharts/') || id.includes('/d3-') || id.includes('/victory-vendor/')) return 'charts';
+          if (/\/node_modules\/(react|react-dom|react-router|react-router-dom|@tanstack\/react-query|scheduler)\//.test(id)) return 'react';
+          return undefined;
         },
       },
     },
