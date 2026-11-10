@@ -11,7 +11,7 @@ conecta ao seu banco nem à sua aplicação**.
 2. Coloque ali os arquivos da tabela abaixo. Não precisa de todos.
 3. Rode a auditoria normalmente. As descobertas aparecem com a origem **Evidências** e a área **Desempenho**.
 
-A pasta é montada somente para leitura (`EVIDENCE_HOST_DIR` muda o local). Para um repositório que já versiona estes
+A pasta é montada com leitura e escrita, porque a tela de evidências envia e apaga arquivos nela (`EVIDENCE_HOST_DIR` muda o local). Para um repositório que já versiona estes
 arquivos, vale também a pasta `.sentinel/evidence/` dentro do próprio projeto.
 
 ## O que cada arquivo revela
