@@ -55,7 +55,7 @@ function useBodyScrollLock(): void {
 }
 
 /** O foco entra no aviso e, ao fechar, volta para quem o tinha. */
-function useFocusOnMount(box: React.RefObject<HTMLDivElement>): void {
+function useFocusOnMount(box: React.RefObject<HTMLDivElement | null>): void {
   useEffect(() => {
     const anterior = document.activeElement as HTMLElement | null;
     box.current?.focus();

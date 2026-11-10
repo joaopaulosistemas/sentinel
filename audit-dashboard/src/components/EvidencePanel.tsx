@@ -215,7 +215,7 @@ interface IDropZoneProps {
   dragging: boolean;
   setDragging: (v: boolean) => void;
   onDrop: (e: DragEvent<HTMLDivElement>) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   onPick: () => void;
   onFiles: (files: File[]) => void;
 }
