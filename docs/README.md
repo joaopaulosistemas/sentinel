@@ -15,7 +15,7 @@
 |---|---|
 | [arquitetura/ARQUITETURA.md](arquitetura/ARQUITETURA.md) | Módulos, pacotes, classes, fluxos e 13 diagramas |
 | [referencia/pacotes-de-regras.md](referencia/pacotes-de-regras.md) | Camadas de qualidade, pacotes de regras, perfis, ferramentas externas, segurança dos pacotes |
-| [referencia/versoes-fixadas.md](referencia/versoes-fixadas.md) | Versões fixadas das ferramentas, política de atualização e decisões em aberto (ESLint 9, Gitleaks, Hadolint) |
+| [referencia/versoes-fixadas.md](referencia/versoes-fixadas.md) | Versões fixadas das ferramentas, política de atualização e decisões em aberto (Gitleaks, Hadolint) |
 | [referencia/auditoria-e-api.md](referencia/auditoria-e-api.md) | Auditoria completa, webhooks, notificações, Configurações, OIDC e todos os endpoints |
 | [padrao-typescript/README.md](padrao-typescript/README.md) · [clean-code-labs42.md](padrao-typescript/clean-code-labs42.md) | Padrão TypeScript da casa e regras do guia clean-code-typescript |
 | [padrao-google/README.md](padrao-google/README.md) | Perfis Google Java/TypeScript, SEI CERT e Sonar |

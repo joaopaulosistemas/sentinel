@@ -22,6 +22,7 @@ export function Rotulo() {
       <label htmlFor="nome">Nome</label>
       <input id="nome" />
       <label><span>sem controle associado</span></label>
+      {[1, 2].map((n) => <li>{n}</li>)}
     </div>
   );
 }
@@ -39,6 +40,13 @@ if [ "$codigo" -ge 2 ]; then
 fi
 if ! grep -q "jsx-a11y/label-has-associated-control" "$saida"; then
   echo "ERRO: a regra jsx-a11y/label-has-associated-control não produziu o achado esperado." >&2
+  cat "$saida" >&2
+  exit 1
+fi
+# eslint-plugin-react não declara suporte ao ESLint 10 e chama APIs removidas; o fixupPluginRules da config as devolve.
+# Sem ele, o ESLint sai com código 2 (acima); com ele, a regra tem que produzir o achado.
+if ! grep -q "react/jsx-key" "$saida"; then
+  echo "ERRO: a regra react/jsx-key não produziu o achado esperado." >&2
   cat "$saida" >&2
   exit 1
 fi
