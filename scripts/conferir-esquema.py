@@ -2,7 +2,7 @@
 """Confere que o esquema do banco depois da subida da API (Flyway + Hibernate) é igual ao V1 do Flyway.
 Se o Hibernate ainda precisou criar ou alterar algo, falta uma migração: o script lista a diferença e sai com 1.
 Uso: conferir-esquema.py <pg_dump.sql> <V1__baseline.sql> [V2.sql V3.sql ...]
-As migrações depois do V1 só entram pelo que mudam no esquema: hoje, DROP INDEX."""
+As migrações depois do V1 só entram pelo que mudam no esquema: DROP INDEX e ALTER COLUMN ... TYPE timestamp(6) with time zone."""
 import re
 import sys
 
@@ -28,6 +28,23 @@ def _normaliza(comando):
     return re.sub(r"CONSTRAINT (\w+) CHECK \(\(\((\w+)\)::text = ANY (.*?\]\)?(?:::text\[\])?\))\)\)", reduz, comando)
 
 
+def _aplica_fuso(v1, comando):
+    """ALTER TABLE t ALTER COLUMN c TYPE timestamp(6) with time zone: a coluna do CREATE TABLE do V1 passa a ter fuso."""
+    m = re.match(r"ALTER TABLE (?:ONLY )?(?:public\.)?(\w+) (.*)$", comando)
+    if not m:
+        return v1
+    colunas = re.findall(r"ALTER COLUMN (\w+) TYPE timestamp\(6\) with time zone", m.group(2))
+    if not colunas:
+        return v1
+    novo = set()
+    for x in v1:
+        if re.match(r"CREATE TABLE (?:public\.)?%s " % m.group(1), x):
+            for col in colunas:
+                x = re.sub(r"\b%s timestamp\(6\) without time zone" % col, "%s timestamp(6) with time zone" % col, x)
+        novo.add(x)
+    return novo
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
@@ -38,6 +55,7 @@ def main():
             m = re.match(r"DROP INDEX (?:IF EXISTS )?(?:public\.)?(\w+)$", c)
             if m:
                 v1 = {x for x in v1 if not re.match(r"CREATE (?:UNIQUE )?INDEX %s ON " % m.group(1), x)}
+            v1 = _aplica_fuso(v1, c)
     so_banco, so_v1 = sorted(banco - v1), sorted(v1 - banco)
     for c in so_banco:
         print("Só no banco (falta migração):", c[:300])
