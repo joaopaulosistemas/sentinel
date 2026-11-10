@@ -59,15 +59,20 @@ function RunNotFound({ error }: { error: unknown }) {
 
 const FINISHED: RunState[] = ['COMPLETED', 'FAILED', 'CANCELLED'];
 
-/** Ao terminar, as listas que mostram nota e situação precisam do dado novo. */
-function useRefreshListsWhenFinished({ finished }: { finished: boolean }) {
+/**
+ * Ao terminar, as listas que mostram nota e situação precisam do dado novo. Os insights e os achados desta
+ * auditoria também: a tela os pede enquanto ela roda, e o que veio então (sem analisadores) ficaria em cache.
+ */
+export function useRefreshListsWhenFinished({ finished, runId }: { finished: boolean; runId: number | undefined }) {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!finished) return;
+    void queryClient.invalidateQueries({ queryKey: ['insights', runId] });
+    void queryClient.invalidateQueries({ queryKey: ['findings', runId] });
     void queryClient.invalidateQueries({ queryKey: ['systems'] });
     void queryClient.invalidateQueries({ queryKey: ['auditRuns'] });
     void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
-  }, [finished, queryClient]);
+  }, [finished, runId, queryClient]);
 }
 
 interface IStepTextInput {
@@ -469,7 +474,7 @@ export function AuditRunPage() {
 
   if (run?.progress) lastProgress.current = run.progress;
 
-  useRefreshListsWhenFinished({ finished });
+  useRefreshListsWhenFinished({ finished, runId: run?.id });
 
   if (isLoading) return <RunSkeleton />;
   if (error || !run) return <RunNotFound error={error} />;
