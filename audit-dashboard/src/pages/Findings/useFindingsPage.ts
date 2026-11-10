@@ -113,7 +113,7 @@ export function useFindingsData({ auditMode, auditId, filters: f }: IFindingsDat
   };
 }
 
-export type FindingsData = ReturnType<typeof useFindingsData>;
+type FindingsData = ReturnType<typeof useFindingsData>;
 
 interface IClaudeNotesInput {
   auditMode: boolean;

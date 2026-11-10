@@ -2,6 +2,7 @@ package com.sentinel.audit.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -26,6 +27,8 @@ import java.util.Optional;
  */
 @ApplicationScoped
 public class SecretBox {
+
+    private static final Logger LOG = Logger.getLogger(SecretBox.class);
 
     /** AES-GCM: IV de 96 bits (recomendação do NIST) e tag de autenticação de 128 bits. */
     private static final int GCM_IV_BYTES = 12;
@@ -88,6 +91,8 @@ public class SecretBox {
             c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(GCM_TAG_BITS, all, 0, GCM_IV_BYTES));
             return new String(c.doFinal(all, GCM_IV_BYTES, all.length - GCM_IV_BYTES), StandardCharsets.UTF_8);
         } catch (Exception e) {
+            // Sem este aviso, trocar SECRETS_KEY/API_KEY faria os tokens salvos "sumirem" sem nenhum rastro.
+            LOG.warn("Não foi possível decifrar um segredo salvo: valor corrompido ou SECRETS_KEY/API_KEY mudou desde que foi gravado");
             return null;
         }
     }

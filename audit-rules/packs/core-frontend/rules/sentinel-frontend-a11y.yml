@@ -39,6 +39,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-1022: Use of Web Link to Untrusted Target with window.opener Access"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-fe-html-sem-lang
     pattern-regex: '(?s)<html\b(?![^>]*\blang\s*=)(?![^>]*\bth:(?:replace|insert|include)\b)[^>]*>'

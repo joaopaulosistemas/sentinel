@@ -170,6 +170,8 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
         f.setFilePath(dep.filePath());
         f.setCveId(top.cve() != null ? top.cve() : top.id());
         f.setRuleId("osv-" + dep.name());
+        // Todos os ids, em ordem fixa: entram na identidade, então uma vulnerabilidade nova reabre uma supressão antiga.
+        f.setCodeSnippet(allIds(vulns));
         f.setToolSource(ANALYZER_NAME);
         return f;
     }
@@ -184,6 +186,12 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
             }
         }
         return bestFix;
+    }
+
+    /** Todos os ids (CVE quando houver), ordenados, sem o corte de {@link #listIds}. */
+    private static String allIds(List<OsvVulnerability> vulns) {
+        return vulns.stream().map(v -> v.cve() != null ? v.cve() : v.id()).sorted().distinct()
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 
     /** Os primeiros ids (CVE quando houver), separados por vírgula, com a contagem do que ficou de fora. */

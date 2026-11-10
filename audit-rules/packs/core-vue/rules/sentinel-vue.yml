@@ -79,6 +79,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-1022: Use of Web Link to Untrusted Target with window.opener Access"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-vue-options-api-mixins
     pattern-regex: '(?m)^\s*mixins\s*:\s*\['

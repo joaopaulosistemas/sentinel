@@ -1,4 +1,8 @@
 {{- if .Values.ingress.enabled }}
+{{- /* O proxy do dashboard injeta a API key: quem alcança o ingress usa a API como administrador. */}}
+{{- if and (ne (toString (index .Values.api.env "QUARKUS_PROFILE" | default "")) "oidc") (not .Values.ingress.allowWithoutLogin) }}
+{{- fail "ingress.enabled exige login: defina api.env.QUARKUS_PROFILE=oidc (imagem com -Poidc) ou, sabendo do risco, ingress.allowWithoutLogin=true" }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

@@ -87,6 +87,15 @@ class AuditCliTest {
     }
 
     @Test
+    void resultadoIncompletoReprovaComCodigoQuatroSalvoAllowIncomplete() {
+        auditJson = auditJson.replace("\"status\":\"COMPLETED\"",
+                "\"status\":\"COMPLETED\",\"incomplete\":true,\"incompleteReasons\":[\"trivy: falhou\"]");
+        assertEquals(4, run());
+        assertEquals(0, run("--allow-incomplete"));
+        assertEquals(1, run("--fail-below", "90"));              // a reprovação por nota continua valendo
+    }
+
+    @Test
     void scoreAbaixoDoLimiteRetornaUm() {
         assertEquals(1, run("--fail-below", "90"));
         assertEquals(0, run("--fail-below", "70"));

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 /** Depois disso, a tela deixa de prometer que a API volta sozinha e oferece uma saída. */
 export const RESTART_TIMEOUT_SECONDS = 90;
 
-export type RestartPhase = 'requesting' | 'waiting';
+type RestartPhase = 'requesting' | 'waiting';
 
 interface IProps {
   /** requesting: o pedido de reinício está a caminho; waiting: a API foi encerrada e a tela espera ela voltar. */
@@ -156,7 +156,7 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: IProps) {
       data-testid="restart-overlay"
       style={{ position: 'fixed', inset: 0, zIndex: 9500, background: 'rgba(22, 22, 22, 0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- prende o Tab dentro do diálogo modal */}
+      { }
       <div
         ref={box}
         role="alertdialog"

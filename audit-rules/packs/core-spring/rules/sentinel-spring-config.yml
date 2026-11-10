@@ -13,6 +13,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-200: Exposure of Sensitive Information"
+      owasp: A01:2021 - Broken Access Control
 
   - id: sentinel-spring-actuator-exposto-yaml
     pattern-regex: '(?m)^[ \t]*exposure:[ \t]*\n[ \t]+include:[ \t]*["'']?\*'
@@ -28,6 +29,7 @@ rules:
       side: back
       category: security
       cwe: "CWE-200: Exposure of Sensitive Information"
+      owasp: A01:2021 - Broken Access Control
 
   - id: sentinel-spring-h2-console
     pattern-regex: '(?m)^[ \t]*spring\.h2\.console\.enabled[ \t]*=[ \t]*true'
@@ -41,6 +43,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-489: Active Debug Code"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-spring-senha-em-properties
     pattern-regex: '(?m)^[ \t]*(?:spring\.datasource\.password|spring\.security\.user\.password|[\w.\-]*(?:password|secret|api-key|apikey))[ \t]*=[ \t]*(?!\$\{)(?![ \t]*$)[^\s$#]{3,}'
@@ -55,6 +58,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
 
   - id: sentinel-spring-ddl-auto-perigoso
     pattern-regex: '(?m)^[ \t]*spring\.jpa\.hibernate\.ddl-auto[ \t]*=[ \t]*(?:update|create|create-drop)\b'

@@ -7,6 +7,7 @@ import com.sentinel.audit.dto.SuppressRequest;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
+import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.FindingSuppression;
@@ -21,8 +22,10 @@ import jakarta.ws.rs.NotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -93,13 +96,25 @@ public class FindingLifecycleService {
 
     /** Calcula o fingerprint, marca os novos e suprime os que têm supressão válida. */
     public static void apply(List<Finding> findings, Baseline baseline) {
+        Map<String, Integer> occurrences = new HashMap<>();
         for (Finding f : findings) {
-            f.setFingerprint(Fingerprints.compute(f));
-            f.setIsNew(baseline.baseAuditId() == null ? null : !baseline.previousFingerprints().contains(f.getFingerprint()));
+            String base = Fingerprints.compute(f);
+            int ordinal = occurrences.merge(base, 1, Integer::sum) - 1;
+            f.setFingerprint(Fingerprints.withOrdinal(base, ordinal));
+            f.setIsNew(baseline.baseAuditId() == null ? null : !existedBefore(f, baseline));
             if (baseline.suppressedFingerprints().contains(f.getFingerprint())) {
                 f.setStatus(FindingStatus.SUPPRESSED);
             }
         }
+    }
+
+    /** Já estava na auditoria anterior? Dependências também são reconhecidas pela identidade do formato antigo. */
+    private static boolean existedBefore(Finding f, Baseline baseline) {
+        if (baseline.previousFingerprints().contains(f.getFingerprint())) {
+            return true;
+        }
+        return f.getCategory() == Category.DEPENDENCY
+                && baseline.previousFingerprints().contains(Fingerprints.legacyDependency(f));
     }
 
     /** Findings que contam para o score (tudo menos os suprimidos). */

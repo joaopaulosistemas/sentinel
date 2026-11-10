@@ -28,7 +28,7 @@ final class GitLog {
             Process p = new ProcessBuilder(command)
                     .redirectErrorStream(true).redirectOutput(out.toFile()).start();
             if (!p.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                p.destroyForcibly();
+                ProcessTree.destroy(p);
                 return "";
             }
             return p.exitValue() == 0 ? Files.readString(out, StandardCharsets.UTF_8) : "";

@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import com.sentinel.audit.pack.AuditPolicy;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Finding;
@@ -62,6 +63,19 @@ public class AuditOrchestrationService {
     /** Andamento mostrado na tela; o valor inicial serve a testes que montam o serviço sem CDI. */
     @Inject
     AuditProgressTracker progress = new AuditProgressTracker();
+
+    /** Quantas auditorias rodam ao mesmo tempo; as demais esperam em PENDING. */
+    @ConfigProperty(name = "sentinel.audit.max-concurrent", defaultValue = "2")
+    int maxConcurrent = 2;
+
+    private AuditSlots slots;
+
+    private synchronized AuditSlots slots() {
+        if (slots == null) {
+            slots = new AuditSlots(maxConcurrent);
+        }
+        return slots;
+    }
 
     /** Executor para a orquestração e para os analisadores (tarefas bloqueantes de I/O). */
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
@@ -135,7 +149,10 @@ public class AuditOrchestrationService {
     private void executeAudit(Long auditRunId) {
         Path clonedPath = null;
         AuditPolicy policy = null;
+        boolean holdingSlot = false;
         try {
+            slots().acquire(auditRunId, () -> progress.isCancelRequested(auditRunId));
+            holdingSlot = true;
             AuditContext context = store.markRunning(auditRunId);
             progress.queued(auditRunId);
             checkNotCancelled(auditRunId);
@@ -178,6 +195,9 @@ public class AuditOrchestrationService {
             store.notifySafely(auditRunId);
             throw new IllegalStateException("Auditoria " + auditRunId + " falhou", e);
         } finally {
+            if (holdingSlot) {
+                slots().release();
+            }
             progress.finish(auditRunId);
             policies.cleanup(policy);
             if (clonedPath != null) {

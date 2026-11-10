@@ -13,6 +13,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-79: Cross-site Scripting"
+      owasp: A03:2021 - Injection
 
   - id: sentinel-ng-nativeelement-html
     pattern-regex: '\.nativeElement\.(?:innerHTML|outerHTML)\s*='
@@ -27,6 +28,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-79: Cross-site Scripting"
+      owasp: A03:2021 - Injection
 
   - id: sentinel-ng-dom-direto
     pattern-regex: '\bdocument\.(?:getElementById|querySelector|querySelectorAll|getElementsBy\w+)\s*\('

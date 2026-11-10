@@ -356,7 +356,7 @@ function CompletedView({ run, seconds }: { run: IAuditRunResponse; seconds: numb
   const [rerun, setRerun] = useState(false);
   const openFindings = () => {
     setSelectedAudit(run.id);
-    navigate(`/findings?auditId=${run.id}`);
+    void navigate(`/findings?auditId=${run.id}`);
   };
   return (
     <PageShell crumbs={runCrumbsFor(run)}>

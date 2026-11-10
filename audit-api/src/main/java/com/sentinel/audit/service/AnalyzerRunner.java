@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Escolhe os analisadores de uma auditoria, dispara os que valem em paralelo e espera cada um (atendendo ao
@@ -52,7 +53,7 @@ final class AnalyzerRunner {
         List<AnalyzerRunInfo> runs = skippedBeforeRun(candidates, analyzers, policy);
         Long runId = runRef.getId();
         List<CodeAnalyzer> started = new ArrayList<>();
-        List<CompletableFuture<Outcome>> futures = new ArrayList<>();
+        List<Running> futures = new ArrayList<>();
         List<AuditProgressDto.AnalyzerProgress> plan = new ArrayList<>();
         for (AnalyzerRunInfo r : runs) {
             plan.add(new AuditProgressDto.AnalyzerProgress(r.name(), r.status(), 0, 0, r.note()));
@@ -110,17 +111,23 @@ final class AnalyzerRunner {
     }
 
     /** Dispara um analisador em paralelo; uma falha dele vira resultado vazio com o erro anotado. */
-    private CompletableFuture<Outcome> startAnalyzer(CodeAnalyzer analyzer, Path projectPath, AuditRun runRef, AuditPolicy policy) {
+    private Running startAnalyzer(CodeAnalyzer analyzer, Path projectPath, AuditRun runRef, AuditPolicy policy) {
         Long runId = runRef.getId();
-        return CompletableFuture
+        AtomicReference<Thread> thread = new AtomicReference<>();
+        CompletableFuture<Outcome> future = CompletableFuture
                 .supplyAsync(() -> {
-                    progress.analyzerStarted(runId, analyzer.getName());
-                    AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
-                    progress.analyzerFinished(runId, analyzer.getName(), new AuditProgressTracker.Done(
-                            r.partial() ? "PARCIAL" : "OK", r.findings().size(),
-                            r.duration() == null ? 0 : r.duration().toMillis(),
-                            noteOf(r), severityCounts(r.findings())));
-                    return new Outcome(r, null);
+                    thread.set(Thread.currentThread());
+                    try {
+                        progress.analyzerStarted(runId, analyzer.getName());
+                        AnalyzerResult r = analyzer.analyze(projectPath, runRef, policy);
+                        progress.analyzerFinished(runId, analyzer.getName(), new AuditProgressTracker.Done(
+                                r.partial() ? "PARCIAL" : "OK", r.findings().size(),
+                                r.duration() == null ? 0 : r.duration().toMillis(),
+                                noteOf(r), severityCounts(r.findings())));
+                        return new Outcome(r, null);
+                    } finally {
+                        thread.set(null);
+                    }
                 }, executor)
                 .exceptionally(error -> {
                     LOG.errorf(error, "Analisador %s falhou; seguindo sem seus resultados", analyzer.getName());
@@ -129,10 +136,25 @@ final class AnalyzerRunner {
                     return new Outcome(new AnalyzerResult(List.of(), analyzer.getName(), Duration.ZERO),
                             error.getMessage());
                 });
+        return new Running(future, thread);
+    }
+
+    /**
+     * Um analisador em andamento. {@code CompletableFuture.cancel} não interrompe a thread que o executa; por isso a
+     * thread fica guardada: interrompê-la faz o {@code ExternalTools} encerrar a ferramenta e seus processos filhos.
+     */
+    record Running(CompletableFuture<Outcome> future, AtomicReference<Thread> thread) {
+        void cancel() {
+            future.cancel(true);
+            Thread running = thread.get();
+            if (running != null) {
+                running.interrupt();
+            }
+        }
     }
 
     /** Espera cada analisador na ordem em que foi disparado e junta achados e situação de cada um. */
-    private Analysis collectOutcomes(Long runId, List<CodeAnalyzer> started, List<CompletableFuture<Outcome>> futures,
+    private Analysis collectOutcomes(Long runId, List<CodeAnalyzer> started, List<Running> futures,
                                      List<AnalyzerRunInfo> runs) {
         List<Finding> allFindings = new ArrayList<>();
         for (int i = 0; i < futures.size(); i++) {
@@ -150,14 +172,14 @@ final class AnalyzerRunner {
 
     /** Espera o analisador, mas acorda a cada meio segundo para atender um pedido de cancelamento. */
     @SuppressWarnings("PMD.PreserveStackTrace")   // o timeout é só o relógio do polling; o cancelamento não tem causa
-    private Outcome awaitOutcome(Long runId, CompletableFuture<Outcome> future, List<CompletableFuture<Outcome>> all) {
+    private Outcome awaitOutcome(Long runId, Running running, List<Running> all) {
         while (true) {
             try {
-                return future.get(CANCEL_POLL_MILLIS, java.util.concurrent.TimeUnit.MILLISECONDS);
+                return running.future().get(CANCEL_POLL_MILLIS, java.util.concurrent.TimeUnit.MILLISECONDS);
             } catch (java.util.concurrent.TimeoutException e) {
                 progress.heartbeat(runId);
                 if (progress.isCancelRequested(runId)) {
-                    all.forEach(f -> f.cancel(true));
+                    all.forEach(Running::cancel);
                     throw new AuditCancelledException(runId);
                 }
             } catch (InterruptedException e) {

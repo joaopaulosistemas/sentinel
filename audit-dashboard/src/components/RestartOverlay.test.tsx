@@ -1,16 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { axe } from 'vitest-axe';
-import * as matchers from 'vitest-axe/matchers';
 import { RESTART_TIMEOUT_SECONDS, RestartOverlay } from './RestartOverlay';
-
-expect.extend(matchers);
-
-declare module 'vitest' {
-  interface Assertion {
-    toHaveNoViolations(): void;
-  }
-}
+import { expectNoAxeViolations } from '../test/axe';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -91,7 +82,7 @@ describe('RestartOverlay', () => {
   it('sem violações de acessibilidade', async () => {
     vi.useRealTimers();
     const { container, unmount } = renderOverlay();
-    expect(await axe(container)).toHaveNoViolations();
+    await expectNoAxeViolations(container);
     unmount();
   });
 });

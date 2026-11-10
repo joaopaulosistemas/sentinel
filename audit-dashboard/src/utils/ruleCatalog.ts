@@ -80,7 +80,7 @@ function applyPlan(plan: IFixPlanItem[], ensure: (id: string) => IRuleRow): void
 
 export type RuleScope = 'all' | 'seen' | 'adjusted';
 
-export interface IRuleFilter {
+interface IRuleFilter {
   query: string;
   scope: RuleScope;
   pack: string;

@@ -14,7 +14,8 @@ import java.util.Locale;
  * <p>
  * Usa regra + arquivo + trecho de código normalizado e <b>não</b> usa o número da linha: se alguém
  * insere código acima, o problema continua sendo "o mesmo". Para dependências o trecho não existe e o título
- * muda com a versão, então só regra + arquivo contam (atualizar a versão não cria um problema "novo").
+ * muda com a versão, então contam regra + arquivo + a lista de vulnerabilidades (guardada como trecho): atualizar a
+ * versão sem mudar as vulnerabilidades não cria um problema "novo", mas uma vulnerabilidade nova reabre o que estava suprimido.
  */
 public final class Fingerprints {
 
@@ -32,6 +33,19 @@ public final class Fingerprints {
                 nullToEmpty(f.getFilePath()),
                 nullToEmpty(discriminator));
         return sha256(raw);
+    }
+
+    /**
+     * Identidade que as dependências tinham antes de os ids de vulnerabilidade entrarem no cálculo (regra + arquivo).
+     * Serve só para reconhecer, na auditoria anterior, uma dependência que já existia, e não marcá-la como nova.
+     */
+    public static String legacyDependency(Finding f) {
+        return sha256(String.join("\u0000", nullToEmpty(f.getRuleId()), nullToEmpty(f.getFilePath()), ""));
+    }
+
+    /** A n-ésima ocorrência idêntica (mesma regra, arquivo e trecho) no mesmo arquivo; a primeira mantém a identidade base. */
+    public static String withOrdinal(String base, int ordinal) {
+        return ordinal == 0 ? base : sha256(base + "\u0000#" + ordinal);
     }
 
     private static String normalize(String text) {

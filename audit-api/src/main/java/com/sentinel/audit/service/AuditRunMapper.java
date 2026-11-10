@@ -49,7 +49,8 @@ public class AuditRunMapper {
                 compared ? diff.newFindings().size() : null,
                 compared ? diff.resolvedFindings().size() : null,
                 compared ? diff.baseAuditId() : null,
-                compared ? diff.scoreDelta() : null);
+                compared ? diff.scoreDelta() : null,
+                run.isIncomplete(), run.getIncompleteReasonList());
     }
 
     private static RiskScoreDto scoreOf(AuditRun run) {

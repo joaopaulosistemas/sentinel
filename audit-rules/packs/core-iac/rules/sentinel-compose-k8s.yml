@@ -14,6 +14,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-compose-docker-sock
     pattern-regex: '/var/run/docker\.sock'
@@ -28,6 +29,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-compose-network-host
     pattern-regex: '(?m)^[ \t]*network_mode:[ \t]*["'']?host\b'
@@ -41,6 +43,7 @@ rules:
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
       cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
+      owasp: A01:2021 - Broken Access Control
       category: security
 
   - id: sentinel-compose-segredo-em-env
@@ -56,6 +59,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
 
   - id: sentinel-k8s-host-network
     pattern-regex: '(?m)^[ \t]*host(?:Network|PID|IPC):[ \t]*true\b'
@@ -70,6 +74,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-k8s-escalada-de-privilegio
     pattern-regex: '(?m)^[ \t]*allowPrivilegeEscalation:[ \t]*true\b'
@@ -84,6 +89,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-269: Improper Privilege Management"
+      owasp: A01:2021 - Broken Access Control
 
   - id: sentinel-k8s-roda-como-root
     pattern-regex: '(?m)^[ \t]*(?:runAsNonRoot:[ \t]*false|runAsUser:[ \t]*0)\b'
@@ -98,6 +104,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-k8s-hostpath
     pattern-regex: '(?m)^[ \t]*hostPath:[ \t]*$'
@@ -112,6 +119,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
+      owasp: A01:2021 - Broken Access Control
 
   - id: sentinel-k8s-capacidade-perigosa
     pattern-regex: '(?m)(?:^[ \t]*|\{[ \t]*)add:[ \t]*(?:\[[^\]\n]*(?:ALL|SYS_ADMIN|NET_ADMIN|SYS_PTRACE)|\n(?:[ \t]*-[ \t]*\S+[ \t]*\n)*?[ \t]*-[ \t]*["'']?(?:ALL|SYS_ADMIN|NET_ADMIN|SYS_PTRACE)\b)'
@@ -126,6 +134,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-k8s-imagem-latest
     pattern-regex: '(?m)^[ \t]*image:[ \t]*["'']?[\w./\-]+:latest\b'
@@ -140,3 +149,4 @@ rules:
     metadata:
       category: security
       cwe: "CWE-1357: Reliance on Insufficiently Trustworthy Component"
+      owasp: A06:2021 - Vulnerable and Outdated Components

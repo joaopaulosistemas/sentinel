@@ -166,8 +166,8 @@ function isWebhookUrl(value: string): boolean {
   return WEBHOOK_SO_HOST.test(value) || WEBHOOK_COM_CAMINHO.test(value);
 }
 
-export const BRANCH_NAME = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
-export const MAX_INTERVAL_HOURS = 720;
+const BRANCH_NAME = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
+const MAX_INTERVAL_HOURS = 720;
 const MAX_NAME_LENGTH = 255;
 const MAX_LOCAL_PATH_LENGTH = 500;
 const MAX_GIT_HISTORY_DEPTH = 5000;

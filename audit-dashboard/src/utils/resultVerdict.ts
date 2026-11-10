@@ -1,8 +1,6 @@
 import type { Category, IFixPlan, IRiskScoreDto } from '../types';
 import { TARGET_SCORE, WARN_SCORE } from './scoreBand';
 
-export { TARGET_SCORE };
-
 export interface IVerdict {
   tone: 'good' | 'warn' | 'bad';
   headline: string;

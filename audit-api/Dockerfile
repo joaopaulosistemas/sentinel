@@ -50,19 +50,32 @@ ARG SEMGREP_VERSION=1.172.0
 ARG WITH_TRIVY=true
 ARG WITH_GITLEAKS=true
 ARG GITLEAKS_VERSION=8.21.2
+ARG GITLEAKS_SHA256_AMD64=5bc41815076e6ed6ef8fbecc9d9b75bcae31f39029ceb55da08086315316e3ba
+ARG GITLEAKS_SHA256_ARM64=654c935542c89f565aabe7bf7c6c500830f116c114f0aeb509d2460c1ac2e6da
 # PMD (lint Java, precisa só do JRE que a imagem já tem) e ESLint (lint TypeScript, precisa de Node 18+, por isso
 # vem ligado porque a stack é Angular/React/TypeScript: --build-arg WITH_ESLINT=false tira o Node 20, o ESLint e o Stylelint).
 ARG WITH_PMD=true
 ARG PMD_VERSION=7.7.0
+ARG PMD_SHA256=be8bf68f6c1d66984bd9645a93e631b78a1c2f42f5f0f8719082fead67553940
 ARG WITH_ESLINT=true
 # Analisadores de mercado do pacote market-tools: njsscan, Checkov e SQLFluff (cada um em venv próprio), Hadolint e kube-linter
 # (binários) e Stylelint (CSS/SCSS, precisa do Node: vem junto com WITH_ESLINT). --build-arg WITH_MARKET_TOOLS=false
 # deixa a imagem menor.
 ARG HADOLINT_VERSION=2.12.0
+ARG HADOLINT_SHA256_AMD64=56de6d5e5ec427e17b74fa48d51271c7fc0d61244bf5c90e828aab8362d55010
+ARG HADOLINT_SHA256_ARM64=5798551bf19f33951881f15eb238f90aef023f11e7ec7e9f4c37961cb87c5df6
 ARG KUBE_LINTER_VERSION=0.7.2
+ARG KUBE_LINTER_SHA256_AMD64=8a0f8ba6c28910acd4886cc4d501ed32f3d404a53ac5e72c45a0dd893fcadb03
+ARG KUBE_LINTER_SHA256_ARM64=c9e9c0e55f26e1723c23bef933e2004b4b524714613243c98ea581de13060dd7
 ARG KUBE_SCORE_VERSION=1.19.0
+ARG KUBE_SCORE_SHA256_AMD64=a5b10e509bd845f0bc32a529f4e8165c021877f924ee6f6be66678039f75a761
+ARG KUBE_SCORE_SHA256_ARM64=96b24dda719b75fa7b6d14e5423553bffa09688bd6f9400789b623e30f0e3541
 ARG CHECKSTYLE_VERSION=10.21.4
+ARG CHECKSTYLE_SHA256=3c1d94d6ecc83e02dff587c9ba5b6b4ec4fec38c7a958eb587efec9b28e2f318
 ARG WITH_MARKET_TOOLS=true
+ARG NJSSCAN_VERSION=1.0.2
+ARG CHECKOV_VERSION=3.4.3
+ARG SQLFLUFF_VERSION=4.5.0
 # Taint entre arquivos com o Joern (lê o código-fonte Java, sem compilar): ligado só com --build-arg WITH_JOERN=true, porque
 # pesa cerca de 2 GB e precisa de memória na análise (SENTINEL_JOERN_XMX, padrão 4g). Ver audit-api/joern/.
 ARG WITH_JOERN=false
@@ -82,6 +95,7 @@ RUN if [ "$INSECURE_SSL" = "true" ]; then \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git curl ca-certificates gnupg python3 python3-pip \
     && if [ "$INSECURE_SSL" = "true" ]; then git config --system http.sslVerify false; fi \
+    && fetch() { curl -fsSL -o "$1" "$2" && echo "$3  $1" | sha256sum -c -; } \
     && if [ "$WITH_OPENGREP" = "true" ]; then \
          arch="$(dpkg --print-architecture)" \
          && if [ "$arch" = "arm64" ]; then dist=aarch64; sha="$OPENGREP_SHA256_ARM64"; else dist=x86; sha="$OPENGREP_SHA256_AMD64"; fi \
@@ -97,35 +111,37 @@ RUN apt-get update \
          && apt-get update && apt-get install -y --no-install-recommends trivy; \
        fi \
     && if [ "$WITH_GITLEAKS" = "true" ]; then \
-         ARCH="$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/')" \
-         && curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz" \
-            | tar -xz -C /usr/local/bin gitleaks; \
+         if [ "$(uname -m)" = "aarch64" ]; then ARCH=arm64; sha="$GITLEAKS_SHA256_ARM64"; else ARCH=x64; sha="$GITLEAKS_SHA256_AMD64"; fi \
+         && fetch /tmp/gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz" "$sha" \
+         && tar -xz -C /usr/local/bin -f /tmp/gitleaks.tgz gitleaks && rm /tmp/gitleaks.tgz; \
        fi \
     && if [ "$WITH_PMD" = "true" ]; then \
          apt-get install -y --no-install-recommends unzip \
-         && curl -fsSL -o /tmp/pmd.zip "https://github.com/pmd/pmd/releases/download/pmd_releases%2F${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip" \
+         && fetch /tmp/pmd.zip "https://github.com/pmd/pmd/releases/download/pmd_releases%2F${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip" "$PMD_SHA256" \
          && unzip -q /tmp/pmd.zip -d /opt && rm /tmp/pmd.zip \
          && ln -s /opt/pmd-bin-${PMD_VERSION}/bin/pmd /usr/local/bin/pmd; \
        fi \
     && if [ "$WITH_MARKET_TOOLS" = "true" ]; then \
          apt-get install -y --no-install-recommends python3-venv \
-         && for spec in "njsscan:njsscan" "checkov:checkov" "sqlfluff:sqlfluff"; do \
+         && for spec in "njsscan:njsscan==${NJSSCAN_VERSION}" "checkov:checkov==${CHECKOV_VERSION}" "sqlfluff:sqlfluff==${SQLFLUFF_VERSION}"; do \
               bin="${spec%%:*}"; pkg="${spec#*:}"; \
               python3 -m venv "/opt/venvs/$bin" \
               && "/opt/venvs/$bin/bin/pip" install --no-cache-dir "$pkg" \
               && ln -s "/opt/venvs/$bin/bin/$bin" "/usr/local/bin/$bin"; \
             done \
-         && HL_ARCH="$(uname -m | sed 's/aarch64/arm64/')" \
-         && curl -fsSL -o /usr/local/bin/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-${HL_ARCH}" \
+         && if [ "$(uname -m)" = "aarch64" ]; then \
+              HL_ARCH=arm64; HL_SHA="$HADOLINT_SHA256_ARM64"; KL_SUFFIX=_arm64; KL_SHA="$KUBE_LINTER_SHA256_ARM64"; KS_ARCH=arm64; KS_SHA="$KUBE_SCORE_SHA256_ARM64"; \
+            else \
+              HL_ARCH=x86_64; HL_SHA="$HADOLINT_SHA256_AMD64"; KL_SUFFIX=; KL_SHA="$KUBE_LINTER_SHA256_AMD64"; KS_ARCH=amd64; KS_SHA="$KUBE_SCORE_SHA256_AMD64"; \
+            fi \
+         && fetch /usr/local/bin/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-${HL_ARCH}" "$HL_SHA" \
          && chmod 755 /usr/local/bin/hadolint \
-         && KL_SUFFIX="$(uname -m | sed 's/x86_64//;s/aarch64/_arm64/')" \
-         && curl -fsSL "https://github.com/stackrox/kube-linter/releases/download/v${KUBE_LINTER_VERSION}/kube-linter-linux${KL_SUFFIX}.tar.gz" \
-            | tar -xz -C /usr/local/bin kube-linter \
-         && KS_ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')" \
-         && curl -fsSL "https://github.com/zegl/kube-score/releases/download/v${KUBE_SCORE_VERSION}/kube-score_${KUBE_SCORE_VERSION}_linux_${KS_ARCH}.tar.gz" \
-            | tar -xz -C /usr/local/bin kube-score \
+         && fetch /tmp/kube-linter.tgz "https://github.com/stackrox/kube-linter/releases/download/v${KUBE_LINTER_VERSION}/kube-linter-linux${KL_SUFFIX}.tar.gz" "$KL_SHA" \
+         && tar -xz -C /usr/local/bin -f /tmp/kube-linter.tgz kube-linter && rm /tmp/kube-linter.tgz \
+         && fetch /tmp/kube-score.tgz "https://github.com/zegl/kube-score/releases/download/v${KUBE_SCORE_VERSION}/kube-score_${KUBE_SCORE_VERSION}_linux_${KS_ARCH}.tar.gz" "$KS_SHA" \
+         && tar -xz -C /usr/local/bin -f /tmp/kube-score.tgz kube-score && rm /tmp/kube-score.tgz \
          && mkdir -p /opt/checkstyle \
-         && curl -fsSL -o /opt/checkstyle/checkstyle.jar "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-${CHECKSTYLE_VERSION}/checkstyle-${CHECKSTYLE_VERSION}-all.jar"; \
+         && fetch /opt/checkstyle/checkstyle.jar "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-${CHECKSTYLE_VERSION}/checkstyle-${CHECKSTYLE_VERSION}-all.jar" "$CHECKSTYLE_SHA256"; \
        fi \
     && if [ "$WITH_JOERN" = "true" ]; then \
          apt-get install -y --no-install-recommends unzip \

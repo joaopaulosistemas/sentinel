@@ -9,7 +9,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -43,6 +45,12 @@ public class AuditRequestService {
     /** Como {@link #request(Long, String, String)}; com {@code baseRef} a auditoria é de PR (só arquivos alterados). */
     @Transactional
     public AuditRun request(Long systemId, String branch, String baseRef, String triggeredBy) {
+        // Uma auditoria por sistema de cada vez, em qualquer branch: duas juntas clonam, analisam e gravam o mesmo
+        // sistema ao mesmo tempo, e a segunda compara contra uma base que a primeira ainda não terminou.
+        activeRun(systemId, LocalDateTime.now()).ifPresent(active -> {
+            throw new ClientErrorException("Este sistema já tem a auditoria #" + active.getId() + " em andamento ("
+                    + active.getBranch() + "). Aguarde ela terminar ou cancele para iniciar outra.", Response.Status.CONFLICT);
+        });
         AuditedSystem system = systemRepository.findByIdOptional(systemId)
                 .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + systemId));
         AuditRun run = new AuditRun();
@@ -58,21 +66,22 @@ public class AuditRequestService {
     }
 
     /**
-     * Cria a auditoria só se não houver outra em andamento para o mesmo sistema e branch
+     * Cria a auditoria só se não houver outra em andamento para o mesmo sistema
      * (evita fila de auditorias quando chegam vários pushes seguidos).
      */
     @Transactional
     public Optional<AuditRun> requestIfIdle(Long systemId, String branch, String triggeredBy) {
-        if (hasActiveRun(systemId, branch, LocalDateTime.now())) {
+        if (activeRun(systemId, LocalDateTime.now()).isPresent()) {
             return Optional.empty();
         }
         return Optional.of(request(systemId, branch, triggeredBy));
     }
 
-    boolean hasActiveRun(Long systemId, String branch, LocalDateTime now) {
+    /** A auditoria PENDING/RUNNING do sistema (em qualquer branch) que ainda não foi dada como travada. */
+    Optional<AuditRun> activeRun(Long systemId, LocalDateTime now) {
         return auditRunRepository.findActive().stream()
                 .filter(r -> r.getSystem() != null && Objects.equals(r.getSystem().getId(), systemId))
-                .filter(r -> Objects.equals(r.getBranch(), branch))
-                .anyMatch(r -> r.getStartedAt() == null || r.getStartedAt().isAfter(now.minusHours(STALE_AFTER_HOURS)));
+                .filter(r -> r.getStartedAt() == null || r.getStartedAt().isAfter(now.minusHours(STALE_AFTER_HOURS)))
+                .findFirst();
     }
 }

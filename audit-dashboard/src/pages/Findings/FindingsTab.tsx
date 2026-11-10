@@ -54,7 +54,7 @@ function useSystemOrigin({ auditMode, data }: { auditMode: boolean; data: Findin
     stackByName: data.stackBySystem,
     open: (hit) => {
       setSelectedAudit(hit.auditId);
-      navigate(`/systems/${hit.systemId}`);
+      void navigate(`/systems/${hit.systemId}`);
     },
   });
 }

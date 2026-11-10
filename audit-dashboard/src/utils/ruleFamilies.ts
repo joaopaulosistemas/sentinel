@@ -16,7 +16,7 @@ const SIDE_OF_PACK: Record<string, PackSide> = {
   'ts-clean-code': 'front',
 };
 
-export const SIDE_TITLE: Record<PackSide, string> = { back: 'Back-end', front: 'Front-end', both: 'Transversais' };
+const SIDE_TITLE: Record<PackSide, string> = { back: 'Back-end', front: 'Front-end', both: 'Transversais' };
 const SIDE_ORDER: PackSide[] = ['back', 'front', 'both'];
 
 export function sideOfPack(id: string): PackSide {
@@ -48,7 +48,7 @@ export function limitSide(key: string): PackSide {
   return FRONT_ONLY_LIMITS.has(key) ? 'front' : 'both';
 }
 
-export const NO_FAMILY = 'none';
+const NO_FAMILY = 'none';
 
 const FAMILY_LABEL: Record<string, string> = {
   security: 'Segurança',
@@ -68,7 +68,7 @@ export function familyOf(row: Pick<IRuleRow, 'category'>): string {
   return category ? category : NO_FAMILY;
 }
 
-export function familyLabel(key: string): string {
+function familyLabel(key: string): string {
   return FAMILY_LABEL[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
 }
 
@@ -120,7 +120,7 @@ export function hiddenAdjustedCount({ rows, packs, adjustedIds }: IHiddenAdjuste
 
 /** Nome de cada lado (back, front, comum) na tela. */
 export const SIDE_NAME: Record<EngineSide, string> = { back: 'Back-end', front: 'Front-end', common: 'Infra e comum' };
-export const SIDES: EngineSide[] = ['back', 'front', 'common'];
+const SIDES: EngineSide[] = ['back', 'front', 'common'];
 
 /** Lado da regra: o que a API informa; sem isso (API antiga), o do pacote, com "transversal" virando comum. */
 export function sideOfRule(row: Pick<IRuleRow, 'side' | 'pack'>): EngineSide {

@@ -1,5 +1,5 @@
 export type Stack = 'JAVA' | 'JAVASCRIPT' | 'DOTNET' | 'PYTHON' | 'COBOL' | 'MIXED';
-export type AuditStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+type AuditStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
 export type Category = 'SECURITY' | 'QUALITY' | 'ARCHITECTURE' | 'DEPENDENCY' | 'OBSERVABILITY' | 'PERFORMANCE';
 export type FindingStatus = 'OPEN' | 'ACKNOWLEDGED' | 'FIXED' | 'SUPPRESSED';
@@ -94,7 +94,7 @@ export interface IProfileInfo {
   thresholds: Record<string, number>;
 }
 
-export interface IPackInfo {
+interface IPackInfo {
   id: string;
   name: string;
   version: string;
@@ -142,6 +142,9 @@ export interface IAuditRunResponse {
   resolvedFindings?: number | null;
   previousAuditId?: number | null;
   scoreDelta?: number | null;
+  /** Algum analisador falhou ou terminou pela metade: a nota pode estar otimista */
+  incomplete?: boolean;
+  incompleteReasons?: string[];
 }
 
 export type AuditPhase = 'FILA' | 'CLONE' | 'ANALISE' | 'PONTUACAO' | 'RELATORIO';
@@ -207,7 +210,7 @@ export interface IFindingResponse {
   remediation?: IRemediation | null;
 }
 
-export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
+type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export interface IRemediation {
   summary: string | null;
@@ -301,7 +304,7 @@ export interface IDebtItem {
   example: string | null;
 }
 
-export interface IAreaReport {
+interface IAreaReport {
   area: string;
   label: string;
   state: AreaState;
@@ -314,7 +317,7 @@ export interface IAreaReport {
   notVerified: string[];
 }
 
-export interface IRoadmapPhase {
+interface IRoadmapPhase {
   number: number;
   name: string;
   goal: string;
@@ -476,7 +479,7 @@ export interface IBatchSuppressResponse {
 
 export type McpDataLevel = 'TITLES' | 'FILE_LINE' | 'SENSITIVE';
 
-export interface IMcpToolState {
+interface IMcpToolState {
   name: string;
   description: string;
   /** true = a ferramenta muda algo; nenhuma ferramenta da fase atual escreve */
@@ -552,7 +555,7 @@ export interface IEngineAnalyzerState {
   side?: EngineSide;
 }
 
-export interface IEngineThresholdState {
+interface IEngineThresholdState {
   key: string;
   profileValue: number | null;
   override: number | null;
@@ -575,7 +578,7 @@ export interface IEngineConfig {
 
 export type SuggestionStatus = 'OPEN' | 'ADDRESSED' | 'DISMISSED';
 
-export type RuleStage = 'PROPOSED' | 'REVIEWED' | 'SAMPLE_PASSED' | 'OBSERVING' | 'PROMOTED' | 'DISCARDED';
+type RuleStage = 'PROPOSED' | 'REVIEWED' | 'SAMPLE_PASSED' | 'OBSERVING' | 'PROMOTED' | 'DISCARDED';
 
 export interface IReviewSuggestion {
   id: number;
@@ -588,7 +591,7 @@ export interface IReviewSuggestion {
   createdAt: string;
 }
 
-export interface IRuleEvidence {
+interface IRuleEvidence {
   hits: number;
   falsePositives: number;
   auditsSinceStart: number;
@@ -620,7 +623,7 @@ export interface IClaudeReview {
   proposals: IRuleProposalView[];
 }
 
-export type PendingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+type PendingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
 /** Pedido do Claude que só acontece se uma pessoa aprovar. */
 export interface IPendingAction {
@@ -650,7 +653,7 @@ export interface IReviewMetrics {
 }
 
 /** Opção de uma configuração de escolha (ex.: qual configuração do ESLint). */
-export interface ISettingOption {
+interface ISettingOption {
   value: string;
   label: string;
   sub: string;

@@ -7,7 +7,7 @@ import { timeAgo } from '../utils/timeAgo';
 import { SpinnerIcon } from './StatusIcons';
 
 /** "Na fila", "Clonando", "Analisando 4/12", "Pontuando" — onde a auditoria em andamento está. */
-export function stepText(run: IAuditRunResponse): string {
+function stepText(run: IAuditRunResponse): string {
   const i = phaseIndex(run);
   if (run.status === 'PENDING' || i === 0) return 'Na fila';
   if (i === 1) return 'Clonando';

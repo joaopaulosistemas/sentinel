@@ -9,10 +9,10 @@ import {
 } from '../../utils/findingsView';
 import type { Category } from '../../types';
 
-export const label = { fontSize: 12, color: 'var(--s-text-3)' } as const;
-export const select = { height: 40, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', fontSize: 14 } as const;
+const label = { fontSize: 12, color: 'var(--s-text-3)' } as const;
+const select = { height: 40, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', fontSize: 14 } as const;
 
-export const categoryOptions: Array<{ value: Category | ''; label: string }> = [
+const categoryOptions: Array<{ value: Category | ''; label: string }> = [
   { value: '', label: 'Todas' },
   { value: 'SECURITY', label: 'Segurança' },
   { value: 'QUALITY', label: 'Qualidade' },

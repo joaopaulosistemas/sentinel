@@ -10,6 +10,8 @@ interface IProps {
   onClose: () => void;
   /** Se informado, a tela continua onde está (a auditoria aparece na lista); sem isto, vai para o acompanhamento. */
   onStarted?: (run: IAuditRunResponse) => void;
+  /** Vai para o acompanhamento mesmo havendo {@code onStarted}: para quem iniciou longe do topo da página, onde o aviso passaria despercebido. */
+  follow?: boolean;
 }
 
 type AuditTarget = NonNullable<IProps['system']>;
@@ -49,8 +51,13 @@ function isLocalWithPath(system: AuditTarget): boolean {
   return system.sourceType === 'LOCAL_PATH' && !!system.localPath;
 }
 
+/** A tela fica onde está (só avisa que iniciou) ou segue para o acompanhamento da auditoria? */
+export function staysOnPage(onStarted: IProps['onStarted'], follow: boolean | undefined): boolean {
+  return onStarted !== undefined && !follow;
+}
+
 /** Pede o branch, dispara a auditoria e leva para o acompanhamento. */
-export function StartAuditModal({ system, onClose, onStarted }: IProps) {
+export function StartAuditModal({ system, onClose, onStarted, follow }: IProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [branch, setBranch] = useState('main');
@@ -67,8 +74,8 @@ export function StartAuditModal({ system, onClose, onStarted }: IProps) {
       void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
       mutation.reset();
       onClose();
-      if (onStarted) onStarted(run);
-      else navigate(`/audits/${run.id}`);
+      if (onStarted && staysOnPage(onStarted, follow)) onStarted(run);
+      else void navigate(`/audits/${run.id}`);
       void vars;
     },
   });
@@ -77,7 +84,7 @@ export function StartAuditModal({ system, onClose, onStarted }: IProps) {
     <Modal
       open={system !== null}
       modalHeading={`Nova auditoria — ${system?.name ?? ''}`}
-      primaryButtonText={onStarted ? "Iniciar auditoria" : "Iniciar e acompanhar"}
+      primaryButtonText={staysOnPage(onStarted, follow) ? "Iniciar auditoria" : "Iniciar e acompanhar"}
       secondaryButtonText="Cancelar"
       primaryButtonDisabled={mutation.isPending || branch.trim() === ''}
       onRequestClose={() => {

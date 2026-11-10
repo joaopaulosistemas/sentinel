@@ -32,6 +32,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-89: SQL Injection"
+      owasp: A03:2021 - Injection
   - id: sentinel-taint-html-parametro-url
     mode: taint
     pattern-sources:
@@ -53,6 +54,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-79: Cross-site Scripting"
+      owasp: A03:2021 - Injection
 
   - id: sentinel-servlet-path-traversal
     mode: taint

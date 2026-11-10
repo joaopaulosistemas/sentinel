@@ -12,6 +12,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-732: Incorrect Permission Assignment for Critical Resource"
+      owasp: A01:2021 - Broken Access Control
 
   - id: sentinel-docker-sudo
     pattern-regex: '(?im)^\s*RUN\b[^\n]*\bsudo\b'
@@ -25,6 +26,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
+      owasp: A05:2021 - Security Misconfiguration
 
   - id: sentinel-docker-segredo-em-arg
     pattern-regex: '(?im)^\s*ARG\s+\w*(?:PASSWORD|SECRET|TOKEN|API_?KEY|PRIVATE_?KEY)\w*\s*=\s*[^\s$]+'
@@ -38,6 +40,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
 
   - id: sentinel-docker-expose-ssh
     pattern-regex: '(?im)^\s*EXPOSE\b[^\n]*(?<![\d])22(?![\d])'
@@ -49,6 +52,7 @@ rules:
       include: ["*Dockerfile*", "*.dockerfile"]
     metadata:
       cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
+      owasp: A01:2021 - Broken Access Control
       category: security
 
   - id: sentinel-docker-apt-sem-no-recommends

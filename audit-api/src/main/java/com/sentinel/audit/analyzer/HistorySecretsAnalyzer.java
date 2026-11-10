@@ -105,7 +105,7 @@ public class HistorySecretsAnalyzer implements CodeAnalyzer {
             pb.environment().put("GIT_TERMINAL_PROMPT", "0");
             Process process = pb.start();
             if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-                process.destroyForcibly();
+                ProcessTree.destroy(process);
                 LOG.warnf("git log excedeu %ds; histórico ignorado", timeoutSeconds);
                 return List.of();
             }

@@ -19,12 +19,20 @@ public class StartupChecks {
     @ConfigProperty(name = "sentinel.audit.api-key")
     Optional<String> apiKey;
 
+    @ConfigProperty(name = "sentinel.audit.secrets-key")
+    Optional<String> secretsKey;
+
     @ConfigProperty(name = "quarkus.hibernate-orm.database.generation")
     String schemaMode;
 
     void onStart(@Observes StartupEvent event) {
         if (apiKey.isEmpty() || apiKey.get().isBlank()) {
             LOG.warn("API_KEY não definida: a API está ABERTA, sem autenticação. Use apenas em desenvolvimento local.");
+        }
+        boolean hasSecretsKey = secretsKey.isPresent() && !secretsKey.get().isBlank();
+        if (!hasSecretsKey && apiKey.isPresent() && !apiKey.get().isBlank()) {
+            LOG.warn("SECRETS_KEY não definida: os tokens salvos são cifrados com a chave derivada da API_KEY; "
+                    + "trocar a API_KEY torna esses segredos ilegíveis. Defina uma SECRETS_KEY própria.");
         }
         if (schemaMode.startsWith("drop-and-create") || "create".equals(schemaMode)) {
             LOG.warnf("DB_SCHEMA_MODE=%s: o banco será APAGADO a cada inicialização (histórico de auditorias perdido).", schemaMode);

@@ -46,7 +46,7 @@ async function readHead(file: File): Promise<string> {
 }
 
 /** Seção "Evidências" da página do sistema: guia de o que entregar, valida cada arquivo e recusa o resto. */
-export interface ILastEvidenceRun {
+interface ILastEvidenceRun {
   id: number;
   startedAt: string;
   /** Estado do Analisador de Evidências naquela auditoria; ausente = não se sabe */

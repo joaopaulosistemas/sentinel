@@ -34,7 +34,7 @@ export function filterRules<T extends IGuideRule>(rules: T[], { severity, query 
 export type Coverage = { label: string; tone: 'good' | 'warn' | 'bad' };
 
 /** Mínimo de regras para dizer que o Sentinel cobre a tecnologia: específicas, ou herdadas se for linguagem base. */
-export const MIN_RULES = 6;
+const MIN_RULES = 6;
 
 export function coverageOf(stack: IGuideStack): Coverage {
   const relevant = stack.baseLanguage ? stack.inheritedRules : stack.ownRules;

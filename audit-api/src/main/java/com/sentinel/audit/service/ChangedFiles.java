@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.analyzer.ProcessTree;
 import com.sentinel.audit.model.Finding;
 
 import java.io.ByteArrayOutputStream;
@@ -162,7 +163,7 @@ public final class ChangedFiles {
         reader.setDaemon(true);
         reader.start();
         if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-            process.destroyForcibly();
+            ProcessTree.destroy(process);
             return new GitOut(-1, "");
         }
         reader.join(READER_JOIN_MILLIS);

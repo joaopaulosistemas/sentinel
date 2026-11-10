@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.analyzer.ProcessTree;
 import jakarta.enterprise.context.ApplicationScoped;
 import com.sentinel.audit.model.LocalSnapshot;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -142,7 +143,7 @@ public class IngestionService {
         Process process = pb.start();
         boolean finished = process.waitFor(cloneTimeoutSeconds, TimeUnit.SECONDS);
         if (!finished) {
-            process.destroyForcibly();
+            ProcessTree.destroy(process);
             throw new IllegalStateException("git clone excedeu o tempo limite de " + cloneTimeoutSeconds + "s");
         }
         if (process.exitValue() != 0) {
@@ -196,7 +197,7 @@ public class IngestionService {
             Process process = new ProcessBuilder("git", "-C", repoDir.toString(), "rev-parse", "HEAD")
                     .redirectErrorStream(true).start();
             if (!process.waitFor(10, TimeUnit.SECONDS)) {
-                process.destroyForcibly();
+                ProcessTree.destroy(process);
                 return null;
             }
             String line = process.inputReader(StandardCharsets.UTF_8).readLine();

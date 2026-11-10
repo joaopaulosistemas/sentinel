@@ -6,9 +6,9 @@ import { SIDE_NAME, limitSide, packsBySide, sideIsOff, sideOfRule, type IFamilyT
 import { SideBadge } from './EngineScope';
 
 export const mono = "'IBM Plex Mono', ui-monospace, monospace";
-export const SEVERITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'] as const;
+const SEVERITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'] as const;
 export const PAGE = 25;
-export const fieldStyle = { height: 36, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', color: 'var(--s-text)' } as const;
+const fieldStyle = { height: 36, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', color: 'var(--s-text)' } as const;
 const THRESHOLD_LABEL: Record<string, string> = {
   'max-function-lines': 'Linhas por função',
   'max-component-lines': 'Linhas por componente',

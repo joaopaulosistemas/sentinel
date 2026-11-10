@@ -88,8 +88,8 @@ function FreshKey({ fresh, url, systemName, onDismiss }: { fresh: IMcpNewKey; ur
       <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Para registrar no Claude Code:</div>
       <code style={{ fontFamily: mono, fontSize: 12, wordBreak: 'break-all' }}>{command}</code>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <Button kind="tertiary" size="sm" onClick={() => copy(fresh.key)}>Copiar chave</Button>
-        <Button kind="tertiary" size="sm" onClick={() => copy(command)}>Copiar comando</Button>
+        <Button kind="tertiary" size="sm" onClick={() => void copy(fresh.key)}>Copiar chave</Button>
+        <Button kind="tertiary" size="sm" onClick={() => void copy(command)}>Copiar comando</Button>
         <Button kind="ghost" size="sm" onClick={onDismiss}>Já copiei</Button>
       </div>
     </div>
@@ -104,7 +104,7 @@ function KeySection(props: IKeyProps) {
         <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Endereço deste sistema</div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <code style={{ fontFamily: mono, fontSize: 13, background: 'var(--s-layer)', padding: '4px 8px', wordBreak: 'break-all' }}>{url}</code>
-          <Button kind="ghost" size="sm" onClick={() => copy(url)}>Copiar</Button>
+          <Button kind="ghost" size="sm" onClick={() => void copy(url)}>Copiar</Button>
         </div>
       </div>
 
@@ -233,7 +233,7 @@ export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
   const [confirmNew, setConfirmNew] = useState(false);
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: key });
+    void queryClient.invalidateQueries({ queryKey: key });
   };
   const update = useMutation({
     mutationFn: (body: IMcpConfigRequest) => api.updateMcp(system.id, body),

@@ -16,7 +16,7 @@ const NO_TEAM = 'Sem time';
  * Ordem de atenção: sistemas nunca auditados primeiro (risco desconhecido), depois por
  * críticos abertos, altos abertos e, por último, score mais baixo.
  */
-export function rankSystems(systems: ISystemSummaryResponse[]): ISystemSummaryResponse[] {
+function rankSystems(systems: ISystemSummaryResponse[]): ISystemSummaryResponse[] {
   return [...systems].sort(compareAttention);
 }
 

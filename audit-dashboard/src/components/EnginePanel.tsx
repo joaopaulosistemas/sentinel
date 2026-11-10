@@ -61,7 +61,7 @@ function useEngine(systemId: number) {
     mutationFn: (body: IEngineTuning) => api.updateEngineConfig(systemId, body),
     onSuccess: (data) => {
       queryClient.setQueryData(key, data);
-      queryClient.invalidateQueries({ queryKey: ['systems'] });
+      void queryClient.invalidateQueries({ queryKey: ['systems'] });
     },
   });
   return { query, save };
