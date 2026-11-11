@@ -14,7 +14,7 @@ class PackResourceTest {
         assertEquals(java.util.List.of("core-architecture", "core-boas-praticas", "core-corporativo", "core-frontend", "core-iac", "core-persistencia", "core-quality", "core-quarkus", "core-security", "core-spring", "core-vue", "java-cert-sonar", "java-google-style", "market-tools", "ts-clean-code", "ts-clean-code-labs42"),
                 r.packs().stream().map(PackResource.PackInfo::id).toList());
         PackResource.PackInfo q = r.packs().stream().filter(p -> p.id().equals("core-quality")).findFirst().orElseThrow();
-        assertEquals(41, q.semgrepRules());
+        assertEquals(45, q.semgrepRules());
         assertTrue(q.remediations() > 40);
         assertNotNull(r.loadedAt());
         assertEquals(0, r.rejected().size());
