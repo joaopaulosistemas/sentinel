@@ -1199,5 +1199,5 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 
 - **Por quê:** a auditoria do próprio Sentinel saiu "parcial": o PMD não conseguiu analisar 5 arquivos (`ContextedRuntimeException`, p. ex. `SchemaChecks.java`). O PMD 7.7.0 traz o ASM 9.7, que não lê classes do Java 25, e a imagem do `audit-api` roda em `eclipse-temurin:25-jre`.
 - **Mudança:** `PMD_VERSION=7.27.0` (ASM 9.10.1) e o SHA-256 do zip no `Dockerfile`.
-- **Verificado:** o JSON do 7.27.0 tem as mesmas chaves da fixture `pmd-real.json`; no repositório inteiro o 7.27.0 reporta 996 violações e 1 erro (fixture de teste com `import` fora do lugar, esperado), contra 838 e 1 do 7.7.0. O aumento vem das regras novas das categorias ligadas.
+- **Verificado:** o JSON do 7.27.0 tem as mesmas chaves da fixture `pmd-real.json` na raiz, nos arquivos e nas violações (a fixture não traz `processingErrors`; o 7.27.0 os traz com `filename` e `message`, que o analisador lê); no repositório inteiro o 7.27.0 reporta 996 violações e 1 erro (fixture de teste com `import` fora do lugar, esperado), contra 838 e 1 do 7.7.0. O aumento vem das regras novas das categorias ligadas.
 - **Não verificado:** a causa no JRE 25 (não havia Java 25 para reproduzir; o 7.7.0 rodou limpo em Java 21) e a imagem reconstruída.
