@@ -14,7 +14,8 @@ SAIDA="${SAIDA:-calibracao-saida}"; mkdir -p "$SAIDA"
 GUARDAR_ACHADOS="${GUARDAR_ACHADOS:-0}"; TOLERAR="${TOLERAR:-0}"
 
 falhar() {
-  local r="$1%0A$(docker logs sentinel-cal-api 2>&1 | grep -E 'ERROR|Exception' | tail -8)"
+  local r
+  r="$1%0A$(docker logs sentinel-cal-api 2>&1 | grep -E 'ERROR|Exception' | tail -8)"
   r="${r//$'\n'/%0A}"; echo "::error title=Calibração falhou::${r:0:3500}"
   docker rm -f sentinel-cal-api sentinel-cal-db >/dev/null 2>&1; exit 1
 }

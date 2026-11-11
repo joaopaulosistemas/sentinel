@@ -56,13 +56,26 @@ public final class McpRateLimiter {
     public synchronized boolean blocked(String key) {
         Deque<Long> q = hits.get(key);
         if (q == null) {
-            return false;
+            return saturated();
         }
         long now = clock.getAsLong();
         while (!q.isEmpty() && now - q.peekFirst() >= WINDOW_MS) {
             q.pollFirst();
         }
         return q.size() >= limit;
+    }
+
+    /**
+     * Com o mapa cheio de nomes distintos, um nome novo não consegue ser registrado: tratá-lo como livre desligaria o
+     * limite justamente durante um ataque. Depois de descartar o que já expirou, se ainda não há lugar, recusa.
+     */
+    private boolean saturated() {
+        if (hits.size() < MAX_KEYS) {
+            return false;
+        }
+        long now = clock.getAsLong();
+        hits.values().removeIf(q -> q.isEmpty() || now - q.peekLast() >= WINDOW_MS);
+        return hits.size() >= MAX_KEYS;
     }
 
     /** Segundos até a janela abrir de novo para a chave. */

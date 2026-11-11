@@ -69,6 +69,7 @@ public class SettingsResource {
 
     @POST
     @Path("/restart")
+    @Consumes(MediaType.WILDCARD)
     @Operation(summary = "Reiniciar a API", description = "Encerra o processo; o Docker Compose e o Kubernetes sobem de novo.")
     public Response restart() {
         LOG.warn("Reinício da API pedido pela tela de Configurações");

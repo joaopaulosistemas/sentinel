@@ -7,7 +7,7 @@ Só conta linhas em que a pessoa preencheu o veredito (VP, FP ou ?). Linhas vazi
 Sai com 1 se a concordância (entre as linhas preenchidas) ficar abaixo de --minimo: nesse caso o precisao.md
 deve ser lido com desconfiança e corrigido nas linhas divergentes (o script lista cada uma).
 """
-import argparse, os, re, sys
+import argparse, os, sys
 
 PADRAO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "evolucao", "revisao-humana.md")
 VEREDITOS = {"VP", "FP", "?"}
@@ -51,7 +51,7 @@ def main():
         print("Concordância: não calculável (nenhum veredito humano preenchido).")
         return
     print("Concordância agente x pessoa: %d/%d = %.0f%% (mínimo %.0f%%)" % (r["iguais"], r["preenchidas"], r["taxa"] * 100, a.minimo * 100))
-    for rodada, repo, regra, local, ag, hu in r["divergentes"]:
+    for _rodada, repo, regra, local, ag, hu in r["divergentes"]:
         print("  diverge: %s %s %s — agente %s, pessoa %s" % (repo, regra, local.split("]")[0].lstrip("["), ag, hu))
     if r["taxa"] < a.minimo:
         print("Abaixo do mínimo: leia as taxas de precisao.md com desconfiança e corrija as linhas divergentes.")

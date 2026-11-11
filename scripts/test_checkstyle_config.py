@@ -13,7 +13,7 @@ MEDIDOS_PELO_CLEANCODE = {"MethodLength", "ParameterNumber", "CyclomaticComplexi
 
 
 def _modulos():
-    return {m.get("name") for m in ET.parse(CHECKS).getroot().iter("module")}
+    return {m.get("name") for m in ET.parse(CHECKS).getroot().iter("module")}  # noqa: S314 (arquivo do repositório)
 
 
 class ChecksXml(unittest.TestCase):

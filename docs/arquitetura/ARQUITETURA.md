@@ -134,7 +134,7 @@ flowchart LR
 
 ## 3. Backend `audit-api`
 
-Pacote raiz: `com.sentinel.audit`. Quarkus 3.33, Java 21, Hibernate/Panache, PostgreSQL, CDI (`@ApplicationScoped`), REST (JAX-RS).
+Pacote raiz: `com.sentinel.audit`. Quarkus 3.40, Java 21, Hibernate/Panache, PostgreSQL, CDI (`@ApplicationScoped`), REST (JAX-RS).
 
 ### 3.1 Camadas (desenho micro)
 
@@ -494,7 +494,7 @@ flowchart LR
 
 ## 5. Frontend `audit-dashboard`
 
-React 18, TypeScript, IBM Carbon Design System, Vite, TanStack Query (dados do servidor), Zustand (filtros e seleção), React Router.
+React 19, TypeScript, IBM Carbon Design System, Vite, TanStack Query (dados do servidor), Zustand (filtros e seleção), React Router.
 
 ```mermaid
 flowchart TB
@@ -595,9 +595,11 @@ flowchart TB
 ```mermaid
 flowchart TB
     PUSH["push na main / PR / domingo / manual"] --> CI["ci.yml"]
-    CI --> J1["API, CLI e pacotes de regras (Maven)"]
-    CI --> J2["Testes Semgrep dos pacotes"]
-    CI --> J3["Dashboard (tsc, Vitest, build)"]
+    CI --> J1["API, CLI e pacotes de regras (Maven, Java 21)"]
+    CI --> J1b["Testes unitários na JVM da imagem (Java 25)"]
+    CI --> J1c["Integração HTTP com PostgreSQL real (Testcontainers)"]
+    CI --> J2["Testes Semgrep dos pacotes + auto-auditoria do Sentinel"]
+    CI --> J3["Dashboard (tsc, lint, Vitest com piso de cobertura, build, Playwright)"]
     CI --> J4["Imagens Docker e Helm + teste ponta a ponta"]
     CI --> J5["Calibração em vários repositórios"]
     AG["Agente Sentinel Ciclo\n(Claude Code, na sua máquina)"] -- "dispara" --> AC["auditoria-completa.yml\nAPI real + todos os analisadores"]
@@ -612,7 +614,7 @@ flowchart TB
 
 | Parte | Arquivos |
 |---|---|
-| CI | `.github/workflows/ci.yml`, `scripts/ci-anotar.sh` (transforma falhas em anotações legíveis), `scripts/e2e.sh` (Postgres + API + auditoria do petclinic) |
+| CI | `.github/workflows/ci.yml`, `scripts/ci-anotar.sh` (transforma falhas em anotações legíveis), `scripts/e2e.sh` (Postgres + API + auditoria do petclinic), `scripts/auditar-sentinel.sh` (o Sentinel contra o próprio código; achado ERROR barra) |
 | Calibração | `scripts/calibracao.sh`, `scripts/comparar-calibracao.py`, `audit-rules/calibracao/esperado.json` |
 | Release | `.github/workflows/release.yml`, `scripts/versoes-pacotes.sh` |
 | Agente Sentinel Ciclo | `.claude/agents/sentinel-ciclo.md`, `.github/workflows/auditoria-completa.yml`, `scripts/auditoria-completa.sh` |
@@ -626,9 +628,9 @@ O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é
 
 | Terceiro | Onde entra | Obrigatório? |
 |---|---|---|
-| Quarkus 3.33, Hibernate/Panache, JAX-RS | Backend | sim |
+| Quarkus 3.40, Hibernate/Panache, JAX-RS | Backend | sim |
 | PostgreSQL 16 | Persistência | sim |
-| React 18, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest | Dashboard | sim |
+| React 19, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest | Dashboard | sim |
 | Opengrep (ou Semgrep) | `SemgrepAnalyzer` (regras dos pacotes) | recomendado; sem ele a análise de regras fica de fora |
 | Trivy | `TrivyAnalyzer` (SCA e IaC) | opcional; substitui o SCA interno |
 | Gitleaks | `GitleaksAnalyzer` (segredos e histórico) | opcional; substitui os analisadores internos de segredo |

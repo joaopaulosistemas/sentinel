@@ -33,6 +33,14 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: false,
     exclude: ['**/node_modules/**', 'e2e/**'],
+    // Piso de cobertura (medido em 2026-11: linhas 88,7%, instruções 87,1%, ramos 77,9%, funções 82,7%). Sobe com o tempo.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/**/*.d.ts', 'src/main.tsx'],
+      reporter: ['text-summary', 'lcov'],
+      thresholds: { lines: 80, statements: 80, branches: 70, functions: 75 },
+    },
   },
   server: {
     port: 3000,

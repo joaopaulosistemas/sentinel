@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 def linhas(caminho):
     # O relatório vem do nosso próprio build; ainda assim não resolve entidades externas.
-    raiz = ET.parse(caminho).getroot()
+    raiz = ET.parse(caminho).getroot()  # noqa: S314 (relatório do nosso próprio build)
     for c in raiz.findall("counter"):
         if c.get("type") == "LINE":
             return int(c.get("covered")), int(c.get("missed"))

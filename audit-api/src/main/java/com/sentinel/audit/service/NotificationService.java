@@ -34,9 +34,6 @@ public class NotificationService {
 
     private static final int DEFAULT_MIN_SCORE_DROP = 5;
     /** IPv6 tem 16 bytes; endereço local único (fc00::/7) tem o primeiro byte 0xfc ou 0xfd. */
-    private static final int IPV6_BYTES = 16;
-    private static final int IPV6_ULA_MASK = 0xfe;
-    private static final int IPV6_ULA_PREFIX = 0xfc;
     private static final int RANK_CRITICAL = 5;
     private static final int RANK_HIGH = 4;
     private static final int RANK_MEDIUM = 3;
@@ -99,7 +96,9 @@ public class NotificationService {
 
     /**
      * Aceita só https para endereço público: o destino é digitado por quem cadastra o sistema, então não pode apontar
-     * para a própria máquina nem para a rede interna (SSRF).
+     * para a própria máquina nem para a rede interna (SSRF). Limite conhecido: o cliente HTTP resolve o nome de novo ao
+     * conectar, então um DNS que muda entre a validação e o envio (rebinding) não é barrado por esta conferência; quem
+     * precisa fechar isso também deve restringir a saída de rede do contêiner da API.
      */
     public static void validateTarget(String url) {
         URI uri;
@@ -117,23 +116,13 @@ public class NotificationService {
     private static void requirePublicAddress(URI uri) {
         try {
             for (java.net.InetAddress a : java.net.InetAddress.getAllByName(uri.getHost())) {
-                if (isInternal(a)) {
+                if (InternalAddresses.isInternal(a)) {
                     throw new IllegalArgumentException("A URL de notificação não pode apontar para rede interna ou local");
                 }
             }
         } catch (java.net.UnknownHostException e) {
             throw new IllegalArgumentException("Não foi possível resolver o endereço da notificação: " + uri.getHost(), e);
         }
-    }
-
-    private static boolean isInternal(java.net.InetAddress a) {
-        boolean local = a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress();
-        return local || a.isSiteLocalAddress() || a.isMulticastAddress() || isUniqueLocalV6(a);
-    }
-
-    private static boolean isUniqueLocalV6(java.net.InetAddress a) {
-        byte[] b = a.getAddress();
-        return b.length == IPV6_BYTES && (b[0] & IPV6_ULA_MASK) == IPV6_ULA_PREFIX;
     }
 
     @Transactional

@@ -5,7 +5,7 @@
 | Para | Precisa de |
 |---|---|
 | Subir tudo com Compose (recomendado) | Docker (ou Podman) com Compose, Git |
-| Rodar a API em modo desenvolvimento | Java 21, Maven 3.9+ (o Quarkus 3.33 recusa Maven mais antigo; o do `apt` costuma ser antigo), PostgreSQL 16+ (o Compose usa 16) |
+| Rodar a API em modo desenvolvimento | Java 21, Maven 3.9+ (o Quarkus 3.40 recusa Maven mais antigo; o do `apt` costuma ser antigo), PostgreSQL 16+ (o Compose usa 16) |
 | Rodar o painel em modo desenvolvimento | Node.js 20+ |
 
 ## Opção 1 — Tudo via Compose (recomendado)
@@ -140,7 +140,7 @@ sentinel/
 ├── .env.example                    ← Template de variáveis de ambiente
 ├── docs/                           ← Toda a documentação (índice em docs/README.md); schema-referencia.sql é só referência
 │
-├── audit-api/                      ← Backend Quarkus 3.33 + Java 21
+├── audit-api/                      ← Backend Quarkus 3.40 + Java 21
 │   ├── Dockerfile
 │   └── src/main/java/com/sentinel/audit/
 │       ├── model/                  ← Entidades JPA + enums
@@ -163,7 +163,7 @@ sentinel/
 │
 ├── deploy/helm/sentinel/           ← Chart Helm (API, dashboard, PostgreSQL opcional) — `helm lint` e `helm template` rodam no CI
 │
-├── audit-dashboard/                ← Frontend React 18 + IBM Carbon DS
+├── audit-dashboard/                ← Frontend React 19 + IBM Carbon DS
 │   ├── Dockerfile + nginx.conf.template
 │   └── src/
 │       ├── pages/                  ← Overview, Systems, SystemDetail, AuditRun, Ranking, Findings (Achados, Revisão do Claude, Reauditoria), Reports
