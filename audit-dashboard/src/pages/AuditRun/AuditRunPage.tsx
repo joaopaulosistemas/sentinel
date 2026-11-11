@@ -1,6 +1,6 @@
 import { Button, InlineNotification, Modal, SkeletonText } from '@carbon/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { StartAuditModal } from '../../components/StartAuditModal';
@@ -466,13 +466,14 @@ export function AuditRunPage() {
   const id = Number(auditId);
   const { data: run, isLoading, error } = useAudit(id);
   const finished = run !== undefined && FINISHED.includes(run.status);
-  const lastProgress = useRef<IAuditProgress | null>(null);
+  const [lastProgress, setLastProgress] = useState<IAuditProgress | null>(null);
   // Histórico do mesmo sistema: base da estimativa de tempo.
   const { data: history } = useAuditRuns(run?.systemId ?? 0);
   // O que o Claude (MCP) fez com este sistema desde que a auditoria começou. Só informação: não entra na nota.
   const mcp = useMcpActivity({ systemId: run?.systemId, refresh: run !== undefined && !finished });
 
-  if (run?.progress) lastProgress.current = run.progress;
+  // Guarda o último andamento visto (estado ajustado durante o render): o servidor o omite quando a auditoria conclui.
+  if (run?.progress && run.progress !== lastProgress) setLastProgress(run.progress);
 
   useRefreshListsWhenFinished({ finished, runId: run?.id });
 
@@ -482,6 +483,6 @@ export function AuditRunPage() {
   const seconds = elapsedSeconds(run);
   if (run.status === 'COMPLETED') return <CompletedView key={run.id} run={run} seconds={seconds} />;
   // O servidor só devolve o andamento enquanto a auditoria roda; ao concluir, guarda-se o último visto.
-  const progress = run.progress ?? lastProgress.current;
+  const progress = run.progress ?? lastProgress;
   return <RunningView run={run} progress={progress} history={history} mcp={mcp} seconds={seconds} />;
 }

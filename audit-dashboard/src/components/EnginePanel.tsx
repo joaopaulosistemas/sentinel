@@ -289,7 +289,9 @@ function useRulesDraft({ cfg, plan, onDirtyChange }: { cfg: IEngineConfig | unde
   const dirty = useMemo(() => hasUnsavedRules({ cfg, packs, limits, rules, sidesOff }), [cfg, packs, limits, rules, sidesOff]);
 
   const dirtyRef = useRef(false);
-  dirtyRef.current = dirty;
+  useEffect(() => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
   useDirtyReport({ dirty, onDirtyChange });
 
   // Só recarrega a tela com o que veio do servidor se não houver edição em andamento.
@@ -457,7 +459,9 @@ function useAnalyzersDraft({ cfg, onDirtyChange }: { cfg: IEngineConfig | undefi
   };
   const dirtyRef = useRef(false);
   const loadedRef = useRef(false);
-  dirtyRef.current = dirty;
+  useEffect(() => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
 
   useDirtyReport({ dirty, onDirtyChange });
   useEffect(() => {

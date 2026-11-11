@@ -104,7 +104,9 @@ function useMenuLargura() {
   const [largura, setLargura] = useState(() => readMenuWidth(window.innerWidth));
   const [arrastando, setArrastando] = useState(false);
   const ref = useRef(largura);
-  ref.current = largura;
+  useEffect(() => {
+    ref.current = largura;
+  }, [largura]);
   const aplicar = (w: number) => {
     const larguraLimitada = clampMenu(w, window.innerWidth);
     setLargura(larguraLimitada);
@@ -277,8 +279,13 @@ export function AppShell({ children }: IAppShellProps) {
   const menu = useMenuLargura();
   const trilho = fixo && menu.largura === MENU_TRILHO;
   const [aberto, setAberto] = useState(false);
-  // Ao trocar de tela ou ao voltar para a tela larga, o menu sobreposto fecha.
-  useEffect(() => setAberto(false), [location.pathname, fixo]);
+  // Ao trocar de tela ou ao voltar para a tela larga, o menu sobreposto fecha (estado ajustado durante o render, sem efeito).
+  const chaveTela = `${location.pathname}|${String(fixo)}`;
+  const [chaveVista, setChaveVista] = useState(chaveTela);
+  if (chaveTela !== chaveVista) {
+    setChaveVista(chaveTela);
+    setAberto(false);
+  }
 
   return (
     <>

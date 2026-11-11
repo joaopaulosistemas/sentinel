@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { RecentAudits } from '../../components/RecentAudits';
+import { useNow } from '../../hooks/useNow';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { useRecentAudits } from '../../hooks/useAuditRuns';
 import { useSystems } from '../../hooks/useSystems';
@@ -222,13 +223,13 @@ export function OverviewPage() {
   const pendingClaude = usePendingClaude();
   const [startTarget, setStartTarget] = useState<ISystemSummaryResponse | null>(null);
 
+  const now = useNow(60_000);
   const list: ISystemSummaryResponse[] = systems ?? [];
   const picked = list.find((s) => String(s.id) === pickedId) ?? list[0] ?? null;
 
   if (isLoading) return <DataTableSkeleton columnCount={4} rowCount={5} />;
   if (error) return <OverviewError error={error} />;
 
-  const now = Date.now();
   return (
     <PageShell crumbs={[{ label: 'Início', to: '/' }, { label: 'Visão geral' }]}>
       <OverviewHeader list={list} picked={picked} onPick={setPickedId} onStart={() => picked && setStartTarget(picked)} />

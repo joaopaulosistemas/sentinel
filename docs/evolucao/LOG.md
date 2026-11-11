@@ -1187,3 +1187,10 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Mergeados com CI verde:** `squawk-cli` 2.70, as ações `setup-python` 7, `setup-java` 6, `setup-helm` 5, `login-action` 4 e `setup-buildx-action` 4, e no dashboard `recharts` 3, `jsdom` 31 e `zustand` 5.
 - **Fechado:** `stylelint-config-standard` 41 (#212), que exige Stylelint 18 enquanto o `standard-scss` 17 só aceita o 17; o Dependabot passa a ignorar essas duas majors.
 - **Limite:** o dashboard só tem teste de unidade e de acessibilidade em jsdom; `recharts` 3 muda a API de gráficos e o visual só se confere no navegador, o que não foi feito.
+
+## Dashboard: regras do compilador do React ligadas (sem versão nova)
+
+- **Por quê:** ao subir o `eslint-plugin-react-hooks` para a série 7 (#208) deixei só `rules-of-hooks` e `exhaustive-deps`; as regras novas (`refs`, `purity`, `set-state-in-effect`) apontavam 8 pontos.
+- **Correções (comportamento preservado):** os `dirtyRef`/`ref` que eram escritos durante o render (`EnginePanel`, `AppShell`) passam a ser atualizados em efeito, declarado antes dos efeitos que os leem; o último andamento da auditoria (`AuditRunPage`) virou estado ajustado no render, em vez de ref lida no render; o fechamento do menu ao trocar de tela (`AppShell`) deixou de ser `setState` em efeito e usa a chave de tela no render; `Date.now()` no render da `OverviewPage` virou o hook `useNow` (estado atualizado por intervalo de 60 s, então "há N dias" não congela numa aba aberta).
+- **Exceção declarada:** `SettingsPage` mantém `setRestarting(false)` num efeito com `eslint-disable` comentado, porque o fim do reinício vem do polling da API e dispara o aviso.
+- **Verificado:** `tsc`, `eslint --max-warnings 0` com `reactHooks.configs.recommended`, `vite build` e `vitest` (58 arquivos, 389 testes, mais 3 do `useNow`). **Não verificado:** o comportamento no navegador (arrastar o menu, sair de uma tela com o painel de motor sujo).
