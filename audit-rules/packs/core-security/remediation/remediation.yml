@@ -283,6 +283,18 @@
   effort: S
   regression-risk: LOW
 
+- key: "sentinel-resource-path-concatenado"
+  summary: "Não concatene o nome vindo do cliente a um prefixo ao abrir recurso. Use só o nome do arquivo ou uma lista fixa de nomes permitidos."
+  before: "getClass().getResourceAsStream(\"/dados/\" + nomeArquivo)"
+  after: |-
+    String nome = Paths.get(nomeArquivo).getFileName().toString();
+    if (!PERMITIDOS.contains(nome)) throw new IllegalArgumentException("arquivo não permitido");
+    getClass().getResourceAsStream("/dados/" + nome);
+  refs:
+    - "https://owasp.org/www-community/attacks/Path_Traversal"
+    - "https://cwe.mitre.org/data/definitions/22.html"
+  effort: S
+
 - key: "sentinel-servlet-path-traversal"
   summary: "Não monte caminho com dado da requisição. Use só o nome do arquivo e confira que o caminho final fica dentro do diretório permitido."
   before: "new File(\"/dados/\" + request.getParameter(\"arquivo\"))"

@@ -1,0 +1,121 @@
+{
+ "_comentario": "Falhas conhecidas de SasanLabs/VulnerableApp, lidas no código (treino). Linhas conferidas em 2026-11-11 (master). Entradas sem regra hoje são lacunas assumidas; as regras aceitas são sufixos de ruleId e serão ajustadas depois de ver a auditoria.",
+ "repo": "SasanLabs/VulnerableApp",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/sqlInjection/UnionBasedSQLInjectionVulnerability.java",
+   "linha": 85,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-injection"
+   ],
+   "nota": "JdbcTemplate.query com id concatenado"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/sqlInjection/ErrorBasedSQLInjectionVulnerability.java",
+   "linha": 87,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-injection"
+   ],
+   "nota": "JdbcTemplate.query com id concatenado"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/sqlInjection/BlindSQLInjectionVulnerability.java",
+   "linha": 93,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-injection"
+   ],
+   "nota": "JdbcTemplate.query com id concatenado"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/authentication/AuthLoginService.java",
+   "linha": 51,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-injection"
+   ],
+   "nota": "login com SQL concatenado"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/commandInjection/CommandInjection.java",
+   "linha": 58,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection-shell",
+    "sentinel-command-injection-variable"
+   ],
+   "nota": "ProcessBuilder sh -c com ip do usuário"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/ldapInjection/LDAPInjectionVulnerability.java",
+   "linha": 43,
+   "cwe": "CWE-90",
+   "regras": [
+    "sentinel-ldap-injection"
+   ],
+   "nota": "UnboundID LDAPConnection.search(base, escopo, filtro) com filtro montado por concatenação nos chamadores"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/deserialization/DeserializationUtils.java",
+   "linha": 51,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-jackson-default-typing",
+    "sentinel-java-deserializacao"
+   ],
+   "nota": "ObjectMapper com default typing (usado em deserializePolymorphicUnsafe, linha 88)"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/xxe/XXEVulnerability.java",
+   "linha": 214,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml"
+   ],
+   "nota": "SAXParserFactory sem proteção (nível 2 desliga só entidades gerais)"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/otp/OTPService.java",
+   "linha": 118,
+   "cwe": "CWE-338",
+   "regras": [
+    "sentinel-crypto-random-previsivel",
+    "sentinel-crypto-random-servidor"
+   ],
+   "nota": "OTP gerado com java.util.Random"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/authentication/AuthLoginService.java",
+   "linha": 149,
+   "cwe": "CWE-328",
+   "regras": [],
+   "nota": "MessageDigest.getInstance(algoritmo) com algoritmo vindo de enum (MD5/SHA-1): lacuna assumida"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/ssrf/SSRFVulnerability.java",
+   "linha": 73,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-api-ssrf"
+   ],
+   "nota": "new URL(url) vindo do usuário"
+  },
+  {
+   "arquivo": "src/main/java/org/sasanlabs/service/vulnerability/pathTraversal/PathTraversalVulnerability.java",
+   "linha": 66,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-resource-path-concatenado",
+    "sentinel-api-path-traversal",
+    "sentinel-servlet-path-traversal"
+   ],
+   "nota": "getResourceAsStream(BASE + fileName) no ajudante readFile; nível 1 sem validação (a linha 547 antiga era o validador seguro, erro corrigido)"
+  }
+ ]
+}
