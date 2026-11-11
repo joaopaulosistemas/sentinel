@@ -34,6 +34,16 @@ class Observabilidade {
         log.error("erro fora de catch");
     }
 
+    // receptor que não é logger (ex.: resultado de ferramenta) não é log de erro
+    void resultadoDeFerramenta() {
+        try {
+            executa();
+        } catch (Exception e) {
+            // ok: sentinel-obs-log-erro-sem-excecao
+            Resultado.error("Erro interno ao executar a ferramenta.");
+        }
+    }
+
     // ---- exceção relançada sem a causa --------------------------------------------------------
     void d() {
         try {

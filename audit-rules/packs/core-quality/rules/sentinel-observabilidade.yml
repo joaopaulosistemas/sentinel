@@ -8,6 +8,9 @@ rules:
               try { ... } catch ($T $E) { ... $LOG.error($MSG); ... }
           - pattern: |
               try { ... } catch ($T $E) { ... $LOG.warn($MSG); ... }
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: '^(this\.)?_?(?i:log|logger)$'
       - focus-metavariable: $MSG
     message: >
       Dentro do catch o log registra só a mensagem, sem a exceção: a pilha de chamadas se perde e a causa da falha não
