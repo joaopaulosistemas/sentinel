@@ -15,8 +15,7 @@ export default tseslint.config(
     rules: {
       // As duas regras que a série 5 do plugin trazia. A série 7 acrescenta regras do compilador do React (refs, purity,
       // set-state-in-effect) que exigem mexer em componentes: ficam para um PR próprio, não para a troca de versão.
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+      ...reactHooks.configs.recommended.rules,
       // Promessas soltas escondem erros de rede: exigem await, catch ou void explícito.
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',

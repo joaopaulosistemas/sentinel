@@ -141,6 +141,8 @@ function useRestartFlow(setNotice: SetNotice) {
   const apiCameBack = restarting && query.isSuccess && !query.isFetching && !restartRequired;
   useEffect(() => {
     if (apiCameBack) {
+      // Efeito intencional: o fim do reinício vem do polling da API (externo) e também dispara o aviso.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRestarting(false);
       setNotice({ kind: 'success', title: 'API reiniciada', text: 'As configurações salvas já estão em uso.' });
     }
