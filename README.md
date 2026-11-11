@@ -45,7 +45,7 @@ Painel em http://localhost:3000 e API em http://localhost:8080. Modo desenvolvim
 
 ## Stack
 
-Java 21 + Quarkus 3.33 · PostgreSQL 16 · React 18 + TypeScript + Vite + IBM Carbon · Opengrep 1.30.0 (Semgrep como alternativa) · Docker/Compose e chart Helm · CLI Java.
+Java 21 + Quarkus 3.40 · PostgreSQL 16 · React 19 + TypeScript + Vite + IBM Carbon · Opengrep 1.30.0 (Semgrep como alternativa) · Docker/Compose e chart Helm · CLI Java.
 
 ## Estado e limites
 
