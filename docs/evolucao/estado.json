@@ -1,18 +1,18 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 25,
-  "ultimoRepositorioTreino": "kOaDT/oss-oopssec-store",
-  "ultimaStack": "JAVASCRIPT",
-  "branchAtual": "ciclo/estabilizacao-9",
+  "ultimaVolta": 26,
+  "ultimoRepositorioTreino": "SasanLabs/VulnerableApp",
+  "ultimaStack": "JAVA",
+  "branchAtual": "ciclo/estabilizacao-10",
   "proximaBranch": null,
-  "voltasNaBranch": 0,
+  "voltasNaBranch": 1,
   "voltasSemGanhoSeguidas": 0,
   "limiteVoltasPorBranch": 6,
   "ultimoPrMesclado": "#151",
   "gabaritosValidacao": [
     "bnematzadeh/vulnerable-rest-api"
   ],
-  "conjuntosSha256": "ac64cfd14da715f9c9d91941c855f1480de4fe665c7df740e128eab3bacaf50c",
+  "conjuntosSha256": "2dd48de8abe408eef51e2f33d1db9f5349feb9920da4559a6fcd69bad39fd6a9",
   "pendencias": [
     "Volta dedicada a avaliar o Joern para JS/TS (decisão pendente desde a 12.65.0)",
     "Aplicar no GitHub a proteção de .github/agente/protecao-main.json (exige o João)",
@@ -30,6 +30,7 @@
     "Ligar scripts/verificar-regras.py ao CI (exige mexer em .github/, decisão do João)",
     "Fontes de taint Java copiadas em ~10 regras (item G do relatório de conflitos) e peso do estilo (tsp-*, cct-*) na nota (item I, decisão de produto)",
     "oss-oopssec-store: nota do dvja 48,22 vs 48,95 da volta 24 com contagem igual (176), causa não investigada; lógica de acesso/IDOR sem regra",
-    "Gabarito de validação: só bnematzadeh/vulnerable-rest-api (README, 13 itens); dvja/NodeGoat/dvna/nodejs-goof seguem sem fonte pública acessível (robots/erro); próximo: lições do terracotta-bank"
+    "Gabarito de validação: só bnematzadeh/vulnerable-rest-api (README, 13 itens); dvja/NodeGoat/dvna/nodejs-goof seguem sem fonte pública acessível (robots/erro); próximo: lições do terracotta-bank",
+    "Volta 26 (VulnerableApp): MD5/SHA-1 por MessageDigest.getInstance(algoritmo dinâmico) sem regra; IDOR, JWT, upload e reset de senha por lógica sem regra; dvja 176->173 achados já na main antes da branch 10, causa não investigada"
   ]
 }

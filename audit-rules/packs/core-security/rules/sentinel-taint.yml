@@ -119,6 +119,50 @@ rules:
       cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
       owasp: A01:2021 - Broken Access Control
 
+  - id: sentinel-resource-path-concatenado
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., @$A(...) String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $A
+              regex: ^(RequestParam|PathVariable|RequestHeader|QueryParam|PathParam|FormParam|HeaderParam)$
+          - focus-metavariable: $P
+      # ajudante que recebe o nome do arquivo já vindo do controlador (o taint não atravessa a chamada)
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., String $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $P
+              regex: (?i)^\w*(file|filename|nome\w*arquivo|arquivo|path|caminho|resource|recurso|template)\w*$
+          - focus-metavariable: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $X.getResourceAsStream($BASE + $ARG)
+              - pattern: $X.getResource($BASE + $ARG)
+              - pattern: new ClassPathResource($BASE + $ARG)
+              - pattern: new org.springframework.core.io.ClassPathResource($BASE + $ARG)
+              - pattern: new FileSystemResource($BASE + $ARG)
+              - pattern: new org.springframework.core.io.FileSystemResource($BASE + $ARG)
+          - focus-metavariable: $ARG
+    pattern-sanitizers:
+      - pattern: $X.getName()
+      - pattern: $X.getFileName()
+      - pattern: org.apache.commons.io.FilenameUtils.getName(...)
+      - pattern: FilenameUtils.getName(...)
+    message: >
+      Possível Path Traversal (CWE-22): o nome do arquivo vem do cliente e é concatenado a um prefixo na leitura de um recurso
+      (classpath ou disco). `../` sai do diretório pretendido. Use só o nome (`getFileName()`), normalize e confira o prefixo,
+      ou aceite apenas nomes de uma lista fixa.
+    severity: WARNING
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp: A01:2021 - Broken Access Control
+
   - id: sentinel-servlet-trust-boundary
     mode: taint
     pattern-sources:

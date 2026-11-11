@@ -110,6 +110,19 @@ class InjectionCases {
         ctx.search("dc=empresa", "(uid={0})", new Object[]{user}, null);
     }
 
+    // UnboundID: o filtro é o terceiro argumento de search(base, escopo, filtro)
+    void ldapUnboundid(com.unboundid.ldap.sdk.LDAPConnection conexao, String usuario) throws Exception {
+        // ruleid: sentinel-ldap-injection
+        conexao.search("dc=empresa", com.unboundid.ldap.sdk.SearchScope.SUB, "(uid=" + usuario + ")");
+        // ok: sentinel-ldap-injection
+        conexao.search("dc=empresa", com.unboundid.ldap.sdk.SearchScope.SUB, "(uid=admin)");
+    }
+
+    void ldapUnboundidParametro(com.unboundid.ldap.sdk.LDAPConnection conexao, String filtro) throws Exception {
+        // ruleid: sentinel-ldap-injection
+        conexao.search("dc=empresa", com.unboundid.ldap.sdk.SearchScope.SUB, filtro);
+    }
+
     void xpath(javax.xml.xpath.XPath xp, String id, org.w3c.dom.Document doc) throws Exception {
         // ruleid: sentinel-xpath-injection
         xp.evaluate("//usuario[@id='" + id + "']", doc);
