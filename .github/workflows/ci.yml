@@ -124,6 +124,10 @@ jobs:
           cache-dependency-path: scripts/requirements-ci.txt
       - run: pip install -r scripts/requirements-ci.txt
       - run: bash scripts/instalar-opengrep.sh
+      - name: Testes dos scripts de regras (runner, dedup, perfis, CWEs)
+        run: |
+          python3 -m unittest scripts/test_testar_pacote.py scripts/test_verificar_regras.py scripts/test_dedup.py scripts/test_checkstyle_config.py
+          python3 scripts/verificar-regras.py
       - name: Rodar os testes de cada pacote
         run: |
           falhas=0
@@ -136,23 +140,21 @@ jobs:
           }
           for p in audit-rules/packs/*/; do
             [ -d "${p}tests" ] && [ -d "${p}rules" ] || continue
-            tmp=$(mktemp -d)
-            for f in "${p}"rules/*.yml; do
-              if [[ "$f" == *-sql.yml ]]; then
-                # regras de SQL/XML não são avaliadas pelo `semgrep --test`: têm verificador próprio
-                if ! python3 audit-rules/scripts/testar-regex-sql.py "$f" "${p}tests" > "$tmp.sql.log" 2>&1; then
-                  anotar "SQL $f" "$tmp.sql.log"; falhas=1
-                fi
-              else
-                cp "$f" "$tmp"/
+            for f in "${p}"rules/*-sql.yml; do
+              [ -e "$f" ] || continue
+              # regras de SQL/XML não são avaliadas pelo `semgrep --test`: têm verificador próprio
+              if ! python3 audit-rules/scripts/testar-regex-sql.py "$f" "${p}tests" > sql.log 2>&1; then
+                anotar "SQL $f" sql.log; falhas=1
               fi
             done
-            if semgrep --test --metrics=off --disable-version-check --config "$tmp" "${p}tests" > "$tmp.log" 2>&1; then
+            # testar-pacote.py roda `semgrep --test` e falha se alguma regra do pacote não foi executada
+            # (teste órfão, alvo YAML) ou se falta caso `ruleid:` / `ok:` para ela
+            if python3 scripts/testar-pacote.py "$p" > pacote.log 2>&1; then
               echo "::notice title=Semgrep $p::passou"
             else
-              anotar "Semgrep $p" "$tmp.log"; falhas=1
+              anotar "Semgrep $p" pacote.log; falhas=1
             fi
-            rm -rf "$tmp" "$tmp.log" "$tmp.sql.log"
+            rm -f sql.log pacote.log
           done
           exit $falhas
       # O Sentinel executa as regras com o Opengrep; `opengrep test` não lê o formato de teste dos pacotes

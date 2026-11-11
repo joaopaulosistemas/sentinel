@@ -1,0 +1,32 @@
+services:
+  app:
+    # ok: sentinel-compose-privileged
+    privileged: false
+    # ok: sentinel-compose-network-host
+    network_mode: bridge
+    # ok: sentinel-compose-docker-sock
+    volumes:
+      - app-data:/var/lib/app
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: seguro
+spec:
+  # ok: sentinel-k8s-host-network
+  hostNetwork: false
+  volumes:
+    # ok: sentinel-k8s-hostpath
+    - name: cache
+      emptyDir: {}
+  containers:
+    - name: app
+      image: registry.example.com/app:1.4.2
+      securityContext:
+        # ok: sentinel-k8s-roda-como-root
+        runAsNonRoot: true
+        runAsUser: 1000
+        # ok: sentinel-k8s-capacidade-perigosa
+        capabilities:
+          add: ["NET_BIND_SERVICE"]
+          drop: ["ALL"]
