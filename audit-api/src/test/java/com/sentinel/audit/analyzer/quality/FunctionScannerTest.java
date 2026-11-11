@@ -223,4 +223,66 @@ class FunctionScannerTest {
         // blocos de lógica continuam contando
         assertEquals(2, ts("function f() { if (a) { for (const x of y) { g({ z: 1 }); } } }").get(0).nesting());
     }
+
+    // ------------------------------------------------------------------ função aninhada conta uma vez só
+
+    @Test
+    void classeAnonimaNaoSomaSuaComplexidadeAoMetodoExterno() {
+        List<Fn> fns = java("""
+                class A {
+                    void m(boolean a) {
+                        if (a) { go(); }
+                        Runnable r = new Runnable() {
+                            public void run() { if (a) { go(); } if (a && a) { go(); } }
+                        };
+                    }
+                }
+                """);
+        assertEquals(List.of("m", "run"), names(fns));
+        assertEquals(2, fns.get(0).complexity());            // 1 + o próprio if; as decisões de run() são de run()
+        assertEquals(4, fns.get(1).complexity());            // 1 + if + if + &&
+    }
+
+    @Test
+    void closuresDeUmComponenteNaoSomamAoComponente() {
+        List<Fn> fns = ts("""
+                const Comp = () => {
+                    const a = () => { if (x) { y(); } };
+                    const b = () => { if (x || y) { y(); } };
+                    if (z) { go(); }
+                    return null;
+                };
+                """);
+        assertEquals(List.of("Comp", "a", "b"), names(fns));
+        assertEquals(2, fns.get(0).complexity());
+        assertEquals(2, fns.get(1).complexity());
+        assertEquals(3, fns.get(2).complexity());
+    }
+
+    @Test
+    void funcaoSemAninhadaMantemAComplexidadeDeAntes() {
+        assertEquals(4, java("class A { void m() { if (a) {} for (;;) {} while (b) {} } }").get(0).complexity());
+    }
+
+    @Test
+    void linhasDoMetodoExternoContinuamIncluindoOCorpoAninhado() {
+        List<Fn> fns = ts("function f() {\n  const g = () => {\n    h();\n  };\n  g();\n}\n");
+        assertEquals(6, fns.get(0).codeLines());
+    }
+
+    // ------------------------------------------------------------------ literal de regex não derruba a função
+
+    @Test
+    void regexComChaveDesbalanceadaNaoFazAFuncaoSumir() {
+        List<Fn> fns = ts("function f(s) { return s.replace(/[{(]+/g, ''); }\nfunction g() { return 1; }\n");
+        assertEquals(List.of("f", "g"), names(fns));
+    }
+
+    @Test
+    void regexComChaveDesbalanceadaNaoDistorceMetricas() {
+        List<Fn> fns = ts("function f(s) { if (/\\{/.test(s)) { return 1; } return 2; }\n");
+        assertEquals(1, fns.size());
+        assertEquals(2, fns.get(0).complexity());
+        assertEquals(1, fns.get(0).nesting());
+    }
 }

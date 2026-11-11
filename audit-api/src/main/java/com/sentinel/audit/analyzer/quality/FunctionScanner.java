@@ -55,7 +55,31 @@ public final class FunctionScanner {
             scanArrows(c);
         }
         result.sort(java.util.Comparator.comparingInt(Fn::startIdx));
-        return result;
+        return withOwnComplexity(clean, result);
+    }
+
+    /**
+     * Uma decisão dentro de uma função aninhada (classe anônima, lambda com bloco, closure de componente) pertence
+     * a ela, não à função de fora: o corpo das aninhadas é apagado antes de contar a complexidade da externa.
+     * Linhas e aninhamento seguem medindo o corpo inteiro (o código está fisicamente ali).
+     */
+    private static List<Fn> withOwnComplexity(String clean, List<Fn> fns) {
+        List<Fn> out = new ArrayList<>(fns.size());
+        for (Fn f : fns) {
+            char[] body = clean.substring(f.openBrace() + 1, f.closeBrace()).toCharArray();
+            boolean changed = false;
+            for (Fn g : fns) {
+                if (g != f && g.openBrace() > f.openBrace() && g.closeBrace() < f.closeBrace()) {
+                    for (int k = g.openBrace() - f.openBrace(); k < g.closeBrace() - f.openBrace() - 1; k++) {
+                        body[k] = ' ';
+                    }
+                    changed = true;
+                }
+            }
+            out.add(changed ? new Fn(f.name(), f.startIdx(), f.openBrace(), f.closeBrace(), f.startLine(), f.endLine(),
+                    f.paramCount(), f.codeLines(), complexity(new String(body)), f.nesting()) : f);
+        }
+        return out;
     }
 
     private static void scanNamed(Ctx c) {

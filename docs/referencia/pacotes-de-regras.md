@@ -153,7 +153,7 @@ O Sentinel analisa **Angular, TypeScript, JavaScript, React, HTML, CSS, SCSS, Ja
 
 | Tecnologia | Analisadores |
 |---|---|
-| Java | PMD, **Checkstyle** (bugs prováveis, tamanho e complexidade); regras Semgrep de segurança (injeção, criptografia, OWASP API, XSS, **XXE, SpEL, redirect aberto, desserialização do Jackson, Zip Slip, dado sensível no log, senha fixa, cookie sem Secure**), clean code e integrações |
+| Java | PMD, **Checkstyle** (bugs prováveis, orientação a objetos e estilo; tamanho de método, parâmetros e complexidade ficam com o CleanCode, que respeita os limiares do perfil); regras Semgrep de segurança (injeção, criptografia, OWASP API, XSS, **XXE, SpEL, redirect aberto, desserialização do Jackson, Zip Slip, dado sensível no log, senha fixa, cookie sem Secure**), clean code e integrações |
 | SQL / Banco | **Squawk** (migrations do Postgres: índice sem `CONCURRENTLY`, mudança de tipo, `NOT NULL`, `int` em vez de `bigint`...) e **SQLFluff** (estilo, dialeto Postgres) em `db/migration`, `migrations`, `db/changelog`; regras Semgrep `sentinel-sql-*` e `sentinel-jpa-*` (pacote `core-persistencia`) nas consultas dentro do código Java |
 | Memória | regras Semgrep `sentinel-mem-*`: `ThreadLocal` sem `remove()`, coleção estática, cache sem limite, executor sem `shutdown`, `new Thread`, leitura total de arquivo; no front, `setInterval`, `addEventListener`, `subscribe()` e `useEffect` sem limpeza |
 | Spring Boot / JPA | pacote `core-spring` (18 regras): Actuator exposto, console H2, senha em properties, `ddl-auto`, `open-in-view`, `@RequestMapping` sem método, `@RequestBody` sem `@Valid`, `permitAll()` geral, `frameOptions` desligado, `FetchType.EAGER`, `@Data` em entidade; `@CrossOrigin` aberto |

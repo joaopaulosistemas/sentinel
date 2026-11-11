@@ -200,4 +200,47 @@ class FindingDeduplicatorTest {
         assertEquals(1, r.size());
         assertSame(shell, r.get(0));
     }
+
+    @Test
+    void numeroMagicoDoCheckstyleAbsorveODoArchitectureComAChaveRealDaMensagem() {
+        Finding arch = f("Architecture", "arch-magic-number", "api/A.java", 7, Severity.LOW);
+        Finding cs = f("Checkstyle", "checkstyle-magic.number", "api/A.java", 7, Severity.LOW);
+
+        List<Finding> r = FindingDeduplicator.apply(List.of(arch, cs));
+
+        assertEquals(1, r.size());
+        assertSame(cs, r.get(0));                                              // fica a linha exata do Checkstyle
+    }
+
+    @Test
+    void sqlInjectionGenericaEATaintDaMesmaChamadaViramUmAchadoSo() {
+        Finding generica = f("Semgrep", "audit-rules.rules.security.sentinel-sql-injection", "api/Dao.java", 30, Severity.MEDIUM);
+        Finding taint = f("Semgrep", "audit-rules.rules.security.sentinel-taint-sql-parametro-http", "api/Dao.java", 31, Severity.HIGH);
+        Finding outroArquivo = f("Semgrep", "audit-rules.rules.security.sentinel-sql-injection", "api/Outro.java", 30, Severity.MEDIUM);
+
+        List<Finding> r = FindingDeduplicator.apply(List.of(generica, taint, outroArquivo));
+
+        assertEquals(2, r.size());
+        assertSame(taint, r.get(0));                                           // a regra com prova de origem fica
+        assertEquals(Severity.HIGH, taint.getSeverity());
+        assertSame(outroArquivo, r.get(1));
+    }
+
+    @Test
+    void pathTraversalDeServletEDaApiNaMesmaLinhaViramUm() {
+        Finding api = f("Semgrep", "audit-rules.rules.security.sentinel-api-path-traversal", "api/F.java", 12, Severity.MEDIUM);
+        Finding servlet = f("Semgrep", "audit-rules.rules.security.sentinel-servlet-path-traversal", "api/F.java", 12, Severity.HIGH);
+
+        List<Finding> r = FindingDeduplicator.apply(List.of(api, servlet));
+
+        assertEquals(1, r.size());
+        assertSame(servlet, r.get(0));
+    }
+
+    @Test
+    void sqlSelectEstrelaNaoEJuntadoComSqlInjection() {
+        Finding inj = f("Semgrep", "audit-rules.rules.security.sentinel-sql-injection", "api/Dao.java", 30, Severity.HIGH);
+        Finding estrela = f("Semgrep", "audit-rules.rules.security.sentinel-sql-select-estrela", "api/Dao.java", 30, Severity.LOW);
+        assertEquals(2, FindingDeduplicator.apply(List.of(inj, estrela)).size());
+    }
 }

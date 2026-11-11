@@ -51,4 +51,26 @@
   order:
     - "sentinel-taint-html-parametro-url"
     - "sentinel-ng-bypass-security"
+    - "sentinel-xss-inner-html"
+  max-lines: 1
+
+# Injeção de SQL: a regra de taint (prova de origem na requisição) vem primeiro, depois a específica do Panache,
+# por último a genérica de concatenação. `sql-select-estrela` é outro defeito e fica de fora.
+- name: sql-injection-java
+  order:
+    - "sentinel-taint-sql-parametro-http"
+    - "sentinel-quarkus-panache-consulta-concatenada"
+    - "sentinel-sql-injection"
+  max-lines: 2
+
+- name: path-traversal-java
+  order:
+    - "sentinel-servlet-path-traversal"
+    - "sentinel-api-path-traversal"
+  max-lines: 1
+
+- name: cors-aberto
+  order:
+    - "sentinel-crossorigin-aberto"
+    - "sentinel-api-cors-wildcard"
   max-lines: 1
