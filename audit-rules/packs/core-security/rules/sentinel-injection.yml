@@ -274,6 +274,16 @@ rules:
               - pattern: (LdapTemplate $CTX).search($BASE, $FILTER, ...)
               - pattern: (LdapOperations $CTX).search($BASE, $FILTER, ...)
           - focus-metavariable: $FILTER
+      # UnboundID LDAP SDK: search(base, escopo, filtro, ...) tem o filtro na terceira posição
+      - patterns:
+          - pattern-either:
+              - pattern: (com.unboundid.ldap.sdk.LDAPConnection $C).search($BASE, $SCOPE, $FILTER, ...)
+              - pattern: (LDAPConnection $C).search($BASE, $SCOPE, $FILTER, ...)
+              - pattern: (com.unboundid.ldap.sdk.LDAPInterface $C).search($BASE, $SCOPE, $FILTER, ...)
+              - pattern: (LDAPInterface $C).search($BASE, $SCOPE, $FILTER, ...)
+              - pattern: (com.unboundid.ldap.sdk.LDAPConnectionPool $C).search($BASE, $SCOPE, $FILTER, ...)
+              - pattern: (LDAPConnectionPool $C).search($BASE, $SCOPE, $FILTER, ...)
+          - focus-metavariable: $FILTER
       - patterns:
           - pattern: $CTX.search($BASE, $FILTER, ...)
           - focus-metavariable: $FILTER
