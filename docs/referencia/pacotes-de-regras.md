@@ -8,7 +8,7 @@ sem exigir nada instalado (as três primeiras camadas) e usando PMD/ESLint quand
 |---|---|---|
 | **CleanCode** (interno) | função longa, muitos parâmetros, complexidade ciclomática, aninhamento profundo | não |
 | **Regras Semgrep** `audit-rules/packs/core-quality/rules/` | 41 regras no total: regras Java (catch vazio, `return null` em coleção, injeção por campo, estado estático mutável, `==` em String, `@Transactional` privado, log concatenado, thread manual, service locator, singleton manual...), regras TypeScript/React (`any`, `@ts-ignore`, `var`, `==`, `useEffect` async, `key` por índice, token em `localStorage`...) e 9 de **integração** (HTTP/JDBC/axios/fetch sem timeout, pool ilimitado, HTTP sem TLS) | Semgrep |
-| **PMD** (lint Java) | boas práticas, propensão a erro, design e segurança do PMD 7 (ruleset embutido; troque com `PMD_RULESET`) | `pmd` no PATH |
+| **PMD** (lint Java) | boas práticas, propensão a erro, design e segurança do PMD 7 (ruleset embutido; troque com `PMD_RULESET`). Severidade: HIGH só no ruleset Security; nos demais o teto é MEDIUM (a prioridade 1 do PMD vale também para estilo) | `pmd` no PATH |
 | **ESLint** (lint TypeScript) | `typescript-eslint` recommended + `eqeqeq`, `no-var`, `no-console`, `prefer-const`, `no-eval` | `eslint` no PATH **e** `/opt/eslint/eslint.config.mjs` |
 
 Como funciona:

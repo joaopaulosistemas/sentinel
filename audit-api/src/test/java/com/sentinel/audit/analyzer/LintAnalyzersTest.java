@@ -71,11 +71,17 @@ class LintAnalyzersTest {
 
     @Test
     void pmdMapeiaPrioridadeERulesetEIgnoraPastasDeBuildETeste() {
-        assertEquals(Severity.HIGH, PmdAnalyzer.severity(1, "Best Practices"));
+        // HIGH é reservado ao ruleset Security: prioridade 1 de estilo/design/boas práticas era marcada como ALTA
+        // (ClassWithOnlyPrivateConstructorsShouldBeFinal, AvoidThrowingRawExceptionTypes...) e pesava como falha grave.
+        assertEquals(Severity.MEDIUM, PmdAnalyzer.severity(1, "Best Practices"));
+        assertEquals(Severity.MEDIUM, PmdAnalyzer.severity(1, "Design"));
         assertEquals(Severity.MEDIUM, PmdAnalyzer.severity(2, "Design"));
         assertEquals(Severity.LOW, PmdAnalyzer.severity(3, "Design"));
         assertEquals(Severity.INFO, PmdAnalyzer.severity(5, "Design"));
-        assertEquals(Severity.HIGH, PmdAnalyzer.severity(1, "Error Prone"), "já é HIGH: não passa de HIGH");
+        assertEquals(Severity.MEDIUM, PmdAnalyzer.severity(1, "Error Prone"), "propensão a erro não passa de MEDIUM");
+        assertEquals(Severity.MEDIUM, PmdAnalyzer.severity(3, "Error Prone"), "sobe um nível, até MEDIUM");
+        assertEquals(Severity.HIGH, PmdAnalyzer.severity(1, "Security"));
+        assertEquals(Severity.HIGH, PmdAnalyzer.severity(2, "Security"), "segurança sobe um nível");
         assertEquals(Severity.MEDIUM, PmdAnalyzer.severity(3, "Security"));
         assertEquals(Category.SECURITY, PmdAnalyzer.category("Security"));
         assertEquals(Category.ARCHITECTURE, PmdAnalyzer.category("Design"));

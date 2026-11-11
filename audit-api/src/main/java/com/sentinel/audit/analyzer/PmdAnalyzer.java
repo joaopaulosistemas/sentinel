@@ -300,7 +300,12 @@ public class PmdAnalyzer implements CodeAnalyzer {
         return f;
     }
 
-    /** Prioridade do PMD (1 = mais grave); regras de propensão a erro e de segurança sobem um nível. */
+    /**
+     * Prioridade do PMD (1 = mais grave). Regras de propensão a erro e de segurança sobem um nível, mas HIGH é reservado
+     * ao ruleset Security: a prioridade 1 do PMD vale também para regras de estilo e design (ex.:
+     * ClassWithOnlyPrivateConstructorsShouldBeFinal, AvoidThrowingRawExceptionTypes), e como HIGH elas pesavam na nota
+     * como falha grave (revisão em {@code docs/evolucao/precisao.md}). Fora de Security o teto é MEDIUM.
+     */
     static Severity severity(int priority, String ruleset) {
         Severity base = switch (priority) {
             case PRIORITY_HIGH -> Severity.HIGH;
@@ -308,11 +313,10 @@ public class PmdAnalyzer implements CodeAnalyzer {
             case PRIORITY_LOW -> Severity.LOW;
             default -> Severity.INFO;
         };
-        boolean risky = "Error Prone".equalsIgnoreCase(ruleset) || "Security".equalsIgnoreCase(ruleset);
-        if (risky && base.ordinal() > Severity.HIGH.ordinal()) {
-            return Severity.values()[base.ordinal() - 1];
-        }
-        return base;
+        boolean security = "Security".equalsIgnoreCase(ruleset);
+        boolean risky = security || "Error Prone".equalsIgnoreCase(ruleset);
+        Severity bumped = risky && base.ordinal() > Severity.HIGH.ordinal() ? Severity.values()[base.ordinal() - 1] : base;
+        return !security && bumped.ordinal() < Severity.MEDIUM.ordinal() ? Severity.MEDIUM : bumped;
     }
 
     static Category category(String ruleset) {
