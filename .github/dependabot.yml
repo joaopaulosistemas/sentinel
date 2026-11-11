@@ -35,6 +35,12 @@ updates:
     directory: /audit-rules/lint/stylelint
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 3
+    ignore:
+      # O standard 41 exige Stylelint 18 e o standard-scss 17 só aceita o 17 (ver docs/referencia/versoes-fixadas.md).
+      - dependency-name: stylelint
+        update-types: ["version-update:semver-major"]
+      - dependency-name: stylelint-config-standard
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /audit-rules/lint/jscpd
     schedule: { interval: weekly, day: monday }

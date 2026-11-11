@@ -1181,3 +1181,9 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Por quê:** a primeira rodada abriu 26 PRs, entre eles TypeScript 7 (sem API programática: o `dependency-cruiser` analisa 0 módulos e o typescript-eslint não roda) e saltos de major das imagens base.
 - **Mudança:** `ignore` de major para `typescript` em `lint/eslint` e `lint/extras`, e para `node`, `maven` e `eclipse-temurin` nas imagens (major de runtime só à mão). Minor e patch continuam automáticos.
 - **Reavaliar:** TypeScript quando sair o 7.1 com a API.
+
+## Segunda rodada do Dependabot (sem versão nova)
+
+- **Mergeados com CI verde:** `squawk-cli` 2.70, as ações `setup-python` 7, `setup-java` 6, `setup-helm` 5, `login-action` 4 e `setup-buildx-action` 4, e no dashboard `recharts` 3, `jsdom` 31 e `zustand` 5.
+- **Fechado:** `stylelint-config-standard` 41 (#212), que exige Stylelint 18 enquanto o `standard-scss` 17 só aceita o 17; o Dependabot passa a ignorar essas duas majors.
+- **Limite:** o dashboard só tem teste de unidade e de acessibilidade em jsdom; `recharts` 3 muda a API de gráficos e o visual só se confere no navegador, o que não foi feito.
