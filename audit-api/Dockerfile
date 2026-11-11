@@ -61,8 +61,8 @@ ARG BETTERLEAKS_SHA256_ARM64=3d7585cbe4f947aef6e31662f65beb5b43b104381a691b6b81b
 # PMD (lint Java, precisa só do JRE que a imagem já tem) e ESLint (lint TypeScript, precisa de Node 20.19+ (a imagem usa o 24, LTS ativo), por isso
 # vem ligado porque a stack é Angular/React/TypeScript: --build-arg WITH_ESLINT=false tira o Node 24, o ESLint e o Stylelint).
 ARG WITH_PMD=true
-ARG PMD_VERSION=7.7.0
-ARG PMD_SHA256=be8bf68f6c1d66984bd9645a93e631b78a1c2f42f5f0f8719082fead67553940
+ARG PMD_VERSION=7.27.0
+ARG PMD_SHA256=4ae396ffaf2b0d3ef0b73a10b2925e77066f73d57a4ce9078c60e7302bcddec9
 ARG WITH_ESLINT=true
 # Analisadores de mercado do pacote market-tools: njsscan, Checkov e SQLFluff (cada um em venv próprio), kube-linter e
 # kube-score (binários) e Stylelint (CSS/SCSS, precisa do Node: vem junto com WITH_ESLINT). --build-arg WITH_MARKET_TOOLS=false

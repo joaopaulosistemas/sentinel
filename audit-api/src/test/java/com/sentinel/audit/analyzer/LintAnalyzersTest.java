@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * PMD e ESLint. As fixtures {@code lint/*-real.json} são a saída <b>real</b> das ferramentas (PMD 7.7.0 e ESLint 9)
+ * PMD e ESLint. As fixtures {@code lint/*-real.json} são a saída <b>real</b> das ferramentas (PMD 7.7.0 e ESLint 9 (formato igual ao do 7.27.0))
  * rodando sobre um arquivo com problemas conhecidos; os testes de execução usam executáveis falsos.
  */
 class LintAnalyzersTest {

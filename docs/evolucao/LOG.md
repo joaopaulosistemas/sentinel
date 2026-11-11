@@ -1194,3 +1194,10 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Correções (comportamento preservado):** os `dirtyRef`/`ref` que eram escritos durante o render (`EnginePanel`, `AppShell`) passam a ser atualizados em efeito, declarado antes dos efeitos que os leem; o último andamento da auditoria (`AuditRunPage`) virou estado ajustado no render, em vez de ref lida no render; o fechamento do menu ao trocar de tela (`AppShell`) deixou de ser `setState` em efeito e usa a chave de tela no render; `Date.now()` no render da `OverviewPage` virou o hook `useNow` (estado atualizado por intervalo de 60 s, então "há N dias" não congela numa aba aberta).
 - **Exceção declarada:** `SettingsPage` mantém `setRestarting(false)` num efeito com `eslint-disable` comentado, porque o fim do reinício vem do polling da API e dispara o aviso.
 - **Verificado:** `tsc`, `eslint --max-warnings 0` com `reactHooks.configs.recommended`, `vite build` e `vitest` (58 arquivos, 389 testes, mais 3 do `useNow`). **Não verificado:** o comportamento no navegador (arrastar o menu, sair de uma tela com o painel de motor sujo).
+
+## PMD 7.7.0 → 7.27.0: erro de processamento no JRE 25 (sem versão nova)
+
+- **Por quê:** a auditoria do próprio Sentinel saiu "parcial": o PMD não conseguiu analisar 5 arquivos (`ContextedRuntimeException`, p. ex. `SchemaChecks.java`). O PMD 7.7.0 traz o ASM 9.7, que não lê classes do Java 25, e a imagem do `audit-api` roda em `eclipse-temurin:25-jre`.
+- **Mudança:** `PMD_VERSION=7.27.0` (ASM 9.10.1) e o SHA-256 do zip no `Dockerfile`.
+- **Verificado:** o JSON do 7.27.0 tem as mesmas chaves da fixture `pmd-real.json`; no repositório inteiro o 7.27.0 reporta 996 violações e 1 erro (fixture de teste com `import` fora do lugar, esperado), contra 838 e 1 do 7.7.0. O aumento vem das regras novas das categorias ligadas.
+- **Não verificado:** a causa no JRE 25 (não havia Java 25 para reproduzir; o 7.7.0 rodou limpo em Java 21) e a imagem reconstruída.
