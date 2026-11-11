@@ -1213,3 +1213,10 @@ Verificado: `verificar-separacao.py` sem problemas; auditoria no CI. NÃO verifi
 - **Não feito:** MD5/SHA-1 por algoritmo dinâmico; IDOR, JWT (assinatura/algoritmo), upload sem validação, cache poisoning, reset de senha e OTP por lógica (falhas lógicas, fora de padrão sintático) ficaram sem regra e sem gabarito; Opengrep não analisa `@RequestParam Map<String,String>` chegando até ajudante sem o nome do parâmetro indicar arquivo.
 
 Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI antes e depois e 4 reauditorias (dvja na branch e na `main`, NodeGoat, JavaVulnerableLab). NÃO verificado: JUnit (nada de Java do analisador mudou), dashboard, Benchmark OWASP, FP além dos 3 achados novos conferidos nas linhas do gabarito, branch ainda sem PR (1 volta na branch).
+
+## Trivy: `TRIVY_OFFLINE` e aviso de cache mais preciso (sem versão nova)
+
+- **Por quê:** com o cache Maven aquecido (268 MB) a auditoria seguia "parcial": o Trivy tenta o Maven Central, leva o 429 e repete com `--offline-scan`, e o Sentinel marcava parcial sem saber se o cache cobria o projeto. O número de achados (36) não mudou depois de aquecer, sinal de que o resultado já estava completo.
+- **Mudança:** `TRIVY_OFFLINE=true` (`sentinel.audit.trivy.offline`, padrão `false`) roda sempre com `--offline-scan`, sem tentar a rede e sem o aviso. O aviso do caminho padrão agora diz que só faltam dependências se o cache não cobrir o projeto. Documentado em `docs/guia/cache-maven.md`.
+- **Testes:** `TrivyOfflineTest` usa um `trivy` falso (429 com rede, relatório vazio com `--offline-scan`) e confere as chamadas e a nota nos dois modos.
+- **Limite:** no modo offline o Sentinel não detecta cache incompleto; a doc manda aquecer o cache por projeto antes de ligar.
