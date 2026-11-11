@@ -8,7 +8,7 @@ rules:
   njsscan-ejs_ect_template: {shadow: true}   # precisao.md
   "sentinel-java-*": {shadow: true}
   "sentinel-ts-*": {shadow: true}
-  sentinel-god-object: {severity: low}
+  arch-god-object: {severity: low}
 thresholds:
   max-function-lines: 120
   max-component-lines: 400

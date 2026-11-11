@@ -29,7 +29,7 @@ class SemgrepAnalyzerTest {
                                     "category":"security"}}},
               {"check_id":"sentinel-god-object","path":"src/Big.java","start":{"line":1},
                "extra":{"message":"God object","severity":"WARNING","lines":"class Big {",
-                        "metadata":{"cwe":["CWE-1060: Excessive Number of Inefficient Server-Side Data Accesses"],"category":"quality"}}}
+                        "metadata":{"cwe":["CWE-1048: Excessive Coupling"],"category":"quality"}}}
             ]}
             """;
 
@@ -46,7 +46,7 @@ class SemgrepAnalyzerTest {
         assertNull(sqli.getCodeSnippet());                     // "requires login" não é código
 
         Finding god = findings.get(1);
-        assertEquals("CWE-1060", god.getCveId());              // cwe em formato de lista
+        assertEquals("CWE-1048", god.getCveId());              // cwe em formato de lista
         assertEquals(Severity.MEDIUM, god.getSeverity());
         assertEquals(Category.QUALITY, god.getCategory());
         assertEquals("class Big {", god.getCodeSnippet());
@@ -83,6 +83,55 @@ class SemgrepAnalyzerTest {
         assertEquals(Category.OBSERVABILITY, f.get(1).getCategory());
         assertEquals(Category.QUALITY, f.get(2).getCategory());
         assertEquals(Severity.LOW, f.get(0).getSeverity());     // INFO do Semgrep = LOW
+    }
+
+    @Test
+    void categoriaDeclaradaVenceAsPalavrasDoIdDaRegra() {
+        // Regras de qualidade/confiabilidade cujo id contém "sql"/"injection" não podem pesar em Segurança.
+        String json = """
+                {"results":[
+                  {"check_id":"sentinel-sqlnorma-indice-fora-do-padrao","path":"A.sql","start":{"line":1},
+                   "extra":{"message":"m","severity":"WARNING","lines":"x","metadata":{"category":"quality"}}},
+                  {"check_id":"sentinel-too-many-injections","path":"B.java","start":{"line":1},
+                   "extra":{"message":"m","severity":"WARNING","lines":"x","metadata":{"category":"quality"}}},
+                  {"check_id":"sentinel-sql-delete-sem-where","path":"C.java","start":{"line":1},
+                   "extra":{"message":"m","severity":"ERROR","lines":"x","metadata":{"category":"reliability"}}},
+                  {"check_id":"sentinel-spring-show-sql","path":"D.yml","start":{"line":1},
+                   "extra":{"message":"m","severity":"INFO","lines":"x","metadata":{"category":"quality"}}}
+                ]}
+                """;
+        List<Finding> f = analyzer.parseSemgrepOutput(json, Path.of("/p"), new AuditRun());
+        assertEquals(4, f.size());
+        for (Finding finding : f) {
+            assertEquals(Category.QUALITY, finding.getCategory(), finding.getRuleId());
+        }
+    }
+
+    @Test
+    void semCategoriaDeclaradaAindaUsaPalavrasDoIdParaSeguranca() {
+        String json = """
+                {"results":[
+                  {"check_id":"externa.sql-injection","path":"A.java","start":{"line":1},
+                   "extra":{"message":"m","severity":"ERROR","lines":"x","metadata":{}}},
+                  {"check_id":"externa.estilo","path":"B.java","start":{"line":1},
+                   "extra":{"message":"m","severity":"INFO","lines":"x","metadata":{}}}
+                ]}
+                """;
+        List<Finding> f = analyzer.parseSemgrepOutput(json, Path.of("/p"), new AuditRun());
+        assertEquals(Category.SECURITY, f.get(0).getCategory());
+        assertEquals(Category.QUALITY, f.get(1).getCategory());
+    }
+
+    @Test
+    void categoriaDesconhecidaCaiNoFallbackPorId() {
+        String json = """
+                {"results":[
+                  {"check_id":"externa.xss-refletido","path":"A.java","start":{"line":1},
+                   "extra":{"message":"m","severity":"ERROR","lines":"x","metadata":{"category":"correctness"}}}
+                ]}
+                """;
+        List<Finding> f = analyzer.parseSemgrepOutput(json, Path.of("/p"), new AuditRun());
+        assertEquals(Category.SECURITY, f.get(0).getCategory());
     }
 
     @Test

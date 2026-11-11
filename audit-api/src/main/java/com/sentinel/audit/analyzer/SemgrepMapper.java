@@ -98,15 +98,22 @@ final class SemgrepMapper {
             "security", Category.SECURITY,
             "architecture", Category.ARCHITECTURE,
             "observability", Category.OBSERVABILITY,
-            "performance", Category.PERFORMANCE);
+            "performance", Category.PERFORMANCE,
+            "quality", Category.QUALITY,
+            "reliability", Category.QUALITY);
 
     /** Trechos do id da regra que indicam segurança quando a regra não declara a categoria. */
     private static final List<String> SECURITY_HINTS = List.of(
             "security", "sql", "injection", "xss", "csrf", "ssrf", "secret", "owasp");
 
+    /**
+     * A categoria declarada na regra manda: uma regra de qualidade com "sql" no id (ex.: {@code sentinel-sqlnorma-*})
+     * não pode pesar em Segurança. As palavras do id só valem para regras externas sem categoria ou com categoria
+     * desconhecida.
+     */
     private static Category mapCategory(String checkId, String metadataCategory) {
         for (Map.Entry<String, Category> e : METADATA_CATEGORIES.entrySet()) {
-            if (e.getKey().equalsIgnoreCase(metadataCategory)) {
+            if (e.getKey().equalsIgnoreCase(metadataCategory.strip())) {
                 return e.getValue();
             }
         }

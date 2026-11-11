@@ -89,7 +89,7 @@ rules:
       exclude: ["**/test/**"]
     metadata:
       category: quality
-      cwe: "CWE-1327: Binding to an Unrestricted IP Address"
+      cwe: "CWE-1058: Invokable Control Element in Multi-Thread Context with non-Final Static Storable or Member Element"
 
   - id: sentinel-java-string-igualdade-literal
     pattern-either:

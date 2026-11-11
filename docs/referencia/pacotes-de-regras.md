@@ -80,7 +80,7 @@ packs: [core-security, core-quality]
 disable-packs: [core-spring]
 rules:
   "sentinel-java-*": {shadow: true}      # aparece no relatório, mas não pesa no score nem derruba o pipeline
-  sentinel-god-object: {severity: low}
+  arch-god-object: {severity: low}         # analisador Java (ArchitectureAnalyzer); o id é o do finding
   sentinel-sql-injection: {severity: critical}
   sentinel-crypto-hash-fraco: {disabled: true}
 thresholds:                  # clean code: max-function-lines, max-component-lines, max-parameters, max-complexity, max-nesting, max-findings
