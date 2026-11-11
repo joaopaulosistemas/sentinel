@@ -15,8 +15,12 @@ alvos=("$@")
 [ "${#alvos[@]}" -gt 0 ] || alvos=(audit-api/src/main audit-cli/src/main audit-dashboard/src deploy docker-compose.yml)
 
 saida="$(mktemp)"
-"$motor" scan "${configs[@]}" --json --quiet --metrics=off --timeout 20 -o "$saida" \
-  "${alvos[@]}" || true
+# --metrics só existe no Semgrep; o Opengrep não aceita a opção (e não envia métricas)
+export SEMGREP_SEND_METRICS=off
+opcoes=(--json --quiet --timeout 20)
+[ "$(basename "$motor")" = "semgrep" ] && opcoes+=(--metrics=off)
+"$motor" scan "${configs[@]}" "${opcoes[@]}" -o "$saida" "${alvos[@]}" || true
+[ -s "$saida" ] || { echo "::error title=Auto-auditoria::o motor não gerou relatório"; exit 1; }
 
 python3 -I - "$saida" <<'PY'
 import json, sys

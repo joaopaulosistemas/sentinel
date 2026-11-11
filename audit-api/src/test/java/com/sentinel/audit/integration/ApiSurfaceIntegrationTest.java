@@ -140,7 +140,7 @@ class ApiSurfaceIntegrationTest {
         int id = criaSistema("Sistema Evidencia IT", "https://127.0.0.1:1/org/evid.git", null);
 
         given().get("/api/v1/systems/" + id + "/evidence").then().statusCode(200).body("enabled", is(false));
-        given().contentType("application/octet-stream").body("CREATE TABLE a (x int);")
+        given().contentType("application/octet-stream").body("CREATE TABLE a (x int);".getBytes(java.nio.charset.StandardCharsets.UTF_8))
                 .put("/api/v1/systems/" + id + "/evidence/esquema.sql").then().statusCode(409);
         given().get("/api/v1/systems/999999/evidence").then().statusCode(404);
     }

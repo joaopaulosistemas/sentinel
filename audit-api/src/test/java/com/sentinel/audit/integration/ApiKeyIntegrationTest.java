@@ -43,6 +43,6 @@ class ApiKeyIntegrationTest {
     void configuracoesEEvidenciasTambemExigemAChave() {
         given().get("/api/v1/settings").then().statusCode(401);
         given().post("/api/v1/settings/restart").then().statusCode(401);
-        given().contentType("application/octet-stream").body("x").put("/api/v1/systems/1/evidence/a.sql").then().statusCode(401);
+        given().contentType("application/octet-stream").body("x".getBytes(java.nio.charset.StandardCharsets.UTF_8)).put("/api/v1/systems/1/evidence/a.sql").then().statusCode(401);
     }
 }

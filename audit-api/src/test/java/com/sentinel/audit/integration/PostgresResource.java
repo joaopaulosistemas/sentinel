@@ -20,7 +20,8 @@ public class PostgresResource implements QuarkusTestResourceLifecycleManager {
                 "quarkus.datasource.password", postgres.getPassword(),
                 "sentinel.audit.scheduler.enabled", "false",
                 "sentinel.audit.osv.enabled", "false",
-                "sentinel.audit.api-key", "");
+                "sentinel.audit.api-key", "",
+                "sentinel.audit.secrets-key", "chave-de-teste-da-integracao");
     }
 
     @Override

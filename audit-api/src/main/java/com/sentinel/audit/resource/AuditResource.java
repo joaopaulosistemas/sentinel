@@ -89,6 +89,7 @@ public class AuditResource {
      */
     @POST
     @Path("/{id}/cancel")
+    @Consumes(MediaType.WILDCARD)
     @Operation(summary = "Cancelar auditoria", description = "Interrompe uma auditoria pendente ou em execução; 409 se ela já terminou")
     public Response cancel(@PathParam("id") Long id) {
         return runViews.cancel(id);
