@@ -249,6 +249,59 @@ class ScoringServiceTest {
         assertTrue(scoringService.explainWithout(findings, null, List.of()).removedRules().isEmpty());
     }
 
+    @Test
+    void ocorrenciasAltasRepetidasDaMesmaRegraTemTetoMaiorQueOsDeSeveridadeBaixa() {
+        List<Finding> muitas = new java.util.ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            muitas.add(withRule(Category.QUALITY, Severity.HIGH, "pmd-estilo-repetido"));
+        }
+        // 30 x 10 = 300, mas uma regra HIGH sozinha tira no máximo 50 => 50 (antes zerava a dimensão)
+        assertEquals(50.0, scoringService.calculateDimensionScore(muitas, Category.QUALITY));
+    }
+
+    @Test
+    void regrasAltasDiferentesSomamAteOTetoDeCadaUma() {
+        List<Finding> findings = new java.util.ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            findings.add(withRule(Category.SECURITY, Severity.HIGH, "regra-a"));     // 200, teto 50
+        }
+        findings.add(withRule(Category.SECURITY, Severity.HIGH, "regra-b"));         // 10
+        findings.add(withRule(Category.SECURITY, Severity.HIGH, "regra-b"));         // 10
+        assertEquals(30.0, scoringService.calculateDimensionScore(findings, Category.SECURITY));   // 100 - 50 - 20
+    }
+
+    @Test
+    void altaSemRegraIdentificadaContinuaSemTeto() {
+        List<Finding> semRegra = new java.util.ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            semRegra.add(buildFinding(Category.SECURITY, Severity.HIGH));
+        }
+        assertEquals(0.0, scoringService.calculateDimensionScore(semRegra, Category.SECURITY));
+    }
+
+    @Test
+    void altaAbaixoDoTetoNaoMudaANota() {
+        List<Finding> quatro = new java.util.ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            quatro.add(withRule(Category.SECURITY, Severity.HIGH, "sqli"));
+        }
+        assertEquals(60.0, scoringService.calculateDimensionScore(quatro, Category.SECURITY));
+    }
+
+    @Test
+    void explicacaoMarcaOTetoTambemParaSeveridadeAlta() {
+        List<Finding> findings = new java.util.ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            findings.add(withRule(Category.QUALITY, Severity.HIGH, "estilo"));       // 80, teto 50
+        }
+        var quality = scoringService.explain(findings, null).dimensions().get(1);
+        var grupo = quality.groups().get(0);
+        assertEquals(80.0, grupo.raw(), 0.0001);
+        assertEquals(50.0, grupo.counted(), 0.0001);
+        assertTrue(grupo.capped());
+        assertEquals(50.0, quality.score(), 0.0001);
+    }
+
     private Finding buildFinding(Category category, Severity severity) {
         Finding f = new Finding();
         f.setCategory(category);

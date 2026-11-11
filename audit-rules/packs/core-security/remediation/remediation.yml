@@ -772,3 +772,69 @@
     const linhas = db.prepare('SELECT * FROM reviews WHERE author = ?').all(autor)
   refs:
     - "https://owasp.org/www-community/attacks/SQL_Injection"
+
+- key: "sentinel-xxe-outros-parsers"
+  summary: "Desligue DTD e entidades externas antes de usar o parser (XMLReader, SAXBuilder, SAXReader, SchemaFactory)."
+  before: "XMLReader r = XMLReaderFactory.createXMLReader();"
+  after: |-
+    XMLReader r = XMLReaderFactory.createXMLReader();
+    r.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+  effort: S
+  regression-risk: MEDIUM
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-snakeyaml-construtor-padrao"
+  summary: "Carregue YAML de origem externa com SafeConstructor (e SnakeYAML 2.x)."
+  before: "new Yaml().load(texto)"
+  after: "new Yaml(new SafeConstructor(new LoaderOptions())).load(texto)"
+  effort: S
+  regression-risk: MEDIUM
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+
+- key: "sentinel-script-engine-eval-dinamico"
+  summary: "Não avalie texto externo; use operações fixas ou um avaliador de expressões sem acesso a classes."
+  before: "engine.eval(expressao)"
+  after: "switch (operacao) { case SOMA -> a + b; case SUBTRACAO -> a - b; }"
+  effort: M
+  regression-risk: HIGH
+
+- key: "sentinel-arquivo-temporario-inseguro"
+  summary: "Use Files.createTempFile, que cria o arquivo com permissões restritas."
+  before: "File.createTempFile(\"relatorio\", \".tmp\")"
+  after: "Files.createTempFile(\"relatorio\", \".tmp\")"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-session-fixation-desligada"
+  summary: "Mantenha a migração da sessão no login (padrão do Spring Security)."
+  before: "http.sessionManagement(s -> s.sessionFixation().none());"
+  after: "http.sessionManagement(s -> s.sessionFixation().migrateSession());"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-chave-assimetrica-curta"
+  summary: "Gere chaves RSA/DSA/DH com pelo menos 2048 bits (ou use curvas elípticas)."
+  before: "gerador.initialize(1024);"
+  after: "gerador.initialize(3072);"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-postmessage-origem-curinga"
+  summary: "Informe a origem esperada no lugar de \"*\" em postMessage."
+  before: "janela.postMessage(dados, '*');"
+  after: "janela.postMessage(dados, 'https://app.exemplo.com');"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-message-listener-sem-origem"
+  summary: "Confira event.origin antes de usar event.data."
+  before: "window.addEventListener('message', (e) => usar(e.data));"
+  after: |-
+    window.addEventListener('message', (e) => {
+      if (e.origin !== 'https://app.exemplo.com') return;
+      usar(e.data);
+    });
+  effort: S
+  regression-risk: LOW

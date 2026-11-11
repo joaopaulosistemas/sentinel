@@ -10,6 +10,9 @@ package com.sentinel.audit.analyzer.quality;
 public final class SourceSanitizer {
 
     private static final int TEXT_BLOCK_DELIMITER_LENGTH = 3;
+    private static final String REGEX_PREV = "(,=:[!&|?{;+-*%<>~^";
+    private static final java.util.Set<String> REGEX_KEYWORDS = java.util.Set.of(
+            "return", "typeof", "case", "in", "of", "yield", "await", "delete", "void", "throw", "else", "do");
 
 
     private SourceSanitizer() {}
@@ -51,9 +54,64 @@ public final class SourceSanitizer {
                 textBlock();
             } else if (isQuote(c)) {
                 quoted(c);
+            } else if (c == '/' && regexAllowedHere()) {
+                regexLiteral();
             } else {
                 i++;
             }
+        }
+
+        /**
+         * Uma barra abre literal de regex (JS/TS) quando vem onde só uma expressão pode começar: depois de
+         * {@code ( , = : [ ! & | ? { ; + - * % < > ~ ^}, de {@code return}/{@code typeof}/{@code case}... ou no início.
+         * Depois de identificador, número, {@code )} ou {@code ]} é divisão. Em Java nunca há barra nessas posições.
+         */
+        private boolean regexAllowedHere() {
+            int k = i - 1;
+            while (k >= 0 && Character.isWhitespace(out[k])) {
+                k--;
+            }
+            if (k < 0) {
+                return true;
+            }
+            char p = out[k];
+            if (REGEX_PREV.indexOf(p) >= 0) {
+                return true;
+            }
+            if (!Character.isLetter(p)) {
+                return false;
+            }
+            int from = k;
+            while (from > 0 && (Character.isLetterOrDigit(out[from - 1]) || out[from - 1] == '_' || out[from - 1] == '$')) {
+                from--;
+            }
+            return REGEX_KEYWORDS.contains(new String(out, from, k - from + 1));
+        }
+
+        /** Apaga o corpo de {@code /.../flags}; a barra de {@code [...]} não fecha, e sem fechar na linha não é regex. */
+        private void regexLiteral() {
+            boolean inClass = false;
+            int j = i + 1;
+            while (j < n && in[j] != '\n') {
+                char ch = in[j];
+                if (ch == '\\') {
+                    j += 2;
+                    continue;
+                }
+                if (ch == '[') {
+                    inClass = true;
+                } else if (ch == ']') {
+                    inClass = false;
+                } else if (ch == '/' && !inClass) {
+                    for (int k = i + 1; k < j; k++) {
+                        blank(k);
+                    }
+                    i = j + 1;
+                    return;
+                }
+                j++;
+            }
+            i++;                                                 // não era regex (ex.: divisão): segue como código
         }
 
         private boolean startsTextBlock(char c, char next) {

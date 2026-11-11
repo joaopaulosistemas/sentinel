@@ -31,7 +31,7 @@ Escopo de tecnologias: Java, Spring Boot, Quarkus, Angular, React, Vue, TypeScri
 
 ## Pacotes de regras
 
-16 pacotes declarativos em `audit-rules/packs` (299 regras próprias), 12 ferramentas de mercado via SARIF (mais o Joern, opcional) e 9 perfis. Pacotes novos entram sem compilar nada. Veja [pacotes e perfis](docs/referencia/pacotes-de-regras.md). O pacote [`ts-clean-code-labs42`](docs/padrao-typescript/clean-code-labs42.md) traz 21 regras do guia clean-code-typescript (opt-in).
+16 pacotes declarativos em `audit-rules/packs` (311 regras próprias), 12 ferramentas de mercado via SARIF (mais o Joern, opcional) e 9 perfis. Pacotes novos entram sem compilar nada. Veja [pacotes e perfis](docs/referencia/pacotes-de-regras.md). O pacote [`ts-clean-code-labs42`](docs/padrao-typescript/clean-code-labs42.md) traz 21 regras do guia clean-code-typescript (opt-in).
 
 ## Começando
 
@@ -45,7 +45,7 @@ Painel em http://localhost:3000 e API em http://localhost:8080. Modo desenvolvim
 
 ## Stack
 
-Java 21 + Quarkus 3.33 · PostgreSQL 16 · React 18 + TypeScript + Vite + IBM Carbon · Opengrep 1.30.0 (Semgrep como alternativa) · Docker/Compose e chart Helm · CLI Java.
+Java 21 + Quarkus 3.40 · PostgreSQL 16 · React 19 + TypeScript + Vite + IBM Carbon · Opengrep 1.30.0 (Semgrep como alternativa) · Docker/Compose e chart Helm · CLI Java.
 
 ## Estado e limites
 

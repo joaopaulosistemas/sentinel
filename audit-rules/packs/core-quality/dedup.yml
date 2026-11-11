@@ -58,7 +58,7 @@
     - "sentinel-ts-react-key-indice"
   max-lines: 2
 
-# A mesma função complexa aparecia no CleanCode (>10), no Checkstyle (>12) e no PMD; fica o achado do CleanCode,
+# A mesma função complexa podia aparecer no CleanCode (>10) e em outro motor (Checkstyle de projeto, PMD); fica o achado do CleanCode,
 # que é o que tem a orientação de correção do catálogo. A severidade final é a maior das duas.
 - name: complexidade-ciclomatica
   prefer: CleanCode
@@ -73,5 +73,31 @@
   prefer: Checkstyle
   rules:
     - "magicnumber"
+    - "magic.number"          # o Checkstyle devolve a chave da mensagem, não o nome da classe
     - "arch-magic-number"
+  max-lines: 1
+
+# Regras do mesmo motor (Semgrep) de pacotes diferentes que apontam o mesmo defeito: a mais específica vem primeiro.
+- name: excecao-generica-java
+  order:
+    - "sentinel-ee-lanca-excecao-generica"
+    - "sentinel-cert-throw-generico"
+  max-lines: 1
+
+- name: codigo-comentado
+  order:
+    - "sentinel-cct-codigo-comentado"
+    - "sentinel-codigo-comentado"
+  max-lines: 1
+
+- name: jpa-consulta-em-laco
+  order:
+    - "sentinel-jpa-n-mais-um"
+    - "sentinel-perf-consulta-em-laco"
+  max-lines: 3
+
+- name: thread-solta-java
+  order:
+    - "sentinel-java-thread-manual"
+    - "sentinel-mem-new-thread-solto"
   max-lines: 1

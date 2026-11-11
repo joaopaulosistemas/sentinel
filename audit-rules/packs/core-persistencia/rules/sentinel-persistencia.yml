@@ -163,7 +163,7 @@ rules:
       exclude: ["**/test/**", "**/target/**"]
     metadata:
       category: reliability
-      cwe: "CWE-1025: Comparison Using Wrong Factors"
+      cwe: "CWE-754: Improper Check for Unusual or Exceptional Conditions"
 
   - id: sentinel-sql-update-sem-where
     # o WHERE pode vir em outro trecho concatenado da mesma instrução ("... SET x = " + v + " WHERE id = " + id)
@@ -177,4 +177,4 @@ rules:
       exclude: ["**/test/**", "**/target/**"]
     metadata:
       category: reliability
-      cwe: "CWE-1025: Comparison Using Wrong Factors"
+      cwe: "CWE-754: Improper Check for Unusual or Exceptional Conditions"

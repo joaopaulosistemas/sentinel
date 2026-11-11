@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.jboss.logging.Logger;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +17,7 @@ import java.util.Optional;
  * Não guarda sessão e não abre fluxo SSE; quem decide o que cada chave pode fazer é o {@link McpBackend}.
  */
 public final class McpProtocol {
+    private static final Logger LOG = Logger.getLogger(McpProtocol.class);
 
     /** Códigos de erro do JSON-RPC 2.0. */
     private static final int PARSE_ERROR = -32700;
@@ -120,6 +123,7 @@ public final class McpProtocol {
         try {
             res = backend.call(tool.get(), args);
         } catch (RuntimeException e) {
+            LOG.errorf(e, "Falha na ferramenta MCP %s", tool.get().wire());
             res = McpBackend.ToolResult.error("Erro interno ao executar a ferramenta.");
         }
         ObjectNode r = mapper.createObjectNode();

@@ -1,0 +1,79 @@
+# Observabilidade: falhas que somem do log ou perdem a causa. Hoje a dimensão Observabilidade só tinha duas verificações
+# (System.out e printStackTrace); estas dão sinal sobre registro de erros. Casos de teste: tests/sentinel-observabilidade.*
+rules:
+  - id: sentinel-obs-log-erro-sem-excecao
+    patterns:
+      - pattern-either:
+          - pattern: |
+              try { ... } catch ($T $E) { ... $LOG.error($MSG); ... }
+          - pattern: |
+              try { ... } catch ($T $E) { ... $LOG.warn($MSG); ... }
+      - metavariable-regex:
+          metavariable: $LOG
+          regex: '^(this\.)?_?(?i:log|logger)$'
+      - focus-metavariable: $MSG
+    message: >
+      Dentro do catch o log registra só a mensagem, sem a exceção: a pilha de chamadas se perde e a causa da falha não
+      aparece na produção. Passe a exceção como último argumento (log.error("falha ao ...", e)).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: observability
+      cwe: "CWE-778: Insufficient Logging"
+
+  - id: sentinel-obs-excecao-relancada-sem-causa
+    patterns:
+      - pattern: |
+          try { ... } catch ($T $E) { ... throw new $EX($MSG); ... }
+      - pattern-not: |
+          try { ... } catch ($T $E) { ... throw new $EX($E); ... }
+      - focus-metavariable: $MSG
+    message: >
+      A exceção capturada é descartada e uma nova é lançada só com texto: a causa original (e a pilha dela) some do log de
+      quem a receber. Passe a causa ao construtor (new X("mensagem", e)) ou use initCause.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: observability
+      cwe: "CWE-778: Insufficient Logging"
+
+  - id: sentinel-obs-mdc-sem-limpeza
+    patterns:
+      - pattern: MDC.put(...)
+      - pattern-not-inside: |
+          try {
+            ...
+          } finally {
+            ...
+          }
+    message: >
+      MDC.put sem limpeza garantida: em servidor com pool de threads o contexto (usuário, requisição) vaza para a
+      próxima requisição que reaproveitar a thread e aparece nos logs errados. Limpe em finally (MDC.remove ou
+      MDC.clear) ou use try (MDC.MDCCloseable c = MDC.putCloseable(...)).
+    severity: INFO
+    languages: [java]
+    paths:
+      exclude: ["**/test/**", "**/target/**"]
+    metadata:
+      category: observability
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+
+  - id: sentinel-obs-catch-console-sem-erro
+    patterns:
+      - pattern-inside: |
+          catch ($E) { ... }
+      - pattern: console.error($MSG)
+    message: >
+      O catch registra só um texto e descarta o erro: sem ele não há mensagem original nem pilha de chamadas para
+      investigar. Passe o erro ao log (console.error("falha ao ...", e)) ou ao serviço de logs da aplicação.
+    severity: INFO
+    languages: [javascript, typescript]
+    paths:
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "**/*.spec.*", "**/*.test.*"]
+    metadata:
+      category: observability
+      cwe: "CWE-778: Insufficient Logging"

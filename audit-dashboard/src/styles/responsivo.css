@@ -1,20 +1,24 @@
 /*
  * Layout responsivo. Duas regras guiam as telas:
- *  1. O conteúdo tem largura máxima e fica centralizado: em tela muito larga ele não estica.
+ *  1. O conteúdo fica colado ao menu e ocupa a largura disponível, sem largura máxima nem centralização
+ *     (decisão do João, Dashboard 12.19.2): começa 40 px depois do menu em qualquer tela.
  *  2. Cada bloco reage à largura do PRÓPRIO espaço (container queries), não à da janela;
  *     assim o mesmo componente se ajusta bem com ou sem menu lateral.
  */
 .sentinel-page {
   box-sizing: border-box;
   width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: clamp(56px, 7vw, 70px) clamp(16px, 3vw, 40px);
+  margin: 0;
+  padding: 70px 40px;
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 .sentinel-page > * { min-width: 0; }
+/* No celular o menu vira gaveta e não ocupa espaço: margens laterais menores. */
+@media (max-width: 42rem) {
+  .sentinel-page { padding: 56px 16px; }
+}
 
 /* Cabeçalho enxuto: no celular só ficam o menu, a marca e o tema. */
 /* stylelint-disable declaration-no-important -- os controles do cabeçalho têm display inline do React */

@@ -516,3 +516,34 @@
   after: "interface Opcoes { ... }"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-obs-log-erro-sem-excecao"
+  summary: "Passe a exceção como último argumento do log para registrar a pilha de chamadas."
+  before: "log.error(\"falha ao executar\");"
+  after: "log.error(\"falha ao executar\", e);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-obs-excecao-relancada-sem-causa"
+  summary: "Passe a exceção original como causa da nova."
+  before: "throw new IllegalStateException(\"falha ao executar\");"
+  after: "throw new IllegalStateException(\"falha ao executar\", e);"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-obs-mdc-sem-limpeza"
+  summary: "Limpe o MDC em finally, ou use putCloseable num try-with-resources."
+  before: "MDC.put(\"requisicao\", id);"
+  after: |-
+    try (MDC.MDCCloseable c = MDC.putCloseable("requisicao", id)) {
+        executa();
+    }
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-obs-catch-console-sem-erro"
+  summary: "Passe o erro capturado ao log."
+  before: "console.error('falha ao executar');"
+  after: "console.error('falha ao executar', e);"
+  effort: S
+  regression-risk: LOW

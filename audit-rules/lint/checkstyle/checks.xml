@@ -25,9 +25,7 @@
     <module name="DefaultComesLast"/>
     <module name="ReturnCount"><property name="max" value="5"/><property name="maxForVoid" value="5"/></module>
     <!-- tamanho e complexidade -->
-    <module name="MethodLength"><property name="max" value="60"/><property name="countEmpty" value="false"/></module>
-    <module name="ParameterNumber"><property name="max" value="7"/></module>
-    <module name="CyclomaticComplexity"><property name="max" value="12"/></module>
+    <!-- tamanho de método, número de parâmetros e complexidade ciclomática ficam com o CleanCode (limiares do perfil) -->
     <module name="NestedIfDepth"><property name="max" value="3"/></module>
     <module name="NestedTryDepth"><property name="max" value="2"/></module>
     <module name="BooleanExpressionComplexity"><property name="max" value="4"/></module>

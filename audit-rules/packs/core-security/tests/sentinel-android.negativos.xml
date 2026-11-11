@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- ok: sentinel-android-manifest-allow-backup -->
+    <!-- ok: sentinel-android-manifest-cleartext -->
+    <application android:allowBackup="false" android:usesCleartextTraffic="false">
+    </application>
+</manifest>

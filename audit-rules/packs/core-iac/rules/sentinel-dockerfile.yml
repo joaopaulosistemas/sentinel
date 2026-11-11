@@ -9,7 +9,7 @@ rules:
     languages: [dockerfile]
     metadata:
       category: security
-      cwe: "CWE-1104: Use of Unmaintained Third Party Components"
+      cwe: "CWE-1357: Reliance on Insufficiently Trustworthy Component"
       owasp: A06:2021 - Vulnerable and Outdated Components
 
   - id: sentinel-docker-add-url

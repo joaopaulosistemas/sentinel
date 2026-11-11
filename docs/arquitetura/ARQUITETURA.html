@@ -288,7 +288,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </table></div>
 <hr />
 <h2 id="3-backend-audit-api">3. Backend <code>audit-api</code></h2>
-<p>Pacote raiz: <code>com.sentinel.audit</code>. Quarkus 3.33, Java 21, Hibernate/Panache, PostgreSQL, CDI (<code>@ApplicationScoped</code>), REST (JAX-RS).</p>
+<p>Pacote raiz: <code>com.sentinel.audit</code>. Quarkus 3.40, Java 21, Hibernate/Panache, PostgreSQL, CDI (<code>@ApplicationScoped</code>), REST (JAX-RS).</p>
 <h3 id="31-camadas-desenho-micro">3.1 Camadas (desenho micro)</h3>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     RES["resource (borda REST)\nAuditResource, SystemResource, FindingResource,\nWebhookResource, PackResource, RuleResource,\nHealthResource, ApiKeyFilter, StartupChecks"]
@@ -956,7 +956,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </table></div>
 <hr />
 <h2 id="5-frontend-audit-dashboard">5. Frontend <code>audit-dashboard</code></h2>
-<p>React 18, TypeScript, IBM Carbon Design System, Vite, TanStack Query (dados do servidor), Zustand (filtros e seleção), React Router.</p>
+<p>React 19, TypeScript, IBM Carbon Design System, Vite, TanStack Query (dados do servidor), Zustand (filtros e seleção), React Router.</p>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     subgraph rotas["App.tsx (rotas)"]
         O["/\nOverviewPage"]
@@ -1113,9 +1113,11 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <h2 id="8-automacao-ci-release-e-agentes">8. Automação: CI, release e agentes</h2>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     PUSH["push na main / PR / domingo / manual"] --&gt; CI["ci.yml"]
-    CI --&gt; J1["API, CLI e pacotes de regras (Maven)"]
-    CI --&gt; J2["Testes Semgrep dos pacotes"]
-    CI --&gt; J3["Dashboard (tsc, Vitest, build)"]
+    CI --&gt; J1["API, CLI e pacotes de regras (Maven, Java 21)"]
+    CI --&gt; J1b["Testes unitários na JVM da imagem (Java 25)"]
+    CI --&gt; J1c["Integração HTTP com PostgreSQL real (Testcontainers)"]
+    CI --&gt; J2["Testes Semgrep dos pacotes + auto-auditoria do Sentinel"]
+    CI --&gt; J3["Dashboard (tsc, lint, Vitest com piso de cobertura, build, Playwright)"]
     CI --&gt; J4["Imagens Docker e Helm + teste ponta a ponta"]
     CI --&gt; J5["Calibração em vários repositórios"]
     AG["Agente Sentinel Ciclo\n(Claude Code, na sua máquina)"] -- "dispara" --&gt; AC["auditoria-completa.yml\nAPI real + todos os analisadores"]
@@ -1136,7 +1138,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tbody>
 <tr>
 <td>CI</td>
-<td><code>.github/workflows/ci.yml</code>, <code>scripts/ci-anotar.sh</code> (transforma falhas em anotações legíveis), <code>scripts/e2e.sh</code> (Postgres + API + auditoria do petclinic)</td>
+<td><code>.github/workflows/ci.yml</code>, <code>scripts/ci-anotar.sh</code> (transforma falhas em anotações legíveis), <code>scripts/e2e.sh</code> (Postgres + API + auditoria do petclinic), <code>scripts/auditar-sentinel.sh</code> (o Sentinel contra o próprio código; achado ERROR barra)</td>
 </tr>
 <tr>
 <td>Calibração</td>
@@ -1169,7 +1171,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </thead>
 <tbody>
 <tr>
-<td>Quarkus 3.33, Hibernate/Panache, JAX-RS</td>
+<td>Quarkus 3.40, Hibernate/Panache, JAX-RS</td>
 <td>Backend</td>
 <td>sim</td>
 </tr>
@@ -1179,7 +1181,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>sim</td>
 </tr>
 <tr>
-<td>React 18, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest</td>
+<td>React 19, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest</td>
 <td>Dashboard</td>
 <td>sim</td>
 </tr>

@@ -1,1 +1,2 @@
 semgrep==1.172.0
+PyYAML==6.0.3

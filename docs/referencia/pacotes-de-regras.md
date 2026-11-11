@@ -8,7 +8,7 @@ sem exigir nada instalado (as três primeiras camadas) e usando PMD/ESLint quand
 |---|---|---|
 | **CleanCode** (interno) | função longa, muitos parâmetros, complexidade ciclomática, aninhamento profundo | não |
 | **Regras Semgrep** `audit-rules/packs/core-quality/rules/` | 41 regras no total: regras Java (catch vazio, `return null` em coleção, injeção por campo, estado estático mutável, `==` em String, `@Transactional` privado, log concatenado, thread manual, service locator, singleton manual...), regras TypeScript/React (`any`, `@ts-ignore`, `var`, `==`, `useEffect` async, `key` por índice, token em `localStorage`...) e 9 de **integração** (HTTP/JDBC/axios/fetch sem timeout, pool ilimitado, HTTP sem TLS) | Semgrep |
-| **PMD** (lint Java) | boas práticas, propensão a erro, design e segurança do PMD 7 (ruleset embutido; troque com `PMD_RULESET`) | `pmd` no PATH |
+| **PMD** (lint Java) | boas práticas, propensão a erro, design e segurança do PMD 7 (ruleset embutido; troque com `PMD_RULESET`). Severidade: HIGH só no ruleset Security; nos demais o teto é MEDIUM (a prioridade 1 do PMD vale também para estilo) | `pmd` no PATH |
 | **ESLint** (lint TypeScript) | `typescript-eslint` recommended + `eqeqeq`, `no-var`, `no-console`, `prefer-const`, `no-eval` | `eslint` no PATH **e** `/opt/eslint/eslint.config.mjs` |
 
 Como funciona:
@@ -28,8 +28,8 @@ semgrep --test --config audit-rules/packs/core-quality/rules audit-rules/packs/c
 ## Pacotes de regras, perfis e arquitetura (plug and play)
 
 As regras não ficam mais no código: são **pacotes** (pastas com um `pack.yml`) que você adiciona, atualiza ou remove sem recompilar.
-Vêm prontos em `audit-rules/packs/`: `core-security` (102 regras Semgrep, 31 delas para backend Node/Express), `core-spring` (18, Spring Boot e JPA), `core-persistencia` (13: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
-`core-quality` (41, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (29: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
+Vêm prontos em `audit-rules/packs/`: `core-security` (110 regras Semgrep, 31 delas para backend Node/Express), `core-spring` (18, Spring Boot e JPA), `core-persistencia` (13: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
+`core-quality` (45, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (29: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
 
 ### Estrutura de um pacote
 
@@ -80,7 +80,7 @@ packs: [core-security, core-quality]
 disable-packs: [core-spring]
 rules:
   "sentinel-java-*": {shadow: true}      # aparece no relatório, mas não pesa no score nem derruba o pipeline
-  sentinel-god-object: {severity: low}
+  arch-god-object: {severity: low}         # analisador Java (ArchitectureAnalyzer); o id é o do finding
   sentinel-sql-injection: {severity: critical}
   sentinel-crypto-hash-fraco: {disabled: true}
 thresholds:                  # clean code: max-function-lines, max-component-lines, max-parameters, max-complexity, max-nesting, max-findings
@@ -153,7 +153,7 @@ O Sentinel analisa **Angular, TypeScript, JavaScript, React, HTML, CSS, SCSS, Ja
 
 | Tecnologia | Analisadores |
 |---|---|
-| Java | PMD, **Checkstyle** (bugs prováveis, tamanho e complexidade); regras Semgrep de segurança (injeção, criptografia, OWASP API, XSS, **XXE, SpEL, redirect aberto, desserialização do Jackson, Zip Slip, dado sensível no log, senha fixa, cookie sem Secure**), clean code e integrações |
+| Java | PMD, **Checkstyle** (bugs prováveis, orientação a objetos e estilo; tamanho de método, parâmetros e complexidade ficam com o CleanCode, que respeita os limiares do perfil); regras Semgrep de segurança (injeção, criptografia, OWASP API, XSS, **XXE, SpEL, redirect aberto, desserialização do Jackson, Zip Slip, dado sensível no log, senha fixa, cookie sem Secure**), clean code e integrações |
 | SQL / Banco | **Squawk** (migrations do Postgres: índice sem `CONCURRENTLY`, mudança de tipo, `NOT NULL`, `int` em vez de `bigint`...) e **SQLFluff** (estilo, dialeto Postgres) em `db/migration`, `migrations`, `db/changelog`; regras Semgrep `sentinel-sql-*` e `sentinel-jpa-*` (pacote `core-persistencia`) nas consultas dentro do código Java |
 | Memória | regras Semgrep `sentinel-mem-*`: `ThreadLocal` sem `remove()`, coleção estática, cache sem limite, executor sem `shutdown`, `new Thread`, leitura total de arquivo; no front, `setInterval`, `addEventListener`, `subscribe()` e `useEffect` sem limpeza |
 | Spring Boot / JPA | pacote `core-spring` (18 regras): Actuator exposto, console H2, senha em properties, `ddl-auto`, `open-in-view`, `@RequestMapping` sem método, `@RequestBody` sem `@Valid`, `permitAll()` geral, `frameOptions` desligado, `FetchType.EAGER`, `@Data` em entidade; `@CrossOrigin` aberto |

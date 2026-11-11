@@ -1,0 +1,7 @@
+{
+  // ok: sentinel-boas-ts-strict-desligado
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022"
+  }
+}

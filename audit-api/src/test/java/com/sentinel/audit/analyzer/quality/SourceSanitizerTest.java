@@ -65,4 +65,39 @@ class SourceSanitizerTest {
         assertDoesNotThrow(() -> SourceSanitizer.strip("/* nunca fecha"));
         assertDoesNotThrow(() -> SourceSanitizer.strip("\"\"\" nunca fecha"));
     }
+
+    @Test
+    void literalDeRegexComChaveEParentesesDesbalanceadosEApagado() {
+        String src = "const re = /[{(]+/g;\nfunction f() { return 1; }\n";
+        String clean = SourceSanitizer.strip(src);
+        assertFalse(clean.contains("{(") || clean.contains("[{"), clean);   // o conteúdo do regex some
+        assertTrue(clean.contains("function f() { return 1; }"));
+        assertEquals(src.length(), clean.length());                        // mesmo tamanho: índices continuam valendo
+        assertEquals(src.indexOf('\n'), clean.indexOf('\n'));
+    }
+
+    @Test
+    void barraDentroDeClasseDeCaracteresNaoFechaORegex() {
+        String clean = SourceSanitizer.strip("const re = /[/{]x/;\nfoo();\n");
+        assertFalse(clean.contains("{"), clean);
+        assertTrue(clean.contains("foo();"));
+    }
+
+    @Test
+    void divisaoNaoEConfundidaComRegex() {
+        String src = "x = (a + b) / 2 / c; y = arr[0] / n; z = a / b;\nif (x) { go(); }\n";
+        assertEquals(src, SourceSanitizer.strip(src));
+    }
+
+    @Test
+    void regexDepoisDeReturnEDeParentese() {
+        assertFalse(SourceSanitizer.strip("return /(\\{/.test(s);").contains("{"));
+        assertFalse(SourceSanitizer.strip("s.split(/[{(]/);").contains("{"));
+    }
+
+    @Test
+    void barraSemFechamentoNaLinhaNaoEngoleOResto() {
+        String src = "x = / sem fechar\nif (a) { go(); }\n";
+        assertTrue(SourceSanitizer.strip(src).contains("if (a) { go(); }"));
+    }
 }

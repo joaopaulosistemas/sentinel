@@ -86,6 +86,7 @@ public class ClaudeReviewResource {
 
     @POST
     @Path("/rules/{rid}/review")
+    @Consumes(MediaType.WILDCARD)
     @Operation(summary = "Uma pessoa revisou a regra proposta")
     public ReviewResponse review(@PathParam("id") Long id, @PathParam("rid") Long rid) {
         requireSystem(id);
@@ -105,6 +106,7 @@ public class ClaudeReviewResource {
 
     @POST
     @Path("/rules/{rid}/observe")
+    @Consumes(MediaType.WILDCARD)
     @Operation(summary = "Começar a observação: a regra passa a rodar fora da nota")
     public ReviewResponse observe(@PathParam("id") Long id, @PathParam("rid") Long rid) {
         requireSystem(id);

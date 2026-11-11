@@ -12,7 +12,8 @@ H=(-H "X-API-Key: $KEY" -H "Content-Type: application/json")
 falhar() {
   local msg="$1"
   local logs; logs="$(docker logs sentinel-e2e-api 2>&1 | tail -30)"
-  local r="$msg%0A--- API ---%0A$(printf '%s' "$logs" | grep -E "ERROR|WARN|Exception|falhou" | tail -12)"
+  local r
+  r="$msg%0A--- API ---%0A$(printf '%s' "$logs" | grep -E "ERROR|WARN|Exception|falhou" | tail -12)"
   r="${r//$'\n'/%0A}"
   echo "::error title=Teste ponta a ponta falhou::${r:0:3500}"
   # Esquema que o Hibernate criou (só se E2E_SCHEMA_OUT estiver definido): base da migração V1 do Flyway

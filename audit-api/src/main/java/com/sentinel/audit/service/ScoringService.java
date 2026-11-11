@@ -41,6 +41,13 @@ public class ScoringService {
     /** Teto de penalidade para findings MEDIUM/LOW/INFO repetidos da mesma regra. */
     private static final double MAX_LOW_SEVERITY_PENALTY_PER_RULE = 20.0;
 
+    /**
+     * Teto de penalidade para findings HIGH repetidos da mesma regra (cinco ocorrências). Sem ele, uma regra de estilo
+     * que dispara centenas de vezes como HIGH (ex.: PMD de prioridade 1) zerava a dimensão sozinha; com ele, cada regra
+     * HIGH tira no máximo metade da nota e regras diferentes continuam somando. CRITICAL nunca tem teto.
+     */
+    static final double MAX_HIGH_PENALTY_PER_RULE = 50.0;
+
     /** Peso de cada dimensão no score geral (soma = 1.0). */
     private static final Map<Category, Double> DIMENSION_WEIGHT = Map.of(
             Category.SECURITY,      0.30,
@@ -145,8 +152,8 @@ public class ScoringService {
     /**
      * Calcula o score de uma dimensão específica subtraindo as penalidades dos findings
      * dessa categoria do score base de 100. Findings CRITICAL sempre penalizam por inteiro; os demais
-     * são multiplicados por {@code sizeFactor}. Os de severidade MEDIUM ou menor têm teto por regra (veja
-     * {@code MAX_LOW_SEVERITY_PENALTY_PER_RULE}).
+     * são multiplicados por {@code sizeFactor}. Os de severidade HIGH ou menor têm teto por regra (veja
+     * {@link #penaltyCap(Severity)}).
      *
      * @param findings   lista completa de findings
      * @param category   categoria (dimensão) a calcular
@@ -156,7 +163,7 @@ public class ScoringService {
     public double calculateDimensionScore(List<Finding> findings, Category category, double sizeFactor) {
         double criticalPenalty = 0.0;
         double penalty = 0.0;
-        Map<String, Double> lowSeverityByRule = new HashMap<>();
+        Map<String, Double> cappedByRule = new HashMap<>();
 
         for (Finding f : findings) {
             if (f.getCategory() != category) {
@@ -165,15 +172,16 @@ public class ScoringService {
             double p = findingPenalty(f);
             if (f.getSeverity() == Severity.CRITICAL) {
                 criticalPenalty += p;
-            } else if (f.getRuleId() != null && isLowSeverity(f.getSeverity())) {
-                // Muitas ocorrências de severidade baixa da mesma regra não devem zerar a dimensão.
-                lowSeverityByRule.merge(f.getRuleId() + "|" + f.getSeverity(), p, Double::sum);
+            } else if (f.getRuleId() != null && penaltyCap(f.getSeverity()) != null) {
+                // Muitas ocorrências da mesma regra não devem zerar a dimensão sozinhas.
+                cappedByRule.merge(f.getRuleId() + "|" + f.getSeverity(), p, Double::sum);
             } else {
                 penalty += p;
             }
         }
-        for (double rulePenalty : lowSeverityByRule.values()) {
-            penalty += Math.min(rulePenalty, MAX_LOW_SEVERITY_PENALTY_PER_RULE);
+        for (Map.Entry<String, Double> e : cappedByRule.entrySet()) {
+            Severity severity = Severity.valueOf(e.getKey().substring(e.getKey().lastIndexOf('|') + 1));
+            penalty += Math.min(e.getValue(), penaltyCap(severity));
         }
 
         return applyCurve(criticalPenalty + penalty * sizeFactor);
@@ -253,15 +261,16 @@ public class ScoringService {
         double critical = 0.0;
         double others = 0.0;
         for (Acc a : groupByRule(findings, category).values()) {
-            boolean capCandidate = a.severity != Severity.CRITICAL && !"(sem regra)".equals(a.ruleId) && isLowSeverity(a.severity);
-            double counted = capCandidate ? Math.min(a.raw, MAX_LOW_SEVERITY_PENALTY_PER_RULE) : a.raw;
+            Double cap = "(sem regra)".equals(a.ruleId) ? null : penaltyCap(a.severity);
+            boolean capCandidate = cap != null;
+            double counted = capCandidate ? Math.min(a.raw, cap) : a.raw;
             if (a.severity == Severity.CRITICAL) {
                 critical += counted;
             } else {
                 others += counted;
             }
             groups.add(new ScoreExplanationDto.Group(a.ruleId, a.severity, a.count, round(a.raw), round(counted),
-                    capCandidate && a.raw > MAX_LOW_SEVERITY_PENALTY_PER_RULE));
+                    capCandidate && a.raw > cap));
         }
         groups.sort(Comparator.comparingDouble((ScoreExplanationDto.Group g) -> g.counted() * (g.severity() == Severity.CRITICAL ? 1.0 : factor))
                 .reversed().thenComparing(ScoreExplanationDto.Group::ruleId));
@@ -295,8 +304,13 @@ public class ScoringService {
         return Math.max(0.0, 100.0 - totalPenalty);
     }
 
-    private boolean isLowSeverity(Severity severity) {
-        return severity == Severity.MEDIUM || severity == Severity.LOW || severity == Severity.INFO;
+    /** Teto de penalidade de uma regra repetida na severidade dada; nulo = sem teto (CRITICAL ou severidade desconhecida). */
+    static Double penaltyCap(Severity severity) {
+        if (severity == Severity.HIGH) {
+            return MAX_HIGH_PENALTY_PER_RULE;
+        }
+        boolean low = severity == Severity.MEDIUM || severity == Severity.LOW || severity == Severity.INFO;
+        return low ? MAX_LOW_SEVERITY_PENALTY_PER_RULE : null;
     }
 
     private double round(double value) {
