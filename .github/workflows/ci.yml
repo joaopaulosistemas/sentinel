@@ -162,7 +162,7 @@ jobs:
         run: python3 scripts/paridade-motores.py
       # O ESLint da imagem (audit-rules/lint/eslint) usa overrides de dependência; sem este passo, um override que
       # quebra um plugin só aparece em produção, como ESLint saindo com código 2 e resultado vazio.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
       - name: ESLint e plugins rodam com o package-lock.json
@@ -207,7 +207,7 @@ jobs:
         working-directory: audit-dashboard
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
           cache: npm
