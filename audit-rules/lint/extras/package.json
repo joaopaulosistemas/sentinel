@@ -4,7 +4,7 @@
   "description": "Squawk (migrations Postgres), Dependency-Cruiser (ciclos e módulos órfãos em TS/JS) e Spectral (contrato de API) usados pelo pacote market-tools; instalado em /opt/extras na imagem",
   "dependencies": {
     "dependency-cruiser": "18.7.2",
-    "squawk-cli": "2.61.0",
+    "squawk-cli": "2.70.0",
     "typescript": "5.9.3",
     "@stoplight/spectral-cli": "6.17.1"
   },
