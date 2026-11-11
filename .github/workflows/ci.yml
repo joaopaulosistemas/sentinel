@@ -226,7 +226,11 @@ jobs:
       - run: npm run build
       # A API é simulada por rota (e2e/helpers.ts): não precisa de backend.
       - name: Instalar o Chromium do Playwright
-        run: npx playwright install --with-deps chromium
+        # O download do Chromium é obrigatório; as bibliotecas do sistema vêm do apt, que o runner às vezes
+        # não alcança (falha de DNS). Nesse caso seguimos com as que a imagem já traz e o e2e diz se faltou algo.
+        run: |
+          npx playwright install chromium
+          npx playwright install-deps chromium || echo "::warning title=Playwright::apt indisponível no runner; usando as bibliotecas já instaladas"
       - name: Testes ponta a ponta no navegador
         run: npm run e2e
 
