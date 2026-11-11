@@ -23,7 +23,7 @@ O Sentinel entrega isso: clona o repositório (ou lê uma pasta local), roda os 
 | Capacidade | Como é hoje |
 |---|---|
 | **Análise** | Segurança (SAST com Opengrep, segredos, dependências com Trivy/OSV, IaC), qualidade (clean code, PMD, ESLint, Stylelint), arquitetura (camadas, ciclos, God Object), SQL (SQLFluff, Squawk), Docker e Kubernetes (Hadolint, Checkov, kube-linter), duplicação (jscpd) e higiene do projeto (README, testes, CI, lockfile) |
-| **Regras** | 16 pacotes declarativos em `audit-rules/packs` (298 regras próprias), 12 ferramentas de mercado via SARIF (mais o Joern, opcional) e 9 perfis (padrão, Quarkus + React, padrão Google, padrão TypeScript, legado etc.) |
+| **Regras** | 16 pacotes declarativos em `audit-rules/packs` (299 regras próprias), 12 ferramentas de mercado via SARIF (mais o Joern, opcional) e 9 perfis (padrão, Quarkus + React, padrão Google, padrão TypeScript, legado etc.) |
 | **Fluxo de dados** | Taint no mesmo arquivo pelo Opengrep; entre arquivos (Java) pelo Joern, opcional, sem compilar o projeto |
 | **Nota** | Seis dimensões (segurança, qualidade, arquitetura, dependências, observabilidade, performance), com ajuste por tamanho do código e limite de penalidade por regra |
 | **Acompanhamento** | Achados com identidade estável entre auditorias: novos, resolvidos e persistentes; tendência da nota; supressão com motivo, justificativa e validade |
