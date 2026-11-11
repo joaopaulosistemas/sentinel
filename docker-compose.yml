@@ -71,6 +71,8 @@ services:
       OSV_URL: ${OSV_URL:-https://api.osv.dev}
       TRIVY_ENABLED: ${TRIVY_ENABLED:-true}
       TRIVY_SCANNERS: ${TRIVY_SCANNERS:-vuln,misconfig}
+      # true: o Trivy não consulta o Maven Central e usa só o cache de M2_HOST_DIR (docs/guia/cache-maven.md)
+      TRIVY_OFFLINE: ${TRIVY_OFFLINE:-false}
       # Rede fechada: true, com a base do Trivy já no cache. O Trivy lê esta variável sozinho.
       TRIVY_SKIP_DB_UPDATE: ${TRIVY_SKIP_DB_UPDATE:-false}
       SENTINEL_EVIDENCE_DIR: /evidence

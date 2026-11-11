@@ -51,6 +51,13 @@ public class TrivyAnalyzer implements CodeAnalyzer {
 
     String pathEnv = System.getenv("PATH");
 
+    /**
+     * Varre sempre com {@code --offline-scan}: o Trivy não consulta o Maven Central e usa só o cache Maven local.
+     * Para quem mantém o cache aquecido ({@code scripts/aquecer-cache-maven.sh}) e não quer o 429 nem o aviso a cada auditoria.
+     */
+    @ConfigProperty(name = "sentinel.audit.trivy.offline", defaultValue = "false")
+    boolean offline;
+
     /** Folga além do --timeout do próprio Trivy, para ele encerrar sozinho antes de ser morto. */
     long graceSeconds = DEFAULT_GRACE_SECONDS;
 
@@ -85,16 +92,17 @@ public class TrivyAnalyzer implements CodeAnalyzer {
 
     /** Aviso de cobertura parcial quando a varredura teve de repetir só com o cache Maven local. */
     static final String NOTA_CACHE_LOCAL = "dependências Maven resolvidas só pelo cache local (o Maven Central "
-            + "limitou as requisições); para cobertura completa rode `scripts/aquecer-cache-maven.sh "
-            + "<pasta-do-projeto>` e aponte M2_HOST_DIR (.env) para o mesmo cache";
+            + "limitou as requisições); se o cache não cobre este projeto, faltam dependências na análise. Para "
+            + "cobertura completa rode `scripts/aquecer-cache-maven.sh <pasta-do-projeto>` e aponte M2_HOST_DIR "
+            + "(.env) para o mesmo cache";
 
     /** Código de saída da varredura e, se foi preciso repetir sem rede, a nota de cobertura parcial. */
     private record Scan(int code, String note) { }
 
     private Scan scan(Path exe, Path projectPath, Path report, Path stderr) throws IOException, InterruptedException {
-        int code = executar(exe, projectPath, report, stderr, false);
+        int code = executar(exe, projectPath, report, stderr, offline);
         String note = null;
-        if (code != 0 && code != -1 && limiteDoMaven(stderr)) {
+        if (!offline && code != 0 && code != -1 && limiteDoMaven(stderr)) {
             // O Maven Central bloqueou o IP (429) ao baixar POMs pai: o Trivy aborta a varredura inteira.
             // Refaz sem consultar repositórios remotos; o que já estiver no ~/.m2 continua sendo usado.
             LOG.warn("Trivy: repositório Maven limitou as requisições; repetindo com --offline-scan");
@@ -115,19 +123,24 @@ public class TrivyAnalyzer implements CodeAnalyzer {
     /** Terraform está fora do escopo do Sentinel; o Trivy lia esses arquivos e inflava o relatório com achados de nuvem. */
     static final String TERRAFORM_FILES = "**/*.tf,**/*.tf.json,**/*.tfvars";
 
-    private int executar(Path exe, Path projectPath, Path report, Path stderr, boolean offline)
+    private int executar(Path exe, Path projectPath, Path report, Path stderr, boolean offlineScan)
             throws IOException, InterruptedException {
+        List<String> cmd = comando(exe, projectPath, report, offlineScan);
+        return ExternalTools.runTo(cmd, null, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds, new ExternalTools.Output(null, stderr));
+    }
+
+    List<String> comando(Path exe, Path projectPath, Path report, boolean offlineScan) {
         List<String> cmd = new ArrayList<>(List.of(exe.toString(), "fs", "--quiet", "--no-progress",
                 "--format", "json", "--output", report.toString(),
                 "--scanners", String.join(",", scannerList()),
                 "--skip-dirs", "node_modules,.git",
                 "--skip-files", TERRAFORM_FILES,
                 "--timeout", timeoutSeconds + "s"));
-        if (offline) {
+        if (offlineScan) {
             cmd.add("--offline-scan");
         }
         cmd.add(projectPath.toString());
-        return ExternalTools.runTo(cmd, null, Map.of("TRIVY_DISABLE_TELEMETRY", "true"), timeoutSeconds + graceSeconds, new ExternalTools.Output(null, stderr));
+        return cmd;
     }
 
     /** O stderr do Trivy indica bloqueio/limite de taxa do Maven Central (HTTP 429, Retry-After). */
