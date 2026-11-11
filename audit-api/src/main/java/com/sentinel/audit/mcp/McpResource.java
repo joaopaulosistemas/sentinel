@@ -67,13 +67,13 @@ public class McpResource {
 
     private McpProtocol protocol;
     private McpRateLimiter callLimiter;
-    private McpRateLimiter failureLimiter;
+    private McpAuthGuard authGuard;
 
     @PostConstruct
     void init() {
         protocol = new McpProtocol(mapper, version);
         callLimiter = new McpRateLimiter(ratePerMinute);
-        failureLimiter = new McpRateLimiter(failedPerMinute);
+        authGuard = new McpAuthGuard(new McpRateLimiter(failedPerMinute));
     }
 
     @POST
@@ -83,13 +83,14 @@ public class McpResource {
                          @HeaderParam("Authorization") String authorization,
                          String body) {
         String ref = systemRef == null ? "" : systemRef.trim().toLowerCase(java.util.Locale.ROOT);
-        if (failureLimiter.blocked("fail:" + ref)) {
-            return tooMany(failureLimiter.retryAfterSeconds("fail:" + ref));
-        }
         Optional<AuditedSystem> system = findSystem(systemRef);
         McpAccess access = system.map(s -> gate.find(s.getId())).orElse(null);
-        if (access == null || !gate.accepts(access, bearer(authorization))) {
-            failureLimiter.tryAcquire("fail:" + ref);
+        boolean keyValid = access != null && gate.accepts(access, bearer(authorization));
+        McpAuthGuard.Verdict verdict = authGuard.check(ref, keyValid);
+        if (verdict == McpAuthGuard.Verdict.TOO_MANY) {
+            return tooMany(authGuard.retryAfterSeconds(ref));
+        }
+        if (verdict == McpAuthGuard.Verdict.UNAUTHORIZED) {
             return Response.status(Response.Status.UNAUTHORIZED)
                     .header("WWW-Authenticate", "Bearer")
                     .type(MediaType.APPLICATION_JSON)

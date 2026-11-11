@@ -82,7 +82,7 @@ def medir(achados, casos):
             t["vuln"] += 1; t["tp"] += achou
         else:
             t["seguro"] += 1; t["fp"] += achou
-    for cat, t in tabela.items():
+    for _cat, t in tabela.items():
         t["tpr"] = round(t["tp"] / t["vuln"], 3) if t["vuln"] else 0.0
         t["fpr"] = round(t["fp"] / t["seguro"], 3) if t["seguro"] else 0.0
         t["pontuacao"] = round(t["tpr"] - t["fpr"], 3)

@@ -29,7 +29,6 @@ def main() -> int:
     cabeca, rodape = atual[:ini], atual[fim:]
 
     # sumário do próprio HTML: só os títulos de nível 2
-    corpo_md = texto.split("\n---\n", 1)[-1] if False else texto
     md = markdown.Markdown(extensions=["tables", "fenced_code", "toc"], extension_configs={"toc": {"slugify": slug}})
     # blocos mermaid viram <figure class="diagrama"><pre class="mermaid">
     marcadores = {}

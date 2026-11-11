@@ -36,7 +36,11 @@ public class SecretBox {
     private static final int KEY_BYTES = 32;
 
 
-    private static final String PREFIX = "v1:";
+    /** v2: chave derivada com PBKDF2 (custo contra força bruta de uma API_KEY fraca). v1: SHA-256 simples, só leitura. */
+    private static final String PREFIX = "v2:";
+    private static final String LEGACY_PREFIX = "v1:";
+    private static final int PBKDF2_ITERATIONS = 210_000;
+    private static final byte[] KDF_SALT = "sentinel-secretbox-v2".getBytes(StandardCharsets.UTF_8);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @ConfigProperty(name = "sentinel.audit.secrets-key")
@@ -49,6 +53,10 @@ public class SecretBox {
     String keyFile;
 
     private volatile String fileKey;
+    /** A derivação custa ~100 ms: feita uma vez por chave de origem. */
+    private volatile DerivedKey derived;
+
+    private record DerivedKey(String seed, SecretKeySpec key) { }
 
     public SecretBox() {
     }
@@ -69,7 +77,7 @@ public class SecretBox {
             byte[] iv = new byte[GCM_IV_BYTES];
             RANDOM.nextBytes(iv);
             Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-            c.init(Cipher.ENCRYPT_MODE, key(), new GCMParameterSpec(GCM_TAG_BITS, iv));
+            c.init(Cipher.ENCRYPT_MODE, key(false), new GCMParameterSpec(GCM_TAG_BITS, iv));
             byte[] ct = c.doFinal(plain.getBytes(StandardCharsets.UTF_8));
             byte[] all = new byte[iv.length + ct.length];
             System.arraycopy(iv, 0, all, 0, iv.length);
@@ -82,13 +90,14 @@ public class SecretBox {
 
     /** Texto original, ou {@code null} se o valor estiver vazio, corrompido ou a chave tiver mudado. */
     public String decrypt(String stored) {
-        if (stored == null || !stored.startsWith(PREFIX)) {
+        boolean legacy = stored != null && stored.startsWith(LEGACY_PREFIX);
+        if (stored == null || !(legacy || stored.startsWith(PREFIX))) {
             return null;
         }
         try {
             byte[] all = Base64.getDecoder().decode(stored.substring(PREFIX.length()));
             Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-            c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(GCM_TAG_BITS, all, 0, GCM_IV_BYTES));
+            c.init(Cipher.DECRYPT_MODE, key(legacy), new GCMParameterSpec(GCM_TAG_BITS, all, 0, GCM_IV_BYTES));
             return new String(c.doFinal(all, GCM_IV_BYTES, all.length - GCM_IV_BYTES), StandardCharsets.UTF_8);
         } catch (Exception e) {
             // Sem este aviso, trocar SECRETS_KEY/API_KEY faria os tokens salvos "sumirem" sem nenhum rastro.
@@ -157,11 +166,22 @@ public class SecretBox {
         }
     }
 
-    private SecretKeySpec key() throws GeneralSecurityException {
+    private SecretKeySpec key(boolean legacy) throws GeneralSecurityException {
         String seed = seed();
         if (seed.isBlank()) {
             throw new IllegalStateException("Não há chave para cifrar os segredos: defina SECRETS_KEY (ou API_KEY) ou deixe a API gravar o arquivo de chave.");
         }
-        return new SecretKeySpec(MessageDigest.getInstance("SHA-256").digest(seed.getBytes(StandardCharsets.UTF_8)), "AES");
+        if (legacy) {
+            return new SecretKeySpec(MessageDigest.getInstance("SHA-256").digest(seed.getBytes(StandardCharsets.UTF_8)), "AES");
+        }
+        DerivedKey d = derived;
+        if (d == null || !d.seed().equals(seed)) {
+            byte[] raw = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                    .generateSecret(new javax.crypto.spec.PBEKeySpec(seed.toCharArray(), KDF_SALT, PBKDF2_ITERATIONS, KEY_BYTES * 8))
+                    .getEncoded();
+            d = new DerivedKey(seed, new SecretKeySpec(raw, "AES"));
+            derived = d;
+        }
+        return d.key();
     }
 }

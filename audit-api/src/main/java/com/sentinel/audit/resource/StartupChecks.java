@@ -15,7 +15,7 @@ import java.util.Optional;
 public class StartupChecks {
 
     private static final Logger LOG = Logger.getLogger(StartupChecks.class);
-    private static final String SECRETS_KEY_AVISO =
+    private static final String AVISO_SEM_CHAVE_PROPRIA =
             "SECRETS_KEY não definida: os tokens salvos são cifrados com a chave derivada da API_KEY; "
                     + "trocar a API_KEY torna esses segredos ilegíveis. Defina uma SECRETS_KEY própria.";
 
@@ -34,7 +34,7 @@ public class StartupChecks {
         }
         boolean hasSecretsKey = secretsKey.isPresent() && !secretsKey.get().isBlank();
         if (!hasSecretsKey && apiKey.isPresent() && !apiKey.get().isBlank()) {
-            LOG.warn(SECRETS_KEY_AVISO);
+            LOG.warn(AVISO_SEM_CHAVE_PROPRIA);
         }
         if (schemaMode.startsWith("drop-and-create") || "create".equals(schemaMode)) {
             LOG.warnf("DB_SCHEMA_MODE=%s: o banco será APAGADO a cada inicialização (histórico de auditorias perdido).", schemaMode);
