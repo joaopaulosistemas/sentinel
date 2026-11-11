@@ -28,7 +28,8 @@
       "veracode-research/actuator-testbed",
       "t0thkr1s/allsafe-android",
       "koenbuyens/Vulnerable-OAuth-2.0-Applications",
-      "kOaDT/oss-oopssec-store"
+      "kOaDT/oss-oopssec-store",
+      "SasanLabs/VulnerableApp"
     ],
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
     "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu.",
@@ -51,7 +52,8 @@
     "_nota_actuator": "veracode-research/actuator-testbed (app Spring Boot de teste com Actuators expostos, branch master, stack JAVA) entrou em 2026-11-07 na volta 22 (ciclo/estabilizacao-7); treino.",
     "_nota_allsafe": "t0thkr1s/allsafe-android (app Android vulneravel de treino em Java e Kotlin, branch master, stack JAVA) entrou em 2026-11-07 na volta 23 (ciclo/estabilizacao-7); treino.",
     "_nota_oauth": "koenbuyens/Vulnerable-OAuth-2.0-Applications (apps Node/Express de treino com OAuth 2.0 inseguro, branch master, stack JAVASCRIPT) entrou em 2026-11-07 na volta 24 (ciclo/estabilizacao-7); treino.",
-    "_nota_oopssec": "kOaDT/oss-oopssec-store (loja Next.js/TypeScript/Prisma vulneravel de treino, branch main, stack JAVASCRIPT) entrou em 2026-11-07 na volta 25 (ciclo/estabilizacao-8); treino."
+    "_nota_oopssec": "kOaDT/oss-oopssec-store (loja Next.js/TypeScript/Prisma vulneravel de treino, branch main, stack JAVASCRIPT) entrou em 2026-11-07 na volta 25 (ciclo/estabilizacao-8); treino.",
+    "_nota_vulnerableapp": "SasanLabs/VulnerableApp (app Spring Boot de treino, OWASP Incubator, branch master, stack JAVA) entrou em 2026-11-11 na volta 26 (ciclo/estabilizacao-10); treino."
   },
   "validacao": {
     "repositorios_fixos": [
