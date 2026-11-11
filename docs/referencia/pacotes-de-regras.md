@@ -28,7 +28,7 @@ semgrep --test --config audit-rules/packs/core-quality/rules audit-rules/packs/c
 ## Pacotes de regras, perfis e arquitetura (plug and play)
 
 As regras não ficam mais no código: são **pacotes** (pastas com um `pack.yml`) que você adiciona, atualiza ou remove sem recompilar.
-Vêm prontos em `audit-rules/packs/`: `core-security` (102 regras Semgrep, 31 delas para backend Node/Express), `core-spring` (18, Spring Boot e JPA), `core-persistencia` (13: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
+Vêm prontos em `audit-rules/packs/`: `core-security` (110 regras Semgrep, 31 delas para backend Node/Express), `core-spring` (18, Spring Boot e JPA), `core-persistencia` (13: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
 `core-quality` (41, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (29: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) e `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**).
 
 ### Estrutura de um pacote

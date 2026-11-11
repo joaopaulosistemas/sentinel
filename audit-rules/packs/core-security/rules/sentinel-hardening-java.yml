@@ -1,0 +1,125 @@
+# Lacunas de endurecimento em Java: XXE em outros parsers, SnakeYAML, ScriptEngine, arquivo temporário, fixação de
+# sessão e tamanho de chave. Casos de teste: tests/sentinel-hardening-java.java
+rules:
+  - id: sentinel-xxe-outros-parsers
+    patterns:
+      - pattern-either:
+          - pattern: XMLReaderFactory.createXMLReader()
+          - pattern: SchemaFactory.newInstance(...)
+          - pattern: new SAXBuilder()
+          - pattern: new SAXReader()
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $F.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $F.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            ...
+          }
+    message: >
+      Parser XML (XMLReader, SchemaFactory, SAXBuilder ou SAXReader) criado sem desligar DTD e entidades externas:
+      permite XXE (leitura de arquivos do servidor e SSRF). Chame
+      setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) (ou, no SchemaFactory, feche
+      ACCESS_EXTERNAL_SCHEMA e ACCESS_EXTERNAL_DTD) antes de usar.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-611: Improper Restriction of XML External Entity Reference"
+      owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-snakeyaml-construtor-padrao
+    pattern: new Yaml()
+    message: >
+      SnakeYAML com o construtor padrão: nas versões anteriores à 2.0 um YAML de origem externa instancia classes
+      arbitrárias e executa código. Passe um SafeConstructor (new Yaml(new SafeConstructor(new LoaderOptions()))) ou
+      atualize para a 2.x e restrinja os tipos aceitos.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-script-engine-eval-dinamico
+    patterns:
+      - pattern: (ScriptEngine $E).eval($ARG)
+      - pattern-not: (ScriptEngine $E).eval("...")
+    message: >
+      ScriptEngine.eval com texto que não é literal: se parte dele vier do usuário, é execução remota de código
+      (JavaScript/Groovy rodam com as permissões da aplicação). Não avalie texto externo; use uma lista fechada de
+      operações ou um avaliador de expressões sem acesso a classes (ex.: parser próprio).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-arquivo-temporario-inseguro
+    pattern: File.createTempFile(...)
+    message: >
+      File.createTempFile cria o arquivo com permissões herdadas da máscara do processo, em pasta compartilhada, com nome
+      previsível o bastante para ataque de corrida. Use Files.createTempFile (permissões 600 em POSIX) ou
+      Files.createTempDirectory.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-377: Insecure Temporary File"
+      owasp: A01:2021 - Broken Access Control
+
+  - id: sentinel-session-fixation-desligada
+    pattern: $X.sessionFixation().none()
+    message: >
+      Proteção contra fixação de sessão desligada no Spring Security (sessionFixation().none()): o identificador de
+      sessão de antes do login continua valendo depois dele, e quem o conhecia assume a sessão autenticada. Use
+      migrateSession() (padrão) ou changeSessionId().
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-384: Session Fixation"
+      owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-chave-assimetrica-curta
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $G = KeyPairGenerator.getInstance("RSA");
+              ...
+          - pattern-inside: |
+              $G = KeyPairGenerator.getInstance("DSA");
+              ...
+          - pattern-inside: |
+              $G = KeyPairGenerator.getInstance("DH");
+              ...
+      - pattern: $G.initialize($N)
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 2048
+    message: >
+      Chave RSA/DSA/DH com menos de 2048 bits: dá para fatorar ou quebrar com recursos ao alcance de um atacante. Use
+      pelo menos 2048 bits (3072 para uso além de 2030) ou curvas elípticas (EC com 256 bits ou mais).
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-326: Inadequate Encryption Strength"
+      owasp: A02:2021 - Cryptographic Failures

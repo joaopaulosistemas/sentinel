@@ -31,7 +31,7 @@ Escopo de tecnologias: Java, Spring Boot, Quarkus, Angular, React, Vue, TypeScri
 
 ## Pacotes de regras
 
-16 pacotes declarativos em `audit-rules/packs` (299 regras próprias), 12 ferramentas de mercado via SARIF (mais o Joern, opcional) e 9 perfis. Pacotes novos entram sem compilar nada. Veja [pacotes e perfis](docs/referencia/pacotes-de-regras.md). O pacote [`ts-clean-code-labs42`](docs/padrao-typescript/clean-code-labs42.md) traz 21 regras do guia clean-code-typescript (opt-in).
+16 pacotes declarativos em `audit-rules/packs` (307 regras próprias), 12 ferramentas de mercado via SARIF (mais o Joern, opcional) e 9 perfis. Pacotes novos entram sem compilar nada. Veja [pacotes e perfis](docs/referencia/pacotes-de-regras.md). O pacote [`ts-clean-code-labs42`](docs/padrao-typescript/clean-code-labs42.md) traz 21 regras do guia clean-code-typescript (opt-in).
 
 ## Começando
 

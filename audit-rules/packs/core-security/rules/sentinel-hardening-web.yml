@@ -1,0 +1,33 @@
+# Lacunas de endurecimento no navegador: postMessage sem origem. Casos de teste: tests/sentinel-hardening-web.ts
+rules:
+  - id: sentinel-postmessage-origem-curinga
+    pattern: $W.postMessage($MSG, "*")
+    message: >
+      postMessage com targetOrigin "*": qualquer página que esteja na janela de destino recebe a mensagem, inclusive um
+      site malicioso que a tenha aberto ou embutido. Informe a origem esperada (https://app.exemplo.com).
+    severity: WARNING
+    languages: [javascript, typescript]
+    paths:
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "**/*.spec.*", "**/*.test.*"]
+    metadata:
+      category: security
+      cwe: "CWE-346: Origin Validation Error"
+      owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-message-listener-sem-origem
+    patterns:
+      - pattern-either:
+          - pattern: window.addEventListener("message", ($E) => { ... })
+          - pattern: window.addEventListener("message", function ($E) { ... })
+      - pattern-not-regex: '\.origin\b'          # o corpo do ouvinte confere event.origin
+    message: >
+      Ouvinte de "message" que não confere event.origin: qualquer página que consiga enviar mensagem à janela é
+      obedecida. Compare event.origin com a origem esperada antes de usar event.data.
+    severity: WARNING
+    languages: [javascript, typescript]
+    paths:
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "**/*.spec.*", "**/*.test.*"]
+    metadata:
+      category: security
+      cwe: "CWE-346: Origin Validation Error"
+      owasp: A07:2021 - Identification and Authentication Failures
