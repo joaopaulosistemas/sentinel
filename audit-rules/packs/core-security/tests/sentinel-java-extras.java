@@ -280,4 +280,69 @@ class SenhaComparadaComLiteral {
         }
         return null;
     }
+
+    // ---- achados do sentinel-alvo: o exemplo vulnerável tem que ser pego e a defesa recomendada não ----
+
+    void zipSlipDeclaradoAntesDoLaco(java.util.zip.ZipInputStream zip, File destino) throws Exception {
+        ZipEntry e;
+        while ((e = zip.getNextEntry()) != null) {
+            // ruleid: sentinel-zip-slip
+            File saida = new File(destino, e.getName());
+        }
+    }
+
+    void zipSlipForEach(java.util.zip.ZipFile zip, File destino) throws Exception {
+        for (ZipEntry e : java.util.Collections.list(zip.entries())) {
+            // ruleid: sentinel-zip-slip
+            File saida = new File(destino, e.getName());
+        }
+    }
+
+    void zipSlipComCaminhoCanonicoConferido(ZipEntry entry, File destino) throws Exception {
+        // ok: sentinel-zip-slip
+        File saida = new File(destino, entry.getName()).getCanonicalFile();
+        if (!saida.toPath().startsWith(destino.getCanonicalFile().toPath())) {
+            throw new SecurityException("fora do destino");
+        }
+    }
+
+    void redirectComCondicao(jakarta.servlet.http.HttpServletResponse resp, String next) throws Exception {
+        // ok: sentinel-open-redirect
+        resp.sendRedirect(next != null && next.startsWith("/") && !next.startsWith("//") ? next : "/inicio");
+    }
+
+    void redirectComValidacaoAntes(jakarta.servlet.http.HttpServletResponse resp, String next) throws Exception {
+        if (next.startsWith("/") && !next.startsWith("//")) {
+            // ok: sentinel-open-redirect
+            resp.sendRedirect(next);
+        }
+    }
+
+    String redirectSpringDestinoEmPortugues(String destino) {
+        // ruleid: sentinel-open-redirect-spring
+        return "redirect:" + destino;
+    }
+
+    String redirectSpringRetornoEmPortugues(String retorno) {
+        // ruleid: sentinel-open-redirect-spring
+        return "redirect:" + retorno;
+    }
+
+    String redirectSpringDestinoValidado(String destino) {
+        if (destino.startsWith("/") && !destino.startsWith("//")) {
+            // ok: sentinel-open-redirect-spring
+            return "redirect:" + destino;
+        }
+        return "redirect:/inicio";
+    }
+
+    java.io.InputStream ssrfDiretoDaRequisicao(jakarta.servlet.http.HttpServletRequest req) throws Exception {
+        // ruleid: sentinel-ssrf-url-do-parametro
+        return new URL(req.getParameter("url")).openStream();
+    }
+
+    java.io.InputStream urlFixaNaoEUmSsrf() throws Exception {
+        // ok: sentinel-ssrf-url-do-parametro
+        return new URL("https://api.parceiro.com.br/cotacao").openStream();
+    }
 }

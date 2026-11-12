@@ -1220,3 +1220,11 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Mudança:** `TRIVY_OFFLINE=true` (`sentinel.audit.trivy.offline`, padrão `false`) roda sempre com `--offline-scan`, sem tentar a rede e sem o aviso. O aviso do caminho padrão agora diz que só faltam dependências se o cache não cobrir o projeto. Documentado em `docs/guia/cache-maven.md`.
 - **Testes:** `TrivyOfflineTest` usa um `trivy` falso (429 com rede, relatório vazio com `--offline-scan`) e confere as chamadas e a nota nos dois modos.
 - **Limite:** no modo offline o Sentinel não detecta cache incompleto; a doc manda aquecer o cache por projeto antes de ligar.
+
+## Regras: lacunas e falsos positivos achados pelo `sentinel-alvo` (`core-security` 1.7.0, `core-iac` 1.0.2)
+
+- **Por quê:** o projeto [`sentinel-alvo`](https://github.com/joaopaulosistemas/sentinel-alvo) escreve, para cada regra, um exemplo vulnerável e um correto a partir do problema (CWE), sem olhar a regra, e confere se o motor pega um e deixa o outro. Das 73 regras com caso, 5 não pegavam o exemplo e 2 marcavam a defesa recomendada.
+- **Lacunas fechadas:** `zip-slip` (agora vê `ZipEntry e;` declarado antes do laço e `for (ZipEntry e : ...)`); `open-redirect-spring` (nomes `destino`, `retorno`, `volta`, `proxim*`); `api-jwt-chave-fixa` (`signWith(alg, "literal")` do jjwt 0.9); `ssrf-url-do-parametro` (`new URL(req.getParameter(...))` direto); `docker-imagem-latest` (passa a valer em `Dockerfile.prod`, `app.Dockerfile` etc.: virou regex em vez da linguagem `dockerfile`, que o motor só aplica ao arquivo chamado exatamente `Dockerfile`).
+- **Falsos positivos fechados:** `open-redirect` e `open-redirect-spring` não marcam destino validado com `startsWith("/")` nem expressão condicional; `zip-slip` e `servlet-path-traversal` aceitam `getCanonicalFile()` seguido de `startsWith` (o uso do caminho canônico sem a conferência continua sendo achado).
+- **Testes:** casos `ruleid`/`ok` novos em `sentinel-java-extras.java`, `sentinel-owasp-api.java`, `sentinel-taint.java` e `sentinel-dockerfile.dockerfile`.
+- **Limite:** o verificador do `sentinel-alvo` roda o motor sobre as regras, não a API inteira; as demais regras ainda não têm caso lá.

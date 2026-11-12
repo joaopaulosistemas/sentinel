@@ -1,12 +1,18 @@
 # Boas práticas e riscos em Dockerfiles.
 rules:
   - id: sentinel-docker-imagem-latest
-    pattern: FROM $IMAGE:latest
+    # Regex (e não a linguagem dockerfile) para valer também em Dockerfile.prod, app.Dockerfile etc.: o motor só
+    # reconhece como dockerfile o arquivo chamado exatamente "Dockerfile".
+    pattern-regex: (?im)^\s*FROM\s+(--\S+\s+)*\S+:latest(\s|$)
     message: >
       Imagem base com a tag ':latest': o build deixa de ser reprodutível e pode trazer vulnerabilidades novas sem aviso.
       Fixe uma versão (ou o digest sha256).
     severity: WARNING
-    languages: [dockerfile]
+    languages: [regex]
+    paths:
+      include:
+        - "*Dockerfile*"
+        - "*.dockerfile"
     metadata:
       category: security
       cwe: "CWE-1357: Reliance on Insufficiently Trustworthy Component"

@@ -70,6 +70,10 @@ rules:
       # response.encodeURL("literal") só acrescenta o id de sessão a um destino fixo; o "url" no nome do método não é entrada do usuário
       - pattern-not: $R.sendRedirect($E.encodeURL("..."))
       - pattern-not: $R.sendRedirect($E.encodeRedirectURL("..."))
+      # destino escolhido por uma condição (`ok ? destino : "/inicio"`) ou validado antes (`if (destino.startsWith("/"))`)
+      - pattern-not: "$R.sendRedirect($C ? $A : $B)"
+      - pattern-not-inside: |
+          if (<... $X.startsWith("/") ...>) { ... }
       - metavariable-regex:
           metavariable: $X
           regex: (?i).*(param|url|redirect|return|next|target|dest|uri).*
@@ -137,9 +141,13 @@ rules:
           - pattern: $B.header(HttpHeaders.LOCATION, $X)
       # nomes que denunciam um destino vindo do usuário; "dest"/"target" ficam de fora porque costumam indexar
       # um mapa de destinos fixos (redirect:" + destinos.get(id))
+      - pattern-not-inside: |
+          if (<... $X.startsWith("/") ...>) { ... }
+      # inclui os nomes mais comuns em português (destino, retorno, volta, proximo): o código de quem usa o Sentinel
+      # costuma ser escrito assim
       - metavariable-regex:
           metavariable: $X
-          regex: (?i)^(\w*url|\w*uri|redirect\w*|return\w*|next|continue|callback|\w*param\w*)$
+          regex: (?i)^(\w*url|\w*uri|redirect\w*|return\w*|next|continue|callback|\w*param\w*|destino\w*|retorno\w*|volta\w*|proxim\w*)$
     message: >
       Redirecionamento (redirect: / cabeçalho Location) para '$X', que parece vir da requisição: o atacante usa
       seu domínio para phishing. Valide contra uma lista de destinos permitidos ou aceite só caminhos relativos.
@@ -181,6 +189,12 @@ rules:
           - pattern-inside: |
               ZipEntry $E = ...;
               ...
+          # `ZipEntry e; while ((e = zip.getNextEntry()) != null) { ... }` e `for (ZipEntry e : ...)`
+          - pattern-inside: |
+              ZipEntry $E;
+              ...
+          - pattern-inside: |
+              for (ZipEntry $E : ...) { ... }
           - pattern-inside: |
               $T $M(..., ZipEntry $E, ...) {
                 ...
@@ -188,6 +202,19 @@ rules:
       - pattern-not-inside: |
           if (<... $E.getName().contains("..") ...>) { ... }
           ...
+      # defesa recomendada: resolver o caminho final e conferir que continua dentro do destino
+      - pattern-not-inside: |
+          File $V = new File($D, $E.getName()).getCanonicalFile();
+          ...
+          if (<... $V.toPath().startsWith(...) ...>) { ... }
+      - pattern-not-inside: |
+          java.io.File $V = new java.io.File($D, $E.getName()).getCanonicalFile();
+          ...
+          if (<... $V.toPath().startsWith(...) ...>) { ... }
+      - pattern-not-inside: |
+          String $V = new File($D, $E.getName()).getCanonicalPath();
+          ...
+          if (<... $V.startsWith(...) ...>) { ... }
     message: >
       Arquivo extraído usando o nome da entrada do ZIP sem validar: um ZIP com "../../x" grava fora da pasta de
       destino (Zip Slip). Resolva o caminho, normalize e confira que continua dentro do diretório de destino.
@@ -383,32 +410,39 @@ rules:
       owasp: A03:2021 - Injection
 
   - id: sentinel-ssrf-url-do-parametro
-    patterns:
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: new java.net.URL($P).openConnection(...)
+              - pattern: new java.net.URL($P).openStream()
+              - pattern: new URL($P).openConnection(...)
+              - pattern: new URL($P).openStream()
+              - pattern: |
+                  $T $U = new java.net.URL($P);
+                  ...
+                  $U.openConnection(...);
+              - pattern: |
+                  $T $U = new URL($P);
+                  ...
+                  $U.openConnection(...);
+              - pattern: |
+                  $T $U = new URL($P);
+                  ...
+                  $U.openStream();
+          - pattern-not-inside: |
+              if ($P.matches(...)) { ... }
+          - pattern-not-inside: |
+              if ($P.equals(...)) { ... }
+          - pattern-not-inside: |
+              if ($P.startsWith(...)) { ... }
+          - pattern-inside: |
+              $RET $M(..., String $P, ...) { ... }
+      # URL montada direto com o dado da requisição (o caso mais comum em servlet): não há parâmetro a conferir
       - pattern-either:
-          - pattern: new java.net.URL($P).openConnection(...)
-          - pattern: new java.net.URL($P).openStream()
-          - pattern: new URL($P).openConnection(...)
-          - pattern: new URL($P).openStream()
-          - pattern: |
-              $T $U = new java.net.URL($P);
-              ...
-              $U.openConnection(...);
-          - pattern: |
-              $T $U = new URL($P);
-              ...
-              $U.openConnection(...);
-          - pattern: |
-              $T $U = new URL($P);
-              ...
-              $U.openStream();
-      - pattern-not-inside: |
-          if ($P.matches(...)) { ... }
-      - pattern-not-inside: |
-          if ($P.equals(...)) { ... }
-      - pattern-not-inside: |
-          if ($P.startsWith(...)) { ... }
-      - pattern-inside: |
-          $RET $M(..., String $P, ...) { ... }
+          - pattern: new java.net.URL($REQ.getParameter(...)).openConnection(...)
+          - pattern: new java.net.URL($REQ.getParameter(...)).openStream()
+          - pattern: new URL($REQ.getParameter(...)).openConnection(...)
+          - pattern: new URL($REQ.getParameter(...)).openStream()
     message: >
       Método que abre conexão para uma URL recebida inteira como parâmetro, sem validar o destino. Se algum chamador
       passar texto vindo da requisição, é SSRF (acesso a serviços internos, metadados de nuvem, file:// e ftp://). A origem
