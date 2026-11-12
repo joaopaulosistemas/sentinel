@@ -80,7 +80,7 @@ rules:
       category: quality
 
   - id: sentinel-tsp-abreviacao
-    pattern-regex: '\b(?:num|cod|desc|qtd|vlr|dt|tp|cd)[A-Z]\w*'
+    pattern-regex: '(?<![A-Za-z0-9])(?:num|cod|desc|qtd|vlr|dt|tp|cd)[A-Z]\w*'
     message: >
       Evite abreviações (num, cod, desc, qtd, vlr, dt...). Use o nome do domínio por extenso (numeroContaCorrente,
       codigoTarifaLegado, descricao...), para que desenvolvedores e analistas falem a mesma língua.

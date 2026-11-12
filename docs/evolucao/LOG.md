@@ -1273,3 +1273,9 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Mudança:** a regra passa a olhar também operandos de concatenação dentro dos argumentos do log.
 - **Testes:** `ruleid`/`ok` novos em `sentinel-padroes-java.java` (visto falhar antes da correção); a auto-auditoria do próprio código continua sem ERROR.
 - **Limite:** dado pessoal passado por método de formatação (`String.format`) ou mascarado por função própria não é distinguido.
+
+## Regras: abreviação em membro privado com underscore (`ts-clean-code` 1.0.1)
+
+- **Por quê:** o `sentinel-alvo` (232 regras com caso) mostrou que `tsp-abreviacao` não pegava `_qtdItens`: o `\b` inicial não separa o `_` da letra seguinte, e membro privado leva underscore pela própria norma (`tsp-privado-sem-underscore`).
+- **Mudança:** o início da palavra passa a ser "não precedido de letra ou dígito", então `_qtdItens` e `this._numConta` são pegos.
+- **Testes:** `ruleid`/`ok` novos em `sentinel-ts-padrao.ts` (visto falhar antes da correção).
