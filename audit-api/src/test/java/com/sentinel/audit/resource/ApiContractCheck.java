@@ -11,7 +11,7 @@ import java.util.TreeMap;
 /**
  * As regras do contrato OpenAPI, sobre o documento já em JSON: cada rota tem resumo, descrição, tag e resposta de sucesso
  * com tipo de mídia (e esquema quando é JSON); as rotas com parâmetro de caminho documentam o 404 e as com corpo o 400,
- * ambos com o formato {@code ApiError}; todo parâmetro tem descrição. Devolve uma linha por violação, no formato
+ * ambos num dos dois formatos de erro ({@code ApiError} ou {@code ApiKeyError}); o MCP pode responder só 405; todo parâmetro tem descrição. Devolve uma linha por violação, no formato
  * {@code METODO /caminho: o que falta}, e a lista vazia quando o contrato está completo.
  */
 public final class ApiContractCheck {
@@ -112,7 +112,7 @@ public final class ApiContractCheck {
                 found.add(route + ": resposta " + code + " em JSON sem esquema");
             }
         }
-        if (!anySuccess) {
+        if (!anySuccess && !route.contains(" /mcp/")) {
             found.add(route + ": sem resposta de sucesso");
         }
     }
@@ -127,7 +127,8 @@ public final class ApiContractCheck {
 
     private static boolean isApiError(JsonNode response) {
         JsonNode ref = response.path("content").path(JSON).path("schema").path("$ref");
-        return ref.asText("").endsWith("/ApiError");
+        String name = ref.asText("");
+        return name.endsWith("/ApiError") || name.endsWith("/ApiKeyError");
     }
 
     private static boolean blank(JsonNode node) {

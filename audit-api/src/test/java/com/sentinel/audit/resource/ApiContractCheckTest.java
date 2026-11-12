@@ -72,15 +72,28 @@ class ApiContractCheckTest {
     @Test
     void exige404ComApiErrorQuandoHaParametroDeCaminho() throws Exception {
         List<String> semNada = check(op("r", "d", "[\"T\"]", "{\"200\":" + OK_JSON + "}", PARAM_OK));
-        assertTrue(semNada.toString().contains("sem 404 com o formato ApiError"), semNada.toString());
+        assertTrue(semNada.toString().contains("sem 404 com formato de erro"), semNada.toString());
         List<String> semContent = check(op("r", "d", "[\"T\"]", "{\"200\":" + OK_JSON + ",\"404\":{}}", PARAM_OK));
-        assertTrue(semContent.toString().contains("sem 404 com o formato ApiError"), semContent.toString());
+        assertTrue(semContent.toString().contains("sem 404 com formato de erro"), semContent.toString());
     }
 
     @Test
     void exige400ComApiErrorQuandoHaCorpo() throws Exception {
         List<String> v = check(op("r", "d", "[\"T\"]", completeResponses(), PARAM_OK + "\"requestBody\":{},"));
-        assertTrue(v.toString().contains("sem 400 com o formato ApiError"), v.toString());
+        assertTrue(v.toString().contains("sem 400 com formato de erro"), v.toString());
+    }
+
+    @Test
+    void aceitaOFormatoDeErroComChaveError() throws Exception {
+        String erro = ERRO.replace("/ApiError", "/ApiKeyError");
+        assertEquals(List.of(), check(op("r", "d", "[\"T\"]", "{\"200\":" + OK_JSON + ",\"404\":" + erro + "}", PARAM_OK)));
+    }
+
+    @Test
+    void mcpPodeResponderSoErro405() throws Exception {
+        JsonNode doc = new ObjectMapper().readTree("{\"paths\":{\"/mcp/{system}\":{\"get\":"
+                + op("r", "d", "[\"T\"]", "{\"405\":{}}", PARAM_OK) + "}}}");
+        assertEquals(List.of(), ApiContractCheck.violations(doc));
     }
 
     @Test
