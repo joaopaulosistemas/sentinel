@@ -15,3 +15,7 @@ javac.*.args
 # Cache Maven do Trivy (scripts/aquecer-cache-maven.sh): por máquina, não versiona
 .m2-cache/
 audit-dashboard/coverage/
+
+# Python
+__pycache__/
+*.pyc

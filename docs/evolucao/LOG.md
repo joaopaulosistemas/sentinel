@@ -1322,6 +1322,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Pendente (manual, João):** T039 desta spec e T022 da spec 002.
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`. Só documentação; sem código.
 
+## Dashboard 12.95.0 — CI roda o teste de `conferir-esquema.py` (spec 001, A6 da análise)
+
+- **Por quê:** `scripts/test_conferir_esquema.py` (PR B da spec 001) protege a checagem de esquema contra regressão, mas nunca rodava no CI. Mudança em `.github/workflows/ci.yml` autorizada pelo João.
+- **Mudança:** o arquivo entra no passo "Testes dos scripts de regras" do job `API, CLI e pacotes de regras`, ao lado dos outros testes de scripts.
+- **Junto:** 13 arquivos `scripts/__pycache__/*.pyc` tinham sido versionados por engano (vários vieram de PRs anteriores meus); saem do repositório e `__pycache__/` e `*.pyc` entram no `.gitignore`.
+- **Verificado:** os 5 testes passam localmente; YAML do workflow lido; `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** a execução no runner do CI (o PR prova).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

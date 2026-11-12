@@ -126,7 +126,7 @@ jobs:
       - run: bash scripts/instalar-opengrep.sh
       - name: Testes dos scripts de regras (runner, dedup, perfis, CWEs)
         run: |
-          python3 -m unittest scripts/test_testar_pacote.py scripts/test_verificar_regras.py scripts/test_dedup.py scripts/test_checkstyle_config.py
+          python3 -m unittest scripts/test_testar_pacote.py scripts/test_verificar_regras.py scripts/test_dedup.py scripts/test_checkstyle_config.py scripts/test_conferir_esquema.py
           python3 scripts/verificar-regras.py
       - name: Rodar os testes de cada pacote
         run: |
