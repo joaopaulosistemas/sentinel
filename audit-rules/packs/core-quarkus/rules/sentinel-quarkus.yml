@@ -68,6 +68,7 @@ rules:
           - metavariable-regex:
               metavariable: $M
               regex: ^(find|list|delete|update|count|stream)$
+          - pattern-not: $M("...", ...)
           - pattern-inside: |
               class $C implements PanacheRepository<$T> { ... }
     message: >
