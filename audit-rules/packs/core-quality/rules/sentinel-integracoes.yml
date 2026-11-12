@@ -7,10 +7,17 @@ rules:
       - pattern-either:
           - pattern: HttpClient.newHttpClient()
           - pattern: HttpClient.newBuilder(). ... .build()
+          # Apache HttpClient: os tempos padrão são ilimitados
+          - pattern: HttpClients.createDefault()
+          - pattern: HttpClients.custom(). ... .build()
+          - pattern: HttpClientBuilder.create(). ... .build()
       - pattern-not: HttpClient.newBuilder(). ... .connectTimeout(...). ... .build()
+      - pattern-not: HttpClients.custom(). ... .setDefaultRequestConfig(...). ... .build()
+      - pattern-not: HttpClientBuilder.create(). ... .setDefaultRequestConfig(...). ... .build()
     message: >
-      HttpClient sem connectTimeout: se o destino não responder, a conexão espera indefinidamente e prende a thread.
-      Configure HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(N)).
+      HttpClient sem timeout: se o destino não responder, a conexão espera indefinidamente e prende a thread.
+      No HttpClient do JDK use HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(N)); no do Apache,
+      setDefaultRequestConfig(RequestConfig com connectTimeout e socketTimeout).
     severity: WARNING
     languages: [java]
     paths:
@@ -127,12 +134,22 @@ rules:
 
   - id: sentinel-int-axios-sem-timeout
     patterns:
-      - pattern: |
-          axios.create({...})
-      - pattern-not: |
-          axios.create({..., timeout: $T, ...})
+      - pattern-either:
+          - patterns:
+              - pattern: |
+                  axios.create({...})
+              - pattern-not: |
+                  axios.create({..., timeout: $T, ...})
+          # chamada direta, sem configuração: usa o padrão ilimitado (um axios.defaults.timeout em outro arquivo
+          # resolve; nesse caso suprima o achado)
+          - pattern: axios.get($U)
+          - pattern: axios.delete($U)
+          - pattern: axios.head($U)
+          - pattern: axios.post($U, $D)
+          - pattern: axios.put($U, $D)
+          - pattern: axios.patch($U, $D)
     message: >
-      Instância do axios sem timeout (o padrão é ilimitado). Configure axios.create({ timeout: ... }).
+      axios sem timeout (o padrão é ilimitado). Configure axios.create({ timeout: ... }) ou passe { timeout } na chamada.
     severity: WARNING
     languages: [typescript, javascript]
     paths:
