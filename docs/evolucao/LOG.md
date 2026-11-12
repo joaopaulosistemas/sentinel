@@ -1345,6 +1345,13 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado:** nada foi implementado; metas numéricas e orçamento de tempo não existem ainda (dependem da linha de base da 003); os nomes dos jobs do CI ficam para cada plano.
 
+## Tarefas da spec 003 (sem versão nova)
+
+- **Por quê:** próximo passo do fluxo SDD depois do plano da spec 003 (medição e prova).
+- **Mudança (só documentação):** `specs/003-medicao-e-prova/tasks.md` com 69 tarefas em 9 fases, organizadas pelas fatias A a F do plano; testes antes do código em cada fatia (princípio II); 5 tarefas marcadas como dependentes de autorização do João (`.github/`, lista de repositórios reservados e de código real, medição do reservado).
+- **Verificado:** formato das tarefas conferido por script (IDs sequenciais, todas no padrão); `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado:** nada foi implementado; a ordem e as dependências ainda passam pelo `/speckit-analyze`, que deve rodar antes de `/speckit-implement`.
+
 ## 12.96.0 — Ranking de Sistemas: a barra da nota voltou a aparecer
 
 - **Por quê:** na tela de ranking só apareciam a linha da meta e o número; as barras sumiram. Regressão do PR #238 (selo de escopo da spec 001): ele colocou a barra dentro de um novo `span` flex, e o contêiner passou a encolher ao tamanho do conteúdo, deixando a trilha (`flex: 1`) com largura 0.
