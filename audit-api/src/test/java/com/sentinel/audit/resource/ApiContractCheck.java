@@ -11,7 +11,7 @@ import java.util.TreeMap;
 /**
  * As regras do contrato OpenAPI, sobre o documento já em JSON: cada rota tem resumo, descrição, tag e resposta de sucesso
  * com tipo de mídia (e esquema quando é JSON); as rotas com parâmetro de caminho documentam o 404 e as com corpo o 400,
- * ambos num dos dois formatos de erro ({@code ApiError} ou {@code ApiKeyError}); o MCP pode responder só 405; todo parâmetro tem descrição. Devolve uma linha por violação, no formato
+ * ambos num dos dois formatos de erro ({@code ApiError} ou {@code ApiKeyError}); o MCP pode responder só 405; todo parâmetro tem descrição; todo corpo JSON descreve cada propriedade e nenhum exemplo parece um segredo. Devolve uma linha por violação, no formato
  * {@code METODO /caminho: o que falta}, e a lista vazia quando o contrato está completo.
  */
 public final class ApiContractCheck {
@@ -19,6 +19,8 @@ public final class ApiContractCheck {
     private static final Set<String> VERBS = Set.of("get", "post", "put", "delete", "patch");
     private static final List<String> OUTSIDE_STANDARD_ERRORS = List.of("/api/v1/health", "/api/v1/webhooks/", "/mcp/");
     private static final String JSON = "application/json";
+    private static final java.util.regex.Pattern SECRET_LOOKING =
+            java.util.regex.Pattern.compile("ghp_|glpat-|\\bsk-|AKIA[0-9A-Z]{12}|\\b[0-9a-fA-F]{32,}\\b");
 
     private ApiContractCheck() {
     }
@@ -55,7 +57,48 @@ public final class ApiContractCheck {
                 }
             }
         }
+        checkRequestBodies(document, found);
+        checkExamples(document, "$", found);
         return found;
+    }
+
+    /** Todo corpo de requisição em JSON descreve cada propriedade; corpo livre (sem propriedades) fica de fora. */
+    private static void checkRequestBodies(JsonNode document, List<String> found) {
+        for (Map.Entry<String, JsonNode> route : operations(document).entrySet()) {
+            JsonNode schema = route.getValue().path("requestBody").path("content").path(JSON).path("schema");
+            JsonNode resolved = resolve(document, schema);
+            Iterator<Map.Entry<String, JsonNode>> properties = resolved.path("properties").fields();
+            while (properties.hasNext()) {
+                Map.Entry<String, JsonNode> property = properties.next();
+                if (blank(property.getValue().path("description")) && !property.getValue().has("$ref")) {
+                    found.add(route.getKey() + ": propriedade " + property.getKey() + " do corpo sem descrição");
+                }
+            }
+        }
+    }
+
+    private static JsonNode resolve(JsonNode document, JsonNode schema) {
+        String ref = schema.path("$ref").asText("");
+        return ref.startsWith("#/") ? document.at(ref.substring(1)) : schema;
+    }
+
+    /** Nenhum exemplo do documento pode parecer um token ou uma chave real. */
+    private static void checkExamples(JsonNode node, String where, List<String> found) {
+        if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> it = node.fields();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> child = it.next();
+                if (child.getKey().equals("example") && child.getValue().isTextual()
+                        && SECRET_LOOKING.matcher(child.getValue().asText()).find()) {
+                    found.add(where + ": exemplo parece um segredo real");
+                }
+                checkExamples(child.getValue(), where + "/" + child.getKey(), found);
+            }
+        } else if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) {
+                checkExamples(node.get(i), where + "/" + i, found);
+            }
+        }
     }
 
     private static void checkOperation(String route, String path, JsonNode op, List<String> found) {

@@ -15,6 +15,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
@@ -36,7 +37,7 @@ public class SettingsResource {
     private static final Logger LOG = Logger.getLogger(SettingsResource.class);
     private static final long RESTART_DELAY_MS = 800;
 
-    public record SaveRequest(Map<String, String> values) {}
+    public record SaveRequest(@Schema(description = "Valores a salvar, por chave de configuração.") Map<String, String> values) {}
 
     @Inject
     SettingsService service;

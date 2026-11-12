@@ -35,7 +35,10 @@ public class RuleResource {
     private static final int HTTP_UNPROCESSABLE = 422;
 
 
-    public record PlaygroundRequest(@NotNull String rule, @NotNull String code, @NotNull String extension) {}
+    public record PlaygroundRequest(
+            @Schema(description = "Regra Semgrep em YAML.") @NotNull String rule,
+            @Schema(description = "Trecho de código sobre o qual a regra é executada.") @NotNull String code,
+            @Schema(description = "Extensão do arquivo do trecho, que define a linguagem.", example = ".java") @NotNull String extension) {}
 
     @Inject
     RuleQualityService qualityService;

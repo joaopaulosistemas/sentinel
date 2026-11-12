@@ -1267,6 +1267,17 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** compilação e testes Java (Maven sem acesso ao Maven Central aqui); o CI prova. Algumas rotas respondem erros em `{"error":...}` em vez de `ApiError` e estão anotadas assim; o Swagger UI não foi aberto num navegador.
 
+## Dashboard 12.89.0 — OpenAPI: esquemas dos corpos de requisição com descrição e exemplo (spec 002, PR C)
+
+- **Spec:** `specs/002-documentar-api-openapi` (história 1; tarefas T016–T017).
+- **Por quê:** os corpos de requisição apareciam no Swagger como campos soltos, sem dizer o que cada um significa nem um valor de exemplo.
+- **Mudança (só documentação do contrato; nenhuma rota muda):**
+  - `@Schema(description, example)` em cada campo de `CreateSystemRequest`, `CreateAuditRequest`, `SuppressRequest`, `BatchSuppressRequest`, `ScheduleRequest`, `ProfileRequest`, `RepoCheckRequest`, `PathCheckRequest` e nos corpos declarados nos resources (laboratório de regras, revisão do Claude, configurações, MCP). Exemplos são valores de mentira; os campos de token e segredo não têm exemplo.
+  - `ApiContractCheck` passa a exigir descrição em toda propriedade de corpo JSON (corpo livre, como o do ajuste do motor, fica de fora) e a recusar exemplo que pareça token ou chave (`ghp_`, `glpat-`, `sk-`, `AKIA...`, hexadecimal longo); `ApiContractCheckTest` prova cada regra.
+- **Fora desta entrega:** as propriedades dos DTOs de resposta ainda não têm descrição por campo; ficam para uma próxima rodada.
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** compilação e testes Java (Maven sem acesso ao Maven Central aqui); o CI prova.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

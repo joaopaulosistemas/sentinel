@@ -1,5 +1,6 @@
 package com.sentinel.audit.dto;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -13,6 +14,6 @@ import jakarta.validation.constraints.Size;
  * @param auditOnPush        auditar a cada push na branch (exige o webhook configurado no GitHub/GitLab)
  */
 public record ScheduleRequest(
-        @Min(0) @Max(720) Integer auditIntervalHours,
-        @Size(max = 255) @Pattern(regexp = "^$|^[A-Za-z0-9][A-Za-z0-9._/-]*$", message = "Nome de branch inválido") String branch,
-        Boolean auditOnPush) {}
+        @Schema(description = "A cada quantas horas auditar; 0 ou ausente desliga (máximo 720, 30 dias).", example = "24") @Min(0) @Max(720) Integer auditIntervalHours,
+        @Schema(description = "Branch auditada automaticamente. Vazio = main.", example = "main") @Size(max = 255) @Pattern(regexp = "^$|^[A-Za-z0-9][A-Za-z0-9._/-]*$", message = "Nome de branch inválido") String branch,
+        @Schema(description = "Auditar a cada push na branch; exige o webhook configurado no GitHub ou GitLab.") Boolean auditOnPush) {}

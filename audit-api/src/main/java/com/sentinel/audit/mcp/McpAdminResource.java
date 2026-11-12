@@ -17,6 +17,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -35,7 +36,7 @@ import java.util.List;
 @Tag(name = "MCP", description = "Acesso do Claude (MCP) aos resultados de um sistema")
 public class McpAdminResource {
 
-    public record McpConfigRequest(Boolean enabled, String dataLevel, List<String> tools) {}
+    public record McpConfigRequest(@Schema(description = "Liga ou desliga o acesso MCP do sistema.") Boolean enabled, @Schema(description = "Nível de dados que o MCP pode devolver.") String dataLevel, @Schema(description = "Ferramentas MCP liberadas para o sistema.") List<String> tools) {}
 
     /** A chave aparece aqui uma única vez; depois só o começo dela. */
     public record NewKeyResponse(String key, String keyPrefix) {}
