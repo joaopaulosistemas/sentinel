@@ -1270,6 +1270,7 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
   - API (aditiva): `SystemSummaryResponse.disabledSides` (lista, nunca nula) vem da última auditoria **concluída**; mudar o ajuste depois não muda o selo até a próxima auditoria concluir.
   - Relatórios: selo ao lado da nota nos HTML/PDF técnico e executivo e na tabela do portfólio (o CSV não muda).
   - Dashboard: selo no ranking de sistemas (`scopeBadge.ts`, `RankingPage`).
+- **Verificador de esquema:** `scripts/conferir-esquema.py` (job `Imagens Docker e Helm`) só entendia DROP INDEX e fuso nas migrações depois do V1; passou a entender `ADD COLUMN`, com `scripts/test_conferir_esquema.py` (rodado aqui; ainda não listado no passo de testes do CI, que fica em `.github/`).
 - **Testes:** `AuditScopeTest`, `AuditRunStoreTest`, `SystemViewsTest`, `ReportServiceTest`, `PdfReportServiceTest`, `PortfolioReportServiceTest`, `RankingPage.test.tsx`, `scopeBadge.test.ts`.
 - **Verificado:** `tsc` e os testes novos do dashboard rodados aqui (9 verdes); `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** testes Java e a migração contra um PostgreSQL real (Maven não alcança o Maven Central aqui); o CI deste PR verifica (job de integração com PostgreSQL real aplica a V6). A tela não foi vista num navegador real (T039).

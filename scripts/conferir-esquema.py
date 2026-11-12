@@ -2,7 +2,8 @@
 """Confere que o esquema do banco depois da subida da API (Flyway + Hibernate) é igual ao V1 do Flyway.
 Se o Hibernate ainda precisou criar ou alterar algo, falta uma migração: o script lista a diferença e sai com 1.
 Uso: conferir-esquema.py <pg_dump.sql> <V1__baseline.sql> [V2.sql V3.sql ...]
-As migrações depois do V1 só entram pelo que mudam no esquema: DROP INDEX e ALTER COLUMN ... TYPE timestamp(6) with time zone."""
+As migrações depois do V1 só entram pelo que mudam no esquema: DROP INDEX, ALTER COLUMN ... TYPE timestamp(6) with time zone
+e ADD COLUMN (a coluna entra no fim do CREATE TABLE do V1, como o pg_dump a mostra)."""
 import re
 import sys
 
@@ -45,6 +46,21 @@ def _aplica_fuso(v1, comando):
     return novo
 
 
+def _aplica_coluna(v1, comando):
+    """ALTER TABLE t ADD COLUMN c tipo: a coluna entra no fim do CREATE TABLE do V1 (varchar(n) vira character varying(n))."""
+    m = re.match(r"ALTER TABLE (?:ONLY )?(?:public\.)?(\w+) ADD COLUMN (\w+) (.+)$", comando)
+    if not m:
+        return v1
+    tipo = re.sub(r"\bvarchar\b", "character varying", m.group(3))
+    novo = set()
+    for x in v1:
+        criar = re.match(r"(CREATE TABLE (?:public\.)?%s \()(.*?)(\s*\))$" % m.group(1), x)
+        if criar:
+            x = "%s%s, %s %s%s" % (criar.group(1), criar.group(2), m.group(2), tipo, criar.group(3))
+        novo.add(x)
+    return novo
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
@@ -56,6 +72,7 @@ def main():
             if m:
                 v1 = {x for x in v1 if not re.match(r"CREATE (?:UNIQUE )?INDEX %s ON " % m.group(1), x)}
             v1 = _aplica_fuso(v1, c)
+            v1 = _aplica_coluna(v1, c)
     so_banco, so_v1 = sorted(banco - v1), sorted(v1 - banco)
     for c in so_banco:
         print("Só no banco (falta migração):", c[:300])
