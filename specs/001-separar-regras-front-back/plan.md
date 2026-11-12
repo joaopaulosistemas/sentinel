@@ -50,7 +50,7 @@ specs/001-separar-regras-front-back/
 ├── contracts/
 │   ├── api-sistemas.md
 │   └── pacote-ferramentas.md
-└── tasks.md             # saída de /speckit-tasks (ainda não criado)
+└── tasks.md             # saída de /speckit-tasks
 ```
 
 ### Código-fonte (caminhos reais do repositório)
@@ -83,7 +83,7 @@ docs/evolucao/LOG.md, docs/referencia/pacotes-de-regras.md   # registro e docume
 |---|---|---|---|
 | A | 2 e 3 (FR-008, FR-010) | `side` em `ToolSpec`/`ToolSpecParser`, skip no `SarifAnalyzer`, `side:` nas 4 ferramentas, teste de guarda, LOG e docs | `API, CLI e pacotes de regras` |
 | B | 1 (FR-009) | `disabledSides` no resumo, selo no ranking e nos relatórios, testes `vitest` e Java | `Dashboard`, `API, CLI e pacotes de regras` |
-| C | 4 (FR-011), opcional | Opengrep sem as regras do lado desligado | `Calibração em vários repositórios`, `OWASP Benchmark (recall e precisão)` |
+| C | 4 (FR-011), **cancelado** | Opengrep sem as regras do lado desligado (ver `research.md` R6) | — |
 
 O PR C só entra se a verificação do `research.md` R6 mostrar um caminho seguro. O PR B inclui uma migração de banco (coluna anulável, V6) e uma mudança aditiva na API.
 

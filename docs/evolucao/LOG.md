@@ -1314,6 +1314,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** compilação e testes Java; o CI prova (e lista qualquer propriedade que tenha sobrado).
 
+## Dashboard 12.94.0 — spec 001: correções da análise cruzada (`/speckit-analyze`)
+
+- **Spec:** `specs/001-separar-regras-front-back`. T038 feita depois da entrega, só como registro: 0 achados críticos, 4 médios e 4 baixos.
+- **Mudança (só documentação):** status "Concluída no código" com T039 pendente; História 4 e PR C marcados como cancelados; número certo de regras que o guarda achou (15, não 3); textos velhos do plano e de T027 atualizados; nota de terminologia (grupo/escopo = lado); SC-005 explica que é provado pelos jobs de calibração e do OWASP Benchmark.
+- **Não aplicado (precisa de autorização para tocar `.github/`):** rodar `scripts/test_conferir_esquema.py` no CI.
+- **Pendente (manual, João):** T039 desta spec e T022 da spec 002.
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`. Só documentação; sem código.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

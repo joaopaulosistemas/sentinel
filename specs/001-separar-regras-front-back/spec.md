@@ -2,14 +2,14 @@
 
 **Branch da funcionalidade**: `001-separar-regras-front-back`
 **Criada em**: 2026-11-12 · **Revisada em**: 2026-11-12 (após ler o código)
-**Status**: Concluída em 2026-11-12 (PR A #235 e PR B #238; FR-011 cancelado, ver `research.md` R6)
+**Status**: Concluída no código em 2026-11-12 (PR A #235 e PR B #238; FR-011 cancelado, ver `research.md` R6). Falta a conferência manual do `quickstart.md` com Docker e navegador (T039, do João). Análise cruzada feita depois da entrega: ver tasks.md, T038.
 **Origem**: pedido do João: separar as regras do Sentinel em front-end e back-end, refletir isso na tela Motor de regras e permitir que um projeto só Java desligue tudo de front (e o contrário).
 
 > **Correção.** A primeira versão desta spec descrevia a funcionalidade inteira como se não existisse. Ao ler o código, vimos que ela já está na `main` desde o Dashboard 12.48.0 (um lado, `back`, `front` ou `comum`, em cada regra e analisador) e 12.49.0 (campo `disableSides` por sistema, bloco "Escopo da auditoria" na aba Motor de regras, abas por lado). Esta versão descreve **só o que ainda falta**, e o que já existe aparece como linha de base. Fontes: `docs/evolucao/LOG.md` (entradas 12.48.0 e 12.49.0) e o código em `audit-api/.../pack/RuleSide.java`, `SystemTuning.java` e `AuditPolicy.java`.
 
 ## Linha de base: o que já funciona
 
-- Cada regra tem um lado: `metadata.side` na regra, ou dedução pela linguagem e pelos caminhos (`RuleSide`). 255 regras marcadas na 12.48.0: 142 back, 89 front, 24 comuns.
+- Cada regra tem um lado: `metadata.side` na regra, ou dedução pela linguagem e pelos caminhos (`RuleSide`). 255 regras marcadas na 12.48.0 (142 back, 89 front, 24 comuns); na 12.85.0 são 311 (192 back, 92 front, 27 comuns).
 - O ajuste do sistema tem `disableSides` (`back` e/ou `front`, nunca os dois). Lado desligado tira as regras do lado e não roda os analisadores do lado (PMD, OWASP-Dependency e Evidências no back; ESLint e código morto no front). CleanCode e Duplicação perdem só os achados dos arquivos do lado desligado.
 - Regras de Docker, Kubernetes e IaC são "comuns" e continuam sempre ligadas. Sistemas antigos continuam iguais.
 - A aba Motor de regras mostra o escopo, as abas Back-end, Front-end e Infra e comum, e a coluna Lado.
@@ -17,6 +17,8 @@
 ## Clarifications
 
 ### Session 2026-11-12
+
+> Nota de terminologia: nas respostas abaixo, "grupo" e "escopo" querem dizer **lado** (back, front, comum). O texto original foi mantido.
 
 - Q: As regras de Docker, Kubernetes, SQL e infraestrutura como código ganham interruptor próprio, ficam sempre ligadas ou entram no back-end? → A: Sempre ligadas, fora do interruptor. (Já é assim hoje.)
 - Q: O que acontece quando uma regra nova é adicionada sem informar o grupo? → A (João, antes de sabermos que a dedução existia): o pacote falha ao carregar. **Substituída em 2026-11-12**, por delegação do João ("escolha a melhor"): manter a dedução atual e acrescentar um teste de guarda (ver história 3). Motivo: falhar ao carregar quebraria pacotes de terceiros e o princípio V da constituição (plug-and-play), e as 255 regras atuais já passam pela dedução.
@@ -76,7 +78,7 @@ Quem escreve uma regra nova de código sem `metadata.side` descobre, no teste do
 
 ---
 
-### História 4 — Desligar um lado também economiza tempo no Opengrep (Prioridade: P3)
+### História 4 — Desligar um lado também economiza tempo no Opengrep (Prioridade: P3) — CANCELADA (ver `research.md` R6)
 
 Hoje o Opengrep lê as regras dos dois lados e os achados do lado desligado são filtrados depois (corretos, mas sem ganho de tempo). O objetivo é não executar as regras do lado desligado.
 
@@ -127,7 +129,7 @@ Hoje o Opengrep lê as regras dos dois lados e os achados do lado desligado são
 - **SC-002**: em um sistema com os dois lados ligados, o conjunto de achados e a nota ficam idênticos aos da versão anterior.
 - **SC-003**: o selo aparece no Ranking e nos relatórios (de um sistema e de todos) em 100 % dos sistemas com lado desligado e em 0 % dos demais.
 - **SC-004**: o teste de guarda falha para uma regra de código sem lado declarado que a dedução classifique como comum, e passa com as regras atuais.
-- **SC-005**: os testes de precisão e calibração existentes (OWASP Benchmark, `calibracao.sh`) continuam passando sem queda, já que a detecção não muda.
+- **SC-005**: os testes de precisão e calibração existentes (OWASP Benchmark, `calibracao.sh`) continuam passando sem queda, já que a detecção não muda. Não tem tarefa própria: é provado pelos jobs de calibração e do OWASP Benchmark do CI nos PRs que tocam regras; a conferência de que rodaram em cada PR é manual.
 
 ## Premissas
 
