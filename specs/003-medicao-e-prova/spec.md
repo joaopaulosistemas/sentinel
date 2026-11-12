@@ -1,6 +1,6 @@
 # Especificação: Sentinel Premium 1 — Medição e prova
 
-**Ramo**: `spec/003-medicao-e-prova` | **Criada**: 2026-11-12 | **Status**: Rascunho esclarecido (Q1 respondida em 2026-11-12); pronta para `/speckit-plan`
+**Ramo**: `spec/003-medicao-e-prova` | **Criada**: 2026-11-12 | **Status**: Rascunho esclarecido (Q1 respondida em 2026-11-12); plano pronto (`plan.md`); próximo: `/speckit-tasks`
 **Pedido**: "Sentinel Premium — Plano de Ação": fazer o Sentinel entender código (não só padrões) e **provar com números**. Esta é a primeira das seis specs do plano e a única que não muda o que o Sentinel detecta: ela cria a régua. As outras cinco (menos alarme falso, modelo estrutural, rastreio entre arquivos, arquitetura verificável, prova externa) só começam depois que esta régua existir, porque sem medida "ficou melhor" é opinião.
 
 ## Linha de base: o que já existe (levantado no repositório em 2026-11-12)

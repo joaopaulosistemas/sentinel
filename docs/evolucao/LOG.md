@@ -1345,6 +1345,13 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado:** nada foi implementado; metas numéricas e orçamento de tempo não existem ainda (dependem da linha de base da 003); os nomes dos jobs do CI ficam para cada plano.
 
+## Plano da spec 003 e Q1 da spec 008 (sem versão nova)
+
+- **Por quê:** a spec 003 (medição e prova) é a base do Sentinel Premium; o plano define como construí-la. A Q1 da 008 (revisor externo) foi respondida: um colega de trabalho do João, só sobre código aberto público.
+- **Mudança (só documentação):** `specs/003-medicao-e-prova/{plan,research,data-model,quickstart}.md` e `contracts/{cli,arquivos}.md`. Decisão central: ferramenta Python única (`scripts/medicao.py`), dados em JSON em `audit-rules/calibracao/`, relatórios em `docs/evolucao/medicao/`; nada em Java, banco ou painel. Seis fatias (A a F), duas delas pedem autorização do João (mexer em `.github/` e aprovar a lista de repositórios reservados).
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`; campos de tempo (`startedAt`, `completedAt`) e formatos de gabarito conferidos no código.
+- **NÃO verificado:** nada foi implementado; o CI não detecta leitura do reservado por pessoa ou agente fora do que fica versionado (dito no plano); a linha de base real só roda no GitHub.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
