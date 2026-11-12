@@ -47,8 +47,8 @@ def _aplica_fuso(v1, comando):
 
 
 def _aplica_coluna(v1, comando):
-    """ALTER TABLE t ADD COLUMN c tipo: a coluna entra no fim do CREATE TABLE do V1 (varchar(n) vira character varying(n))."""
-    m = re.match(r"ALTER TABLE (?:ONLY )?(?:public\.)?(\w+) ADD COLUMN (\w+) (.+)$", comando)
+    """ALTER TABLE t ADD COLUMN c tipo (uma coluna, sem IF NOT EXISTS: o V2 e o V4 só completam bancos antigos): a coluna entra no fim do CREATE TABLE do V1 (varchar(n) vira character varying(n))."""
+    m = re.match(r"ALTER TABLE (?:ONLY )?(?:public\.)?(\w+) ADD COLUMN (?!IF NOT EXISTS)(\w+) ([^,]+)$", comando)
     if not m:
         return v1
     tipo = re.sub(r"\bvarchar\b", "character varying", m.group(3))
