@@ -103,6 +103,35 @@ class ReportServiceTest {
                         "A.java", 10, "usar parâmetros")));
     }
 
+    private static AuditRun runComEscopo(String disabledSides) {
+        AuditRun r = run();
+        RiskScore score = new RiskScore();
+        score.setOverall(60.0);
+        r.setRiskScore(score);
+        r.setDisabledSides(disabledSides);
+        return r;
+    }
+
+    @Test
+    void seloDeEscopoApareceAoLadoDaNotaQuandoHaLadoDesligado() {
+        List<Finding> none = List.of();
+        String tecnico = new ReportService().generateHtmlReport(runComEscopo("front"), none);
+        String executivo = new ReportService().generateExecutiveReport(runComEscopo("back"), none, plan(), null, 75);
+
+        assertTrue(tecnico.contains("front-end desligado"), "técnico");
+        assertTrue(executivo.contains("back-end desligado"), "executivo");
+    }
+
+    @Test
+    void seloDeEscopoNaoApareceComOsDoisLadosLigadosOuEscopoDesconhecido() {
+        for (String stored : new String[] {"", null}) {
+            String tecnico = new ReportService().generateHtmlReport(runComEscopo(stored), List.of());
+            String executivo = new ReportService().generateExecutiveReport(runComEscopo(stored), List.of(), plan(), null, 75);
+            assertFalse(tecnico.contains("desligado"), "técnico, escopo=" + stored);
+            assertFalse(executivo.contains("desligado"), "executivo, escopo=" + stored);
+        }
+    }
+
     @Test
     void relatorioExecutivoMostraNotaMetaEPrioridades() {
         AuditRun r = run();

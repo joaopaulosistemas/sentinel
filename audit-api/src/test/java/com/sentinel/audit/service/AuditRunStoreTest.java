@@ -53,6 +53,28 @@ class AuditRunStoreTest {
     }
 
     @Test
+    void escopoDaAuditoriaEGravadoNoInicioEUmaSoVez() {
+        AuditRun r = run(10, AuditStatus.RUNNING);
+
+        store.storeScope(10L, AuditScope.encode(java.util.Set.of("front")));
+        store.storeScope(10L, AuditScope.encode(java.util.Set.of("back")));
+
+        assertEquals("front", r.getDisabledSides(), "o valor gravado no início não muda depois");
+    }
+
+    @Test
+    void escopoVazioSignificaOsDoisLadosLigadosEDiferenteDeNulo() {
+        AuditRun ligados = run(11, AuditStatus.RUNNING);
+        AuditRun antiga = run(12, AuditStatus.COMPLETED);
+
+        store.storeScope(11L, AuditScope.encode(java.util.Set.of()));
+        store.storeScope(99L, "front");
+
+        assertEquals("", ligados.getDisabledSides());
+        assertNull(antiga.getDisabledSides(), "auditoria anterior à funcionalidade segue com escopo desconhecido");
+    }
+
+    @Test
     void naoCancelaAuditoriaJaEncerradaOuInexistente() {
         AuditRun done = run(3, AuditStatus.COMPLETED);
 

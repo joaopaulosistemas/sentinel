@@ -143,7 +143,7 @@ flowchart LR
 
 ## 3. Backend `audit-api`
 
-Pacote raiz: `com.sentinel.audit`. Quarkus 3.40, bytecode Java 21 (a imagem compila com o JDK 26 e roda no JRE 25; o CI testa também na JVM da imagem), Hibernate/Panache, Flyway (`db/migration`, V1 a V5), PostgreSQL, CDI (`@ApplicationScoped`), REST (JAX-RS).
+Pacote raiz: `com.sentinel.audit`. Quarkus 3.40, bytecode Java 21 (a imagem compila com o JDK 26 e roda no JRE 25; o CI testa também na JVM da imagem), Hibernate/Panache, Flyway (`db/migration`, V1 a V6), PostgreSQL, CDI (`@ApplicationScoped`), REST (JAX-RS).
 
 ### 3.1 Camadas (desenho micro)
 
@@ -488,7 +488,7 @@ erDiagram
 - `model`: `AuditedSystem`, `AuditRun`, `Finding`, `FindingSuppression` (entidades), `RiskScore` (objeto embutido em `AuditRun`), `Severity`, `Category`, `Stack`, `FindingStatus`, `AuditStatus`, `SuppressionReason` (enums).
 - Entidades do plano Sentinel + MCP: `SystemEngineConfig` (ajuste do motor), `McpAccess` e `McpCallLog` (acesso e registro do MCP), `ReviewSuggestion` e `RuleProposal` (revisão do Claude), `PendingAction` (pedidos com aprovação); cada uma tem o seu repositório Panache.
 - Outras tabelas: `app_setting` (`AppSetting`, valores da tela de Configurações) e `audit_progress` (`AuditProgressSnapshot`, andamento das auditorias em execução). Também no pacote `model`: `SourceType` (Git ou pasta local), `LocalSnapshot` e `Confidence`.
-- Esquema: Flyway em `audit-api/src/main/resources/db/migration` (V1 baseline; V2 e V4 completam bancos antigos; V3 tira um índice redundante; V5 passa as datas para `timestamptz`). `docs/schema-referencia.sql` é só referência.
+- Esquema: Flyway em `audit-api/src/main/resources/db/migration` (V1 baseline; V2 e V4 completam bancos antigos; V3 tira um índice redundante; V5 passa as datas para `timestamptz`; V6 guarda em `audit_run.disabled_sides` o escopo da auditoria). `docs/schema-referencia.sql` é só referência.
 - `repository` (Panache): `AuditedSystemRepository`, `AuditRunRepository`, `FindingRepository`, `FindingSuppressionRepository`.
 - `dto`: `CreateSystemRequest`, `CreateAuditRequest`, `ProfileRequest`, `ScheduleRequest`, `SuppressRequest` (entradas); `SystemSummaryResponse`, `AuditRunResponse`, `FindingResponse`, `RiskScoreDto`, `RemediationDto`, `AuditDiffResponse`, `TrendPoint`, `SuppressionResponse` (saídas); `FindingMapper` converte entidade em resposta (inclui a orientação de correção).
 

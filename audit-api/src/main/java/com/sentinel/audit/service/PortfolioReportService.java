@@ -34,7 +34,8 @@ public class PortfolioReportService {
 
     /** Situação de um sistema: última auditoria concluída, achados dela e os pontos do período. */
     public record SystemSnapshot(String name, String stack, Long auditId, LocalDateTime completedAt, Double overall,
-                                 long critical, long high, List<Finding> findings, List<TrendPoint> points) {}
+                                 long critical, long high, List<Finding> findings, List<TrendPoint> points,
+                                 List<String> disabledSides) {}
 
     public enum Format {
         HTML, PDF, CSV;
@@ -78,7 +79,7 @@ public class PortfolioReportService {
         for (SystemSnapshot s : sorted) {
             Double change = change(s.points());
             String changeText = change == null ? "-" : (change > 0 ? "+" : "") + fmt(change);
-            rows.add(List.of(s.name(), nz(s.stack()), "#" + s.auditId(), fmt(s.overall()), changeText,
+            rows.add(List.of(s.name(), nz(s.stack()), "#" + s.auditId(), withBadge(fmt(s.overall()), s.disabledSides()), changeText,
                     String.valueOf(s.critical()), String.valueOf(s.high()), date(s.completedAt())));
             csv.append(ReportService.csv(s.name())).append(',').append(ReportService.csv(s.stack())).append(',')
                     .append(s.auditId()).append(',').append(fmt(s.overall())).append(',')
@@ -201,6 +202,12 @@ public class PortfolioReportService {
 
     private static String nz(String s) {
         return s == null ? "" : s;
+    }
+
+    /** Nota seguida do selo de escopo, quando a auditoria rodou com um lado desligado. */
+    private static String withBadge(String score, List<String> disabledSides) {
+        String badge = AuditScope.badge(disabledSides);
+        return badge.isEmpty() ? score : score + " (" + badge + ")";
     }
 
     private static String fmt(Double v) {

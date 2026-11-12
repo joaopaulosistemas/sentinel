@@ -75,7 +75,7 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 | `POST` | `/api/v1/systems` | Cadastra novo sistema |
 | `PUT` | `/api/v1/systems/{id}` | Edita nome, descrição, repositório, stack, time e perfil (o agendamento tem endpoint próprio) |
 | `POST` | `/api/v1/systems/check-repo` | Testa o repositório sem clonar (`git ls-remote --symref`): responde se está acessível, a branch padrão e se a branch pedida existe |
-| `GET` | `/api/v1/systems/{id}` | Detalhe do sistema (inclui `scoreDelta`: nota da última auditoria completa menos a anterior) |
+| `GET` | `/api/v1/systems/{id}` | Detalhe do sistema (inclui `scoreDelta`: nota da última auditoria completa menos a anterior; e `disabledSides`: lados `back`/`front` desligados na última auditoria concluída, `[]` quando os dois estavam ligados ou a auditoria é anterior ao campo. O resumo do `GET /api/v1/systems` traz o mesmo campo) |
 | `DELETE` | `/api/v1/systems/{id}` | Remove o sistema (e suas supressões) |
 | `PUT` | `/api/v1/systems/{id}/schedule` | Auditoria periódica / por push |
 | `GET` | `/api/v1/systems/{id}/audits` | Histórico de auditorias do sistema |

@@ -69,6 +69,13 @@ public class AuditRun {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    /**
+     * Lados desligados no ajuste do sistema quando a auditoria começou: "back", "front" ou vazio (os dois ligados).
+     * Nulo = auditoria anterior a esta coluna (escopo desconhecido).
+     */
+    @Column(name = "disabled_sides", length = 20)
+    private String disabledSides;
+
     /** Motivo da falha (preenchido apenas quando o status é FAILED). */
     @Column(name = "error_message", length = 1000)
     private String errorMessage;
@@ -211,6 +218,14 @@ public class AuditRun {
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public String getDisabledSides() {
+        return disabledSides;
+    }
+
+    public void setDisabledSides(String disabledSides) {
+        this.disabledSides = disabledSides;
     }
 
     public String getErrorMessage() {

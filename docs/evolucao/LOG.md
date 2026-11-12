@@ -1221,6 +1221,21 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Testes:** `TrivyOfflineTest` usa um `trivy` falso (429 com rede, relatório vazio com `--offline-scan`) e confere as chamadas e a nota nos dois modos.
 - **Limite:** no modo offline o Sentinel não detecta cache incompleto; a doc manda aquecer o cache por projeto antes de ligar.
 
+## Dashboard 12.86.0 — Selo de escopo na nota: "front-end desligado" / "back-end desligado" (migração V6)
+
+- **Spec:** `specs/001-separar-regras-front-back` (PR B: história 1, T019–T031).
+- **Por quê:** com um lado desligado a nota é calculada sobre menos regras e ninguém via isso no ranking nem nos relatórios, então "71" de um sistema sem front-end parecia igual a "71" de um sistema completo.
+- **Mudança:**
+  - Migração `V6__lados_desligados_na_auditoria.sql`: coluna `audit_run.disabled_sides varchar(20)`, anulável e sem padrão (`NULL` = auditoria anterior, escopo desconhecido, sem selo). Nenhuma linha é reescrita.
+  - A auditoria grava o escopo uma vez, quando começa (`AuditRunStore.storeScope`, a partir do mesmo `SystemTuning` da política); `AuditScope` codifica, decodifica e dá o texto do selo.
+  - API (aditiva): `SystemSummaryResponse.disabledSides` (lista, nunca nula) vem da última auditoria **concluída**; mudar o ajuste depois não muda o selo até a próxima auditoria concluir.
+  - Relatórios: selo ao lado da nota nos HTML/PDF técnico e executivo e na tabela do portfólio (o CSV não muda).
+  - Dashboard: selo no ranking de sistemas (`scopeBadge.ts`, `RankingPage`).
+- **Verificador de esquema:** `scripts/conferir-esquema.py` (job `Imagens Docker e Helm`) só entendia DROP INDEX e fuso nas migrações depois do V1; passou a entender `ADD COLUMN`, com `scripts/test_conferir_esquema.py` (rodado aqui; ainda não listado no passo de testes do CI, que fica em `.github/`).
+- **Testes:** `AuditScopeTest`, `AuditRunStoreTest`, `SystemViewsTest`, `ReportServiceTest`, `PdfReportServiceTest`, `PortfolioReportServiceTest`, `RankingPage.test.tsx`, `scopeBadge.test.ts`.
+- **Verificado:** `tsc` e os testes novos do dashboard rodados aqui (9 verdes); `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** testes Java e a migração contra um PostgreSQL real (Maven não alcança o Maven Central aqui); o CI deste PR verifica (job de integração com PostgreSQL real aplica a V6). A tela não foi vista num navegador real (T039).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

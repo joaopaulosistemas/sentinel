@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRuleQuality, useSystems } from '../../hooks/useSystems';
 import type { ISystemSummaryResponse } from '../../types';
 import { formatTrend, summarizeTeams } from '../../utils/ranking';
+import { scopeBadgeText } from '../../utils/scopeBadge';
 import { TARGET_SCORE as TARGET, scoreColor as barColor, scoreTagType } from '../../utils/scoreBand';
 import { timeAgo } from '../../utils/timeAgo';
 
@@ -109,6 +110,7 @@ function ScoreBar({ score }: { score: number | null | undefined }) {
 function RankingRow({ system: s, position, onOpen }: { system: ISystemSummaryResponse; position: number; onOpen: () => void }) {
   const trend = formatTrend(s.scoreDelta);
   const critical = s.openCritical ?? 0;
+  const scope = scopeBadgeText(s.disabledSides);
   return (
     <button
       type="button"
@@ -132,7 +134,10 @@ function RankingRow({ system: s, position, onOpen }: { system: ISystemSummaryRes
         <strong style={{ fontWeight: 600 }}>{s.name}</strong>
         <span style={{ fontSize: '0.75rem', color: 'var(--s-text-3)' }}>{s.team || 'Sem time'}</span>
       </span>
-      <ScoreBar score={s.lastAuditScore} />
+      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <ScoreBar score={s.lastAuditScore} />
+        {scope && <Tag type="outline" size="sm">{scope}</Tag>}
+      </span>
       <span style={{ fontWeight: 500, color: trendColor[trend.tone], fontSize: '0.8125rem' }}>{trend.text}</span>
       <span style={{ fontWeight: 600, color: critical > 0 ? 'var(--s-danger-text)' : 'var(--s-success-text)' }}>{critical}</span>
       <span style={{ fontSize: '0.8125rem', color: 'var(--s-text-3)' }}>{timeAgo(s.lastAuditDate)}</span>
