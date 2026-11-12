@@ -139,4 +139,22 @@ class ApiContractCheckTest {
                 "{\"Corpo\":{\"properties\":{\"k\":{\"description\":\"x\",\"example\":\"https://github.com/acme/app\"}}}}");
         assertEquals(List.of(), ok);
     }
+
+    private static List<String> checkComResposta(String schemas) throws Exception {
+        JsonNode doc = new ObjectMapper().readTree("{\"components\":{\"schemas\":" + schemas + "},\"paths\":{\"/api/v1/x\":{\"get\":"
+                + op("r", "d", "[\"T\"]", "{\"200\":{\"content\":{\"application/json\":{\"schema\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/components/schemas/Saida\"}}}}}}", "") + "}}}");
+        return ApiContractCheck.responseGaps(doc);
+    }
+
+    @Test
+    void acusaPropriedadeDaRespostaSemDescricaoInclusiveAninhada() throws Exception {
+        List<String> v = checkComResposta("{\"Saida\":{\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"description\":\"x\",\"$ref\":\"#/components/schemas/Dentro\"}}},"
+                + "\"Dentro\":{\"properties\":{\"c\":{\"type\":\"integer\"}}}}");
+        assertEquals(List.of("resposta Saida: propriedade a sem descrição", "resposta Dentro: propriedade c sem descrição"), v);
+    }
+
+    @Test
+    void respostaComTodasAsPropriedadesDescritasNaoAcusa() throws Exception {
+        assertEquals(List.of(), checkComResposta("{\"Saida\":{\"properties\":{\"a\":{\"description\":\"x\"}}}}"));
+    }
 }

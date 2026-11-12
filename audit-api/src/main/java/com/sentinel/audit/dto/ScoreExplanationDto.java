@@ -1,5 +1,6 @@
 package com.sentinel.audit.dto;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Severity;
 
@@ -16,8 +17,8 @@ import java.util.List;
  * @param removedRules  regras retiradas na simulação "e se"; vazio quando não há simulação
  * @param dimensions    seis dimensões com as regras que mais pesam em cada uma
  */
-public record ScoreExplanationDto(String curve, double sizeFactor, Long linesOfCode, double overallBefore, double overall,
-                                  List<String> removedRules, List<Dimension> dimensions) {
+public record ScoreExplanationDto(@Schema(description = "Curva da nota em uso (linear ou suave).") String curve, @Schema(description = "Fator por tamanho do projeto aplicado às penalidades que não são CRITICAL (1,0 = sem ajuste).") double sizeFactor, @Schema(description = "Linhas de código analisadas; nulo = desconhecido.") Long linesOfCode, @Schema(description = "Nota geral com todos os achados que contam.") double overallBefore, @Schema(description = "Nota geral desta explicação (igual à anterior, ou a simulada quando há regras retiradas).") double overall,
+                                  @Schema(description = "Regras retiradas na simulação \"e se\"; vazio quando não há simulação.") List<String> removedRules, @Schema(description = "As dimensões, com as regras que mais pesam em cada uma.") List<Dimension> dimensions) {
 
     /**
      * @param weight  peso da dimensão na nota geral
@@ -25,12 +26,12 @@ public record ScoreExplanationDto(String curve, double sizeFactor, Long linesOfC
      * @param penalty penalidade total antes da curva (CRITICAL inteiro + demais já com teto e fator de tamanho)
      * @param hidden  quantas regras menores ficaram fora da lista {@code groups}
      */
-    public record Dimension(Category category, double weight, double score, double penalty, int hidden, List<Group> groups) {}
+    public record Dimension(@Schema(description = "Dimensão.") Category category, @Schema(description = "Peso da dimensão na nota geral.") double weight, @Schema(description = "Nota da dimensão (0 a 100).") double score, @Schema(description = "Penalidade total antes da curva.") double penalty, @Schema(description = "Quantas regras menores ficaram fora de groups.") int hidden, @Schema(description = "As regras que mais pesam na dimensão.") List<Group> groups) {}
 
     /**
      * @param raw     penalidade somada de todas as ocorrências da regra nesta severidade
      * @param counted penalidade que de fato entra (depois do teto por regra); antes do fator de tamanho
      * @param capped  {@code true} quando o teto cortou: corrigir só parte das ocorrências não muda a nota
      */
-    public record Group(String ruleId, Severity severity, int count, double raw, double counted, boolean capped) {}
+    public record Group(@Schema(description = "Regra.") String ruleId, @Schema(description = "Severidade das ocorrências.") Severity severity, @Schema(description = "Quantidade de ocorrências.") int count, @Schema(description = "Penalidade somada de todas as ocorrências.") double raw, @Schema(description = "Penalidade que de fato entra, depois do teto por regra.") double counted, @Schema(description = "Verdadeiro quando o teto cortou: corrigir só parte das ocorrências não muda a nota.") boolean capped) {}
 }

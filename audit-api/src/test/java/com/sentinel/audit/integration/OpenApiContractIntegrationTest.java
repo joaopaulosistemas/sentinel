@@ -62,6 +62,7 @@ class OpenApiContractIntegrationTest {
         System.out.println("OpenAPI: " + ops.size() + " rotas conferidas");
         assertTrue(ops.size() >= MIN_OPERATIONS, "rotas no documento: " + ops.size());
         assertNoneMissing("violações do contrato", ApiContractCheck.violations(doc));
+        System.out.println("OpenAPI: " + ApiContractCheck.responseGaps(doc).size() + " propriedades de resposta ainda sem descrição");
     }
 
     /** O 404 documentado é o que a API devolve: GET com um só identificador de caminho, para um recurso que não existe. */

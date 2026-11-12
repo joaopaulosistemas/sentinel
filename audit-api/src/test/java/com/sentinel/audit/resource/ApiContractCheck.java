@@ -77,6 +77,56 @@ public final class ApiContractCheck {
         }
     }
 
+    /**
+     * Propriedades dos tipos devolvidos em respostas 2xx JSON (e dos aninhados neles) sem descrição. Fica fora de
+     * {@link #violations}: é o relatório do que falta documentar nas respostas, sem barrar o CI.
+     */
+    public static List<String> responseGaps(JsonNode document) {
+        List<String> found = new ArrayList<>();
+        checkResponseSchemas(document, found);
+        return found;
+    }
+
+    private static void checkResponseSchemas(JsonNode document, List<String> found) {
+        java.util.Set<String> visited = new java.util.TreeSet<>();
+        for (JsonNode op : operations(document).values()) {
+            Iterator<Map.Entry<String, JsonNode>> responses = op.path("responses").fields();
+            while (responses.hasNext()) {
+                Map.Entry<String, JsonNode> response = responses.next();
+                if (response.getKey().startsWith("2")) {
+                    walk(document, response.getValue().path("content").path(JSON).path("schema"), "(inline)", visited, found);
+                }
+            }
+        }
+    }
+
+    private static void walk(JsonNode document, JsonNode schema, String owner, java.util.Set<String> visited,
+                             List<String> found) {
+        if (schema.isMissingNode() || schema.isNull()) {
+            return;
+        }
+        String ref = schema.path("$ref").asText("");
+        if (!ref.isEmpty()) {
+            if (visited.add(ref)) {
+                walk(document, resolve(document, schema), ref.substring(ref.lastIndexOf('/') + 1), visited, found);
+            }
+            return;
+        }
+        Iterator<Map.Entry<String, JsonNode>> properties = schema.path("properties").fields();
+        while (properties.hasNext()) {
+            Map.Entry<String, JsonNode> property = properties.next();
+            if (blank(property.getValue().path("description")) && !property.getValue().has("$ref")) {
+                found.add("resposta " + owner + ": propriedade " + property.getKey() + " sem descrição");
+            }
+            walk(document, property.getValue(), owner, visited, found);
+        }
+        walk(document, schema.path("items"), owner, visited, found);
+        walk(document, schema.path("additionalProperties"), owner, visited, found);
+        for (JsonNode part : schema.path("allOf")) {
+            walk(document, part, owner, visited, found);
+        }
+    }
+
     private static JsonNode resolve(JsonNode document, JsonNode schema) {
         String ref = schema.path("$ref").asText("");
         return ref.startsWith("#/") ? document.at(ref.substring(1)) : schema;

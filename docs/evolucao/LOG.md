@@ -1297,6 +1297,15 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Não feito:** descrição campo a campo dos DTOs de resposta.
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`. Só documentação.
 
+## Dashboard 12.92.0 — OpenAPI: descrição campo a campo dos DTOs de resposta (spec 002, PR E)
+
+- **Spec:** `specs/002-documentar-api-openapi` (follow-up; T023).
+- **Mudança (só documentação do contrato):** `@Schema(description)` em cada campo dos DTOs de resposta do pacote `dto` (`AuditRunResponse`, `FindingResponse`, `SystemSummaryResponse`, `RiskScoreDto`, `TrendPoint`, `AuditDiffResponse`, `SuppressionResponse`, `BatchSuppressResponse`, `FindingsOverviewDto`, `FixPlanDto`, `ScoreExplanationDto`, `AuditProgressDto`) e dos records aninhados deles. As descrições vêm do Javadoc existente e do código (o `shadow` do finding, por exemplo, vem do comentário do modelo).
+- **Teste:** `ApiContractCheck.responseGaps` lista as propriedades de respostas 2xx JSON sem descrição; o teste de integração imprime a contagem, sem barrar. `ApiContractCheckTest` prova a regra.
+- **Ainda sem descrição:** os tipos aninhados de serviços devolvidos direto pelas rotas (≈50 tipos, ≈330 propriedades: mapa do projeto, configurações, pacotes, revisão do Claude, MCP, auditoria completa, evidências...). Quando a lista chegar a zero, `responseGaps` passa a entrar em `violations` e barra.
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** compilação e testes Java; o CI prova.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
