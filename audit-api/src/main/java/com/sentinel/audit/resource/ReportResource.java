@@ -4,6 +4,7 @@ import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
+import com.sentinel.audit.service.AuditScope;
 import com.sentinel.audit.service.FindingCatalog;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.service.PortfolioReportService;
@@ -117,6 +118,6 @@ public class ReportResource {
                 counts.getOrDefault(com.sentinel.audit.model.Severity.CRITICAL, 0L),
                 counts.getOrDefault(com.sentinel.audit.model.Severity.HIGH, 0L),
                 scope.kind() == ReportService.Type.TECNICO ? findingsByRun.getOrDefault(run.getId(), List.of()) : List.of(),
-                points);
+                points, AuditScope.decode(run.getDisabledSides()));
     }
 }

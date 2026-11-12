@@ -70,6 +70,15 @@ public class AuditRunStore {
         }
     }
 
+    /** Grava o escopo uma única vez, quando a auditoria começa; uma segunda chamada não altera o valor. */
+    @Transactional
+    void storeScope(Long auditRunId, String disabledSides) {
+        AuditRun run = auditRunRepository.findById(auditRunId);
+        if (run != null && run.getDisabledSides() == null) {
+            run.setDisabledSides(disabledSides);
+        }
+    }
+
     @Transactional
     void storeContext(Long auditRunId, String json) {
         AuditRun run = auditRunRepository.findById(auditRunId);

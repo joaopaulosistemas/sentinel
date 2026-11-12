@@ -201,6 +201,7 @@ public class AuditOrchestrationService {
         runRef.setId(auditRunId);
 
         state.policy = policies.forAudit(context.profile(), context.systemId());
+        store.storeScope(auditRunId, AuditScope.encode(state.policy.disabledSides()));
         progress.phase(auditRunId, AuditProgressTracker.ANALISE, "Repositório clonado; iniciando a análise");
         AnalyzerRunner.Analysis analysis = new AnalyzerRunner(analyzerSet, progress, executor)
                 .run(clonedPath, runRef, context.stack(), state.policy);

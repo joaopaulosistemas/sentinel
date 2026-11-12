@@ -67,7 +67,9 @@ public class PdfReportService {
             doc.add(h2("Resumo"));
             if (run.getRiskScore() != null && run.getRiskScore().getOverall() != null) {
                 var s = run.getRiskScore();
-                doc.add(new Paragraph("Score geral: " + fmt(s.getOverall()) + " (0-100, maior = melhor)", BOLD));
+                String scope = AuditScope.badge(AuditScope.decode(run.getDisabledSides()));
+                doc.add(new Paragraph("Score geral: " + fmt(s.getOverall()) + (scope.isEmpty() ? "" : " (" + scope + ")")
+                        + " (0-100, maior = melhor)", BOLD));
                 table(doc, List.of("Segurança", "Qualidade", "Arquitetura", "Dependências", "Observabilidade", "Desempenho"),
                         List.of(List.of(fmt(s.getSecurity()), fmt(s.getQuality()), fmt(s.getArchitecture()),
                                 fmt(s.getDependencies()), fmt(s.getObservability()), fmt(s.getPerformance()))));
@@ -118,7 +120,9 @@ public class PdfReportService {
             meta(doc, run);
             double score = run.getRiskScore() != null && run.getRiskScore().getOverall() != null
                     ? run.getRiskScore().getOverall() : plan.scoreNow();
-            doc.add(new Paragraph("Nota geral: " + fmt(score) + " (0-100, maior = melhor). Meta: " + fmt(target)
+            String scope = AuditScope.badge(AuditScope.decode(run.getDisabledSides()));
+            doc.add(new Paragraph("Nota geral: " + fmt(score) + (scope.isEmpty() ? "" : " (" + scope + ")")
+                    + " (0-100, maior = melhor). Meta: " + fmt(target)
                     + (score >= target ? " - meta atingida." : " - faltam " + fmt(target - score) + " pontos."), BOLD));
             if (scoreDelta != null) {
                 doc.add(new Paragraph("Em relação à auditoria anterior: " + (scoreDelta > 0 ? "+" : "") + fmt(scoreDelta)

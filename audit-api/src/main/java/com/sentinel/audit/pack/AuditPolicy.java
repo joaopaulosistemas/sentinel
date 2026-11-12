@@ -148,6 +148,11 @@ public final class AuditPolicy {
     }
 
     /** Por que a ferramenta externa do pacote não roda neste sistema (lado desligado), ou {@code null} se roda. */
+    /** Lados desligados no ajuste do sistema usado por esta política (vazio se nenhum). */
+    public Set<String> disabledSides() {
+        return tuning.disableSides();
+    }
+
     public String toolOffNote(ToolSpec spec) {
         return spec == null || spec.side() == null ? null : sideOffNote(spec.side().id());
     }

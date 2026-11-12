@@ -76,7 +76,7 @@ public class ReportService {
         if (run.getRiskScore() != null) {
             var s = run.getRiskScore();
             h.append("<div class=\"score\">").append(s.getOverall()).append("</div>")
-                    .append("<p>Score geral (0–100, maior = melhor)</p><table><tr>")
+                    .append("<p>Score geral (0–100, maior = melhor)").append(scopeBadge(run)).append("</p><table><tr>")
                     .append("<th>Segurança</th><th>Qualidade</th><th>Arquitetura</th><th>Dependências</th><th>Observabilidade</th><th>Desempenho</th></tr><tr>")
                     .append("<td>").append(s.getSecurity()).append("</td><td>").append(s.getQuality()).append("</td><td>")
                     .append(s.getArchitecture()).append("</td><td>").append(s.getDependencies()).append("</td><td>")
@@ -171,7 +171,7 @@ public class ReportService {
                 .append(meta("Auditoria", "#" + run.getId() + " · " + esc(run.getBranch())))
                 .append(meta("Concluída em", run.getCompletedAt() != null ? run.getCompletedAt().format(DATE_FMT) : "—"))
                 .append("</dl>");
-        appendExecutiveScore(h, executiveScore(run, plan), scoreDelta, target);
+        appendExecutiveScore(h, executiveScore(run, plan), scoreDelta, target, run);
 
         h.append("<h2>Riscos em aberto</h2><p class=\"badges\">");
         appendSeverityBadges(h, active);
@@ -189,9 +189,15 @@ public class ReportService {
         return hasOverall ? run.getRiskScore().getOverall() : plan.scoreNow();
     }
 
-    private static void appendExecutiveScore(StringBuilder h, double score, Double scoreDelta, double target) {
+    /** Selo ao lado da nota quando a auditoria rodou com um lado desligado; vazio nos demais casos. */
+    private static String scopeBadge(AuditRun run) {
+        String badge = AuditScope.badge(AuditScope.decode(run.getDisabledSides()));
+        return badge.isEmpty() ? "" : " <span class=\"badge\">" + esc(badge) + "</span>";
+    }
+
+    private static void appendExecutiveScore(StringBuilder h, double score, Double scoreDelta, double target, AuditRun run) {
         h.append("<div class=\"summary\">");
-        h.append("<div class=\"score\">").append(fmt(score)).append("</div><p>Nota geral (0–100, maior = melhor). Meta: ")
+        h.append("<div class=\"score\">").append(fmt(score)).append("</div><p>Nota geral (0–100, maior = melhor)").append(scopeBadge(run)).append(". Meta: ")
                 .append(fmt(target)).append(score >= target ? " — <strong>meta atingida</strong>." : " — faltam <strong>"
                         + fmt(target - score) + " pontos</strong>.").append("</p>");
         if (scoreDelta != null) {

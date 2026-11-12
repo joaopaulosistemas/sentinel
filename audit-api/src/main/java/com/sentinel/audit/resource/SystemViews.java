@@ -9,6 +9,7 @@ import com.sentinel.audit.model.AuditStatus;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.model.Severity;
 import com.sentinel.audit.service.AuditRunMapper;
+import com.sentinel.audit.service.AuditScope;
 import com.sentinel.audit.service.FindingCatalog;
 import com.sentinel.audit.service.FindingLifecycleService;
 import com.sentinel.audit.service.RunCatalog;
@@ -79,6 +80,7 @@ public class SystemViews {
                 system.isLocalSource() ? system.effectiveLocalSnapshot() : null,
                 system.hasGitToken(), system.getGitTokenHosts(), system.hasWebhookSecret(), system.getGitHistoryDepth(),
                 system.hasNotifyUrl(), system.getNotifyFormat(), system.getNotifyMinScoreDrop(),
-                system.getNotifyMinSeverity(), system.getNotifyPublicUrl());
+                system.getNotifyMinSeverity(), system.getNotifyPublicUrl(),
+                lastRun == null ? List.of() : AuditScope.decode(lastRun.getDisabledSides()));
     }
 }

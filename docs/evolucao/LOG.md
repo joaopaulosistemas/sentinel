@@ -1259,3 +1259,17 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Testes:** `ToolSpecParserTest`, `SarifAnalyzerTest`, `SarifResumoTest`, `SystemTuningSidesTest`, `MarketToolsSideTest` (13 ferramentas embutidas) e `RuleSideTest`.
 - **Verificado:** `scripts/conferir-numeros.py`, `scripts/sincronizar-versao.py --check` e `scripts/verificar-separacao.py`; a lista das 15 regras veio de uma simulação em Python de `RuleSide.infer`, e conferi que só `metadata.side` mudou nos YAMLs.
 - **NÃO verificado localmente:** os testes Java e os do Semgrep (o Maven não alcança o Maven Central neste ambiente); quem verifica é o CI deste PR. A guarda não foi replicada em `scripts/verificar-regras.py` (roda só no Maven).
+
+## Dashboard 12.86.0 — Selo de escopo na nota: "front-end desligado" / "back-end desligado" (migração V6)
+
+- **Spec:** `specs/001-separar-regras-front-back` (PR B: história 1, T019–T031).
+- **Por quê:** com um lado desligado a nota é calculada sobre menos regras e ninguém via isso no ranking nem nos relatórios, então "71" de um sistema sem front-end parecia igual a "71" de um sistema completo.
+- **Mudança:**
+  - Migração `V6__lados_desligados_na_auditoria.sql`: coluna `audit_run.disabled_sides varchar(20)`, anulável e sem padrão (`NULL` = auditoria anterior, escopo desconhecido, sem selo). Nenhuma linha é reescrita.
+  - A auditoria grava o escopo uma vez, quando começa (`AuditRunStore.storeScope`, a partir do mesmo `SystemTuning` da política); `AuditScope` codifica, decodifica e dá o texto do selo.
+  - API (aditiva): `SystemSummaryResponse.disabledSides` (lista, nunca nula) vem da última auditoria **concluída**; mudar o ajuste depois não muda o selo até a próxima auditoria concluir.
+  - Relatórios: selo ao lado da nota nos HTML/PDF técnico e executivo e na tabela do portfólio (o CSV não muda).
+  - Dashboard: selo no ranking de sistemas (`scopeBadge.ts`, `RankingPage`).
+- **Testes:** `AuditScopeTest`, `AuditRunStoreTest`, `SystemViewsTest`, `ReportServiceTest`, `PdfReportServiceTest`, `PortfolioReportServiceTest`, `RankingPage.test.tsx`, `scopeBadge.test.ts`.
+- **Verificado:** `tsc` e os testes novos do dashboard rodados aqui (9 verdes); `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** testes Java e a migração contra um PostgreSQL real (Maven não alcança o Maven Central aqui); o CI deste PR verifica (job de integração com PostgreSQL real aplica a V6). A tela não foi vista num navegador real (T039).

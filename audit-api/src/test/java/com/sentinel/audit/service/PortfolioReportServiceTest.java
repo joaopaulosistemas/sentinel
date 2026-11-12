@@ -47,9 +47,9 @@ class PortfolioReportServiceTest {
                         List.of(f("Injeção de SQL", Severity.CRITICAL, FindingStatus.OPEN),
                                 f("=cmd()", Severity.LOW, FindingStatus.OPEN),
                                 f("Ruído", Severity.HIGH, FindingStatus.SUPPRESSED)),
-                        List.of(p(200, 55, 5), p(214, 62, 3))),
+                        List.of(p(200, 55, 5), p(214, 62, 3)), List.of("front")),
                 new SystemSnapshot("Pagamentos", "NODE", 90L, LocalDateTime.of(2026, 10, 15, 9, 10), 88.0, 0, 1,
-                        List.of(), List.of(p(90, 88, 0))));
+                        List.of(), List.of(p(90, 88, 0)), List.of()));
     }
 
     private String text(ReportService.Type t, Format fmt) {
@@ -63,6 +63,14 @@ class PortfolioReportServiceTest {
         assertTrue(html.contains("1 abaixo da meta"));
         assertTrue(html.contains("3 achado(s) crítico(s)"));
         assertTrue(html.contains("<td>+7</td>"));
+    }
+
+    @Test
+    void executivoMostraOSeloDeEscopoSoNoSistemaComLadoDesligado() {
+        String html = text(ReportService.Type.EXECUTIVO, Format.HTML);
+        assertTrue(html.contains("62 (front-end desligado)") || html.contains("62,0 (front-end desligado)")
+                || html.contains("62.0 (front-end desligado)"), html);
+        assertEquals(1, html.split("desligado", -1).length - 1, "só um sistema tem lado desligado");
     }
 
     @Test

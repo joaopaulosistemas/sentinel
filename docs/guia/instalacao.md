@@ -158,7 +158,7 @@ sentinel/
 │       ├── review/                 ← Revisão do Claude: sugestões, regras propostas, funil e métricas
 │       ├── actions/                ← Pedidos do Claude que só acontecem com aprovação (iniciar auditoria, suprimir achado)
 │       └── resource/               ← Endpoints REST
-│   (migrações do banco em src/main/resources/db/migration, Flyway V1 a V5)
+│   (migrações do banco em src/main/resources/db/migration, Flyway V1 a V6)
 │
 ├── audit-rules/
 │   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, core-corporativo, market-tools, ts-clean-code, ts-clean-code-labs42, core-architecture, e os de adesão opcional core-quarkus, core-vue e core-boas-praticas) e profiles/

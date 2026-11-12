@@ -56,6 +56,18 @@ class PdfReportServiceTest {
     }
 
     @Test
+    void relatoriosComLadoDesligadoGeramPdfValido() {
+        AuditRun r = run();
+        RiskScore score = new RiskScore();
+        score.setOverall(64.0);
+        r.setRiskScore(score);
+        r.setDisabledSides("front");
+        FixPlanDto plan = new FixPlanDto(60, 71, 0, List.of());
+        assertPdf(new PdfReportService().technical(r, List.of()));
+        assertPdf(new PdfReportService().executive(r, List.of(), plan, null, 80));
+    }
+
+    @Test
     void executivoEComparativoGeramPdf() {
         FixPlanDto plan = new FixPlanDto(60, 71, 1, List.of(
                 new FixPlanDto.Item("r", "SQL por concatenação", Severity.CRITICAL, Category.SECURITY, 3, 4.5, "A.java", 3, "use prepared")));

@@ -5,6 +5,7 @@ import com.sentinel.audit.model.SourceType;
 
 import com.sentinel.audit.model.Stack;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO de resposta resumida de um sistema auditado, incluindo dados da última auditoria.
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
  * @param localPath Pasta do projeto (relativa à raiz do servidor) quando a origem é LOCAL_PATH.
  * @param gitTokenSet Há token Git salvo? O token em si nunca é devolvido.
  * @param webhookSecretSet Há segredo de webhook salvo? O segredo nunca é devolvido.
+ * @param disabledSides Lados ("back", "front") desligados na última auditoria concluída; lista vazia quando os dois
+ *                      estavam ligados, quando não há auditoria concluída ou quando ela é anterior a este campo.
  */
 public record SystemSummaryResponse(
         Long id,
@@ -44,5 +47,6 @@ public record SystemSummaryResponse(
         String notifyFormat,
         Double notifyMinScoreDrop,
         String notifyMinSeverity,
-        String notifyPublicUrl) {
+        String notifyPublicUrl,
+        List<String> disabledSides) {
 }

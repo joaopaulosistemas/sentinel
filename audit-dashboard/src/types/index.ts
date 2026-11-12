@@ -40,6 +40,8 @@ export interface ISystemSummaryResponse {
   scoreDelta?: number | null;
   /** Quantas auditorias o sistema já tem, em qualquer situação */
   auditCount?: number | null;
+  /** Lados ("back", "front") desligados na última auditoria concluída; vazio quando os dois estavam ligados ou o escopo é desconhecido */
+  disabledSides?: string[] | null;
   /** Há token Git salvo (o token em si nunca vem da API) */
   gitTokenSet?: boolean | null;
   /** Hosts que recebem o token, separados por vírgula */
