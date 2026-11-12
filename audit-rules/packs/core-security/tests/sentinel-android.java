@@ -37,6 +37,16 @@ class AndroidTeste extends android.app.Activity {
         ctx.getSharedPreferences("prefs", Context.MODE_WORLD_READABLE);
         // ruleid: sentinel-android-modo-mundo
         ctx.openFileOutput("a.txt", Context.MODE_WORLD_WRITEABLE);
+        // ruleid: sentinel-android-modo-mundo
+        getSharedPreferences("prefs", MODE_WORLD_READABLE);
+        // ruleid: sentinel-android-modo-mundo
+        ctx.openFileOutput("b.txt", MODE_WORLD_WRITEABLE);
+        // ruleid: sentinel-android-modo-mundo
+        ctx.openOrCreateDatabase("d.db", Context.MODE_WORLD_READABLE, null);
+        // ruleid: sentinel-android-modo-mundo
+        openOrCreateDatabase("d.db", MODE_WORLD_WRITEABLE, null);
+        // ok: sentinel-android-modo-mundo
+        getSharedPreferences("prefs", MODE_PRIVATE);
         // ok: sentinel-android-modo-mundo
         ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE);
         // ok: sentinel-android-modo-mundo

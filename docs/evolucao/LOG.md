@@ -1301,3 +1301,10 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Por quê:** o `sentinel-alvo` (232 regras com caso) mostrou que `tsp-abreviacao` não pegava `_qtdItens`: o `\b` inicial não separa o `_` da letra seguinte, e membro privado leva underscore pela própria norma (`tsp-privado-sem-underscore`).
 - **Mudança:** o início da palavra passa a ser "não precedido de letra ou dígito", então `_qtdItens` e `this._numConta` são pegos.
 - **Testes:** `ruleid`/`ok` novos em `sentinel-ts-padrao.ts` (visto falhar antes da correção).
+
+## Regras: `android-modo-mundo` também com a constante sem `Context.` (`core-security` 1.7.2)
+
+- **Por quê:** o `sentinel-alvo` chegou às 311 regras com caso (310 pegas). A última lacuna: `getSharedPreferences("p", MODE_WORLD_READABLE)` dentro de uma `Activity` (forma mais comum, sem receptor e sem `Context.`) passava, e a variante de `openOrCreateDatabase` nunca casava porque o modo fica no meio dos argumentos.
+- **Mudança:** a regra aceita chamada com ou sem receptor e a constante com ou sem `Context.`, em qualquer posição do argumento, para `getSharedPreferences`, `openFileOutput`, `getDir` e `openOrCreateDatabase`.
+- **Testes:** `ruleid`/`ok` novos em `sentinel-android.java` (vistos falhar antes da correção).
+- **Limite:** modos combinados (`MODE_PRIVATE | MODE_WORLD_READABLE`) não são vistos.
