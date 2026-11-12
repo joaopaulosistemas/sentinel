@@ -2,7 +2,7 @@
 
 **Branch da funcionalidade**: `001-separar-regras-front-back`
 **Criada em**: 2026-11-12 · **Revisada em**: 2026-11-12 (após ler o código)
-**Status**: Esclarecida (pronta para `/speckit-plan`)
+**Status**: Concluída em 2026-11-12 (PR A #235 e PR B #238; FR-011 cancelado, ver `research.md` R6)
 **Origem**: pedido do João: separar as regras do Sentinel em front-end e back-end, refletir isso na tela Motor de regras e permitir que um projeto só Java desligue tudo de front (e o contrário).
 
 > **Correção.** A primeira versão desta spec descrevia a funcionalidade inteira como se não existisse. Ao ler o código, vimos que ela já está na `main` desde o Dashboard 12.48.0 (um lado, `back`, `front` ou `comum`, em cada regra e analisador) e 12.49.0 (campo `disableSides` por sistema, bloco "Escopo da auditoria" na aba Motor de regras, abas por lado). Esta versão descreve **só o que ainda falta**, e o que já existe aparece como linha de base. Fontes: `docs/evolucao/LOG.md` (entradas 12.48.0 e 12.49.0) e o código em `audit-api/.../pack/RuleSide.java`, `SystemTuning.java` e `AuditPolicy.java`.
@@ -108,10 +108,10 @@ Hoje o Opengrep lê as regras dos dois lados e os achados do lado desligado são
 - **FR-005** (já atendido): o lado é declarado na própria regra (`metadata.side`) ou deduzido.
 - **FR-006** (já atendido): sistemas existentes continuam com tudo ligado e produzindo o mesmo resultado.
 - **FR-007** (já atendido): regras que o usuário adiciona por sistema entram na mesma dedução de lado.
-- **FR-008**: cada ferramenta externa de pacote DEVE ter um lado (`side` no YAML ou dedução por `applies-to`); a de lado desligado NÃO DEVE rodar nem gerar achados, e o resumo da auditoria DEVE dizer o motivo. As de lado comum DEVEM rodar sempre.
-- **FR-009**: o Ranking de Sistemas e os relatórios DEVEM mostrar, ao lado da nota, um selo com o lado desligado, sem alterar o cálculo da nota.
-- **FR-010**: os testes dos pacotes DEVEM falhar quando uma regra de código for dedutida como comum sem declarar `metadata.side`, com o id da regra na mensagem.
-- **FR-011** (opcional, P3): o Opengrep NÃO DEVE executar regras de um lado desligado.
+- **FR-008** (atendido no PR A, #235): cada ferramenta externa de pacote DEVE ter um lado (`side` no YAML ou dedução por `applies-to`); a de lado desligado NÃO DEVE rodar nem gerar achados, e o resumo da auditoria DEVE dizer o motivo. As de lado comum DEVEM rodar sempre.
+- **FR-009** (atendido no PR B, #238): o Ranking de Sistemas e os relatórios DEVEM mostrar, ao lado da nota, um selo com o lado desligado, sem alterar o cálculo da nota.
+- **FR-010** (atendido no PR A, #235): os testes dos pacotes DEVEM falhar quando uma regra de código for dedutida como comum sem declarar `metadata.side`, com o id da regra na mensagem.
+- **FR-011** (opcional, P3, **cancelado**): o Opengrep NÃO DEVE executar regras de um lado desligado. O ganho é só de tempo e a opção do motor exige reproduzir o namespace de ids (ver `research.md` R6).
 
 ### Entidades principais
 

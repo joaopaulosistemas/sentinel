@@ -1236,6 +1236,13 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `tsc` e os testes novos do dashboard rodados aqui (9 verdes); `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** testes Java e a migração contra um PostgreSQL real (Maven não alcança o Maven Central aqui); o CI deste PR verifica (job de integração com PostgreSQL real aplica a V6). A tela não foi vista num navegador real (T039).
 
+## Spec 001 concluída: o Opengrep não será configurado por lado (sem versão nova)
+
+- **Por quê:** a história 4 (FR-011) previa não executar no Opengrep as regras do lado desligado, e dependia de o Opengrep 1.30.0 aceitar excluir regras por id.
+- **Resultado:** o binário v1.30.0 (SHA-256 igual ao fixado no Dockerfile) aceita `--exclude-rule`, mas só com o id completo derivado do caminho do arquivo de regras em relação ao diretório de execução (`--exclude-rule r-dois` não excluiu nada; `--exclude-rule t.r-dois` excluiu). Reproduzir isso no `SemgrepAnalyzer` falharia em silêncio se o caminho mudasse, e o ganho (só tempo) nunca foi medido; o lado desligado já some dos achados em `AuditPolicy.apply`. História cancelada; detalhes em `specs/001-separar-regras-front-back/research.md` R6.
+- **Verificado:** teste com o binário real e regras mínimas de duas formas (arquivo e pasta de regras).
+- **NÃO verificado:** o ganho de tempo (nunca medido) e o comportamento em auditoria real.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
