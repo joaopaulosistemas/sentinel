@@ -79,10 +79,10 @@ public final class ApiContractCheck {
             return;
         }
         if (path.contains("{") && !isApiError(responses.path("404"))) {
-            found.add(route + ": sem 404 com o formato ApiError");
+            found.add(route + ": sem 404 com formato de erro");
         }
         if (op.has("requestBody") && !isApiError(responses.path("400"))) {
-            found.add(route + ": sem 400 com o formato ApiError");
+            found.add(route + ": sem 400 com formato de erro");
         }
     }
 
