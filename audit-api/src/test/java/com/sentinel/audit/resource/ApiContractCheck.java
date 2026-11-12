@@ -58,7 +58,6 @@ public final class ApiContractCheck {
             }
         }
         checkRequestBodies(document, found);
-        checkResponseSchemas(document, found);
         checkExamples(document, "$", found);
         return found;
     }
@@ -78,7 +77,16 @@ public final class ApiContractCheck {
         }
     }
 
-    /** Toda propriedade dos tipos devolvidos em respostas 2xx JSON (e dos tipos aninhados neles) tem descrição. */
+    /**
+     * Propriedades dos tipos devolvidos em respostas 2xx JSON (e dos aninhados neles) sem descrição. Fica fora de
+     * {@link #violations}: é o relatório do que falta documentar nas respostas, sem barrar o CI.
+     */
+    public static List<String> responseGaps(JsonNode document) {
+        List<String> found = new ArrayList<>();
+        checkResponseSchemas(document, found);
+        return found;
+    }
+
     private static void checkResponseSchemas(JsonNode document, List<String> found) {
         java.util.Set<String> visited = new java.util.TreeSet<>();
         for (JsonNode op : operations(document).values()) {

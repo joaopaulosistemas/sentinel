@@ -35,3 +35,8 @@ Formato: `- [ ] ID descrição com caminho`. Caminhos relativos a `audit-api/src
 - [x] T020 `docs/referencia/auditoria-e-api.md` e `docs/guia/instalacao.md`: onde está o arquivo gerado
 - [x] T021 LOG, versão, PR D, CI verde, merge com autorização
 - [ ] T022 (manual, do João) Abrir `/swagger-ui` em modo dev com chave ligada, clicar em Authorize, chamar uma rota protegida e ver 200 (SC-005)
+
+## Follow-up — respostas
+
+- [x] T023 DTOs de resposta do pacote `dto` com `@Schema` por campo; `ApiContractCheck.responseGaps` como relatório
+- [ ] T024 descrever os ≈330 campos dos tipos aninhados de serviços devolvidos pelas rotas e mover `responseGaps` para `violations`

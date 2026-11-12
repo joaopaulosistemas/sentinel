@@ -19,6 +19,6 @@ public record FixPlanDto(@Schema(description = "Nota geral da auditoria, recalcu
     /**
      * @param scoreGain quanto a nota geral sobe se todas as ocorrências deste problema forem corrigidas
      */
-    public record Item(String ruleId, String title, Severity severity, Category category, int occurrences,
-                       double scoreGain, String exampleFile, Integer exampleLine, String howToFix) {}
+    public record Item(@Schema(description = "Regra do problema.") String ruleId, @Schema(description = "Título do problema.") String title, @Schema(description = "Severidade.") Severity severity, @Schema(description = "Categoria.") Category category, @Schema(description = "Quantas ocorrências a regra tem.") int occurrences,
+                       @Schema(description = "Quanto a nota geral sobe se todas as ocorrências forem corrigidas.") double scoreGain, @Schema(description = "Arquivo de uma ocorrência, como exemplo.") String exampleFile, @Schema(description = "Linha dessa ocorrência.") Integer exampleLine, @Schema(description = "Como corrigir.") String howToFix) {}
 }

@@ -143,7 +143,7 @@ class ApiContractCheckTest {
     private static List<String> checkComResposta(String schemas) throws Exception {
         JsonNode doc = new ObjectMapper().readTree("{\"components\":{\"schemas\":" + schemas + "},\"paths\":{\"/api/v1/x\":{\"get\":"
                 + op("r", "d", "[\"T\"]", "{\"200\":{\"content\":{\"application/json\":{\"schema\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/components/schemas/Saida\"}}}}}}", "") + "}}}");
-        return ApiContractCheck.violations(doc);
+        return ApiContractCheck.responseGaps(doc);
     }
 
     @Test
