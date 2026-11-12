@@ -1,6 +1,17 @@
 # Modelo de dados (Fase 1): escopo front-end e back-end
 
-Nada muda no banco de dados: `disableSides` já fica no JSON de ajustes do sistema (`SystemEngineConfig`, tabela existente). As mudanças são em modelos em memória, no YAML dos pacotes e em um DTO.
+`disableSides` já fica no JSON de ajustes do sistema (`SystemEngineConfig`, tabela existente). Muda: uma coluna nova e anulável em `audit_run` (abaixo), modelos em memória, o YAML dos pacotes e dois DTOs.
+
+## Auditoria (`AuditRun`)
+
+Arquivo: `audit-api/src/main/java/com/sentinel/audit/model/AuditRun.java`. Migração nova `V6__lados_desligados_na_auditoria.sql` em `audit-api/src/main/resources/db/migration/`.
+
+| Campo | Tipo | Regra |
+|---|---|---|
+| `disabledSides` (coluna `disabled_sides`) | `VARCHAR(20)`, anulável | Lados desligados no ajuste do sistema quando a auditoria começou: `"back"`, `"front"` ou vazio (`""`) quando ambos estavam ligados. `NULL` = auditoria anterior a esta mudança (escopo desconhecido) |
+
+- Gravado uma vez, quando a auditoria começa (o valor vem de `tuning.disableSides()` já usado para montar a política); nunca é atualizado depois.
+- Coluna anulável e sem valor padrão: a migração não reescreve linhas existentes e é reversível (basta ignorar a coluna).
 
 ## Ferramenta externa de pacote (`ToolSpec`)
 
@@ -23,7 +34,9 @@ Sem mudança de estrutura. `disableSides` continua sendo `Set<String>` com `back
 
 | Campo novo | Tipo | Valor |
 |---|---|---|
-| `disabledSides` | `List<String>` (ordenada) | `tuning.disableSides()` do sistema; lista vazia quando nenhum lado está desligado |
+| `disabledSides` | `List<String>` (ordenada) | Escopo da **última auditoria concluída** (`AuditRun.disabledSides`); lista vazia quando os dois lados estavam ligados ou quando o escopo é desconhecido (`NULL`) |
+
+O `SystemSnapshot` do relatório de portfólio (`PortfolioReportService`) recebe o mesmo campo.
 
 Compatível para trás: campo novo e opcional no JSON; o dashboard antigo o ignora.
 

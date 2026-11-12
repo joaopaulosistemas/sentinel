@@ -35,10 +35,12 @@ Quem olha o Ranking de Sistemas ou um relatório vê, ao lado da nota, que o sis
 
 **Cenários de aceite**:
 
-1. **Dado** um sistema com `disableSides` contendo `front`, **quando** o Ranking é aberto, **então** a linha dele mostra o selo "front-end desligado" ao lado da nota.
+1. **Dado** um sistema cuja última auditoria concluída rodou com o front-end desligado, **quando** o Ranking é aberto, **então** a linha dele mostra o selo "front-end desligado" ao lado da nota.
 2. **Dado** o mesmo sistema, **quando** o relatório dele (e o relatório de todos os sistemas) é gerado, **então** o selo aparece ao lado da nota.
-3. **Dado** um sistema com os dois lados ligados, **quando** o ranking e os relatórios são abertos, **então** nenhum selo aparece e nada muda.
+3. **Dado** um sistema cuja última auditoria rodou com os dois lados ligados, **quando** o ranking e os relatórios são abertos, **então** nenhum selo aparece e nada muda.
 4. **Dado** qualquer sistema, **quando** o selo existe, **então** o valor da nota é idêntico ao calculado antes desta funcionalidade.
+5. **Dado** um sistema auditado com o front-end ligado e depois ajustado para desligá-lo, **quando** o ranking é aberto antes da nova auditoria, **então** nenhum selo aparece (o selo descreve a auditoria que gerou a nota, não o ajuste atual).
+6. **Dado** um sistema cuja última auditoria é anterior a esta funcionalidade, **quando** o ranking é aberto, **então** nenhum selo aparece (escopo desconhecido).
 
 ---
 

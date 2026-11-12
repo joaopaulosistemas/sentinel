@@ -10,7 +10,7 @@ O lado (back, front, comum) de regras e analisadores e o desligamento por sistem
 
 **Linguagem/versão**: Java 21 (bytecode; imagem no JRE 25) com Quarkus 3.40; TypeScript no dashboard (React 19, Vite, IBM Carbon)
 **Dependências principais**: as que já existem; nenhuma nova
-**Armazenamento**: PostgreSQL 16, sem migração (o ajuste do sistema já guarda `disableSides`)
+**Armazenamento**: PostgreSQL 16; uma migração Flyway (V6) com coluna anulável em `audit_run`; o ajuste do sistema já guarda `disableSides`
 **Testes**: JUnit na API (`audit-api/src/test/java/com/sentinel/audit/...`), `vitest` + Testing Library no dashboard, testes dos pacotes (`opengrep --test`, `scripts/verificar-regras.py`)
 **Plataforma-alvo**: Docker (Compose e Helm); roda em WSL/Windows e no GitHub runner
 **Tipo de projeto**: aplicação web (API Quarkus + dashboard React) mais pacotes de regras declarativos
@@ -61,8 +61,9 @@ audit-api/src/main/java/com/sentinel/audit/
 ├── pack/AuditPolicy.java                     # `toolOffNote`, filtro por arquivo para o jscpd
 ├── analyzer/SarifAnalyzer.java               # pula ferramenta de lado desligado e registra no resumo
 ├── analyzer/SarifResumo.java                 # linha "lado desligado"
+├── model/AuditRun.java                       # `disabledSides` gravado quando a auditoria começa (FR-009)
 ├── dto/SystemSummaryResponse.java            # campo `disabledSides` (FR-009)
-├── resource/SystemViews.java                 # preenche o campo
+├── resource/SystemViews.java                 # preenche o campo a partir da última auditoria concluída
 ├── service/ReportService.java, PdfReportService.java, PortfolioReportService.java   # selo nos relatórios
 └── analyzer/SemgrepAnalyzer.java             # só na história 4 (P3)
 
@@ -84,13 +85,15 @@ docs/evolucao/LOG.md, docs/referencia/pacotes-de-regras.md   # registro e docume
 | B | 1 (FR-009) | `disabledSides` no resumo, selo no ranking e nos relatórios, testes `vitest` e Java | `Dashboard`, `API, CLI e pacotes de regras` |
 | C | 4 (FR-011), opcional | Opengrep sem as regras do lado desligado | `Calibração em vários repositórios`, `OWASP Benchmark (recall e precisão)` |
 
-O PR C só entra se a verificação do `research.md` R6 mostrar um caminho seguro. O PR B depende da decisão da pergunta aberta em `contracts/api-sistemas.md` (selo do ajuste atual ou do usado na última auditoria).
+O PR C só entra se a verificação do `research.md` R6 mostrar um caminho seguro. O PR B inclui uma migração de banco (coluna anulável, V6) e uma mudança aditiva na API.
 
-## Pontos em aberto (para o João antes de `/speckit-tasks`)
+## Decisões tomadas por delegação do João (2026-11-12, "escolha a melhor")
 
-1. **Selo do ajuste atual ou do ajuste usado na auditoria?** O mais honesto é guardar o escopo na auditoria (campo novo em `AuditRun`); o mais simples é ler o ajuste atual.
-2. **Versão e contrato:** confirmar que os PRs sobem a versão como os anteriores e que acrescentar `disabledSides` à API pública é aceitável (mudança aditiva).
-3. **jscpd:** confirmar o tratamento "comum, mas descarta achados do lado desligado" (R4), igual à `Duplicação`.
+1. **Selo do escopo usado na auditoria** (não do ajuste atual): cada `AuditRun` guarda os lados desligados (coluna nova anulável, migração V6). Auditoria antiga: sem selo. Motivo: a nota exibida é daquela auditoria; o ajuste atual poderia contradizê-la (princípio IV).
+2. **Versão e contrato:** os PRs sobem a versão como os anteriores; `disabledSides` na API pública é mudança só aditiva, sinalizada no PR B.
+3. **jscpd:** roda sempre (`common`) e descarta achados dos arquivos do lado desligado, igual à `Duplicação` interna (R4).
+
+Se o João discordar de qualquer um dos três, a mudança é local: (1) afeta só o PR B; (2) é uma linha por PR; (3) afeta só o PR A.
 
 ## Complexity Tracking
 

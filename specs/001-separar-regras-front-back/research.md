@@ -37,14 +37,15 @@ A dedução por `applies-to` (`RuleSide.infer(["regex"], applies-to)`) acerta qu
 
 - **Fato**: o analisador interno `Duplicação` já está em `SIDE_BY_FILE_TOOLS` (`AuditPolicy`): com um lado desligado ele perde só os achados dos arquivos do lado desligado.
 - **Decisão**: tratar o jscpd externo do mesmo jeito. Ele é declarado `common` (continua rodando) e seus achados em arquivos do lado desligado são descartados, reaproveitando `inDisabledSide` com o nome da fonte. Isso mantém o comportamento igual ao da `Duplicação`.
-- **NÃO verificado**: o nome exato do campo `toolSource` que os achados do SARIF recebem (`SarifAnalyzer`); a tarefa correspondente começa lendo isso.
+- **Verificado na leitura**: `SarifAnalyzer` grava `f.setToolSource(spec.name())`, ou seja, o campo `name` do YAML (para o jscpd, `"jscpd"`). O filtro por arquivo usa esse nome, não o `id`.
 
 ## R5. Onde o selo é calculado e exibido
 
 - **Fato**: `SystemViews.summary()` monta `SystemSummaryResponse`, que alimenta o Ranking (`audit-dashboard/src/pages/Ranking/RankingPage.tsx`, 291 linhas). Não há `disableSides` em nenhum arquivo do ranking nem dos relatórios.
-- **Decisão**: acrescentar `disabledSides` (lista de strings) ao `SystemSummaryResponse`, lendo `tuningService.load(id).disableSides()`; o dashboard e os relatórios (`ReportService`, `PdfReportService`, `PortfolioReportService`) leem esse campo. O cálculo em `ScoringService` não é tocado.
-- **Alternativas**: endpoint separado (descartada, N chamadas no ranking); guardar o selo em `RiskScore` (descartada, a nota não muda).
-- **NÃO verificado**: como `PortfolioReportService` obtém os sistemas (se reaproveita `SystemViews.summary` ou monta a lista sozinho); a tarefa começa lendo isso.
+- **Decisão (tomada por delegação do João em 2026-11-12)**: o selo mostra o escopo **usado na última auditoria concluída**, e não o ajuste atual do sistema, porque a nota exibida é dessa auditoria. Para isso, cada `AuditRun` guarda os lados desligados no momento em que a auditoria roda: coluna nova e anulável `disabled_sides` (migração Flyway `V6__...`, a pasta tem V1 a V5). Auditoria antiga fica com `NULL`, que significa "escopo desconhecido" e não mostra selo (nunca afirmamos o que não sabemos).
+- O `SystemSummaryResponse` ganha `disabledSides` (lista de strings) preenchido por `SystemViews.summary()` a partir da última auditoria concluída (`lastRun`, já calculada ali). O Ranking, o relatório do sistema (`ReportService`, `PdfReportService`) e o do portfólio leem esse campo. `ScoringService` não é tocado.
+- **Portfólio**: `PortfolioReportService` recebe uma lista de `SystemSnapshot` montada em `ReportResource` (`/portfolio`); o `SystemSnapshot` ganha `disabledSides`. **NÃO verificado**: de onde `ReportResource` obtém cada snapshot (se reusa `SystemViews.summary`); a primeira tarefa do PR B lê isso.
+- **Alternativas**: ler o ajuste atual (descartada: pode contradizer a nota exibida); endpoint separado (descartada, N chamadas no ranking); guardar o selo em `RiskScore` (descartada, a nota não muda); reaproveitar `context_json` da auditoria (descartada: é lido por `InsightsService` com um tipo fixo, `AuditContextData`, e misturaria assuntos).
 
 ## R6. Executar menos regras no Opengrep (FR-011, P3)
 
