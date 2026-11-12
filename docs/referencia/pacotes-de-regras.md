@@ -7,7 +7,7 @@ sem exigir nada instalado (as três primeiras camadas) e usando PMD/ESLint quand
 | Camada | O que verifica | Precisa instalar? |
 |---|---|---|
 | **CleanCode** (interno) | função longa, muitos parâmetros, complexidade ciclomática, aninhamento profundo | não |
-| **Regras Semgrep** `audit-rules/packs/core-quality/rules/` | 41 regras no total: regras Java (catch vazio, `return null` em coleção, injeção por campo, estado estático mutável, `==` em String, `@Transactional` privado, log concatenado, thread manual, service locator, singleton manual...), regras TypeScript/React (`any`, `@ts-ignore`, `var`, `==`, `useEffect` async, `key` por índice, token em `localStorage`...) e 9 de **integração** (HTTP/JDBC/axios/fetch sem timeout, pool ilimitado, HTTP sem TLS) | Semgrep |
+| **Regras Semgrep** `audit-rules/packs/core-quality/rules/` | 45 regras no total: regras Java (catch vazio, `return null` em coleção, injeção por campo, estado estático mutável, `==` em String, `@Transactional` privado, log concatenado, thread manual, service locator, singleton manual...), regras TypeScript/React (`any`, `@ts-ignore`, `var`, `==`, `useEffect` async, `key` por índice, token em `localStorage`...) e 9 de **integração** (HTTP/JDBC/axios/fetch sem timeout, pool ilimitado, HTTP sem TLS) | Semgrep |
 | **PMD** (lint Java) | boas práticas, propensão a erro, design e segurança do PMD 7 (ruleset embutido; troque com `PMD_RULESET`). Severidade: HIGH só no ruleset Security; nos demais o teto é MEDIUM (a prioridade 1 do PMD vale também para estilo) | `pmd` no PATH |
 | **ESLint** (lint TypeScript) | `typescript-eslint` recommended + `eqeqeq`, `no-var`, `no-console`, `prefer-const`, `no-eval` | `eslint` no PATH **e** `/opt/eslint/eslint.config.mjs` |
 
@@ -16,7 +16,7 @@ Como funciona:
 - **Limites do CleanCode** (`CLEANCODE_*`): 50 linhas por função (100 para componente JSX), 5 parâmetros, complexidade 10, aninhamento 4. As métricas são **textuais** (um scanner de chaves que ignora comentários e strings), não uma árvore sintática: é rápido e não depende de nada, mas pode errar em código muito fora do comum. Testes, `target`, `node_modules`, `dist` e arquivos gerados são ignorados.
 - **Sem contagem em dobro**: quando Semgrep e PMD/ESLint apontam o mesmo ponto (catch vazio, `var`, `==`, `any`, `console.log`), fica um finding só, com a maior severidade e a nota "Também detectado por...". Só se juntam equivalências conhecidas (`FindingDeduplicator`); regra desconhecida nunca é escondida.
 - **O ESLint nunca carrega a configuração do repositório auditado** (`--no-config-lookup`): um `eslint.config.js` é código e seria executado no servidor. Vale a configuração de `audit-rules/lint/eslint/`.
-- **Imagem Docker**: PMD vem ligado (`WITH_PMD=true`); ESLint (com Node 20 e Stylelint) vem ligado (`WITH_ESLINT=true`; `--build-arg WITH_ESLINT=false` tira).
+- **Imagem Docker**: PMD vem ligado (`WITH_PMD=true`); ESLint (com Node 24 e Stylelint) vem ligado (`WITH_ESLINT=true`; `--build-arg WITH_ESLINT=false` tira).
 - Cada regra nova tem orientação de correção (antes/depois) no catálogo, exibida no dashboard; um teste impede regra sem orientação.
 - A taxa de falso positivo por regra (`GET /api/v1/rules/quality`) mostra quais regras estão incomodando e devem ser ajustadas.
 

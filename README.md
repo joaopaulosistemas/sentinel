@@ -27,7 +27,7 @@ Escopo de tecnologias: Java, Spring Boot, Quarkus, Angular, React, Vue, TypeScri
 
 **Nota:** seis dimensões (segurança, qualidade, arquitetura, dependências, observabilidade, performance), com ajuste por tamanho do código. Cada achado tem identidade estável entre auditorias (novo, resolvido, persistente), orientação de correção (antes/depois, esforço, risco) e pode ser suprimido com motivo, justificativa e validade.
 
-**Também faz:** auditoria completa (parecer, dívida técnica P0–P3, plano de ação), auditoria só do que mudou no PR, webhooks GitHub/GitLab, avisos em Teams/Slack, SBOM CycloneDX, perfis por sistema, servidor MCP para o Claude consultar o Sentinel (fora da nota e com aprovação humana para qualquer ação).
+**Também faz:** guia de código por tecnologia (e o CLAUDE.md gerado para a IA), tela de Configurações da instalação, origem "pasta local" para auditar sem Git, relatório de todos os sistemas, ajustes do próprio projeto auditado em `.sentinel.yml`, auditoria completa (parecer, dívida técnica P0–P3, plano de ação), auditoria só do que mudou no PR, webhooks GitHub/GitLab, avisos em Teams/Slack, SBOM CycloneDX, perfis por sistema, servidor MCP para o Claude consultar o Sentinel (fora da nota e com aprovação humana para qualquer ação).
 
 ## Pacotes de regras
 
@@ -45,7 +45,7 @@ Painel em http://localhost:3000 e API em http://localhost:8080. Modo desenvolvim
 
 ## Stack
 
-Java 21 + Quarkus 3.40 · PostgreSQL 16 · React 19 + TypeScript + Vite + IBM Carbon · Opengrep 1.30.0 (Semgrep como alternativa) · Docker/Compose e chart Helm · CLI Java.
+Java 21 (bytecode; a imagem roda no JRE 25) + Quarkus 3.40 · PostgreSQL 16 · React 19 + TypeScript + Vite + IBM Carbon · Opengrep 1.30.0 (Semgrep como alternativa) · Docker/Compose e chart Helm · CLI Java.
 
 ## Estado e limites
 

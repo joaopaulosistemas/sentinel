@@ -15,11 +15,26 @@ As ferramentas externas rodam em versões **fixadas** (com SHA-256 quando são b
 | ESLint | 10.14.0 | Linha atual (a 9.x saiu de suporte em 2026-08-06). `eslint-plugin-react` e `eslint-plugin-jsx-a11y` não declaram suporte ao 10 e rodam com `fixupPluginRules` (`@eslint/compat`) | Acompanhar versões novas desses dois plugins e tirar o adaptador quando declararem suporte |
 | Gitleaks | 8.30.1 | Última 8.x (2026-03-21); o autor lançou o Betterleaks como sucessor e a manutenção do Gitleaks tende a só correções | Segue como padrão; só correções de segurança upstream |
 | Betterleaks | 1.10.0 | Sucessor do Gitleaks (MIT), pelo mesmo autor. A série 1.x mantém a linha de comando e o relatório do Gitleaks; a **2.x ainda só tem versões candidatas** (rc.7) e muda comandos, flags e o JSON | Opt-in (`BETTERLEAKS_ENABLED=true`). Migrar para a 2.x quando sair a versão final; medir contra o Gitleaks antes de torná-lo padrão |
-| Node (imagem e CI) | 24 | LTS ativo (fim de vida em 2028-04-30); o 22 sai de suporte em 2027-04-30 e o ESLint 10 pede 20.19+ | Avaliar o 26 quando virar LTS ativo e o ecossistema acompanhar |
+| Node (imagem da API e CI) | 24 | LTS ativo (fim de vida em 2028-04-30); o 22 sai de suporte em 2027-04-30 e o ESLint 10 pede 20.19+ | Avaliar o 26 quando virar LTS ativo e o ecossistema acompanhar |
 | Hadolint | 2.12.0 | Licença GPL-3.0; **fora da imagem publicada**, opt-in com `WITH_HADOLINT=true` | Decidido (abaixo) |
 | Stylelint | 17.16.0 | Com `stylelint-config-standard-scss` 17 e `-standard` 40, que exigem Stylelint 17; o 18 só entra quando o `-standard-scss` aceitar | Subir junto com as configs |
 | Opengrep | 1.30.0 | LGPL-2.1 | Sem pendência |
 | Checkov | 3.4.3 | Roda só em Dockerfile, Kubernetes e GitHub Actions; Terraform fica fora (ver LOG) | Sem pendência |
+
+### Outras versões fixadas (lidas do `Dockerfile` em 2026-11-12)
+
+Sem decisão de revisão pendente; entram aqui para a tabela cobrir tudo o que o build fixa.
+
+| Item | Versão | Observação |
+|---|---|---|
+| PMD | 7.27.0 (SHA-256) | Subiu do 7.7.0 porque o ASM 9.7 não lia classes do Java 25 (ver LOG) |
+| Checkstyle | 10.21.4 (SHA-256) | Pacote `market-tools`; também usado pelo perfil Google Java |
+| kube-linter / kube-score | 0.7.2 / 1.19.0 (SHA-256) | `WITH_MARKET_TOOLS=true` |
+| njsscan / SQLFluff | 1.0.2 / 4.5.0 | Instalados com pip em ambiente virtual próprio, sem hash |
+| Semgrep | 1.172.0 | Motor alternativo ao Opengrep, só com `WITH_SEMGREP=true` |
+| Joern | v4.0.583 (SHA-256) | Opt-in com `WITH_JOERN=true` (cerca de 2 GB) |
+| JDK de build / JRE da imagem | 26 / 25 | O bytecode é Java 21 (`pom.xml`); o CI compila com 21 e roda os testes também na JVM da imagem (25) |
+| Node no build do dashboard | 26 | A imagem da API e o CI usam 24; o estágio de build do dashboard (`audit-dashboard/Dockerfile`) usa `node:26-alpine` e o servidor é `nginx-unprivileged` 1.31 |
 
 ## Decisões em aberto
 
