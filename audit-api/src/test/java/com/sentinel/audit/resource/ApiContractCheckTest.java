@@ -108,4 +108,35 @@ class ApiContractCheckTest {
                 + op("r", "d", "[\"T\"]", "{\"200\":" + OK_JSON + "}", PARAM_OK + "\"requestBody\":{},") + "}}}");
         assertEquals(List.of(), ApiContractCheck.violations(doc));
     }
+
+    private static List<String> checkComCorpo(String schemaDoCorpo, String schemas) throws Exception {
+        JsonNode doc = new ObjectMapper().readTree("{\"components\":{\"schemas\":" + schemas + "},\"paths\":{\"/api/v1/x\":{\"post\":"
+                + op("r", "d", "[\"T\"]", "{\"200\":" + OK_JSON + ",\"400\":" + ERRO + "}", "\"requestBody\":{\"content\":{\"application/json\":{\"schema\":"
+                        + schemaDoCorpo + "}}},") + "}}}");
+        return ApiContractCheck.violations(doc);
+    }
+
+    @Test
+    void acusaPropriedadeDoCorpoSemDescricao() throws Exception {
+        List<String> v = checkComCorpo("{\"$ref\":\"#/components/schemas/Corpo\"}",
+                "{\"Corpo\":{\"properties\":{\"nome\":{\"type\":\"string\"},\"ok\":{\"description\":\"x\"}}}}");
+        assertEquals(List.of("POST /api/v1/x: propriedade nome do corpo sem descrição"), v);
+    }
+
+    @Test
+    void corpoLivreSemPropriedadesNaoAcusa() throws Exception {
+        assertEquals(List.of(), checkComCorpo("{\"type\":\"object\"}", "{}"));
+    }
+
+    @Test
+    void acusaExemploQueParecaSegredo() throws Exception {
+        for (String segredo : List.of("ghp_abcdef123456", "glpat-xxxxxxxxxxxx", "sk-proj-123", "0123456789abcdef0123456789abcdef")) {
+            List<String> v = checkComCorpo("{\"$ref\":\"#/components/schemas/Corpo\"}",
+                    "{\"Corpo\":{\"properties\":{\"k\":{\"description\":\"x\",\"example\":\"" + segredo + "\"}}}}");
+            assertTrue(v.toString().contains("exemplo parece um segredo real"), segredo + " -> " + v);
+        }
+        List<String> ok = checkComCorpo("{\"$ref\":\"#/components/schemas/Corpo\"}",
+                "{\"Corpo\":{\"properties\":{\"k\":{\"description\":\"x\",\"example\":\"https://github.com/acme/app\"}}}}");
+        assertEquals(List.of(), ok);
+    }
 }

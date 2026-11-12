@@ -48,7 +48,13 @@ public class EngineConfigResource {
 
     @PUT
     @Operation(summary = "Substituir os ajustes do sistema", description = "Vazio = voltar a ser igual ao perfil")
-    public EngineConfigViews.EngineConfigResponse put(@PathParam("id") Long id, JsonNode body) {
+    public EngineConfigViews.EngineConfigResponse put(@PathParam("id") Long id,
+            @org.eclipse.microprofile.openapi.annotations.parameters.RequestBody(
+                    description = "Ajustes do motor do sistema, como objeto JSON; objeto vazio volta a ser igual ao perfil. O formato de leitura é o do GET desta rota.",
+                    content = @org.eclipse.microprofile.openapi.annotations.media.Content(mediaType = "application/json",
+                            schema = @org.eclipse.microprofile.openapi.annotations.media.Schema(
+                                    type = org.eclipse.microprofile.openapi.annotations.enums.SchemaType.OBJECT)))
+            JsonNode body) {
         AuditedSystem system = systemCatalog.require(id);
         SystemTuning parsed;
         try {

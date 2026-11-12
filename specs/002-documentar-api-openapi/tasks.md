@@ -25,8 +25,8 @@ Formato: `- [ ] ID descrição com caminho`. Caminhos relativos a `audit-api/src
 
 ## PR C — esquemas dos DTOs
 
-- [ ] T016 `API/dto/*` e modelos usados direto nas rotas: `@Schema` com descrição por campo e exemplo (sem valor sensível real)
-- [ ] T017 [US1] `ApiContractCheck`: todo `schema` de corpo tem descrição por propriedade, e nenhum exemplo parece token ou chave real (`ghp_`, `glpat-`, `sk-`, chave longa em hexadecimal)
+- [x] T016 `API/dto/*` e corpos declarados nos resources: `@Schema` com descrição por campo e exemplo (sem valor sensível real); DTOs de resposta ficam para depois
+- [x] T017 [US1] `ApiContractCheck`: todo `schema` de corpo de requisição tem descrição por propriedade, e nenhum exemplo parece token ou chave real (`ghp_`, `glpat-`, `sk-`, chave longa em hexadecimal)
 - [ ] T018 LOG, versão, PR C, CI verde, merge com autorização
 
 ## PR D — CI e docs (pede autorização: toca `.github/`)

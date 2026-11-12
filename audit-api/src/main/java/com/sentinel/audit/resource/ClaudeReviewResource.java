@@ -17,6 +17,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
@@ -45,13 +46,13 @@ public class ClaudeReviewResource {
 
     public record ReviewResponse(int openSuggestions, List<SuggestionDto> suggestions, List<ProposalDto> proposals) {}
 
-    public record StatusRequest(String status) {}
+    public record StatusRequest(@Schema(description = "Novo estado da sugestão: tratada, dispensada ou aberta.") String status) {}
 
-    public record SampleRequest(Boolean passed, String note) {}
+    public record SampleRequest(@Schema(description = "Se o teste de amostra, feito fora do Sentinel, passou.") Boolean passed, @Schema(description = "Observação sobre o teste.") String note) {}
 
-    public record NoteRequest(String note) {}
+    public record NoteRequest(@Schema(description = "Observação de quem decidiu.") String note) {}
 
-    public record CopyRequest(Long targetSystemId) {}
+    public record CopyRequest(@Schema(description = "Sistema que recebe a cópia da regra.") Long targetSystemId) {}
 
     @Inject
     SystemCatalog systemCatalog;
