@@ -85,4 +85,17 @@ class PmdProcessingErrorsTest {
         String json = relatorio(erro("src/Foo.java", "falha estranha sem dois pontos"));
         assertTrue(PmdAnalyzer.recoverableNote(json, ROOT, caminho -> false).contains("(erro de leitura)"));
     }
+
+    @Test
+    void relatorioLegivelComListaDeArquivosEAproveitavelMesmoComCodigoDeFalha() {
+        assertTrue(PmdAnalyzer.hasReadableReport("{\"files\":[{\"filename\":\"A.java\",\"violations\":[]}]}"));
+        assertTrue(PmdAnalyzer.hasReadableReport("{\"files\":[]}"));
+    }
+
+    @Test
+    void relatorioCortadoOuVazioNaoEAproveitavel() {
+        assertFalse(PmdAnalyzer.hasReadableReport(""));
+        assertFalse(PmdAnalyzer.hasReadableReport("{\"files\":[{\"filename\":"));
+        assertFalse(PmdAnalyzer.hasReadableReport("{\"outra\":1}"));
+    }
 }

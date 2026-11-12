@@ -1410,3 +1410,11 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Mudança:** a regra aceita chamada com ou sem receptor e a constante com ou sem `Context.`, em qualquer posição do argumento, para `getSharedPreferences`, `openFileOutput`, `getDir` e `openOrCreateDatabase`.
 - **Testes:** `ruleid`/`ok` novos em `sentinel-android.java` (vistos falhar antes da correção).
 - **Limite:** modos combinados (`MODE_PRIVATE | MODE_WORLD_READABLE`) não são vistos.
+
+## PMD: aproveita o relatório gravado quando o PMD termina com erro
+
+- **Por quê:** numa auditoria o PMD terminou com código 1 (exceção interna) depois de achar 84 problemas; o Sentinel descartou o relatório e mostrou "0 achados, resultado parcial".
+- **Mudança:** com código diferente de 0 e 5, se o relatório JSON está inteiro e tem achados, eles são mantidos e o aviso de resultado parcial continua, com o motivo da falha.
+- **Testes:** `PmdProcessingErrorsTest` cobre relatório legível, vazio e cortado.
+- **NÃO verificado localmente:** os testes Java (o Maven não alcança o Maven Central neste ambiente); quem verifica é o CI da PR.
+- **Pendente:** a causa do código 1 (stack trace do PMD) ainda não foi informada.

@@ -145,6 +145,13 @@ public class PmdAnalyzer implements CodeAnalyzer {
         if (code != 0 && code != EXIT_RECOVERABLE_ERRORS) {
             String partial = ExternalTools.falha(code, timeoutSeconds, stderr);
             LOG.warnf("PMD %s", partial);
+            // Falha do PMD (ex.: exceção numa regra) depois de gravar o relatório: aproveita o que foi achado e
+            // avisa que o resultado é parcial, em vez de mostrar "0 achados".
+            List<Finding> salvos = readableFindings(report, projectPath, auditRun);
+            if (!salvos.isEmpty()) {
+                LOG.infof("PMD: %d problemas aproveitados do relatório parcial", salvos.size());
+                return new ToolRun.Outcome(salvos, partial + " (os achados já gravados foram aproveitados)");
+            }
             return new ToolRun.Outcome(new ArrayList<>(), partial);
         }
         String json = Files.readString(report, StandardCharsets.UTF_8);
@@ -160,6 +167,30 @@ public class PmdAnalyzer implements CodeAnalyzer {
             }
         }
         return new ToolRun.Outcome(found, partial);
+    }
+
+    private List<Finding> readableFindings(Path report, Path projectPath, AuditRun auditRun) {
+        try {
+            if (!Files.isRegularFile(report)) {
+                return new ArrayList<>();
+            }
+            String json = Files.readString(report, StandardCharsets.UTF_8);
+            return hasReadableReport(json) ? parse(json, projectPath, auditRun) : new ArrayList<>();
+        } catch (IOException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    /** O JSON do PMD está inteiro e traz a lista {@code files}: dá para aproveitar mesmo se o PMD terminou com erro. */
+    static boolean hasReadableReport(String json) {
+        if (json == null || json.isBlank()) {
+            return false;
+        }
+        try {
+            return MAPPER.readTree(json).path("files").isArray();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private static boolean isUsableFile(String path) {
