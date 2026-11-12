@@ -3,6 +3,7 @@
 - id: squawk
   name: "Squawk"
   category: performance
+  side: common
   applies-to: ["**/db/migration/**/*.sql", "**/db/migrations/**/*.sql", "**/migrations/**/*.sql", "**/db/changelog/**/*.sql", "**/liquibase/**/*.sql", "**/flyway/**/*.sql"]
   stdout: true
   command: [node, /opt/extras/sarif-extras.mjs, squawk, "{files}"]
@@ -13,6 +14,7 @@
 - id: sqlfluff
   name: "SQLFluff"
   category: quality
+  side: common
   applies-to: ["**/*.sql"]
   stdout: true
   command: [node, /opt/extras/sarif-extras.mjs, sqlfluff, "{files}"]

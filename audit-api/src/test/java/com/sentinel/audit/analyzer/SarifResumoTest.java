@@ -2,6 +2,7 @@ package com.sentinel.audit.analyzer;
 
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
+import com.sentinel.audit.pack.RuleSide;
 import com.sentinel.audit.pack.ToolSpec;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class SarifResumoTest {
 
     private static ToolSpec spec(String id, String name) {
-        return new ToolSpec(id, name, List.of("x"), null, Category.QUALITY, Map.of(), 60, false, List.of());
+        return new ToolSpec(id, name, List.of("x"), null, Category.QUALITY, Map.of(), 60, false, List.of(), RuleSide.COMMON);
     }
 
     private static SarifExecucao rodou(int achados, long segundos) {

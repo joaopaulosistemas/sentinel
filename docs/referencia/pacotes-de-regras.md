@@ -147,6 +147,12 @@ Imports Java e TypeScript (relativos e por pacote) são resolvidos para camadas.
 Comandos nunca passam por shell, rodam com o projeto como diretório de trabalho e só executam se o pacote for liberado
 (`PACKS_ALLOW_TOOLS=true`, para todos) ou **confiável** (`PACKS_TRUSTED_TOOL_PACKS`, abaixo). Ferramenta ausente é ignorada sem erro.
 
+**Lado da ferramenta (`side`, opcional).** `back`, `front` ou `common`: com o lado desligado no escopo de um sistema (aba Motor de regras), a ferramenta
+daquele lado não roda e o resumo da auditoria diz o motivo ("Desligadas pelo escopo do sistema"). Sem `side`, o lado é deduzido dos globs de `applies-to`
+(só extensões de front, só de back, ou infraestrutura; na dúvida é `common`, e `common` roda sempre). Declare o lado quando a dedução erra: `njsscan` é
+`back` (Node/Express, embora analise `.js` e `.ts`); `squawk` e `sqlfluff` são `common` (SQL fica sempre ligado); `jscpd` é `common`, mas com um lado
+desligado perde só os achados dos arquivos desse lado, como a Duplicação interna. Valor fora de `back|front|common` falha o carregamento da ferramenta.
+
 ### Escopo de tecnologias e analisadores
 
 O Sentinel analisa **Angular, TypeScript, JavaScript, React, HTML, CSS, SCSS, Java, Spring Boot, Docker e Kubernetes**. Analisadores de Python, Go e Terraform foram removidos.

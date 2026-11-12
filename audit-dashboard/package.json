@@ -1,6 +1,6 @@
 {
   "name": "audit-dashboard",
-  "version": "12.84.0",
+  "version": "12.85.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

@@ -35,7 +35,7 @@ final class ToolSpecParser {
 
     /** Uma ferramenta de {@code tools/*.yml}; devolve {@code null} quando o item é inutilizável (o erro já foi registrado). */
     private static ToolSpec parseTool(Map<String, Object> m, String name, Set<String> ids, List<String> errors) {
-        PackLoader.checkKeys(m, Set.of("id", "name", "command", "input", "category", "timeout-seconds", "severity-map", "stdout", "applies-to"), name, errors);
+        PackLoader.checkKeys(m, Set.of("id", "name", "command", "input", "category", "timeout-seconds", "severity-map", "stdout", "applies-to", "side"), name, errors);
         String id = Yamls.str(m, "id");
         if (id == null || !PackManifest.ID.matcher(id).matches()) {
             errors.add(name + ": 'id' ausente ou inválido");
@@ -60,10 +60,21 @@ final class ToolSpecParser {
             applies = List.of();
         }
         checkToolGlobs(args, applies, input, where, errors);
+        RuleSide side = toolSide(m, applies, where, errors);
         String toolName = Yamls.str(m, "name");
         return new ToolSpec(id, toolName == null ? id : toolName, args, input,
                 PackLoader.category(m, "category", Category.QUALITY, where, errors), toolSeverityMap(m, where, errors),
-                Yamls.integer(m, "timeout-seconds", DEFAULT_TOOL_TIMEOUT_SECONDS, errors, name), stdout, applies);
+                Yamls.integer(m, "timeout-seconds", DEFAULT_TOOL_TIMEOUT_SECONDS, errors, name), stdout, applies, side);
+    }
+
+    /** O lado escrito em {@code side} (back, front ou common); sem ele, deduzido dos globs de {@code applies-to}. */
+    private static RuleSide toolSide(Map<String, Object> m, List<String> applies, String where, List<String> errors) {
+        String text = Yamls.str(m, "side");
+        RuleSide side = RuleSide.parse(text);
+        if (text != null && side == null) {
+            errors.add(where + ": 'side' inválido '" + text + "' (use back, front ou common)");
+        }
+        return side != null ? side : RuleSide.infer(List.of("regex"), applies);
     }
 
     /** O comando grava o SARIF em {output} ou escreve no stdout; nunca os dois, e 'stdout' só vale com 'command'. */

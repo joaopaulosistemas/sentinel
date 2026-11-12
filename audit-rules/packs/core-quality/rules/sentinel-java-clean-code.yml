@@ -208,6 +208,7 @@ rules:
       include: ["*.java", "*.ts", "*.tsx"]
       exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
     metadata:
+      side: common
       category: quality
 
   - id: sentinel-codigo-comentado
@@ -221,4 +222,5 @@ rules:
       include: ["*.java", "*.ts", "*.tsx"]
       exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
     metadata:
+      side: common
       category: quality

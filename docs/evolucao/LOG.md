@@ -1238,3 +1238,17 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Falsos positivos fechados:** `open-redirect` e `open-redirect-spring` não marcam destino validado com `startsWith("/")` nem expressão condicional; `zip-slip` e `servlet-path-traversal` aceitam `getCanonicalFile()` seguido de `startsWith` (o uso do caminho canônico sem a conferência continua sendo achado).
 - **Testes:** casos `ruleid`/`ok` novos em `sentinel-java-extras.java`, `sentinel-owasp-api.java`, `sentinel-taint.java` e `sentinel-dockerfile.dockerfile`.
 - **Limite:** o verificador do `sentinel-alvo` roda o motor sobre as regras, não a API inteira; as demais regras ainda não têm caso lá.
+
+## Dashboard 12.85.0 — Ferramentas externas com lado (front/back/comum) e guarda contra regra "comum" por esquecimento (`market-tools` 5.3.0, `core-iac` 1.0.3, `core-quality` 1.1.1, `core-security` 1.7.1)
+
+- **Spec:** `specs/001-separar-regras-front-back` (PR A: FR-008 e FR-010).
+- **Por quê:** o escopo "sem front-end" / "sem back-end" do sistema já desligava regras, mas as ferramentas externas (market-tools) rodavam sempre. E a dedução do lado marcava como "comum" qualquer regra de código com linguagens mistas, sem ninguém perceber.
+- **Mudança:**
+  - `ToolSpec` ganha `side`; o YAML da ferramenta aceita `side: back|front|common` (inválido vira erro de carregamento); sem ele, o lado é deduzido dos globs de `applies_to`.
+  - Ferramenta de lado desligado não roda e o resumo da análise diz quais ficaram de fora e por quê (`SarifResumo`). `AuditPolicy.toolOffNote` dá o motivo; jscpd continua comum, mas perde os achados dos arquivos do lado desligado.
+  - Lados declarados: njsscan `back` (a dedução diria front), squawk/sqlfluff/jscpd `common` (a dedução diria back para SQL).
+  - 15 regras que a dedução deixava como comum ganharam `metadata.side: common` explícito (9 de Compose/Kubernetes, `sentinel-int-http-sem-tls`, 2 de comentários, 3 de manifesto Android). Total: back 192, front 92, common 27 de 311.
+  - `RuleSide.isInfrastructure` e teste-guarda em `RuleSideTest`: regra de código que a dedução deixa como comum sem `metadata.side` (e que não é de infraestrutura) falha listando os ids.
+- **Testes:** `ToolSpecParserTest`, `SarifAnalyzerTest`, `SarifResumoTest`, `SystemTuningSidesTest`, `MarketToolsSideTest` (13 ferramentas embutidas) e `RuleSideTest`.
+- **Verificado:** `scripts/conferir-numeros.py`, `scripts/sincronizar-versao.py --check` e `scripts/verificar-separacao.py`; a lista das 15 regras veio de uma simulação em Python de `RuleSide.infer`, e conferi que só `metadata.side` mudou nos YAMLs.
+- **NÃO verificado localmente:** os testes Java e os do Semgrep (o Maven não alcança o Maven Central neste ambiente); quem verifica é o CI deste PR. A guarda não foi replicada em `scripts/verificar-regras.py` (roda só no Maven).

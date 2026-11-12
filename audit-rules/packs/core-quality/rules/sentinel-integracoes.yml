@@ -103,6 +103,7 @@ rules:
       include: ["*.java", "*.ts", "*.tsx"]
       exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
       owasp: A02:2021 - Cryptographic Failures

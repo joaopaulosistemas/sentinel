@@ -2,6 +2,7 @@
 - id: njsscan
   name: "njsscan"
   category: security
+  side: back
   applies-to: ["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.ts"]
   command: [njsscan, --sarif, -o, "{output}", "{project}"]
   timeout-seconds: 600
