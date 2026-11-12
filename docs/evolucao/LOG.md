@@ -1330,6 +1330,13 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** os 5 testes passam localmente; YAML do workflow lido; `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** a execução no runner do CI (o PR prova).
 
+## Spec 003 (Sentinel Premium 1): medição e prova (sem versão nova)
+
+- **Por quê:** o plano Sentinel Premium só vale se o ganho for provado com números; hoje a medição está espalhada (benchmark só Java, 1 gabarito de validação, nenhum veredito humano de precisão) e não há conjunto reservado.
+- **Mudança (só documentação):** `specs/003-medicao-e-prova/` com spec e checklist de qualidade (16 de 16). Cinco histórias: linha de base, veredito "fica / sai / inconclusivo" com critérios escritos antes, conjunto reservado, precisão em código real com revisão humana, lacunas de medição. Q1 respondida: só código aberto público.
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`; números da linha de base conferidos no repositório (14 gabaritos de treino, 1 de validação, separação 51 × 8).
+- **NÃO verificado:** nada foi implementado; as metas numéricas não existem ainda (dependem da linha de base). SC-008 depende de vereditos humanos que João ainda não preencheu.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
