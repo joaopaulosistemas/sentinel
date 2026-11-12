@@ -81,7 +81,10 @@ rules:
       cwe: "CWE-681: Incorrect Conversion between Numeric Types"
   - id: sentinel-ee-log-dado-pessoal
     patterns:
-      - pattern: $LOG.$M(..., $ARG, ...)
+      - pattern-either:
+          - pattern: $LOG.$M(..., $ARG, ...)
+          - pattern: $LOG.$M(..., <... $X + $ARG ...>, ...)
+          - pattern: $LOG.$M(..., <... $ARG + $X ...>, ...)
       - metavariable-regex:
           metavariable: $LOG
           regex: '(?i)^(this\.)?\w*(log|logger)$'
