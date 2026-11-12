@@ -1221,6 +1221,16 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Testes:** `TrivyOfflineTest` usa um `trivy` falso (429 com rede, relatório vazio com `--offline-scan`) e confere as chamadas e a nota nos dois modos.
 - **Limite:** no modo offline o Sentinel não detecta cache incompleto; a doc manda aquecer o cache por projeto antes de ligar.
 
+## Documentação alinhada ao código da 12.84.0 (sem versão nova)
+
+- **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
+- **Mudança (só texto):**
+  - `ARQUITETURA.md` (e o `.html` regenerado por `scripts/gerar-arquitetura-html.py`): 20 analisadores (inclui Betterleaks e Mensagens de commit), recursos REST separados por responsabilidade, pacote `settings`, relatórios PDF/portfólio, plano de correção, confiança do achado, `.sentinel.yml`, pasta local, regras por lado, guia de código, retenção e limite de auditorias simultâneas, rotas `/guide` e `/settings`, migrações Flyway V1 a V5, Dockerfiles (JDK 26 no build, JRE 25 na imagem, Node 24, nginx sem privilégios), jobs do CI e remoção dos agentes antigos do diagrama.
+  - `AGENTE.md`: 26 voltas, `estado.json`, gabarito de validação existente. `PLACAR.md`: regras do jogo para um agente; itens de JaCoCo (sem o piso de 70 %) e de Playwright marcados com a evidência; as notas dos eixos não mudaram.
+  - `pacotes-de-regras.md` (45 regras, Node 24), `versoes-fixadas.md` (outras versões fixadas no Dockerfile), `instalacao.md` (pré-requisitos e árvore do projeto), `docs/README.md` (índice completo, 14 diagramas) e `README.md` (stack e funcionalidades).
+- **Verificado:** `scripts/conferir-numeros.py`, `scripts/sincronizar-versao.py --check` e `scripts/verificar-separacao.py` rodados antes e depois; contagens conferidas no código (45 regras no `core-quality`, 20 analisadores em `AnalyzerCatalog`, 14 blocos Mermaid, 70 rotas anotadas nos `*Resource`).
+- **Não verificado:** o comportamento em execução (nada foi compilado nem rodado: não há Maven nem Docker nesta sessão); `IMPACTO.md` não foi reescrito: o OWASP Benchmark do Opengrep (0,513, LOG 12.35.0) pode estar abaixo do valor local mais recente (0,53 na 12.42.0, sem medição no CI); `historia.md` e `historico-de-versoes.md` são históricos e ficaram como estão (o segundo ganhou um aviso de que os agentes Evolution e Descoberta foram removidos).
+
 ## Regras: lacunas e falsos positivos achados pelo `sentinel-alvo` (`core-security` 1.7.0, `core-iac` 1.0.2)
 
 - **Por quê:** o projeto [`sentinel-alvo`](https://github.com/joaopaulosistemas/sentinel-alvo) escreve, para cada regra, um exemplo vulnerável e um correto a partir do problema (CWE), sem olhar a regra, e confere se o motor pega um e deixa o outro. Das 73 regras com caso, 5 não pegavam o exemplo e 2 marcavam a defesa recomendada.
