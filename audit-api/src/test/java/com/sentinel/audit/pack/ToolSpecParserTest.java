@@ -193,7 +193,7 @@ class ToolSpecParserTest {
     @Test
     void ladoInvalidoNaFerramentaViraErroDeCarregamento() throws Exception {
         List<String> errors = new ArrayList<>();
-        ToolSpecParser.parse(pacoteComTools("- id: x\n  side: meio\n  input: \"reports/*.sarif\"\n"), errors);
+        ToolSpecParser.parse(pacoteComTools("- id: ferramenta-x\n  side: meio\n  input: \"reports/*.sarif\"\n"), errors);
 
         assertTrue(temErro(errors, "'side' inválido 'meio'"), errors.toString());
         assertTrue(temErro(errors, "back, front ou common"), errors.toString());
