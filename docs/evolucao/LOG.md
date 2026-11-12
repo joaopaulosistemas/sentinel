@@ -1266,3 +1266,10 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Mudança:** o filtro de `$CTX` passou a valer só para `getBean`; as chamadas sem receptor (`find`, `list`, `delete`, `update`, `count`, `stream`) são pegas apenas dentro de classe que implementa `PanacheRepository<T>` e só quando a consulta não é feita só de literais (a auto-auditoria achou duas assim no `AuditRunRepository`); `MDC.put` seguido de `try/finally` no mesmo bloco deixa de ser marcado.
 - **Testes:** `ruleid`/`ok` novos em `sentinel-java-clean-code.java`, `sentinel-observabilidade.java` e `sentinel-quarkus.java` (visto falhar antes da correção); `PackToolTest` com a versão 1.1.3.
 - **Limite:** `MDC.put` com o `try/finally` em outro método continua marcado; classes que estendem `PanacheRepositoryBase` não são cobertas.
+
+## Regras: dado pessoal no log também dentro de concatenação (`core-corporativo` 1.0.1)
+
+- **Por quê:** o `sentinel-alvo` (206 regras com caso) mostrou que `ee-log-dado-pessoal` só olhava o dado passado direto (`LOG.info("x", cpf)`); a forma mais comum, `LOG.info("login cpf=" + cpf)`, passava.
+- **Mudança:** a regra passa a olhar também operandos de concatenação dentro dos argumentos do log.
+- **Testes:** `ruleid`/`ok` novos em `sentinel-padroes-java.java` (visto falhar antes da correção); a auto-auditoria do próprio código continua sem ERROR.
+- **Limite:** dado pessoal passado por método de formatação (`String.format`) ou mascarado por função própria não é distinguido.
