@@ -1,0 +1,43 @@
+{
+ "_comentario": "Dados só de teste do medicao.py; não são medidas do Sentinel.",
+ "casos": [
+  0,
+  0,
+  0,
+  1,
+  0,
+  0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  1,
+  0,
+  0,
+  0
+ ],
+ "commits": {
+  "fix/java-app": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+ },
+ "conjunto": "treino",
+ "versoes_ferramentas": {
+  "joern": null,
+  "opengrep": "1.0"
+ }
+}

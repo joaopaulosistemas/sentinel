@@ -1,0 +1,35 @@
+{
+ "falhas": [
+  {
+   "arquivo": "A.java",
+   "cwe": "CWE-89",
+   "fonte": "https://exemplo.invalid/teste",
+   "linha": 11,
+   "regras": [
+    "java-sqli"
+   ],
+   "tolerancia": 3
+  },
+  {
+   "arquivo": "B.java",
+   "cwe": "CWE-79",
+   "fonte": "https://exemplo.invalid/teste",
+   "linha": 20,
+   "regras": [
+    "java-xss"
+   ],
+   "tolerancia": 3
+  },
+  {
+   "arquivo": "C.java",
+   "cwe": "CWE-79",
+   "fonte": "https://exemplo.invalid/teste",
+   "linha": 50,
+   "regras": [
+    "java-xss"
+   ],
+   "tolerancia": 3
+  }
+ ],
+ "repo": "fix/java-app"
+}

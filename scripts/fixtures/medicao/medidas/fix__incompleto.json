@@ -1,0 +1,16 @@
+{
+ "achados": [],
+ "arquivos": null,
+ "commit": "cccccccccccccccccccccccccccccccccccccccc",
+ "completa": false,
+ "duracao_s": null,
+ "fim": null,
+ "inicio": "2026-11-12T10:00:00Z",
+ "motivo_incompleta": "auditoria excedeu o tempo",
+ "repo": "fix/incompleto",
+ "versao_sentinel": "0.0.0-teste",
+ "versoes_ferramentas": {
+  "joern": null,
+  "opengrep": "1.0"
+ }
+}
