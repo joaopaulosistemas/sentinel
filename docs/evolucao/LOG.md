@@ -1352,6 +1352,12 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Testes:** `RankingPage.test.tsx` novo caso confere que a barra cresce e tem largura mínima, com e sem selo. Conferido que ele **falha** no código anterior e passa no novo.
 - **Verificado:** `vitest` da pasta do ranking (8 testes), `tsc --noEmit`, `sincronizar-versao.py --check`. O selo só existe no ranking (conferido por busca), então nenhuma outra tela tem o mesmo risco.
 - **NÃO verificado:** o desenho no navegador (jsdom não calcula largura); confira em `localhost:3000/ranking` depois de subir a versão. O teste cobre o estilo, não o pixel.
+## Plano da spec 003 e Q1 da spec 008 (sem versão nova)
+
+- **Por quê:** a spec 003 (medição e prova) é a base do Sentinel Premium; o plano define como construí-la. A Q1 da 008 (revisor externo) foi respondida: um colega de trabalho do João, só sobre código aberto público.
+- **Mudança (só documentação):** `specs/003-medicao-e-prova/{plan,research,data-model,quickstart}.md` e `contracts/{cli,arquivos}.md`. Decisão central: ferramenta Python única (`scripts/medicao.py`), dados em JSON em `audit-rules/calibracao/`, relatórios em `docs/evolucao/medicao/`; nada em Java, banco ou painel. Seis fatias (A a F), duas delas pedem autorização do João (mexer em `.github/` e aprovar a lista de repositórios reservados).
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`; campos de tempo (`startedAt`, `completedAt`) e formatos de gabarito conferidos no código.
+- **NÃO verificado:** nada foi implementado; o CI não detecta leitura do reservado por pessoa ou agente fora do que fica versionado (dito no plano); a linha de base real só roda no GitHub.
 
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 

@@ -13,13 +13,13 @@
 
 ## Completude dos requisitos
 
-- [ ] Nenhum marcador [NEEDS CLARIFICATION] restante
+- [x] Nenhum marcador [NEEDS CLARIFICATION] restante
 - [x] Requisitos testáveis e sem ambiguidade
 - [x] Critérios de sucesso mensuráveis
 - [x] Critérios de sucesso sem detalhes de tecnologia
 - [x] Todos os cenários de aceite definidos
 - [x] Casos de borda identificados
-- [ ] Escopo claramente delimitado
+- [x] Escopo claramente delimitado
 - [x] Dependências e premissas identificadas
 
 ## Prontidão da funcionalidade
@@ -31,7 +31,7 @@
 
 ## Notas
 
-- A Q1 (revisor externo) é o único marcador aberto; ela também deixa o escopo da revisão sem fechar. As duas marcas fecham quando for respondida.
+- A Q1 (revisor externo) foi respondida em 2026-11-12: um colega de trabalho, só sobre código aberto público.
 - A seção "Linha de base" cita ferramentas e rotas que já existem no projeto como fatos levantados, no mesmo formato das specs 002 e 003. Os requisitos e os critérios de sucesso não dependem delas.
 - A tabela "Como cada critério é verificado" nomeia jobs do CI por tipo, e não por nome exato (princípio VIII); os nomes ficam para o plano.
 - Metas numéricas não foram inventadas: dependem da linha de base da spec 003 e são fixadas por João.
