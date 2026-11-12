@@ -137,15 +137,16 @@ rules:
       owasp: M8 - Security Misconfiguration
 
   - id: sentinel-android-modo-mundo
-    pattern-either:
-      - pattern: $C.getSharedPreferences(..., Context.MODE_WORLD_READABLE)
-      - pattern: $C.getSharedPreferences(..., Context.MODE_WORLD_WRITEABLE)
-      - pattern: $C.openFileOutput(..., Context.MODE_WORLD_READABLE)
-      - pattern: $C.openFileOutput(..., Context.MODE_WORLD_WRITEABLE)
-      - pattern: $C.getDir(..., Context.MODE_WORLD_READABLE)
-      - pattern: $C.getDir(..., Context.MODE_WORLD_WRITEABLE)
-      - pattern: $C.openOrCreateDatabase(..., Context.MODE_WORLD_READABLE, ...)
-      - pattern: $C.openOrCreateDatabase(..., Context.MODE_WORLD_WRITEABLE, ...)
+    patterns:
+      - pattern-either:
+          - pattern: $C.$M(..., $MODE, ...)
+          - pattern: $M(..., $MODE, ...)
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(getSharedPreferences|openFileOutput|getDir|openOrCreateDatabase)$
+      - metavariable-regex:
+          metavariable: $MODE
+          regex: ^(Context\.)?MODE_WORLD_(READABLE|WRITEABLE)$
     message: >
       Arquivo, preferência ou banco criado com MODE_WORLD_READABLE/WRITEABLE (CWE-732): qualquer outro app do
       aparelho lê ou altera os dados, inclusive credenciais. Use MODE_PRIVATE e compartilhe por ContentProvider com
