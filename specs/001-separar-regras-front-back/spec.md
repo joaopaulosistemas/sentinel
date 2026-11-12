@@ -2,10 +2,19 @@
 
 **Branch da funcionalidade**: `001-separar-regras-front-back`
 **Criada em**: 2026-11-12
-**Status**: Rascunho (3 pontos em aberto, ver "Esclarecimentos pendentes")
+**Status**: Esclarecida (pronta para `/speckit-plan`)
 **Origem**: pedido do João: separar as regras do Sentinel em front-end e back-end no backend, refletir isso na tela Motor de regras, e permitir que um projeto só Java desligue tudo de front (e o contrário). Há um protótipo fiel da tela, feito como canvas de design; a implementação aguarda o "vá" dele.
 
 > Esta spec é um exemplo vivo do fluxo: foi escrita só com o que o João já disse e com o que o repositório mostra. O que ninguém decidiu ainda está marcado como `[NEEDS CLARIFICATION]` e deve ser resolvido com `/speckit-clarify` antes do plano.
+
+## Clarifications
+
+### Session 2026-11-12
+
+- Q: As regras de Docker, Kubernetes, SQL e infraestrutura como código ganham interruptor próprio, ficam sempre ligadas ou entram no back-end? → A: Sempre ligadas, fora do interruptor.
+- Q: O que acontece quando uma regra nova é adicionada sem informar o grupo? → A: O carregamento do pacote falha, com mensagem apontando a regra sem grupo.
+- Q: O interruptor também controla as ferramentas de mercado de uma tecnologia só? → A: Sim; as de uma tecnologia só acompanham o grupo, as que servem aos dois lados ou à infraestrutura ficam sempre ligadas.
+- Q: O Ranking de Sistemas deve avisar quando um sistema tem um grupo desligado? → A: Sim, com um selo ao lado da nota (ranking e relatórios), sem mudar o cálculo da nota.
 
 ## Cenários de usuário e testes *(obrigatório)*
 
@@ -52,34 +61,36 @@ Quem adiciona uma regra nova, ou um pacote novo, define em qual grupo ela entra,
 **Cenários de aceite**:
 
 1. **Dado** uma regra nova com o grupo informado, **quando** o pacote é carregado, **então** ela aparece no grupo informado.
-2. **Dado** uma regra nova sem grupo informado, **quando** o pacote é carregado, **então** `[NEEDS CLARIFICATION: o que acontece? falha ao carregar, vai para um grupo padrão ou é inferida pela linguagem/caminho?]`.
+2. **Dado** uma regra de código nova sem grupo informado, **quando** o pacote é carregado, **então** o carregamento falha com uma mensagem que aponta a regra sem grupo (regras de Docker, Kubernetes, SQL e IaC são a exceção: não têm grupo).
 
 ---
 
 ### Casos de borda
 
 - Hoje a divisão por pacote não serve: `core-frontend` declara `languages: [java, javascript, typescript]` e traz regras de Angular e de acessibilidade ao lado de "consulta em laço / N+1", que é de back-end; `core-security`, `core-quality` e `core-boas-praticas` também misturam Java e TypeScript. A classificação precisa ser **por regra**, não por pacote.
-- Regras de Docker, Kubernetes, SQL e IaC não são nem front nem back `[NEEDS CLARIFICATION: viram um terceiro grupo (infraestrutura/dados) ou ficam ligadas sempre?]`.
-- Ferramentas de mercado via SARIF (`market-tools`) rodam sobre vários tipos de arquivo e não são regras individuais do Sentinel `[NEEDS CLARIFICATION: o interruptor também desliga as ferramentas de mercado de cada lado, por exemplo ESLint e Stylelint no front e PMD no back?]`.
+- Regras de Docker, Kubernetes, SQL e IaC não são nem front nem back: ficam fora do interruptor e continuam sempre ligadas. Um terceiro grupo pode ser criado numa spec futura, já que o grupo é declarado em cada regra.
+- Ferramentas de mercado via SARIF (`market-tools`) não são regras individuais do Sentinel: as que analisam uma tecnologia só (por exemplo ESLint e Stylelint no front, PMD no back) acompanham o grupo; as que servem aos dois lados ou à infraestrutura (por exemplo Trivy e Gitleaks) ficam sempre ligadas.
 - Sistemas já cadastrados antes da funcionalidade devem continuar com tudo ligado, sem ação do usuário.
-- A nota de risco de um sistema com um grupo desligado não pode ser comparada diretamente com a de um sistema completo `[NEEDS CLARIFICATION: o ranking de sistemas deve indicar que um grupo está desligado?]`.
+- A nota de risco de um sistema com um grupo desligado não é diretamente comparável à de um sistema completo: o ranking e os relatórios mostram um selo ("front-end desligado" ou "back-end desligado") ao lado da nota, e o cálculo da nota não muda.
 
 ## Requisitos *(obrigatório)*
 
 ### Requisitos funcionais
 
-- **FR-001**: Cada regra do motor DEVE pertencer a exatamente um grupo de tecnologia, dentre front-end e back-end (mais o que o esclarecimento sobre infraestrutura decidir).
+- **FR-001**: Cada regra de código do motor DEVE pertencer a exatamente um grupo de tecnologia, front-end ou back-end. Regras de Docker, Kubernetes, SQL e IaC não pertencem a nenhum grupo e nunca são desligadas pelo interruptor.
 - **FR-002**: O usuário DEVE poder ligar e desligar cada grupo por sistema, no cadastro do sistema (Constituição, princípio V), sem afetar outros sistemas.
 - **FR-003**: Um grupo desligado DEVE impedir a execução e o aparecimento de achados das suas regras na auditoria desse sistema.
 - **FR-004**: A tela Motor de regras DEVE mostrar as regras separadas por grupo, com contagem e estado do grupo, mantendo o visual atual.
 - **FR-005**: O grupo de uma regra DEVE ser declarado na própria definição da regra, de modo que regras e pacotes novos entrem sem alterar código.
 - **FR-006**: Sistemas existentes DEVEM continuar com todos os grupos ligados e produzir o mesmo resultado de antes.
 - **FR-007**: Regras que o usuário adiciona por sistema DEVEM poder ser colocadas em um dos grupos.
+- **FR-008**: Cada ferramenta de mercado que analisa uma só tecnologia DEVE declarar o grupo a que pertence e ser desligada junto com ele; ferramentas que servem aos dois lados ou à infraestrutura DEVEM ficar sempre ligadas.
+- **FR-009**: O Ranking de Sistemas e os relatórios DEVEM mostrar, ao lado da nota, um selo indicando qual grupo está desligado, sem alterar o cálculo da nota.
 
 ### Entidades principais
 
 - **Regra**: uma verificação do motor; passa a ter um grupo de tecnologia.
-- **Grupo de tecnologia**: front-end ou back-end (e, se decidido, outros); pode ser ligado ou desligado por sistema.
+- **Grupo de tecnologia**: front-end ou back-end; pode ser ligado ou desligado por sistema.
 - **Sistema**: o projeto auditado; guarda o estado de cada grupo.
 
 ## Critérios de sucesso *(obrigatório)*
@@ -88,7 +99,7 @@ Quem adiciona uma regra nova, ou um pacote novo, define em qual grupo ela entra,
 
 - **SC-001**: Em um sistema só Java com o front-end desligado, a auditoria produz zero achados de regras de front-end e executa zero dessas regras.
 - **SC-002**: Em um sistema com os dois grupos ligados, o conjunto de achados fica idêntico ao da versão anterior (nenhuma regressão).
-- **SC-003**: 100 % das regras existentes ficam classificadas em um grupo, e um teste automático barra regra nova sem grupo, a menos que o esclarecimento 2 decida outro comportamento para esse caso.
+- **SC-003**: 100 % das regras existentes ficam classificadas em um grupo, e um teste automático falha se uma regra de código não tiver grupo.
 - **SC-004**: Os testes de precisão e calibração existentes (OWASP Benchmark, `calibracao.sh`) continuam passando sem queda, já que nada na detecção deve mudar.
 
 ## Premissas
@@ -99,6 +110,4 @@ Quem adiciona uma regra nova, ou um pacote novo, define em qual grupo ela entra,
 
 ## Esclarecimentos pendentes
 
-1. Regras de infraestrutura e dados (Docker, Kubernetes, SQL, IaC) formam um terceiro grupo ou ficam fora do interruptor?
-2. Regra sem grupo: falha, usa padrão ou é inferida?
-3. O interruptor também controla as ferramentas de mercado de cada lado?
+Nenhum. As quatro dúvidas da primeira versão foram resolvidas em 2026-11-12 (ver "Clarifications").
