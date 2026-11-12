@@ -1,6 +1,6 @@
 # Especificação: Documentar toda a API REST do Sentinel com OpenAPI/Swagger
 
-**Ramo**: `spec/002-documentar-api-openapi` | **Criada**: 2026-11-12 | **Status**: Em andamento (PR A mergeado em 2026-11-12: segurança, erros padrão, MCP e trava; faltam B, C e D)
+**Ramo**: `spec/002-documentar-api-openapi` | **Criada**: 2026-11-12 | **Status**: Concluída (PRs A a D mergeados em 2026-11-12); falta só a conferência manual SC-005 (T022, do João). Fora do escopo entregue: descrição campo a campo dos DTOs de resposta
 **Pedido**: "criar uma spec para swagger, criar para todos os resources do sentinel"
 
 ## Linha de base: o que já existe (levantado no código em 2026-11-12)

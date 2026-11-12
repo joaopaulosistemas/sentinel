@@ -1289,6 +1289,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** testes do validador (6) e YAML do workflow lido; `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** compilação Java e a execução dos novos passos do job (o CI prova); o Swagger UI não foi aberto em navegador (T022, do João).
 
+## Dashboard 12.91.0 — spec 002 (OpenAPI) concluída
+
+- **Spec:** `specs/002-documentar-api-openapi`: status Concluída; PRs A (#243), B (#245), C (#246) e D (#247) mergeados com CI verde.
+- **Resultado:** as 70 rotas têm resumo, descrição, tag, respostas com tipo de mídia, 401/404/400 documentados, parâmetros descritos e corpos de requisição com descrição e exemplo; o teste de contrato trava regressões e o CI publica o `openapi.json` como artefato.
+- **Pendente (manual, João):** T022 / SC-005 — abrir `/swagger-ui` em modo dev com chave ligada, clicar em Authorize e chamar uma rota protegida.
+- **Não feito:** descrição campo a campo dos DTOs de resposta.
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`. Só documentação.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
