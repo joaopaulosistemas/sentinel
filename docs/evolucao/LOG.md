@@ -1243,6 +1243,18 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** teste com o binário real e regras mínimas de duas formas (arquivo e pasta de regras).
 - **NÃO verificado:** o ganho de tempo (nunca medido) e o comportamento em auditoria real.
 
+## Dashboard 12.87.0 — OpenAPI: autenticação, erros padrão e MCP no documento (spec 002, PR A)
+
+- **Spec:** `specs/002-documentar-api-openapi` (histórias 2, 3 e 4; plano e tarefas no mesmo diretório).
+- **Por quê:** o Swagger mostrava 67 das 70 rotas com resumo, mas não dizia como autenticar (sem "Authorize", com a chave ligada tudo dava 401), omitia o `McpResource` e não descrevia nenhum erro.
+- **Mudança (só documentação do contrato; nenhuma rota muda):**
+  - `SentinelOpenApiFilter` (`mp.openapi.filter`) declara `X-API-Key`, `Bearer` e a chave MCP do sistema; os schemas `ApiError` e `ApiKeyError`; marca saúde e webhooks como sem chave; e põe o 401 em toda rota protegida. A lista de rotas abertas vem de `ApiKeyFilter.isOpenPath`.
+  - `McpResource` ganha tag, resumo, descrição e respostas (200, 202, 401, 413, 429, 405).
+  - `OpenApiContractIntegrationTest` falha listando `METODO /caminho` de rota sem resumo, tag, resposta ou 401.
+- **Testes:** `SentinelOpenApiFilterTest` (unitário) e `OpenApiContractIntegrationTest` (Testcontainers, job de integração).
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** compilação e testes Java (Maven sem acesso ao Maven Central aqui); o CI prova. O Swagger UI não foi aberto num navegador.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
