@@ -17,6 +17,15 @@ class Integracoes {
 
         // ok: sentinel-int-httpclient-sem-timeout
         HttpClient d = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).connectTimeout(Duration.ofSeconds(5)).build();
+
+        // ruleid: sentinel-int-httpclient-sem-timeout
+        org.apache.http.client.HttpClient e = HttpClients.createDefault();
+
+        // ruleid: sentinel-int-httpclient-sem-timeout
+        org.apache.http.client.HttpClient f = HttpClients.custom().setMaxConnTotal(20).build();
+
+        // ok: sentinel-int-httpclient-sem-timeout
+        org.apache.http.client.HttpClient g = HttpClients.custom().setDefaultRequestConfig(cfg).build();
     }
 
     void requisicoes(URI uri) {

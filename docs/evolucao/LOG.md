@@ -1239,7 +1239,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Testes:** casos `ruleid`/`ok` novos em `sentinel-java-extras.java`, `sentinel-owasp-api.java`, `sentinel-taint.java` e `sentinel-dockerfile.dockerfile`.
 - **Limite:** o verificador do `sentinel-alvo` roda o motor sobre as regras, não a API inteira; as demais regras ainda não têm caso lá.
 
-## Dashboard 12.85.0 — Ferramentas externas com lado (front/back/comum) e guarda contra regra "comum" por esquecimento (`market-tools` 5.3.0, `core-iac` 1.0.3, `core-quality` 1.1.1, `core-security` 1.7.1)
+## Regras: timeout do HttpClient do Apache e do axios direto (`core-quality` 1.1.1)
+
+- **Por quê:** o `sentinel-alvo` (104 regras com caso) achou duas lacunas nas regras de timeout: `int-httpclient-sem-timeout` só olhava o `HttpClient` do JDK, e `int-axios-sem-timeout` só `axios.create`.
+- **Mudança:** a primeira passa a pegar `HttpClients.createDefault()` e `HttpClients.custom()`/`HttpClientBuilder.create()` sem `setDefaultRequestConfig`; a segunda, `axios.get/delete/head(url)` e `axios.post/put/patch(url, dados)` sem configuração.
+- **Testes:** `ruleid`/`ok` novos em `sentinel-integracoes.java` e `.ts`; `PackToolTest` com a versão 1.1.1.
+- **Limite:** um `axios.defaults.timeout` definido em outro arquivo não é visto; nesse caso o achado deve ser suprimido.
+
+## Dashboard 12.85.0 — Ferramentas externas com lado (front/back/comum) e guarda contra regra "comum" por esquecimento (`market-tools` 5.3.0, `core-iac` 1.0.3, `core-quality` 1.1.2, `core-security` 1.7.1)
 
 - **Spec:** `specs/001-separar-regras-front-back` (PR A: FR-008 e FR-010).
 - **Por quê:** o escopo "sem front-end" / "sem back-end" do sistema já desligava regras, mas as ferramentas externas (market-tools) rodavam sempre. E a dedução do lado marcava como "comum" qualquer regra de código com linguagens mistas, sem ninguém perceber.
