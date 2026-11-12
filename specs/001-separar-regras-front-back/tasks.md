@@ -117,8 +117,8 @@ Sem pré-requisitos bloqueantes: cada história altera arquivos próprios, e o `
 
 **Dependência**: só se a verificação abaixo mostrar um caminho seguro; caso contrário, cancelar a história.
 
-- [-] T032 (cancelada: ver research.md R6) [US4] Verificar na documentação oficial do Opengrep 1.30.0 (https://github.com/opengrep/opengrep) se existe opção para excluir regras por id (no Semgrep é `--exclude-rule`; **não confirmado** para o Opengrep) e registrar o resultado em `specs/001-separar-regras-front-back/research.md` R6
-- [-] T033 (cancelada: ver research.md R6) [US4] Apresentar ao João o resultado de T032 e decidir ir ou não ir; se for, seguir T034 a T036 em nova branch `feat/opengrep-sem-lado-desligado`
+- [x] T032 [US4] Verificar na documentação oficial do Opengrep 1.30.0 (https://github.com/opengrep/opengrep) se existe opção para excluir regras por id (no Semgrep é `--exclude-rule`; **não confirmado** para o Opengrep) e registrar o resultado em `specs/001-separar-regras-front-back/research.md` R6
+- [x] T033 (decidido: cancelar, ver research.md R6) [US4] Apresentar ao João o resultado de T032 e decidir ir ou não ir; se for, seguir T034 a T036 em nova branch `feat/opengrep-sem-lado-desligado`
 - [-] T034 (cancelada: ver research.md R6) [P] [US4] Em `TESTE/analyzer/` (teste de `SemgrepAnalyzer`), testar que `buildCommand`/`resolveConfigs` com lado desligado não passam as regras do lado, e que o conjunto de achados final é igual ao do filtro posterior de `AuditPolicy.apply`
 - [-] T035 (cancelada: ver research.md R6) [US4] Em `API/analyzer/SemgrepAnalyzer.java` (`resolveConfigs` e `buildCommand`), excluir as regras do lado desligado usando o catálogo `RuleCatalog.of(policy.packs())` e o `SystemTuning` da política
 - [-] T036 (cancelada: ver research.md R6) [US4] Medir antes e depois o tempo e os achados de uma auditoria com um lado desligado (job `Calibração em vários repositórios` e `OWASP Benchmark (recall e precisão)` sem queda), entrada no `docs/evolucao/LOG.md`, PR C e mesclagem **somente** com autorização do João
@@ -128,7 +128,7 @@ Sem pré-requisitos bloqueantes: cada história altera arquivos próprios, e o `
 ## Fase 8: Acabamento
 
 - [x] T037 [P] Atualizar `specs/001-separar-regras-front-back/spec.md` (status e requisitos FR-008 a FR-011 marcados como atendidos) e `docs/sdd.md`, se o fluxo ensinado mudou
-- [ ] T038 Rodar `/speckit-analyze` sobre `spec.md`, `plan.md` e `tasks.md` antes de começar a implementar, para pegar inconsistências
+- [-] T038 (não feito: as tarefas foram executadas sem a análise prévia) Rodar `/speckit-analyze` sobre `spec.md`, `plan.md` e `tasks.md` antes de começar a implementar, para pegar inconsistências
 - [ ] T039 Executar os cenários do `quickstart.md` numa instalação real (Docker na máquina do João) e registrar o resultado, já que a tela só se verifica com navegador real
 
 ---
