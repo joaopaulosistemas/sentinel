@@ -88,6 +88,16 @@ class Observabilidade {
         executa();
     }
 
+    void iAntes(String id) {
+        // ok: sentinel-obs-mdc-sem-limpeza
+        MDC.put("requisicao", id);
+        try {
+            executa();
+        } finally {
+            MDC.clear();
+        }
+    }
+
     void i(String id) {
         try {
             // ok: sentinel-obs-mdc-sem-limpeza

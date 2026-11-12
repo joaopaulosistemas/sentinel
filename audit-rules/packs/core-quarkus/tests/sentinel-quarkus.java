@@ -50,3 +50,19 @@ class Exemplos {
         Class<?> c = Class.forName("demo.Conta");
     }
 }
+
+class ContaRepositorio implements PanacheRepository<Conta> {
+    void consultas(String nome) {
+        // ruleid: sentinel-quarkus-panache-consulta-concatenada
+        find("nome = '" + nome + "'");
+        // ok: sentinel-quarkus-panache-consulta-concatenada
+        find("nome = ?1", nome);
+    }
+}
+
+class OutraClasse {
+    void consultas(String nome) {
+        // ok: sentinel-quarkus-panache-consulta-concatenada
+        find("nome = '" + nome + "'");
+    }
+}

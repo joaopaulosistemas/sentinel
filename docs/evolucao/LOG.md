@@ -1259,3 +1259,10 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Testes:** `ToolSpecParserTest`, `SarifAnalyzerTest`, `SarifResumoTest`, `SystemTuningSidesTest`, `MarketToolsSideTest` (13 ferramentas embutidas) e `RuleSideTest`.
 - **Verificado:** `scripts/conferir-numeros.py`, `scripts/sincronizar-versao.py --check` e `scripts/verificar-separacao.py`; a lista das 15 regras veio de uma simulação em Python de `RuleSide.infer`, e conferi que só `metadata.side` mudou nos YAMLs.
 - **NÃO verificado localmente:** os testes Java e os do Semgrep (o Maven não alcança o Maven Central neste ambiente); quem verifica é o CI deste PR. A guarda não foi replicada em `scripts/verificar-regras.py` (roda só no Maven).
+
+## Regras: service locator via CDI/Arc, Panache no estilo repository e MDC.put antes do try/finally (`core-quality` 1.1.3, `core-quarkus` 1.0.1)
+
+- **Por quê:** o `sentinel-alvo` (188 regras com caso) achou três defeitos reais. `java-service-locator`: as alternativas `CDI.current().select(...)` e `Arc.container().instance(...)` nunca casavam, porque o filtro por `$CTX` valia para as três e só a primeira define essa variável. `quarkus-panache-consulta-concatenada`: só pegava `Entidade.find(a + b)`, e `find(...)` sem receptor dentro de um `PanacheRepository` passava. `obs-mdc-sem-limpeza`: o jeito mais comum (`MDC.put(...)` e, logo depois, `try { ... } finally { MDC.clear(); }`) era marcado como se não houvesse limpeza.
+- **Mudança:** o filtro de `$CTX` passou a valer só para `getBean`; as chamadas sem receptor (`find`, `list`, `delete`, `update`, `count`, `stream`) são pegas apenas dentro de classe que implementa `PanacheRepository<T>`; `MDC.put` seguido de `try/finally` no mesmo bloco deixa de ser marcado.
+- **Testes:** `ruleid`/`ok` novos em `sentinel-java-clean-code.java`, `sentinel-observabilidade.java` e `sentinel-quarkus.java` (visto falhar antes da correção); `PackToolTest` com a versão 1.1.3.
+- **Limite:** `MDC.put` com o `try/finally` em outro método continua marcado; classes que estendem `PanacheRepositoryBase` não são cobertas.
