@@ -5,8 +5,8 @@
 | Para | Precisa de |
 |---|---|
 | Subir tudo com Compose (recomendado) | Docker (ou Podman) com Compose, Git |
-| Rodar a API em modo desenvolvimento | Java 21, Maven 3.9+ (o Quarkus 3.40 recusa Maven mais antigo; o do `apt` costuma ser antigo), PostgreSQL 16+ (o Compose usa 16) |
-| Rodar o painel em modo desenvolvimento | Node.js 20+ |
+| Rodar a API em modo desenvolvimento | Java 21 ou mais novo (o bytecode é Java 21; o CI compila com 21 e a imagem roda no JRE 25), Maven 3.9+ (o Quarkus 3.40 recusa Maven mais antigo; o do `apt` costuma ser antigo), PostgreSQL 16+ (o Compose usa 16) |
+| Rodar o painel em modo desenvolvimento | Node.js 24 (a versão do CI e da imagem da API) |
 
 ## Opção 1 — Tudo via Compose (recomendado)
 
@@ -140,8 +140,10 @@ sentinel/
 ├── .env.example                    ← Template de variáveis de ambiente
 ├── docs/                           ← Toda a documentação (índice em docs/README.md); schema-referencia.sql é só referência
 │
-├── audit-api/                      ← Backend Quarkus 3.40 + Java 21
-│   ├── Dockerfile
+├── audit-api/                      ← Backend Quarkus 3.40 (bytecode Java 21; imagem em JRE 25)
+│   ├── Dockerfile                  ← ferramentas externas com versão e SHA-256 fixados
+│   ├── joern/                      ← taint entre arquivos (opcional, WITH_JOERN=true)
+│   ├── certs/                      ← CA da empresa para redes com inspeção SSL
 │   └── src/main/java/com/sentinel/audit/
 │       ├── model/                  ← Entidades JPA + enums
 │       ├── repository/             ← Repositórios Panache
@@ -150,10 +152,13 @@ sentinel/
 │       ├── analyzer/               ← Motores de análise
 │       ├── insights/               ← Áreas, mapa do projeto, dívida técnica (P0–P3), quick wins e roadmap
 │       ├── tuning/                 ← Ajuste do motor por sistema (regras, limites, pacotes, analisadores)
+│       ├── pack/                   ← Carga de pacotes e perfis, política da auditoria, deduplicação, catálogos de regras e do guia
+│       ├── settings/               ← Tela de Configurações: catálogo, valores no banco e leitura na subida
 │       ├── mcp/                    ← Servidor MCP: chave por sistema, ferramentas, nível de dado, limite de chamadas
 │       ├── review/                 ← Revisão do Claude: sugestões, regras propostas, funil e métricas
 │       ├── actions/                ← Pedidos do Claude que só acontecem com aprovação (iniciar auditoria, suprimir achado)
 │       └── resource/               ← Endpoints REST
+│   (migrações do banco em src/main/resources/db/migration, Flyway V1 a V5)
 │
 ├── audit-rules/
 │   ├── packs/                      ← Pacotes de regras (core-security, core-iac, core-spring, core-persistencia, core-quality, core-frontend, core-corporativo, market-tools, ts-clean-code, ts-clean-code-labs42, core-architecture, e os de adesão opcional core-quarkus, core-vue e core-boas-praticas) e profiles/
@@ -165,8 +170,9 @@ sentinel/
 │
 ├── audit-dashboard/                ← Frontend React 19 + IBM Carbon DS
 │   ├── Dockerfile + nginx.conf.template
+│   ├── e2e/                        ← testes ponta a ponta (Playwright)
 │   └── src/
-│       ├── pages/                  ← Overview, Systems, SystemDetail, AuditRun, Ranking, Findings (Achados, Revisão do Claude, Reauditoria), Reports
+│       ├── pages/                  ← Overview, Systems, SystemDetail, AuditRun, Ranking, Findings (Achados, Revisão do Claude, Reauditoria), Guide (Guia de código), Reports, Settings
 │       ├── components/             ← Layout/AppShell, RiskBadge, ScoreGauge, FindingsTable, InsightsPanel, TrendChart, SuppressModal, EnginePanel, McpPanel, ClaudeReviewPanel, ReauditPanel, StartAuditModal
 │       ├── hooks/                  ← TanStack Query (useSystems, useFindings, useAuditRuns, useLifecycle)
 │       ├── store/                  ← Zustand (filtros, sistema selecionado)
@@ -178,7 +184,9 @@ sentinel/
 │
 ├── .github/workflows/              ← ci.yml, auditoria-completa.yml, release.yml
 ├── .claude/agents/                 ← agente Sentinel Ciclo (Claude Code)
-├── scripts/                        ← e2e, auditoria completa, calibração, anotações de CI
+├── .github/agente/                 ← proteção sugerida para a branch main (protecao-main.json)
+├── .sentinel.yml                   ← ajustes do próprio Sentinel para as auditorias do Sentinel
+├── scripts/                        ← e2e, auditoria completa, calibração, medição, conferência de números e versão, anotações de CI
 └── evidencias/                     ← Uma subpasta por sistema com dumps e exports para a análise offline
 ```
 

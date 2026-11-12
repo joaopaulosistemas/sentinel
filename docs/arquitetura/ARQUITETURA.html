@@ -75,7 +75,7 @@ hr{display:none}
   <main>
 <h1 id="arquitetura-do-sentinel-audit-tool">Arquitetura do Sentinel Audit Tool</h1>
 <p>Mapa de todos os módulos, pacotes e classes, do desenho macro (quem fala com quem) ao micro (o que cada classe faz).
-Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
+Os diagramas (14, em Mermaid) aparecem desenhados no GitHub e no VS Code.</p>
 <blockquote>
 <p><strong>Escopo.</strong> "Todos os projetos" aqui são os módulos do repositório <code>sentinel</code>: <code>audit-api</code> (backend), <code>audit-cli</code>, <code>audit-dashboard</code> (frontend), <code>audit-rules</code> (regras e configuração das ferramentas), <code>deploy</code> (Docker/Helm) e a automação (<code>.github</code>, <code>scripts</code>). O app <code>frequency</code> é outro repositório e não está neste documento.
 <strong>Origem.</strong> Escrito a partir do código da <code>main</code> (classes Java em <code>audit-api</code>, <code>audit-cli</code> e arquivos TypeScript/TSX em <code>audit-dashboard/src</code>; contagens mudam a cada versão). Nomes de classe foram conferidos contra o código. Onde uma descrição vem só do comentário da classe e não da leitura do corpo, o texto diz "segundo o comentário".</p>
@@ -94,7 +94,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
         direction LR
         DASH["audit-dashboard\nReact + Carbon"]
         CLI["audit-cli\nJava"]
-        API["audit-api\nQuarkus / Java 21"]
+        API["audit-api\nQuarkus 3.40 (bytecode Java 21)"]
         DB[("PostgreSQL 16")]
         RULES["audit-rules\npacotes e perfis"]
     end
@@ -124,8 +124,8 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <h3 id="12-conteineres-e-implantacao">1.2 Contêineres e implantação</h3>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     subgraph Host["docker compose / Kubernetes (Helm)"]
-        NG["audit-dashboard\nNginx servindo a SPA\n:80"]
-        AP["audit-api\nJRE 21 + Opengrep + Trivy + Gitleaks\n+ Node (ESLint, Stylelint) + venvs Python\n:8080"]
+        NG["audit-dashboard\nNginx (sem privilégios) servindo a SPA\n:8080 no contêiner, :3000 no host"]
+        AP["audit-api\nJRE 25 + Opengrep + Trivy + Gitleaks\n+ Node 24 (ESLint, Stylelint) + venvs Python\n:8080"]
         PG[("postgres:16-alpine\n:5432")]
     end
     NG -- "proxy /api" --&gt; AP
@@ -162,7 +162,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tr>
 <td>Auditoria automática por agenda</td>
 <td><code>AuditScheduler</code> (a cada 5 min)</td>
-<td>Dashboard: <code>ScheduleForm</code></td>
+<td>Dashboard: campos de agenda do cadastro do sistema (<code>SystemFormFields</code>)</td>
 </tr>
 <tr>
 <td>Auditoria por webhook de push</td>
@@ -220,9 +220,54 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>Dashboard: <code>InsightsPanel</code></td>
 </tr>
 <tr>
-<td>Relatório HTML</td>
-<td><code>ReportService</code></td>
+<td>Relatórios (HTML, PDF, CSV; técnico, executivo e comparativo)</td>
+<td><code>ReportService</code>, <code>PdfReportService</code>, <code>PortfolioReportService</code>, <code>AuditReports</code>, <code>ReportResource</code>, <code>AuditExportResource</code></td>
 <td>Dashboard: <code>ReportsPage</code></td>
+</tr>
+<tr>
+<td>O que corrigir primeiro e de onde vem a nota</td>
+<td><code>FixPlanner</code>, <code>ScoreExplanationDto</code>, <code>AuditAnalysisResource</code></td>
+<td>Dashboard: <code>ScoreExplanationPanel</code></td>
+</tr>
+<tr>
+<td>Confiança do achado (alta, média, baixa)</td>
+<td><code>FindingConfidence</code>, <code>PathRole</code>, <code>VendoredCode</code>, <code>GeneratedFiles</code></td>
+<td>Dashboard: <code>FindingsTable</code></td>
+</tr>
+<tr>
+<td>Ajustes do projeto auditado (<code>.sentinel.yml</code>: excluir caminhos, suprimir com motivo)</td>
+<td><code>ProjectConfig</code>, <code>ProjectConfigExclusions</code>, <code>FindingRefinement</code></td>
+<td><code>docs/integracao/sentinel-yml.md</code></td>
+</tr>
+<tr>
+<td>Origem "pasta local" (auditar sem Git)</td>
+<td><code>LocalSource</code>, <code>WorkingTreeCopier</code>, <code>SystemSourceResource</code></td>
+<td><code>SENTINEL_LOCAL_ROOT</code>; <code>docs/pasta-local/README.md</code></td>
+</tr>
+<tr>
+<td>Regras separadas por lado (back-end, front-end, comum)</td>
+<td><code>RuleSide</code>, <code>RuleCatalog</code>, <code>AnalyzerCatalog</code></td>
+<td>Dashboard: <code>EnginePanel</code>, <code>EngineScope</code></td>
+</tr>
+<tr>
+<td>Guia de código por tecnologia e CLAUDE.md gerado</td>
+<td><code>GuideBook</code>, <code>GuideCatalog</code>, <code>GuideResource</code></td>
+<td>Dashboard: <code>GuidePage</code> (menu Guia de código)</td>
+</tr>
+<tr>
+<td>Configurações da instalação pela tela</td>
+<td>pacote <code>settings</code> (<code>SettingsCatalog</code>, <code>SettingsService</code>, <code>DbConfigSource</code>, <code>SettingsResource</code>)</td>
+<td>Dashboard: <code>SettingsPage</code>, <code>RestartOverlay</code></td>
+</tr>
+<tr>
+<td>Controle de carga e retenção</td>
+<td><code>AuditSlots</code> (<code>AUDIT_MAX_CONCURRENT</code>), <code>AuditRetentionJob</code> (<code>AUDIT_RETENTION_DAYS</code>, <code>AUDIT_RETENTION_KEEP</code>)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Taint entre arquivos em Java (opcional)</td>
+<td><code>SarifAnalyzer</code> + ferramenta <code>joern-taint</code></td>
+<td><code>audit-api/joern</code>; <code>docs/integracao/joern.md</code></td>
 </tr>
 <tr>
 <td>Orientação de correção por regra</td>
@@ -288,14 +333,14 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </table></div>
 <hr />
 <h2 id="3-backend-audit-api">3. Backend <code>audit-api</code></h2>
-<p>Pacote raiz: <code>com.sentinel.audit</code>. Quarkus 3.40, Java 21, Hibernate/Panache, PostgreSQL, CDI (<code>@ApplicationScoped</code>), REST (JAX-RS).</p>
+<p>Pacote raiz: <code>com.sentinel.audit</code>. Quarkus 3.40, bytecode Java 21 (a imagem compila com o JDK 26 e roda no JRE 25; o CI testa também na JVM da imagem), Hibernate/Panache, Flyway (<code>db/migration</code>, V1 a V5), PostgreSQL, CDI (<code>@ApplicationScoped</code>), REST (JAX-RS).</p>
 <h3 id="31-camadas-desenho-micro">3.1 Camadas (desenho micro)</h3>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     RES["resource (borda REST)\nAuditResource, SystemResource, FindingResource,\nWebhookResource, PackResource, RuleResource,\nHealthResource, ApiKeyFilter, StartupChecks"]
     DTO["dto\nrequests, responses e FindingMapper"]
-    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AuditScheduler,\nIngestionService, EvidenceStager, ScoringService,\nFindingLifecycleService, FindingDeduplicator, ReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService"]
-    ANA["analyzer (motores)\nCodeAnalyzer e 14 analisadores\n+ deps, evidence, quality"]
-    PCK["pack (regras e perfis)\nPackRegistry, PackLoader, PackIntegrity, ProfileLoader, AuditPolicy"]
+    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AnalyzerRunner,\nAuditScheduler, AuditSlots, IngestionService, EvidenceStager,\nScoringService, FindingRefinement, FindingLifecycleService,\nReportService, PdfReportService, PortfolioReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService"]
+    ANA["analyzer (motores)\nCodeAnalyzer e 20 analisadores\n+ deps, evidence, quality, structure"]
+    PCK["pack (regras e perfis)\nPackRegistry, PackLoader, PackIntegrity, ProfileLoader, AuditPolicy,\nFindingDeduplicator, RuleCatalog, GuideBook"]
     INS["insights (auditoria completa)\nInsightsService, InsightsBuilder, ProjectProfiler"]
     REP["repository (Panache)\nAuditedSystem, AuditRun, Finding, FindingSuppression"]
     MOD["model (JPA)\nAuditedSystem, AuditRun, Finding, FindingSuppression,\nRiskScore e enums"]
@@ -361,18 +406,68 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tbody>
 <tr>
 <td><code>SystemResource</code></td>
-<td>Cadastro, edição e consulta de sistemas, verificação do repositório, agenda, perfil, tendência, supressões</td>
-<td><code>/api/v1/systems</code>, <code>/check-repo</code>, <code>/{id}</code>, <code>/{id}/audits</code>, <code>/{id}/trend</code>, <code>/{id}/suppressions</code>, <code>/{id}/schedule</code>, <code>/{id}/profile</code></td>
+<td>Cadastro, edição e remoção de sistemas, agenda e perfil</td>
+<td><code>/api/v1/systems</code>, <code>/{id}</code>, <code>/{id}/schedule</code>, <code>/{id}/profile</code></td>
+</tr>
+<tr>
+<td><code>SystemSourceResource</code></td>
+<td>Confere a origem antes de cadastrar: repositório remoto (sem clonar) e pasta local</td>
+<td><code>/api/v1/systems/check-repo</code>, <code>/check-path</code>, <code>/local-source</code></td>
+</tr>
+<tr>
+<td><code>SystemHistoryResource</code></td>
+<td>Histórico de um sistema: auditorias, tendência da nota e supressões</td>
+<td><code>/api/v1/systems/{id}/audits</code>, <code>/trend</code>, <code>/suppressions</code>, <code>/suppressions/{suppressionId}</code></td>
+</tr>
+<tr>
+<td><code>SystemEvidenceResource</code></td>
+<td>Lista, envia e apaga as evidências offline de um sistema</td>
+<td><code>/api/v1/systems/{id}/evidence</code>, <code>/{name}</code></td>
 </tr>
 <tr>
 <td><code>AuditResource</code></td>
-<td>Cria, lista e cancela auditorias; entrega resultado com andamento, achados, diferença, plano de correção, relatórios (técnico, executivo, comparativo, CSV), SBOM e visão completa</td>
-<td><code>/api/v1/audits</code>, <code>/{id}</code>, <code>/{id}/cancel</code>, <code>/{id}/fix-plan</code>, <code>/{id}/findings</code>, <code>/{id}/findings.csv</code>, <code>/{id}/diff</code>, <code>/{id}/report</code>, <code>/{id}/sbom</code>, <code>/{id}/insights</code></td>
+<td>Cria, lista e cancela auditorias; entrega o resultado com andamento e diz se a auditoria está desatualizada em relação à ponta da branch</td>
+<td><code>/api/v1/audits</code>, <code>/{id}</code>, <code>/{id}/cancel</code>, <code>/{id}/freshness</code></td>
+</tr>
+<tr>
+<td><code>AuditFindingsResource</code></td>
+<td>Achados de uma auditoria, com filtros</td>
+<td><code>/api/v1/audits/{id}/findings</code></td>
+</tr>
+<tr>
+<td><code>AuditAnalysisResource</code></td>
+<td>Leituras analíticas: diferença para a auditoria anterior, o que corrigir primeiro, explicação da nota e auditoria completa</td>
+<td><code>/api/v1/audits/{id}/diff</code>, <code>/fix-plan</code>, <code>/score-explanation</code>, <code>/insights</code></td>
+</tr>
+<tr>
+<td><code>AuditExportResource</code></td>
+<td>Relatórios (HTML e PDF; técnico, executivo, comparativo), achados em CSV e SBOM</td>
+<td><code>/api/v1/audits/{id}/report</code>, <code>/report.pdf</code>, <code>/findings.csv</code>, <code>/sbom</code></td>
+</tr>
+<tr>
+<td><code>ReportResource</code></td>
+<td>Relatório de todos os sistemas (ou de um) em HTML, PDF ou CSV</td>
+<td><code>/api/v1/reports/portfolio</code></td>
+</tr>
+<tr>
+<td><code>GuideResource</code></td>
+<td>Guia de código por tecnologia e o CLAUDE.md gerado</td>
+<td><code>/api/v1/guide</code>, <code>/guide/{stack}/claude-md</code></td>
+</tr>
+<tr>
+<td><code>SettingsResource</code></td>
+<td>Lê e grava as configurações da instalação e reinicia a API</td>
+<td><code>/api/v1/settings</code>, <code>/settings/{key}</code>, <code>/settings/restart</code></td>
 </tr>
 <tr>
 <td><code>FindingResource</code></td>
-<td>Suprime um achado com justificativa; lista os achados de todos os sistemas</td>
-<td><code>POST /api/v1/findings/{id}/suppress</code>, <code>GET /api/v1/findings</code></td>
+<td>Lista os achados da última auditoria de cada sistema</td>
+<td><code>GET /api/v1/findings</code></td>
+</tr>
+<tr>
+<td><code>FindingSuppressionResource</code></td>
+<td>Suprime um achado, ou até 200 de uma vez, com motivo, justificativa e validade</td>
+<td><code>POST /api/v1/findings/{id}/suppress</code>, <code>/suppress-batch</code></td>
 </tr>
 <tr>
 <td><code>WebhookResource</code></td>
@@ -425,6 +520,11 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>filtro global</td>
 </tr>
 <tr>
+<td><code>ApiErrorMapper</code></td>
+<td>Devolve em JSON a mensagem dos erros 4xx (sem ela a tela só mostraria "HTTP 400"); erros 5xx não expõem detalhe</td>
+<td>—</td>
+</tr>
+<tr>
 <td><code>StartupChecks</code></td>
 <td>Avisa na partida sobre configuração insegura ou destrutiva</td>
 <td>—</td>
@@ -443,6 +543,26 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tr>
 <td><code>AuditOrchestrationService</code></td>
 <td>Maestro: clona, roda analisadores em paralelo, deduplica, aplica política, calcula score, grava e notifica</td>
+</tr>
+<tr>
+<td><code>AnalyzerRunner</code></td>
+<td>Escolhe os analisadores que valem para a auditoria, roda em paralelo e respeita o cancelamento; falha individual vira resultado vazio com o erro anotado</td>
+</tr>
+<tr>
+<td><code>AnalyzerSet</code>, <code>AnalyzerCatalog</code></td>
+<td>Conjunto dos 20 analisadores conhecidos; nome, descrição e lado (back-end, front-end ou comum) de cada um, para a tela de acompanhamento</td>
+</tr>
+<tr>
+<td><code>AuditPolicyResolver</code></td>
+<td>Monta a política da auditoria: perfil, ajustes do sistema por cima e regras locais; falha ao ler os ajustes vale como "sem ajustes"</td>
+</tr>
+<tr>
+<td><code>AuditSlots</code></td>
+<td>Limita as auditorias simultâneas (<code>AUDIT_MAX_CONCURRENT</code>, padrão 2); as demais esperam em <code>PENDING</code></td>
+</tr>
+<tr>
+<td><code>AuditRetention</code>, <code>AuditRetentionJob</code></td>
+<td>Apaga uma vez por dia as auditorias antigas (<code>AUDIT_RETENTION_DAYS</code>, desligado por padrão; as <code>AUDIT_RETENTION_KEEP</code> mais recentes ficam)</td>
 </tr>
 <tr>
 <td><code>AuditRequestService</code></td>
@@ -465,12 +585,36 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>Lista arquivos alterados contra um branch base (auditoria de PR)</td>
 </tr>
 <tr>
+<td><code>LocalSource</code>, <code>WorkingTreeCopier</code></td>
+<td>Origem "pasta local": só dentro da raiz <code>SENTINEL_LOCAL_ROOT</code>, sem seguir link simbólico nem <code>..</code>; a origem é só lida</td>
+</tr>
+<tr>
+<td><code>RemoteProbe</code></td>
+<td>Verifica um repositório remoto sem clonar: responde, branch padrão, tamanho e SHA da ponta da branch</td>
+</tr>
+<tr>
+<td><code>EvidenceLibrary</code></td>
+<td>Lista, recebe e remove os arquivos de evidência de um sistema pela API</td>
+</tr>
+<tr>
 <td><code>EvidenceStager</code></td>
 <td>Copia as evidências do sistema para <code>.sentinel/evidence/</code> dentro do clone</td>
 </tr>
 <tr>
-<td><code>FindingDeduplicator</code></td>
-<td>Junta o mesmo problema vindo de ferramentas diferentes (fica o do Semgrep, com a maior severidade)</td>
+<td><code>FindingRefinement</code></td>
+<td>Entre a análise e a nota: deduplicação, política do perfil, auditoria de PR, <code>.sentinel.yml</code>, marca de "novo" e confiança</td>
+</tr>
+<tr>
+<td><code>FindingConfidence</code></td>
+<td>Dá a cada achado confiança alta, média ou baixa e o motivo (teste, exemplo, código gerado e valor de exemplo pesam para baixo); não muda a severidade</td>
+</tr>
+<tr>
+<td><code>ProjectConfig</code>, <code>ProjectConfigExclusions</code></td>
+<td>Lê o <code>.sentinel.yml</code> do projeto auditado: caminhos excluídos e achados suprimidos com motivo, em revisão como qualquer mudança</td>
+</tr>
+<tr>
+<td><code>GeneratedFiles</code></td>
+<td>Reconhece arquivo gerado pelo cabeçalho, para não cobrar estilo de quem não o escreve à mão</td>
 </tr>
 <tr>
 <td><code>Fingerprints</code></td>
@@ -493,8 +637,32 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>Devolve a orientação de correção pelo id da regra (vale a chave mais específica)</td>
 </tr>
 <tr>
-<td><code>ReportService</code></td>
-<td>Relatório HTML</td>
+<td><code>ReportService</code>, <code>PdfReportService</code></td>
+<td>Relatório HTML e a versão em PDF gerada no servidor</td>
+</tr>
+<tr>
+<td><code>PortfolioReportService</code></td>
+<td>Relatórios de todos os sistemas (executivo, técnico, comparativo) em HTML, PDF ou CSV</td>
+</tr>
+<tr>
+<td><code>FixPlanner</code></td>
+<td>Plano "o que corrigir primeiro": o ganho de cada problema é a nota recalculada pelo <code>ScoringService</code> sem aquela regra</td>
+</tr>
+<tr>
+<td><code>ScoreTrend</code></td>
+<td>Variação da nota entre as duas últimas auditorias completas (as de PR ficam de fora)</td>
+</tr>
+<tr>
+<td><code>SecretBox</code></td>
+<td>Cifra (AES-256-GCM) o token Git e a URL de notificação guardados no banco</td>
+</tr>
+<tr>
+<td><code>InternalAddresses</code></td>
+<td>Barra destino de notificação em máquina local e rede interna</td>
+</tr>
+<tr>
+<td><code>ProgressStore</code></td>
+<td>Espelho do andamento no banco (<code>audit_progress</code>), para qualquer réplica da API mostrá-lo</td>
 </tr>
 <tr>
 <td><code>NotificationService</code></td>
@@ -530,6 +698,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     CodeAnalyzer &lt;|.. SarifAnalyzer
     CodeAnalyzer &lt;|.. TrivyAnalyzer
     CodeAnalyzer &lt;|.. GitleaksAnalyzer
+    CodeAnalyzer &lt;|.. BetterleaksAnalyzer
     CodeAnalyzer &lt;|.. SecretsAnalyzer
     CodeAnalyzer &lt;|.. HistorySecretsAnalyzer
     CodeAnalyzer &lt;|.. OWASPDependencyAnalyzer
@@ -541,6 +710,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     CodeAnalyzer &lt;|.. DuplicationAnalyzer
     CodeAnalyzer &lt;|.. HotspotAnalyzer
     CodeAnalyzer &lt;|.. DeadCodeAnalyzer
+    CodeAnalyzer &lt;|.. CommitMessageAnalyzer
     CodeAnalyzer &lt;|.. EvidenceAnalyzer
     SemgrepAnalyzer ..&gt; ExternalTools
     PmdAnalyzer ..&gt; ExternalTools
@@ -581,7 +751,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 <tr>
 <td><code>SarifAnalyzer</code></td>
-<td>Importa o SARIF 2.1.0 de qualquer ferramenta declarada em <code>tools/*.yml</code> dos pacotes (Stylelint, SQLFluff, Hadolint, Checkov, Spectral, Squawk, Checkstyle, jscpd, Dependency-Cruiser, njsscan, kube-linter, kube-score)</td>
+<td>Importa o SARIF 2.1.0 de qualquer ferramenta declarada em <code>tools/*.yml</code> dos pacotes (Stylelint, SQLFluff, Hadolint, Checkov, Spectral, Squawk, Checkstyle, jscpd, Dependency-Cruiser, njsscan, kube-linter, kube-score e o Joern, opt-in); <code>ToolRun</code> é o esqueleto comum e <code>SarifResumo</code> diz na tela quais rodaram</td>
 </tr>
 <tr>
 <td><code>TrivyAnalyzer</code></td>
@@ -590,6 +760,10 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tr>
 <td><code>GitleaksAnalyzer</code></td>
 <td>Segredos em arquivos atuais e no histórico do Git</td>
+</tr>
+<tr>
+<td><code>BetterleaksAnalyzer</code></td>
+<td>Mesmo papel, com o Betterleaks (sucessor do Gitleaks, série 1.x); opt-in com <code>BETTERLEAKS_ENABLED=true</code> e, ligado, substitui o Gitleaks</td>
 </tr>
 <tr>
 <td><code>SecretsAnalyzer</code></td>
@@ -644,6 +818,18 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>Lê evidências geradas fora: dump do esquema, estatísticas e planos do Postgres, cobertura, histograma de memória</td>
 </tr>
 <tr>
+<td><code>SastEngine</code></td>
+<td>Escolhe o motor das regras YAML: Opengrep (padrão) ou Semgrep (<code>WITH_SEMGREP=true</code>); os dois leem o mesmo formato, mas a linha de comando difere</td>
+</tr>
+<tr>
+<td><code>VendoredCode</code>, <code>ProjectExclusions</code></td>
+<td>Deixam de fora da análise o código de terceiros copiado para o projeto e os caminhos que o <code>.sentinel.yml</code> exclui</td>
+</tr>
+<tr>
+<td><code>ProcessTree</code></td>
+<td>Encerra o processo externo junto com tudo o que ele iniciou (cancelamento e tempo esgotado)</td>
+</tr>
+<tr>
 <td><code>ExternalTools</code></td>
 <td>Utilidades de execução de processos externos e de detecção de ferramenta no PATH</td>
 </tr>
@@ -673,6 +859,10 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tr>
 <td><code>analyzer.quality</code></td>
 <td><code>FunctionScanner</code> (acha funções e mede), <code>SourceSanitizer</code> (apaga comentários e strings antes de medir)</td>
+</tr>
+<tr>
+<td><code>analyzer.structure</code></td>
+<td><code>DependencyCycles</code>, <code>Duplication</code>, <code>Hotspots</code>, <code>UnusedExports</code>, <code>CommitMessages</code>, <code>GlobalAuth</code>, <code>SourceFiles</code>: o cálculo por trás dos analisadores estruturais, separado da integração com a auditoria</td>
 </tr>
 </tbody>
 </table></div>
@@ -751,6 +941,30 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tr>
 <td><code>RemediationEntry</code></td>
 <td>Orientação de correção por regra</td>
+</tr>
+<tr>
+<td><code>FindingDeduplicator</code> / <code>DedupTopic</code></td>
+<td>Junta o mesmo problema vindo de ferramentas diferentes (fica o do motor SAST (Opengrep ou Semgrep), com a maior severidade), conforme o <code>dedup.yml</code> do pacote</td>
+</tr>
+<tr>
+<td><code>RuleSide</code></td>
+<td>Lado da regra: back-end, front-end ou comum (<code>metadata.side</code>; sem isso, deduzido da linguagem e dos caminhos)</td>
+</tr>
+<tr>
+<td><code>RuleCatalog</code> / <code>RuleYaml</code></td>
+<td>Catálogo das regras declaradas (id, texto, severidade, categoria, lado), mesmo antes de disparar</td>
+</tr>
+<tr>
+<td><code>GuideBook</code> / <code>GuideCatalog</code></td>
+<td>Guia de código: tecnologias (<code>guia/stacks.yml</code>) e as regras que valem para cada uma</td>
+</tr>
+<tr>
+<td><code>PathRole</code> / <code>PathGlobs</code></td>
+<td>Papel do arquivo pelo caminho (produção, teste, documentação, exemplo, gerado) e curingas no estilo do <code>.gitignore</code></td>
+</tr>
+<tr>
+<td><code>SystemTuning</code></td>
+<td>Ajustes de um sistema por cima do perfil; vazio é igual ao perfil</td>
 </tr>
 <tr>
 <td><code>Versions</code></td>
@@ -870,6 +1084,8 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <ul>
 <li><code>model</code>: <code>AuditedSystem</code>, <code>AuditRun</code>, <code>Finding</code>, <code>FindingSuppression</code> (entidades), <code>RiskScore</code> (objeto embutido em <code>AuditRun</code>), <code>Severity</code>, <code>Category</code>, <code>Stack</code>, <code>FindingStatus</code>, <code>AuditStatus</code>, <code>SuppressionReason</code> (enums).</li>
 <li>Entidades do plano Sentinel + MCP: <code>SystemEngineConfig</code> (ajuste do motor), <code>McpAccess</code> e <code>McpCallLog</code> (acesso e registro do MCP), <code>ReviewSuggestion</code> e <code>RuleProposal</code> (revisão do Claude), <code>PendingAction</code> (pedidos com aprovação); cada uma tem o seu repositório Panache.</li>
+<li>Outras tabelas: <code>app_setting</code> (<code>AppSetting</code>, valores da tela de Configurações) e <code>audit_progress</code> (<code>AuditProgressSnapshot</code>, andamento das auditorias em execução). Também no pacote <code>model</code>: <code>SourceType</code> (Git ou pasta local), <code>LocalSnapshot</code> e <code>Confidence</code>.</li>
+<li>Esquema: Flyway em <code>audit-api/src/main/resources/db/migration</code> (V1 baseline; V2 e V4 completam bancos antigos; V3 tira um índice redundante; V5 passa as datas para <code>timestamptz</code>). <code>docs/schema-referencia.sql</code> é só referência.</li>
 <li><code>repository</code> (Panache): <code>AuditedSystemRepository</code>, <code>AuditRunRepository</code>, <code>FindingRepository</code>, <code>FindingSuppressionRepository</code>.</li>
 <li><code>dto</code>: <code>CreateSystemRequest</code>, <code>CreateAuditRequest</code>, <code>ProfileRequest</code>, <code>ScheduleRequest</code>, <code>SuppressRequest</code> (entradas); <code>SystemSummaryResponse</code>, <code>AuditRunResponse</code>, <code>FindingResponse</code>, <code>RiskScoreDto</code>, <code>RemediationDto</code>, <code>AuditDiffResponse</code>, <code>TrendPoint</code>, <code>SuppressionResponse</code> (saídas); <code>FindingMapper</code> converte entidade em resposta (inclui a orientação de correção).</li>
 </ul>
@@ -966,6 +1182,8 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
         RK["/ranking\nRankingPage"]
         F["/findings\nFindingsPage (Achados, Revisão do Claude, Reauditoria)"]
         RP["/reports\nReportsPage"]
+        GD["/guide\nGuidePage"]
+        CF["/settings\nSettingsPage"]
     end
     SHELL["AppShell (cabeçalho, menu, versão)"] --&gt; rotas
     rotas --&gt; COMP["components"]
@@ -985,17 +1203,17 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tbody>
 <tr>
 <td>Páginas</td>
-<td><code>OverviewPage</code>, <code>SystemsPage</code>, <code>SystemDetailPage</code>, <code>AuditRunPage</code> (com a faixa Claude (MCP) e as chamadas do Claude no quadro de eventos enquanto a auditoria roda), <code>RankingPage</code>, <code>FindingsPage</code>, <code>ReportsPage</code></td>
-<td>Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios</td>
+<td><code>OverviewPage</code>, <code>SystemsPage</code>, <code>SystemDetailPage</code>, <code>AuditRunPage</code> (com a faixa Claude (MCP) e as chamadas do Claude no quadro de eventos enquanto a auditoria roda), <code>RankingPage</code>, <code>FindingsPage</code>, <code>ReportsPage</code>, <code>GuidePage</code>, <code>SettingsPage</code></td>
+<td>Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios; guia de código por tecnologia (para pessoas e para a IA); configurações da instalação com reinício da API</td>
 </tr>
 <tr>
 <td>Componentes</td>
-<td><code>FindingsTable</code>, <code>ScoreGauge</code>, <code>RiskBadge</code>, <code>TrendChart</code>, <code>DiffSummary</code>, <code>InsightsPanel</code>, <code>RemediationBlock</code>, <code>SuppressModal</code>, <code>SuppressionsList</code>, <code>ProfileForm</code>, <code>ScheduleForm</code>, <code>Layout/AppShell</code>, <code>EnginePanel</code>, <code>McpPanel</code>, <code>McpStatusStrip</code>, <code>ClaudeReviewPanel</code>, <code>ReauditPanel</code>, <code>StartAuditModal</code></td>
-<td>Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria</td>
+<td><code>FindingsTable</code>, <code>ScoreGauge</code>, <code>RiskBadge</code>, <code>TrendChart</code>, <code>DiffSummary</code>, <code>InsightsPanel</code>, <code>RemediationBlock</code>, <code>SuppressModal</code>, <code>SuppressionsList</code>, <code>ScoreExplanationPanel</code>, <code>EvidencePanel</code>, <code>Layout/AppShell</code>, <code>EnginePanel</code>, <code>McpPanel</code>, <code>McpStatusStrip</code>, <code>ClaudeReviewPanel</code>, <code>ReauditPanel</code>, <code>StartAuditModal</code></td>
+<td>Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, de onde vem a nota, evidências offline, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria</td>
 </tr>
 <tr>
 <td>Hooks</td>
-<td><code>useSystems</code> (<code>useSystem</code>, <code>useRuleQuality</code>), <code>useAuditRuns</code> (<code>useAudit</code>), <code>useFindings</code>, <code>useLifecycle</code> (tendência, diferença, supressões, visão completa, pacotes, perfil, agenda)</td>
+<td><code>useSystems</code> (<code>useSystem</code>, <code>useRuleQuality</code>), <code>useAuditRuns</code> (<code>useAudit</code>), <code>useFindings</code>, <code>useLifecycle</code> (tendência, diferença, supressões, visão completa, pacotes, perfil, agenda), <code>useSettings</code>, <code>useGuide</code>, <code>usePendingClaude</code>, <code>useMcpActivity</code></td>
 <td>Cada um encapsula uma consulta ou mutação ao servidor</td>
 </tr>
 <tr>
@@ -1016,7 +1234,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <tr>
 <td>Testes</td>
 <td>um <code>.test.tsx</code> ao lado de páginas e painéis, mais <code>test/a11y.test</code> (axe)</td>
-<td>Vitest + Testing Library; <code>npx vitest run</code></td>
+<td>Vitest + Testing Library (<code>npx vitest run</code>, com piso de cobertura no CI) e Playwright em <code>audit-dashboard/e2e</code></td>
 </tr>
 </tbody>
 </table></div>
@@ -1077,7 +1295,11 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 <tr>
 <td><code>audit-api/Dockerfile</code></td>
-<td>Constrói com Maven (Java 21) e roda em JRE 21 com Git, Opengrep (Semgrep e Joern opcionais), Trivy, Gitleaks, Node (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; telemetria do Semgrep desligada</td>
+<td>Constrói com Maven 3.9 no JDK 26 (bytecode Java 21) e roda em <code>eclipse-temurin:25-jre</code> com Git, Opengrep (Semgrep, Betterleaks, Hadolint e Joern opcionais), Trivy, Gitleaks, PMD, Node 24 (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; versões e SHA-256 fixados em <code>ARG</code>; telemetria do Semgrep desligada</td>
+</tr>
+<tr>
+<td><code>audit-dashboard/Dockerfile</code></td>
+<td>Constrói a SPA com Node 26 e serve com <code>nginx-unprivileged</code> 1.31 (porta 8080 no contêiner, 3000 no host); <code>nginx.conf.template</code> repassa <code>/api</code> e <code>/mcp/</code> à API e injeta a <code>API_KEY</code></td>
 </tr>
 <tr>
 <td><code>deploy/helm/sentinel</code></td>
@@ -1113,12 +1335,15 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <h2 id="8-automacao-ci-release-e-agentes">8. Automação: CI, release e agentes</h2>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     PUSH["push na main / PR / domingo / manual"] --&gt; CI["ci.yml"]
+    CI --&gt; J0["Só roda o que mudou; confere separação treino × validação\ne números da documentação"]
     CI --&gt; J1["API, CLI e pacotes de regras (Maven, Java 21)"]
     CI --&gt; J1b["Testes unitários na JVM da imagem (Java 25)"]
     CI --&gt; J1c["Integração HTTP com PostgreSQL real (Testcontainers)"]
     CI --&gt; J2["Testes Semgrep dos pacotes + auto-auditoria do Sentinel"]
     CI --&gt; J3["Dashboard (tsc, lint, Vitest com piso de cobertura, build, Playwright)"]
     CI --&gt; J4["Imagens Docker e Helm + teste ponta a ponta"]
+    CI --&gt; J4b["OWASP Benchmark (TPR − FPR por categoria)"]
+    CI --&gt; J4c["Joern (taint entre arquivos)"]
     CI --&gt; J5["Calibração em vários repositórios"]
     AG["Agente Sentinel Ciclo\n(Claude Code, na sua máquina)"] -- "dispara" --&gt; AC["auditoria-completa.yml\nAPI real + todos os analisadores"]
     AC --&gt; ART["artefato: achados, relatório PDF, SBOM"]
@@ -1126,8 +1351,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
     AG --&gt; PRS["PRs ciclo/*"]
     PRS --&gt; HUM["Você revisa e faz o merge"]
     HUM --&gt; TAG["tag vX.Y.Z"] --&gt; REL["release.yml\nimagens no GHCR, zip do CLI, SBOM"]
-    PL["docs/evolucao/PLACAR.md"] -. "meta dos agentes" .-&gt; EV
-    PL -. "meta dos agentes" .-&gt; DS</pre></figure>
+    PL["docs/evolucao/PLACAR.md"] -. "meta do agente" .-&gt; AG</pre></figure>
 <div class="tabela"><table>
 <thead>
 <tr>
@@ -1154,7 +1378,11 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 <tr>
 <td>Memória e metas</td>
-<td><code>docs/evolucao/</code> (<code>PLACAR.md</code>, <code>LOG.md</code>, <code>calibracao.md</code>, <code>precisao.md</code>, <code>relatorios/</code>, <code>AGENTE.md</code>)</td>
+<td><code>docs/evolucao/</code> (<code>PLACAR.md</code>, <code>LOG.md</code>, <code>estado.json</code> com o estado entre execuções, <code>calibracao.md</code>, <code>precisao.md</code>, <code>relatorios/</code>, <code>AGENTE.md</code>)</td>
+</tr>
+<tr>
+<td>Medição</td>
+<td><code>scripts/benchmark-owasp.py</code>, <code>scripts/medir-volta.py</code>, <code>scripts/verificar-separacao.py</code> (treino × validação), <code>scripts/conferir-numeros.py</code> (números da documentação) e <code>scripts/sincronizar-versao.py</code> (versão única em <code>audit-dashboard/package.json</code>, Helm e OpenAPI)</td>
 </tr>
 </tbody>
 </table></div>
@@ -1181,7 +1409,7 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>sim</td>
 </tr>
 <tr>
-<td>React 19, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest</td>
+<td>React 19, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest, Playwright</td>
 <td>Dashboard</td>
 <td>sim</td>
 </tr>
@@ -1196,9 +1424,14 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <td>opcional; substitui o SCA interno</td>
 </tr>
 <tr>
-<td>Gitleaks</td>
-<td><code>GitleaksAnalyzer</code> (segredos e histórico)</td>
+<td>Gitleaks (ou Betterleaks, opt-in)</td>
+<td><code>GitleaksAnalyzer</code>, <code>BetterleaksAnalyzer</code> (segredos e histórico)</td>
 <td>opcional; substitui os analisadores internos de segredo</td>
+</tr>
+<tr>
+<td>Joern</td>
+<td><code>SarifAnalyzer</code> via <code>joern-taint</code> (taint entre arquivos em Java)</td>
+<td>opcional; <code>WITH_JOERN=true</code> no build</td>
 </tr>
 <tr>
 <td>PMD</td>
@@ -1257,9 +1490,9 @@ Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.</p>
 <hr />
 <h2 id="11-limites-deste-documento">11. Limites deste documento</h2>
 <ul>
-<li>Este documento descreve o código até a versão 12.11.0 do dashboard (fases 1 a 6 do plano Sentinel + MCP, mais a faixa do Claude na execução da auditoria). O HTML é gerado deste arquivo por <code>scripts/gerar-arquitetura-html.py</code>; edite só o <code>.md</code>.</li>
+<li>Este documento descreve o código até a versão 12.84.0 do dashboard (a versão do produto vem de <code>audit-dashboard/package.json</code>). O HTML é gerado deste arquivo por <code>scripts/gerar-arquitetura-html.py</code>; edite só o <code>.md</code>.</li>
 <li>Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (<code>AuditOrchestrationService</code>, <code>ScoringService</code>, camadas, dashboard). Classes grandes como <code>PackLoader</code> (641 linhas), <code>ArchitecturePolicyAnalyzer</code> (534) e <code>InsightsBuilder</code> (344) estão descritas pelo comentário de classe, não por leitura linha a linha.</li>
-<li>A lista de analisadores executados por padrão é a de <code>AuditOrchestrationService.runAnalyzers</code> (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.</li>
+<li>A lista de analisadores executados por padrão é a de <code>AuditOrchestrationService.runAnalyzers</code> (20 candidatos, os mesmos de <code>AnalyzerCatalog.names()</code>); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.</li>
 <li>Os pesos e o teto do score vêm de <code>ScoringService</code> hoje; mudam com o código. Em caso de dúvida vale o código.</li>
 <li>Este documento não foi gerado automaticamente: se uma classe nascer, mudar de pacote ou sair, ele precisa de atualização manual (o agente Sentinel Ciclo pode propor isso num PR).</li>
 </ul>

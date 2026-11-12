@@ -2,6 +2,8 @@
 
 Resumo mantido do README antigo. O histórico completo, com o que foi verificado em cada versão, está em [`evolucao/LOG.md`](evolucao/LOG.md).
 
+> **Atenção:** os agentes Sentinel Evolution e Sentinel Descoberta citados abaixo foram removidos em 2026-11-05. Quem conduz o ciclo hoje é o agente Sentinel Ciclo ([`evolucao/AGENTE.md`](evolucao/AGENTE.md)).
+
 ## Novidades da v10
 
 - **Evidências offline**: coloque dumps e exports em `evidencias/<nome-do-sistema>/` (veja `docs/evidencias/README.md`). O analisador "Evidências" lê `schema.sql`, estatísticas do `pg_stat_*`, planos `EXPLAIN` JSON, cobertura (JaCoCo/lcov) e histograma de heap. Nenhuma conexão com banco é aberta.

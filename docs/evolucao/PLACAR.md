@@ -3,7 +3,7 @@
 Escala por eixo: 0 ausente · 1 frágil · 2 funciona e é testado · 3 validado com evidência externa (repositórios reais, CI real, medição).
 **Meta: média ≥ 2,5 com nenhum eixo abaixo de 2.** Hoje: **2,0** (todos os eixos em 2; nenhum em 3 ainda).
 
-## Regras do jogo (valem para os dois agentes)
+## Regras do jogo (valem para o agente Sentinel Ciclo)
 1. O placar só sobe com **evidência no repositório** (teste, saída de CI, relatório com números). Nunca por opinião.
 2. Quem sobe a nota propõe a alteração desta tabela **no mesmo PR** que traz a evidência, citando o arquivo ou a execução.
 3. Uma nota nunca sobe por causa de outra mudança de peso ou de critério. Se o critério mudar, registre no LOG e reavalie tudo.
@@ -31,7 +31,7 @@ Escala por eixo: 0 ausente · 1 frágil · 2 funciona e é testado · 3 validado
 - **Revisão humana**: `docs/evolucao/revisao-humana.md`.
 - **Linha de partida honesta**: antes das regras novas a média era 0,00 (equivalente a chute); depois, 0,44. Categorias mais fracas: `cmdi` 0,06, `xpathi` 0,17, `pathtraver` 0,13, `ldapi` 0,29, `trustbound` 0,26.
 
-## Backlog (cada rodada do agente Sentinel Ciclo pega itens do eixo de menor nota; empate: o de menor esforço. Marcar `[x]` exige diff de código ou de teste)
+## Backlog (cada volta do agente Sentinel Ciclo pega itens do eixo de menor nota; empate: o de menor esforço. Marcar `[x]` exige diff de código ou de teste)
 Marque `[x]` no PR que fecha o item, com a evidência.
 - [x] 10/2 Criar `docs/evolucao/precisao.md` e alimentá-lo a cada rodada da Descoberta (regra, revisados, VP, FP) — arquivo existe com 8 regras e 10 achados em 4 repositórios (rodada de 2026-10-21); nota do eixo 10 segue 2 (faltam ≥ 100 achados em ≥ 10 repositórios)
 - [ ] 1/2 OWASP Benchmark: subir `cmdi` (hoje 0,06) tratando `exec` com argumentos de ambiente e `ProcessBuilder.command(...)`; medir antes e depois no CI
@@ -39,11 +39,12 @@ Marque `[x]` no PR que fecha o item, com a evidência.
 - [ ] 1/2 Estender o benchmark a outra linguagem com gabarito (NodeGoat ou OWASP Juice Shop com lista de desafios) para medir as regras de JS/TS
 - [ ] 8 Métricas Prometheus da API (`/q/metrics`: auditorias, duração, achados) com teste
 - [ ] 9 Corrigir N+1 em `RuleQualityService` e `AuditScheduler` com teste que conta consultas
-- [ ] 9 Cobertura JaCoCo no Maven e meta de 70% nos pacotes de regra e pontuação
+- [x] 9 Cobertura JaCoCo no Maven (`quarkus-jacoco` e `jacoco-maven-plugin` em `audit-api/pom.xml`; o relatório sai como artefato `cobertura-jacoco` do job `backend` em `ci.yml`)
+- [ ] 9 Meta de 70% de cobertura nos pacotes de regra e pontuação, com falha no CI abaixo do piso (hoje o relatório é publicado, sem piso)
 - [ ] 8 Teste de login OIDC contra Keycloak em CI (job novo no `e2e`, sem tocar `.github/` — pedir ao humano o ajuste do workflow)
 - [ ] 3 SARIF de uma auditoria subido ao Code Scanning (depende do plano do GitHub)
 - [ ] 8 Teste de carga (k6) com limites de latência documentados
-- [ ] 7 Teste ponta a ponta do dashboard com Playwright
+- [x] 7 Teste ponta a ponta do dashboard com Playwright (`audit-dashboard/e2e/*.spec.ts`, `playwright.config.ts`; roda no job `dashboard` de `ci.yml`). O eixo 7 só sobe para 3 com o critério da tabela: auditoria, relatório e filtros cobertos
 - [ ] 1 Conjunto de referência para recall (casos `deve_achar` ampliados com os falsos negativos da descoberta)
 - [ ] 6 Revisão das remediações das regras de segurança contra a documentação oficial
 

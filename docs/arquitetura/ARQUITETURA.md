@@ -1,7 +1,7 @@
 # Arquitetura do Sentinel Audit Tool
 
 Mapa de todos os módulos, pacotes e classes, do desenho macro (quem fala com quem) ao micro (o que cada classe faz).
-Os diagramas são Mermaid e aparecem desenhados no GitHub e no VS Code.
+Os diagramas (14, em Mermaid) aparecem desenhados no GitHub e no VS Code.
 
 > **Escopo.** "Todos os projetos" aqui são os módulos do repositório `sentinel`: `audit-api` (backend), `audit-cli`, `audit-dashboard` (frontend), `audit-rules` (regras e configuração das ferramentas), `deploy` (Docker/Helm) e a automação (`.github`, `scripts`). O app `frequency` é outro repositório e não está neste documento.
 > **Origem.** Escrito a partir do código da `main` (classes Java em `audit-api`, `audit-cli` e arquivos TypeScript/TSX em `audit-dashboard/src`; contagens mudam a cada versão). Nomes de classe foram conferidos contra o código. Onde uma descrição vem só do comentário da classe e não da leitura do corpo, o texto diz "segundo o comentário".
@@ -38,7 +38,7 @@ flowchart TB
         direction LR
         DASH["audit-dashboard\nReact + Carbon"]
         CLI["audit-cli\nJava"]
-        API["audit-api\nQuarkus / Java 21"]
+        API["audit-api\nQuarkus 3.40 (bytecode Java 21)"]
         DB[("PostgreSQL 16")]
         RULES["audit-rules\npacotes e perfis"]
     end
@@ -72,8 +72,8 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph Host["docker compose / Kubernetes (Helm)"]
-        NG["audit-dashboard\nNginx servindo a SPA\n:80"]
-        AP["audit-api\nJRE 21 + Opengrep + Trivy + Gitleaks\n+ Node (ESLint, Stylelint) + venvs Python\n:8080"]
+        NG["audit-dashboard\nNginx (sem privilégios) servindo a SPA\n:8080 no contêiner, :3000 no host"]
+        AP["audit-api\nJRE 25 + Opengrep + Trivy + Gitleaks\n+ Node 24 (ESLint, Stylelint) + venvs Python\n:8080"]
         PG[("postgres:16-alpine\n:5432")]
     end
     NG -- "proxy /api" --> AP
@@ -104,7 +104,7 @@ flowchart LR
 | Feature | Backend (`audit-api`) | Outros módulos |
 |---|---|---|
 | Cadastrar sistemas e disparar auditorias | `SystemResource`, `AuditResource`, `AuditRequestService`, `AuditOrchestrationService` | Dashboard: `OverviewPage`; CLI: `AuditCli` |
-| Auditoria automática por agenda | `AuditScheduler` (a cada 5 min) | Dashboard: `ScheduleForm` |
+| Auditoria automática por agenda | `AuditScheduler` (a cada 5 min) | Dashboard: campos de agenda do cadastro do sistema (`SystemFormFields`) |
 | Auditoria por webhook de push | `WebhookResource`, `WebhookService` | GitHub / GitLab |
 | Análise de segurança e qualidade | `SemgrepAnalyzer`, `PmdAnalyzer`, `EslintAnalyzer`, `CleanCodeAnalyzer` | `audit-rules/packs`, `audit-rules/lint` |
 | Dependências vulneráveis (SCA) e SBOM | `OWASPDependencyAnalyzer`, `OsvClient`, `TrivyAnalyzer`, `SbomWriter` | OSV.dev, Trivy |
@@ -116,7 +116,16 @@ flowchart LR
 | Score de risco (6 dimensões) | `ScoringService`, `SourceSizer` | Dashboard: `ScoreGauge` |
 | Novo × corrigido × suprimido, tendência | `FindingLifecycleService`, `Fingerprints`, `FindingResource` | Dashboard: `DiffSummary`, `TrendChart`, `SuppressModal` |
 | Auditoria completa (áreas, dívida, plano) | pacote `insights` | Dashboard: `InsightsPanel` |
-| Relatório HTML | `ReportService` | Dashboard: `ReportsPage` |
+| Relatórios (HTML, PDF, CSV; técnico, executivo e comparativo) | `ReportService`, `PdfReportService`, `PortfolioReportService`, `AuditReports`, `ReportResource`, `AuditExportResource` | Dashboard: `ReportsPage` |
+| O que corrigir primeiro e de onde vem a nota | `FixPlanner`, `ScoreExplanationDto`, `AuditAnalysisResource` | Dashboard: `ScoreExplanationPanel` |
+| Confiança do achado (alta, média, baixa) | `FindingConfidence`, `PathRole`, `VendoredCode`, `GeneratedFiles` | Dashboard: `FindingsTable` |
+| Ajustes do projeto auditado (`.sentinel.yml`: excluir caminhos, suprimir com motivo) | `ProjectConfig`, `ProjectConfigExclusions`, `FindingRefinement` | `docs/integracao/sentinel-yml.md` |
+| Origem "pasta local" (auditar sem Git) | `LocalSource`, `WorkingTreeCopier`, `SystemSourceResource` | `SENTINEL_LOCAL_ROOT`; `docs/pasta-local/README.md` |
+| Regras separadas por lado (back-end, front-end, comum) | `RuleSide`, `RuleCatalog`, `AnalyzerCatalog` | Dashboard: `EnginePanel`, `EngineScope` |
+| Guia de código por tecnologia e CLAUDE.md gerado | `GuideBook`, `GuideCatalog`, `GuideResource` | Dashboard: `GuidePage` (menu Guia de código) |
+| Configurações da instalação pela tela | pacote `settings` (`SettingsCatalog`, `SettingsService`, `DbConfigSource`, `SettingsResource`) | Dashboard: `SettingsPage`, `RestartOverlay` |
+| Controle de carga e retenção | `AuditSlots` (`AUDIT_MAX_CONCURRENT`), `AuditRetentionJob` (`AUDIT_RETENTION_DAYS`, `AUDIT_RETENTION_KEEP`) | — |
+| Taint entre arquivos em Java (opcional) | `SarifAnalyzer` + ferramenta `joern-taint` | `audit-api/joern`; `docs/integracao/joern.md` |
 | Orientação de correção por regra | `RemediationCatalog`, `RemediationDto` | `remediation/` de cada pacote; `RemediationBlock` |
 | Qualidade das regras (falso positivo) | `RuleQualityService`, `RuleResource` | Dashboard: `RankingPage` |
 | Laboratório de regras | `RulePlaygroundService` | `PackLoader` |
@@ -134,7 +143,7 @@ flowchart LR
 
 ## 3. Backend `audit-api`
 
-Pacote raiz: `com.sentinel.audit`. Quarkus 3.40, Java 21, Hibernate/Panache, PostgreSQL, CDI (`@ApplicationScoped`), REST (JAX-RS).
+Pacote raiz: `com.sentinel.audit`. Quarkus 3.40, bytecode Java 21 (a imagem compila com o JDK 26 e roda no JRE 25; o CI testa também na JVM da imagem), Hibernate/Panache, Flyway (`db/migration`, V1 a V5), PostgreSQL, CDI (`@ApplicationScoped`), REST (JAX-RS).
 
 ### 3.1 Camadas (desenho micro)
 
@@ -142,9 +151,9 @@ Pacote raiz: `com.sentinel.audit`. Quarkus 3.40, Java 21, Hibernate/Panache, Pos
 flowchart TB
     RES["resource (borda REST)\nAuditResource, SystemResource, FindingResource,\nWebhookResource, PackResource, RuleResource,\nHealthResource, ApiKeyFilter, StartupChecks"]
     DTO["dto\nrequests, responses e FindingMapper"]
-    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AuditScheduler,\nIngestionService, EvidenceStager, ScoringService,\nFindingLifecycleService, FindingDeduplicator, ReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService"]
-    ANA["analyzer (motores)\nCodeAnalyzer e 14 analisadores\n+ deps, evidence, quality"]
-    PCK["pack (regras e perfis)\nPackRegistry, PackLoader, PackIntegrity, ProfileLoader, AuditPolicy"]
+    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AnalyzerRunner,\nAuditScheduler, AuditSlots, IngestionService, EvidenceStager,\nScoringService, FindingRefinement, FindingLifecycleService,\nReportService, PdfReportService, PortfolioReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService"]
+    ANA["analyzer (motores)\nCodeAnalyzer e 20 analisadores\n+ deps, evidence, quality, structure"]
+    PCK["pack (regras e perfis)\nPackRegistry, PackLoader, PackIntegrity, ProfileLoader, AuditPolicy,\nFindingDeduplicator, RuleCatalog, GuideBook"]
     INS["insights (auditoria completa)\nInsightsService, InsightsBuilder, ProjectProfiler"]
     REP["repository (Panache)\nAuditedSystem, AuditRun, Finding, FindingSuppression"]
     MOD["model (JPA)\nAuditedSystem, AuditRun, Finding, FindingSuppression,\nRiskScore e enums"]
@@ -211,9 +220,19 @@ Pontos do código que valem saber (do comentário de `AuditOrchestrationService`
 
 | Classe | O que faz | Rotas |
 |---|---|---|
-| `SystemResource` | Cadastro, edição e consulta de sistemas, verificação do repositório, agenda, perfil, tendência, supressões | `/api/v1/systems`, `/check-repo`, `/{id}`, `/{id}/audits`, `/{id}/trend`, `/{id}/suppressions`, `/{id}/schedule`, `/{id}/profile` |
-| `AuditResource` | Cria, lista e cancela auditorias; entrega resultado com andamento, achados, diferença, plano de correção, relatórios (técnico, executivo, comparativo, CSV), SBOM e visão completa | `/api/v1/audits`, `/{id}`, `/{id}/cancel`, `/{id}/fix-plan`, `/{id}/findings`, `/{id}/findings.csv`, `/{id}/diff`, `/{id}/report`, `/{id}/sbom`, `/{id}/insights` |
-| `FindingResource` | Suprime um achado com justificativa; lista os achados de todos os sistemas | `POST /api/v1/findings/{id}/suppress`, `GET /api/v1/findings` |
+| `SystemResource` | Cadastro, edição e remoção de sistemas, agenda e perfil | `/api/v1/systems`, `/{id}`, `/{id}/schedule`, `/{id}/profile` |
+| `SystemSourceResource` | Confere a origem antes de cadastrar: repositório remoto (sem clonar) e pasta local | `/api/v1/systems/check-repo`, `/check-path`, `/local-source` |
+| `SystemHistoryResource` | Histórico de um sistema: auditorias, tendência da nota e supressões | `/api/v1/systems/{id}/audits`, `/trend`, `/suppressions`, `/suppressions/{suppressionId}` |
+| `SystemEvidenceResource` | Lista, envia e apaga as evidências offline de um sistema | `/api/v1/systems/{id}/evidence`, `/{name}` |
+| `AuditResource` | Cria, lista e cancela auditorias; entrega o resultado com andamento e diz se a auditoria está desatualizada em relação à ponta da branch | `/api/v1/audits`, `/{id}`, `/{id}/cancel`, `/{id}/freshness` |
+| `AuditFindingsResource` | Achados de uma auditoria, com filtros | `/api/v1/audits/{id}/findings` |
+| `AuditAnalysisResource` | Leituras analíticas: diferença para a auditoria anterior, o que corrigir primeiro, explicação da nota e auditoria completa | `/api/v1/audits/{id}/diff`, `/fix-plan`, `/score-explanation`, `/insights` |
+| `AuditExportResource` | Relatórios (HTML e PDF; técnico, executivo, comparativo), achados em CSV e SBOM | `/api/v1/audits/{id}/report`, `/report.pdf`, `/findings.csv`, `/sbom` |
+| `ReportResource` | Relatório de todos os sistemas (ou de um) em HTML, PDF ou CSV | `/api/v1/reports/portfolio` |
+| `GuideResource` | Guia de código por tecnologia e o CLAUDE.md gerado | `/api/v1/guide`, `/guide/{stack}/claude-md` |
+| `SettingsResource` | Lê e grava as configurações da instalação e reinicia a API | `/api/v1/settings`, `/settings/{key}`, `/settings/restart` |
+| `FindingResource` | Lista os achados da última auditoria de cada sistema | `GET /api/v1/findings` |
+| `FindingSuppressionResource` | Suprime um achado, ou até 200 de uma vez, com motivo, justificativa e validade | `POST /api/v1/findings/{id}/suppress`, `/suppress-batch` |
 | `WebhookResource` | Recebe push do GitHub e do GitLab | `/api/v1/webhooks/github`, `/gitlab` |
 | `PackResource` | Lista pacotes e perfis; recarrega do disco | `/api/v1/packs`, `/reload` |
 | `RuleResource` | Qualidade das regras e laboratório | `/api/v1/rules/quality`, `/playground` |
@@ -224,6 +243,7 @@ Pontos do código que valem saber (do comentário de `AuditOrchestrationService`
 | `PendingActionResource` | Pedidos do Claude esperando aprovação | `/api/v1/pending-actions/{id}`, `/{actionId}/approve`, `/reject` |
 | `HealthResource` | Verificação de saúde | `/api/v1/health` |
 | `ApiKeyFilter` | Exige a chave `X-API-Key` quando `API_KEY` está definida | filtro global |
+| `ApiErrorMapper` | Devolve em JSON a mensagem dos erros 4xx (sem ela a tela só mostraria "HTTP 400"); erros 5xx não expõem detalhe | — |
 | `StartupChecks` | Avisa na partida sobre configuração insegura ou destrutiva | — |
 
 ### 3.4 Pacote `service` (negócio)
@@ -231,19 +251,36 @@ Pontos do código que valem saber (do comentário de `AuditOrchestrationService`
 | Classe | O que faz |
 |---|---|
 | `AuditOrchestrationService` | Maestro: clona, roda analisadores em paralelo, deduplica, aplica política, calcula score, grava e notifica |
+| `AnalyzerRunner` | Escolhe os analisadores que valem para a auditoria, roda em paralelo e respeita o cancelamento; falha individual vira resultado vazio com o erro anotado |
+| `AnalyzerSet`, `AnalyzerCatalog` | Conjunto dos 20 analisadores conhecidos; nome, descrição e lado (back-end, front-end ou comum) de cada um, para a tela de acompanhamento |
+| `AuditPolicyResolver` | Monta a política da auditoria: perfil, ajustes do sistema por cima e regras locais; falha ao ler os ajustes vale como "sem ajustes" |
+| `AuditSlots` | Limita as auditorias simultâneas (`AUDIT_MAX_CONCURRENT`, padrão 2); as demais esperam em `PENDING` |
+| `AuditRetention`, `AuditRetentionJob` | Apaga uma vez por dia as auditorias antigas (`AUDIT_RETENTION_DAYS`, desligado por padrão; as `AUDIT_RETENTION_KEEP` mais recentes ficam) |
 | `AuditRequestService` | Cria a execução (`PENDING`) e dispara o evento `AuditCreated` |
 | `AuditCreated` | Evento CDI "auditoria criada" |
 | `AuditScheduler` | A cada 5 minutos dispara auditorias agendadas e recupera as que ficaram `RUNNING` por causa de um reinício |
 | `IngestionService` | Clona o repositório (raso, com token e lista de hosts permitidos) e apaga a pasta ao fim |
 | `ChangedFiles` | Lista arquivos alterados contra um branch base (auditoria de PR) |
+| `LocalSource`, `WorkingTreeCopier` | Origem "pasta local": só dentro da raiz `SENTINEL_LOCAL_ROOT`, sem seguir link simbólico nem `..`; a origem é só lida |
+| `RemoteProbe` | Verifica um repositório remoto sem clonar: responde, branch padrão, tamanho e SHA da ponta da branch |
+| `EvidenceLibrary` | Lista, recebe e remove os arquivos de evidência de um sistema pela API |
 | `EvidenceStager` | Copia as evidências do sistema para `.sentinel/evidence/` dentro do clone |
-| `FindingDeduplicator` | Junta o mesmo problema vindo de ferramentas diferentes (fica o do Semgrep, com a maior severidade) |
+| `FindingRefinement` | Entre a análise e a nota: deduplicação, política do perfil, auditoria de PR, `.sentinel.yml`, marca de "novo" e confiança |
+| `FindingConfidence` | Dá a cada achado confiança alta, média ou baixa e o motivo (teste, exemplo, código gerado e valor de exemplo pesam para baixo); não muda a severidade |
+| `ProjectConfig`, `ProjectConfigExclusions` | Lê o `.sentinel.yml` do projeto auditado: caminhos excluídos e achados suprimidos com motivo, em revisão como qualquer mudança |
+| `GeneratedFiles` | Reconhece arquivo gerado pelo cabeçalho, para não cobrar estilo de quem não o escreve à mão |
 | `Fingerprints` | Identidade estável de um achado entre auditorias |
 | `FindingLifecycleService` | Marca o que é novo, aplica supressões, compara com a auditoria anterior (novo × corrigido) e calcula a tendência de score |
 | `ScoringService` | Score por dimensão e geral |
 | `SourceSizer` | Conta linhas de código (base do score por densidade) |
 | `RemediationCatalog` | Devolve a orientação de correção pelo id da regra (vale a chave mais específica) |
-| `ReportService` | Relatório HTML |
+| `ReportService`, `PdfReportService` | Relatório HTML e a versão em PDF gerada no servidor |
+| `PortfolioReportService` | Relatórios de todos os sistemas (executivo, técnico, comparativo) em HTML, PDF ou CSV |
+| `FixPlanner` | Plano "o que corrigir primeiro": o ganho de cada problema é a nota recalculada pelo `ScoringService` sem aquela regra |
+| `ScoreTrend` | Variação da nota entre as duas últimas auditorias completas (as de PR ficam de fora) |
+| `SecretBox` | Cifra (AES-256-GCM) o token Git e a URL de notificação guardados no banco |
+| `InternalAddresses` | Barra destino de notificação em máquina local e rede interna |
+| `ProgressStore` | Espelho do andamento no banco (`audit_progress`), para qualquer réplica da API mostrá-lo |
 | `NotificationService` | Avisos para Teams, Slack ou webhook genérico |
 | `WebhookService` | Valida a autenticidade, acha o sistema pelo repositório e dispara se o push é na branch configurada |
 | `RuleQualityService` | Mede quais regras viram falso positivo com frequência |
@@ -268,6 +305,7 @@ classDiagram
     CodeAnalyzer <|.. SarifAnalyzer
     CodeAnalyzer <|.. TrivyAnalyzer
     CodeAnalyzer <|.. GitleaksAnalyzer
+    CodeAnalyzer <|.. BetterleaksAnalyzer
     CodeAnalyzer <|.. SecretsAnalyzer
     CodeAnalyzer <|.. HistorySecretsAnalyzer
     CodeAnalyzer <|.. OWASPDependencyAnalyzer
@@ -279,6 +317,7 @@ classDiagram
     CodeAnalyzer <|.. DuplicationAnalyzer
     CodeAnalyzer <|.. HotspotAnalyzer
     CodeAnalyzer <|.. DeadCodeAnalyzer
+    CodeAnalyzer <|.. CommitMessageAnalyzer
     CodeAnalyzer <|.. EvidenceAnalyzer
     SemgrepAnalyzer ..> ExternalTools
     PmdAnalyzer ..> ExternalTools
@@ -304,9 +343,10 @@ classDiagram
 | `SemgrepAnalyzer` | Roda o Opengrep (ou o Semgrep, via `SastEngine`) com as regras dos pacotes ativos (segurança, qualidade, Spring, persistência, IaC, front); ignora bibliotecas embutidas (`node_modules`, `vendor`, `*.min.js`...) |
 | `PmdAnalyzer` | Lint de Java com PMD (boas práticas, propensão a erro, design) |
 | `EslintAnalyzer` | Lint de TypeScript/JavaScript com ESLint; só liga as regras do Angular se o projeto depende de `@angular/*` |
-| `SarifAnalyzer` | Importa o SARIF 2.1.0 de qualquer ferramenta declarada em `tools/*.yml` dos pacotes (Stylelint, SQLFluff, Hadolint, Checkov, Spectral, Squawk, Checkstyle, jscpd, Dependency-Cruiser, njsscan, kube-linter, kube-score) |
+| `SarifAnalyzer` | Importa o SARIF 2.1.0 de qualquer ferramenta declarada em `tools/*.yml` dos pacotes (Stylelint, SQLFluff, Hadolint, Checkov, Spectral, Squawk, Checkstyle, jscpd, Dependency-Cruiser, njsscan, kube-linter, kube-score e o Joern, opt-in); `ToolRun` é o esqueleto comum e `SarifResumo` diz na tela quais rodaram |
 | `TrivyAnalyzer` | Vulnerabilidades em dependências e más configurações de IaC/Dockerfile/Kubernetes |
 | `GitleaksAnalyzer` | Segredos em arquivos atuais e no histórico do Git |
+| `BetterleaksAnalyzer` | Mesmo papel, com o Betterleaks (sucessor do Gitleaks, série 1.x); opt-in com `BETTERLEAKS_ENABLED=true` e, ligado, substitui o Gitleaks |
 | `SecretsAnalyzer` | Segredos no código (fallback interno quando não há Gitleaks) |
 | `HistorySecretsAnalyzer` | Segredos que existiram em commits antigos (fallback interno) |
 | `OWASPDependencyAnalyzer` | SCA: lê manifestos, consulta o OSV.dev e classifica pela nota CVSS |
@@ -320,6 +360,9 @@ classDiagram
 | `CommitMessageAnalyzer` | Mensagens de commit fora do padrão Conventional Commits (`git log`, um achado só acima de `commit-max-bad-percent`); limites `commit-min-commits`, `commit-max-bad-percent` |
 | `DeadCodeAnalyzer` | Exportações TypeScript/JavaScript que nenhum arquivo usa; ignora bibliotecas publicadas |
 | `EvidenceAnalyzer` | Lê evidências geradas fora: dump do esquema, estatísticas e planos do Postgres, cobertura, histograma de memória |
+| `SastEngine` | Escolhe o motor das regras YAML: Opengrep (padrão) ou Semgrep (`WITH_SEMGREP=true`); os dois leem o mesmo formato, mas a linha de comando difere |
+| `VendoredCode`, `ProjectExclusions` | Deixam de fora da análise o código de terceiros copiado para o projeto e os caminhos que o `.sentinel.yml` exclui |
+| `ProcessTree` | Encerra o processo externo junto com tudo o que ele iniciou (cancelamento e tempo esgotado) |
 | `ExternalTools` | Utilidades de execução de processos externos e de detecção de ferramenta no PATH |
 | `AnalyzerResult` | Resultado imutável de um analisador (achados, nome, duração) |
 
@@ -330,6 +373,7 @@ Subpacotes:
 | `analyzer.deps` | `DependencyExtractor` (lê `pom.xml`, `package.json`, lockfiles...), `Dependency`, `OsvClient` (API do OSV.dev), `OsvVulnerability`, `Cvss` (nota base v3.x), `SbomWriter` (CycloneDX 1.5) |
 | `analyzer.evidence` | `SchemaParser` (DDL → tabelas, chaves, índices), `SchemaChecks`, `PgStatChecks` (CSV de `pg_stat_*`), `PlanChecks` (EXPLAIN JSON), `CoverageChecks` (JaCoCo, lcov), `HeapChecks`, `Csv`, `Ev` (monta os achados) |
 | `analyzer.quality` | `FunctionScanner` (acha funções e mede), `SourceSanitizer` (apaga comentários e strings antes de medir) |
+| `analyzer.structure` | `DependencyCycles`, `Duplication`, `Hotspots`, `UnusedExports`, `CommitMessages`, `GlobalAuth`, `SourceFiles`: o cálculo por trás dos analisadores estruturais, separado da integração com a auditoria |
 
 ### 3.6 Pacote `pack` (pacotes de regras e perfis)
 
@@ -366,6 +410,12 @@ flowchart LR
 | `ArchitecturePolicy` | Camadas e componentes declarados em YAML |
 | `DedupTopic` | Grupo de regras de ferramentas diferentes que apontam o mesmo problema |
 | `RemediationEntry` | Orientação de correção por regra |
+| `FindingDeduplicator` / `DedupTopic` | Junta o mesmo problema vindo de ferramentas diferentes (fica o do motor SAST (Opengrep ou Semgrep), com a maior severidade), conforme o `dedup.yml` do pacote |
+| `RuleSide` | Lado da regra: back-end, front-end ou comum (`metadata.side`; sem isso, deduzido da linguagem e dos caminhos) |
+| `RuleCatalog` / `RuleYaml` | Catálogo das regras declaradas (id, texto, severidade, categoria, lado), mesmo antes de disparar |
+| `GuideBook` / `GuideCatalog` | Guia de código: tecnologias (`guia/stacks.yml`) e as regras que valem para cada uma |
+| `PathRole` / `PathGlobs` | Papel do arquivo pelo caminho (produção, teste, documentação, exemplo, gerado) e curingas no estilo do `.gitignore` |
+| `SystemTuning` | Ajustes de um sistema por cima do perfil; vazio é igual ao perfil |
 | `Versions` | Comparação de versões para a política de componentes |
 | `Yamls` | Leitura de YAML sem instanciar classes (evita o risco clássico do SnakeYAML) |
 | `PackException` | Pacote inválido |
@@ -437,6 +487,8 @@ erDiagram
 
 - `model`: `AuditedSystem`, `AuditRun`, `Finding`, `FindingSuppression` (entidades), `RiskScore` (objeto embutido em `AuditRun`), `Severity`, `Category`, `Stack`, `FindingStatus`, `AuditStatus`, `SuppressionReason` (enums).
 - Entidades do plano Sentinel + MCP: `SystemEngineConfig` (ajuste do motor), `McpAccess` e `McpCallLog` (acesso e registro do MCP), `ReviewSuggestion` e `RuleProposal` (revisão do Claude), `PendingAction` (pedidos com aprovação); cada uma tem o seu repositório Panache.
+- Outras tabelas: `app_setting` (`AppSetting`, valores da tela de Configurações) e `audit_progress` (`AuditProgressSnapshot`, andamento das auditorias em execução). Também no pacote `model`: `SourceType` (Git ou pasta local), `LocalSnapshot` e `Confidence`.
+- Esquema: Flyway em `audit-api/src/main/resources/db/migration` (V1 baseline; V2 e V4 completam bancos antigos; V3 tira um índice redundante; V5 passa as datas para `timestamptz`). `docs/schema-referencia.sql` é só referência.
 - `repository` (Panache): `AuditedSystemRepository`, `AuditRunRepository`, `FindingRepository`, `FindingSuppressionRepository`.
 - `dto`: `CreateSystemRequest`, `CreateAuditRequest`, `ProfileRequest`, `ScheduleRequest`, `SuppressRequest` (entradas); `SystemSummaryResponse`, `AuditRunResponse`, `FindingResponse`, `RiskScoreDto`, `RemediationDto`, `AuditDiffResponse`, `TrendPoint`, `SuppressionResponse` (saídas); `FindingMapper` converte entidade em resposta (inclui a orientação de correção).
 
@@ -506,6 +558,8 @@ flowchart TB
         RK["/ranking\nRankingPage"]
         F["/findings\nFindingsPage (Achados, Revisão do Claude, Reauditoria)"]
         RP["/reports\nReportsPage"]
+        GD["/guide\nGuidePage"]
+        CF["/settings\nSettingsPage"]
     end
     SHELL["AppShell (cabeçalho, menu, versão)"] --> rotas
     rotas --> COMP["components"]
@@ -518,13 +572,13 @@ flowchart TB
 
 | Camada | Arquivos | Papel |
 |---|---|---|
-| Páginas | `OverviewPage`, `SystemsPage`, `SystemDetailPage`, `AuditRunPage` (com a faixa Claude (MCP) e as chamadas do Claude no quadro de eventos enquanto a auditoria roda), `RankingPage`, `FindingsPage`, `ReportsPage` | Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios |
-| Componentes | `FindingsTable`, `ScoreGauge`, `RiskBadge`, `TrendChart`, `DiffSummary`, `InsightsPanel`, `RemediationBlock`, `SuppressModal`, `SuppressionsList`, `ProfileForm`, `ScheduleForm`, `Layout/AppShell`, `EnginePanel`, `McpPanel`, `McpStatusStrip`, `ClaudeReviewPanel`, `ReauditPanel`, `StartAuditModal` | Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, perfil de regras, agenda, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria |
-| Hooks | `useSystems` (`useSystem`, `useRuleQuality`), `useAuditRuns` (`useAudit`), `useFindings`, `useLifecycle` (tendência, diferença, supressões, visão completa, pacotes, perfil, agenda) | Cada um encapsula uma consulta ou mutação ao servidor |
+| Páginas | `OverviewPage`, `SystemsPage`, `SystemDetailPage`, `AuditRunPage` (com a faixa Claude (MCP) e as chamadas do Claude no quadro de eventos enquanto a auditoria roda), `RankingPage`, `FindingsPage`, `ReportsPage`, `GuidePage`, `SettingsPage` | Visão geral; cadastro e edição de sistemas numa janela com abas (cadastro, motor, analisadores, Claude/MCP); detalhe com nota, tendência e visão completa; andamento de uma auditoria; ranking de sistemas e qualidade das regras; Informações de Auditoria com três abas (achados e nota, Revisão do Claude, Reauditoria); relatórios; guia de código por tecnologia (para pessoas e para a IA); configurações da instalação com reinício da API |
+| Componentes | `FindingsTable`, `ScoreGauge`, `RiskBadge`, `TrendChart`, `DiffSummary`, `InsightsPanel`, `RemediationBlock`, `SuppressModal`, `SuppressionsList`, `ScoreExplanationPanel`, `EvidencePanel`, `Layout/AppShell`, `EnginePanel`, `McpPanel`, `McpStatusStrip`, `ClaudeReviewPanel`, `ReauditPanel`, `StartAuditModal` | Tabela de achados, medidor de nota, selo de severidade, gráfico de tendência, novo × corrigido, auditoria completa, como corrigir, supressão com justificativa, de onde vem a nota, evidências offline, ajuste do motor por sistema, acesso MCP, revisão do Claude, pedidos e reauditoria |
+| Hooks | `useSystems` (`useSystem`, `useRuleQuality`), `useAuditRuns` (`useAudit`), `useFindings`, `useLifecycle` (tendência, diferença, supressões, visão completa, pacotes, perfil, agenda), `useSettings`, `useGuide`, `usePendingClaude`, `useMcpActivity` | Cada um encapsula uma consulta ou mutação ao servidor |
 | Estado | `store/useAuditStore` | Sistema e auditoria selecionados e filtros de achados |
 | Acesso à API | `api/client.ts` | `apiFetch` e o objeto `api` com cada endpoint |
 | Apoio | `types/index.ts`, `utils/ranking.ts`, `vite-env.d.ts` | Tipos do contrato, cálculo do ranking |
-| Testes | um `.test.tsx` ao lado de páginas e painéis, mais `test/a11y.test` (axe) | Vitest + Testing Library; `npx vitest run` |
+| Testes | um `.test.tsx` ao lado de páginas e painéis, mais `test/a11y.test` (axe) | Vitest + Testing Library (`npx vitest run`, com piso de cobertura no CI) e Playwright em `audit-dashboard/e2e` |
 
 Em produção a SPA é servida pelo Nginx (`nginx.conf.template`), que repassa `/api` para a API.
 
@@ -579,7 +633,8 @@ flowchart TB
 | Item | Detalhe |
 |---|---|
 | `docker-compose.yml` | `postgres` (16-alpine, só no localhost), `audit-api`, `audit-dashboard` |
-| `audit-api/Dockerfile` | Constrói com Maven (Java 21) e roda em JRE 21 com Git, Opengrep (Semgrep e Joern opcionais), Trivy, Gitleaks, Node (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; telemetria do Semgrep desligada |
+| `audit-api/Dockerfile` | Constrói com Maven 3.9 no JDK 26 (bytecode Java 21) e roda em `eclipse-temurin:25-jre` com Git, Opengrep (Semgrep, Betterleaks, Hadolint e Joern opcionais), Trivy, Gitleaks, PMD, Node 24 (ESLint, Stylelint) e ferramentas Python em ambientes virtuais; versões e SHA-256 fixados em `ARG`; telemetria do Semgrep desligada |
+| `audit-dashboard/Dockerfile` | Constrói a SPA com Node 26 e serve com `nginx-unprivileged` 1.31 (porta 8080 no contêiner, 3000 no host); `nginx.conf.template` repassa `/api` e `/mcp/` à API e injeta a `API_KEY` |
 | `deploy/helm/sentinel` | Chart com `api`, `dashboard`, `ingress`, `postgres` e `secret` |
 | Autenticação | Chave estática `X-API-Key` (`ApiKeyFilter`) ou OIDC/Keycloak em build com `-Poidc` (`QUARKUS_PROFILE=oidc`, com `API_KEY` vazia) |
 | Clone | token Git, hosts do token e profundidade do histórico são do cadastro de cada sistema (token cifrado com `SECRETS_KEY`, só vai para os hosts listados); clone raso quando o histórico é 0/1 |
@@ -595,12 +650,15 @@ flowchart TB
 ```mermaid
 flowchart TB
     PUSH["push na main / PR / domingo / manual"] --> CI["ci.yml"]
+    CI --> J0["Só roda o que mudou; confere separação treino × validação\ne números da documentação"]
     CI --> J1["API, CLI e pacotes de regras (Maven, Java 21)"]
     CI --> J1b["Testes unitários na JVM da imagem (Java 25)"]
     CI --> J1c["Integração HTTP com PostgreSQL real (Testcontainers)"]
     CI --> J2["Testes Semgrep dos pacotes + auto-auditoria do Sentinel"]
     CI --> J3["Dashboard (tsc, lint, Vitest com piso de cobertura, build, Playwright)"]
     CI --> J4["Imagens Docker e Helm + teste ponta a ponta"]
+    CI --> J4b["OWASP Benchmark (TPR − FPR por categoria)"]
+    CI --> J4c["Joern (taint entre arquivos)"]
     CI --> J5["Calibração em vários repositórios"]
     AG["Agente Sentinel Ciclo\n(Claude Code, na sua máquina)"] -- "dispara" --> AC["auditoria-completa.yml\nAPI real + todos os analisadores"]
     AC --> ART["artefato: achados, relatório PDF, SBOM"]
@@ -608,8 +666,7 @@ flowchart TB
     AG --> PRS["PRs ciclo/*"]
     PRS --> HUM["Você revisa e faz o merge"]
     HUM --> TAG["tag vX.Y.Z"] --> REL["release.yml\nimagens no GHCR, zip do CLI, SBOM"]
-    PL["docs/evolucao/PLACAR.md"] -. "meta dos agentes" .-> EV
-    PL -. "meta dos agentes" .-> DS
+    PL["docs/evolucao/PLACAR.md"] -. "meta do agente" .-> AG
 ```
 
 | Parte | Arquivos |
@@ -618,7 +675,8 @@ flowchart TB
 | Calibração | `scripts/calibracao.sh`, `scripts/comparar-calibracao.py`, `audit-rules/calibracao/esperado.json` |
 | Release | `.github/workflows/release.yml`, `scripts/versoes-pacotes.sh` |
 | Agente Sentinel Ciclo | `.claude/agents/sentinel-ciclo.md`, `.github/workflows/auditoria-completa.yml`, `scripts/auditoria-completa.sh` |
-| Memória e metas | `docs/evolucao/` (`PLACAR.md`, `LOG.md`, `calibracao.md`, `precisao.md`, `relatorios/`, `AGENTE.md`) |
+| Memória e metas | `docs/evolucao/` (`PLACAR.md`, `LOG.md`, `estado.json` com o estado entre execuções, `calibracao.md`, `precisao.md`, `relatorios/`, `AGENTE.md`) |
+| Medição | `scripts/benchmark-owasp.py`, `scripts/medir-volta.py`, `scripts/verificar-separacao.py` (treino × validação), `scripts/conferir-numeros.py` (números da documentação) e `scripts/sincronizar-versao.py` (versão única em `audit-dashboard/package.json`, Helm e OpenAPI) |
 
 O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é manual. A calibração pesada do CI roda nesses PRs.
 
@@ -630,10 +688,11 @@ O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é
 |---|---|---|
 | Quarkus 3.40, Hibernate/Panache, JAX-RS | Backend | sim |
 | PostgreSQL 16 | Persistência | sim |
-| React 19, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest | Dashboard | sim |
+| React 19, IBM Carbon, TanStack Query, Zustand, React Router, Vite, Vitest, Playwright | Dashboard | sim |
 | Opengrep (ou Semgrep) | `SemgrepAnalyzer` (regras dos pacotes) | recomendado; sem ele a análise de regras fica de fora |
 | Trivy | `TrivyAnalyzer` (SCA e IaC) | opcional; substitui o SCA interno |
-| Gitleaks | `GitleaksAnalyzer` (segredos e histórico) | opcional; substitui os analisadores internos de segredo |
+| Gitleaks (ou Betterleaks, opt-in) | `GitleaksAnalyzer`, `BetterleaksAnalyzer` (segredos e histórico) | opcional; substitui os analisadores internos de segredo |
+| Joern | `SarifAnalyzer` via `joern-taint` (taint entre arquivos em Java) | opcional; `WITH_JOERN=true` no build |
 | PMD | `PmdAnalyzer` | opcional |
 | ESLint (+ Angular ESLint, html-eslint), Stylelint | `EslintAnalyzer`, `SarifAnalyzer` | opcional (stack web) |
 | SQLFluff, Squawk, Hadolint, Checkov, Spectral, Checkstyle, jscpd, Dependency-Cruiser, njsscan, kube-linter, kube-score | `SarifAnalyzer` via `market-tools` | opcionais; cada uma só roda se instalada |
@@ -660,8 +719,8 @@ O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é
 
 ## 11. Limites deste documento
 
-- Este documento descreve o código até a versão 12.11.0 do dashboard (fases 1 a 6 do plano Sentinel + MCP, mais a faixa do Claude na execução da auditoria). O HTML é gerado deste arquivo por `scripts/gerar-arquitetura-html.py`; edite só o `.md`.
+- Este documento descreve o código até a versão 12.84.0 do dashboard (a versão do produto vem de `audit-dashboard/package.json`). O HTML é gerado deste arquivo por `scripts/gerar-arquitetura-html.py`; edite só o `.md`.
 - Os papéis das classes vêm do nome, do comentário e da leitura dos pontos principais (`AuditOrchestrationService`, `ScoringService`, camadas, dashboard). Classes grandes como `PackLoader` (641 linhas), `ArchitecturePolicyAnalyzer` (534) e `InsightsBuilder` (344) estão descritas pelo comentário de classe, não por leitura linha a linha.
-- A lista de analisadores executados por padrão é a de `AuditOrchestrationService.runAnalyzers` (14 candidatos); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.
+- A lista de analisadores executados por padrão é a de `AuditOrchestrationService.runAnalyzers` (20 candidatos, os mesmos de `AnalyzerCatalog.names()`); o que de fato roda depende das ferramentas instaladas, da stack do sistema e do perfil.
 - Os pesos e o teto do score vêm de `ScoringService` hoje; mudam com o código. Em caso de dúvida vale o código.
 - Este documento não foi gerado automaticamente: se uma classe nascer, mudar de pacote ou sair, ele precisa de atualização manual (o agente Sentinel Ciclo pode propor isso num PR).
