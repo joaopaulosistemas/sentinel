@@ -39,4 +39,4 @@ Formato: `- [ ] ID descrição com caminho`. Caminhos relativos a `audit-api/src
 ## Follow-up — respostas
 
 - [x] T023 DTOs de resposta do pacote `dto` com `@Schema` por campo; `ApiContractCheck.responseGaps` como relatório
-- [ ] T024 descrever os ≈330 campos dos tipos aninhados de serviços devolvidos pelas rotas e mover `responseGaps` para `violations`
+- [x] T024 descrever os tipos de serviços devolvidos pelas rotas e mover a regra de respostas para `violations`

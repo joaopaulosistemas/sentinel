@@ -157,4 +157,11 @@ class ApiContractCheckTest {
     void respostaComTodasAsPropriedadesDescritasNaoAcusa() throws Exception {
         assertEquals(List.of(), checkComResposta("{\"Saida\":{\"properties\":{\"a\":{\"description\":\"x\"}}}}"));
     }
+
+    @Test
+    void violationsTambemCobremAsRespostas() throws Exception {
+        JsonNode doc = new ObjectMapper().readTree("{\"components\":{\"schemas\":{\"Saida\":{\"properties\":{\"a\":{\"type\":\"string\"}}}}},\"paths\":{\"/api/v1/x\":{\"get\":"
+                + op("r", "d", "[\"T\"]", "{\"200\":{\"content\":{\"application/json\":{\"schema\":{\"$ref\":\"#/components/schemas/Saida\"}}}}}", "") + "}}}");
+        assertTrue(ApiContractCheck.violations(doc).contains("resposta Saida: propriedade a sem descrição"));
+    }
 }

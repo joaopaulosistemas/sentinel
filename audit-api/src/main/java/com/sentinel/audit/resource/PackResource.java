@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.pack.PackManifest;
 import com.sentinel.audit.pack.PackRegistry;
@@ -27,15 +28,15 @@ import java.util.Map;
 @Tag(name = "Packs", description = "Pacotes de regras e perfis")
 public class PackResource {
 
-    public record PackInfo(String id, String name, String version, String description, String author,
-                           List<String> languages, boolean enabledByDefault, int semgrepRules, int remediations,
-                           int dedupTopics, int tools, boolean architecture, String integrity) {}
+    public record PackInfo(@Schema(description = "Identificador do pacote.") String id, @Schema(description = "Nome.") String name, @Schema(description = "Versão.") String version, @Schema(description = "O que o pacote cobre.") String description, @Schema(description = "Autor.") String author,
+                           @Schema(description = "Linguagens atendidas.") List<String> languages, @Schema(description = "Ligado quando o perfil não diz nada.") boolean enabledByDefault, @Schema(description = "Quantidade de regras Semgrep.") int semgrepRules, @Schema(description = "Quantidade de orientações de correção.") int remediations,
+                           @Schema(description = "Quantidade de tópicos de deduplicação.") int dedupTopics, @Schema(description = "Quantidade de analisadores declarados.") int tools, @Schema(description = "Verdadeiro quando traz regras de arquitetura.") boolean architecture, @Schema(description = "Situação da integridade do pacote (unsigned quando não há assinatura).") String integrity) {}
 
-    public record ProfileInfo(String id, String name, String description, String extendsId, List<String> packs,
-                              int ruleOverrides, Map<String, Integer> thresholds) {}
+    public record ProfileInfo(@Schema(description = "Identificador do perfil.") String id, @Schema(description = "Nome.") String name, @Schema(description = "Para que serve.") String description, @Schema(description = "Perfil que este estende.") String extendsId, @Schema(description = "Pacotes do perfil.") List<String> packs,
+                              @Schema(description = "Quantas regras o perfil ajusta.") int ruleOverrides, @Schema(description = "Limites do perfil, por nome.") Map<String, Integer> thresholds) {}
 
-    public record PacksResponse(List<PackInfo> packs, List<ProfileInfo> profiles, Map<String, List<String>> rejected,
-                                List<String> warnings, Instant loadedAt) {}
+    public record PacksResponse(@Schema(description = "Pacotes carregados.") List<PackInfo> packs, @Schema(description = "Perfis carregados.") List<ProfileInfo> profiles, @Schema(description = "Pacotes recusados e os motivos.") Map<String, List<String>> rejected,
+                                @Schema(description = "Avisos do carregamento.") List<String> warnings, @Schema(description = "Quando os pacotes foram carregados.") Instant loadedAt) {}
 
     @Inject
     PackRegistry registry;

@@ -1,5 +1,6 @@
 package com.sentinel.audit.settings;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -23,12 +24,12 @@ public class SettingsService {
     static final String MASK = "********";
     static final String SOURCE_DB = "tela";
 
-    public record SettingView(String key, String section, String group, String label, String help, String kind,
-                              String def, List<SettingDef.Option> options, String unit, int min, int max,
-                              boolean editable, boolean secret, String value, String savedValue, String source,
-                              boolean pendingRestart) {}
+    public record SettingView(@Schema(description = "Chave da configuração.") String key, @Schema(description = "Seção.") String section, @Schema(description = "Grupo.") String group, @Schema(description = "Nome exibido.") String label, @Schema(description = "Ajuda.") String help, @Schema(description = "Tipo do valor.") String kind,
+                              @Schema(description = "Valor padrão.") String def, @Schema(description = "Opções, quando o valor é uma escolha.") List<SettingDef.Option> options, @Schema(description = "Unidade.") String unit, @Schema(description = "Mínimo.") int min, @Schema(description = "Máximo.") int max,
+                              @Schema(description = "Se pode ser editada na tela.") boolean editable, @Schema(description = "Se o valor é secreto e não é mostrado.") boolean secret, @Schema(description = "Valor em uso.") String value, @Schema(description = "Valor salvo.") String savedValue, @Schema(description = "De onde vem o valor em uso (padrão, ambiente ou o que foi salvo na tela).") String source,
+                              @Schema(description = "Salvo, mas só vale após reiniciar.") boolean pendingRestart) {}
 
-    public record SettingsView(List<SettingView> settings, boolean restartRequired) {}
+    public record SettingsView(@Schema(description = "Configurações.") List<SettingView> settings, @Schema(description = "Há alteração que só vale após reiniciar.") boolean restartRequired) {}
 
     @Inject
     EntityManager em;

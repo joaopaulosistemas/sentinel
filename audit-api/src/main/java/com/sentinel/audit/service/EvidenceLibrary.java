@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +32,7 @@ public class EvidenceLibrary {
     long maxFileBytes = EvidenceStager.MAX_FILE_BYTES;
     int maxFiles = EvidenceStager.MAX_FILES;
 
-    public record EvidenceFile(String name, long sizeBytes, Instant modifiedAt) { }
+    public record EvidenceFile(@Schema(description = "Nome do arquivo.") String name, @Schema(description = "Tamanho, em bytes.") long sizeBytes, @Schema(description = "Última alteração.") Instant modifiedAt) { }
 
     public boolean enabled() {
         return evidenceDir.isPresent() && !evidenceDir.get().isBlank();

@@ -1306,6 +1306,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** compilação e testes Java; o CI prova.
 
+## Dashboard 12.93.0 — OpenAPI: descrição de todos os tipos de resposta (spec 002, T024)
+
+- **Spec:** `specs/002-documentar-api-openapi` (follow-up; T024).
+- **Mudança (só documentação do contrato):** `@Schema(description)` nos ≈50 tipos de resposta que faltavam (mapa do projeto, dívida técnica e roadmap da auditoria completa, configurações, pacotes e perfis, guia, ajuste do motor, revisão do Claude e suas métricas, pedidos pendentes, MCP, evidências, verificações de repositório e de pasta, laboratório de regras). Os significados vieram do Javadoc e do código (por exemplo, `review.docs/team/ai` do guia vêm do comentário do `stacks.yml`, e as taxas de métrica são "tratadas ÷ decididas"); onde o código não dizia mais que o nome, a descrição só diz o que o nome diz. A resposta 200 do laboratório de regras agora aponta para o tipo real.
+- **Teste:** `ApiContractCheck.violations` passa a incluir as respostas: toda propriedade de resposta 2xx JSON tem descrição, e o CI barra regressão.
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** compilação e testes Java; o CI prova (e lista qualquer propriedade que tenha sobrado).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

@@ -1,5 +1,6 @@
 package com.sentinel.audit.actions;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import jakarta.annotation.security.PermitAll;
 import com.sentinel.audit.service.SystemCatalog;
 import jakarta.inject.Inject;
@@ -30,8 +31,8 @@ public class PendingActionResource {
     private static final int RECENT_LIMIT = 30;
 
 
-    public record PendingDto(Long id, String kind, String summary, String status, String createdAt, String expiresAt,
-                             String decidedAt, String resultNote, Long auditRunId) {}
+    public record PendingDto(@Schema(description = "Identificador do pedido.") Long id, @Schema(description = "Tipo de ação pedida pelo Claude.") String kind, @Schema(description = "O que o Claude quer fazer.") String summary, @Schema(description = "Situação do pedido.") String status, @Schema(description = "Quando foi criado.") String createdAt, @Schema(description = "Quando deixa de valer.") String expiresAt,
+                             @Schema(description = "Quando foi aprovado ou recusado.") String decidedAt, @Schema(description = "Observação do resultado da ação.") String resultNote, @Schema(description = "Auditoria associada ao pedido, quando há.") Long auditRunId) {}
 
     @Inject
     SystemCatalog systemCatalog;

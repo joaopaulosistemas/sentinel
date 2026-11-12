@@ -31,7 +31,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Tag(name = "Systems", description = "Gerenciamento de sistemas auditados")
 public class SystemEvidenceResource {
 
-    public record EvidenceList(boolean enabled, List<EvidenceLibrary.EvidenceFile> files) { }
+    public record EvidenceList(@Schema(description = "Se a biblioteca de evidências está ligada.") boolean enabled, @Schema(description = "Arquivos de evidência do sistema.") List<EvidenceLibrary.EvidenceFile> files) { }
 
     @Inject
     SystemCatalog systemCatalog;

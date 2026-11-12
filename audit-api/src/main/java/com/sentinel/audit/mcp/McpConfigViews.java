@@ -1,5 +1,6 @@
 package com.sentinel.audit.mcp;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
@@ -11,10 +12,10 @@ import java.util.List;
 @ApplicationScoped
 public class McpConfigViews {
 
-    public record ToolState(String name, String description, boolean writes, boolean enabled) {}
+    public record ToolState(@Schema(description = "Ferramenta MCP.") String name, @Schema(description = "O que faz.") String description, @Schema(description = "Verdadeiro se altera dados.") boolean writes, @Schema(description = "Liberada para o sistema.") boolean enabled) {}
 
-    public record McpConfigResponse(boolean enabled, boolean hasKey, String keyPrefix, String keyCreatedAt,
-                                    DataLevel dataLevel, List<ToolState> tools) {}
+    public record McpConfigResponse(@Schema(description = "Acesso MCP ligado.") boolean enabled, @Schema(description = "Há chave gerada.") boolean hasKey, @Schema(description = "Começo da chave.") String keyPrefix, @Schema(description = "Quando a chave foi gerada.") String keyCreatedAt,
+                                    @Schema(description = "Nível de dados.") DataLevel dataLevel, @Schema(description = "Estado das ferramentas.") List<ToolState> tools) {}
 
     @Inject
     McpGateService gate;

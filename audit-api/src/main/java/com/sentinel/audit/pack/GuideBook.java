@@ -1,5 +1,6 @@
 package com.sentinel.audit.pack;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -17,9 +18,9 @@ import org.jboss.logging.Logger;
  */
 public final class GuideBook {
 
-    public record Practice(String title, String doIt, String avoid) {}
+    public record Practice(@Schema(description = "Título.") String title, @Schema(description = "O que fazer.") String doIt, @Schema(description = "O que evitar.") String avoid) {}
 
-    public record Review(boolean docs, boolean team, boolean ai) {}
+    public record Review(@Schema(description = "Práticas conferidas na documentação oficial.") boolean docs, @Schema(description = "Revisão da equipe feita.") boolean team, @Schema(description = "Testado com a IA numa tarefa real.") boolean ai) {}
 
     public record Stack(String id, String name, String kind, String summary, List<String> languages, List<String> own,
                         List<String> also, List<String> exclude, List<String> tools, List<String> gaps, List<String> commands,

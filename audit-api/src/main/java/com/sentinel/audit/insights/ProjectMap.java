@@ -1,5 +1,6 @@
 package com.sentinel.audit.insights;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
 
@@ -8,28 +9,28 @@ import java.util.Map;
  * Tudo aqui é fato observado; nada é inferido por heurística de "qualidade".
  */
 public record ProjectMap(
-        Map<String, Integer> languages,
-        List<String> buildTools,
-        List<String> frameworks,
-        List<String> entryPoints,
-        List<String> ciConfigs,
-        List<String> dockerfiles,
-        List<String> iacFiles,
-        List<String> docs,
-        List<String> lockfiles,
-        int sourceFiles,
-        int testFiles,
-        boolean hasReadme,
-        int readmeLines,
-        boolean hasGitignore,
-        boolean hasLicense,
-        List<String> scripts,
-        List<String> committedEnvFiles,
-        List<String> committedKeyFiles,
-        List<String> committedArtifactDirs,
-        List<String> packageJsonWithoutLock,
-        List<String> dockerfilesWithoutIgnore,
-        boolean truncated) {
+        @Schema(description = "Arquivos de código por linguagem.") Map<String, Integer> languages,
+        @Schema(description = "Ferramentas de build encontradas.") List<String> buildTools,
+        @Schema(description = "Frameworks encontrados.") List<String> frameworks,
+        @Schema(description = "Pontos de entrada encontrados.") List<String> entryPoints,
+        @Schema(description = "Arquivos de CI.") List<String> ciConfigs,
+        @Schema(description = "Dockerfiles.") List<String> dockerfiles,
+        @Schema(description = "Arquivos de infraestrutura como código.") List<String> iacFiles,
+        @Schema(description = "Documentação encontrada.") List<String> docs,
+        @Schema(description = "Arquivos de trava de dependências.") List<String> lockfiles,
+        @Schema(description = "Arquivos de código-fonte.") int sourceFiles,
+        @Schema(description = "Arquivos de teste.") int testFiles,
+        @Schema(description = "Tem README.") boolean hasReadme,
+        @Schema(description = "Linhas do README.") int readmeLines,
+        @Schema(description = "Tem .gitignore.") boolean hasGitignore,
+        @Schema(description = "Tem arquivo de licença.") boolean hasLicense,
+        @Schema(description = "Scripts encontrados.") List<String> scripts,
+        @Schema(description = "Arquivos .env versionados.") List<String> committedEnvFiles,
+        @Schema(description = "Arquivos de chave versionados.") List<String> committedKeyFiles,
+        @Schema(description = "Pastas de artefatos de build versionadas.") List<String> committedArtifactDirs,
+        @Schema(description = "package.json sem arquivo de trava.") List<String> packageJsonWithoutLock,
+        @Schema(description = "Dockerfiles sem .dockerignore.") List<String> dockerfilesWithoutIgnore,
+        @Schema(description = "Verdadeiro quando a lista foi cortada por tamanho.") boolean truncated) {
 
     /** Proporção de arquivos de teste sobre o total de arquivos de código (0 se não há código). */
     public double testRatio() {

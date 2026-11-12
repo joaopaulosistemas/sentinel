@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.sentinel.audit.model.LocalSnapshot;
 
 import org.jboss.logging.Logger;
@@ -52,8 +53,8 @@ public final class LocalSource {
     static final int DEFAULT_HISTORY_DEPTH = 100;
 
     /** Resultado da verificação de uma pasta, mostrado antes de salvar o sistema. */
-    public record PathCheck(boolean ok, String message, String defaultBranch, Boolean branchFound,
-                            Long fileCount, Long uncommittedFiles) {
+    public record PathCheck(@Schema(description = "Pasta utilizável.") boolean ok, @Schema(description = "Explicação do resultado.") String message, @Schema(description = "Branch padrão.") String defaultBranch, @Schema(description = "A branch pedida existe.") Boolean branchFound,
+                            @Schema(description = "Arquivos na pasta.") Long fileCount, @Schema(description = "Arquivos com alteração não commitada.") Long uncommittedFiles) {
         static PathCheck fail(String message) {
             return new PathCheck(false, message, null, null, null, null);
         }
