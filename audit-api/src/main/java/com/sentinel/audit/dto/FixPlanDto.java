@@ -1,5 +1,6 @@
 package com.sentinel.audit.dto;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Severity;
 
@@ -13,7 +14,7 @@ import java.util.List;
  * @param criticalCount        quantidade de achados críticos ativos
  * @param items                os problemas de maior ganho (no máximo 15)
  */
-public record FixPlanDto(double scoreNow, double scoreIfCriticalFixed, long criticalCount, List<Item> items) {
+public record FixPlanDto(@Schema(description = "Nota geral da auditoria, recalculada com os mesmos achados ativos.") double scoreNow, @Schema(description = "Nota estimada se todos os críticos fossem corrigidos.") double scoreIfCriticalFixed, @Schema(description = "Quantidade de achados críticos ativos.") long criticalCount, @Schema(description = "Os problemas de maior ganho (no máximo 15).") List<Item> items) {
 
     /**
      * @param scoreGain quanto a nota geral sobe se todas as ocorrências deste problema forem corrigidas

@@ -1,5 +1,6 @@
 package com.sentinel.audit.dto;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.List;
 
 /**
@@ -8,7 +9,7 @@ import java.util.List;
  * @param total        quantidade de achados que atendem aos filtros (antes da paginação)
  * @param bySystem     quantidade por sistema, para o resumo no topo da tela
  */
-public record FindingsOverviewDto(long total, List<SystemCount> bySystem, List<Item> items) {
+public record FindingsOverviewDto(@Schema(description = "Quantidade de achados que atendem aos filtros, antes da paginação.") long total, @Schema(description = "Quantidade por sistema, para o resumo no topo da tela.") List<SystemCount> bySystem, @Schema(description = "Achados da página pedida.") List<Item> items) {
 
     /** @param stack stack do sistema; critical/high contam entre os achados que passam pelos filtros; auditedAt é a data da auditoria usada */
     public record SystemCount(Long systemId, String systemName, Long auditId, long count,
