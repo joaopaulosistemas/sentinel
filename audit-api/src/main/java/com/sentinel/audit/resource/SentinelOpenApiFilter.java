@@ -19,11 +19,11 @@ import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
  */
 public class SentinelOpenApiFilter implements OASFilter {
 
-    static final String API_KEY = "ApiKeyHeader";
-    static final String BEARER = "BearerKey";
-    static final String MCP_KEY = "McpSystemKey";
-    static final String API_ERROR = "ApiError";
-    static final String API_KEY_ERROR = "ApiKeyError";
+    static final String SCHEME_HEADER = "ApiKeyHeader";
+    static final String SCHEME_BEARER = "BearerKey";
+    static final String SCHEME_MCP = "McpSystemKey";
+    static final String SCHEMA_ERROR = "ApiError";
+    static final String SCHEMA_AUTH_ERROR = "ApiKeyError";
 
     private static final String JSON = "application/json";
     private static final String MCP_PREFIX = "mcp/";
@@ -35,8 +35,8 @@ public class SentinelOpenApiFilter implements OASFilter {
         }
         addSecuritySchemes(openAPI);
         addErrorSchemas(openAPI);
-        openAPI.addSecurityRequirement(requirement(API_KEY));
-        openAPI.addSecurityRequirement(requirement(BEARER));
+        openAPI.addSecurityRequirement(requirement(SCHEME_HEADER));
+        openAPI.addSecurityRequirement(requirement(SCHEME_BEARER));
         if (openAPI.getPaths() == null || openAPI.getPaths().getPathItems() == null) {
             return;
         }
@@ -51,24 +51,24 @@ public class SentinelOpenApiFilter implements OASFilter {
     }
 
     private static void addSecuritySchemes(OpenAPI openAPI) {
-        openAPI.getComponents().addSecurityScheme(API_KEY, OASFactory.createSecurityScheme()
+        openAPI.getComponents().addSecurityScheme(SCHEME_HEADER, OASFactory.createSecurityScheme()
                 .type(SecurityScheme.Type.APIKEY).in(SecurityScheme.In.HEADER).name("X-API-Key")
-                .description("Chave da API (variável API_KEY do servidor). Sem chave configurada a API fica aberta."));
-        openAPI.getComponents().addSecurityScheme(BEARER, OASFactory.createSecurityScheme()
+                .description("Chave da API (variável SCHEME_HEADER do servidor). Sem chave configurada a API fica aberta."));
+        openAPI.getComponents().addSecurityScheme(SCHEME_BEARER, OASFactory.createSecurityScheme()
                 .type(SecurityScheme.Type.HTTP).scheme("bearer")
                 .description("A mesma chave da API, enviada como Authorization: Bearer <chave>."));
-        openAPI.getComponents().addSecurityScheme(MCP_KEY, OASFactory.createSecurityScheme()
+        openAPI.getComponents().addSecurityScheme(SCHEME_MCP, OASFactory.createSecurityScheme()
                 .type(SecurityScheme.Type.HTTP).scheme("bearer")
                 .description("Chave de acesso MCP do sistema (gerada na aba MCP do sistema); enxerga só esse sistema."));
     }
 
     private static void addErrorSchemas(OpenAPI openAPI) {
-        openAPI.getComponents().addSchema(API_ERROR, OASFactory.createSchema()
+        openAPI.getComponents().addSchema(SCHEMA_ERROR, OASFactory.createSchema()
                 .addType(Schema.SchemaType.OBJECT)
                 .description("Erro padrão da API (400, 404, 409...): a mensagem em português.")
                 .addProperty("message", OASFactory.createSchema().addType(Schema.SchemaType.STRING)
                         .example("Auditoria não encontrada: 99")));
-        openAPI.getComponents().addSchema(API_KEY_ERROR, OASFactory.createSchema()
+        openAPI.getComponents().addSchema(SCHEMA_AUTH_ERROR, OASFactory.createSchema()
                 .addType(Schema.SchemaType.OBJECT)
                 .description("Erro no formato {\"error\": ...}: o 401 de chave ausente ou inválida e as rotas que respondem assim (webhooks, laboratório de regras, CLAUDE.md).")
                 .addProperty("error", OASFactory.createSchema().addType(Schema.SchemaType.STRING)
@@ -79,14 +79,14 @@ public class SentinelOpenApiFilter implements OASFilter {
     private static void applySecurity(String path, Operation operation) {
         String normalized = path.replaceAll("^/+", "");
         if (normalized.startsWith(MCP_PREFIX)) {
-            operation.setSecurity(List.of(requirement(MCP_KEY)));
+            operation.setSecurity(List.of(requirement(SCHEME_MCP)));
         } else if (ApiKeyFilter.isOpenPath(path)) {
             operation.setSecurity(List.of());
         } else if (operation.getResponses() != null && !operation.getResponses().getAPIResponses().containsKey("401")) {
             operation.getResponses().addAPIResponse("401", OASFactory.createAPIResponse()
                     .description("Chave da API ausente ou inválida (só quando a API tem chave configurada).")
                     .content(OASFactory.createContent().addMediaType(JSON, OASFactory.createMediaType()
-                            .schema(OASFactory.createSchema().ref(API_KEY_ERROR)))));
+                            .schema(OASFactory.createSchema().ref(SCHEMA_AUTH_ERROR)))));
         }
     }
 
@@ -126,7 +126,7 @@ public class SentinelOpenApiFilter implements OASFilter {
 
     private static org.eclipse.microprofile.openapi.models.media.Content errorContent() {
         return OASFactory.createContent().addMediaType(JSON, OASFactory.createMediaType()
-                .schema(OASFactory.createSchema().ref(API_ERROR)));
+                .schema(OASFactory.createSchema().ref(SCHEMA_ERROR)));
     }
 
     /** Descrição dos parâmetros pelo nome, para os que as anotações não descreveram. */
