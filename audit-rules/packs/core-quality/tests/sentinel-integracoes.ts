@@ -18,6 +18,18 @@ export async function chamadas(url: string): Promise<void> {
 
   // ok: sentinel-int-axios-sem-timeout
   const b = axios.create({ baseURL: url, timeout: 5000 });
+
+  // ruleid: sentinel-int-axios-sem-timeout
+  const r1 = await axios.get(url);
+
+  // ruleid: sentinel-int-axios-sem-timeout
+  await axios.post(url, { a: 1 });
+
+  // ok: sentinel-int-axios-sem-timeout
+  await axios.get(url, { timeout: 5000 });
+
+  // ok: sentinel-int-axios-sem-timeout
+  await b.get(url);
 }
 
 // ruleid: sentinel-int-http-sem-tls

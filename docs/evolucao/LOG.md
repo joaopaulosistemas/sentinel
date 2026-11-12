@@ -1238,3 +1238,10 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Falsos positivos fechados:** `open-redirect` e `open-redirect-spring` não marcam destino validado com `startsWith("/")` nem expressão condicional; `zip-slip` e `servlet-path-traversal` aceitam `getCanonicalFile()` seguido de `startsWith` (o uso do caminho canônico sem a conferência continua sendo achado).
 - **Testes:** casos `ruleid`/`ok` novos em `sentinel-java-extras.java`, `sentinel-owasp-api.java`, `sentinel-taint.java` e `sentinel-dockerfile.dockerfile`.
 - **Limite:** o verificador do `sentinel-alvo` roda o motor sobre as regras, não a API inteira; as demais regras ainda não têm caso lá.
+
+## Regras: timeout do HttpClient do Apache e do axios direto (`core-quality` 1.1.1)
+
+- **Por quê:** o `sentinel-alvo` (104 regras com caso) achou duas lacunas nas regras de timeout: `int-httpclient-sem-timeout` só olhava o `HttpClient` do JDK, e `int-axios-sem-timeout` só `axios.create`.
+- **Mudança:** a primeira passa a pegar `HttpClients.createDefault()` e `HttpClients.custom()`/`HttpClientBuilder.create()` sem `setDefaultRequestConfig`; a segunda, `axios.get/delete/head(url)` e `axios.post/put/patch(url, dados)` sem configuração.
+- **Testes:** `ruleid`/`ok` novos em `sentinel-integracoes.java` e `.ts`; `PackToolTest` com a versão 1.1.1.
+- **Limite:** um `axios.defaults.timeout` definido em outro arquivo não é visto; nesse caso o achado deve ser suprimido.
