@@ -1,113 +1,113 @@
-# Implementation Plan: [FEATURE]
+# Plano de implementação: Sentinel Premium 1 — Medição e prova
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Ramo**: `spec/003-medicao-e-prova` (specs) → PRs de implementação por fatia | **Data**: 2026-11-12 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+## Resumo
 
-**Note**: This template is filled in by the `/speckit-plan` command; its definition describes the execution workflow.
+A régua do Sentinel Premium vira uma ferramenta única, `scripts/medicao.py` (Python, biblioteca padrão), que consolida as medidas já existentes (OWASP Benchmark, recall por gabarito, precisão revisada) num relatório com intervalos e "sem medida", compara antes × depois com critérios registrados antes (veredito fica / sai / inconclusivo) e administra o conjunto **reservado**. Os dados vivem em JSON versionado em `audit-rules/calibracao/` e os relatórios em `docs/evolucao/medicao/`. Não muda Java, banco nem painel. Detalhes de escolha em [research.md](research.md).
 
-## Summary
+## Contexto técnico
 
-[Extract from feature spec: primary requirement + technical approach from research]
+**Linguagem/versão**: Python 3 (a do runner do CI), somente biblioteca padrão; scripts executados com `python3 -I`.
+**Dependências principais**: nenhuma nova. Reaproveita `git`, os scripts existentes e os formatos de gabarito e de medida.
+**Armazenamento**: arquivos JSON e Markdown no repositório (ver [data-model.md](data-model.md)).
+**Testes**: `unittest` em `scripts/test_medicao.py` e `scripts/test_verificar_separacao.py`, com dados de teste em `scripts/fixtures/medicao/`; rodam aqui e no job de testes dos scripts.
+**Plataforma-alvo**: runner do GitHub Actions (medição com clone de repositórios) e esta sessão (lógica e testes).
+**Tipo de projeto**: ferramenta de linha de comando dentro do repositório (sem serviço).
+**Metas de desempenho**: gerar um relatório a partir de medidas já coletadas em menos de 1 minuto; teste unitário completo em menos de 30 s.
+**Restrições**: determinístico (mesmas entradas, mesma saída); sem rede nos testes; sem executar código auditado; compatível com os scripts atuais (nenhum é alterado de forma incompatível).
+**Escala/escopo**: dezenas de repositórios por conjunto, milhares de achados por repositório.
 
-## Technical Context
+## Verificação da constituição
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
+*Portão: passa antes da Fase 0 e foi reavaliado depois do desenho.*
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
+| Princípio | Como este plano cumpre |
+|---|---|
+| I. Motor de regras é a fonte da verdade | Mede o motor; não cria regra nem altera resultados. O Claude só lê e sugere. |
+| II. Teste junto com o código | Cada subcomando nasce com teste de unidade antes da implementação da fatia; critérios SC-002 a SC-004 viram testes (ver tabela abaixo). |
+| III. Treino e validação separados | Estende a separação com o grupo reservado e novas checagens no mesmo script que já roda no CI. |
+| IV. Honestidade nos números | Todo relatório traz Verificado / NÃO verificado, "sem medida" e intervalos; correções com histórico. |
+| V. Plug-and-play | Repositório novo entra por dado (`repositorios.json`, gabarito), sem compilar. |
+| VI. Escopo fixo | `pilhas` só aceita as do escopo da constituição. |
+| VII. Código auditado é dado | Só análise estática; nada é executado; nada de empregador entra (Q1 da spec). |
+| VIII. Roda onde o João roda | Python no CI e aqui; nada exigido na máquina dele. Cada critério tem job (tabela abaixo). |
+| IX. Mudanças pequenas e reversíveis | Seis fatias, uma por PR. Mexer em `.github/` e escolher os repositórios reservados **pedem autorização do João** e estão marcados. |
 
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
+**Complexity Tracking**: nenhuma violação a justificar.
 
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
+## Qual job do CI prova cada critério
 
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
+| Critério | Prova | Onde |
+|---|---|---|
+| SC-002 (repetição idêntica) | `test_medicao.py` roda o relatório duas vezes e compara byte a byte | job "API, CLI e pacotes de regras" (linha de testes de scripts) |
+| SC-003 (total e intervalo, aviso de amostra pequena) | testes de formatação do relatório | idem |
+| SC-004 (3 mudanças de teste, veredito certo) | teste com 3 casos sintéticos (melhora, piora, sem efeito) | idem |
+| SC-005, SC-006 (reservado) | `verificar-separacao.py` estendido + `test_verificar_separacao.py` | job "Separação treino e validação" |
+| SC-001, SC-007, SC-009 | workflow de medição (`medicao.yml`, **novo, exige autorização**) publica `linha-de-base` como artefato; CI existente continua verde | job novo + jobs atuais |
+| SC-008 | `medicao.py revisao` sobre `revisao-humana.md` preenchido | manual (depende do João) |
 
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+## Estrutura do projeto
 
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]
-
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
-
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
-
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
-
-## Constitution Check
-
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
-
-[Gates determined based on constitution file]
-
-## Project Structure
-
-### Documentation (this feature)
-
-```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit-plan command output)
-├── research.md          # Phase 0 output (/speckit-plan command)
-├── data-model.md        # Phase 1 output (/speckit-plan command)
-├── quickstart.md        # Phase 1 output (/speckit-plan command)
-├── contracts/           # Phase 1 output (/speckit-plan command)
-└── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
-```
-
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+### Documentação desta funcionalidade
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+specs/003-medicao-e-prova/
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+├── contracts/
+│   ├── cli.md          # subcomandos, argumentos, códigos de saída
+│   └── arquivos.md     # formatos dos arquivos de dados e relatórios
+└── tasks.md            # criado por /speckit-tasks
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+### Código-fonte (raiz do repositório)
 
-## Complexity Tracking
+```text
+scripts/
+├── medicao.py                      # NOVO: relatorio | comparar | reservado | amostra | revisao | lacunas
+├── test_medicao.py                 # NOVO
+├── test_verificar_separacao.py     # NOVO
+├── verificar-separacao.py          # ESTENDIDO: checagens 5 a 8 (reservado)
+├── auditoria-completa.sh           # ESTENDIDO: duração e arquivos no resumo
+└── fixtures/medicao/               # NOVO: medidas e gabaritos de teste
 
-> **Fill ONLY if Constitution Check has violations that must be justified**
+audit-rules/calibracao/
+├── conjuntos.json                  # ESTENDIDO: grupo "reservado"
+├── repositorios.json               # NOVO: commit, origem, pilhas, grupo
+├── codigo-real.json                # NOVO: lista de projetos reais para precisão
+├── propostas/                      # NOVO: critérios por mudança
+├── gabaritos/reservado/            # NOVO: só com fonte pública
+└── reservado/consultas.json        # NOVO: registro só-acrescenta
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+docs/evolucao/
+├── medicao/linha-de-base.{json,md} # NOVO (gerado)
+├── estado.json                     # ESTENDIDO: hash do reservado
+└── LOG.md                          # entrada por PR
+
+.github/workflows/medicao.yml       # NOVO (exige autorização do João)
+```
+
+**Decisão de estrutura**: um único módulo Python para a lógica (importável nos testes por caminho) e os dados ao lado dos que já existem em `audit-rules/calibracao/`.
+
+## Fatias (um PR cada)
+
+| Fatia | Entrega | Histórias | Toca `.github/`? |
+|---|---|---|---|
+| A | `medicao.py` com `relatorio` e `lacunas` sobre medidas existentes, estatística e `repositorios.json` | US1, US5 | não |
+| B | `comparar` + `propostas/` + veredito, com os 3 casos de teste | US2 | não |
+| C | Grupo `reservado`, checagens 5 a 8, registro de consultas (a **lista dos repositórios é aprovada pelo João**) | US3 | não |
+| D | `auditoria-completa.sh` com duração/arquivos e `medicao.yml` para medir treino, validação e o reservado uma vez (marco 0) e gerar a **linha de base** | US1, SC-001, SC-007 | **sim** |
+| E | `amostra` e `revisao` (precisão em código real e concordância), `codigo-real.json` | US4 | não |
+| F | Fechamento: LOG, PLACAR, documentação e spec atualizada | todas | não |
+
+Ordem: A → B → C → D → E → F. A, B e C podem ser desenvolvidas aqui; D só se prova no GitHub; E depende do João para os vereditos.
+
+## Riscos e o que NÃO se consegue verificar aqui
+
+- Medição real (clonar repositórios, rodar a auditoria completa) só ocorre no GitHub.
+- O CI não detecta leitura do reservado por pessoa ou agente fora do que fica versionado.
+- SC-008 só fecha quando o João (e depois o revisor externo, spec 008) preencher vereditos.
+- O reservado inicial precisa de gabarito de fonte pública; se um candidato não tiver, ele não entra.
