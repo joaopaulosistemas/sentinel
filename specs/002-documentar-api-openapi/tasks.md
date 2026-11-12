@@ -31,7 +31,7 @@ Formato: `- [ ] ID descrição com caminho`. Caminhos relativos a `audit-api/src
 
 ## PR D — CI e docs (pede autorização: toca `.github/`)
 
-- [ ] T019 [US5] `.github/workflows/ci.yml`: publicar o OpenAPI do build como artefato e validar a estrutura
-- [ ] T020 `docs/referencia/auditoria-e-api.md` e `docs/guia/instalacao.md`: onde está o arquivo gerado
+- [x] T019 [US5] `.github/workflows/ci.yml`: publicar o OpenAPI do build como artefato e validar a estrutura
+- [x] T020 `docs/referencia/auditoria-e-api.md` e `docs/guia/instalacao.md`: onde está o arquivo gerado
 - [ ] T021 LOG, versão, PR D, CI verde, merge com autorização
 - [ ] T022 (manual, do João) Abrir `/swagger-ui` em modo dev com chave ligada, clicar em Authorize, chamar uma rota protegida e ver 200 (SC-005)

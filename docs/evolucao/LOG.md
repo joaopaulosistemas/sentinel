@@ -1278,6 +1278,17 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** compilação e testes Java (Maven sem acesso ao Maven Central aqui); o CI prova.
 
+## Dashboard 12.90.0 — OpenAPI publicado e validado pelo CI (spec 002, PR D)
+
+- **Spec:** `specs/002-documentar-api-openapi` (história 5; tarefas T019–T021). Mudança em `.github/workflows/ci.yml` autorizada pelo João.
+- **Por quê:** o documento OpenAPI só existia dentro do teste; ninguém podia baixar o contrato de uma versão nem saber se a estrutura estava válida.
+- **Mudança:**
+  - `OpenApiContractIntegrationTest` grava o documento em `audit-api/target/openapi/openapi.json`.
+  - Job de integração: roda `scripts/test_validar_openapi.py`, valida com `scripts/validar-openapi.py` (versão 3.x, info, rotas, `operationId` único, respostas, referências) e publica o artefato `openapi`.
+  - Docs: `docs/referencia/auditoria-e-api.md` e `docs/guia/instalacao.md` dizem onde está o arquivo.
+- **Verificado:** testes do validador (6) e YAML do workflow lido; `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** compilação Java e a execução dos novos passos do job (o CI prova); o Swagger UI não foi aberto em navegador (T022, do João).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

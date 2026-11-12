@@ -29,7 +29,7 @@ docker compose up -d --build
    ```bash
    mvn quarkus:dev -s settings-local.xml -f audit-api/pom.xml
    ```
-   Pronto quando aparecer `Listening on: http://localhost:8080`. O Swagger fica em http://localhost:8080/swagger-ui (só em modo dev).
+   Pronto quando aparecer `Listening on: http://localhost:8080`. O Swagger fica em http://localhost:8080/swagger-ui (só em modo dev). O `openapi.json` de cada versão está no artefato `openapi` da execução do CI.
 
 
 Variáveis úteis (todas opcionais em dev):
