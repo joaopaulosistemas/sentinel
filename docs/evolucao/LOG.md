@@ -1255,6 +1255,18 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** compilação e testes Java (Maven sem acesso ao Maven Central aqui); o CI prova. O Swagger UI não foi aberto num navegador.
 
+## Dashboard 12.88.0 — OpenAPI: descrição, respostas e parâmetros de todas as rotas (spec 002, PR B)
+
+- **Spec:** `specs/002-documentar-api-openapi` (história 1; tarefas T009–T014).
+- **Por quê:** 22 das 70 rotas tinham só resumo; as que devolvem `Response` não declaravam resposta nem tipo de mídia; parâmetros e erros 400/404 não estavam descritos.
+- **Mudança (só documentação do contrato; nenhuma rota muda):**
+  - `@Operation(description)` nas 22 rotas que não tinham.
+  - `@APIResponse` nas 19 rotas que devolvem `Response` (códigos e tipos de mídia lidos no código: 202 da criação e do cancelamento, 409, 204, 201, CSV/PDF/HTML, SBOM, webhooks, laboratório de regras com 400/422/429/503, `X-Total-Count`).
+  - `SentinelOpenApiFilter`: 404 com formato `ApiError` em rota protegida com parâmetro de caminho, 400 com `ApiError` em rota com corpo, conteúdo nos 400/404/409 anotados sem corpo, e descrição dos parâmetros pelo nome.
+  - `ApiContractCheck` (teste) concentra as regras do contrato; `ApiContractCheckTest` prova cada uma com documentos sintéticos; `OpenApiContractIntegrationTest` passa a usá-lo e confere que o 404 documentado é o que a API devolve (GET com `{id}` inexistente).
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado localmente:** compilação e testes Java (Maven sem acesso ao Maven Central aqui); o CI prova. Algumas rotas respondem erros em `{"error":...}` em vez de `ApiError` e estão anotadas assim; o Swagger UI não foi aberto num navegador.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

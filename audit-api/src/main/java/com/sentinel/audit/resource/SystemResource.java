@@ -21,6 +21,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
@@ -67,6 +70,8 @@ public class SystemResource {
     @POST
     @Transactional
     @Operation(summary = "Criar sistema", description = "Cadastra um novo sistema para auditoria")
+    @APIResponse(responseCode = "201", description = "Sistema criado",
+                content = {@Content(mediaType = "application/json", schema = @Schema(implementation = SystemSummaryResponse.class))})
     public Response createSystem(@Valid CreateSystemRequest request) {
         AuditedSystem system = new AuditedSystem();
         writer.apply(system, request, true);
@@ -105,6 +110,7 @@ public class SystemResource {
     @Path("/{id}")
     @Transactional
     @Operation(summary = "Remover sistema", description = "Remove um sistema e todas as suas auditorias")
+    @APIResponse(responseCode = "204", description = "Sistema removido")
     public Response deleteSystem(@PathParam("id") Long id) {
         AuditedSystem system = systemCatalog.require(id);
         cleanup.purgeRelated(id);

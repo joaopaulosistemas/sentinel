@@ -72,7 +72,8 @@ public class SystemSourceResource {
     /** Se a origem "pasta local" está ligada neste servidor (há uma raiz configurada). */
     @GET
     @Path("/local-source")
-    @Operation(summary = "Origem pasta local ligada?")
+    @Operation(summary = "Origem pasta local ligada?",
+            description = "Informa se o servidor está com a origem por pasta local habilitada.")
     public Map<String, Boolean> localSource() {
         return Map.of("enabled", ingestionService.localSourceEnabled());
     }

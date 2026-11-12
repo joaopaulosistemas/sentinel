@@ -59,7 +59,8 @@ public class ClaudeReviewResource {
     ReviewService service;
 
     @GET
-    @Operation(summary = "Sugestões e regras propostas do sistema")
+    @Operation(summary = "Sugestões e regras propostas do sistema",
+            description = "Lista as sugestões feitas pelo Claude para o sistema e as regras que ele propôs, com o estado de cada uma.")
     public ReviewResponse get(@PathParam("id") Long id) {
         requireSystem(id);
         return response(id);
@@ -67,7 +68,8 @@ public class ClaudeReviewResource {
 
     @GET
     @Path("/metrics")
-    @Operation(summary = "Quanto o Claude acerta: sugestões tratadas e regras promovidas, segundo as pessoas")
+    @Operation(summary = "Quanto o Claude acerta: sugestões tratadas e regras promovidas, segundo as pessoas",
+            description = "Devolve as contagens de sugestões tratadas e de regras promovidas, conforme a decisão registrada pelas pessoas.")
     public ReviewMetrics.Result metrics(@PathParam("id") Long id) {
         requireSystem(id);
         return ReviewMetrics.compute(
@@ -77,7 +79,8 @@ public class ClaudeReviewResource {
 
     @POST
     @Path("/suggestions/{sid}/status")
-    @Operation(summary = "Marcar uma sugestão como tratada, dispensada ou aberta")
+    @Operation(summary = "Marcar uma sugestão como tratada, dispensada ou aberta",
+            description = "Muda o estado de uma sugestão do Claude para o sistema (tratada, dispensada ou aberta).")
     public ReviewResponse suggestionStatus(@PathParam("id") Long id, @PathParam("sid") Long sid, StatusRequest body) {
         requireSystem(id);
         SuggestionStatus status = parseStatus(body);
@@ -87,7 +90,8 @@ public class ClaudeReviewResource {
     @POST
     @Path("/rules/{rid}/review")
     @Consumes(MediaType.WILDCARD)
-    @Operation(summary = "Uma pessoa revisou a regra proposta")
+    @Operation(summary = "Uma pessoa revisou a regra proposta",
+            description = "Registra que uma pessoa revisou a regra proposta pelo Claude.")
     public ReviewResponse review(@PathParam("id") Long id, @PathParam("rid") Long rid) {
         requireSystem(id);
         return act(id, () -> service.review(id, rid));
@@ -95,7 +99,8 @@ public class ClaudeReviewResource {
 
     @POST
     @Path("/rules/{rid}/sample")
-    @Operation(summary = "Registrar o resultado do teste de amostra feito fora do Sentinel")
+    @Operation(summary = "Registrar o resultado do teste de amostra feito fora do Sentinel",
+            description = "Guarda o resultado do teste de amostra da regra proposta, executado fora do Sentinel.")
     public ReviewResponse sample(@PathParam("id") Long id, @PathParam("rid") Long rid, SampleRequest body) {
         requireSystem(id);
         if (body == null || body.passed() == null) {
@@ -107,7 +112,8 @@ public class ClaudeReviewResource {
     @POST
     @Path("/rules/{rid}/observe")
     @Consumes(MediaType.WILDCARD)
-    @Operation(summary = "Começar a observação: a regra passa a rodar fora da nota")
+    @Operation(summary = "Começar a observação: a regra passa a rodar fora da nota",
+            description = "Coloca a regra proposta em observação: ela passa a rodar sem pesar na nota do sistema.")
     public ReviewResponse observe(@PathParam("id") Long id, @PathParam("rid") Long rid) {
         requireSystem(id);
         return act(id, () -> service.startObservation(id, rid));
@@ -115,7 +121,8 @@ public class ClaudeReviewResource {
 
     @POST
     @Path("/rules/{rid}/promote")
-    @Operation(summary = "Promover a regra: passa a pesar na nota")
+    @Operation(summary = "Promover a regra: passa a pesar na nota",
+            description = "Promove a regra proposta: a partir daí ela pesa na nota do sistema.")
     public ReviewResponse promote(@PathParam("id") Long id, @PathParam("rid") Long rid, NoteRequest body) {
         requireSystem(id);
         return act(id, () -> service.promote(id, rid, body == null ? null : body.note()));
@@ -123,7 +130,8 @@ public class ClaudeReviewResource {
 
     @POST
     @Path("/rules/{rid}/discard")
-    @Operation(summary = "Descartar a regra")
+    @Operation(summary = "Descartar a regra",
+            description = "Descarta a regra proposta pelo Claude.")
     public ReviewResponse discard(@PathParam("id") Long id, @PathParam("rid") Long rid, NoteRequest body) {
         requireSystem(id);
         return act(id, () -> service.discard(id, rid, body == null ? null : body.note()));
@@ -131,7 +139,8 @@ public class ClaudeReviewResource {
 
     @POST
     @Path("/rules/{rid}/copy")
-    @Operation(summary = "Copiar uma regra promovida para outro sistema, em observação")
+    @Operation(summary = "Copiar uma regra promovida para outro sistema, em observação",
+            description = "Copia uma regra já promovida para outro sistema, onde ela começa em observação.")
     public ReviewResponse copy(@PathParam("id") Long id, @PathParam("rid") Long rid, CopyRequest body) {
         requireSystem(id);
         return act(id, () -> service.copyTo(id, rid, body == null ? null : body.targetSystemId()));

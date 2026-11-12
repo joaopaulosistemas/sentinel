@@ -18,6 +18,10 @@
 | C | Esquemas dos DTOs (descrição e exemplo por campo) | T016–T018 |
 | D | Artefato do CI e docs (**mexe em `.github/`: só com autorização do João**) | T019–T021 |
 
+## Constituição
+
+II (testes com o código): filtro e trava têm teste; IV (números honestos): cada PR registra Verificado e NÃO verificado no LOG; VI (escopo): sem dependência nova; IX (PRs pequenos): quatro PRs reversíveis, e só o D toca `.github/`, com autorização.
+
 ## Riscos
 
 - O filtro usa a API de modelos do MicroProfile OpenAPI; só o CI compila e prova (Maven não alcança o Maven Central no ambiente de desenvolvimento).

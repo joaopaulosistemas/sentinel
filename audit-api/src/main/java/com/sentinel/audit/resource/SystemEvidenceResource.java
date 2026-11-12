@@ -18,6 +18,9 @@ import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /** Evidências de execução do sistema (dump do banco, estatísticas, cobertura, histograma de memória). */
@@ -47,6 +50,12 @@ public class SystemEvidenceResource {
     @Path("/{name}")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Operation(summary = "Entregar uma evidência", description = "Grava (ou substitui) o arquivo na pasta de evidências do sistema; vale a partir da próxima auditoria")
+    @APIResponse(responseCode = "200", description = "Evidência gravada",
+                content = {@Content(mediaType = "application/json", schema = @Schema(implementation = com.sentinel.audit.service.EvidenceLibrary.EvidenceFile.class))})
+    @APIResponse(responseCode = "400", description = "Nome ou conteúdo da evidência recusado",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiError"))})
+    @APIResponse(responseCode = "409", description = "A evidência não pôde ser gravada no estado atual",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiError"))})
     public Response put(@PathParam("id") Long id, @PathParam("name") String name, InputStream body) {
         AuditedSystem s = systemCatalog.require(id);
         try {
@@ -60,7 +69,13 @@ public class SystemEvidenceResource {
 
     @DELETE
     @Path("/{name}")
-    @Operation(summary = "Remover uma evidência")
+    @Operation(summary = "Remover uma evidência",
+            description = "Remove uma evidência anexada ao sistema.")
+    @APIResponse(responseCode = "204", description = "Evidência removida")
+    @APIResponse(responseCode = "400", description = "Nome da evidência recusado",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiError"))})
+    @APIResponse(responseCode = "404", description = "Evidência não encontrada",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiError"))})
     public Response delete(@PathParam("id") Long id, @PathParam("name") String name) {
         AuditedSystem s = systemCatalog.require(id);
         boolean removed;

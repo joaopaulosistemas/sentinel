@@ -16,6 +16,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
@@ -53,6 +57,16 @@ public class RuleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation(summary = "Laboratório de regras",
             description = "Valida uma regra Semgrep (mesmas checagens dos pacotes) e a executa sobre um trecho de código")
+    @APIResponse(responseCode = "200", description = "Resultado da validação e da execução da regra",
+                content = {@Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT))})
+    @APIResponse(responseCode = "400", description = "Regra ou trecho inválido",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
+    @APIResponse(responseCode = "422", description = "A regra não pôde ser executada",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
+    @APIResponse(responseCode = "429", description = "Já há um teste em andamento; tente de novo em instantes",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
+    @APIResponse(responseCode = "503", description = "O motor de regras não está disponível",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
     public Response playground(@Valid PlaygroundRequest request) {
         try {
             return Response.ok(playground.run(request.rule(), request.code(), request.extension())).build();

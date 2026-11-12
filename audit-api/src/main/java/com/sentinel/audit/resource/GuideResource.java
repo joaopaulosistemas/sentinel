@@ -12,6 +12,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
@@ -58,6 +62,10 @@ public class GuideResource {
     @Produces("text/markdown;charset=UTF-8")
     @Operation(summary = "CLAUDE.md da tecnologia",
             description = "Arquivo de instruções enxuto para a IA que escreve código nessa tecnologia")
+    @APIResponse(responseCode = "200", description = "Arquivo CLAUDE.md da tecnologia",
+                content = {@Content(mediaType = "text/markdown", schema = @Schema(type = SchemaType.STRING))})
+    @APIResponse(responseCode = "404", description = "Tecnologia desconhecida",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
     public Response claudeMd(@PathParam("stack") String stackId) {
         List<GuideBook.Stack> stacks = GuideBook.stacks();
         GuideBook.Stack stack = stacks.stream().filter(s -> s.id().equals(stackId)).findFirst().orElse(null);

@@ -39,7 +39,8 @@ public class PendingActionResource {
     PendingActionService service;
 
     @GET
-    @Operation(summary = "Pedidos recentes do Claude neste sistema")
+    @Operation(summary = "Pedidos recentes do Claude neste sistema",
+            description = "Lista os pedidos de ação feitos pelo Claude neste sistema, do mais recente para o mais antigo.")
     public List<PendingDto> list(@PathParam("id") Long id) {
         requireSystem(id);
         return service.recent(id, RECENT_LIMIT).stream().map(PendingActionResource::dto).toList();
@@ -47,7 +48,8 @@ public class PendingActionResource {
 
     @POST
     @Path("/{actionId}/approve")
-    @Operation(summary = "Aprovar o pedido: é neste ponto que a ação acontece")
+    @Operation(summary = "Aprovar o pedido: é neste ponto que a ação acontece",
+            description = "Aprova um pedido pendente do Claude; é neste momento que a ação é executada.")
     public List<PendingDto> approve(@PathParam("id") Long id, @PathParam("actionId") Long actionId) {
         requireSystem(id);
         return decide(id, () -> service.approve(id, actionId));
@@ -55,7 +57,8 @@ public class PendingActionResource {
 
     @POST
     @Path("/{actionId}/reject")
-    @Operation(summary = "Recusar o pedido")
+    @Operation(summary = "Recusar o pedido",
+            description = "Recusa um pedido pendente do Claude, sem executar a ação.")
     public List<PendingDto> reject(@PathParam("id") Long id, @PathParam("actionId") Long actionId) {
         requireSystem(id);
         return decide(id, () -> service.reject(id, actionId));

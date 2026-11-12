@@ -19,6 +19,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
@@ -60,6 +63,8 @@ public class AuditResource {
     @POST
     @Transactional
     @Operation(summary = "Criar auditoria", description = "Dispara uma nova execução de auditoria de forma assíncrona")
+    @APIResponse(responseCode = "202", description = "Auditoria aceita; roda de forma assíncrona",
+                content = {@Content(mediaType = "application/json", schema = @Schema(implementation = AuditRunResponse.class))})
     public Response createAudit(@Valid CreateAuditRequest request) {
         AuditRunResponse created = runViews.request(request.getSystemId(), request.getBranch(), request.getBaseRef(),
                 actor(request.getTriggeredBy()));
@@ -91,6 +96,10 @@ public class AuditResource {
     @Path("/{id}/cancel")
     @Consumes(MediaType.WILDCARD)
     @Operation(summary = "Cancelar auditoria", description = "Interrompe uma auditoria pendente ou em execução; 409 se ela já terminou")
+    @APIResponse(responseCode = "202", description = "Cancelamento pedido",
+                content = {@Content(mediaType = "application/json", schema = @Schema(implementation = AuditRunResponse.class))})
+    @APIResponse(responseCode = "409", description = "A auditoria já terminou e não pode ser cancelada",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiError"))})
     public Response cancel(@PathParam("id") Long id) {
         return runViews.cancel(id);
     }

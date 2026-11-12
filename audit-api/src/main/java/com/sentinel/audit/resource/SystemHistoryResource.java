@@ -17,6 +17,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
@@ -53,7 +54,8 @@ public class SystemHistoryResource {
      */
     @GET
     @Path("/{id}/suppressions")
-    @Operation(summary = "Listar supressões")
+    @Operation(summary = "Listar supressões",
+            description = "Lista as supressões de findings registradas para o sistema.")
     public List<SuppressionResponse> suppressions(@PathParam("id") Long id) {
         systemCatalog.require(id);
         return views.suppressions(id);
@@ -64,7 +66,9 @@ public class SystemHistoryResource {
      */
     @DELETE
     @Path("/{id}/suppressions/{suppressionId}")
-    @Operation(summary = "Remover supressão")
+    @Operation(summary = "Remover supressão",
+            description = "Remove uma supressão do sistema; o finding volta a contar nas próximas auditorias.")
+    @APIResponse(responseCode = "204", description = "Supressão removida")
     public Response removeSuppression(@PathParam("id") Long id, @PathParam("suppressionId") Long suppressionId) {
         views.removeSuppression(id, suppressionId);
         return Response.noContent().build();

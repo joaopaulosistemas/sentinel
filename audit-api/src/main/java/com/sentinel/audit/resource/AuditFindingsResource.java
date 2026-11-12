@@ -21,6 +21,11 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.headers.Header;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
@@ -47,6 +52,9 @@ public class AuditFindingsResource {
     @GET
     @Path("/{id}/findings")
     @Operation(summary = "Listar findings", description = "Retorna os findings de uma auditoria com filtros opcionais")
+    @APIResponse(responseCode = "200", description = "Página de findings; o total antes da paginação vem no cabeçalho X-Total-Count",
+                content = {@Content(mediaType = "application/json", schema = @Schema(type = SchemaType.ARRAY, implementation = FindingResponse.class))},
+                headers = {@Header(name = "X-Total-Count", description = "Total de findings depois dos filtros, antes da paginação", schema = @Schema(type = SchemaType.INTEGER))})
     public Response getFindings(@PathParam("id") Long id, @BeanParam FindingsQuery q) {
 
         runCatalog.require(id);
