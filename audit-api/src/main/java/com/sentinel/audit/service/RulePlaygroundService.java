@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinel.audit.analyzer.SastEngine;
@@ -49,10 +50,10 @@ public class RulePlaygroundService {
             Map.entry("yaml", "code.yaml"), Map.entry("json", "code.json"), Map.entry("tf", "main.tf"),
             Map.entry("dockerfile", "Dockerfile"));
 
-    public record Match(String ruleId, int line, int endLine, String severity, String message, String snippet) {}
+    public record Match(@Schema(description = "Regra que casou.") String ruleId, @Schema(description = "Linha inicial.") int line, @Schema(description = "Linha final.") int endLine, @Schema(description = "Severidade.") String severity, @Schema(description = "Mensagem da regra.") String message, @Schema(description = "Trecho que casou.") String snippet) {}
 
-    public record Result(boolean valid, List<String> errors, List<String> warnings, List<Match> matches,
-                         List<String> engineErrors, long millis) {}
+    public record Result(@Schema(description = "A regra é válida.") boolean valid, @Schema(description = "Erros de validação da regra.") List<String> errors, @Schema(description = "Avisos de validação.") List<String> warnings, @Schema(description = "Trechos que a regra encontrou.") List<Match> matches,
+                         @Schema(description = "Erros do motor ao executar.") List<String> engineErrors, @Schema(description = "Duração, em milissegundos.") long millis) {}
 
     /** Já há execuções demais em andamento. */
     public static final class BusyException extends RuntimeException {

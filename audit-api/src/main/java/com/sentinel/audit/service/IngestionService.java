@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.sentinel.audit.analyzer.ProcessTree;
 import jakarta.enterprise.context.ApplicationScoped;
 import com.sentinel.audit.model.LocalSnapshot;
@@ -317,7 +318,7 @@ public class IngestionService {
     // ------------------------------------------------------------------ verificação rápida
 
     /** Resultado da verificação de um repositório antes de cadastrá-lo ou auditá-lo. */
-    public record RepoCheck(boolean reachable, String defaultBranch, Boolean branchFound, String message, Long fileCount) {
+    public record RepoCheck(@Schema(description = "Repositório acessível.") boolean reachable, @Schema(description = "Branch padrão.") String defaultBranch, @Schema(description = "A branch pedida existe.") Boolean branchFound, @Schema(description = "Explicação do resultado.") String message, @Schema(description = "Arquivos no repositório.") Long fileCount) {
 
         public RepoCheck(boolean reachable, String defaultBranch, Boolean branchFound, String message) {
             this(reachable, defaultBranch, branchFound, message, null);

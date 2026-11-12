@@ -34,17 +34,17 @@ import java.util.List;
 @Tag(name = "Revisão do Claude", description = "Sugestões do Claude e funil de promoção de regras")
 public class ClaudeReviewResource {
 
-    public record SuggestionDto(Long id, String title, String detail, String ruleRef, String file, Integer line,
-                                String status, String createdAt) {}
+    public record SuggestionDto(@Schema(description = "Identificador da sugestão.") Long id, @Schema(description = "Título da sugestão.") String title, @Schema(description = "Detalhe da sugestão.") String detail, @Schema(description = "Regra a que a sugestão se refere.") String ruleRef, @Schema(description = "Arquivo citado.") String file, @Schema(description = "Linha citada.") Integer line,
+                                @Schema(description = "Situação: aberta, tratada ou dispensada.") String status, @Schema(description = "Quando foi feita.") String createdAt) {}
 
-    public record EvidenceDto(int hits, int falsePositives, int auditsSinceStart, double precision) {}
+    public record EvidenceDto(@Schema(description = "Achados que a regra deu durante a observação.") int hits, @Schema(description = "Quantos deles foram marcados como falso positivo.") int falsePositives, @Schema(description = "Auditorias desde que a observação começou.") int auditsSinceStart, @Schema(description = "Proporção de acertos (0 a 1).") double precision) {}
 
-    public record ProposalDto(Long id, String slug, String title, String rationale, String semgrepYaml, String stage,
-                              String stageLabel, Long copiedFromId, String sampleNote, String observationStartedAt,
-                              String decisionNote, EvidenceDto evidence, double minPrecision, int minHits,
-                              boolean sharedEligible, boolean runsInAudits) {}
+    public record ProposalDto(@Schema(description = "Identificador da regra proposta.") Long id, @Schema(description = "Nome curto da regra.") String slug, @Schema(description = "Título.") String title, @Schema(description = "Por que o Claude propôs a regra.") String rationale, @Schema(description = "A regra, em YAML do Semgrep.") String semgrepYaml, @Schema(description = "Estágio da regra.") String stage,
+                              @Schema(description = "Estágio, em texto para exibição.") String stageLabel, @Schema(description = "Regra de origem, quando foi copiada de outro sistema.") Long copiedFromId, @Schema(description = "Observação do teste de amostra.") String sampleNote, @Schema(description = "Quando a observação começou.") String observationStartedAt,
+                              @Schema(description = "Observação de quem decidiu.") String decisionNote, @Schema(description = "Resultado medido durante a observação.") EvidenceDto evidence, @Schema(description = "Precisão mínima configurada para a regra poder ser promovida.") double minPrecision, @Schema(description = "Mínimo de achados configurado para a regra poder ser promovida.") int minHits,
+                              @Schema(description = "Verdadeiro quando a regra pode ser copiada para outros sistemas.") boolean sharedEligible, @Schema(description = "Verdadeiro quando a regra já roda nas auditorias.") boolean runsInAudits) {}
 
-    public record ReviewResponse(int openSuggestions, List<SuggestionDto> suggestions, List<ProposalDto> proposals) {}
+    public record ReviewResponse(@Schema(description = "Quantas sugestões estão abertas.") int openSuggestions, @Schema(description = "Sugestões do Claude para o sistema.") List<SuggestionDto> suggestions, @Schema(description = "Regras propostas pelo Claude.") List<ProposalDto> proposals) {}
 
     public record StatusRequest(@Schema(description = "Novo estado da sugestão: tratada, dispensada ou aberta.") String status) {}
 

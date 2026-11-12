@@ -1,5 +1,6 @@
 package com.sentinel.audit.review;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.List;
 
 /**
@@ -10,9 +11,9 @@ public final class ReviewMetrics {
 
     private ReviewMetrics() {}
 
-    public record Result(int suggestionsTotal, int suggestionsOpen, int suggestionsAddressed, int suggestionsDismissed,
-                         Double suggestionAdoption, int rulesTotal, int rulesInProgress, int rulesPromoted,
-                         int rulesDiscarded, Double rulePromotion) {}
+    public record Result(@Schema(description = "Sugestões feitas.") int suggestionsTotal, @Schema(description = "Sugestões abertas.") int suggestionsOpen, @Schema(description = "Sugestões tratadas.") int suggestionsAddressed, @Schema(description = "Sugestões dispensadas.") int suggestionsDismissed,
+                         @Schema(description = "Tratadas dividido por tratadas mais dispensadas (0 a 1); nulo enquanto nenhuma foi decidida.") Double suggestionAdoption, @Schema(description = "Regras propostas.") int rulesTotal, @Schema(description = "Regras ainda no funil.") int rulesInProgress, @Schema(description = "Regras promovidas.") int rulesPromoted,
+                         @Schema(description = "Regras descartadas.") int rulesDiscarded, @Schema(description = "Promovidas dividido por promovidas mais descartadas (0 a 1); nulo enquanto nenhuma foi decidida.") Double rulePromotion) {}
 
     public static Result compute(List<SuggestionStatus> suggestions, List<RuleStage> rules) {
         int open = 0;

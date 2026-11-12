@@ -1,5 +1,6 @@
 package com.sentinel.audit.settings;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.List;
 
 /**
@@ -13,5 +14,5 @@ public record SettingDef(String key, String property, String section, String gro
 
     public enum Kind { BOOL, NUMBER, TEXT, ENUM }
 
-    public record Option(String value, String label, String sub) {}
+    public record Option(@Schema(description = "Valor gravado.") String value, @Schema(description = "Texto exibido.") String label, @Schema(description = "Texto auxiliar.") String sub) {}
 }

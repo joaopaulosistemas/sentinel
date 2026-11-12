@@ -29,17 +29,17 @@ import java.util.Map;
 @Tag(name = "Guide", description = "Guia de código por tecnologia")
 public class GuideResource {
 
-    public record RuleView(String id, String pack, String title, String action, String severity, String cwe,
-                           String before, String after) {}
+    public record RuleView(@Schema(description = "Regra.") String id, @Schema(description = "Pacote.") String pack, @Schema(description = "Título.") String title, @Schema(description = "Ação sugerida.") String action, @Schema(description = "Severidade.") String severity, @Schema(description = "CWE relacionada.") String cwe,
+                           @Schema(description = "Exemplo do problema.") String before, @Schema(description = "Exemplo corrigido.") String after) {}
 
-    public record RuleRef(String id, boolean own) {}
+    public record RuleRef(@Schema(description = "Regra.") String id, @Schema(description = "Verdadeiro quando é da própria tecnologia, falso quando herdada.") boolean own) {}
 
-    public record StackView(String id, String name, String kind, String summary, List<String> tools, List<String> gaps,
-                            List<String> commands, boolean commandsVerified, GuideBook.Review review,
-                            List<GuideBook.Practice> practices, boolean baseLanguage, int ownRules, int inheritedRules,
-                            List<RuleRef> rules) {}
+    public record StackView(@Schema(description = "Tecnologia.") String id, @Schema(description = "Nome.") String name, @Schema(description = "Tipo da tecnologia, como declarado no guia.") String kind, @Schema(description = "Resumo.") String summary, @Schema(description = "Analisadores citados no guia da tecnologia.") List<String> tools, @Schema(description = "Lacunas conhecidas da cobertura da tecnologia.") List<String> gaps,
+                            @Schema(description = "Comandos para rodar as ferramentas.") List<String> commands, @Schema(description = "Se os comandos foram conferidos.") boolean commandsVerified, @Schema(description = "Quais passos de verificação do guia já foram feitos.") GuideBook.Review review,
+                            @Schema(description = "Boas práticas.") List<GuideBook.Practice> practices, @Schema(description = "Verdadeiro quando é linguagem base de outras.") boolean baseLanguage, @Schema(description = "Regras próprias.") int ownRules, @Schema(description = "Regras herdadas.") int inheritedRules,
+                            @Schema(description = "Referências das regras.") List<RuleRef> rules) {}
 
-    public record GuideResponse(List<StackView> stacks, List<RuleView> rules, List<GuideBook.Practice> process) {}
+    public record GuideResponse(@Schema(description = "Tecnologias do guia.") List<StackView> stacks, @Schema(description = "Regras do guia.") List<RuleView> rules, @Schema(description = "Práticas de processo.") List<GuideBook.Practice> process) {}
 
     @Inject
     PackRegistry packRegistry;

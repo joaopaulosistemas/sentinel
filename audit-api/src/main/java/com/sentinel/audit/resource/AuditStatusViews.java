@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.sentinel.audit.insights.AuditInsights;
 import com.sentinel.audit.service.InsightsService;
 import com.sentinel.audit.model.AuditRun;
@@ -27,7 +28,7 @@ public class AuditStatusViews {
     SecretBox secretBox;
 
     /** Se o código mudou desde a auditoria: {@code stale} é nulo quando não dá para saber. */
-    public record Freshness(String auditedCommit, String currentCommit, Boolean stale) {
+    public record Freshness(@Schema(description = "Commit auditado.") String auditedCommit, @Schema(description = "Commit atual da branch.") String currentCommit, @Schema(description = "Verdadeiro se o código mudou desde a auditoria; nulo quando não dá para saber.") Boolean stale) {
     }
 
     Freshness freshness(Long id) {

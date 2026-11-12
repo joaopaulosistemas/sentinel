@@ -58,6 +58,7 @@ public final class ApiContractCheck {
             }
         }
         checkRequestBodies(document, found);
+        checkResponseSchemas(document, found);
         checkExamples(document, "$", found);
         return found;
     }
@@ -78,8 +79,8 @@ public final class ApiContractCheck {
     }
 
     /**
-     * Propriedades dos tipos devolvidos em respostas 2xx JSON (e dos aninhados neles) sem descrição. Fica fora de
-     * {@link #violations}: é o relatório do que falta documentar nas respostas, sem barrar o CI.
+     * Propriedades dos tipos devolvidos em respostas 2xx JSON (e dos aninhados neles) sem descrição. Entra em
+     * {@link #violations}; este método existe para quem quer só a lista das respostas.
      */
     public static List<String> responseGaps(JsonNode document) {
         List<String> found = new ArrayList<>();

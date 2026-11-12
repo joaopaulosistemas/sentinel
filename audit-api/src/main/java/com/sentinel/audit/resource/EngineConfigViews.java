@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.pack.AuditPolicy;
@@ -23,27 +24,27 @@ import java.util.Map;
 @ApplicationScoped
 public class EngineConfigViews {
 
-    public record RuleAdjustment(String id, String severity, boolean disabled, Boolean shadow) {}
+    public record RuleAdjustment(@Schema(description = "Regra ajustada.") String id, @Schema(description = "Severidade forçada; vazio = a da regra.") String severity, @Schema(description = "Regra desligada.") boolean disabled, @Schema(description = "Regra em observação: aparece, mas não pesa na nota.") Boolean shadow) {}
 
-    public record PackState(String id, String name, String description, boolean inProfile, boolean active) {}
+    public record PackState(@Schema(description = "Pacote.") String id, @Schema(description = "Nome.") String name, @Schema(description = "O que cobre.") String description, @Schema(description = "Está no perfil do sistema.") boolean inProfile, @Schema(description = "Está ativo para este sistema.") boolean active) {}
 
-    public record AnalyzerState(String name, String description, boolean disabled, String side) {}
+    public record AnalyzerState(@Schema(description = "Analisador.") String name, @Schema(description = "O que faz.") String description, @Schema(description = "Desligado para este sistema.") boolean disabled, @Schema(description = "Lado: back, front ou common.") String side) {}
 
-    public record ThresholdState(String key, Integer profileValue, Integer override) {}
+    public record ThresholdState(@Schema(description = "Nome do limite.") String key, @Schema(description = "Valor do perfil.") Integer profileValue, @Schema(description = "Valor ajustado no sistema; nulo = o do perfil.") Integer override) {}
 
-    public record KnownRule(String id, long count) {}
+    public record KnownRule(@Schema(description = "Regra.") String id, @Schema(description = "Achados da regra na última auditoria.") long count) {}
 
     /** Regra declarada num pacote: o que ela faz, de que pacote vem, a severidade que o Semgrep declara e o lado (back, front ou common). */
-    public record CatalogRule(String id, String pack, String message, String severity, String category, String side) {}
+    public record CatalogRule(@Schema(description = "Regra.") String id, @Schema(description = "Pacote de origem.") String pack, @Schema(description = "O que a regra diz.") String message, @Schema(description = "Severidade declarada no Semgrep.") String severity, @Schema(description = "Categoria.") String category, @Schema(description = "Lado: back, front ou common.") String side) {}
 
-    public record Tuning(List<RuleAdjustment> rules, Map<String, Integer> thresholds, List<String> enablePacks,
-                         List<String> disablePacks, List<String> disableAnalyzers, List<String> ignorePaths,
-                         List<String> disableSides) {}
+    public record Tuning(@Schema(description = "Ajustes por regra.") List<RuleAdjustment> rules, @Schema(description = "Limites ajustados.") Map<String, Integer> thresholds, @Schema(description = "Pacotes ligados além do perfil.") List<String> enablePacks,
+                         @Schema(description = "Pacotes desligados.") List<String> disablePacks, @Schema(description = "Analisadores desligados.") List<String> disableAnalyzers, @Schema(description = "Caminhos ignorados.") List<String> ignorePaths,
+                         @Schema(description = "Lados desligados (back, front).") List<String> disableSides) {}
 
-    public record EngineConfigResponse(String profile, String profileDescription, int adjustments, Tuning tuning,
-                                       List<RuleAdjustment> profileRules, List<PackState> packs,
-                                       List<AnalyzerState> analyzers, List<ThresholdState> thresholds,
-                                       List<KnownRule> knownRules, List<CatalogRule> catalog) {}
+    public record EngineConfigResponse(@Schema(description = "Perfil do sistema.") String profile, @Schema(description = "Descrição do perfil.") String profileDescription, @Schema(description = "Quantos ajustes o sistema tem sobre o perfil.") int adjustments, @Schema(description = "Ajustes salvos do sistema.") Tuning tuning,
+                                       @Schema(description = "Ajustes que vêm do perfil.") List<RuleAdjustment> profileRules, @Schema(description = "Estado de cada pacote.") List<PackState> packs,
+                                       @Schema(description = "Estado de cada analisador.") List<AnalyzerState> analyzers, @Schema(description = "Estado de cada limite.") List<ThresholdState> thresholds,
+                                       @Schema(description = "Regras vistas nas auditorias, com contagem.") List<KnownRule> knownRules, @Schema(description = "Regras dos pacotes.") List<CatalogRule> catalog) {}
 
     @Inject
     PackRegistry packRegistry;

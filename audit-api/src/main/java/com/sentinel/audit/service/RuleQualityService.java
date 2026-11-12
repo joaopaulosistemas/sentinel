@@ -1,5 +1,6 @@
 package com.sentinel.audit.service;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.model.Category;
@@ -39,8 +40,8 @@ public class RuleQualityService {
     public static final double REVIEW_RATE = 0.4;
 
     /** Resultado por regra. {@code falsePositiveRate} vai de 0 a 1. */
-    public record RuleQuality(String ruleId, String tool, long total, long falsePositive, long acceptedRisk,
-                              double falsePositiveRate, boolean needsReview) {}
+    public record RuleQuality(@Schema(description = "Regra.") String ruleId, @Schema(description = "Analisador.") String tool, @Schema(description = "Achados no total.") long total, @Schema(description = "Marcados como falso positivo.") long falsePositive, @Schema(description = "Marcados como risco aceito.") long acceptedRisk,
+                              @Schema(description = "Proporção de falsos positivos (0 a 1).") double falsePositiveRate, @Schema(description = "A regra precisa de revisão.") boolean needsReview) {}
 
     /** Findings de uma auditoria e as decisões do sistema (fingerprint -> motivo da supressão). */
     public record Snapshot(List<Finding> findings, Map<String, SuppressionReason> reasonByFingerprint) {}

@@ -39,9 +39,9 @@ public class McpAdminResource {
     public record McpConfigRequest(@Schema(description = "Liga ou desliga o acesso MCP do sistema.") Boolean enabled, @Schema(description = "Nível de dados que o MCP pode devolver.") String dataLevel, @Schema(description = "Ferramentas MCP liberadas para o sistema.") List<String> tools) {}
 
     /** A chave aparece aqui uma única vez; depois só o começo dela. */
-    public record NewKeyResponse(String key, String keyPrefix) {}
+    public record NewKeyResponse(@Schema(description = "A chave completa; aparece uma única vez.") String key, @Schema(description = "Começo da chave, que continua visível depois.") String keyPrefix) {}
 
-    public record CallResponse(String tool, boolean ok, long durationMs, String detail, String at) {}
+    public record CallResponse(@Schema(description = "Ferramenta chamada.") String tool, @Schema(description = "Chamada bem-sucedida.") boolean ok, @Schema(description = "Duração, em milissegundos.") long durationMs, @Schema(description = "Detalhe.") String detail, @Schema(description = "Quando ocorreu.") String at) {}
 
     @Inject
     SystemCatalog systemCatalog;

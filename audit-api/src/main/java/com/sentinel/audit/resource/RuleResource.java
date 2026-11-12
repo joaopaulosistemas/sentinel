@@ -61,7 +61,7 @@ public class RuleResource {
     @Operation(summary = "Laboratório de regras",
             description = "Valida uma regra Semgrep (mesmas checagens dos pacotes) e a executa sobre um trecho de código")
     @APIResponse(responseCode = "200", description = "Resultado da validação e da execução da regra",
-                content = {@Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT))})
+                content = {@Content(mediaType = "application/json", schema = @Schema(implementation = com.sentinel.audit.service.RulePlaygroundService.Result.class))})
     @APIResponse(responseCode = "400", description = "Regra ou trecho inválido",
                 content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
     @APIResponse(responseCode = "422", description = "A regra não pôde ser executada",
