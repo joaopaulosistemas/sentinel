@@ -63,6 +63,14 @@ rules:
       - pattern: $E.update($A + $B, ...)
       - pattern: $E.count($A + $B, ...)
       - pattern: $E.stream($A + $B, ...)
+      - patterns:
+          - pattern: $M($A + $B, ...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(find|list|delete|update|count|stream)$
+          - pattern-not: $M("...", ...)
+          - pattern-inside: |
+              class $C implements PanacheRepository<$T> { ... }
     message: >
       Consulta Panache montada por concatenação: injeção de HQL. Use parâmetros posicionais ou nomeados:
       find("nome = ?1", nome) ou find("nome = :nome", Parameters.with("nome", nome)).

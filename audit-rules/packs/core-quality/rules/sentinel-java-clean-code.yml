@@ -150,14 +150,14 @@ rules:
       category: quality
 
   - id: sentinel-java-service-locator
-    patterns:
-      - pattern-either:
+    pattern-either:
+      - patterns:
           - pattern: $CTX.getBean(...)
-          - pattern: CDI.current().select(...)
-          - pattern: Arc.container().instance(...)
-      - metavariable-regex:
-          metavariable: $CTX
-          regex: (?i)^(applicationContext|context|ctx|beanFactory|appContext|CDI\.current\(\)|Arc\.container\(\))$|^CDI|^Arc
+          - metavariable-regex:
+              metavariable: $CTX
+              regex: (?i)^(applicationContext|context|ctx|beanFactory|appContext)$
+      - pattern: CDI.current().select(...)
+      - pattern: Arc.container().instance(...)
     message: >
       Service Locator: a classe busca suas dependências no container em vez de recebê-las. Esconde o acoplamento e
       dificulta testes. Use injeção de dependência (construtor).
