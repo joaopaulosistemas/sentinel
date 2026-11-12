@@ -97,7 +97,8 @@ function SortToggle({ sortBy, onChange }: { sortBy: SortKey; onChange: (k: SortK
 function ScoreBar({ score }: { score: number | null | undefined }) {
   if (score == null) return <span><Tag type="gray">Nunca auditado</Tag></span>;
   return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+    // flex 1 e largura mínima: o contêiner é filho de um span flex (com o selo de escopo); sem isso ele encolhe ao conteúdo e a trilha fica com largura 0.
+    <span data-testid="barra-da-nota" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '1 1 8rem', minWidth: '8rem' }}>
       <span style={{ position: 'relative', flex: 1, height: 10, background: 'var(--s-border)' }}>
         <span style={{ position: 'absolute', left: 0, top: 0, height: 10, width: `${Math.max(0, Math.min(100, score))}%`, background: barColor(score) }} />
         <span style={{ position: 'absolute', left: `${TARGET}%`, top: -4, width: 2, height: 18, background: 'var(--s-text)' }} />

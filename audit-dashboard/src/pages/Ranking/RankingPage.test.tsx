@@ -45,3 +45,21 @@ describe('ranking de sistemas: selo de escopo ao lado da nota', () => {
     expect(screen.queryByText(/desligado/)).not.toBeInTheDocument();
   });
 });
+
+describe('ranking de sistemas: barra da nota', () => {
+  it('a barra ocupa o espaço da coluna e não encolhe ao tamanho do número (regressão do selo de escopo)', async () => {
+    renderPage([system({ id: 1, name: 'com-selo', lastAuditScore: 82, disabledSides: ['front'] }), system({ id: 2, name: 'sem-selo', lastAuditScore: 30 })]);
+
+    expect(await screen.findByText('com-selo')).toBeInTheDocument();
+    const barras = screen.getAllByTestId('barra-da-nota');
+    expect(barras).toHaveLength(2);
+    for (const barra of barras) {
+      expect(barra.style.flexGrow).toBe('1');
+      expect(barra.style.minWidth).toBe('8rem');
+      const trilha = barra.firstElementChild as HTMLElement;
+      expect(trilha.style.flexGrow).toBe('1');
+      const preenchimento = trilha.firstElementChild as HTMLElement;
+      expect(['82%', '30%']).toContain(preenchimento.style.width);
+    }
+  });
+});
