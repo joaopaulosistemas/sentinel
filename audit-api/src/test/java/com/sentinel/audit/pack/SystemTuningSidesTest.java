@@ -125,4 +125,28 @@ class SystemTuningSidesTest {
                 finding("dup", "src/Outro.java", "Duplicação")));
         assertEquals(List.of("web/src/app.component.ts"), out.stream().map(Finding::getFilePath).toList());
     }
+
+    @Test
+    void jscpdComoDuplicacaoSoPerdeOsAchadosDosArquivosDoLadoDesligado() {
+        List<Finding> todos = List.of(
+                finding("jscpd-duplicado", "web/src/estilo.scss", "jscpd"),
+                finding("jscpd-duplicado", "src/Servico.java", "jscpd"));
+
+        assertEquals(List.of("src/Servico.java"), policy(sides("front")).apply(todos).stream().map(Finding::getFilePath).toList());
+        assertEquals(List.of("web/src/estilo.scss"), policy(sides("back")).apply(todos).stream().map(Finding::getFilePath).toList());
+        assertEquals(2, policy(SystemTuning.EMPTY).apply(todos).size(), "sem lado desligado nada muda");
+    }
+
+    @Test
+    void ferramentaExternaDeLadoDesligadoTemMotivoEAComumNao() {
+        ToolSpec front = new ToolSpec("stylelint", "Stylelint", List.of(), "x/*.sarif", com.sentinel.audit.model.Category.QUALITY,
+                Map.of(), 30, false, List.of(), RuleSide.FRONT);
+        ToolSpec comum = new ToolSpec("sqlfluff", "SQLFluff", List.of(), "x/*.sarif", com.sentinel.audit.model.Category.QUALITY,
+                Map.of(), 30, false, List.of(), RuleSide.COMMON);
+
+        assertEquals("lado front-end desligado no escopo deste sistema", policy(sides("front")).toolOffNote(front));
+        assertNull(policy(sides("front")).toolOffNote(comum));
+        assertNull(policy(sides("back")).toolOffNote(front));
+        assertNull(policy(SystemTuning.EMPTY).toolOffNote(front));
+    }
 }

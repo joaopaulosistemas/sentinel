@@ -53,6 +53,18 @@ public enum RuleSide {
         return sideOfLanguages(languages).orElseGet(() -> sideOfIncludes(includes));
     }
 
+    /**
+     * A regra trata de infraestrutura (Dockerfile, Compose, Kubernetes, Helm, GitHub Actions, IaC)? Esse é o único caso em que
+     * "comum" é a resposta esperada sem o autor declarar o lado; para qualquer outra regra de código, "comum" por dedução é dúvida
+     * e o teste dos pacotes exige {@code metadata.side} escrito.
+     */
+    public static boolean isInfrastructure(List<String> languages, List<String> includes) {
+        if (languages != null && languages.size() == 1 && "dockerfile".equals(languages.get(0).strip().toLowerCase(Locale.ROOT))) {
+            return true;
+        }
+        return includes != null && includes.stream().anyMatch(g -> INFRA.matcher(g.strip().toLowerCase(Locale.ROOT)).find());
+    }
+
     /** O lado que as linguagens decidem; vazio quando não decidem (sem linguagem, ou uma mistura). */
     private static Optional<RuleSide> sideOfLanguages(List<String> languages) {
         if (languages == null || languages.isEmpty()) {

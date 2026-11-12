@@ -84,7 +84,7 @@ public class SarifAnalyzer implements CodeAnalyzer {
         Coleta coleta = new Coleta(projectPath, auditRun, new ArrayList<>(), new SarifResumo());
         if (policy != null) {
             for (RulePack pack : policy.packs()) {
-                if (!analisarPacote(pack, policy.isToolPackTrusted(pack.id()), coleta)) {
+                if (!analisarPacote(pack, policy, coleta)) {
                     break;
                 }
             }
@@ -97,8 +97,14 @@ public class SarifAnalyzer implements CodeAnalyzer {
     }
 
     /** Roda as fontes SARIF de um pacote. Devolve {@code false} quando a thread foi interrompida e a análise deve parar. */
-    private boolean analisarPacote(RulePack pack, boolean trusted, Coleta coleta) {
+    private boolean analisarPacote(RulePack pack, AuditPolicy policy, Coleta coleta) {
+        boolean trusted = policy.isToolPackTrusted(pack.id());
         for (ToolSpec spec : pack.tools()) {
+            String desligada = policy.toolOffNote(spec);
+            if (desligada != null) {
+                coleta.resumo().ladoDesligado(spec, desligada);
+                continue;
+            }
             try {
                 analisarFonte(spec, trusted, coleta);
             } catch (InterruptedException e) {

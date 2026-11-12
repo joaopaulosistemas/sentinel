@@ -2,6 +2,7 @@
 - id: jscpd
   name: "jscpd"
   category: quality
+  side: common
   applies-to: ["**/*.java", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.css", "**/*.scss", "**/*.html"]
   stdout: true
   command: [node, /opt/jscpd/sarif-jscpd.mjs]

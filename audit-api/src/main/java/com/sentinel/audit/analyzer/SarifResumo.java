@@ -19,6 +19,7 @@ final class SarifResumo {
     private final List<String> naoInstaladas = new ArrayList<>();
     private final List<String> semResultado = new ArrayList<>();
     private final List<String> falhou = new ArrayList<>();
+    private final List<String> ladoDesligado = new ArrayList<>();
     /** Situação do Joern em frase própria: é a ferramenta opcional, e a pessoa precisa ver se está ativa. */
     private String joern;
 
@@ -26,6 +27,15 @@ final class SarifResumo {
     void joernDesligado() {
         if (joern == null) {
             joern = "desligado neste sistema (o pacote " + TOOLS_PACK_ID + " está fora do perfil ou desligado nos ajustes).";
+        }
+    }
+
+    /** A ferramenta não rodou porque o lado dela (back ou front) está desligado no escopo do sistema. */
+    void ladoDesligado(ToolSpec spec, String motivo) {
+        if (JOERN_ID.equals(spec.id())) {
+            joern = "desligado: " + motivo + ".";
+        } else {
+            ladoDesligado.add(spec.name() + " (" + motivo + ")");
         }
     }
 
@@ -77,6 +87,7 @@ final class SarifResumo {
         adicionar(partes, "Rodaram: ", rodaram);
         adicionar(partes, "Rodaram sem gerar resultado: ", semResultado);
         adicionar(partes, "Falharam: ", falhou);
+        adicionar(partes, "Desligadas pelo escopo do sistema: ", ladoDesligado);
         adicionar(partes, "Sem permissão para executar programas: ", semPermissao);
         adicionar(partes, "Não instaladas: ", naoInstaladas);
         String geral = partes.isEmpty() ? null : String.join(". ", partes) + ".";

@@ -100,6 +100,7 @@ rules:
     severity: WARNING
     languages: [generic]
     metadata:
+      side: common
       category: security
       cwe: "CWE-921: Storage of Sensitive Data in a Mechanism without Access Control"
       owasp: M9 - Insecure Data Storage
@@ -113,6 +114,7 @@ rules:
     severity: ERROR
     languages: [generic]
     metadata:
+      side: common
       category: security
       cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
       owasp: M5 - Insecure Communication
@@ -129,6 +131,7 @@ rules:
     severity: WARNING
     languages: [generic]
     metadata:
+      side: common
       category: security
       cwe: "CWE-926: Improper Export of Android Application Components"
       owasp: M8 - Security Misconfiguration

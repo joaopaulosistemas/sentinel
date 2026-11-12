@@ -144,7 +144,15 @@ public final class AuditPolicy {
         if (tuning.analyzerDisabled(name)) {
             return "desligado nos ajustes deste sistema";
         }
-        String side = com.sentinel.audit.service.AnalyzerCatalog.sideOf(name);
+        return sideOffNote(com.sentinel.audit.service.AnalyzerCatalog.sideOf(name));
+    }
+
+    /** Por que a ferramenta externa do pacote não roda neste sistema (lado desligado), ou {@code null} se roda. */
+    public String toolOffNote(ToolSpec spec) {
+        return spec == null || spec.side() == null ? null : sideOffNote(spec.side().id());
+    }
+
+    private String sideOffNote(String side) {
         if (tuning.sideDisabled(side)) {
             return "lado " + ("back".equals(side) ? "back-end" : "front-end") + " desligado no escopo deste sistema";
         }
@@ -193,8 +201,11 @@ public final class AuditPolicy {
         return null;
     }
 
-    /** Analisadores que olham Java e TypeScript juntos: com um lado desligado, perdem só os achados dos arquivos desse lado. */
-    private static final java.util.Set<String> SIDE_BY_FILE_TOOLS = java.util.Set.of("CleanCode", "Duplicação");
+    /**
+     * Analisadores e ferramentas externas que olham Java e TypeScript juntos: com um lado desligado, perdem só os achados dos
+     * arquivos desse lado. Os nomes de ferramentas externas são o campo {@code name} do YAML (é o {@code toolSource} dos achados).
+     */
+    private static final java.util.Set<String> SIDE_BY_FILE_TOOLS = java.util.Set.of("CleanCode", "Duplicação", "jscpd");
 
     private boolean inDisabledSide(Finding f) {
         if (tuning.disableSides().isEmpty() || !SIDE_BY_FILE_TOOLS.contains(f.getToolSource())) {

@@ -20,9 +20,12 @@ import java.util.Map;
  * @param stdout        {@code true}: o SARIF é a saída padrão da ferramenta (ela não precisa de {@code {output}})
  * @param appliesTo     globs: a ferramenta só roda se o projeto tiver ao menos um arquivo que case (vazio = sempre);
  *                      {@code {files}} vira a lista desses arquivos
+ * @param side          lado da aplicação que a ferramenta analisa: escrito em {@code side} no YAML ou deduzido de
+ *                      {@code applies-to}; com o lado desligado no sistema, a ferramenta não roda
  */
 public record ToolSpec(String id, String name, List<String> command, String input, Category category,
-                       Map<String, Severity> levelSeverity, int timeoutSeconds, boolean stdout, List<String> appliesTo) {
+                       Map<String, Severity> levelSeverity, int timeoutSeconds, boolean stdout, List<String> appliesTo,
+                       RuleSide side) {
 
     public boolean executes() {
         return command != null && !command.isEmpty();

@@ -12,6 +12,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
       owasp: A05:2021 - Security Misconfiguration
@@ -27,6 +28,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
       owasp: A05:2021 - Security Misconfiguration
@@ -42,6 +44,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
       owasp: A01:2021 - Broken Access Control
       category: security
@@ -72,6 +75,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
       owasp: A05:2021 - Security Misconfiguration
@@ -87,6 +91,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-269: Improper Privilege Management"
       owasp: A01:2021 - Broken Access Control
@@ -102,6 +107,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
       owasp: A05:2021 - Security Misconfiguration
@@ -117,6 +123,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-668: Exposure of Resource to Wrong Sphere"
       owasp: A01:2021 - Broken Access Control
@@ -132,6 +139,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-250: Execution with Unnecessary Privileges"
       owasp: A05:2021 - Security Misconfiguration
@@ -147,6 +155,7 @@ rules:
       include: ["*.yml", "*.yaml"]
       exclude: ["**/node_modules/**", "**/.github/**", "**/remediation/**"]
     metadata:
+      side: common
       category: security
       cwe: "CWE-1357: Reliance on Insufficiently Trustworthy Component"
       owasp: A06:2021 - Vulnerable and Outdated Components

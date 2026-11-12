@@ -138,4 +138,64 @@ class ToolSpecParserTest {
         assertTrue(ToolSpecParser.parse(Files.createTempDirectory("vazio"), errors).isEmpty());
         assertTrue(errors.isEmpty());
     }
+
+    @Test
+    void ladoEscritoNaFerramentaValeMaisQueADeducao() throws Exception {
+        List<String> errors = new ArrayList<>();
+        List<ToolSpec> out = ToolSpecParser.parse(pacoteComTools("""
+                - id: njsscan
+                  side: back
+                  input: "reports/*.sarif"
+                  applies-to: ["**/*.js", "**/*.ts"]
+                - id: banco
+                  side: common
+                  input: "reports/*.sarif"
+                  applies-to: ["**/*.sql"]
+                - id: tela
+                  side: front
+                  input: "reports/*.sarif"
+                """), errors);
+
+        assertTrue(errors.isEmpty(), errors.toString());
+        assertEquals(RuleSide.BACK, out.get(0).side(), "js e ts sozinhos seriam deduzidos como front");
+        assertEquals(RuleSide.COMMON, out.get(1).side(), ".sql sozinho seria deduzido como back");
+        assertEquals(RuleSide.FRONT, out.get(2).side());
+    }
+
+    @Test
+    void semLadoAFerramentaEDeduzidaDosGlobsDeAppliesTo() throws Exception {
+        List<String> errors = new ArrayList<>();
+        List<ToolSpec> out = ToolSpecParser.parse(pacoteComTools("""
+                - id: estilo
+                  input: "reports/*.sarif"
+                  applies-to: ["**/*.css", "**/*.scss"]
+                - id: java
+                  input: "reports/*.sarif"
+                  applies-to: ["**/*.java"]
+                - id: mistura
+                  input: "reports/*.sarif"
+                  applies-to: ["**/*.java", "**/*.ts"]
+                - id: docker
+                  input: "reports/*.sarif"
+                  applies-to: ["**/Dockerfile"]
+                - id: sem-globs
+                  input: "reports/*.sarif"
+                """), errors);
+
+        assertTrue(errors.isEmpty(), errors.toString());
+        assertEquals(RuleSide.FRONT, out.get(0).side());
+        assertEquals(RuleSide.BACK, out.get(1).side());
+        assertEquals(RuleSide.COMMON, out.get(2).side(), "mistura de lados é comum");
+        assertEquals(RuleSide.COMMON, out.get(3).side());
+        assertEquals(RuleSide.COMMON, out.get(4).side(), "na dúvida é comum");
+    }
+
+    @Test
+    void ladoInvalidoNaFerramentaViraErroDeCarregamento() throws Exception {
+        List<String> errors = new ArrayList<>();
+        ToolSpecParser.parse(pacoteComTools("- id: ferramenta-x\n  side: meio\n  input: \"reports/*.sarif\"\n"), errors);
+
+        assertTrue(temErro(errors, "'side' inválido 'meio'"), errors.toString());
+        assertTrue(temErro(errors, "back, front ou common"), errors.toString());
+    }
 }

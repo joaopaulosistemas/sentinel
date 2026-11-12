@@ -8,6 +8,8 @@ import com.sentinel.audit.pack.AuditPolicy;
 import com.sentinel.audit.pack.PackFixtures;
 import com.sentinel.audit.pack.PackLoader;
 import com.sentinel.audit.pack.RulePack;
+import com.sentinel.audit.pack.RuleSide;
+import com.sentinel.audit.pack.SystemTuning;
 import com.sentinel.audit.pack.ToolSpec;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,7 +42,7 @@ class SarifAnalyzerTest {
     }
 
     private static ToolSpec spec(String id, String input, List<String> cmd, Map<String, Severity> map) {
-        return new ToolSpec(id, id, cmd, input, Category.QUALITY, map, 30, false, List.of());
+        return new ToolSpec(id, id, cmd, input, Category.QUALITY, map, 30, false, List.of(), RuleSide.COMMON);
     }
 
     @Test
@@ -66,7 +69,7 @@ class SarifAnalyzerTest {
             sarif = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
         ToolSpec joern = new ToolSpec("joern-taint", "Joern (taint entre arquivos)", null, "*.sarif", Category.SECURITY,
-                Map.of("error", Severity.HIGH), 30, false, List.of());
+                Map.of("error", Severity.HIGH), 30, false, List.of(), RuleSide.BACK);
 
         List<Finding> fs = new SarifAnalyzer().parse(sarif, joern, PROJ, run());
 
@@ -427,8 +430,44 @@ class SarifAnalyzerTest {
 
     @Test
     void achadoDeSegurancaEmTesteContinua() {
-        ToolSpec seguranca = new ToolSpec("sec", "sec", null, "*", Category.SECURITY, Map.of(), 30, false, List.of());
+        ToolSpec seguranca = new ToolSpec("sec", "sec", null, "*", Category.SECURITY, Map.of(), 30, false, List.of(), RuleSide.COMMON);
         List<Finding> fs = new SarifAnalyzer().parse(sarifEm("src/it/java/B.java"), seguranca, PROJ, run());
         assertEquals(1, fs.size());
+    }
+
+    private static AuditPolicy comLadoDesligado(AuditPolicy base, String... lados) {
+        return base.withTuning(new SystemTuning(Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), Set.of(), Set.of(lados)), base.packs());
+    }
+
+    @Test
+    void ferramentaDeLadoDesligadoNaoRodaEOResumoDizPorque() throws Exception {
+        Path proj = Files.createTempDirectory("proj").toRealPath();
+        Files.createDirectories(proj.resolve("reports"));
+        Files.writeString(proj.resolve("reports/a.sarif"), fixture());
+        AuditPolicy base = policyWithTools("- id: tela\n  name: Ferramenta Front\n  side: front\n  input: \"reports/*.sarif\"\n"
+                + "- id: servidor\n  name: Ferramenta Back\n  side: back\n  input: \"reports/*.sarif\"\n");
+
+        AnalyzerResult completo = new SarifAnalyzer().analyze(proj, run(), base);
+        AnalyzerResult semFront = new SarifAnalyzer().analyze(proj, run(), comLadoDesligado(base, "front"));
+
+        assertTrue(completo.findings().size() > semFront.findings().size(), "a ferramenta do front deixou de ler");
+        assertFalse(semFront.findings().isEmpty(), "a do back continua");
+        assertTrue(semFront.infoNote().contains("Desligadas pelo escopo do sistema: Ferramenta Front "
+                + "(lado front-end desligado no escopo deste sistema)"), semFront.infoNote());
+        assertFalse(semFront.infoNote().contains("Ferramenta Back"), semFront.infoNote());
+        assertTrue(completo.infoNote() == null || !completo.infoNote().contains("Desligadas pelo escopo"));
+    }
+
+    @Test
+    void ferramentaComumRodaComQualquerLadoDesligado() throws Exception {
+        Path proj = Files.createTempDirectory("proj").toRealPath();
+        Files.createDirectories(proj.resolve("reports"));
+        Files.writeString(proj.resolve("reports/a.sarif"), fixture());
+        AuditPolicy base = policyWithTools("- id: banco\n  name: Ferramenta Comum\n  side: common\n  input: \"reports/*.sarif\"\n");
+
+        int esperado = new SarifAnalyzer().analyze(proj, run(), base).findings().size();
+
+        assertEquals(esperado, new SarifAnalyzer().analyze(proj, run(), comLadoDesligado(base, "front")).findings().size());
+        assertEquals(esperado, new SarifAnalyzer().analyze(proj, run(), comLadoDesligado(base, "back")).findings().size());
     }
 }
