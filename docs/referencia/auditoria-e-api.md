@@ -67,6 +67,10 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 
 ---
 
+## O contrato OpenAPI
+
+O Swagger UI (`/swagger-ui`, só em modo dev) e o documento (`/q/openapi`) saem das anotações das rotas. A cada execução do CI, o job **Integração HTTP** grava o documento do build, valida a estrutura (`scripts/validar-openapi.py`) e o publica como artefato `openapi` (arquivo `openapi.json`) na página da execução. O teste de contrato falha se uma rota ficar sem descrição, resposta, erro documentado ou parâmetro descrito.
+
 ## Endpoints da API
 
 | Método | Endpoint | Descrição |

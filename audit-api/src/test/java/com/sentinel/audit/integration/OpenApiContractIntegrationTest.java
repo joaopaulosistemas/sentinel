@@ -34,6 +34,13 @@ class OpenApiContractIntegrationTest {
         return new ObjectMapper().readTree(body);
     }
 
+    /** Guarda o documento do build em target/openapi, de onde o CI valida a estrutura e o publica como artefato. */
+    private static void publicar(JsonNode doc) throws Exception {
+        java.nio.file.Path destino = java.nio.file.Path.of("target", "openapi", "openapi.json");
+        java.nio.file.Files.createDirectories(destino.getParent());
+        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(destino.toFile(), doc);
+    }
+
     private static Map<String, JsonNode> operations(JsonNode doc) {
         return ApiContractCheck.operations(doc);
     }
@@ -50,6 +57,7 @@ class OpenApiContractIntegrationTest {
     @Test
     void o_contrato_de_toda_rota_esta_completo() throws Exception {
         JsonNode doc = document();
+        publicar(doc);
         Map<String, JsonNode> ops = operations(doc);
         System.out.println("OpenAPI: " + ops.size() + " rotas conferidas");
         assertTrue(ops.size() >= MIN_OPERATIONS, "rotas no documento: " + ops.size());
