@@ -23,6 +23,11 @@
 | [referencia/severidade-das-regras.md](referencia/severidade-das-regras.md) | Critério único de severidade das regras (ERROR, WARNING, INFO) |
 | [referencia/claude-md-spring-boot.md](referencia/claude-md-spring-boot.md) · [claude-md-typescript.md](referencia/claude-md-typescript.md) | Exemplos do CLAUDE.md que o Guia de código gera (cópias de 2026-11-06, ajustadas ao gerador 12.64.0) |
 
+## Como desenvolver
+| Documento | Para quê |
+|---|---|
+| [sdd.md](sdd.md) | Desenvolvimento orientado por especificação com o GitHub Spec Kit: constituição, fluxo de comandos, ligação com issues, PRs e CI. Specs em [`specs/`](../specs/) |
+
 ## Integração
 | Documento | Para quê |
 |---|---|
