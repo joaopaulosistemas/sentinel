@@ -48,7 +48,13 @@ class U {
     void f(String cpf, String id) {
         // ruleid: sentinel-ee-log-dado-pessoal
         LOG.info("cliente", cpf);
+        // ruleid: sentinel-ee-log-dado-pessoal
+        LOG.info("login cpf=" + cpf);
+        // ruleid: sentinel-ee-log-dado-pessoal
+        LOG.info("login cpf=" + cpf + " ok");
         // ok: sentinel-ee-log-dado-pessoal
         LOG.info("cliente", id);
+        // ok: sentinel-ee-log-dado-pessoal
+        LOG.info("cliente=" + id);
     }
 }
