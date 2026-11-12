@@ -1326,6 +1326,7 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 
 - **Por quê:** `scripts/test_conferir_esquema.py` (PR B da spec 001) protege a checagem de esquema contra regressão, mas nunca rodava no CI. Mudança em `.github/workflows/ci.yml` autorizada pelo João.
 - **Mudança:** o arquivo entra no passo "Testes dos scripts de regras" do job `API, CLI e pacotes de regras`, ao lado dos outros testes de scripts.
+- **Junto:** 13 arquivos `scripts/__pycache__/*.pyc` tinham sido versionados por engano (vários vieram de PRs anteriores meus); saem do repositório e `__pycache__/` e `*.pyc` entram no `.gitignore`.
 - **Verificado:** os 5 testes passam localmente; YAML do workflow lido; `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado localmente:** a execução no runner do CI (o PR prova).
 
