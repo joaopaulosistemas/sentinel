@@ -1,5 +1,7 @@
 package com.sentinel.audit.dto;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
 /**
  * Scores de risco por dimensão.
  */
