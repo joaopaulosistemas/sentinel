@@ -1345,6 +1345,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado:** nada foi implementado; metas numéricas e orçamento de tempo não existem ainda (dependem da linha de base da 003); os nomes dos jobs do CI ficam para cada plano.
 
+## 12.96.0 — Ranking de Sistemas: a barra da nota voltou a aparecer
+
+- **Por quê:** na tela de ranking só apareciam a linha da meta e o número; as barras sumiram. Regressão do PR #238 (selo de escopo da spec 001): ele colocou a barra dentro de um novo `span` flex, e o contêiner passou a encolher ao tamanho do conteúdo, deixando a trilha (`flex: 1`) com largura 0.
+- **Mudança:** a barra ganha `flex: 1 1 8rem` e largura mínima de 8rem em `RankingPage.tsx`. O selo continua ao lado, quebrando de linha se faltar espaço.
+- **Testes:** `RankingPage.test.tsx` novo caso confere que a barra cresce e tem largura mínima, com e sem selo. Conferido que ele **falha** no código anterior e passa no novo.
+- **Verificado:** `vitest` da pasta do ranking (8 testes), `tsc --noEmit`, `sincronizar-versao.py --check`. O selo só existe no ranking (conferido por busca), então nenhuma outra tela tem o mesmo risco.
+- **NÃO verificado:** o desenho no navegador (jsdom não calcula largura); confira em `localhost:3000/ranking` depois de subir a versão. O teste cobre o estilo, não o pixel.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
