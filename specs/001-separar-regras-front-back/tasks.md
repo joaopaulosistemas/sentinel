@@ -67,7 +67,7 @@ Sem pré-requisitos bloqueantes: cada história altera arquivos próprios, e o `
 ### Implementação da história 3
 
 - [x] T014 [US3] Em `API/pack/RuleSide.java`, expor um método público que diga se linguagens e caminhos indicam só infraestrutura (Dockerfile, Compose, Kubernetes, Helm, IaC), reaproveitando o `INFRA` e a regra de `dockerfile` já existentes, para o teste T013 e o `RuleSide.infer` não duplicarem a lógica
-- [x] T015 [US3] Rodar o teste de guarda no CI e, para cada regra de código que ele apontar (o LOG 12.48.0 cita 3 regras de qualidade comuns a Java e TypeScript), acrescentar `metadata.side: common` (ou o lado correto) no YAML do pacote dela em `PACOTES/*/rules/*.yml`; as regras de infraestrutura não precisam de mudança
+- [x] T015 [US3] Rodar o teste de guarda no CI e, para cada regra de código que ele apontar (o LOG 12.48.0 citava 3 regras; o guarda achou 15, ver LOG 12.85.0), acrescentar `metadata.side: common` (ou o lado correto) no YAML do pacote dela em `PACOTES/*/rules/*.yml`; as regras de infraestrutura não precisam de mudança
 - [x] T016 [P] [US3] Avaliar se o mesmo guarda cabe em `scripts/verificar-regras.py` (roda sem Maven); se couber, acrescentar lá com um teste em `scripts/test_verificar_regras.py`; se não couber, registrar no LOG que o guarda só roda no CI
 
 ---
@@ -100,7 +100,7 @@ Sem pré-requisitos bloqueantes: cada história altera arquivos próprios, e o `
 - [x] T024 [US1] Em `API/model/AuditRun.java`, mapear o campo `disabledSides` à coluna `disabled_sides` (`@Column(name = "disabled_sides", length = 20)`) com getter e setter
 - [x] T025 [US1] Em `API/service/AuditOrchestrationService.java`, quando a auditoria começa, gravar em `AuditRun.disabledSides` os lados desligados do ajuste usado (o mesmo `SystemTuning` que `API/service/AuditPolicyResolver.java` aplica), ordenados e separados por vírgula; gravar uma vez, nunca atualizar depois
 - [x] T026 [US1] Em `API/dto/SystemSummaryResponse.java`, acrescentar `List<String> disabledSides` ao final do record e preencher em `API/resource/SystemViews.java` (`summary()`, a partir de `lastRun`): lista vazia e nunca nula quando `lastRun` não existe, quando o valor é `NULL` ou quando é vazio; segundo `contracts/api-sistemas.md`
-- [x] T027 [US1] Em `API/resource/ReportResource.java` (rota `/portfolio`), ler como cada `SystemSnapshot` é montado e acrescentar `disabledSides` a `SystemSnapshot` em `API/service/PortfolioReportService.java` (ainda **não verificado** se reaproveita `SystemViews.summary`, ver `research.md` R5)
+- [x] T027 [US1] Em `API/resource/ReportResource.java` (rota `/portfolio`), ler como cada `SystemSnapshot` é montado e acrescentar `disabledSides` a `SystemSnapshot` em `API/service/PortfolioReportService.java` (resolvido no PR B; ver `research.md` R5)
 - [x] T028 [US1] Em `API/service/ReportService.java` e `API/service/PdfReportService.java`, mostrar o selo ao lado da nota; em `PortfolioReportService`, mostrar o selo por sistema; texto do selo: "front-end desligado" ou "back-end desligado" (tabela de `data-model.md`)
 - [x] T029 [P] [US1] Em `DASH/types/index.ts`, acrescentar `disabledSides: string[]` ao tipo do resumo do sistema e, em `DASH/pages/Ranking/RankingPage.tsx`, mostrar o selo ao lado da nota usando o visual atual (tag do Carbon já usada na página)
 - [x] T030 [P] [US1] Documentar o campo `disabledSides` em `docs/referencia/auditoria-e-api.md` e conferir se o OpenAPI gerado o inclui
@@ -128,7 +128,7 @@ Sem pré-requisitos bloqueantes: cada história altera arquivos próprios, e o `
 ## Fase 8: Acabamento
 
 - [x] T037 [P] Atualizar `specs/001-separar-regras-front-back/spec.md` (status e requisitos FR-008 a FR-011 marcados como atendidos) e `docs/sdd.md`, se o fluxo ensinado mudou
-- [-] T038 (não feito: as tarefas foram executadas sem a análise prévia) Rodar `/speckit-analyze` sobre `spec.md`, `plan.md` e `tasks.md` antes de começar a implementar, para pegar inconsistências
+- [x] T038 (feito depois da entrega, em 2026-11-12, só como registro: 0 achados críticos; ver as correções deste PR) Rodar `/speckit-analyze` sobre `spec.md`, `plan.md` e `tasks.md` antes de começar a implementar, para pegar inconsistências
 - [ ] T039 Executar os cenários do `quickstart.md` numa instalação real (Docker na máquina do João) e registrar o resultado, já que a tela só se verifica com navegador real
 
 ---
