@@ -96,7 +96,7 @@ docs/evolucao/
 
 | Fatia | Entrega | Histórias | Toca `.github/`? |
 |---|---|---|---|
-| A | `medicao.py` com `relatorio` e `lacunas` sobre medidas existentes, estatística e `repositorios.json` | US1, US5 | não |
+| A | `medicao.py` com `relatorio` e `lacunas` sobre medidas existentes, estatística e `repositorios.json` | US1, US5 | **sim** (uma linha no `ci.yml`, T004) |
 | B | `comparar` + `propostas/` + veredito, com os 3 casos de teste | US2 | não |
 | C | Grupo `reservado`, checagens 5 a 8, registro de consultas (a **lista dos repositórios é aprovada pelo João**) | US3 | não |
 | D | `auditoria-completa.sh` com duração/arquivos e `medicao.yml` para medir treino, validação e o reservado uma vez (marco 0) e gerar a **linha de base** | US1, SC-001, SC-007 | **sim** |

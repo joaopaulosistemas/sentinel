@@ -2,6 +2,11 @@
 
 Os dados são arquivos versionados. Campos em português, no estilo dos arquivos que já existem em `audit-rules/calibracao/`. Formatos completos com exemplo em [contracts/arquivos.md](contracts/arquivos.md).
 
+## Glossário
+
+- **Grupo**: a qual conjunto um repositório pertence: `treino`, `validacao` ou `reservado` (campo `grupo` de `repositorios.json`).
+- **Conjunto**: o conjunto de repositórios de um grupo, medido de uma vez (campo `conjunto` das medições). Na spec, "conjunto" também é usado para o grupo; os dois nomes têm o mesmo valor.
+
 ## Entidades
 
 ### Repositório medido (`audit-rules/calibracao/repositorios.json`)

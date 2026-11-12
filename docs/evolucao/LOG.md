@@ -1345,6 +1345,13 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
 - **NÃO verificado:** nada foi implementado; metas numéricas e orçamento de tempo não existem ainda (dependem da linha de base da 003); os nomes dos jobs do CI ficam para cada plano.
 
+## Correções da análise da spec 003 (sem versão nova)
+
+- **Por quê:** o `/speckit-analyze` da 003 achou 0 críticos, 3 altos, 4 médios e 2 baixos antes de implementar.
+- **Mudança (só documentação):** `tasks.md` de 69 para 77 tarefas e `plan.md`/`data-model.md` ajustados. Altos: (A1) medição do reservado não pode guardar achados individuais (teste na geração e checagem no CI); (A2) o teste de separação só entra no CI na fatia C, não na A; (A3) conferir cada gabarito no commit fixado antes de confiar nos números. Médios: histórico de correções (FR-015), tabela de fatias, `linha_de_base` obrigatória na proposta, localização e trecho na amostra. Baixos: glossário grupo/conjunto e teste de que o módulo não executa processos.
+- **Verificado:** numeração sequencial das tarefas e referências cruzadas conferidas por script; `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado:** nada foi implementado.
+
 ## Tarefas da spec 003 (sem versão nova)
 
 - **Por quê:** próximo passo do fluxo SDD depois do plano da spec 003 (medição e prova).
