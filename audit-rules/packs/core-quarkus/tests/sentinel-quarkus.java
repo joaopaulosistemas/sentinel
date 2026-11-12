@@ -50,3 +50,28 @@ class Exemplos {
         Class<?> c = Class.forName("demo.Conta");
     }
 }
+
+class ContaRepositorio implements PanacheRepository<Conta> {
+    void consultas(String nome) {
+        // ruleid: sentinel-quarkus-panache-consulta-concatenada
+        find("nome = '" + nome + "'");
+        // ok: sentinel-quarkus-panache-consulta-concatenada
+        find("nome = ?1", nome);
+    }
+}
+
+class ContaRepositorioLiterais implements PanacheRepository<Conta> {
+    void consultas() {
+        // ok: sentinel-quarkus-panache-consulta-concatenada
+        find("nome = ?1 " + "AND ativo = true");
+        // ok: sentinel-quarkus-panache-consulta-concatenada
+        find("FROM Conta c WHERE c.ativo = true " + "AND c.nome IS NOT NULL " + "ORDER BY c.id").list();
+    }
+}
+
+class OutraClasse {
+    void consultas(String nome) {
+        // ok: sentinel-quarkus-panache-consulta-concatenada
+        find("nome = '" + nome + "'");
+    }
+}

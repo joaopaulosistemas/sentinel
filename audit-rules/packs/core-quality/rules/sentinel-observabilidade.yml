@@ -50,6 +50,14 @@ rules:
           } finally {
             ...
           }
+      - pattern-not-inside: |
+          MDC.put(...);
+          ...
+          try {
+            ...
+          } finally {
+            ...
+          }
     message: >
       MDC.put sem limpeza garantida: em servidor com pool de threads o contexto (usuário, requisição) vaza para a
       próxima requisição que reaproveitar a thread e aparece nos logs errados. Limpe em finally (MDC.remove ou

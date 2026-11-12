@@ -87,6 +87,12 @@ class Exemplo {
         // ruleid: sentinel-java-service-locator
         Object b = applicationContext.getBean(Servico.class);
 
+        // ruleid: sentinel-java-service-locator
+        Object c = CDI.current().select(Servico.class).get();
+
+        // ruleid: sentinel-java-service-locator
+        Object q = Arc.container().instance(Servico.class);
+
         // ok: sentinel-java-service-locator
         Object o = mapa.getBean(Servico.class);
     }
