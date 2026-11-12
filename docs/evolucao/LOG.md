@@ -1337,6 +1337,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`; números da linha de base conferidos no repositório (14 gabaritos de treino, 1 de validação, separação 51 × 8).
 - **NÃO verificado:** nada foi implementado; as metas numéricas não existem ainda (dependem da linha de base). SC-008 depende de vereditos humanos que João ainda não preencheu.
 
+## Specs 004 a 008 (Sentinel Premium 2 a 6) (sem versão nova)
+
+- **Por quê:** completar as seis specs do plano Sentinel Premium, depois da 003 (medição e prova): 004 menos alarme falso e só o novo no PR; 005 modelo estrutural do código; 006 rastreio de dado inseguro entre arquivos (começa por injeção de SQL); 007 arquitetura verificável; 008 prova externa.
+- **Mudança (só documentação):** `specs/004` a `specs/008`, cada uma com spec e checklist de qualidade. Todas dependem da 003 (régua, veredito "fica / sai / inconclusivo", conjunto reservado). A 008 tem a Q1 aberta (quem será o revisor externo); as demais não têm marcadores.
+- **Levantado no código para as linhas de base:** modo PR filtra por arquivo alterado, não por linha; Joern é opcional e só para Java; a política de arquitetura é declarada à mão (`architecture.yml`) e pesa 20% da nota; nenhum veredito humano de precisão está preenchido.
+- **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`.
+- **NÃO verificado:** nada foi implementado; metas numéricas e orçamento de tempo não existem ainda (dependem da linha de base da 003); os nomes dos jobs do CI ficam para cada plano.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
