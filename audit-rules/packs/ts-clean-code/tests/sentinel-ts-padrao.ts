@@ -97,6 +97,10 @@ export class CicloComponent {
 const numContaCorrente = 10;
 // ruleid: sentinel-tsp-abreviacao
 const filtro = { codTarifaLegado: 1 };
+// ruleid: sentinel-tsp-abreviacao
+class Itens { private _qtdItens = 0; }
+// ok: sentinel-tsp-abreviacao
+class Itens2 { private _quantidadeItens = 0; }
 // ok: sentinel-tsp-abreviacao
 const numeroContaCorrente = 10;
 // ok: sentinel-tsp-abreviacao
