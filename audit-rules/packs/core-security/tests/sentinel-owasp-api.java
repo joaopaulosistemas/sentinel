@@ -132,4 +132,22 @@ class JwtEPathNoSpring {
         // ok: sentinel-api-ssrf
         return new URL("https://api.interna/itens/2").getHost();
     }
+
+    // ---- achados do sentinel-alvo: jjwt 0.9 assina com signWith(algoritmo, segredo) ----
+    String jwtSignWithLiteral(String usuario) {
+        // ruleid: sentinel-api-jwt-chave-fixa
+        return Jwts.builder().setSubject(usuario).signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, "segredo-do-jwt-123").compact();
+    }
+
+    String jwtSignWithLiteralEmBytes(String usuario) {
+        // ruleid: sentinel-api-jwt-chave-fixa
+        return Jwts.builder().setSubject(usuario).signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, "segredo".getBytes()).compact();
+    }
+
+    String jwtSignWithChaveInjetada(String usuario, java.security.Key chave, String segredoDoAmbiente) {
+        // ok: sentinel-api-jwt-chave-fixa
+        Jwts.builder().setSubject(usuario).signWith(chave).compact();
+        // ok: sentinel-api-jwt-chave-fixa
+        return Jwts.builder().setSubject(usuario).signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, segredoDoAmbiente).compact();
+    }
 }

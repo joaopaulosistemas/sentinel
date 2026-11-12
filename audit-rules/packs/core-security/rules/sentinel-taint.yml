@@ -94,8 +94,16 @@ rules:
         from: $X
         to: $M
     pattern-sinks:
-      - pattern: new java.io.File(...)
-      - pattern: new File(...)
+      # new File(base, entrada).getCanonicalFile() é o primeiro passo da defesa; o uso do resultado sem conferir o
+      # prefixo continua sendo achado (FileInputStream etc. recebem o dado ainda contaminado)
+      - patterns:
+          - pattern-either:
+              - pattern: new java.io.File(...)
+              - pattern: new File(...)
+          - pattern-not-inside: new java.io.File(...).getCanonicalFile()
+          - pattern-not-inside: new File(...).getCanonicalFile()
+          - pattern-not-inside: new java.io.File(...).getCanonicalPath()
+          - pattern-not-inside: new File(...).getCanonicalPath()
       - pattern: java.nio.file.Paths.get(...)
       - pattern: java.nio.file.Path.of(...)
       - pattern: new java.io.FileInputStream(...)
@@ -109,6 +117,13 @@ rules:
       - pattern: $X.getFileName()
       - pattern: org.apache.commons.io.FilenameUtils.getName(...)
       - pattern: $ENC.encodeForHTML(...)
+      # depois de `if (!arq.toPath().startsWith(base)) throw ...` o caminho está dentro do diretório permitido
+      - by-side-effect: true
+        patterns:
+          - pattern-either:
+              - pattern: $F.toPath().startsWith(...)
+              - pattern: $F.getCanonicalPath().startsWith(...)
+          - focus-metavariable: $F
     message: >
       Possível Path Traversal (CWE-22): um dado da requisição (parâmetro, cabeçalho ou cookie) forma o caminho de um arquivo.
       Use só o nome do arquivo (`getFileName()`), normalize e confira que o caminho final continua dentro do diretório permitido.

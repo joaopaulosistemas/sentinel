@@ -21,4 +21,23 @@ class CaminhoPorCabecalho {
         // ok: sentinel-servlet-path-traversal
         new java.io.File("/dados", java.nio.file.Paths.get(nome).getFileName().toString());
     }
+
+
+    // ---- achados do sentinel-alvo: a defesa recomendada (caminho canônico + conferência do prefixo) não é achado ----
+    void caminhoCanonicoConferido(jakarta.servlet.http.HttpServletRequest request) throws Exception {
+        java.io.File base = new java.io.File("/dados/relatorios").getCanonicalFile();
+        java.io.File alvo = new java.io.File(base, request.getParameter("arquivo")).getCanonicalFile();
+        if (!alvo.toPath().startsWith(base.toPath())) {
+            throw new SecurityException("fora da pasta");
+        }
+        // ok: sentinel-servlet-path-traversal
+        new java.io.FileInputStream(alvo);
+    }
+
+    void caminhoCanonicoSemConferir(jakarta.servlet.http.HttpServletRequest request) throws Exception {
+        java.io.File base = new java.io.File("/dados/relatorios").getCanonicalFile();
+        java.io.File alvo = new java.io.File(base, request.getParameter("arquivo")).getCanonicalFile();
+        // ruleid: sentinel-servlet-path-traversal
+        new java.io.FileInputStream(alvo);
+    }
 }

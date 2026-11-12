@@ -2,6 +2,14 @@
 FROM node:latest
 # ok: sentinel-docker-imagem-latest
 FROM node:20.11-alpine
+# ruleid: sentinel-docker-imagem-latest
+FROM registry.exemplo.com:5000/base/app:latest AS build
+# ruleid: sentinel-docker-imagem-latest
+FROM --platform=linux/amd64 eclipse-temurin:latest
+# ok: sentinel-docker-imagem-latest
+FROM registry.exemplo.com:5000/base/app:1.4.2 AS final
+# ok: sentinel-docker-imagem-latest
+FROM build AS runtime
 
 # ruleid: sentinel-docker-add-url
 ADD https://exemplo.com/pacote.tar.gz /tmp/

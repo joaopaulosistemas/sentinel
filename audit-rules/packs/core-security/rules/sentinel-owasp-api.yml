@@ -232,6 +232,9 @@ rules:
       - pattern: $P.setSigningKey("...")
       - pattern: Algorithm.HMAC256("...")
       - pattern: Keys.hmacShaKeyFor("...".getBytes(...))
+      # jjwt 0.9: signWith(SignatureAlgorithm.HS256, "segredo") e signWith(alg, "segredo".getBytes())
+      - pattern: $P.signWith($ALG, "...")
+      - pattern: $P.signWith($ALG, "...".getBytes(...))
       # chave guardada em constante a partir de literal codificado (TextCodec.BASE64.encode("victory"))
       - patterns:
           - pattern-either:
