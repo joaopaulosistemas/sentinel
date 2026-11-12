@@ -1,6 +1,6 @@
 # Especificação: Sentinel Premium 6 — Prova externa
 
-**Ramo**: `spec/008-prova-externa` | **Criada**: 2026-11-12 | **Status**: Rascunho (1 pergunta aberta: Q1)
+**Ramo**: `spec/008-prova-externa` | **Criada**: 2026-11-12 | **Status**: Rascunho esclarecido (Q1 respondida em 2026-11-12)
 **Pedido**: "Sentinel Premium — Plano de Ação", eixo **prova**: transformar os números internos em evidência que terceiros possam conferir e repetir. É a última das seis specs e a que fecha a promessa do plano: "provar com números". Depende de todas as anteriores, principalmente da 003 (régua e conjunto reservado).
 
 ## Linha de base: o que já existe (levantado no repositório em 2026-11-12)
@@ -156,10 +156,13 @@ Os nomes exatos dos jobs ficam para o `/speckit-plan`.
 
 - As specs 003 a 007 foram entregues e medidas antes; esta spec fecha o ciclo com a prova.
 - O limite de 100 achados, 10 repositórios, 60 julgados por pessoa e 80% de concordância é o que o placar do projeto já define; metas adicionais são fixadas por João depois da linha de base.
+- O revisor externo é um colega de trabalho do João (esclarecimento de 2026-11-12); a independência dele é em relação ao projeto, não à empresa, e isso é dito no relatório.
 - A publicação do relatório é, por padrão, **privada** até João decidir publicar; esta spec produz o relatório e o torna publicável.
 - A escolha das ferramentas de mercado e de seus planos é do plano (cuidado com licença).
 - Fora do escopo: novas capacidades de detecção; criar código novo de análise.
 
-## Pergunta em aberto *(resolver com `/speckit-clarify` antes do plano)*
+## Esclarecimentos
 
-- **Q1**: [NEEDS CLARIFICATION: quem será o revisor externo dos achados — uma pessoa conhecida sua (colega de profissão), um profissional contratado ou uma comunidade (por exemplo, pedido público de revisão)? Isso decide o prazo, a independência da prova e se algum custo existe.]
+### Sessão 2026-11-12
+
+- Q: Quem será o revisor externo dos achados? → A: Um colega de trabalho do João, que não participou do projeto. Ele julga só achados de código aberto público (nunca código de empregador ou de cliente); o prazo depende da disponibilidade dele, e o que ficar sem revisão é publicado como pendente.
