@@ -6,13 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sentinel.audit.resource.ApiContractCheck;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.Test;
 @Tag("integration")
 class OpenApiContractIntegrationTest {
 
-    private static final Set<String> VERBS = Set.of("get", "post", "put", "delete", "patch");
     /** Rotas que o ApiKeyFilter deixa passar sem a chave global (o MCP tem a chave própria do sistema). */
     private static final List<String> OPEN_PREFIXES = List.of("/api/v1/health", "/api/v1/webhooks/", "/mcp/");
     private static final int MIN_OPERATIONS = 70;
@@ -36,21 +34,8 @@ class OpenApiContractIntegrationTest {
         return new ObjectMapper().readTree(body);
     }
 
-    /** "GET /api/v1/systems" -> a operação. */
     private static Map<String, JsonNode> operations(JsonNode doc) {
-        Map<String, JsonNode> out = new java.util.TreeMap<>();
-        Iterator<Map.Entry<String, JsonNode>> paths = doc.get("paths").fields();
-        while (paths.hasNext()) {
-            Map.Entry<String, JsonNode> path = paths.next();
-            Iterator<Map.Entry<String, JsonNode>> items = path.getValue().fields();
-            while (items.hasNext()) {
-                Map.Entry<String, JsonNode> item = items.next();
-                if (VERBS.contains(item.getKey())) {
-                    out.put(item.getKey().toUpperCase() + " " + path.getKey(), item.getValue());
-                }
-            }
-        }
-        return out;
+        return ApiContractCheck.operations(doc);
     }
 
     private static boolean isOpen(String route) {
@@ -63,28 +48,31 @@ class OpenApiContractIntegrationTest {
     }
 
     @Test
-    void toda_rota_tem_resumo_tag_e_resposta() throws Exception {
-        Map<String, JsonNode> ops = operations(document());
+    void o_contrato_de_toda_rota_esta_completo() throws Exception {
+        JsonNode doc = document();
+        Map<String, JsonNode> ops = operations(doc);
         System.out.println("OpenAPI: " + ops.size() + " rotas conferidas");
         assertTrue(ops.size() >= MIN_OPERATIONS, "rotas no documento: " + ops.size());
+        assertNoneMissing("violações do contrato", ApiContractCheck.violations(doc));
+    }
 
-        List<String> semResumo = new ArrayList<>();
-        List<String> semTag = new ArrayList<>();
-        List<String> semResposta = new ArrayList<>();
-        ops.forEach((route, op) -> {
-            if (!op.hasNonNull("summary") || op.get("summary").asText().isBlank()) {
-                semResumo.add(route);
+    /** O 404 documentado é o que a API devolve: GET com um só identificador de caminho, para um recurso que não existe. */
+    @Test
+    void o_404_documentado_e_o_que_a_api_devolve() throws Exception {
+        List<String> divergencias = new ArrayList<>();
+        for (Map.Entry<String, JsonNode> route : operations(document()).entrySet()) {
+            String key = route.getKey();
+            String path = key.substring(key.indexOf(' ') + 1);
+            if (!key.startsWith("GET ") || isOpen(key) || !path.matches("(/[a-z0-9.-]+)+/\\{id}(/[a-z0-9.-]+)*")
+                    || !route.getValue().path("responses").has("404")) {
+                continue;
             }
-            if (!op.has("tags") || op.get("tags").isEmpty()) {
-                semTag.add(route);
+            int status = given().get(path.replace("{id}", "999999999")).statusCode();
+            if (status != 404) {
+                divergencias.add(key + " devolveu " + status);
             }
-            if (!op.has("responses") || op.get("responses").isEmpty()) {
-                semResposta.add(route);
-            }
-        });
-        assertNoneMissing("rotas sem resumo", semResumo);
-        assertNoneMissing("rotas sem tag", semTag);
-        assertNoneMissing("rotas sem resposta", semResposta);
+        }
+        assertNoneMissing("rotas que documentam 404 e respondem outra coisa", divergencias);
     }
 
     @Test

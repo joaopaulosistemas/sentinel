@@ -22,6 +22,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDateTime;
@@ -56,6 +60,8 @@ public class ReportResource {
     @Path("/portfolio")
     @Operation(summary = "Relatório de todos os sistemas",
             description = "type=executivo|tecnico|comparativo, format=html|pdf|csv; days limita o período; systemId restringe a um sistema")
+    @APIResponse(responseCode = "200", description = "Relatório no formato pedido (html, pdf ou csv)",
+                content = {@Content(mediaType = "text/html", schema = @Schema(type = SchemaType.STRING)), @Content(mediaType = "application/pdf", schema = @Schema(type = SchemaType.STRING, format = "binary")), @Content(mediaType = "text/csv", schema = @Schema(type = SchemaType.STRING))})
     public Response portfolio(@QueryParam("systemId") Long systemId,
                               @QueryParam("type") String type,
                               @QueryParam("format") String format,

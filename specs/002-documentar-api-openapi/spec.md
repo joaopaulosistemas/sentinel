@@ -1,14 +1,14 @@
 # Especificação: Documentar toda a API REST do Sentinel com OpenAPI/Swagger
 
-**Ramo**: `spec/002-documentar-api-openapi` | **Criada**: 2026-11-12 | **Status**: Rascunho
+**Ramo**: `spec/002-documentar-api-openapi` | **Criada**: 2026-11-12 | **Status**: Em andamento (PR A mergeado em 2026-11-12: segurança, erros padrão, MCP e trava; faltam B, C e D)
 **Pedido**: "criar uma spec para swagger, criar para todos os resources do sentinel"
 
 ## Linha de base: o que já existe (levantado no código em 2026-11-12)
 
 - Há 22 classes com `@Path` e 70 rotas. 21 classes têm `@Tag` e 67 das 70 rotas têm `@Operation` (resumo/descrição).
-- A única classe sem documentação é `McpResource` (`/mcp/{system}`, 3 rotas).
+- A única classe sem documentação era `McpResource` (`/mcp/{system}`, 3 rotas); documentada no PR A.
 - Não existe nenhum `@APIResponse`, `@Parameter` ou `@Schema`: o Swagger mostra o caminho e o resumo, mas não diz que respostas e erros cada rota devolve, nem o que significa cada parâmetro, nem o formato dos corpos.
-- O esquema de segurança não está declarado no OpenAPI, embora a API aceite a chave em `X-API-Key` ou `Authorization: Bearer` (`ApiKeyFilter`). Com isso, o botão "Authorize" do Swagger UI não existe e testar rotas protegidas ali não funciona.
+- (Resolvido no PR A) O esquema de segurança não estava declarado no OpenAPI, embora a API aceite a chave em `X-API-Key` ou `Authorization: Bearer` (`ApiKeyFilter`). Com isso, o botão "Authorize" do Swagger UI não existe e testar rotas protegidas ali não funciona.
 - O erro padrão (`ApiErrorMapper`) não aparece no contrato.
 - O Swagger UI (`/swagger-ui`) só fica ativo em modo dev (`docs/referencia/auditoria-e-api.md`); o documento OpenAPI não é conferido pelo CI.
 
@@ -36,12 +36,12 @@ Com a chave de API configurada, a pessoa clica em "Authorize", informa a chave u
 
 **Por que P1**: sem isso o Swagger só serve para ler; com a chave ligada (padrão de produção) as chamadas dão 401.
 
-**Teste independente**: documento OpenAPI declara o esquema de chave de API e as rotas protegidas o exigem; as rotas públicas (saúde, webhooks, MCP) aparecem sem exigência.
+**Teste independente**: documento OpenAPI declara o esquema de chave de API e as rotas protegidas o exigem; as rotas sem chave global (saúde e webhooks) aparecem sem exigência, e o MCP aparece com a chave própria do sistema.
 
 **Cenários de aceite**:
 
-1. **Dado** o documento OpenAPI, **quando** leio os esquemas de segurança, **então** constam `X-API-Key` e `Bearer`.
-2. **Dado** uma rota que o `ApiKeyFilter` deixa passar sem chave, **quando** a vejo no documento, **então** ela não exige segurança; todas as demais exigem.
+1. **Dado** o documento OpenAPI, **quando** leio os esquemas de segurança, **então** constam `X-API-Key`, `Bearer` e a chave MCP do sistema.
+2. **Dado** uma rota que o `ApiKeyFilter` deixa passar sem chave, **quando** a vejo no documento, **então** ela não exige segurança (o MCP exige a chave do sistema); todas as demais exigem a chave global.
 
 ---
 
@@ -97,10 +97,10 @@ O CI guarda o OpenAPI em arquivo (YAML) como artefato, e a documentação aponta
 - **FR-001**: Toda rota REST (70 hoje) deve ter resumo, descrição, tag, resposta de sucesso com tipo de corpo e mídia, e as respostas de erro que o código devolve.
 - **FR-002**: Todo parâmetro (caminho, query, cabeçalho) deve ter descrição; valores de conjunto fechado listam as opções.
 - **FR-003**: Os corpos de entrada e saída (DTOs) devem ter esquema com descrição por campo e exemplo, sem valores reais sensíveis.
-- **FR-004**: O erro padrão da API deve constar no contrato e ser referenciado pelas respostas de erro.
+- **FR-004**: O erro padrão da API deve constar no contrato (`ApiError`, e `ApiKeyError` para o 401) e ser referenciado pelo `content` das respostas de erro de cada rota.
 - **FR-005**: O documento deve declarar o esquema de segurança (`X-API-Key` e `Bearer`) e marcar como públicas apenas as rotas que o filtro libera.
 - **FR-006**: `McpResource` deve ser documentado e agrupado como as demais.
-- **FR-007**: Um teste deve falhar listando a rota quando alguma ficar sem resumo, tag, resposta de sucesso ou respostas de erro; o teste prova a falha com caso sintético.
+- **FR-007**: Um teste deve falhar listando a rota quando alguma ficar sem resumo, tag, resposta de sucesso ou respostas de erro; a verificação é testada à parte com documentos sintéticos que a fazem falhar.
 - **FR-008**: O CI deve validar o documento OpenAPI e publicá-lo como artefato.
 - **FR-009**: Nenhuma mudança de comportamento: caminhos, métodos, códigos e corpos ficam como estão (o teste do contrato existente e a bateria Java continuam verdes).
 - **FR-010**: `docs/referencia/auditoria-e-api.md` descreve como abrir o Swagger, autenticar, e onde está o arquivo gerado.
@@ -116,11 +116,11 @@ O CI guarda o OpenAPI em arquivo (YAML) como artefato, e a documentação aponta
 
 ### Resultados mensuráveis
 
-- **SC-001**: 70 de 70 rotas com resumo, descrição, tag e resposta de sucesso tipada (hoje: 67 de 70 com resumo; 0 com resposta tipada).
+- **SC-001**: 70 de 70 rotas com resumo, descrição, tag e resposta de sucesso com tipo de mídia e, quando há corpo JSON, o esquema dele (levantamento inicial: 67 de 70 com resumo; 0 com resposta descrita).
 - **SC-002**: 100 % das rotas que validam entrada ou buscam por id descrevem 400/404 (conferido pelo teste, não por leitura).
 - **SC-003**: 100 % dos parâmetros com descrição.
 - **SC-004**: o teste da FR-007 falha num caso sintético e passa no código real; uma rota nova sem documentação derruba o build.
-- **SC-005**: o botão "Authorize" do Swagger UI aceita a chave e uma rota protegida responde 200 em modo dev com chave ligada.
+- **SC-005**: o botão "Authorize" do Swagger UI aceita a chave e uma rota protegida responde 200 em modo dev com chave ligada (conferência manual do João, tarefa T022; o CI não abre navegador).
 - **SC-006**: zero diferença de comportamento: a bateria Java existente passa sem alteração de teste.
 
 ## Premissas

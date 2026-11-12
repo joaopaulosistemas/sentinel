@@ -17,6 +17,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
@@ -51,14 +52,16 @@ public class McpAdminResource {
     McpConfigViews views;
 
     @GET
-    @Operation(summary = "Configuração do acesso MCP do sistema")
+    @Operation(summary = "Configuração do acesso MCP do sistema",
+            description = "Devolve a configuração do acesso MCP do sistema: se está ligado, o nível de dados e as ferramentas.")
     public McpConfigViews.McpConfigResponse get(@PathParam("id") Long id) {
         requireSystem(id);
         return views.view(gate.find(id));
     }
 
     @PUT
-    @Operation(summary = "Ligar ou desligar o acesso, escolher o nível de dados e as ferramentas")
+    @Operation(summary = "Ligar ou desligar o acesso, escolher o nível de dados e as ferramentas",
+            description = "Atualiza a configuração do acesso MCP do sistema.")
     public McpConfigViews.McpConfigResponse update(@PathParam("id") Long id, McpConfigRequest request) {
         requireSystem(id);
         if (request == null) {
@@ -84,6 +87,7 @@ public class McpAdminResource {
     @DELETE
     @Path("/key")
     @Operation(summary = "Revogar a chave", description = "Apaga a chave e desliga o acesso MCP do sistema")
+    @APIResponse(responseCode = "204", description = "Chave revogada e acesso MCP desligado")
     public Response revoke(@PathParam("id") Long id) {
         requireSystem(id);
         gate.revokeKey(id);
@@ -92,7 +96,8 @@ public class McpAdminResource {
 
     @GET
     @Path("/calls")
-    @Operation(summary = "Últimas chamadas feitas pelo MCP neste sistema")
+    @Operation(summary = "Últimas chamadas feitas pelo MCP neste sistema",
+            description = "Lista as chamadas mais recentes feitas pelo MCP neste sistema.")
     public List<CallResponse> calls(@PathParam("id") Long id, @QueryParam("limit") @DefaultValue("50") int limit) {
         requireSystem(id);
         return gate.recentCalls(id, limit).stream()

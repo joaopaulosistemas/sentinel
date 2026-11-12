@@ -14,6 +14,10 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /** Exportações de uma auditoria: relatórios HTML e PDF, achados em CSV e SBOM. */
@@ -40,6 +44,8 @@ public class AuditExportResource {
     @Path("/{id}/report")
     @Produces(MediaType.TEXT_HTML)
     @Operation(summary = "Relatório HTML", description = "Relatório da auditoria: type=tecnico (padrão), executivo ou comparativo; days limita o período do comparativo")
+    @APIResponse(responseCode = "200", description = "Relatório em HTML",
+                content = {@Content(mediaType = "text/html", schema = @Schema(type = SchemaType.STRING))})
     public Response getReport(@PathParam("id") Long id,
                               @QueryParam("type") String type,
                               @QueryParam("days") Integer days) {
@@ -51,6 +57,8 @@ public class AuditExportResource {
     @Path("/{id}/report.pdf")
     @Produces("application/pdf")
     @Operation(summary = "Relatório PDF", description = "Relatório da auditoria em PDF: type=tecnico (padrão), executivo ou comparativo; days limita o período do comparativo")
+    @APIResponse(responseCode = "200", description = "Relatório em PDF",
+                content = {@Content(mediaType = "application/pdf", schema = @Schema(type = SchemaType.STRING, format = "binary"))})
     public Response getReportPdf(@PathParam("id") Long id,
                                  @QueryParam("type") String type,
                                  @QueryParam("days") Integer days) {
@@ -67,6 +75,8 @@ public class AuditExportResource {
     @Path("/{id}/findings.csv")
     @Produces("text/csv")
     @Operation(summary = "Achados em CSV", description = "Achados ativos da auditoria, prontos para planilha")
+    @APIResponse(responseCode = "200", description = "Achados em CSV (UTF-8 com BOM)",
+                content = {@Content(mediaType = "text/csv", schema = @Schema(type = SchemaType.STRING))})
     public Response getFindingsCsv(@PathParam("id") Long id) {
         String csv = reports.csv(id);
         return Response.ok("\uFEFF" + csv, "text/csv; charset=UTF-8")
@@ -81,6 +91,10 @@ public class AuditExportResource {
     @Path("/{id}/sbom")
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "SBOM CycloneDX", description = "Lista de materiais de software da auditoria (CycloneDX 1.5)")
+    @APIResponse(responseCode = "200", description = "SBOM em CycloneDX JSON",
+                content = {@Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT))})
+    @APIResponse(responseCode = "404", description = "Esta auditoria não tem SBOM",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiError"))})
     public Response getSbom(@PathParam("id") Long id) {
         AuditRun run = runCatalog.require(id);
         if (run.getSbomJson() == null) {

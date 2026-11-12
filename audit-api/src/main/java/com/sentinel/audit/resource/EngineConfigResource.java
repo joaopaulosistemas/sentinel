@@ -40,7 +40,8 @@ public class EngineConfigResource {
     EngineConfigViews views;
 
     @GET
-    @Operation(summary = "Ajustes do sistema e o que vem do perfil")
+    @Operation(summary = "Ajustes do sistema e o que vem do perfil",
+            description = "Devolve os ajustes do motor para o sistema e a parte que vem do perfil de regras.")
     public EngineConfigViews.EngineConfigResponse get(@PathParam("id") Long id) {
         return views.view(systemCatalog.require(id), tuningService.load(id));
     }

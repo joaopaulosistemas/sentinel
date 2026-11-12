@@ -14,6 +14,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.nio.charset.StandardCharsets;
@@ -44,6 +48,14 @@ public class WebhookResource {
     @POST
     @Path("/github")
     @Operation(summary = "Webhook de push do GitHub", description = "Content type application/json; segredo no campo Secret do webhook, o mesmo cadastrado no sistema")
+    @APIResponse(responseCode = "200", description = "Ping respondido ou evento ignorado (triggered = 0)",
+                content = {@Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT))})
+    @APIResponse(responseCode = "202", description = "Auditorias disparadas; triggered traz quantas",
+                content = {@Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT))})
+    @APIResponse(responseCode = "400", description = "Corpo não é um JSON válido",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
+    @APIResponse(responseCode = "401", description = "Assinatura inválida ou sistema sem segredo de webhook",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
     public Response github(@HeaderParam("X-Hub-Signature-256") String signature,
                            @HeaderParam("X-GitHub-Event") String event, byte[] body) {
         byte[] bytes = body == null ? new byte[0] : body;
@@ -54,6 +66,14 @@ public class WebhookResource {
     @POST
     @Path("/gitlab")
     @Operation(summary = "Webhook de push do GitLab", description = "Segredo no campo Secret token do webhook, o mesmo cadastrado no sistema")
+    @APIResponse(responseCode = "200", description = "Evento ignorado (triggered = 0)",
+                content = {@Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT))})
+    @APIResponse(responseCode = "202", description = "Auditorias disparadas; triggered traz quantas",
+                content = {@Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT))})
+    @APIResponse(responseCode = "400", description = "Corpo não é um JSON válido",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
+    @APIResponse(responseCode = "401", description = "Token inválido ou sistema sem segredo de webhook",
+                content = {@Content(mediaType = "application/json", schema = @Schema(ref = "ApiKeyError"))})
     public Response gitlab(@HeaderParam("X-Gitlab-Token") String token, byte[] body) {
         return process(body == null ? new byte[0] : body, "webhook-gitlab", "push",
                 s -> WebhookService.validGitlabToken(webhookService.secretOf(s), token));

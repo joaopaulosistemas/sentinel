@@ -15,6 +15,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
@@ -41,7 +42,8 @@ public class SettingsResource {
     SettingsService service;
 
     @GET
-    @Operation(summary = "Configurações em uso, valores salvos e o que aguarda reinício")
+    @Operation(summary = "Configurações em uso, valores salvos e o que aguarda reinício",
+            description = "Lista as configurações em uso, os valores salvos e as alterações que só valem após reiniciar.")
     public SettingsService.SettingsView get() {
         return service.view();
     }
@@ -58,7 +60,8 @@ public class SettingsResource {
 
     @DELETE
     @Path("/{key}")
-    @Operation(summary = "Voltar uma configuração para o valor do ambiente")
+    @Operation(summary = "Voltar uma configuração para o valor do ambiente",
+            description = "Apaga o valor salvo de uma configuração, que volta a usar o valor do ambiente.")
     public SettingsService.SettingsView delete(@PathParam("key") String key) {
         try {
             return service.resetOne(key);
@@ -71,6 +74,7 @@ public class SettingsResource {
     @Path("/restart")
     @Consumes(MediaType.WILDCARD)
     @Operation(summary = "Reiniciar a API", description = "Encerra o processo; o Docker Compose e o Kubernetes sobem de novo.")
+    @APIResponse(responseCode = "202", description = "Reinício agendado; a API encerra em instantes")
     public Response restart() {
         LOG.warn("Reinício da API pedido pela tela de Configurações");
         Thread t = new Thread(() -> {
