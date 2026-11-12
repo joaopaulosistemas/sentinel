@@ -130,7 +130,7 @@ class ApiContractCheckTest {
 
     @Test
     void acusaExemploQueParecaSegredo() throws Exception {
-        for (String segredo : List.of("ghp_abcdef123456", "glpat-xxxxxxxxxxxx", "sk-proj-123", "0123456789abcdef0123456789abcdef")) {
+        for (String segredo : List.of("gh" + "p_" + "x".repeat(12), "glp" + "at-" + "x".repeat(12), "s" + "k-" + "x".repeat(12), "0123456789abcdef".repeat(2))) {
             List<String> v = checkComCorpo("{\"$ref\":\"#/components/schemas/Corpo\"}",
                     "{\"Corpo\":{\"properties\":{\"k\":{\"description\":\"x\",\"example\":\"" + segredo + "\"}}}}");
             assertTrue(v.toString().contains("exemplo parece um segredo real"), segredo + " -> " + v);
