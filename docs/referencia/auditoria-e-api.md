@@ -118,6 +118,8 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 
 Documentação interativa (somente modo dev): **http://localhost:8080/swagger-ui**
 
+O documento OpenAPI (JSON em `/q/openapi?format=json`) declara as formas de autenticação: chave no cabeçalho `X-API-Key` ou `Authorization: Bearer <chave>` (a mesma `API_KEY` do servidor) e, só no MCP, a chave de acesso do sistema. No Swagger UI, **Authorize** guarda a chave uma vez para todas as chamadas. Saúde, webhooks e MCP não usam a chave global. Toda rota protegida documenta o 401, e os dois formatos de erro (`{"message": …}` e `{"error": …}`) estão em `components/schemas` (`ApiError`, `ApiKeyError`). Um teste de integração falha se uma rota ficar sem resumo, tag, resposta ou 401.
+
 ---
 
 **Desenvolvido com ❤️ usando IBM Bob**  

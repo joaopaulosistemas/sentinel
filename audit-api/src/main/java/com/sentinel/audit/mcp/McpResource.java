@@ -13,6 +13,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
@@ -32,6 +35,7 @@ import java.util.Optional;
  */
 // Acesso: fora de /api/*; autenticado aqui dentro pela chave do sistema (guardada como hash), não pela API key global.
 @PermitAll
+@Tag(name = "MCP", description = "Servidor MCP (JSON-RPC): o Claude lê os resultados de um sistema com a chave própria dele")
 @Path("/mcp/{system}")
 public class McpResource {
 
@@ -79,6 +83,15 @@ public class McpResource {
     @POST
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Mensagem JSON-RPC do MCP",
+            description = "Recebe uma mensagem JSON-RPC 2.0 do protocolo MCP (initialize, tools/list, tools/call) e devolve a resposta. "
+                    + "O sistema vai no caminho (nome, sem diferenciar maiúsculas, ou número). A chave é a do sistema, em Authorization: Bearer; "
+                    + "sem chave válida a resposta é sempre a mesma 401, exista o sistema ou não. Notificações (sem id) respondem 202 sem corpo.")
+    @APIResponse(responseCode = "200", description = "Resposta JSON-RPC")
+    @APIResponse(responseCode = "202", description = "Notificação aceita, sem corpo")
+    @APIResponse(responseCode = "401", description = "Chave ausente, inválida ou acesso MCP desligado para o sistema")
+    @APIResponse(responseCode = "413", description = "Corpo maior que 64 mil caracteres")
+    @APIResponse(responseCode = "429", description = "Muitas tentativas: aguarde o tempo do cabeçalho Retry-After")
     public Response post(@PathParam("system") String systemRef,
                          @HeaderParam("Authorization") String authorization,
                          String body) {
@@ -171,11 +184,15 @@ public class McpResource {
 
     /** Este servidor não abre fluxo SSE nem sessão: só responde a POST. */
     @GET
+    @Operation(summary = "Não suportado", description = "O servidor não abre fluxo SSE: só responde a POST.")
+    @APIResponse(responseCode = "405", description = "Método não permitido (Allow: POST)")
     public Response get() {
         return Response.status(Response.Status.METHOD_NOT_ALLOWED).header("Allow", "POST").build();
     }
 
     @DELETE
+    @Operation(summary = "Não suportado", description = "O servidor não guarda sessão: só responde a POST.")
+    @APIResponse(responseCode = "405", description = "Método não permitido (Allow: POST)")
     public Response delete() {
         return Response.status(Response.Status.METHOD_NOT_ALLOWED).header("Allow", "POST").build();
     }
