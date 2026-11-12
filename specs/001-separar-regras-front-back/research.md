@@ -51,7 +51,8 @@ A dedução por `applies-to` (`RuleSide.infer(["regex"], applies-to)`) acerta qu
 
 - **Fato**: `SemgrepAnalyzer.resolveConfigs(policy)` passa ao motor as pastas `rules/` dos pacotes ativos; o lado desligado só é filtrado depois em `AuditPolicy.apply`.
 - **Opções**: (a) flag de exclusão de regra do próprio motor; (b) gerar uma pasta temporária de regras sem as do lado desligado.
-- **Decisão**: adiar. É ganho de desempenho, está no LOG como "não feito" e não muda resultado. Antes de planejar a implementação, verificar no CI se o Opengrep 1.30.0 aceita a opção (a); o Semgrep tem `--exclude-rule`, mas **NÃO verifiquei que o Opengrep a aceita**. Se não aceitar, a opção (b) tem custo e risco maiores e a história pode ser cancelada.
+- **Verificado em 2026-11-12** (binário `opengrep_manylinux_x86` v1.30.0, SHA-256 igual ao fixado no Dockerfile): `opengrep scan --help` lista `--exclude-rule`, e ela funciona, mas só casa com o **id com namespace derivado do caminho do arquivo de regras em relação ao diretório de execução** (`--exclude-rule r-dois` não exclui nada; `--exclude-rule t.r-dois` exclui). Nos achados do Sentinel isso aparece como `audit-rules.packs.core-frontend.rules.sentinel-fe-...`.
+- **Decisão: história cancelada (PR C não será feito).** O ganho é só de tempo (o lado desligado já some dos achados em `AuditPolicy.apply`), não foi medido, e usar a opção exigiria reproduzir no `SemgrepAnalyzer` a regra de namespace do motor, que depende do diretório de execução e do modo de passagem das pastas de regra. Um erro nisso falharia em silêncio (a regra rodaria de qualquer jeito). Se um dia a medição mostrar que vale, o caminho é este: calcular o id completo a partir do caminho relativo ao diretório de execução, passar `--exclude-rule` por regra do lado e provar com um teste que o conjunto final de achados é idêntico ao de hoje.
 
 ## R7. Como o CI prova cada critério
 
