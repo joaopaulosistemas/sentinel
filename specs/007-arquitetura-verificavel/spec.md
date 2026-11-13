@@ -19,6 +19,7 @@
 - Q: A data de uma exceção declarada é de registro ou de validade? → A: de validade, obrigatória; vencida a exceção, a dependência volta a ser desvio; o relatório mostra a exceção vencida, a data de registro e a de validade.
 - Q: Qual medida de acoplamento por módulo? → A: instabilidade de Martin (dependências que saem ÷ saem + entram, de 0 a 1) mais a contagem bruta de dependências entre módulos; definição fixa e registrada.
 - Q: O que é violação nova, resolvida e persistente na tendência? → A: a violação é identificada pela regra violada mais o par origem→destino (classe, módulo ou camada), sem a linha; nova = não existia na auditoria anterior, resolvida = sumiu, persistente = continua.
+- Q: Renomear ou mover uma classe com violação conta como a mesma violação? → A: não; a identidade é regra + par origem→destino, então renomear ou mover aparece como uma resolvida mais uma nova, sem heurística de casamento por similaridade.
 
 ## Cenários de usuário e testes *(obrigatório)*
 
@@ -105,6 +106,7 @@ Ciclos entre módulos, classes que sabem demais (muitas dependências) e módulo
 - Arquitetura declarada com camadas que o código nunca usou: aparece como "declarada e sem evidência".
 - Dependência permitida por exceção justificada: a exceção é declarada com motivo, data de registro e data de validade, e aparece no relatório; vencida, volta a ser desvio.
 - Frameworks que criam dependência em tempo de execução (proxies): declaradas como limite.
+- Classe renomeada ou movida de pacote: a violação aparece como resolvida (par antigo) e nova (par novo); sem casamento por similaridade.
 - Projeto sem arquitetura declarada: o mapa recuperado é entregue sem desvios, e o relatório sugere por onde começar a declarar.
 
 ## Requisitos *(obrigatório)*
