@@ -30,7 +30,7 @@ medicao.py relatorio --conjunto treino|validacao|reservado --medidas <pasta> [--
 medicao.py comparar --proposta <arquivo.json> --antes <medicao.json> --depois <medicao.json> [--saida <arquivo>]
 ```
 
-- Calcula o `sha256` da proposta e confere com `proposta_sha256` da medição "depois" (a "antes" é a linha de base, anterior à proposta; ela é identificada por `linha_de_base`, que precisa ser o `id` da medição "antes").
+- Calcula o `sha256` da proposta e confere com `proposta_sha256` das duas medições.
 - Recusa (saída 3) se `conjunto`, `commit`s ou `versoes_ferramentas` diferirem além da mudança, e diz o que difere.
 - Intervalo do ganho por bootstrap pareado com a `semente` da proposta.
 - Saída 0 para "fica", 1 para "sai", 3 para "inconclusivo" ou recusado (não é erro, é "ainda não"); o JSON tem o `resultado` explícito.

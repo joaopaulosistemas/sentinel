@@ -1373,22 +1373,12 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`; campos de tempo (`startedAt`, `completedAt`) e formatos de gabarito conferidos no código.
 - **NÃO verificado:** nada foi implementado; o CI não detecta leitura do reservado por pessoa ou agente fora do que fica versionado (dito no plano); a linha de base real só roda no GitHub.
 
-## 12.97.0 — Régua de medição, fatia A da spec 003 (`scripts/medicao.py`)
+## Rollback da implementação da spec 003 (volta à 12.96.0)
 
-- **Por quê:** o Premium precisa provar ganho com número. Antes não havia intervalo de confiança comparável entre grupos, nem aviso de amostra pequena, nem "sem medida" separado de zero.
-- **Mudança:** ferramenta Python única (só biblioteca padrão) `scripts/medicao.py` com `relatorio` (JSON e Markdown determinísticos; taxa sempre com `n`, `ic95` e aviso de amostra pequena; pilha sem gabarito ou com medida incompleta vira `sem-medida` e fica fora das médias; código gerado e de terceiros contados em `excluidos`; tempo e arquivos por repositório) e `lacunas`. Também `wilson`, `bootstrap_pareado` (semente fixa) e `registrar_correcao` (histórico, nada sobrescrito sem registro). O grupo reservado fica bloqueado na linha de comando até existir o registro de consultas (fatia C). Novo `audit-rules/calibracao/repositorios.json` com os 59 repositórios de treino e validação, cada um fixado por commit.
-- **Testes:** `scripts/test_medicao.py` (35 casos, escritos antes do código e vistos falhar), com dados só de teste em `scripts/fixtures/medicao/`. Inclui varredura do código-fonte contra execução de código auditado (princípio VII) e conferência do `repositorios.json` real contra `conjuntos.json`.
-- **Verificado:** os 35 testes novos e os 26 dos outros scripts; relatório repetido sobre as fixtures gera arquivos idênticos byte a byte; `sincronizar-versao.py --check`.
-- **NÃO verificado:** os commits são o HEAD de 2026-11-12 (`git ls-remote`) e ainda não foram conferidos contra os gabaritos; as pilhas de cada repositório foram inferidas por nome e notas, não pelo código; nenhuma medição real foi gerada (isso é a fatia de coleta). **O teste ainda não roda no CI**: acrescentar `scripts/test_medicao.py` à linha de testes do `ci.yml` (T004) depende da autorização do João.
-
-## 12.98.0 — Veredito de mudança, fatia B da spec 003 (`medicao.py comparar`)
-
-- **Por quê:** sem um critério escrito antes, qualquer ganho parece vitória. A régua precisa dizer "fica", "sai" ou "inconclusivo" com a regra pré-registrada.
-- **Mudança:** `scripts/medicao.py comparar --proposta --antes --depois`. Ganho pareado com bootstrap (semente da proposta, 10.000 reamostras). "Fica" só com todos os critérios atendidos, amostra de pelo menos 20 casos e limite inferior do intervalo acima de zero. Piora de uma categoria acima da tolerância, alarme falso acima do aceito ou tempo acima do limite dão "sai", mesmo com a média melhor. Conjunto, commits, ferramentas ou categorias diferentes recusam a comparação (saída 3) e dizem o que difere. Hash da proposta ausente ou diferente na medição "depois" marca `pos_medida` e nunca dá "fica". Saídas: 0 fica, 1 sai, 3 inconclusivo ou recusado. Novo `audit-rules/calibracao/propostas/LEIAME.md` com o formato.
-- **Ajuste de contrato:** o hash é conferido na medição "depois"; a "antes" é a linha de base, anterior à proposta, e é ligada por `linha_de_base` (id). `contracts/cli.md` atualizado.
-- **Testes:** 13 casos novos em `scripts/test_medicao.py` (48 no total), escritos antes do código e vistos falhar; os três pares melhora/piora/igual, a piora numa categoria com média melhor, recusas, pós-medida, tempo, alarme falso e `linha_de_base` inexistente.
-- **Verificado:** 48 testes; `precisao-regras.py --verifica` segue ok; os scripts `benchmark-owasp.py`, `comparar-calibracao.py`, `precisao-regras.py` e `medir-volta.py` não foram alterados (FR-012).
-- **NÃO verificado:** `benchmark-owasp.py` e `comparar-calibracao.py` não foram rodados (precisam do resultado de uma auditoria real); o formato das medições com acerto por caso (`resultados`, `falsos`) ainda não é gerado pelo `relatorio` (entra na fatia de coleta); o teste ainda não roda no CI (T004 espera autorização do João).
+- **Por quê:** o João pediu para desfazer o que foi implementado da spec 003 (medição e prova), mantendo a spec, o plano e as tarefas.
+- **Mudança:** revertidas as fatias A (#260, 12.97.0) e B (#261, 12.98.0): saem `scripts/medicao.py`, `scripts/test_medicao.py`, `scripts/fixtures/medicao/`, `audit-rules/calibracao/repositorios.json` e `propostas/LEIAME.md`; tarefas da 003 voltam a não feitas; versão volta a 12.96.0. A fatia C (#262) foi fechada sem merge. `specs/003-medicao-e-prova/` e as specs 004 a 008 ficam como estavam.
+- **Verificado:** `sincronizar-versao.py --check` na 12.96.0; os arquivos removidos não existem mais.
+- **NÃO verificado:** o CI desta PR (a cobrança do GitHub Actions estava falhando); os scripts de calibração existentes não foram tocados e não foram rodados de novo aqui.
 
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
