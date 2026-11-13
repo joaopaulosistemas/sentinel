@@ -13,7 +13,8 @@ Todos em UTF-8, JSON com 1 espaço de indentação (como os gabaritos atuais), c
    "grupo": "treino",
    "origem": "proposital",
    "pilhas": ["JAVASCRIPT"],
-   "commit": "0123456789abcdef0123456789abcdef01234567"
+   "commit": "0123456789abcdef0123456789abcdef01234567",
+   "publicavel": true
   }
  ]
 }
@@ -101,6 +102,7 @@ Todos em UTF-8, JSON com 1 espaço de indentação (como os gabaritos atuais), c
 1. `repositorios.json` e `conjuntos.json` listam os mesmos repositórios, cada um em um grupo só.
 2. `pilhas` só aceita valores do escopo fixo; vazio é erro.
 3. `commit` tem 40 caracteres hexadecimais.
+3a. `publicavel` (booleano) é **opcional** na spec 003 e **obrigatório** quando a spec 008 (prova externa) estiver ativa: só repositório de código aberto com licença que permite referência pode entrar no relatório público.
 4. Gabarito de `validacao` e de `reservado` tem `fonte` em cada falha.
 5. Nome de repositório do reservado só aparece nos arquivos permitidos (conjuntos, repositórios, gabarito do reservado, consultas, medições e relatórios de contagens, estado).
 6. `consultas.json` só cresce (comparação com a base do PR).
