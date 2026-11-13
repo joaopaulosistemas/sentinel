@@ -8,11 +8,11 @@ O Sentinel passa a construir, a cada auditoria, um modelo em memória do reposit
 
 ## Contexto técnico
 
-- **Linguagem/pilha**: Java 25 no `audit-api` (Quarkus), `audit-cli`, script Node 24 da imagem para o frontend. Os frameworks Spring e Quarkus acima são os dos repositórios **auditados**.
+- **Linguagem/pilha**: Java no `audit-api` (compila no JDK 26 e roda no JRE 25 da imagem) (Quarkus), `audit-cli`, script Node 24 da imagem para o frontend. Os frameworks Spring e Quarkus acima são os dos repositórios **auditados**.
 - **Armazenamento**: nenhum novo; o modelo é reconstruído a cada auditoria (esclarecimento 5). Só cobertura e tempo vão com o resultado.
 - **Testes**: JUnit com repositórios de teste pequenos em `audit-api/src/test/resources/modelo/`; `semgrep --test` e `paridade-motores.py` para regras piloto.
 - **Restrições**: sem executar nem compilar o auditado (VII); sem instalação extra no host (VIII); sem rota na API nem tela (esclarecimento 1).
-- **Dependências abertas**: (1) **dependência Maven nova** para ler Java: decisão do João (D1); (2) régua da spec 003 foi revertida, então o veredito "fica" das regras piloto está bloqueado até ela existir.
+- **Dependências abertas**: (0) **como as regras consultam o modelo** (D8: analisadores Java nas 3 regras piloto, exceção ao princípio V), decisão do João; (1) **dependência Maven nova** para ler Java: decisão do João (D1); (2) régua da spec 003 foi revertida, então o veredito "fica" das regras piloto está bloqueado até ela existir.
 
 ## Verificação da constituição
 
@@ -22,13 +22,19 @@ O Sentinel passa a construir, a cada auditoria, um modelo em memória do reposit
 | II (teste junto) | ok | tarefas com teste antes; regra piloto com caso positivo e negativo, `semgrep --test`, paridade |
 | III (treino e validação) | ok | piloto escolhido só por treino e gabaritos; `verificar-separacao.py` |
 | IV (honestidade) | ok | cobertura por tipo, sem média; LOG com Verificado / NÃO verificado; piloto sem régua não afirma ganho |
-| V (plug-and-play) | ok | regras do piloto são YAML; sem recompilar para regra nova |
+| V (plug-and-play) | **exceção justificada** | as 3 regras piloto são analisadores Java parametrizados por YAML (D8); ver "Complexity Tracking" |
 | VI (escopo) | ok | Java, Spring, Quarkus, Angular, React, Vue, TS, JS; nada de outra linguagem |
 | VII (não executar) | ok | só leitura; parser sem carregar configuração do repositório; teste de varredura proíbe `exec` e compilação |
 | VIII (roda onde roda) | ok | JRE e Node já na imagem; sem Node, frontend vira "não modelado" declarado |
 | IX (pequeno, perguntar) | **atenção** | dependência nova: pedir ao João; sem mudar API pública; `ci.yml` só se um teste novo precisar |
 
 Reavaliada após o desenho: sem violação; duas decisões do João pendentes.
+
+## Complexity Tracking
+
+| Desvio | Por quê | Alternativa mais simples descartada |
+|---|---|---|
+| Princípio V: 3 regras piloto são código Java, não só YAML | o motor declarativo não consulta o modelo | linguagem de consulta em YAML antes de provar valor: grande e especulativa |
 
 ## Qual job do CI prova cada critério
 
@@ -50,7 +56,8 @@ specs/005-modelo-estrutural-codigo/   plan, research, data-model, quickstart, co
 audit-api/.../modelo/                 Modelo, Unidade, Relacao, JavaReader (novo), TsReader (novo), Cobertura
 audit-api/src/main/resources/modelo/  leitor-ts.mjs (só parse)
 audit-cli/                            comando `modelo`
-audit-rules/packs/                    3 regras piloto (YAML), convivendo com as de padrão
+audit-api/.../analyzer/               3 analisadores piloto (Java, parâmetros no perfil YAML), convivendo com as regras de padrão
+specs/005-.../piloto.md               escolha das 3 regras e motivo (T029)
 ```
 
 ## Fatias (um PR cada, só depois de `/speckit-tasks`)
@@ -59,6 +66,6 @@ audit-rules/packs/                    3 regras piloto (YAML), convivendo com as 
 - **B**: leitor Java (Spring e Quarkus) e consultas de backend. ⚠️ depende do "sim" do João para a dependência.
 - **C**: leitor TypeScript/JavaScript e frontend (Angular, React, Vue).
 - **D**: relatório de cobertura e tempo, limites de tempo e memória.
-- **E**: três regras piloto convivendo com as de padrão; medição antes × depois.
+- **E**: interface regra→modelo (D8) e três regras piloto convivendo com as de padrão; medição antes × depois.
 
 Nada é implementado nesta etapa: é só plano.
