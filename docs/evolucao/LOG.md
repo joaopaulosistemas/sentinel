@@ -1455,6 +1455,13 @@ Só documentação, a partir do `/speckit-analyze`: chaves passam a ser **por si
 - **Verificado**: caminhos conferidos no repositório (`MarkdownWriter`, `SarifWriter`, testes de serviço); constituição relida.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 
+## Plano e tarefas da spec 007: arquitetura verificável (sem versão nova)
+
+Só documentação em `specs/007-arquitetura-verificavel/`: plan, research, data-model, `contracts/` (`architecture.yml` estendido, comando `arquitetura`, violação plantada), quickstart e tasks (36 tarefas, fatias A a G). Desenho: verificador novo ao lado do atual, em modo sombra, para o peso de 20 % não mudar; formato estendido e compatível; violações plantadas aplicadas em cópia temporária; tendência pela rota de diferença que já existe.
+
+- **Verificado**: `architecture.yml` e `ArchitecturePolicy` (camadas por glob, `forbid`, `allow`, `strict`), `ScoringService` (arquitetura 0,20), `DependencyCycles` (pacotes e arquivos, não módulos); cobertura de FR-001 a FR-012 e SC-001 a SC-007 conferida contra as tarefas.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança; limites de métricas e de caminho são propostas a calibrar.
+- **Pede autorização do João**: campo novo na API pública, se o resumo de métricas exigir (T032).
 ## Plano e tarefas da spec 006: rastreio entre arquivos (sem versão nova)
 
 Só documentação em `specs/006-rastreio-entre-arquivos/`: plan, research, data-model, `contracts/` (definição de classe, achado de rastreio), quickstart e tasks (35 tarefas, fatias A a G). Achado do levantamento: o Joern **já** faz taint entre arquivos para SQL, comando e caminho, com origens e destinos dentro do script; o motor novo (em Java, sobre o modelo da 005, com definições em dados) precisa vencer isso. Dependência registrada: a 005 não traz fluxo de valores, a 006 o acrescenta sobre o mesmo leitor.

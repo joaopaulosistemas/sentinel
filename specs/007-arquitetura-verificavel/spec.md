@@ -1,6 +1,6 @@
 # Especificação: Sentinel Premium 5 — Arquitetura verificável
 
-**Ramo**: `spec/007-arquitetura-verificavel` | **Criada**: 2026-11-12 | **Status**: Esclarecida (4 perguntas, 2026-11-13); próximo: /speckit-plan
+**Ramo**: `spec/007-arquitetura-verificavel` | **Criada**: 2026-11-12 | **Status**: Esclarecida (4 perguntas, 2026-11-13); plano, pesquisa e tarefas prontos (`plan.md`, `tasks.md`); próximo: implementar só quando o João mandar
 **Pedido**: "Sentinel Premium — Plano de Ação", eixo **profundidade**: o Sentinel deve descobrir a arquitetura que o código **realmente** tem, compará-la com a arquitetura que a equipe **declarou** e provar, com violações plantadas, que o verificador as acha. Depende das specs 003 e 005 (e usa a 004 para falar só do que é novo em PR).
 
 ## Linha de base: o que já existe (levantado no repositório em 2026-11-12)
