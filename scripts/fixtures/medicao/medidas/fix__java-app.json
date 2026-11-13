@@ -1,0 +1,46 @@
+{
+ "achados": [
+  {
+   "arquivo": "src/A.java",
+   "ferramenta": "opengrep",
+   "linha": 10,
+   "regra": "sentinel-java-sqli",
+   "sev": "HIGH"
+  },
+  {
+   "arquivo": "src/B.java",
+   "ferramenta": "opengrep",
+   "linha": 21,
+   "regra": "sentinel-java-xss",
+   "sev": "HIGH"
+  },
+  {
+   "arquivo": "src/Gerado.java",
+   "excluido": "codigo_gerado",
+   "ferramenta": "opengrep",
+   "linha": 5,
+   "regra": "sentinel-java-sqli",
+   "sev": "HIGH"
+  },
+  {
+   "arquivo": "vendor/lib.java",
+   "excluido": "terceiros",
+   "ferramenta": "opengrep",
+   "linha": 3,
+   "regra": "x",
+   "sev": "HIGH"
+  }
+ ],
+ "arquivos": 10,
+ "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+ "completa": true,
+ "duracao_s": 40,
+ "fim": "2026-11-12T10:00:40Z",
+ "inicio": "2026-11-12T10:00:00Z",
+ "repo": "fix/java-app",
+ "versao_sentinel": "0.0.0-teste",
+ "versoes_ferramentas": {
+  "joern": null,
+  "opengrep": "1.0"
+ }
+}

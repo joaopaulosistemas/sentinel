@@ -32,21 +32,21 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 
 ## Fase 1: Preparação (fatia A)
 
-- [ ] T001 Criar a pasta de dados de teste `scripts/fixtures/medicao/` com `medidas/` (3 repositórios pequenos: um Java, um JavaScript, um incompleto), `gabaritos/` e `antes.json`/`depois-melhora.json`/`depois-piora.json`/`depois-igual.json` (números só de teste, com comentário `_comentario` dizendo isso)
-- [ ] T002 Criar `audit-rules/calibracao/repositorios.json` com um registro por repositório hoje em `conjuntos.json` (treino e validação): `grupo`, `origem`, `pilhas` do escopo fixo e `commit` de 40 caracteres (**provisório**: o do HEAD de hoje; a conferência contra os gabaritos está na tarefa de coleta real). O commit é buscado via `git ls-remote` no GitHub (só leitura de metadados, sem clonar código); se algum não puder ser fixado, o registro leva `commit: null` e o relatório o marca "não reproduzível"
-- [ ] T003 [P] Criar o esqueleto de `scripts/medicao.py` (subcomandos `relatorio`, `comparar`, `reservado`, `amostra`, `revisao`, `lacunas`, cada um devolvendo "não implementado" com código 2) e o esqueleto de `scripts/test_medicao.py` que carrega o módulo por caminho (compatível com `python3 -I`)
+- [X] T001 Criar a pasta de dados de teste `scripts/fixtures/medicao/` com `medidas/` (3 repositórios pequenos: um Java, um JavaScript, um incompleto), `gabaritos/` e `antes.json`/`depois-melhora.json`/`depois-piora.json`/`depois-igual.json` (números só de teste, com comentário `_comentario` dizendo isso)
+- [X] T002 Criar `audit-rules/calibracao/repositorios.json` com um registro por repositório hoje em `conjuntos.json` (treino e validação): `grupo`, `origem`, `pilhas` do escopo fixo e `commit` de 40 caracteres (**provisório**: o do HEAD de hoje; a conferência contra os gabaritos está na tarefa de coleta real). O commit é buscado via `git ls-remote` no GitHub (só leitura de metadados, sem clonar código); se algum não puder ser fixado, o registro leva `commit: null` e o relatório o marca "não reproduzível"
+- [X] T003 [P] Criar o esqueleto de `scripts/medicao.py` (subcomandos `relatorio`, `comparar`, `reservado`, `amostra`, `revisao`, `lacunas`, cada um devolvendo "não implementado" com código 2) e o esqueleto de `scripts/test_medicao.py` que carrega o módulo por caminho (compatível com `python3 -I`)
 - [ ] T004 ⚠️ Autorização: acrescentar **só** `scripts/test_medicao.py` (o outro arquivo de teste só existe na fatia C) à linha "Testes dos scripts de regras" em `.github/workflows/ci.yml` (mesma mudança de uma linha feita no PR #252)
 
 ## Fase 2: Fundação (bloqueia todas as histórias; fatia A)
 
 **⚠️ Nenhuma história começa antes desta fase.**
 
-- [ ] T005 [P] Testes de `wilson(k, n)` em `scripts/test_medicao.py`: valores conferidos contra `wilson()` de `scripts/medir-volta.py` para os mesmos k e n; `n = 0` devolve (0, 0) sem dividir por zero; `amostra_pequena` verdadeiro para `n < 20` e falso para `n >= 20`
-- [ ] T006 [P] Testes de `bootstrap_pareado(antes, depois, semente)` em `scripts/test_medicao.py`: mesma semente dá o mesmo intervalo (byte a byte); melhora clara tem limite inferior > 0; sem efeito inclui 0; listas de tamanhos diferentes são erro
-- [ ] T007 [P] Teste em `scripts/test_medicao.py`: o módulo `scripts/medicao.py` não chama `subprocess`, `os.system`, `eval` nem `exec` (varredura do código-fonte), garantindo que nenhum código auditado é executado (FR-017, princípio VII)
-- [ ] T008 [P] Testes de carga e validação de dados em `scripts/test_medicao.py`: `repositorios.json` × `conjuntos.json` (repositório em dois grupos, sem registro, pilha fora do escopo, `commit` com tamanho errado) devolvem erro com mensagem útil
-- [ ] T009 Implementar `wilson`, `amostra_pequena` (constante única `AMOSTRA_MINIMA = 20`) e `bootstrap_pareado` (10.000 reamostragens, `random.Random(semente)`) em `scripts/medicao.py`
-- [ ] T010 Implementar `carregar_conjuntos()` e `validar_repositorios()` (regras 1 a 3 de `contracts/arquivos.md`) e `gravar_json()` determinístico (chaves ordenadas, indentação 1, `\n` final) em `scripts/medicao.py`
+- [X] T005 [P] Testes de `wilson(k, n)` em `scripts/test_medicao.py`: valores conferidos contra `wilson()` de `scripts/medir-volta.py` para os mesmos k e n; `n = 0` devolve (0, 0) sem dividir por zero; `amostra_pequena` verdadeiro para `n < 20` e falso para `n >= 20`
+- [X] T006 [P] Testes de `bootstrap_pareado(antes, depois, semente)` em `scripts/test_medicao.py`: mesma semente dá o mesmo intervalo (byte a byte); melhora clara tem limite inferior > 0; sem efeito inclui 0; listas de tamanhos diferentes são erro
+- [X] T007 [P] Teste em `scripts/test_medicao.py`: o módulo `scripts/medicao.py` não chama `subprocess`, `os.system`, `eval` nem `exec` (varredura do código-fonte), garantindo que nenhum código auditado é executado (FR-017, princípio VII)
+- [X] T008 [P] Testes de carga e validação de dados em `scripts/test_medicao.py`: `repositorios.json` × `conjuntos.json` (repositório em dois grupos, sem registro, pilha fora do escopo, `commit` com tamanho errado) devolvem erro com mensagem útil
+- [X] T009 Implementar `wilson`, `amostra_pequena` (constante única `AMOSTRA_MINIMA = 20`) e `bootstrap_pareado` (10.000 reamostragens, `random.Random(semente)`) em `scripts/medicao.py`
+- [X] T010 Implementar `carregar_conjuntos()` e `validar_repositorios()` (regras 1 a 3 de `contracts/arquivos.md`) e `gravar_json()` determinístico (chaves ordenadas, indentação 1, `\n` final) em `scripts/medicao.py`
 
 **Checkpoint**: `python3 -I scripts/test_medicao.py` verde.
 
@@ -59,32 +59,32 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 
 ### Testes (escrever primeiro; devem falhar)
 
-- [ ] T011 [P] [US1] Teste: relatório repetido gera `diff` vazio (SC-002), em `scripts/test_medicao.py`
-- [ ] T012 [P] [US1] Teste: toda taxa traz `n` e `ic95`; `n < 20` traz `amostra_pequena` (SC-003)
-- [ ] T013 [P] [US1] Teste: pilha do escopo sem gabarito aparece como `sem-medida` com motivo e fica **fora** das médias (FR-003)
-- [ ] T014 [P] [US1] Teste: medida incompleta (repositório sem `completa`) não vira zero: entra em pendências com o motivo
-- [ ] T015 [P] [US1] Teste: o `.md` termina com as seções "Verificado" e "NÃO verificado" (FR-016) e traz versão do Sentinel, ferramentas, data e commit de cada repositório (FR-001)
-- [ ] T016 [P] [US1] Teste: código gerado e de terceiros excluídos são contados em `excluidos` e não entram nas taxas
-- [ ] T017 [P] [US1] Teste: `relatorio --conjunto reservado` não deixa nenhuma chave `achados`, `arquivo` ou `linha` por achado na saída; só contagens (FR-006)
-- [ ] T018 [P] [US1] Teste: corrigir um gabarito ou um número publicado acrescenta uma entrada em `historico` (`data`, `motivo`, `antes`, `depois`) e nunca sobrescreve o valor anterior sem registro (FR-015)
+- [X] T011 [P] [US1] Teste: relatório repetido gera `diff` vazio (SC-002), em `scripts/test_medicao.py`
+- [X] T012 [P] [US1] Teste: toda taxa traz `n` e `ic95`; `n < 20` traz `amostra_pequena` (SC-003)
+- [X] T013 [P] [US1] Teste: pilha do escopo sem gabarito aparece como `sem-medida` com motivo e fica **fora** das médias (FR-003)
+- [X] T014 [P] [US1] Teste: medida incompleta (repositório sem `completa`) não vira zero: entra em pendências com o motivo
+- [X] T015 [P] [US1] Teste: o `.md` termina com as seções "Verificado" e "NÃO verificado" (FR-016) e traz versão do Sentinel, ferramentas, data e commit de cada repositório (FR-001)
+- [X] T016 [P] [US1] Teste: código gerado e de terceiros excluídos são contados em `excluidos` e não entram nas taxas
+- [X] T017 [P] [US1] Teste: `relatorio --conjunto reservado` não deixa nenhuma chave `achados`, `arquivo` ou `linha` por achado na saída; só contagens (FR-006)
+- [X] T018 [P] [US1] Teste: corrigir um gabarito ou um número publicado acrescenta uma entrada em `historico` (`data`, `motivo`, `antes`, `depois`) e nunca sobrescreve o valor anterior sem registro (FR-015)
 
 ### Implementação
 
-- [ ] T019 [US1] Implementar a leitura de medidas por repositório (formato atual de `medir-volta.py extrair` + campos novos de `data-model.md`) e o recall por gabarito reaproveitando a regra de acerto (arquivo, linha com tolerância, regras) em `scripts/medicao.py`
-- [ ] T020 [US1] Implementar a entrada do OWASP Benchmark (JSON de `benchmark-owasp.py`) como categorias com `tp`, `fp`, `taxa_acerto` e `taxa_alarme_falso` com intervalo em `scripts/medicao.py`
-- [ ] T021 [US1] Implementar o agrupamento por pilha via `repositorios.json` e o estado `medida`/`sem-medida` em `scripts/medicao.py`
-- [ ] T022 [US1] Implementar o subcomando `relatorio` (saídas `.json` e `.md`, conforme `contracts/cli.md`) em `scripts/medicao.py`; para `--conjunto reservado` descarta achados individuais (arquivo, linha, regra por achado) e grava só contagens
-- [ ] T023 [US1] Implementar o tempo e o tamanho por repositório (`duracao_s`, `arquivos`) no relatório, com agregados, em `scripts/medicao.py` (FR-018)
-- [ ] T024 [US1] Implementar `registrar_correcao()` (histórico de correções de gabarito e de números publicados) em `scripts/medicao.py`
-- [ ] T025 [US1] Rodar o passo 2 do `quickstart.md` e conferir o `diff` vazio
+- [X] T019 [US1] Implementar a leitura de medidas por repositório (formato atual de `medir-volta.py extrair` + campos novos de `data-model.md`) e o recall por gabarito reaproveitando a regra de acerto (arquivo, linha com tolerância, regras) em `scripts/medicao.py`
+- [X] T020 [US1] Implementar a entrada do OWASP Benchmark (JSON de `benchmark-owasp.py`) como categorias com `tp`, `fp`, `taxa_acerto` e `taxa_alarme_falso` com intervalo em `scripts/medicao.py`
+- [X] T021 [US1] Implementar o agrupamento por pilha via `repositorios.json` e o estado `medida`/`sem-medida` em `scripts/medicao.py`
+- [X] T022 [US1] Implementar o subcomando `relatorio` (saídas `.json` e `.md`, conforme `contracts/cli.md`) em `scripts/medicao.py`; para `--conjunto reservado` descarta achados individuais (arquivo, linha, regra por achado) e grava só contagens
+- [X] T023 [US1] Implementar o tempo e o tamanho por repositório (`duracao_s`, `arquivos`) no relatório, com agregados, em `scripts/medicao.py` (FR-018)
+- [X] T024 [US1] Implementar `registrar_correcao()` (histórico de correções de gabarito e de números publicados) em `scripts/medicao.py`
+- [X] T025 [US1] Rodar o passo 2 do `quickstart.md` e conferir o `diff` vazio
 
 ## Fase 4: História 5 — Lacunas de medição visíveis (P3; fatia A)
 
 **Meta**: cada pilha sem medida diz o que falta e a prioridade.
 **Teste independente**: toda pilha `sem-medida` do relatório de teste tem uma linha de lacuna.
 
-- [ ] T026 [P] [US5] Teste: `lacunas` lista cada pilha `sem-medida` com `falta` e `prioridade`; ordem: mais repositórios `real` e nenhuma medida primeiro, em `scripts/test_medicao.py`
-- [ ] T027 [US5] Implementar o subcomando `lacunas` e a seção `lacunas[]` do relatório em `scripts/medicao.py`
+- [X] T026 [P] [US5] Teste: `lacunas` lista cada pilha `sem-medida` com `falta` e `prioridade`; ordem: mais repositórios `real` e nenhuma medida primeiro, em `scripts/test_medicao.py`
+- [X] T027 [US5] Implementar o subcomando `lacunas` e a seção `lacunas[]` do relatório em `scripts/medicao.py`
 - [ ] T028 Fechar a fatia A: LOG, versão nova (ferramenta nova), conferências verdes, PR
 
 **Checkpoint**: fatia A em PR; US1 e US5 entregues e testáveis sozinhas.

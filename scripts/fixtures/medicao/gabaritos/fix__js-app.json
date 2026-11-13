@@ -1,0 +1,25 @@
+{
+ "falhas": [
+  {
+   "arquivo": "app.js",
+   "cwe": "CWE-79",
+   "fonte": "https://exemplo.invalid/teste",
+   "linha": 7,
+   "regras": [
+    "node-xss"
+   ],
+   "tolerancia": 3
+  },
+  {
+   "arquivo": "db.js",
+   "cwe": "CWE-89",
+   "fonte": "https://exemplo.invalid/teste",
+   "linha": 30,
+   "regras": [
+    "node-sqli"
+   ],
+   "tolerancia": 3
+  }
+ ],
+ "repo": "fix/js-app"
+}
