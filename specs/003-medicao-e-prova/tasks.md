@@ -126,23 +126,23 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 
 ### Testes (primeiro)
 
-- [ ] T042 [P] [US3] Criar `scripts/test_verificar_separacao.py` com fixtures em `scripts/fixtures/medicao/separacao/` e teste: repositório em dois grupos, incluindo o reservado, é erro (checagem 5)
-- [ ] T043 [P] [US3] Teste: gabarito do reservado fora de `gabaritos/reservado/` ou sem `fonte` em alguma falha é erro (checagem 6)
-- [ ] T044 [P] [US3] Teste: nome de repositório reservado em arquivo fora da lista permitida é erro (checagem 7)
-- [ ] T045 [P] [US3] Teste: `consultas.json` com linha editada ou removida em relação à base é erro; linha acrescentada é aceita (checagem 8)
-- [ ] T046 [P] [US3] Teste: medição do reservado com a chave `achados`, `arquivo` ou `linha` é erro na checagem 7 (FR-006)
-- [ ] T047 [P] [US3] Teste: `promover` move reservado → treino, atualiza `conjuntos.json`, `repositorios.json`, `estado.json` e o registro, e o repositório nunca volta a reservado
-- [ ] T048 [P] [US3] Teste: medir o reservado sem `--marco` é recusado; com marco, grava a consulta (data, versão, marco, motivo)
+- [X] T042 [P] [US3] Criar `scripts/test_verificar_separacao.py` com fixtures em `scripts/fixtures/medicao/separacao/` e teste: repositório em dois grupos, incluindo o reservado, é erro (checagem 5)
+- [X] T043 [P] [US3] Teste: gabarito do reservado fora de `gabaritos/reservado/` ou sem `fonte` em alguma falha é erro (checagem 6)
+- [X] T044 [P] [US3] Teste: nome de repositório reservado em arquivo fora da lista permitida é erro (checagem 7)
+- [X] T045 [P] [US3] Teste: `consultas.json` com linha editada ou removida em relação à base é erro; linha acrescentada é aceita (checagem 8)
+- [X] T046 [P] [US3] Teste: medição do reservado com a chave `achados`, `arquivo` ou `linha` é erro na checagem 7 (FR-006)
+- [X] T047 [P] [US3] Teste: `promover` move reservado → treino, atualiza `conjuntos.json`, `repositorios.json`, `estado.json` e o registro, e o repositório nunca volta a reservado
+- [X] T048 [P] [US3] Teste: medir o reservado sem `--marco` é recusado; com marco, grava a consulta (data, versão, marco, motivo)
 
 ### Implementação
 
-- [ ] T049 [US3] Estender `scripts/verificar-separacao.py` com as checagens 5 a 8 (a 7 também barra, em medições do reservado, as chaves `achados`, `arquivo` e `linha`) mantendo as opções e os códigos de saída atuais; manter a leitura de `descobertos.txt`
+- [X] T049 [US3] Estender `scripts/verificar-separacao.py` com as checagens 5 a 8 (a 7 também barra, em medições do reservado, as chaves `achados`, `arquivo` e `linha`) mantendo as opções e os códigos de saída atuais; manter a leitura de `descobertos.txt`
 - [ ] T050 ⚠️ Autorização: acrescentar `scripts/test_verificar_separacao.py` à linha de testes dos scripts em `.github/workflows/ci.yml` (nasce aqui, não na fatia A)
-- [ ] T051 [US3] Estender `conjuntos.json` com o grupo `reservado` (`repositorios_fixos`, `regra`, `marcos`) e `audit-rules/calibracao/gabaritos/reservado/LEIAME.json` com a regra de conduta (ninguém lê o código; gabarito só de fonte pública)
-- [ ] T052 [US3] Implementar `reservado consultas` e `reservado promover` e o registro `audit-rules/calibracao/reservado/consultas.json` em `scripts/medicao.py`
+- [X] T051 [US3] Estender `conjuntos.json` com o grupo `reservado` (`repositorios_fixos`, `regra`, `marcos`) e `audit-rules/calibracao/gabaritos/reservado/LEIAME.json` com a regra de conduta (ninguém lê o código; gabarito só de fonte pública)
+- [X] T052 [US3] Implementar `reservado consultas` e `reservado promover` e o registro `audit-rules/calibracao/reservado/consultas.json` em `scripts/medicao.py`
 - [ ] T053 ⚠️ Autorização: **propor a lista inicial de repositórios reservados** só por metadados públicos (linguagem, tamanho, atividade, existência de lista pública de falhas), **sem abrir o código**, com a fonte pública do gabarito de cada um; o João aprova a lista antes de ela entrar em `conjuntos.json`
 - [ ] T054 [US3] Incluir a lista aprovada e atualizar o hash com `python3 -I scripts/verificar-separacao.py --atualizar-hash`
-- [ ] T055 Fechar a fatia C: LOG, versão, conferências, PR
+- [X] T055 Fechar a fatia C: LOG, versão, conferências, PR
 
 **Checkpoint**: US3 testável sozinha; o CI de separação segue verde.
 

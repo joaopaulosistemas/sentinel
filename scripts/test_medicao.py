@@ -2,6 +2,7 @@
 """Testes de scripts/medicao.py (spec 003, fatia A). Rodar: python3 -I -m unittest scripts/test_medicao.py
 Só biblioteca padrão. O módulo é carregado por caminho porque `python3 -I` não põe a pasta do script no sys.path."""
 import copy, importlib.util, io, json, os, re, tempfile, unittest
+from unittest import mock
 from contextlib import redirect_stdout, redirect_stderr
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +24,10 @@ V = carregar("medir_volta", "medir-volta.py")
 def ler(caminho, modo="r"):
     with open(caminho, modo, **({} if "b" in modo else {"encoding": "utf-8"})) as f:
         return f.read()
+
+
+def lj_abs(caminho):
+    return json.loads(ler(caminho))
 
 
 def lj(*partes):
@@ -389,6 +394,99 @@ class Veredito(unittest.TestCase):
             a, b = os.path.join(d, "a.json"), os.path.join(d, "b.json")
             self.cli("depois-melhora.json", a); self.cli("depois-melhora.json", b)
             self.assertEqual(ler(a, "rb"), ler(b, "rb"))
+
+
+class Reservado(unittest.TestCase):
+    """Grupo reservado: medir exige marco (ou motivo escrito) e deixa registro; promover é irreversível."""
+    REPO = "fix/java-app"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory(); self.addCleanup(self._t.cleanup)
+        self.raiz = self._t.name
+        cal = os.path.join(self.raiz, "audit-rules", "calibracao")
+        repos = lj("repositorios.json")
+        repos["repositorios"] = [dict(r, grupo="reservado") for r in repos["repositorios"] if r["repo"] == self.REPO]
+        M.gravar_json(os.path.join(cal, "repositorios.json"), repos)
+        M.gravar_json(os.path.join(cal, "conjuntos.json"), {"treino": {"repositorios_fixos": []}, "validacao": {"repositorios_fixos": []},
+                      "reservado": {"repositorios_fixos": [self.REPO], "regra": "ninguém lê", "marcos": ["marco-0"]}})
+        M.gravar_json(os.path.join(cal, "reservado", "consultas.json"), {"consultas": [], "promocoes": []})
+        M.gravar_json(os.path.join(cal, "gabaritos", "reservado", "fix__java-app.json"), lj("gabaritos", "fix__java-app.json"))
+        M.gravar_json(os.path.join(self.raiz, "docs", "evolucao", "estado.json"), {"conjuntosSha256": "velho", "outro": 1})
+        self.medidas = os.path.join(self.raiz, "medidas")
+        M.gravar_json(os.path.join(self.medidas, "fix__java-app.json"), lj("medidas", "fix__java-app.json"))
+
+    def rodar(self, *args):
+        saida, erro = io.StringIO(), io.StringIO()
+        with redirect_stdout(saida), redirect_stderr(erro), mock.patch("sys.stdin", io.StringIO("")):
+            codigo = M.main(["--raiz", self.raiz, *args])
+        return codigo, saida.getvalue(), erro.getvalue()
+
+    def registro(self):
+        return lj_abs(os.path.join(self.raiz, "audit-rules", "calibracao", "reservado", "consultas.json"))
+
+    def medir(self, *extra):
+        return self.rodar("relatorio", "--conjunto", "reservado", "--medidas", self.medidas, "--saida", os.path.join(self.raiz, "saida"),
+                          "--data", "2026-11-13", "--id", "res-1", *extra)
+
+    def test_sem_marco_nem_motivo_e_recusado_e_nada_e_registrado(self):
+        codigo, _, erro = self.medir()
+        self.assertEqual(codigo, 2); self.assertIn("marco", erro)
+        self.assertEqual(self.registro()["consultas"], [])
+        self.assertFalse(os.path.exists(os.path.join(self.raiz, "saida")))
+
+    def test_marco_conhecido_grava_a_consulta(self):
+        codigo, _, _ = self.medir("--marco", "marco-0")
+        self.assertEqual(codigo, 0)
+        c = self.registro()["consultas"]
+        self.assertEqual(len(c), 1)
+        self.assertEqual((c[0]["data"], c[0]["marco"], c[0]["medicao"]), ("2026-11-13", "marco-0", "res-1"))
+        self.assertEqual(c[0]["versao_sentinel"], "0.0.0-teste"); self.assertTrue(c[0]["motivo"])
+        rel = lj_abs(os.path.join(self.raiz, "saida", "res-1.json"))
+        self.assertFalse({"achados", "arquivo", "linha"} & chaves(rel))
+
+    def test_marco_desconhecido_exige_motivo_escrito(self):
+        codigo, _, erro = self.medir("--marco", "improviso")
+        self.assertEqual(codigo, 2); self.assertIn("motivo", erro)
+        self.assertEqual(self.medir("--marco", "improviso", "--motivo", "conferir regressão da 12.99")[0], 0)
+        self.assertEqual(self.registro()["consultas"][0]["motivo"], "conferir regressão da 12.99")
+
+    def test_consultas_conta_por_versao(self):
+        self.medir("--marco", "marco-0")
+        codigo, saida, _ = self.rodar("reservado", "consultas")
+        self.assertEqual(codigo, 0); self.assertIn("0.0.0-teste: 1", saida)
+        self.assertIn("1", self.rodar("reservado", "consultas", "--versao", "0.0.0-teste")[1])
+        self.assertIn(": 0", self.rodar("reservado", "consultas", "--versao", "9.9.9")[1])
+
+    def test_promover_move_para_treino_e_atualiza_tudo(self):
+        codigo, _, _ = self.rodar("reservado", "promover", self.REPO, "--motivo", "virou treino para depurar", "--sim")
+        self.assertEqual(codigo, 0)
+        cal = os.path.join(self.raiz, "audit-rules", "calibracao")
+        conj = lj_abs(os.path.join(cal, "conjuntos.json"))
+        self.assertEqual(conj["reservado"]["repositorios_fixos"], []); self.assertIn(self.REPO, conj["treino"]["repositorios_fixos"])
+        self.assertEqual(lj_abs(os.path.join(cal, "repositorios.json"))["repositorios"][0]["grupo"], "treino")
+        self.assertTrue(os.path.exists(os.path.join(cal, "gabaritos", "fix__java-app.json")))
+        self.assertFalse(os.path.exists(os.path.join(cal, "gabaritos", "reservado", "fix__java-app.json")))
+        promo = self.registro()["promocoes"]
+        self.assertEqual((promo[0]["repo"], promo[0]["motivo"]), (self.REPO, "virou treino para depurar"))
+        estado = lj_abs(os.path.join(self.raiz, "docs", "evolucao", "estado.json"))
+        with open(os.path.join(cal, "conjuntos.json"), "rb") as f:
+            self.assertEqual(estado["conjuntosSha256"], M.sha256_bytes(f.read()))
+        self.assertEqual(estado["outro"], 1)      # o resto do estado fica como estava
+
+    def test_promover_exige_confirmacao_e_motivo(self):
+        for args, esperado in ((["--motivo", "x"], 1), (["--sim"], 2)):      # sem "sim" no terminal; sem motivo
+            self.assertEqual(self.rodar("reservado", "promover", self.REPO, *args)[0], esperado)
+        self.assertEqual(self.registro()["promocoes"], [])
+
+    def test_promover_repositorio_que_nao_e_reservado_e_erro(self):
+        codigo, _, erro = self.rodar("reservado", "promover", "outro/repo", "--motivo", "x", "--sim")
+        self.assertEqual(codigo, 1); self.assertIn("outro/repo", erro)
+
+    def test_depois_de_promovido_nao_se_mede_como_reservado(self):
+        self.rodar("reservado", "promover", self.REPO, "--motivo", "x", "--sim")
+        codigo, _, _ = self.medir("--marco", "marco-0")
+        self.assertNotEqual(codigo, 0)      # não há mais repositório reservado: nada a medir
+        self.assertEqual(self.registro()["consultas"], [])
 
 
 if __name__ == "__main__":

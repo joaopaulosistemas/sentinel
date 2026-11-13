@@ -21,7 +21,7 @@ PILHAS = ("JAVA", "SPRING", "QUARKUS", "ANGULAR", "REACT", "VUE", "TYPESCRIPT", 
           "DOCKER", "KUBERNETES", "SQL")
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 CHAVES_DE_ACHADO = {"achados", "arquivo", "linha", "regra", "regras"}  # nunca saem do relatório do reservado (FR-006)
-NAO_IMPLEMENTADOS = ("reservado", "amostra", "revisao")
+NAO_IMPLEMENTADOS = ("amostra", "revisao")
 
 
 # --- estatística -----------------------------------------------------------------------------------------------
@@ -460,32 +460,142 @@ def avaliar(proposta, sha, antes, depois):
             "criterios": criterios}
 
 
+# --- grupo reservado (US3) -------------------------------------------------------------------------------------
+
+def _cal(raiz):
+    return os.path.join(raiz, "audit-rules", "calibracao")
+
+
+def _gravar_indent2(caminho, obj):
+    """Mesmo formato do conjuntos.json e do estado.json existentes: ordem original, indentação 2."""
+    with open(caminho, "w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(obj, ensure_ascii=False, indent=2) + "\n")
+
+
+def _versao_do_projeto(raiz):
+    try:
+        return ler_json(os.path.join(raiz, "audit-dashboard", "package.json"))["version"]
+    except (OSError, KeyError, ValueError):
+        return "desconhecida"
+
+
+def ler_registro(raiz):
+    p = os.path.join(_cal(raiz), "reservado", "consultas.json")
+    return ler_json(p) if os.path.exists(p) else {"_comentario": "Registro só-acrescenta: linhas existentes nunca são editadas nem apagadas.", "consultas": [], "promocoes": []}
+
+
+def registrar_consulta(raiz, entrada):
+    """Acrescenta uma consulta ao reservado; nada existente é tocado."""
+    reg = ler_registro(raiz)
+    reg["consultas"] = list(reg.get("consultas") or []) + [entrada]
+    gravar_json(os.path.join(_cal(raiz), "reservado", "consultas.json"), reg)
+
+
+def total_de_consultas(reg, versao=None):
+    """{versão: total}; com `versao`, só ela."""
+    contagem = {}
+    for c in reg.get("consultas") or []:
+        contagem[c["versao_sentinel"]] = contagem.get(c["versao_sentinel"], 0) + 1
+    return {versao: contagem.get(versao, 0)} if versao else dict(sorted(contagem.items()))
+
+
+def promover(raiz, repo, motivo, data):
+    """Ato explícito e irreversível: reservado -> treino. Atualiza conjuntos, repositórios, gabarito, estado e registro."""
+    cal = _cal(raiz)
+    conj_p = os.path.join(cal, "conjuntos.json")
+    conj = ler_json(conj_p)
+    reservados = (conj.get("reservado") or {}).get("repositorios_fixos") or []
+    if repo not in reservados:
+        raise ValueError(f"{repo} não é um repositório reservado")
+    reservados.remove(repo)
+    conj["treino"]["repositorios_fixos"] = list(conj["treino"]["repositorios_fixos"]) + [repo]
+    _gravar_indent2(conj_p, conj)
+    repos_p = os.path.join(cal, "repositorios.json")
+    repos = ler_json(repos_p)
+    for r in repos["repositorios"]:
+        if r["repo"] == repo:
+            r["grupo"] = "treino"
+    gravar_json(repos_p, repos)
+    origem = os.path.join(cal, "gabaritos", "reservado", nome_de_arquivo(repo))
+    if os.path.exists(origem):
+        os.replace(origem, os.path.join(cal, "gabaritos", nome_de_arquivo(repo)))
+    estado_p = os.path.join(raiz, "docs", "evolucao", "estado.json")
+    if os.path.exists(estado_p):
+        estado = ler_json(estado_p)
+        with open(conj_p, "rb") as f:
+            estado["conjuntosSha256"] = sha256_bytes(f.read())
+        _gravar_indent2(estado_p, estado)
+    reg = ler_registro(raiz)
+    reg["promocoes"] = list(reg.get("promocoes") or []) + [{"data": data, "repo": repo, "motivo": motivo, "versao_sentinel": _versao_do_projeto(raiz)}]
+    gravar_json(os.path.join(cal, "reservado", "consultas.json"), reg)
+
+
 # --- linha de comando ------------------------------------------------------------------------------------------
 
 def _cmd_relatorio(a):
+    raiz = a.raiz or RAIZ
+    cal = _cal(raiz)
+    data = a.data or datetime.date.today().isoformat()
     if a.conjunto == "reservado":
-        print("O grupo reservado só pode ser medido quando o registro de consultas existir (fatia C da spec 003).", file=sys.stderr)
-        return 2
-    cal = os.path.join(RAIZ, "audit-rules", "calibracao")
+        marcos = (ler_json(os.path.join(cal, "conjuntos.json")).get("reservado") or {}).get("marcos") or []
+        if not a.marco:
+            print("Medir o reservado exige --marco (um dos marcos de conjuntos.json) ou, fora de marco, --marco com --motivo escrito.", file=sys.stderr)
+            return 2
+        if a.marco not in marcos and not (a.motivo or "").strip():
+            print(f"O marco '{a.marco}' não está em conjuntos.json (marcos: {', '.join(marcos) or 'nenhum'}): fora de marco o --motivo escrito é obrigatório.", file=sys.stderr)
+            return 2
     repos = ler_json(a.repositorios or os.path.join(cal, "repositorios.json"))
     erros = validar_repositorios(repos, carregar_conjuntos(os.path.join(cal, "conjuntos.json")) if not a.repositorios else
                                  {g: [r["repo"] for r in repos["repositorios"] if r["grupo"] == g] for g in GRUPOS})
     if erros:
         print("repositorios.json inválido:\n  " + "\n  ".join(erros), file=sys.stderr)
         return 1
-    gab = a.gabaritos or os.path.join(cal, "gabaritos", {"treino": "", "validacao": "validacao"}[a.conjunto])
+    if a.conjunto == "reservado" and not any(r["grupo"] == "reservado" for r in repos["repositorios"]):
+        print("Nenhum repositório reservado: nada a medir.", file=sys.stderr)
+        return 3
+    gab = a.gabaritos or os.path.join(cal, "gabaritos", {"treino": "", "validacao": "validacao", "reservado": "reservado"}[a.conjunto])
     bench = ler_json(a.benchmark) if a.benchmark else None
-    rel = gerar_relatorio(a.conjunto, a.medidas, repos, gab, a.data or datetime.date.today().isoformat(), marco=a.marco,
-                          benchmark=bench, id_relatorio=a.id)
+    rel = gerar_relatorio(a.conjunto, a.medidas, repos, gab, data, marco=a.marco, benchmark=bench, id_relatorio=a.id)
     erros = validar_relatorio(rel)
     if erros:
         print("relatório inválido:\n  " + "\n  ".join(erros), file=sys.stderr)
         return 1
-    saida = a.saida or os.path.join(RAIZ, "docs", "evolucao", "medicao")
+    saida = a.saida or os.path.join(raiz, "docs", "evolucao", "medicao")
     gravar_json(os.path.join(saida, rel["id"] + ".json"), rel)
     with open(os.path.join(saida, rel["id"] + ".md"), "w", encoding="utf-8", newline="\n") as f:
         f.write(relatorio_md(rel))
+    if a.conjunto == "reservado":
+        versao = rel["versao_sentinel"] or _versao_do_projeto(raiz)
+        registrar_consulta(raiz, {"data": data, "versao_sentinel": versao, "marco": a.marco,
+                                  "motivo": (a.motivo or "").strip() or f"medição no marco {a.marco}", "medicao": rel["id"]})
+        print(f"Consulta ao reservado registrada: {total_de_consultas(ler_registro(raiz), versao)[versao]} na versão {versao}.")
     print(f"Relatório {rel['id']}: {rel['resumo']['categorias_medidas']} categorias medidas, {len(rel['pendencias'])} pendência(s), {len(rel['lacunas'])} lacuna(s).")
+    return 0
+
+
+def _cmd_reservado(a):
+    raiz = a.raiz or RAIZ
+    if a.acao == "consultas":
+        for v, n in total_de_consultas(ler_registro(raiz), a.versao).items():
+            print(f"{v}: {n}")
+        return 0
+    if not (a.motivo or "").strip():
+        print("promover exige --motivo", file=sys.stderr)
+        return 2
+    if not a.sim:
+        try:
+            resposta = input(f"Promover {a.repo} de reservado para treino? Não tem volta. Digite 'sim': ")
+        except EOFError:
+            resposta = ""
+        if resposta.strip().lower() != "sim":
+            print("Promoção cancelada.", file=sys.stderr)
+            return 1
+    try:
+        promover(raiz, a.repo, a.motivo.strip(), datetime.date.today().isoformat())
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    print(f"{a.repo} agora é treino; registrado em reservado/consultas.json. Nunca mais conta como reservado.")
     return 0
 
 
@@ -515,25 +625,38 @@ def _cmd_lacunas(a):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    if argv and argv[0] in NAO_IMPLEMENTADOS:
-        print(f"Subcomando '{argv[0]}' ainda não implementado nesta fatia (ver specs/003-medicao-e-prova/tasks.md).", file=sys.stderr)
-        return 2
     ap = argparse.ArgumentParser(prog="medicao.py", description=__doc__.splitlines()[0])
+    ap.add_argument("--raiz", help="(testes) raiz do repositório alternativa")
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("relatorio")
     r.add_argument("--conjunto", required=True, choices=GRUPOS)
     r.add_argument("--medidas", required=True)
-    r.add_argument("--marco"); r.add_argument("--saida"); r.add_argument("--benchmark")
+    r.add_argument("--marco"); r.add_argument("--motivo", help="obrigatório para o reservado fora de um marco"); r.add_argument("--saida"); r.add_argument("--benchmark")
     r.add_argument("--repositorios", help="(testes) repositorios.json alternativo")
     r.add_argument("--gabaritos", help="(testes) pasta de gabaritos alternativa")
     r.add_argument("--data", help="AAAA-MM-DD; padrão hoje"); r.add_argument("--id")
     c = sub.add_parser("comparar")
     c.add_argument("--proposta", required=True); c.add_argument("--antes", required=True)
     c.add_argument("--depois", required=True); c.add_argument("--saida")
+    rs = sub.add_parser("reservado")
+    rs.add_argument("acao", choices=("consultas", "promover"))
+    rs.add_argument("repo", nargs="?"); rs.add_argument("--versao"); rs.add_argument("--motivo")
+    rs.add_argument("--sim", action="store_true", help="confirma a promoção sem perguntar (testes)")
+    for nome in NAO_IMPLEMENTADOS:
+        sub.add_parser(nome).add_argument("resto", nargs="*")
     l = sub.add_parser("lacunas")
     l.add_argument("--medicao", required=True)
-    a = ap.parse_args(argv)
-    return {"relatorio": _cmd_relatorio, "comparar": _cmd_comparar, "lacunas": _cmd_lacunas}[a.cmd](a)
+    try:
+        a = ap.parse_args(argv)
+    except SystemExit as e:
+        return e.code if isinstance(e.code, int) else 2
+    if a.cmd in NAO_IMPLEMENTADOS:
+        print(f"Subcomando '{a.cmd}' ainda não implementado nesta fatia (ver specs/003-medicao-e-prova/tasks.md).", file=sys.stderr)
+        return 2
+    if a.cmd == "reservado" and a.acao == "promover" and not a.repo:
+        print("promover exige o repositório (dono/nome)", file=sys.stderr)
+        return 2
+    return {"relatorio": _cmd_relatorio, "comparar": _cmd_comparar, "reservado": _cmd_reservado, "lacunas": _cmd_lacunas}[a.cmd](a)
 
 
 if __name__ == "__main__":

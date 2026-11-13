@@ -71,5 +71,13 @@
     "_nota_dvja": "appsecco/dvja (app Java vulnerável, Struts) entrou em 2026-11-05 no lugar do WebGoat; ninguém leu o código dele. Só os números do CI valem.",
     "_nota_rest_api": "bnematzadeh/vulnerable-rest-api (API Node/Express vulneravel, branch main, stack JAVASCRIPT) entrou na validacao em 2026-11-07 (branch ciclo/estabilizacao-9): so o README foi lido; o codigo nao foi aberto. Gabarito em gabaritos/validacao.",
     "_nota_node": "OWASP/NodeGoat, appsecco/dvna e snyk-labs/nodejs-goof entraram em 2026-11-05 para validar as regras sentinel-node-*. Só contagens de achados por regra foram vistas; o código não foi lido."
+  },
+  "reservado": {
+    "repositorios_fixos": [],
+    "regra": "Ninguém lê o código destes repositórios: nem agente, nem pessoa, para escrever regra ou ajustar o Sentinel. Só os números do CI (contagens) valem. O gabarito vem só de fonte pública, em gabaritos/reservado/. Cada medição fica registrada em reservado/consultas.json (data, versão, marco, motivo). Mover para treino é um ato explícito (medicao.py reservado promover) e irreversível.",
+    "marcos": [
+      "marco-0-linha-de-base"
+    ],
+    "_nota_lista": "Lista vazia de propósito: a composição inicial depende da aprovação do João (tarefa T053 da spec 003)."
   }
 }

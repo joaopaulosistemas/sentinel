@@ -1,0 +1,5 @@
+{
+ "_comentario": "Registro só-acrescenta: linhas existentes nunca são editadas nem apagadas (o CI compara com a base). `consultas`: cada medição do reservado. `promocoes`: cada repositório que saiu do reservado; ele nunca volta.",
+ "consultas": [],
+ "promocoes": []
+}

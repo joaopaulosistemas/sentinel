@@ -1,0 +1,5 @@
+{
+ "_comentario": "Gabaritos do conjunto reservado (spec 003). Esta pasta só aceita gabarito montado a partir de fonte pública (lista de falhas publicada pelo projeto, CVE, relatório); cada falha cita `fonte`. Ninguém abre o código do repositório para montar ou conferir o gabarito.",
+ "_nota": "Este arquivo não tem a chave `repo`; a checagem de separação o ignora.",
+ "regra": "ninguém lê o código dos repositórios reservados"
+}

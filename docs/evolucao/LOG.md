@@ -1390,6 +1390,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** 48 testes; `precisao-regras.py --verifica` segue ok; os scripts `benchmark-owasp.py`, `comparar-calibracao.py`, `precisao-regras.py` e `medir-volta.py` não foram alterados (FR-012).
 - **NÃO verificado:** `benchmark-owasp.py` e `comparar-calibracao.py` não foram rodados (precisam do resultado de uma auditoria real); o formato das medições com acerto por caso (`resultados`, `falsos`) ainda não é gerado pelo `relatorio` (entra na fatia de coleta); o teste ainda não roda no CI (T004 espera autorização do João).
 
+## 12.99.0 — Conjunto reservado, fatia C da spec 003
+
+- **Por quê:** treino e validação já existem, mas quem calibra o Sentinel acaba aprendendo a validação. O terceiro grupo, o reservado, é medido poucas vezes e ninguém lê o código dele; é o que dá número que não foi ajustado à mão.
+- **Mudança:** `scripts/verificar-separacao.py` ganha as checagens 5 a 8 (reservado não divide repositório com outro grupo e promovido nunca volta; gabarito do reservado só em `gabaritos/reservado/` com `fonte`; nome `dono/repo` de reservado só nos arquivos permitidos e medição do reservado sem as chaves `achados`, `arquivo` e `linha`; `reservado/consultas.json` só cresce em relação à base git). Opções e códigos de saída atuais mantidos. `scripts/medicao.py` ganha `reservado consultas`, `reservado promover` (irreversível, pede confirmação; move conjuntos, repositórios, gabarito, `estado.json` e registro) e a medição do reservado exige `--marco` conhecido, ou `--motivo` escrito fora de marco, e grava a consulta. `conjuntos.json` ganha o grupo `reservado`, **vazio de propósito**; `estado.json` com o hash novo.
+- **Testes:** `scripts/test_verificar_separacao.py` (16 casos, árvores temporárias em vez de fixtures fixas) e 8 casos novos em `scripts/test_medicao.py` (56 no total), escritos antes do código e vistos falhar.
+- **Verificado:** 72 testes; `verificar-separacao.py` contra a árvore real (treino 51, validação 8, reservado 0, sem problemas); `sincronizar-versao.py --check`.
+- **NÃO verificado:** (1) os dois arquivos de teste ainda não rodam no CI; acrescentar a linha ao `ci.yml` (T004 e T050) espera a autorização do João. (2) A checagem 8 não comparou nada ainda: o arquivo é novo e não existe na base. (3) A checagem 7 procura só o nome completo `dono/repo`, não o nome curto, e não detecta leitura do código por pessoa ou agente fora do que fica versionado. (4) A lista de repositórios reservados está vazia: a proposta (T053) depende da aprovação do João.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
