@@ -1573,3 +1573,9 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Testes:** `PmdProcessingErrorsTest` cobre relatório legível, vazio e cortado.
 - **NÃO verificado localmente:** os testes Java (o Maven não alcança o Maven Central neste ambiente); quem verifica é o CI da PR.
 - **Pendente:** a causa do código 1 (stack trace do PMD) ainda não foi informada.
+
+## Aviso de falha de ferramenta mostra a exceção, não só o fim do stderr
+
+- **Por quê:** o PMD terminou com código 1 e o aviso mostrava só os últimos 300 caracteres do stderr, que são a frase padrão "report this issue"; a causa ficava fora.
+- **Mudança:** quando o stderr é maior que o trecho final, o aviso passa a trazer as duas primeiras linhas de exceção (`...Exception: mensagem`, `Caused by: ...`) antes do trecho final. Stderr curto continua igual.
+- **Testes:** `AnalyzerHonestStatusTest` (stderr de PMD com stack trace longo).

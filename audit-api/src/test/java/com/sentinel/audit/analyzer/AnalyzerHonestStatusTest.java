@@ -71,6 +71,20 @@ class AnalyzerHonestStatusTest {
     }
 
     @Test
+    void falhaLongaMostraAExcecaoEnquantoOFimDoStderrSoTemOAvisoDaFerramenta() throws IOException {
+        Path err = tmp.resolve("err-pmd.txt");
+        Files.writeString(err, "Exception in thread \"main\" java.lang.IllegalStateException: regra X quebrou em Foo.java\n"
+                + "\tat net.sourceforge.pmd.Rule.apply(Rule.java:10)\n".repeat(30)
+                + "Caused by: java.lang.NullPointerException: sem tipo resolvido\n"
+                + "\tat net.sourceforge.pmd.Other.run(Other.java:5)\n".repeat(10)
+                + "If you think this is a bug in PMD, please report this issue at https://github.com/pmd/pmd/issues/new/choose\n");
+        String nota = ExternalTools.falha(1, 30, err);
+        assertTrue(nota.contains("IllegalStateException: regra X quebrou em Foo.java"), nota);
+        assertTrue(nota.contains("Caused by: java.lang.NullPointerException: sem tipo resolvido"), nota);
+        assertTrue(nota.contains("report this issue"), nota);
+    }
+
+    @Test
     void tailLimitaOTamanhoEMantemOFim() throws IOException {
         Path err = tmp.resolve("err.txt");
         Files.writeString(err, "a".repeat(1000) + "FIM");
