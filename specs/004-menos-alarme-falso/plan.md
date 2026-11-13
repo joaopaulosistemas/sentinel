@@ -32,13 +32,15 @@ Reavaliada após o desenho: sem violação; um item de autorização pendente.
 
 | Critério | Prova |
 |---|---|
-| SC-001, SC-002 (só o novo, movido/reformatado não conta) | testes JUnit de `Baseline`/`ChangedFiles` + roteiro 1 do [quickstart](quickstart.md) |
-| SC-003 (gerado) | JUnit de exclusão automática |
-| SC-004 (faixa = precisão medida) | teste do `precisao-regras.py --json` + JUnit de `RuleBand` |
-| SC-005 (agrupamento) | JUnit de listagem com `groupBy` |
-| SC-006 (rebaixe com amostra) | `scripts/precisao-regras.py --verifica` |
-| SC-007 (nada muda desligado) | teste de regressão do comentário e do relatório |
-| Recall | gabarito e OWASP Benchmark, trava −0,02 (jobs existentes) |
+| SC-001, SC-002 (só o novo; movido, reformatado ou renomeado não conta) | testes JUnit de `Baseline`/`ChangedFiles`/`PrClassifier` + roteiro 1 do [quickstart](quickstart.md) |
+| SC-003 (detecção não cai) | gabarito e OWASP Benchmark com chaves ligadas e desligadas, trava −0,02 |
+| SC-004 (só entra no padrão com veredito "fica") | registro do veredito no LOG; chaves seguem desligadas até lá |
+| SC-005 (meta de redução) | medida em código real depois da linha de base da 003; meta fixada pelo João |
+| SC-006 (rebaixe cita amostra e precisão) | `scripts/precisao-regras.py --verifica` |
+| SC-007 (agrupamento não muda a nota) | JUnit de listagem com `groupBy` comparando a nota |
+| Faixa = precisão medida (FR-008) | teste do `precisao-regras.py --json` + JUnit de `RuleBandService` |
+| Gerado fora da nota (FR-005) | JUnit de exclusão automática |
+| Nada muda desligado (FR-011) | teste de regressão do comentário e do relatório |
 
 ## Estrutura
 
