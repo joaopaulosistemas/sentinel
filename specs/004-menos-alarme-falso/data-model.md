@@ -48,10 +48,12 @@ Nunca persistido; a nota continua contando cada achado.
 
 Motivo novo `GENERATED_NON_SECURITY`. Achado de categoria ≠ segurança em arquivo `PathRole.GENERATED` fica fora da nota e do comentário, e aparece no relatório com o motivo. Categoria vem do catálogo da regra.
 
-## Chaves de configuração (todas desligadas por padrão, FR-011)
+## Chaves de configuração (por sistema, em `.sentinel.yml`; desligadas por padrão, FR-011)
 
 | Chave | Efeito |
 |---|---|
-| `sentinel.audit.pr.classify` | liga ClasseNoPR e o comentário só com novo/piorado |
-| `sentinel.audit.generated.exclude-non-security` | liga a exclusão acima |
-| `sentinel.audit.rule-band.enabled` | expõe `ruleBand` nos achados |
+| `pr.classify` | liga ClasseNoPR, o comentário só com novo/piorado e o corte do SARIF |
+| `generated.exclude-non-security` | liga a exclusão acima |
+| `rule-band` | expõe `ruleBand` nos achados |
+
+Lidas por `ProjectConfig`; nenhuma vai para `application.properties`.
