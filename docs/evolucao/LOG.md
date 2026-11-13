@@ -1381,15 +1381,6 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** os 35 testes novos e os 26 dos outros scripts; relatório repetido sobre as fixtures gera arquivos idênticos byte a byte; `sincronizar-versao.py --check`.
 - **NÃO verificado:** os commits são o HEAD de 2026-11-12 (`git ls-remote`) e ainda não foram conferidos contra os gabaritos; as pilhas de cada repositório foram inferidas por nome e notas, não pelo código; nenhuma medição real foi gerada (isso é a fatia de coleta). **O teste ainda não roda no CI**: acrescentar `scripts/test_medicao.py` à linha de testes do `ci.yml` (T004) depende da autorização do João.
 
-## 12.98.0 — Veredito de mudança, fatia B da spec 003 (`medicao.py comparar`)
-
-- **Por quê:** sem um critério escrito antes, qualquer ganho parece vitória. A régua precisa dizer "fica", "sai" ou "inconclusivo" com a regra pré-registrada.
-- **Mudança:** `scripts/medicao.py comparar --proposta --antes --depois`. Ganho pareado com bootstrap (semente da proposta, 10.000 reamostras). "Fica" só com todos os critérios atendidos, amostra de pelo menos 20 casos e limite inferior do intervalo acima de zero. Piora de uma categoria acima da tolerância, alarme falso acima do aceito ou tempo acima do limite dão "sai", mesmo com a média melhor. Conjunto, commits, ferramentas ou categorias diferentes recusam a comparação (saída 3) e dizem o que difere. Hash da proposta ausente ou diferente na medição "depois" marca `pos_medida` e nunca dá "fica". Saídas: 0 fica, 1 sai, 3 inconclusivo ou recusado. Novo `audit-rules/calibracao/propostas/LEIAME.md` com o formato.
-- **Ajuste de contrato:** o hash é conferido na medição "depois"; a "antes" é a linha de base, anterior à proposta, e é ligada por `linha_de_base` (id). `contracts/cli.md` atualizado.
-- **Testes:** 13 casos novos em `scripts/test_medicao.py` (48 no total), escritos antes do código e vistos falhar; os três pares melhora/piora/igual, a piora numa categoria com média melhor, recusas, pós-medida, tempo, alarme falso e `linha_de_base` inexistente.
-- **Verificado:** 48 testes; `precisao-regras.py --verifica` segue ok; os scripts `benchmark-owasp.py`, `comparar-calibracao.py`, `precisao-regras.py` e `medir-volta.py` não foram alterados (FR-012).
-- **NÃO verificado:** `benchmark-owasp.py` e `comparar-calibracao.py` não foram rodados (precisam do resultado de uma auditoria real); o formato das medições com acerto por caso (`resultados`, `falsos`) ainda não é gerado pelo `relatorio` (entra na fatia de coleta); o teste ainda não roda no CI (T004 espera autorização do João).
-
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
