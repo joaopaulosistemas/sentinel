@@ -98,22 +98,22 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 
 ### Testes (primeiro)
 
-- [ ] T029 [P] [US2] Teste: `melhora` → "fica" (saída 0); `piora` → "sai" (1); `igual` → "inconclusivo" (3) com os três pares de fixtures
-- [ ] T030 [P] [US2] Teste: piora de **uma** categoria acima da tolerância dá "sai" mesmo com média melhor (cenário 3)
-- [ ] T031 [P] [US2] Teste: ganho cujo intervalo inclui zero, ou amostra pequena, nunca dá "fica" (cenário 2)
-- [ ] T032 [P] [US2] Teste: conjuntos, `commit`s ou versões de ferramentas diferentes além da mudança → recusa com saída 3 e lista do que difere (cenário 4)
-- [ ] T033 [P] [US2] Teste: proposta sem hash na medição, ou com hash diferente do arquivo atual → `pos_medida` e nunca "fica" (cenário 5, FR-009)
-- [ ] T034 [P] [US2] Teste: tempo acima do aceito impede "fica"; sem limite declarado só destaca o aumento
-- [ ] T035 [P] [US2] Teste: proposta cujo `linha_de_base` não existe, ou não aponta para uma medição, é recusada com mensagem clara (SC-007)
+- [X] T029 [P] [US2] Teste: `melhora` → "fica" (saída 0); `piora` → "sai" (1); `igual` → "inconclusivo" (3) com os três pares de fixtures
+- [X] T030 [P] [US2] Teste: piora de **uma** categoria acima da tolerância dá "sai" mesmo com média melhor (cenário 3)
+- [X] T031 [P] [US2] Teste: ganho cujo intervalo inclui zero, ou amostra pequena, nunca dá "fica" (cenário 2)
+- [X] T032 [P] [US2] Teste: conjuntos, `commit`s ou versões de ferramentas diferentes além da mudança → recusa com saída 3 e lista do que difere (cenário 4)
+- [X] T033 [P] [US2] Teste: proposta sem hash na medição, ou com hash diferente do arquivo atual → `pos_medida` e nunca "fica" (cenário 5, FR-009)
+- [X] T034 [P] [US2] Teste: tempo acima do aceito impede "fica"; sem limite declarado só destaca o aumento
+- [X] T035 [P] [US2] Teste: proposta cujo `linha_de_base` não existe, ou não aponta para uma medição, é recusada com mensagem clara (SC-007)
 
 ### Implementação
 
-- [ ] T036 [US2] Implementar `sha256` da proposta e a validação do formato (`contracts/arquivos.md`) em `scripts/medicao.py`, exigindo que `linha_de_base` exista e aponte para uma medição real (SC-007)
-- [ ] T037 [US2] Implementar a comparabilidade (conjunto, commits, ferramentas) e a recusa explicada em `scripts/medicao.py`
-- [ ] T038 [US2] Implementar o subcomando `comparar` com bootstrap pareado e o veredito em `scripts/medicao.py`; gravar `docs/evolucao/medicao/vereditos/<proposta>.json`
-- [ ] T039 [P] [US2] Criar `audit-rules/calibracao/propostas/LEIAME.md` com o formato da proposta e um exemplo; as propostas reais nascem nas specs 004 a 007
-- [ ] T040 [US2] Garantir que as travas atuais seguem rodando e valendo (FR-012): rodar `benchmark-owasp.py`, `comparar-calibracao.py` e `precisao-regras.py --verifica` contra os dados atuais e registrar que não mudaram
-- [ ] T041 Fechar a fatia B: LOG, versão, conferências, PR
+- [X] T036 [US2] Implementar `sha256` da proposta e a validação do formato (`contracts/arquivos.md`) em `scripts/medicao.py`, exigindo que `linha_de_base` exista e aponte para uma medição real (SC-007)
+- [X] T037 [US2] Implementar a comparabilidade (conjunto, commits, ferramentas) e a recusa explicada em `scripts/medicao.py`
+- [X] T038 [US2] Implementar o subcomando `comparar` com bootstrap pareado e o veredito em `scripts/medicao.py`; gravar `docs/evolucao/medicao/vereditos/<proposta>.json`
+- [X] T039 [P] [US2] Criar `audit-rules/calibracao/propostas/LEIAME.md` com o formato da proposta e um exemplo; as propostas reais nascem nas specs 004 a 007
+- [X] T040 [US2] Garantir que as travas atuais seguem rodando e valendo (FR-012): rodar `benchmark-owasp.py`, `comparar-calibracao.py` e `precisao-regras.py --verifica` contra os dados atuais e registrar que não mudaram
+- [X] T041 Fechar a fatia B: LOG, versão, conferências, PR
 
 **Checkpoint**: US2 testável sem as demais.
 
