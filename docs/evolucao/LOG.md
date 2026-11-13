@@ -1455,6 +1455,14 @@ Só documentação, a partir do `/speckit-analyze`: chaves passam a ser **por si
 - **Verificado**: caminhos conferidos no repositório (`MarkdownWriter`, `SarifWriter`, testes de serviço); constituição relida.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 
+## Plano e tarefas da spec 008: prova externa (sem versão nova)
+
+Só documentação em `specs/008-prova-externa/`: plan, research, data-model, `contracts/` (relatório de prova, comando `prova.py`, amostra externa), quickstart e tasks (35 tarefas, fatias A a F). Desenho: relatório determinístico montado a partir da 003, amostra cega para o revisor, comparação só com ferramentas que leem o fonte (CodeQL, SpotBugs e FindSecBugs fora, por exigirem compilar), mapa regra→categoria commitado antes da medição, uma medição final do reservado por versão. Julgamento do revisor, repositório do aceite e decisão de publicar ficam marcados como **ação humana**.
+
+- **Verificado**: `revisao-humana.md` (a tabela traz o veredito do agente, então a amostra do revisor precisa de arquivo à parte), `PLACAR.md` (eixos 3 e 10), `docs/evolucao/relatorios/`, `github-actions.yml` (`upload-sarif`); cobertura de FR-001 a FR-012 e SC-001 a SC-007 conferida contra as tarefas.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança; tolerância de tempo (30 %) é proposta; licença das regras da comunidade não conferida.
+- **Pede autorização do João**: `ci.yml` (T003 e T026).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
