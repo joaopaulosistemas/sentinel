@@ -1,6 +1,6 @@
 # Especificação: Sentinel Premium 5 — Arquitetura verificável
 
-**Ramo**: `spec/007-arquitetura-verificavel` | **Criada**: 2026-11-12 | **Status**: Rascunho
+**Ramo**: `spec/007-arquitetura-verificavel` | **Criada**: 2026-11-12 | **Status**: Esclarecida (4 perguntas, 2026-11-13); próximo: /speckit-plan
 **Pedido**: "Sentinel Premium — Plano de Ação", eixo **profundidade**: o Sentinel deve descobrir a arquitetura que o código **realmente** tem, compará-la com a arquitetura que a equipe **declarou** e provar, com violações plantadas, que o verificador as acha. Depende das specs 003 e 005 (e usa a 004 para falar só do que é novo em PR).
 
 ## Linha de base: o que já existe (levantado no repositório em 2026-11-12)
@@ -10,6 +10,15 @@
 - A arquitetura é **declarada à mão**: o Sentinel não descobre a estrutura real, e por isso não mostra onde o código diverge do que a equipe acha que tem.
 - Não há medida de quão bem o verificador acha violações: não existe teste com violações plantadas de propósito nem medida de falsos alarmes em projetos que respeitam a arquitetura.
 - Não há acompanhamento da **erosão** ao longo do tempo (violações novas por PR, ciclos, acoplamento crescente).
+
+## Esclarecimentos
+
+### Sessão 2026-11-13
+
+- Q: Como uma classe recebe camada quando a arquitetura não foi declarada? → A: pelas anotações e estereótipos do framework vindos do modelo estrutural (controller, serviço, repositório, entidade); classe sem sinal fica "sem camada", declarada como tal, nunca adivinhada.
+- Q: A data de uma exceção declarada é de registro ou de validade? → A: de validade, obrigatória; vencida a exceção, a dependência volta a ser desvio; o relatório mostra a exceção vencida, a data de registro e a de validade.
+- Q: Qual medida de acoplamento por módulo? → A: instabilidade de Martin (dependências que saem ÷ saem + entram, de 0 a 1) mais a contagem bruta de dependências entre módulos; definição fixa e registrada.
+- Q: O que é violação nova, resolvida e persistente na tendência? → A: a violação é identificada pela regra violada mais o par origem→destino (classe, módulo ou camada), sem a linha; nova = não existia na auditoria anterior, resolvida = sumiu, persistente = continua.
 
 ## Cenários de usuário e testes *(obrigatório)*
 
@@ -23,7 +32,7 @@ O Sentinel mostra o mapa recuperado do código: módulos e camadas encontrados, 
 
 **Cenários de aceite**:
 
-1. **Dado** um projeto multimódulo, **quando** peço o mapa, **então** recebo módulos, camadas inferidas e dependências entre eles, cada uma com evidência (arquivo e linha de um uso).
+1. **Dado** um projeto multimódulo, **quando** peço o mapa, **então** recebo módulos, camadas inferidas por anotação e estereótipo, classes "sem camada" listadas como tal e dependências entre eles, cada uma com evidência (arquivo e linha de um uso).
 2. **Dado** uma dependência que o Sentinel não consegue resolver, **quando** vejo o mapa, **então** ela aparece como "não resolvida", não ausente.
 
 ---
@@ -94,7 +103,7 @@ Ciclos entre módulos, classes que sabem demais (muitas dependências) e módulo
 - Injeção de dependência por interface ou por nome: o que o modelo não resolve fica "não resolvido".
 - Módulo de teste ou código gerado: fica fora do mapa por padrão, com contagem.
 - Arquitetura declarada com camadas que o código nunca usou: aparece como "declarada e sem evidência".
-- Dependência permitida por exceção justificada: a exceção é declarada com motivo e data, e aparece no relatório.
+- Dependência permitida por exceção justificada: a exceção é declarada com motivo, data de registro e data de validade, e aparece no relatório; vencida, volta a ser desvio.
 - Frameworks que criam dependência em tempo de execução (proxies): declaradas como limite.
 - Projeto sem arquitetura declarada: o mapa recuperado é entregue sem desvios, e o relatório sugere por onde começar a declarar.
 
@@ -102,15 +111,15 @@ Ciclos entre módulos, classes que sabem demais (muitas dependências) e módulo
 
 ### Requisitos funcionais
 
-- **FR-001**: O Sentinel MUST recuperar, a partir do modelo estrutural, o mapa de módulos, camadas e dependências do projeto, cada dependência com pelo menos uma evidência (arquivo e linha).
+- **FR-001**: O Sentinel MUST recuperar, a partir do modelo estrutural, o mapa de módulos, camadas e dependências do projeto, cada dependência com pelo menos uma evidência (arquivo e linha). A camada de uma classe MUST ser inferida pelas anotações e estereótipos do framework vindos do modelo; classe sem sinal MUST aparecer como "sem camada", e a inferência MUST NOT usar nome de pacote nem adivinhação.
 - **FR-002**: O Sentinel MUST aceitar a arquitetura-alvo no formato atual de política e estendê-lo para dependências indiretas, ciclos proibidos e exceções com motivo.
 - **FR-003**: Cada desvio MUST mostrar o caminho da dependência (direta ou indireta) com localização.
 - **FR-004**: O mapa e os desvios MUST marcar "não resolvido" para o que o modelo não conseguiu determinar.
 - **FR-005**: O Sentinel MUST medir o verificador de arquitetura com violações plantadas em código limpo e em projetos que respeitam a arquitetura, e registrar acerto e alarme falso na régua da spec 003.
 - **FR-006**: O verificador novo MUST substituir o atual somente com veredito "fica" da spec 003; as verificações atuais continuam rodando até lá.
-- **FR-007**: O Sentinel MUST acompanhar, por auditoria, violações novas, resolvidas e persistentes, ciclos e uma medida de acoplamento por módulo.
+- **FR-007**: O Sentinel MUST acompanhar, por auditoria, violações novas, resolvidas e persistentes (a violação é identificada pela regra violada mais o par origem→destino, sem a linha), ciclos e, por módulo, a instabilidade de Martin (dependências que saem ÷ (saem + entram), de 0 a 1) mais a contagem bruta de dependências entre módulos; a definição MUST ficar registrada e não mudar sem nova medição.
 - **FR-008**: Em auditoria de PR, apenas violações introduzidas ou pioradas pelo PR MUST ser comentadas (conforme a spec 004).
-- **FR-009**: Exceções declaradas MUST aparecer no relatório com motivo e data, e não contar como desvio.
+- **FR-009**: Exceções declaradas MUST ter motivo, data de registro e data de validade obrigatória, e MUST aparecer no relatório com os três; dentro da validade não contam como desvio; vencida, a dependência MUST voltar a ser desvio e a exceção MUST aparecer como vencida.
 - **FR-010**: O Sentinel MUST NOT exigir que a arquitetura seja declarada para entregar o mapa recuperado.
 - **FR-011**: O peso da dimensão de arquitetura na nota MUST ser mantido; qualquer mudança de peso MUST ser registrada e reavaliada em conjunto (regra do placar).
 - **FR-012**: A funcionalidade MUST rodar no ambiente atual do Sentinel, sem instalar ferramentas na máquina e sem executar código auditado.
@@ -122,7 +131,7 @@ Ciclos entre módulos, classes que sabem demais (muitas dependências) e módulo
 - **Desvio**: diferença entre o mapa e a arquitetura-alvo, com caminho e evidência.
 - **Violação plantada**: desvio inserido de propósito em código de teste, com gabarito.
 - **Tendência de erosão**: série de violações, ciclos e acoplamento ao longo das auditorias.
-- **Exceção**: dependência permitida por motivo e data.
+- **Exceção**: dependência permitida por motivo, com data de registro e data de validade.
 
 ## Critérios de sucesso *(obrigatório)*
 
