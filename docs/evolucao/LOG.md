@@ -1403,6 +1403,13 @@ Só documentação: `specs/004-menos-alarme-falso/tasks.md` (32 tarefas, fatias 
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 - **Pede autorização do João**: T021, T025 (API pública) e T028 (`ci.yml`).
 
+## Esclarecimentos da spec 005 (sem versão nova)
+
+Só documentação: 5 respostas em `specs/005-modelo-estrutural-codigo/spec.md` (FR-004 ajustado; FR-007 ampliado; FR-013 a FR-015 novos): consulta só por CLI, arquivo não modelado cai na regra de padrão, chamada a biblioteca vira relação "externa", caminho de API parcial é registrado como parcial, modelo reconstruído a cada auditoria.
+
+- **Verificado**: spec relida; sem marcador pendente.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
