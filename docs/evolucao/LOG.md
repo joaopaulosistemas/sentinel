@@ -1410,6 +1410,14 @@ Só documentação: 5 respostas em `specs/005-modelo-estrutural-codigo/spec.md` 
 - **Verificado**: spec relida; sem marcador pendente.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 
+## Plano da spec 005: modelo estrutural (sem versão nova)
+
+Só documentação em `specs/005-modelo-estrutural-codigo/`: plan, research, data-model, `contracts/cli.md`, quickstart. Escolha da técnica: leitor sintático Java (dependência nova, **decisão do João**) e parser do `typescript-eslint` já na imagem para o frontend.
+
+- **Verificado**: `pom.xml` do `audit-api` sem biblioteca de parser; Dockerfile com Node 24 sob `WITH_ESLINT`; constituição relida.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança. Veredito "fica" das regras piloto bloqueado: a régua da 003 foi revertida.
+- **Pede decisão do João**: dependência Maven nova para ler Java.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
