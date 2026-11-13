@@ -10,7 +10,8 @@
 - **Código gerado**: o mesmo arquivo registra que 3.320 dos 3.368 achados de `sentinel-ts-any-explicito` estavam em arquivos com cabeçalho "não edite". Já existe exclusão de bibliotecas embutidas (jQuery etc.), mas não de código gerado em geral.
 - **Modo PR**: a auditoria com branch base mantém os achados dos **arquivos alterados**, não das **linhas** alteradas. Um arquivo antigo com 40 achados comenta os 40 em qualquer PR que o toque.
 - **Comparação entre auditorias**: existe a rota de diferença (novos, resolvidos, persistentes) contra a auditoria anterior, mas o fluxo de PR não a usa para silenciar o que já existia.
-- **O que falta**: critério único de "isto é novo neste PR"; exclusão sistemática de código gerado; agrupamento de achados repetidos; indicação, em cada achado, de quão confiável ele é; e prova de que cada redução de ruído não custou detecção.
+- **Já existe no código** (levantado em 2026-11-13, ver `research.md`): identidade do achado sem linha (`Fingerprints`), marca de "novo" contra a última auditoria completa (`Baseline`), detecção de código gerado por cabeçalho (`GeneratedFiles`, que hoje só rebaixa a confiança) e nível de confiança por sinais do achado (`FindingConfidence`).
+- **O que falta**: critério único de "novo ou piorado" por achado (hoje a base só guarda identidades, não severidade nem contagem) e tratamento de renomeação; exclusão de código gerado que não seja segurança da nota e do comentário; agrupamento de achados repetidos; faixa de confiança **da regra** vinda da precisão medida; e prova de que cada redução de ruído não custou detecção.
 
 ## Esclarecimentos
 

@@ -1448,6 +1448,13 @@ Só documentação: 4 respostas em `specs/007-arquitetura-verificavel/spec.md` (
 - **Verificado**: spec relida; sem marcador pendente.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 
+## Ajustes da análise da spec 004 (sem versão nova)
+
+Só documentação, a partir do `/speckit-analyze`: chaves passam a ser **por sistema** em `.sentinel.yml`/`ProjectConfig` (princípio V; antes iam para `application.yml`, que nem existe: o arquivo é `application.properties`), T037 (corte do SARIF, que são as anotações do PR), T038 (empacotar `precisao-por-regra.json`), caminhos exatos nas tarefas e linha de base da spec atualizada.
+
+- **Verificado**: caminhos conferidos no repositório (`MarkdownWriter`, `SarifWriter`, testes de serviço); constituição relida.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

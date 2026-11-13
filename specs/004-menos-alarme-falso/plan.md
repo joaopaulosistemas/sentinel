@@ -21,7 +21,8 @@ O comentário do PR passa a mostrar só o que é novo ou piorou, com a faixa de 
 |---|---|---|
 | I a III | ok | reaproveita o que existe; sem dependência nova |
 | IV (prova) | ok | cada critério tem job abaixo; trava de recall |
-| V, VI | ok | chaves desligadas; regressão byte a byte |
+| V | ok | chaves **por sistema** em `.sentinel.yml`/`ProjectConfig`, desligadas por padrão; nada em `application.properties` |
+| VI | ok | sem pilha nova |
 | VII | ok | aviso de base indecidível; nada omitido em silêncio |
 | VIII | ok | LOG por PR, com Verificado / NÃO verificado |
 | IX (pedir antes) | **atenção** | API pública (`groupBy`, campos) só com autorização do João |
@@ -54,8 +55,8 @@ scripts/                        precisao-regras.py (--json, --verifica)
 
 ## Fatias (um PR cada, só depois de `/speckit-tasks`)
 
-- **A**: `Baseline` com severidade e contagem; `ChangedFiles` com renomeação; decisão por arquivo (D1 a D4).
-- **B**: `PrClassifier` e comentário do PR (contrato `comentario-pr.md`).
+- **A**: chaves por sistema em `ProjectConfig`; `Baseline` com severidade e contagem; `ChangedFiles` com renomeação; decisão por arquivo (D1 a D4).
+- **B**: `PrClassifier`, comentário do PR e SARIF (anotações)  (contrato `comentario-pr.md`).
 - **C**: exclusão de não segurança em código gerado (D5).
 - **D**: `precisao-por-regra.json` e `ruleBand` (D6).
 - **E**: agrupamento e `groupBy` (**pede autorização**).
