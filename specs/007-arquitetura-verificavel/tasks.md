@@ -41,7 +41,7 @@ description: "Tarefas da spec 007: Sentinel Premium 5 — Arquitetura verificáv
 - [ ] T003 [P] Testes de compatibilidade: o `architecture.yml` de `core-architecture` sem alteração carrega e dá os mesmos resultados de hoje (História 2 cenário 3, SC-004) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/PoliticaCompativelTest.java`
 - [ ] T004 [P] Testes de validação do formato estendido (`contracts/architecture-yml-estendido.md`): exceção sem `expires` ou `reason` é erro; `registered` > `expires` é erro; camada inexistente é erro; chave desconhecida é erro com mensagem útil em `audit-api/src/test/java/com/sentinel/audit/arquitetura/PoliticaEstendidaTest.java`
 - [ ] T005 [P] Teste de varredura do pacote `arquitetura`: sem execução, compilação nem rede (FR-012, princípio VII) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/SemExecucaoTest.java`
-- [ ] T006 Estender `ArchitecturePolicy` com `indirect`, `cycles`, `exceptions` e `metrics`, sem mudar o que existe, em `audit-api/src/main/java/com/sentinel/audit/pack/ArchitecturePolicy.java` e no leitor correspondente
+- [ ] T006 Estender `ArchitecturePolicy` com `indirect`, `cycles`, `exceptions` e `metrics`, sem mudar o que existe, em `audit-api/src/main/java/com/sentinel/audit/pack/ArchitecturePolicy.java` e no leitor correspondente (FR-002)
 - [ ] T007 Implementar `Excecao` com estado VIGENTE ou VENCIDA calculado pela **data da auditoria** (D6) em `audit-api/src/main/java/com/sentinel/audit/arquitetura/Excecao.java`
 
 **Checkpoint**: testes da fatia A verdes; `ArchitecturePolicyAnalyzer` intacto.
@@ -56,8 +56,8 @@ description: "Tarefas da spec 007: Sentinel Premium 5 — Arquitetura verificáv
 - [ ] T009 [P] [US1] Testes de camada inferida: por anotação e estereótipo; classe sem sinal em "sem camada"; nunca por nome de pacote (esclarecimento 1) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/CamadaInferidaTest.java`
 - [ ] T010 [P] [US1] Testes de dependência "não resolvida" com motivo, nunca ausente (FR-004, SC-007); teste e código gerado fora do mapa, contados; monorepo separado por sistema em `audit-api/src/test/java/com/sentinel/audit/arquitetura/MapaBordaTest.java`
 - [ ] T011 [P] [US1] Teste do mapa sem `architecture.yml`: entrega o mapa sem desvios e o relatório sugere por onde começar (FR-010) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/MapaSemDeclaracaoTest.java`
-- [ ] T012 [US1] Implementar `Mapa`, `Modulo`, `CamadaInferida` e `DependenciaDoMapa` sobre o modelo da 005 em `audit-api/src/main/java/com/sentinel/audit/arquitetura/`
-- [ ] T013 [US1] Comando `sentinel arquitetura mapa` (texto e `--json` determinístico) em `audit-cli/`
+- [ ] T012 [US1] Implementar `Mapa`, `Modulo`, `CamadaInferida` e `DependenciaDoMapa` sobre o modelo da 005 em `audit-api/src/main/java/com/sentinel/audit/arquitetura/` (FR-001)
+- [ ] T013 [US1] Comando `sentinel arquitetura mapa` (texto e `--json` determinístico) no ponto de entrada local (`audit-api/.../local/LocalMain.java`)
 
 ## Fase 4: História 2 — Declarar a meta e ver os desvios (P1) (fatia C)
 
@@ -73,7 +73,7 @@ description: "Tarefas da spec 007: Sentinel Premium 5 — Arquitetura verificáv
 
 - [ ] T021 [P] [US3] Corpus em `audit-rules/calibracao/arquitetura/`: 3 repositórios limpos (treino ou criados; nunca do reservado) e `plantadas.json` com patches (diretas, indiretas, ciclo) e gabarito; teste de que repositório limpo acusa 0 fora do esperado
 - [ ] T022 [P] [US3] Testes de `arquitetura medir`: aplica o patch em **cópia temporária** (o original fica intacto), calcula acerto e alarme falso com Wilson 95 %, mesma estatística da 003 (FR-005, SC-002, SC-003) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/MedirTest.java`
-- [ ] T023 [US3] Implementar `arquitetura medir` em `audit-cli/`, com saída determinística
+- [ ] T023 [US3] Implementar `arquitetura medir` no ponto de entrada local, com saída determinística
 - [ ] T024 [US3] Rodar a medição, registrar acerto e alarme falso com intervalo no LOG; sem a régua da 003 **não** declarar "fica" nem tirar o verificador do sombra (FR-006)
 
 ## Fase 6: Corte em PR e ciclos (fatia E)
@@ -87,7 +87,7 @@ description: "Tarefas da spec 007: Sentinel Premium 5 — Arquitetura verificáv
 - [ ] T028 [P] [US4] Testes de métricas: instabilidade de Martin (saem ÷ saem + entram; indefinida e marcada quando ambos são 0), contagem bruta, fan-out e ciclos por módulo (esclarecimento 3) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/MetricasTest.java`
 - [ ] T029 [P] [US4] Testes da tendência com duas versões, uma mais acoplada: aponta a piora em 100 % dos pares (SC-006); mudança de linha não vira "resolvida" e "nova" em `audit-api/src/test/java/com/sentinel/audit/arquitetura/TendenciaTest.java`
 - [ ] T030 [US4] Implementar `MetricasDoModulo` e guardar só o resumo com o resultado da auditoria
-- [ ] T031 [US4] Implementar a tendência com a rota de diferença existente (`FindingLifecycleService`) e `sentinel arquitetura tendencia`
+- [ ] T031 [US4] Implementar a tendência com a rota de diferença existente (`FindingLifecycleService`) e `sentinel arquitetura tendencia` (FR-007)
 - [ ] T032 [US4] ⚠️ **Autorização**: só se o resumo de métricas precisar de campo novo na resposta da API pública; sem o "sim", ele aparece no relatório e na CLI
 
 ## Fase 8: História 5 — Sinais clássicos (P3) (fatia F)

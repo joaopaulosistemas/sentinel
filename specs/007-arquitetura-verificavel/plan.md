@@ -51,7 +51,7 @@ specs/007-arquitetura-verificavel/   plan, research, data-model, quickstart, con
 audit-api/.../arquitetura/           Mapa, Camadas, Dependencias, Desvios, Excecoes, Metricas, VerificadorAnalyzer
 audit-api/.../pack/ArchitecturePolicy  extensão compatível (indirect, cycles, exceptions, metrics)
 audit-rules/calibracao/arquitetura/  corpus limpo + plantadas.json + patches
-audit-cli/                           comando `arquitetura`
+audit-api/.../local/LocalMain.java    comando `arquitetura` (ponto de entrada local da 005; `audit-cli` não muda)
 ```
 
 ## Fatias (um PR cada, só depois de `/speckit-tasks`)

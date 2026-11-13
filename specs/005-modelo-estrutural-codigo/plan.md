@@ -55,7 +55,8 @@ Reavaliada após o desenho: sem violação; duas decisões do João pendentes.
 specs/005-modelo-estrutural-codigo/   plan, research, data-model, quickstart, contracts/cli.md
 audit-api/.../modelo/                 Modelo, Unidade, Relacao, JavaReader (novo), TsReader (novo), Cobertura
 audit-api/src/main/resources/modelo/  leitor-ts.mjs (só parse)
-audit-cli/                            comando `modelo`
+audit-api/.../local/LocalMain.java     comando `modelo` (ponto de entrada local)
+scripts/sentinel-local               chamada no Docker; `audit-cli` não muda
 audit-api/.../analyzer/               3 analisadores piloto (Java, parâmetros no perfil YAML), convivendo com as regras de padrão
 specs/005-.../piloto.md               escolha das 3 regras e motivo (T029)
 ```

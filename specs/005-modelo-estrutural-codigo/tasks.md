@@ -39,9 +39,9 @@ description: "Tarefas da spec 005: Sentinel Premium 3 — Modelo estrutural do c
 - [ ] T004 [P] Teste de serialização determinística (chaves ordenadas, ids `arquivo#símbolo`, bytes idênticos em duas execuções; SC-002) em `.../modelo/ModeloJsonTest.java`
 - [ ] T005 [P] Teste de varredura do pacote `modelo`: sem `ProcessBuilder` de código auditado, sem compilação, sem chamada de rede nem de IA (FR-011, princípio VII) em `.../modelo/SemExecucaoTest.java`
 - [ ] T006 Implementar os tipos do modelo e `ModeloJson` em `.../modelo/`
-- [ ] T007 Registrar o comando `modelo` (endpoints, chamadores, anotacao, dados, cobertura) na CLI conforme `contracts/cli.md`, devolvendo "não implementado" até as fatias B a D, em `audit-cli/`
+- [ ] T007 Registrar o comando `modelo` (endpoints, chamadores, anotacao, dados, cobertura) no ponto de entrada local (`audit-api/src/main/java/com/sentinel/audit/local/LocalMain.java` e `scripts/sentinel-local`) conforme `contracts/cli.md`, devolvendo "não implementado" até as fatias B a D; o `audit-cli` HTTP não é alterado
 - [ ] T036 [P] Documentar a interface pública do pacote `modelo` (consultas, ids estáveis, estados de relação) em `audit-api/src/main/java/com/sentinel/audit/modelo/package-info.java` e testar que dois consumidores independentes obtêm o mesmo grafo (FR-010; reaproveitável pelas specs 006 e 007) em `.../modelo/InterfacePublicaTest.java` (A2)
-- [ ] T008 Teste de regressão: com o comando novo registrado, a saída dos demais comandos da CLI não muda (FR-007)
+- [ ] T008 Teste de regressão: com o comando novo registrado, a saída dos demais comandos do `audit-cli` e as rotas da API não mudam (FR-007)
 
 **Checkpoint**: testes da fatia A verdes; nenhuma API nem tela criada (esclarecimento 1).
 
@@ -58,7 +58,7 @@ description: "Tarefas da spec 005: Sentinel Premium 3 — Modelo estrutural do c
 - [ ] T013 [P] [US1] Teste de anotação e de acesso a dados em `.../modelo/JavaAnotacoesDadosTest.java`
 - [ ] T014 [US1] Implementar `JavaReader` (só leitura de texto; nada compilado) em `.../modelo/JavaReader.java`
 - [ ] T015 [US1] Implementar a resolução por import, pacote e tipo declarado em `.../modelo/Resolucao.java`
-- [ ] T016 [US1] Ligar `modelo endpoints`, `chamadores`, `anotacao` e `dados` ao modelo Java na CLI, com `--json`
+- [ ] T016 [US1] Ligar `modelo endpoints`, `chamadores`, `anotacao` e `dados` ao modelo Java no ponto de entrada local, com `--json`
 
 ## Fase 4: História 2 — O mesmo no frontend (P1) (fatia C)
 
@@ -67,7 +67,7 @@ description: "Tarefas da spec 005: Sentinel Premium 3 — Modelo estrutural do c
 - [ ] T019 [P] [US2] Teste: sem Node, o frontend sai `naoModelado` com o motivo e o backend continua (FR-005)
 - [ ] T020 [US2] Criar `audit-api/src/main/resources/modelo/leitor-ts.mjs` (só `parse`, saída JSON ordenada)
 - [ ] T021 [US2] Implementar `TsReader` que chama o script com limite de tempo e memória, em `.../modelo/TsReader.java`
-- [ ] T022 [US2] Ligar a CLI aos pontos de entrada e chamadas de API do frontend e casar chamadas com endpoints do backend, inclusive os parciais
+- [ ] T022 [US2] Ligar o ponto de entrada local aos pontos de entrada e chamadas de API do frontend e casar chamadas com endpoints do backend, inclusive os parciais
 
 ## Fase 5: História 4 — O Sentinel diz o que não entendeu (P2) (fatia D)
 

@@ -11,7 +11,7 @@ Levantado no repositório em 2026-11-13.
 | Node 24 na imagem | `Dockerfile` (`WITH_ESLINT`, padrão ligado) com ESLint e `typescript-eslint` | existe; `EslintAnalyzer` já roda `--no-config-lookup` para nunca executar configuração do repositório |
 | Joern (taint Java entre arquivos) | `Dockerfile` `WITH_JOERN=false`, ~2 GB, `audit-api/joern/`, `SarifAnalyzer` | opcional, desligado por padrão |
 | Rotas de dados e consulta por estrutura | — | não existe |
-| CLI | `audit-cli` | existe; é onde o comando de consulta entra (esclarecimento 1) |
+| CLI | `audit-cli` (cliente HTTP) | não carrega o motor; o comando de consulta entra no ponto de entrada local do `audit-api` (D5) |
 
 Observação: a spec e o plano de 004 falam em "Spring Boot"; o **próprio Sentinel** usa Quarkus. O modelo precisa entender os **dois** em repositórios auditados (FR-002), não o framework do Sentinel.
 
@@ -40,7 +40,7 @@ Observação: a spec e o plano de 004 falam em "Spring Boot"; o **próprio Senti
 
 ## D5. Consulta (esclarecimento 1)
 
-**Decisão:** comando da CLI `modelo` com subcomandos `endpoints`, `chamadores`, `anotacao`, `dados`, `cobertura`; saída em texto e `--json`. As regras usam a mesma biblioteca por dentro. Sem rota na API, sem tela.
+**Decisão:** comando da CLI `modelo` com subcomandos `endpoints`, `chamadores`, `anotacao`, `dados`, `cobertura`; saída em texto e `--json`. As regras usam a mesma biblioteca por dentro. Sem rota na API, sem tela. **Ponto de entrada local (decisão de reconciliação):** o `audit-cli` é só um cliente HTTP da API (depende apenas de jackson) e não carrega os motores. Os comandos abaixo rodam num ponto de entrada local `com.sentinel.audit.local.LocalMain` dentro do `audit-api`, chamado no Docker pelo script `scripts/sentinel-local` (princípio VIII; nada no host). O `audit-cli` e a API pública **não mudam**. Alternativa descartada por ora: rotas novas na API + subcomandos no `audit-cli` (muda a API pública; só com o "sim" do João, princípio IX).
 
 ## D6. Regras do piloto e medição
 
