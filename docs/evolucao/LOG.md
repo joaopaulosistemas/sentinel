@@ -1418,6 +1418,14 @@ Só documentação em `specs/005-modelo-estrutural-codigo/`: plan, research, dat
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança. Veredito "fica" das regras piloto bloqueado: a régua da 003 foi revertida.
 - **Pede decisão do João**: dependência Maven nova para ler Java.
 
+## Tarefas da spec 005 (sem versão nova)
+
+Só documentação: `specs/005-modelo-estrutural-codigo/tasks.md` (34 tarefas, fatias A a E, testes antes do código).
+
+- **Verificado**: IDs de FR e SC conferidos contra `spec.md`.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança.
+- **Pede autorização do João**: T009 (dependência Maven nova).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
