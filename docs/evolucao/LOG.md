@@ -1426,6 +1426,14 @@ Só documentação: `specs/005-modelo-estrutural-codigo/tasks.md` (34 tarefas, f
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 - **Pede autorização do João**: T009 (dependência Maven nova).
 
+## Ajustes da análise da spec 005 (sem versão nova)
+
+Só documentação, a partir do `/speckit-analyze`: nova decisão D8 (como uma regra consulta o modelo: analisadores Java nas 3 regras piloto, exceção ao princípio V em "Complexity Tracking"), tarefas T035 e T036, T030 e T033 ajustadas, plano corrigido (JDK 26 / JRE 25, `piloto.md`).
+
+- **Verificado**: IDs conferidos contra spec, plano e tarefas.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança.
+- **Pede decisão do João**: D8 (exceção ao princípio V) e a dependência Maven da T009.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

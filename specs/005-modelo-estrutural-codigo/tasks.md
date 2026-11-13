@@ -40,6 +40,7 @@ description: "Tarefas da spec 005: Sentinel Premium 3 — Modelo estrutural do c
 - [ ] T005 [P] Teste de varredura do pacote `modelo`: sem `ProcessBuilder` de código auditado, sem compilação, sem chamada de rede nem de IA (FR-011, princípio VII) em `.../modelo/SemExecucaoTest.java`
 - [ ] T006 Implementar os tipos do modelo e `ModeloJson` em `.../modelo/`
 - [ ] T007 Registrar o comando `modelo` (endpoints, chamadores, anotacao, dados, cobertura) na CLI conforme `contracts/cli.md`, devolvendo "não implementado" até as fatias B a D, em `audit-cli/`
+- [ ] T036 [P] Documentar a interface pública do pacote `modelo` (consultas, ids estáveis, estados de relação) em `audit-api/src/main/java/com/sentinel/audit/modelo/package-info.java` e testar que dois consumidores independentes obtêm o mesmo grafo (FR-010; reaproveitável pelas specs 006 e 007) em `.../modelo/InterfacePublicaTest.java` (A2)
 - [ ] T008 Teste de regressão: com o comando novo registrado, a saída dos demais comandos da CLI não muda (FR-007)
 
 **Checkpoint**: testes da fatia A verdes; nenhuma API nem tela criada (esclarecimento 1).
@@ -83,15 +84,16 @@ description: "Tarefas da spec 005: Sentinel Premium 3 — Modelo estrutural do c
 ## Fase 7: História 3 — Regras que usam o modelo acertam mais (P1) (fatia E)
 
 - [ ] T029 [US3] Escolher as 3 regras do piloto em `docs/evolucao/precisao.md` e nos gabaritos de **treino** e registrar a escolha e o motivo em `specs/005-modelo-estrutural-codigo/piloto.md` antes de escrever qualquer versão (princípio III)
-- [ ] T030 [P] [US3] Para cada regra: caso positivo e negativo em `tests/`, entrada em `remediation/remediation.yml`, `semgrep --test` e `scripts/paridade-motores.py` (princípio II)
-- [ ] T031 [US3] Escrever as versões baseadas no modelo, convivendo com as de padrão e atrás de chave desligada (FR-007)
+- [ ] T030 [P] [US3] Para cada regra: caso positivo e negativo (para regra baseada em modelo: repositório de teste pequeno com o caso e o contra-caso, em `audit-api/src/test/resources/modelo/piloto/`, rodado por JUnit), entrada em `remediation/remediation.yml`; `semgrep --test` e `scripts/paridade-motores.py` valem para a regra de padrão equivalente, que continua existindo (princípio II, A3)
+- [ ] T035 [US3] Desenhar e implementar a interface regra→modelo (D8 de `research.md`): as regras piloto são analisadores Java no estilo de `ArchitectureAnalyzer`, que consomem o modelo e leem seus parâmetros do perfil YAML; registrar a exceção ao princípio V em "Complexity Tracking" do plano (**decisão do João**, ver D8); teste unitário da interface antes (A1)
+- [ ] T031 [US3] Escrever as versões baseadas no modelo (depende de T035), convivendo com as de padrão e atrás de chave desligada (FR-007)
 - [ ] T032 [US3] Medir antes × depois no treino; sem a régua da spec 003, registrar a medida manual e **não** substituir nenhuma regra (FR-008, SC-004)
 
 ## Fase 8: Fechamento
 
-- [ ] T033 Rodar o roteiro completo do `quickstart.md`; conferir jobs de regras, Semgrep e benchmark (SC-006)
+- [ ] T033 Rodar o roteiro completo do `quickstart.md`; conferir jobs de regras, Semgrep e benchmark (SC-006) e que o modelo roda dentro da imagem Docker, com e sem `WITH_ESLINT`, no job de build da imagem (FR-012, A4)
 - [ ] T034 Atualizar `docs/referencia/` com o comando `modelo` e registrar tudo no `docs/evolucao/LOG.md`
 
 ## Dependências
 
-Fase 2 antes de tudo. B depende de A e do "sim" em T009. C depende de A (independente de B, mas T022 usa os endpoints de B). D depende de B e C. E depende de B (e de C para regras de frontend) e de T029 antes de tudo na fase.
+Fase 2 antes de tudo. B depende de A e do "sim" em T009. C depende de A (independente de B, mas T022 usa os endpoints de B). D depende de B e C. E depende de B (e de C para regras de frontend); dentro dela, T029 vem primeiro e T035 antes de T031.

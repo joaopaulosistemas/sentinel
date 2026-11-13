@@ -47,6 +47,13 @@ Observação: a spec e o plano de 004 falam em "Spring Boot"; o **próprio Senti
 **Decisão:** escolher as 3 regras em `docs/evolucao/precisao.md` e nos gabaritos de **treino** (princípio III), por falso positivo ou falso negativo causado por olhar só texto; a escolha é registrada antes de escrever as versões. Cada uma convive com a regra de padrão; o veredito vem da régua da spec 003.
 **Estado real:** a régua da 003 foi revertida (só especificação). Até ela existir, a comparação é manual sobre treino (gabarito) e o "fica" fica **bloqueado**: o piloto entrega as versões e a medida, sem substituir nenhuma regra.
 
+## D8. Como uma regra consulta o modelo — **decisão do João**
+
+**Problema:** o motor atual lê regras declarativas (padrões em YAML); não há como um YAML perguntar "quem chama X" ao modelo. O princípio V pede regra nova sem compilar.
+**Decisão proposta:** nas 3 regras piloto, analisadores Java no estilo de `ArchitectureAnalyzer` que consomem a interface pública do modelo e leem parâmetros (limites, nomes de anotações, ligar/desligar) do perfil YAML. Uma linguagem de consulta declarativa em YAML fica para depois do piloto, se o valor for provado.
+**Alternativa:** construir já a linguagem declarativa: atende o princípio V por inteiro, mas é trabalho grande e especulativo antes de provar valor.
+**Custo:** exceção ao princípio V para essas 3 regras (registrada em "Complexity Tracking" do plano).
+
 ## D7. Cobertura e orçamento
 
 **Decisão:** cobertura por repositório e por tipo de construção (classe, método, rota, chamada, componente), com motivo do que ficou de fora; código gerado e bibliotecas embutidas excluídos por padrão e contados (reaproveita `GeneratedFiles`, `VendoredCode`). Tempo de construção medido e gravado; limite de tempo e memória por repositório, com relatório do que ficou de fora. O orçamento numérico é do João, depois da linha de base.
