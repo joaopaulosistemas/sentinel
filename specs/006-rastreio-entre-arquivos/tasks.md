@@ -38,10 +38,10 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 
 ## Fase 2: Fundação (bloqueia as histórias; fatia A)
 
-- [ ] T003 [P] Testes do esquema de definição (`contracts/definicao-classe.md`): classe única, argumento inteiro ≥ 0, método qualificado, listas não vazias, sem duplicata em `.../rastreio/DefinicaoDeClasseTest.java`
-- [ ] T004 [P] Teste de varredura do pacote `rastreio`: sem execução, compilação, rede nem IA (princípio VII, FR-012) em `.../rastreio/SemExecucaoTest.java`
+- [ ] T003 [P] Testes do esquema de definição (`contracts/definicao-classe.md`): classe única, argumento inteiro ≥ 0, método qualificado, listas não vazias, sem duplicata em `audit-api/src/test/java/com/sentinel/audit/rastreio/DefinicaoDeClasseTest.java`
+- [ ] T004 [P] Teste de varredura do pacote `rastreio`: sem execução, compilação, rede nem IA (princípio VII, FR-012) em `audit-api/src/test/java/com/sentinel/audit/rastreio/SemExecucaoTest.java`
 - [ ] T005 Criar `audit-rules/taint/sqli.yml` com origens, destinos (JDBC, `JdbcTemplate`, consulta nativa, JPQL/HQL por `EntityManager` e Panache), sanitizadores e propagadores iniciais, revistos só contra treino (princípio III, esclarecimentos 2 a 5)
-- [ ] T006 Implementar `DefinicaoDeClasse` e o carregador em `.../rastreio/DefinicaoDeClasse.java`, falhando com mensagem útil em definição inválida
+- [ ] T006 Implementar `DefinicaoDeClasse` e o carregador em `audit-api/src/main/java/com/sentinel/audit/rastreio/DefinicaoDeClasse.java`, falhando com mensagem útil em definição inválida
 
 **Checkpoint**: testes da fatia A verdes; nenhuma API alterada.
 
@@ -51,28 +51,28 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 
 **Pré-requisito**: spec 005, fatias A e B (leitor Java). **Teste independente**: roteiros 1 e 2.
 
-- [ ] T007 [P] [US1] Testes de fluxo de valores: argumento→parâmetro, atribuição, retorno, campo e construtor, entre arquivos, em `.../rastreio/FluxoDeValoresTest.java`
-- [ ] T008 [P] [US1] Testes do motor: 3 camadas Spring e Quarkus vulneráveis geram 1 achado com os passos; variante parametrizada não gera (SC-001) em `.../rastreio/MotorSqlTest.java`
-- [ ] T009 [P] [US1] Teste de que ORM seguro, `setParameter` e consulta derivada por nome de método não geram alarme (FR-005, casos de borda) em `.../rastreio/MotorSeguroTest.java`
-- [ ] T010 [US1] Implementar a camada de fluxo de valores sobre o leitor Java da 005, sem mudar o contrato público do modelo (D2) em `.../rastreio/FluxoDeValores.java`
-- [ ] T011 [US1] Implementar resumos por método e a propagação interprocedural por fila de trabalho (D3) em `.../rastreio/Resumos.java` e `Motor.java`
+- [ ] T007 [P] [US1] Testes de fluxo de valores: argumento→parâmetro, atribuição, retorno, campo e construtor, entre arquivos, em `audit-api/src/test/java/com/sentinel/audit/rastreio/FluxoDeValoresTest.java`
+- [ ] T008 [P] [US1] Testes do motor: 3 camadas Spring e Quarkus vulneráveis geram 1 achado com os passos; variante parametrizada não gera (SC-001) em `audit-api/src/test/java/com/sentinel/audit/rastreio/MotorSqlTest.java`
+- [ ] T009 [P] [US1] Teste de que ORM seguro, `setParameter` e consulta derivada por nome de método não geram alarme (FR-005, casos de borda) em `audit-api/src/test/java/com/sentinel/audit/rastreio/MotorSeguroTest.java`
+- [ ] T010 [US1] Implementar a camada de fluxo de valores sobre o leitor Java da 005, sem mudar o contrato público do modelo (D2) em `audit-api/src/main/java/com/sentinel/audit/rastreio/FluxoDeValores.java`
+- [ ] T011 [US1] Implementar resumos por método e a propagação interprocedural por fila de trabalho (D3) em `audit-api/src/main/java/com/sentinel/audit/rastreio/Resumos.java` e `Motor.java`
 - [ ] T012 [US1] Gerar o achado `sentinel-taint-sqli` com origem, passos e destino, atrás de `taint.enabled`
 
 ## Fase 4: História 2 — Cada achado conta o caminho (P1) (fatia C)
 
-- [ ] T013 [P] [US2] Testes do caminho: cada passo com arquivo e linha; caminho acima do limite vem com `truncado` e `passosOmitidos`, nunca encurtado em silêncio (FR-004) em `.../rastreio/CaminhoTest.java`
-- [ ] T014 [P] [US2] Testes de sanitizador declarado (encerra o rastro, registra qual) e de função "bonita" fora da lista (não sanitiza) em `.../rastreio/SanitizadorTest.java`
-- [ ] T015 [P] [US2] Testes de propagadores: `StringBuilder.append`, `String.format` seguem; método de biblioteca fora da lista vira `PROPAGADOR_DESCONHECIDO` (FR-013) em `.../rastreio/PropagadorTest.java`
-- [ ] T016 [P] [US2] Testes de rastro perdido (reflexão, assíncrono, limite de profundidade, de caminhos e de tempo): vai ao relatório de cobertura com motivo, 0 achados, 0 "seguro" (FR-006, SC-005) em `.../rastreio/RastroPerdidoTest.java`
-- [ ] T017 [US2] Implementar `Caminho` e o texto de correção ("o que faltou") em `.../rastreio/Caminho.java`
+- [ ] T013 [P] [US2] Testes do caminho: cada passo com arquivo e linha; caminho acima do limite vem com `truncado` e `passosOmitidos`, nunca encurtado em silêncio (FR-004) em `audit-api/src/test/java/com/sentinel/audit/rastreio/CaminhoTest.java`
+- [ ] T014 [P] [US2] Testes de sanitizador declarado (encerra o rastro, registra qual) e de função "bonita" fora da lista (não sanitiza) em `audit-api/src/test/java/com/sentinel/audit/rastreio/SanitizadorTest.java`
+- [ ] T015 [P] [US2] Testes de propagadores: `StringBuilder.append`, `String.format` seguem; método de biblioteca fora da lista vira `PROPAGADOR_DESCONHECIDO` (FR-013) em `audit-api/src/test/java/com/sentinel/audit/rastreio/PropagadorTest.java`
+- [ ] T016 [P] [US2] Testes de rastro perdido (reflexão, assíncrono, limite de profundidade, de caminhos e de tempo): vai ao relatório de cobertura com motivo, 0 achados, 0 "seguro" (FR-006, SC-005) em `audit-api/src/test/java/com/sentinel/audit/rastreio/RastroPerdidoTest.java`
+- [ ] T017 [US2] Implementar `Caminho` e o texto de correção ("o que faltou") em `audit-api/src/main/java/com/sentinel/audit/rastreio/Caminho.java`
 - [ ] T018 [US2] Implementar sanitizadores, propagadores e limites configuráveis (FR-010) no motor
 - [ ] T019 [US2] Implementar `CoberturaDoRastreio` e guardar só o resumo com o resultado da auditoria; comando `sentinel rastreio cobertura` (texto e `--json`, determinístico) em `audit-cli/`
 
 ## Fase 5: História 5 — Convivência com o que existe (P2) (fatia D)
 
-- [ ] T020 [P] [US5] Testes da fusão: o mesmo destino achado por padrão, Joern e rastreio vira 1 achado com 3 fontes; destinos diferentes não se fundem; reformatação não quebra a fusão (FR-007) em `.../rastreio/FusaoDeFontesTest.java`
+- [ ] T020 [P] [US5] Testes da fusão: o mesmo destino achado por padrão, Joern e rastreio vira 1 achado com 3 fontes; destinos diferentes não se fundem; reformatação não quebra a fusão (FR-007) em `audit-api/src/test/java/com/sentinel/audit/rastreio/FusaoDeFontesTest.java`
 - [ ] T021 [P] [US5] Teste de regressão: com `taint.enabled` desligado, relatório e resposta da API idênticos aos de hoje (byte a byte)
-- [ ] T022 [US5] Implementar a fusão de fontes (classe + destino) como passo antes da nota, sem alterar `dedup.yml` (D5) em `.../rastreio/FusaoDeFontes.java`
+- [ ] T022 [US5] Implementar a fusão de fontes (classe + destino) como passo antes da nota, sem alterar `dedup.yml` (D5) em `audit-api/src/main/java/com/sentinel/audit/rastreio/FusaoDeFontes.java`
 - [ ] T023 [US5] ⚠️ **Autorização**: acrescentar `trace`, `sources` e `fix` como campos opcionais do achado na API (`contracts/achado-rastreio.md`); sem o "sim", o caminho aparece só no relatório e no comentário
 
 ## Fase 6: História 3 — Mais preciso que o padrão atual (P1) (fatia E)
@@ -88,7 +88,7 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 ## Fase 7: História 4 — Segunda classe de falha (P2) (fatia F)
 
 - [ ] T028 [US4] Escolher a segunda classe entre as de menor pontuação na linha de base da 003 (hoje no Benchmark: `xpathi`, `pathtraver`, `ldapi`) e registrar a escolha e o motivo em `specs/006-rastreio-entre-arquivos/segunda-classe.md` antes de escrever a definição (FR-012)
-- [ ] T029 [P] [US4] Teste de que a classe nova entra só por arquivo de definição, sem tocar o motor (SC-006) em `.../rastreio/ClasseNovaTest.java`
+- [ ] T029 [P] [US4] Teste de que a classe nova entra só por arquivo de definição, sem tocar o motor (SC-006) em `audit-api/src/test/java/com/sentinel/audit/rastreio/ClasseNovaTest.java`
 - [ ] T030 [US4] Criar `audit-rules/taint/<classe>.yml` e medir como na T025
 
 ## Fase 8: Fechamento (fatia G)
