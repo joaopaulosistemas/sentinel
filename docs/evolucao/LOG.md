@@ -1373,6 +1373,13 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`; campos de tempo (`startedAt`, `completedAt`) e formatos de gabarito conferidos no código.
 - **NÃO verificado:** nada foi implementado; o CI não detecta leitura do reservado por pessoa ou agente fora do que fica versionado (dito no plano); a linha de base real só roda no GitHub.
 
+## Rollback da implementação da spec 003 (volta à 12.96.0)
+
+- **Por quê:** o João pediu para desfazer o que foi implementado da spec 003 (medição e prova), mantendo a spec, o plano e as tarefas.
+- **Mudança:** revertidas as fatias A (#260, 12.97.0) e B (#261, 12.98.0): saem `scripts/medicao.py`, `scripts/test_medicao.py`, `scripts/fixtures/medicao/`, `audit-rules/calibracao/repositorios.json` e `propostas/LEIAME.md`; tarefas da 003 voltam a não feitas; versão volta a 12.96.0. A fatia C (#262) foi fechada sem merge. `specs/003-medicao-e-prova/` e as specs 004 a 008 ficam como estavam.
+- **Verificado:** `sincronizar-versao.py --check` na 12.96.0; os arquivos removidos não existem mais.
+- **NÃO verificado:** o CI desta PR (a cobrança do GitHub Actions estava falhando); os scripts de calibração existentes não foram tocados e não foram rodados de novo aqui.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
