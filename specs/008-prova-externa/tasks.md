@@ -87,8 +87,8 @@ description: "Tarefas da spec 008: Sentinel Premium 6 — Prova externa"
 
 ## Fase 7: História 5 — Aceite em ambiente real (P2) (fatia E)
 
-- [ ] T031 [P] [US5] Teste de `aceite --modelo`: gera o modelo de evidência (serviço, repositório público de teste, URL da execução, alertas exportados, data) e `verificar` exige o preenchimento antes de marcar SC-006 como atendido
-- [ ] T032 [US5] Implementar `aceite --modelo` e escrever o roteiro passo a passo (repositório público de teste, fluxo `upload-sarif` de `docs/integracao/github-actions.yml`, exportação dos alertas pela API)
+- [ ] T031 [P] [US5] Teste de `aceite --modelo`: gera o modelo de evidência (serviço, repositório público de teste, URL da execução, alertas exportados, data) e `verificar` exige o preenchimento antes de marcar SC-006 como atendido (FR-010)
+- [ ] T032 [US5] Implementar `aceite --modelo` e escrever o roteiro passo a passo (repositório público de teste, fluxo `upload-sarif` de `docs/integracao/github-actions.yml`, exportação dos alertas pela API) (FR-010)
 - [ ] T033 👤 **Ação humana**: o João cria o repositório público de teste e o fluxo (fora deste repositório), roda e anexa a evidência; marcar o item do `PLACAR.md` só depois
 
 ## Fase 8: Fechamento (fatia F)

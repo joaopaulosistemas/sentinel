@@ -1484,6 +1484,12 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado**: texto do contrato relido; nenhuma tarefa da 003 muda.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 
+## Análise das specs 006 a 008 e reconciliação da CLI (só documentos, sem versão nova)
+
+- **Verificado:** o `audit-cli` é um cliente HTTP (só jackson, chama `/api/v1/audits/...`) e não carrega os motores; os comandos `modelo`, `rastreio` e `arquitetura` das specs 005 a 007 foram replanejados para um ponto de entrada local do `audit-api` (`LocalMain`, via `scripts/sentinel-local` no Docker). API pública e `audit-cli` não mudam.
+- **Verificado:** cobertura de FR/SC das specs 006, 007 e 008 conferida por varredura; faltavam só citações explícitas, agora nas tarefas (006 T010; 007 T006, T012, T031; 008 T031, T032).
+- **NÃO verificado:** nada foi implementado nem executado; a alternativa de rotas novas na API continua dependendo do "sim" do João.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

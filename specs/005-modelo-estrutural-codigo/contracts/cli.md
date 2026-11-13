@@ -1,6 +1,6 @@
 # Contrato: comando `modelo` da CLI
 
-Sem rota nova na API e sem tela (esclarecimento 1 da spec). Toda saída aceita `--json` determinístico.
+Sem rota nova na API e sem tela (esclarecimento 1 da spec). Executado por `scripts/sentinel-local modelo ...` (ponto de entrada local do `audit-api`, no Docker); o `audit-cli` HTTP não muda. Abaixo, `sentinel modelo` é o nome do comando. Toda saída aceita `--json` determinístico.
 
 ```
 sentinel modelo endpoints  <repo>                 # método HTTP, caminho, classe, método

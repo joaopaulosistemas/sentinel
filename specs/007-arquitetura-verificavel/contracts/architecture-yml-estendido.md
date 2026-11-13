@@ -23,7 +23,7 @@ metrics:                    # novo; limites propostos, a calibrar
 
 Validação: `expires` e `reason` obrigatórios em toda exceção; `registered` ≤ `expires`; `from` e `to` existentes em `layers`; chave desconhecida é erro com mensagem útil. Sem as chaves novas, o comportamento é o de hoje.
 
-# Contrato: comando `arquitetura` da CLI (sem rota nova na API)
+# Contrato: comando `arquitetura` (ponto de entrada local do `audit-api`, `scripts/sentinel-local`; sem rota nova na API e sem mudar o `audit-cli` HTTP)
 
 ```
 sentinel arquitetura mapa      <repo>   # módulos, camadas inferidas, dependências com evidência, "sem camada", "não resolvida"

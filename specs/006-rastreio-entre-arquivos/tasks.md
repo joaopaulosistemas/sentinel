@@ -54,7 +54,7 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 - [ ] T007 [P] [US1] Testes de fluxo de valores: argumento→parâmetro, atribuição, retorno, campo e construtor, entre arquivos, em `audit-api/src/test/java/com/sentinel/audit/rastreio/FluxoDeValoresTest.java`
 - [ ] T008 [P] [US1] Testes do motor: 3 camadas Spring e Quarkus vulneráveis geram 1 achado com os passos; variante parametrizada não gera (SC-001) em `audit-api/src/test/java/com/sentinel/audit/rastreio/MotorSqlTest.java`
 - [ ] T009 [P] [US1] Teste de que ORM seguro, `setParameter` e consulta derivada por nome de método não geram alarme (FR-005, casos de borda) em `audit-api/src/test/java/com/sentinel/audit/rastreio/MotorSeguroTest.java`
-- [ ] T010 [US1] Implementar a camada de fluxo de valores sobre o leitor Java da 005, sem mudar o contrato público do modelo (D2) em `audit-api/src/main/java/com/sentinel/audit/rastreio/FluxoDeValores.java`
+- [ ] T010 [US1] Implementar a camada de fluxo de valores sobre o leitor Java da 005, sem mudar o contrato público do modelo (D2) em `audit-api/src/main/java/com/sentinel/audit/rastreio/FluxoDeValores.java` (FR-001, FR-002)
 - [ ] T011 [US1] Implementar resumos por método e a propagação interprocedural por fila de trabalho (D3) em `audit-api/src/main/java/com/sentinel/audit/rastreio/Resumos.java` e `Motor.java`
 - [ ] T012 [US1] Gerar o achado `sentinel-taint-sqli` com origem, passos e destino, atrás de `taint.enabled`
 
@@ -66,7 +66,7 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 - [ ] T016 [P] [US2] Testes de rastro perdido (reflexão, assíncrono, limite de profundidade, de caminhos e de tempo): vai ao relatório de cobertura com motivo, 0 achados, 0 "seguro" (FR-006, SC-005) em `audit-api/src/test/java/com/sentinel/audit/rastreio/RastroPerdidoTest.java`
 - [ ] T017 [US2] Implementar `Caminho` e o texto de correção ("o que faltou") em `audit-api/src/main/java/com/sentinel/audit/rastreio/Caminho.java`
 - [ ] T018 [US2] Implementar sanitizadores, propagadores e limites configuráveis (FR-010) no motor
-- [ ] T019 [US2] Implementar `CoberturaDoRastreio` e guardar só o resumo com o resultado da auditoria; comando `sentinel rastreio cobertura` (texto e `--json`, determinístico) em `audit-cli/`
+- [ ] T019 [US2] Implementar `CoberturaDoRastreio` e guardar só o resumo com o resultado da auditoria; comando `sentinel rastreio cobertura` (texto e `--json`, determinístico) no ponto de entrada local (`audit-api/.../local/LocalMain.java`)
 
 ## Fase 5: História 5 — Convivência com o que existe (P2) (fatia D)
 
@@ -78,7 +78,7 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 ## Fase 6: História 3 — Mais preciso que o padrão atual (P1) (fatia E)
 
 - [ ] T024 [P] [US3] Teste (arquivo novo `scripts/test_benchmark_owasp.py`): `sentinel-taint-sqli` mapeia para a categoria `sqli` em `MAPA_REGRAS` de `scripts/benchmark-owasp.py`, e as outras categorias seguem sob a trava existente (FR-009, SC-003)
-- [ ] T033 [US3] Comando da CLI `sentinel rastreio executar <pasta> --json`: roda o motor numa pasta de fontes e devolve lista de achados (`ruleId`, `filePath`) no formato que `benchmark-owasp.py` já aceita; teste antes em `audit-cli/src/test/java/com/sentinel/audit/cli/RastreioExecutarTest.java`
+- [ ] T033 [US3] Comando local `sentinel rastreio executar <pasta> --json`: roda o motor numa pasta de fontes e devolve lista de achados (`ruleId`, `filePath`) no formato que `benchmark-owasp.py` já aceita; teste antes em `audit-api/src/test/java/com/sentinel/audit/local/RastreioExecutarTest.java`; roda no Docker via `scripts/sentinel-local`
 - [ ] T034 [US3] Acrescentar `sentinel-taint-sqli` a `MAPA_REGRAS` em `scripts/benchmark-owasp.py`
 - [ ] T035 [US3] ⚠️ **Autorização** (mexe em `.github/`): no job `benchmark` de `.github/workflows/ci.yml`, rodar `rastreio executar` sobre o Benchmark e juntar os achados aos do Opengrep antes de `benchmark-owasp.py`, e acrescentar `scripts/test_benchmark_owasp.py` à linha de testes dos scripts; sem o "sim", a medição é local e manual
 - [ ] T025 [US3] Rodar o Benchmark (`sqli`: baseline 0,938 de acerto e 0,69 de alarme falso) e os gabaritos de treino com padrão, Joern e rastreio; registrar acerto, alarme falso e intervalos no LOG (FR-008)

@@ -20,4 +20,4 @@ Validação (teste de esquema): `classe` única, `argumento` inteiro ≥ 0, mét
 
 # Contrato: relatório de cobertura do rastreio
 
-Comando da CLI `sentinel rastreio cobertura <repo>` (texto e `--json`, determinístico): origens, destinos, caminhos, sanitizadores usados, rastros perdidos por motivo e limite atingido. Sem rota nova na API.
+Comando `sentinel rastreio cobertura <repo>` (ponto de entrada local do `audit-api`, `scripts/sentinel-local`; o `audit-cli` HTTP não muda) (texto e `--json`, determinístico): origens, destinos, caminhos, sanitizadores usados, rastros perdidos por motivo e limite atingido. Sem rota nova na API.

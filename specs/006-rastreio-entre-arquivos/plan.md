@@ -49,7 +49,7 @@ specs/006-rastreio-entre-arquivos/   plan, research, data-model, quickstart, con
 audit-rules/taint/                   sqli.yml (definição de classe)
 audit-api/.../rastreio/              FluxoDeValores, Resumos, Motor, Caminho, Cobertura, FusaoDeFontes
 audit-api/.../service/ProjectConfig  chaves taint.* (por sistema)
-audit-cli/                           comando `rastreio cobertura`
+audit-api/.../local/LocalMain.java    comandos `rastreio cobertura` e `rastreio executar` (ponto de entrada local da 005; `audit-cli` não muda)
 ```
 
 ## Fatias (um PR cada, só depois de `/speckit-tasks`)
