@@ -1395,6 +1395,14 @@ Só documentação: `plan.md`, `research.md`, `data-model.md`, `contracts/coment
 - **NÃO verificado**: nada foi executado; o CI do GitHub Actions está sem cobrança. A régua da spec 003 foi revertida, então o veredito para ligar chaves como padrão é manual.
 - **Pede autorização do João**: `groupBy` e campos novos na API pública.
 
+## Tarefas da spec 004 (sem versão nova)
+
+Só documentação: `specs/004-menos-alarme-falso/tasks.md` (32 tarefas, fatias A a G, testes antes do código) e correção da tabela "qual job prova cada critério" do plano, que citava SC fora da numeração da spec.
+
+- **Verificado**: IDs de FR e SC conferidos contra `spec.md`.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança.
+- **Pede autorização do João**: T021, T025 (API pública) e T028 (`ci.yml`).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
