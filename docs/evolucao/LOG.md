@@ -1455,6 +1455,13 @@ Só documentação, a partir do `/speckit-analyze`: chaves passam a ser **por si
 - **Verificado**: caminhos conferidos no repositório (`MarkdownWriter`, `SarifWriter`, testes de serviço); constituição relida.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 
+## Plano e tarefas da spec 008: prova externa (sem versão nova)
+
+Só documentação em `specs/008-prova-externa/`: plan, research, data-model, `contracts/` (relatório de prova, comando `prova.py`, amostra externa), quickstart e tasks (35 tarefas, fatias A a F). Desenho: relatório determinístico montado a partir da 003, amostra cega para o revisor, comparação só com ferramentas que leem o fonte (CodeQL, SpotBugs e FindSecBugs fora, por exigirem compilar), mapa regra→categoria commitado antes da medição, uma medição final do reservado por versão. Julgamento do revisor, repositório do aceite e decisão de publicar ficam marcados como **ação humana**.
+
+- **Verificado**: `revisao-humana.md` (a tabela traz o veredito do agente, então a amostra do revisor precisa de arquivo à parte), `PLACAR.md` (eixos 3 e 10), `docs/evolucao/relatorios/`, `github-actions.yml` (`upload-sarif`); cobertura de FR-001 a FR-012 e SC-001 a SC-007 conferida contra as tarefas.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança; tolerância de tempo (30 %) é proposta; licença das regras da comunidade não conferida.
+- **Pede autorização do João**: `ci.yml` (T003 e T026).
 ## Plano e tarefas da spec 007: arquitetura verificável (sem versão nova)
 
 Só documentação em `specs/007-arquitetura-verificavel/`: plan, research, data-model, `contracts/` (`architecture.yml` estendido, comando `arquitetura`, violação plantada), quickstart e tasks (36 tarefas, fatias A a G). Desenho: verificador novo ao lado do atual, em modo sombra, para o peso de 20 % não mudar; formato estendido e compatível; violações plantadas aplicadas em cópia temporária; tendência pela rota de diferença que já existe.

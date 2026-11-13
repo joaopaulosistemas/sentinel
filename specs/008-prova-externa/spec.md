@@ -1,6 +1,6 @@
 # Especificação: Sentinel Premium 6 — Prova externa
 
-**Ramo**: `spec/008-prova-externa` | **Criada**: 2026-11-12 | **Status**: Rascunho esclarecido (Q1 respondida em 2026-11-12)
+**Ramo**: `spec/008-prova-externa` | **Criada**: 2026-11-12 | **Status**: Rascunho esclarecido (Q1 respondida em 2026-11-12); plano, pesquisa e tarefas prontos (`plan.md`, `tasks.md`); próximo: implementar só quando o João mandar
 **Pedido**: "Sentinel Premium — Plano de Ação", eixo **prova**: transformar os números internos em evidência que terceiros possam conferir e repetir. É a última das seis specs e a que fecha a promessa do plano: "provar com números". Depende de todas as anteriores, principalmente da 003 (régua e conjunto reservado).
 
 ## Linha de base: o que já existe (levantado no repositório em 2026-11-12)
