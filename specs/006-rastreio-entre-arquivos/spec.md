@@ -1,6 +1,6 @@
 # Especificação: Sentinel Premium 4 — Rastreio de dado inseguro entre arquivos
 
-**Ramo**: `spec/006-rastreio-entre-arquivos` | **Criada**: 2026-11-12 | **Status**: Esclarecida (5 perguntas, 2026-11-13); próximo: /speckit-plan
+**Ramo**: `spec/006-rastreio-entre-arquivos` | **Criada**: 2026-11-12 | **Status**: Esclarecida (5 perguntas, 2026-11-13); plano, pesquisa e tarefas prontos (`plan.md`, `tasks.md`); próximo: implementar só quando o João mandar
 **Pedido**: "Sentinel Premium — Plano de Ação", eixo **profundidade**: seguir um dado que vem de fora (parâmetro de requisição, corpo, cabeçalho) até um ponto perigoso (consulta ao banco, comando, caminho de arquivo, HTML), atravessando métodos, classes e arquivos. Começa por **uma** classe de falha, **injeção de SQL**, e só depois se repete para outras. Depende das specs 003 (régua) e 005 (modelo estrutural).
 
 ## Linha de base: o que já existe (levantado no repositório em 2026-11-12)
