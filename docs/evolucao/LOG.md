@@ -1380,6 +1380,13 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `sincronizar-versao.py --check` na 12.96.0; os arquivos removidos não existem mais.
 - **NÃO verificado:** o CI desta PR (a cobrança do GitHub Actions estava falhando); os scripts de calibração existentes não foram tocados e não foram rodados de novo aqui.
 
+## Esclarecimentos da spec 004 (sem versão nova)
+
+- **Por quê:** rodar o `/speckit-clarify` na spec 004 (menos alarme falso e só o novo no PR) antes do plano, como no fluxo combinado.
+- **Mudança:** 5 respostas do João registradas em `specs/004-menos-alarme-falso/spec.md`: faixas de confiança pelo limite inferior do intervalo de 95 % (alta ≥ 80 %, média 50 % a 79 %, baixa < 50 %); o comentário do PR não lista achados antigos, só a contagem; "piorado" = severidade subiu ou mais ocorrências da mesma regra no mesmo arquivo (o excedente); em código gerado só o que a regra já classifica como segurança permanece; sem base para decidir o que é novo, avisa e cai para o comportamento por arquivo sem bloquear o PR. FR-003, FR-005, FR-008, FR-012, História 1 e 4 e entidades ajustados.
+- **Verificado:** nenhum marcador `[NEEDS CLARIFICATION]` e checklist `requirements.md` ainda 16/16.
+- **NÃO verificado:** só documentação; nada foi executado nem medido. A meta numérica de redução de ruído continua para depois da linha de base da spec 003 (que foi revertida; a spec 003 segue só como especificação, plano e tarefas).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

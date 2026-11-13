@@ -1,6 +1,6 @@
 # Especificação: Sentinel Premium 2 — Menos alarme falso e só o que é novo no PR
 
-**Ramo**: `spec/004-menos-alarme-falso` | **Criada**: 2026-11-12 | **Status**: Rascunho
+**Ramo**: `spec/004-menos-alarme-falso` | **Criada**: 2026-11-12 | **Status**: Esclarecida (5 perguntas, 2026-11-13); próximo: /speckit-plan
 **Pedido**: "Sentinel Premium — Plano de Ação", eixo **precisão**: menos alarmes falsos e, em pull request, só os achados que o PR introduziu. Depende da spec 003 (régua): nenhuma redução de ruído vale sem a medida de que a detecção não caiu.
 
 ## Linha de base: o que já existe (levantado no repositório em 2026-11-12)
@@ -11,6 +11,16 @@
 - **Modo PR**: a auditoria com branch base mantém os achados dos **arquivos alterados**, não das **linhas** alteradas. Um arquivo antigo com 40 achados comenta os 40 em qualquer PR que o toque.
 - **Comparação entre auditorias**: existe a rota de diferença (novos, resolvidos, persistentes) contra a auditoria anterior, mas o fluxo de PR não a usa para silenciar o que já existia.
 - **O que falta**: critério único de "isto é novo neste PR"; exclusão sistemática de código gerado; agrupamento de achados repetidos; indicação, em cada achado, de quão confiável ele é; e prova de que cada redução de ruído não custou detecção.
+
+## Esclarecimentos
+
+### Sessão 2026-11-13
+
+- Q: Quais são os cortes numéricos das faixas de confiança de cada achado? → A: sobre o limite inferior do intervalo de confiança de 95 % da precisão medida: alta ≥ 80 %, média de 50 % a 79 %, baixa < 50 %; sem amostra suficiente, "sem medida".
+- Q: Achado de segurança que já existia, em arquivo alterado pelo PR, aparece no comentário? → A: não; o comentário traz só novos ou piorados e uma linha de contagem dos antigos deixados de fora ("N achados antigos fora deste comentário"); os antigos seguem no painel e no relatório completo.
+- Q: O que conta como achado "piorado" num PR? → A: a severidade do achado subiu, ou a quantidade de ocorrências da mesma regra no mesmo arquivo aumentou (o excedente é o piorado).
+- Q: Em código gerado, o que é "estilo e qualidade" (sai da nota) e o que é "segurança" (continua)? → A: vale a categoria que a regra já tem no catálogo: só o que a regra classifica como segurança permanece; estilo, qualidade, manutenção e desempenho saem. Sem classificação nova.
+- Q: Quando não dá para decidir o que é novo (base muito atrás, histórico reescrito), o que o Sentinel faz? → A: avisa no comentário e usa o comportamento atual por arquivo; não bloqueia o PR por não ter decidido, e nunca omite achado em silêncio.
 
 ## Cenários de usuário e testes *(obrigatório)*
 
@@ -27,7 +37,7 @@ Quem abre um PR vê no comentário e nas anotações apenas os achados que o PR 
 1. **Dado** um arquivo com achados pré-existentes, **quando** um PR altera uma linha sem criar achado, **então** o comentário diz "nenhum achado novo" e não lista os antigos.
 2. **Dado** um PR que cria um achado numa linha nova, **quando** o Sentinel audita, **então** só esse achado aparece, com localização.
 3. **Dado** um PR que move um trecho antigo de lugar sem mudá-lo, **quando** o Sentinel audita, **então** o achado movido não é tratado como novo.
-4. **Dado** um PR que piora um achado existente (por exemplo, eleva a severidade), **quando** o Sentinel audita, **então** ele aparece como "piorou", com o antes e o depois.
+4. **Dado** um PR que piora um achado existente (a severidade subiu, ou a mesma regra passou a ter mais ocorrências no mesmo arquivo), **quando** o Sentinel audita, **então** ele aparece como "piorou", com o antes e o depois (no caso de mais ocorrências, só o excedente).
 
 ---
 
@@ -73,7 +83,7 @@ Cada achado traz uma indicação de confiança baseada na precisão **medida** d
 
 **Cenários de aceite**:
 
-1. **Dado** uma regra com precisão medida, **quando** o achado aparece, **então** a faixa de confiança bate com a medida e cita a amostra.
+1. **Dado** uma regra com precisão medida, **quando** o achado aparece, **então** a faixa é decidida pelo limite inferior do intervalo de 95 % da precisão (alta ≥ 80 %, média de 50 % a 79 %, baixa < 50 %) e o achado cita a amostra e o intervalo.
 2. **Dado** uma regra sem amostra suficiente, **quando** o achado aparece, **então** a confiança é "sem medida", nunca um valor inventado.
 
 ---
@@ -81,7 +91,7 @@ Cada achado traz uma indicação de confiança baseada na precisão **medida** d
 ### Casos de borda
 
 - Arquivo renomeado ou movido no PR: o achado antigo não vira novo só por mudar de caminho.
-- Branch base muito atrás ou histórico reescrito: o Sentinel avisa que não consegue decidir o que é novo e cai para o comportamento atual (por arquivo), dizendo isso no comentário.
+- Branch base muito atrás ou histórico reescrito: o Sentinel avisa no comentário que não consegue decidir o que é novo e cai para o comportamento atual (por arquivo); o aviso não bloqueia o PR.
 - Mudança que apenas formata o arquivo (espaços, quebras de linha): não cria achados novos.
 - Achado que muda de linha porque o código acima mudou: continua sendo o mesmo achado.
 - Regra corrigida depois da amostra de precisão: a medida antiga não vale para a regra nova (já é a regra do verificador atual).
@@ -94,22 +104,22 @@ Cada achado traz uma indicação de confiança baseada na precisão **medida** d
 
 - **FR-001**: Em auditoria de PR, o Sentinel MUST comentar e anotar apenas achados **novos ou piorados** pelo PR, decididos por achado, e não por arquivo alterado.
 - **FR-002**: Um achado MUST ser considerado o mesmo, e portanto não novo, quando só mudou de linha, de caminho por renomeação, ou por reformatação.
-- **FR-003**: Quando não for possível decidir o que é novo, o Sentinel MUST dizer isso no resultado e usar o comportamento atual, nunca omitir achados em silêncio.
+- **FR-003**: Quando não for possível decidir o que é novo, o Sentinel MUST dizer isso no comentário e no resultado e usar o comportamento atual por arquivo, nunca omitir achados em silêncio; não poder decidir MUST NOT, por si só, bloquear o PR.
 - **FR-004**: Os achados antigos MUST continuar visíveis no painel e no relatório completo; a regra "só o novo" vale para o comentário e as anotações do PR.
-- **FR-005**: Achados de estilo e qualidade em código gerado MUST ficar fora da nota e do comentário, com a contagem excluída e o motivo no relatório; achados de segurança em código gerado MUST continuar aparecendo.
+- **FR-005**: Achados de estilo e qualidade em código gerado MUST ficar fora da nota e do comentário, com a contagem excluída e o motivo no relatório; achados de segurança em código gerado MUST continuar aparecendo. O corte usa a categoria que a regra já tem no catálogo: só o que a regra classifica como segurança permanece; estilo, qualidade, manutenção e desempenho saem.
 - **FR-006**: Rebaixar uma regra por baixa precisão MUST exigir medida registrada (amostra mínima e precisão abaixo do limite) e citá-la; sem medida, a regra não muda.
 - **FR-007**: Achados repetidos pela mesma causa MUST poder ser mostrados agrupados, com contagem e locais; o agrupamento MUST NOT alterar a nota.
-- **FR-008**: Cada achado MUST mostrar a confiança da regra derivada da precisão medida, ou "sem medida".
+- **FR-008**: Cada achado MUST mostrar a confiança da regra derivada da precisão medida, ou "sem medida". A faixa sai do limite inferior do intervalo de confiança de 95 %: alta ≥ 80 %, média de 50 % a 79 %, baixa < 50 %.
 - **FR-009**: Toda redução de ruído desta spec MUST ser avaliada pelo veredito da spec 003, com critérios registrados antes; só "fica" libera a mudança para o padrão.
 - **FR-010**: Nenhuma redução de ruído MUST reduzir a detecção de falhas conhecidas nos conjuntos de treino e validação além da tolerância já usada pelas travas do projeto.
 - **FR-011**: As funcionalidades atuais (modo sombra, supressão, rota de diferença entre auditorias) MUST continuar funcionando como hoje para quem não ativar as novas.
-- **FR-012**: Todo relatório de PR MUST dizer quantos achados foram deixados de fora por serem antigos, para o corte ser auditável.
+- **FR-012**: Todo relatório de PR MUST dizer quantos achados foram deixados de fora por serem antigos, para o corte ser auditável, numa linha de contagem ("N achados antigos fora deste comentário"). O comentário não lista nem resume achados antigos, nem os de segurança; eles ficam no painel e no relatório completo (FR-004).
 
 ### Entidades principais
 
-- **Achado novo / piorado / existente**: classificação de um achado em relação à base do PR.
+- **Achado novo / piorado / existente**: classificação de um achado em relação à base do PR. "Piorado" = severidade subiu, ou a quantidade de ocorrências da mesma regra no mesmo arquivo aumentou (o excedente).
 - **Identidade do achado**: o que faz dois achados serem "o mesmo" entre duas versões do código.
-- **Faixa de confiança**: alta, média, baixa ou sem medida, derivada da precisão revisada da regra.
+- **Faixa de confiança**: alta, média, baixa ou sem medida, derivada do limite inferior do intervalo de 95 % da precisão revisada da regra.
 - **Exclusão por código gerado**: registro do que foi excluído, quanto e por quê.
 - **Grupo de achados**: conjunto de ocorrências com a mesma causa, com contagem e locais.
 
