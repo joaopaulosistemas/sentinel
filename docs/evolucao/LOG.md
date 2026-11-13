@@ -1455,6 +1455,14 @@ Só documentação, a partir do `/speckit-analyze`: chaves passam a ser **por si
 - **Verificado**: caminhos conferidos no repositório (`MarkdownWriter`, `SarifWriter`, testes de serviço); constituição relida.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 
+## Plano e tarefas da spec 007: arquitetura verificável (sem versão nova)
+
+Só documentação em `specs/007-arquitetura-verificavel/`: plan, research, data-model, `contracts/` (`architecture.yml` estendido, comando `arquitetura`, violação plantada), quickstart e tasks (36 tarefas, fatias A a G). Desenho: verificador novo ao lado do atual, em modo sombra, para o peso de 20 % não mudar; formato estendido e compatível; violações plantadas aplicadas em cópia temporária; tendência pela rota de diferença que já existe.
+
+- **Verificado**: `architecture.yml` e `ArchitecturePolicy` (camadas por glob, `forbid`, `allow`, `strict`), `ScoringService` (arquitetura 0,20), `DependencyCycles` (pacotes e arquivos, não módulos); cobertura de FR-001 a FR-012 e SC-001 a SC-007 conferida contra as tarefas.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança; limites de métricas e de caminho são propostas a calibrar.
+- **Pede autorização do João**: campo novo na API pública, se o resumo de métricas exigir (T032).
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
