@@ -1462,6 +1462,13 @@ Só documentação em `specs/007-arquitetura-verificavel/`: plan, research, data
 - **Verificado**: `architecture.yml` e `ArchitecturePolicy` (camadas por glob, `forbid`, `allow`, `strict`), `ScoringService` (arquitetura 0,20), `DependencyCycles` (pacotes e arquivos, não módulos); cobertura de FR-001 a FR-012 e SC-001 a SC-007 conferida contra as tarefas.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança; limites de métricas e de caminho são propostas a calibrar.
 - **Pede autorização do João**: campo novo na API pública, se o resumo de métricas exigir (T032).
+## Plano e tarefas da spec 006: rastreio entre arquivos (sem versão nova)
+
+Só documentação em `specs/006-rastreio-entre-arquivos/`: plan, research, data-model, `contracts/` (definição de classe, achado de rastreio), quickstart e tasks (35 tarefas, fatias A a G). Achado do levantamento: o Joern **já** faz taint entre arquivos para SQL, comando e caminho, com origens e destinos dentro do script; o motor novo (em Java, sobre o modelo da 005, com definições em dados) precisa vencer isso. Dependência registrada: a 005 não traz fluxo de valores, a 006 o acrescenta sobre o mesmo leitor.
+
+- **Verificado**: `baseline.json` do Benchmark (`sqli` 0,938 / 0,69), `joern.md`, job `joern` e job `benchmark` do `ci.yml`, `dedup.yml` (só vale dentro da mesma ferramenta); cobertura de FR-001 a FR-013 e SC-001 a SC-007 conferida contra as tarefas.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança; limites iniciais (profundidade 12, 20 caminhos, 60 s) são propostas a calibrar.
+- **Pede autorização do João**: campo `trace`/`sources`/`fix` no achado (T023) e `ci.yml` (T035).
 
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
