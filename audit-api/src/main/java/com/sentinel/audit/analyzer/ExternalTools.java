@@ -125,7 +125,40 @@ final class ExternalTools {
         String base = code == -1 ? "excedeu o tempo limite de " + timeoutSeconds + "s e foi encerrado"
                 : "terminou com código " + code;
         String err = tail(stderrFile, ERROR_TAIL_CHARS);
+        if (err.startsWith("…")) {
+            // stderr longo: o fim costuma ser só o aviso da ferramenta ("report this issue"); a causa está antes.
+            String causa = exceptionLines(stderrFile);
+            if (!causa.isEmpty()) {
+                err = causa + " … " + err.substring(1).trim();
+            }
+        }
         return err.isEmpty() ? base : base + " — " + err;
+    }
+
+    private static final int CAUSE_LINES = 2;
+    private static final int CAUSE_LINE_CHARS = 200;
+
+    /** As primeiras linhas de exceção do stderr ({@code ...Exception: msg} e {@code Caused by: ...}); vazio se não houver. */
+    static String exceptionLines(Path file) {
+        try {
+            if (file == null || !Files.isRegularFile(file)) {
+                return "";
+            }
+            java.util.List<String> found = new java.util.ArrayList<>();
+            for (String line : Files.readAllLines(file, java.nio.charset.StandardCharsets.UTF_8)) {
+                String t = line.trim();
+                boolean isException = t.startsWith("Caused by:") || t.matches("^(Exception in thread \"[^\"]*\" )?[\\w.$]+(Exception|Error)(:.*)?$");
+                if (isException) {
+                    found.add(t.length() <= CAUSE_LINE_CHARS ? t : t.substring(0, CAUSE_LINE_CHARS) + "…");
+                    if (found.size() == CAUSE_LINES) {
+                        break;
+                    }
+                }
+            }
+            return String.join(" ", found);
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /** Caminho relativo à raiz do projeto quando a ferramenta devolve caminho absoluto. */
