@@ -1441,6 +1441,13 @@ Só documentação: 5 respostas em `specs/006-rastreio-entre-arquivos/spec.md` (
 - **Verificado**: spec relida; sem marcador pendente; checklist em 16/16.
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 
+## Esclarecimentos da spec 007 (sem versão nova)
+
+Só documentação: 4 respostas em `specs/007-arquitetura-verificavel/spec.md` (FR-001, FR-007, FR-009 ajustados): camada inferida por anotação e estereótipo ("sem camada" quando não há sinal), exceção com validade obrigatória, acoplamento por instabilidade de Martin mais contagem, violação identificada por regra e par origem→destino sem a linha.
+
+- **Verificado**: spec relida; sem marcador pendente.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
