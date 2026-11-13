@@ -1373,14 +1373,6 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** `conferir-numeros.py`, `sincronizar-versao.py --check`, `verificar-separacao.py`; campos de tempo (`startedAt`, `completedAt`) e formatos de gabarito conferidos no código.
 - **NÃO verificado:** nada foi implementado; o CI não detecta leitura do reservado por pessoa ou agente fora do que fica versionado (dito no plano); a linha de base real só roda no GitHub.
 
-## 12.97.0 — Régua de medição, fatia A da spec 003 (`scripts/medicao.py`)
-
-- **Por quê:** o Premium precisa provar ganho com número. Antes não havia intervalo de confiança comparável entre grupos, nem aviso de amostra pequena, nem "sem medida" separado de zero.
-- **Mudança:** ferramenta Python única (só biblioteca padrão) `scripts/medicao.py` com `relatorio` (JSON e Markdown determinísticos; taxa sempre com `n`, `ic95` e aviso de amostra pequena; pilha sem gabarito ou com medida incompleta vira `sem-medida` e fica fora das médias; código gerado e de terceiros contados em `excluidos`; tempo e arquivos por repositório) e `lacunas`. Também `wilson`, `bootstrap_pareado` (semente fixa) e `registrar_correcao` (histórico, nada sobrescrito sem registro). O grupo reservado fica bloqueado na linha de comando até existir o registro de consultas (fatia C). Novo `audit-rules/calibracao/repositorios.json` com os 59 repositórios de treino e validação, cada um fixado por commit.
-- **Testes:** `scripts/test_medicao.py` (35 casos, escritos antes do código e vistos falhar), com dados só de teste em `scripts/fixtures/medicao/`. Inclui varredura do código-fonte contra execução de código auditado (princípio VII) e conferência do `repositorios.json` real contra `conjuntos.json`.
-- **Verificado:** os 35 testes novos e os 26 dos outros scripts; relatório repetido sobre as fixtures gera arquivos idênticos byte a byte; `sincronizar-versao.py --check`.
-- **NÃO verificado:** os commits são o HEAD de 2026-11-12 (`git ls-remote`) e ainda não foram conferidos contra os gabaritos; as pilhas de cada repositório foram inferidas por nome e notas, não pelo código; nenhuma medição real foi gerada (isso é a fatia de coleta). **O teste ainda não roda no CI**: acrescentar `scripts/test_medicao.py` à linha de testes do `ci.yml` (T004) depende da autorização do João.
-
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
