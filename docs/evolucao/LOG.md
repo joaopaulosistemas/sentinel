@@ -1434,6 +1434,13 @@ Só documentação, a partir do `/speckit-analyze`: nova decisão D8 (como uma r
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança.
 - **Pede decisão do João**: D8 (exceção ao princípio V) e a dependência Maven da T009.
 
+## Esclarecimentos da spec 006 (sem versão nova)
+
+Só documentação: 5 respostas em `specs/006-rastreio-entre-arquivos/spec.md` (FR-002, FR-003, FR-005, FR-006, FR-007 ajustados; FR-013 novo): rastro perdido só no relatório de cobertura do rastreio, sanitizador declarado elimina o achado, propagadores de biblioteca declarados em dados, "o mesmo problema" = classe + destino, destinos de SQL da primeira fatia (JDBC, JdbcTemplate, nativa, JPQL/HQL).
+
+- **Verificado**: spec relida; sem marcador pendente; checklist em 16/16.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
