@@ -1387,6 +1387,14 @@ Verificado: testes das regras (Opengrep e Semgrep), paridade, auditorias no CI a
 - **Verificado:** nenhum marcador `[NEEDS CLARIFICATION]` e checklist `requirements.md` ainda 16/16.
 - **NÃO verificado:** só documentação; nada foi executado nem medido. A meta numérica de redução de ruído continua para depois da linha de base da spec 003 (que foi revertida; a spec 003 segue só como especificação, plano e tarefas).
 
+## Plano da spec 004: menos alarme falso (sem versão nova)
+
+Só documentação: `plan.md`, `research.md`, `data-model.md`, `contracts/comentario-pr.md` e `quickstart.md` em `specs/004-menos-alarme-falso/`. O plano corrige o "o que falta" da spec: identidade sem linha, detecção de código gerado e nível de confiança já existem; o trabalho é estender, com chaves desligadas.
+
+- **Verificado**: arquivos relidos contra o código lido (`Fingerprints`, `FindingLifecycleService`, `ChangedFiles`, `GeneratedFiles`, `FindingConfidence`).
+- **NÃO verificado**: nada foi executado; o CI do GitHub Actions está sem cobrança. A régua da spec 003 foi revertida, então o veredito para ligar chaves como padrão é manual.
+- **Pede autorização do João**: `groupBy` e campos novos na API pública.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
