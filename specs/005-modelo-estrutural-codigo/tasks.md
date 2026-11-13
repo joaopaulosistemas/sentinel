@@ -51,7 +51,7 @@ description: "Tarefas da spec 005: Sentinel Premium 3 — Modelo estrutural do c
 
 **Teste independente**: roteiros 1 a 3 do `quickstart.md`.
 
-- [ ] T009 ⚠️ **Autorização**: adicionar a dependência Maven do leitor sintático de Java (JavaParser) em `audit-api/pom.xml`; sem o "sim" do João, a fatia B não começa
+- [ ] T009 ⚠️ **Autorização**: adicionar a dependência Maven do leitor sintático de Java (JavaParser) em `audit-api/pom.xml`; sem o "sim" do João, a fatia B não começa ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 - [ ] T010 [P] [US1] Testes dos endpoints: Spring e Quarkus devolvem método HTTP, caminho, classe e método exatamente como `esperado.json`, sem item extra (SC-001) em `.../modelo/JavaEndpointsTest.java`
 - [ ] T011 [P] [US1] Testes de chamadores: diretos, inclusive de outro arquivo e módulo; nome igual em pacotes diferentes distinguido pelo import em `.../modelo/JavaChamadoresTest.java`
 - [ ] T012 [P] [US1] Testes de relações especiais: reflexão e injeção por nome saem NAO_RESOLVIDA com motivo; `jdbcTemplate.query` sai EXTERNA com nome qualificado (FR-005, FR-013); Lombok e proxies declarados como não resolvidos em `.../modelo/JavaRelacoesTest.java`

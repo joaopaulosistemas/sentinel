@@ -62,3 +62,8 @@ Observação: a spec e o plano de 004 falam em "Spring Boot"; o **próprio Senti
 
 1. **Decisão do João:** dependência Maven nova para Java (D1).
 2. O orçamento de tempo (SC-005) e a escolha final das 3 regras dependem da linha de base da 003.
+
+
+## Decisões do João (2026-11-13)
+
+Aprovadas as recomendadas: dependência JavaParser (D1); exceção ao princípio V em D8 (regras piloto como analisadores Java, com justificativa registrada no Complexity Tracking); campos opcionais na API das specs 006 e 007; mudanças em `ci.yml` das specs 006 e 008; ponto de entrada local no lugar de rotas novas. Licença do conjunto de regras da comunidade (008): conferir antes do primeiro uso e registrar no relatório; sem licença compatível, a comparação de mercado não o usa. Continua valendo: nada é implementado até o João liberar.

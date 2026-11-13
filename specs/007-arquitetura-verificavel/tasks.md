@@ -88,7 +88,7 @@ description: "Tarefas da spec 007: Sentinel Premium 5 — Arquitetura verificáv
 - [ ] T029 [P] [US4] Testes da tendência com duas versões, uma mais acoplada: aponta a piora em 100 % dos pares (SC-006); mudança de linha não vira "resolvida" e "nova" em `audit-api/src/test/java/com/sentinel/audit/arquitetura/TendenciaTest.java`
 - [ ] T030 [US4] Implementar `MetricasDoModulo` e guardar só o resumo com o resultado da auditoria
 - [ ] T031 [US4] Implementar a tendência com a rota de diferença existente (`FindingLifecycleService`) e `sentinel arquitetura tendencia` (FR-007)
-- [ ] T032 [US4] ⚠️ **Autorização**: só se o resumo de métricas precisar de campo novo na resposta da API pública; sem o "sim", ele aparece no relatório e na CLI
+- [ ] T032 [US4] ⚠️ **Autorização**: só se o resumo de métricas precisar de campo novo na resposta da API pública; sem o "sim", ele aparece no relatório e na CLI ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 
 ## Fase 8: História 5 — Sinais clássicos (P3) (fatia F)
 
