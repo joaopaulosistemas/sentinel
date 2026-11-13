@@ -73,14 +73,14 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 - [ ] T020 [P] [US5] Testes da fusão: o mesmo destino achado por padrão, Joern e rastreio vira 1 achado com 3 fontes; destinos diferentes não se fundem; reformatação não quebra a fusão (FR-007) em `audit-api/src/test/java/com/sentinel/audit/rastreio/FusaoDeFontesTest.java`
 - [ ] T021 [P] [US5] Teste de regressão: com `taint.enabled` desligado, relatório e resposta da API idênticos aos de hoje (byte a byte)
 - [ ] T022 [US5] Implementar a fusão de fontes (classe + destino) como passo antes da nota, sem alterar `dedup.yml` (D5) em `audit-api/src/main/java/com/sentinel/audit/rastreio/FusaoDeFontes.java`
-- [ ] T023 [US5] ⚠️ **Autorização**: acrescentar `trace`, `sources` e `fix` como campos opcionais do achado na API (`contracts/achado-rastreio.md`); sem o "sim", o caminho aparece só no relatório e no comentário
+- [ ] T023 [US5] ⚠️ **Autorização**: acrescentar `trace`, `sources` e `fix` como campos opcionais do achado na API (`contracts/achado-rastreio.md`); sem o "sim", o caminho aparece só no relatório e no comentário ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 
 ## Fase 6: História 3 — Mais preciso que o padrão atual (P1) (fatia E)
 
 - [ ] T024 [P] [US3] Teste (arquivo novo `scripts/test_benchmark_owasp.py`): `sentinel-taint-sqli` mapeia para a categoria `sqli` em `MAPA_REGRAS` de `scripts/benchmark-owasp.py`, e as outras categorias seguem sob a trava existente (FR-009, SC-003)
 - [ ] T033 [US3] Comando local `sentinel rastreio executar <pasta> --json`: roda o motor numa pasta de fontes e devolve lista de achados (`ruleId`, `filePath`) no formato que `benchmark-owasp.py` já aceita; teste antes em `audit-api/src/test/java/com/sentinel/audit/local/RastreioExecutarTest.java`; roda no Docker via `scripts/sentinel-local`
 - [ ] T034 [US3] Acrescentar `sentinel-taint-sqli` a `MAPA_REGRAS` em `scripts/benchmark-owasp.py`
-- [ ] T035 [US3] ⚠️ **Autorização** (mexe em `.github/`): no job `benchmark` de `.github/workflows/ci.yml`, rodar `rastreio executar` sobre o Benchmark e juntar os achados aos do Opengrep antes de `benchmark-owasp.py`, e acrescentar `scripts/test_benchmark_owasp.py` à linha de testes dos scripts; sem o "sim", a medição é local e manual
+- [ ] T035 [US3] ⚠️ **Autorização** (mexe em `.github/`): no job `benchmark` de `.github/workflows/ci.yml`, rodar `rastreio executar` sobre o Benchmark e juntar os achados aos do Opengrep antes de `benchmark-owasp.py`, e acrescentar `scripts/test_benchmark_owasp.py` à linha de testes dos scripts; sem o "sim", a medição é local e manual ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 - [ ] T025 [US3] Rodar o Benchmark (`sqli`: baseline 0,938 de acerto e 0,69 de alarme falso) e os gabaritos de treino com padrão, Joern e rastreio; registrar acerto, alarme falso e intervalos no LOG (FR-008)
 - [ ] T026 [US3] Veredito: sem a régua da 003, registrar a medida manual e **não** colocar o rastreio no padrão; com a régua, só "fica" libera (SC-002)
 - [ ] T027 [US3] Medir e registrar o tempo adicional por repositório; comparar com o orçamento do João quando existir (FR-011, SC-007)

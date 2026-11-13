@@ -35,7 +35,7 @@ description: "Tarefas da spec 008: Sentinel Premium 6 — Prova externa"
 
 - [ ] T001 Criar `scripts/fixtures/prova/` com medidas de teste (números só de teste, com `_comentario` dizendo isso), um `repositorios.json` de teste com `publicavel`, um registro de consultas ao reservado e vereditos de teste internos e externos
 - [ ] T002 [P] Criar o esqueleto de `scripts/prova.py` (subcomandos `montar`, `verificar`, `amostra-externa`, `concordancia`, `comparar-mercado`, `reproduzir`, `aceite`, cada um devolvendo "não implementado" com código 2) e o de `scripts/test_prova.py`
-- [ ] T003 ⚠️ **Autorização**: acrescentar `scripts/test_prova.py` à linha de testes dos scripts em `.github/workflows/ci.yml`
+- [ ] T003 ⚠️ **Autorização**: acrescentar `scripts/test_prova.py` à linha de testes dos scripts em `.github/workflows/ci.yml` ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 
 ## Fase 2: Fundação (bloqueia as histórias; fatia A)
 
@@ -76,7 +76,7 @@ description: "Tarefas da spec 008: Sentinel Premium 6 — Prova externa"
 - [ ] T023 [P] [US3] Teste: o mapa regra→categoria precisa estar commitado **antes** dos achados (data do arquivo anterior ao arquivo de resultados) em `scripts/test_prova.py`
 - [ ] T024 [US3] Escrever `audit-rules/calibracao/mercado/opengrep-comunidade.json` e `joern.json` (mapas de regra para categoria) e fixar versões e SHAs; **conferir antes a licença** do conjunto de regras da comunidade e registrar o resultado
 - [ ] T025 [US3] Implementar `comparar-mercado` e a seção 8 do relatório, com parágrafo de limites
-- [ ] T026 [US3] ⚠️ **Autorização**: job dedicado ou manual em `.github/workflows/ci.yml` que roda as ferramentas sobre os mesmos conjuntos e publica o resultado como artefato
+- [ ] T026 [US3] ⚠️ **Autorização**: job dedicado ou manual em `.github/workflows/ci.yml` que roda as ferramentas sobre os mesmos conjuntos e publica o resultado como artefato ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 
 ## Fase 6: História 4 — Medição final no reservado (P1) (fatia D)
 

@@ -1490,6 +1490,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado:** cobertura de FR/SC das specs 006, 007 e 008 conferida por varredura; faltavam só citações explícitas, agora nas tarefas (006 T010; 007 T006, T012, T031; 008 T031, T032).
 - **NÃO verificado:** nada foi implementado nem executado; a alternativa de rotas novas na API continua dependendo do "sim" do João.
 
+## Decisões recomendadas das specs 005 a 008 (só documentos, sem versão nova)
+
+- **Verificado:** autorizações registradas nas tarefas (005 T009; 006 T023, T035; 007 T032; 008 T003, T026) e no `research.md` da 005.
+- **NÃO verificado:** nada foi implementado; as autorizações só valem quando a implementação for liberada.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
