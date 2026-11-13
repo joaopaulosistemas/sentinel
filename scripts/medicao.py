@@ -8,7 +8,7 @@ Contrato completo: specs/003-medicao-e-prova/contracts/cli.md. Códigos de saíd
 Princípio VII da constituição: este módulo só LÊ arquivos de medida (JSON) e nunca executa código auditado.
 Por isso não dispara processos externos nem avalia texto como código (há teste que varre o código-fonte).
 """
-import argparse, copy, datetime, json, os, random, re, sys
+import argparse, copy, datetime, hashlib, json, os, random, re, sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.dirname(AQUI)
@@ -21,7 +21,7 @@ PILHAS = ("JAVA", "SPRING", "QUARKUS", "ANGULAR", "REACT", "VUE", "TYPESCRIPT", 
           "DOCKER", "KUBERNETES", "SQL")
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 CHAVES_DE_ACHADO = {"achados", "arquivo", "linha", "regra", "regras"}  # nunca saem do relatório do reservado (FR-006)
-NAO_IMPLEMENTADOS = ("comparar", "reservado", "amostra", "revisao")
+NAO_IMPLEMENTADOS = ("reservado", "amostra", "revisao")
 
 
 # --- estatística -----------------------------------------------------------------------------------------------
@@ -326,6 +326,140 @@ def relatorio_md(rel):
     return "\n".join(L) + "\n"
 
 
+# --- proposta e veredito (US2) ---------------------------------------------------------------------------------
+
+def sha256_bytes(dados):
+    return hashlib.sha256(dados).hexdigest()
+
+
+def sha256_arquivo(caminho):
+    with open(caminho, "rb") as f:
+        return sha256_bytes(f.read())
+
+
+def _numero(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def validar_proposta(p):
+    """Formato de contracts/arquivos.md. Devolve a lista de erros (vazia = válida)."""
+    erros = []
+    for campo in ("id", "titulo", "spec", "linha_de_base"):
+        if not isinstance(p.get(campo), str) or not p[campo].strip():
+            erros.append(f"proposta: campo '{campo}' obrigatório (texto)")
+    if not isinstance(p.get("semente"), int) or isinstance(p.get("semente"), bool):
+        erros.append("proposta: 'semente' deve ser um número inteiro")
+    c = p.get("criterios")
+    if not isinstance(c, dict):
+        return erros + ["proposta: 'criterios' obrigatório"]
+    if not isinstance(c.get("metrica"), str) or not c["metrica"]:
+        erros.append("proposta: criterios.metrica obrigatório (categoria ou '*' para todas)")
+    for campo in ("ganho_minimo", "alarme_falso_max_aumento", "tolerancia_categoria"):
+        if campo == "tolerancia_categoria" and campo not in c:
+            continue
+        if not _numero(c.get(campo)) or c[campo] < 0:
+            erros.append(f"proposta: criterios.{campo} deve ser número maior ou igual a 0")
+    if "tempo_max_aumento_pct" not in c or not (c["tempo_max_aumento_pct"] is None or (_numero(c["tempo_max_aumento_pct"]) and c["tempo_max_aumento_pct"] >= 0)):
+        erros.append("proposta: criterios.tempo_max_aumento_pct deve ser número maior ou igual a 0, ou null (sem limite)")
+    return erros
+
+
+def _media(xs):
+    return sum(xs) / len(xs) if xs else 0.0
+
+
+def _casos(med, chave, metrica):
+    dados = med.get(chave) or {}
+    if metrica == "*":
+        return [x for k in sorted(dados) for x in dados[k]]
+    return list(dados.get(metrica) or [])
+
+
+def comparabilidade(antes, depois):
+    """O que difere entre as duas medições além da mudança (lista vazia = comparáveis)."""
+    d = []
+    if antes.get("conjunto") != depois.get("conjunto"):
+        d.append(f"conjunto difere ({antes.get('conjunto')} × {depois.get('conjunto')})")
+    ca, cd = antes.get("commits") or {}, depois.get("commits") or {}
+    for repo in sorted(set(ca) | set(cd)):
+        if ca.get(repo) != cd.get(repo):
+            d.append(f"commit de {repo} difere ({ca.get(repo) or 'ausente'} × {cd.get(repo) or 'ausente'})")
+    fa, fd = antes.get("versoes_ferramentas") or {}, depois.get("versoes_ferramentas") or {}
+    for f in sorted(set(fa) | set(fd)):
+        if fa.get(f) != fd.get(f):
+            d.append(f"versões de ferramentas diferem ({f}: {fa.get(f)} × {fd.get(f)})")
+    ra, rd = set(antes.get("resultados") or {}), set(depois.get("resultados") or {})
+    if ra != rd:
+        d.append("categorias diferem: " + ", ".join(sorted(ra ^ rd)))
+    else:
+        for k in sorted(ra):
+            if len(antes["resultados"][k]) != len(depois["resultados"][k]):
+                d.append(f"categorias diferem: {k} tem {len(antes['resultados'][k])} casos antes e {len(depois['resultados'][k])} depois")
+    return d
+
+
+def _recusa(proposta, sha, antes, depois, motivo):
+    return {"proposta": proposta.get("id"), "proposta_sha256": sha, "antes": antes.get("id"), "depois": depois.get("id"),
+            "resultado": "inconclusivo", "recusado": True, "pos_medida": False, "motivo": motivo, "ganho": None, "criterios": []}
+
+
+def avaliar(proposta, sha, antes, depois):
+    """Veredito de uma proposta: fica, sai ou inconclusivo. Critérios e semente vêm da proposta (pré-registrada)."""
+    cr = proposta["criterios"]
+    if proposta.get("linha_de_base") != antes.get("id"):
+        return _recusa(proposta, sha, antes, depois,
+                       f"linha_de_base da proposta ({proposta.get('linha_de_base')}) não é a medição 'antes' ({antes.get('id')})")
+    dif = comparabilidade(antes, depois)
+    metrica = cr["metrica"]
+    a_res, d_res = _casos(antes, "resultados", metrica), _casos(depois, "resultados", metrica)
+    if not a_res:
+        dif.append(f"métrica '{metrica}' não existe nas medições")
+    if not _casos(antes, "falsos", metrica) or not _casos(depois, "falsos", metrica):
+        dif.append(f"alarme falso da métrica '{metrica}' não medido nas duas medições")
+    if cr["tempo_max_aumento_pct"] is not None and not ((antes.get("tempo") or {}).get("agregado_s") and (depois.get("tempo") or {}).get("agregado_s")):
+        dif.append("tempo não medido nas duas medições, mas a proposta declara limite de tempo")
+    if dif:
+        return _recusa(proposta, sha, antes, depois, "medições incomparáveis: " + "; ".join(dif))
+    boot = bootstrap_pareado(a_res, d_res, proposta["semente"])
+    ganho, ic = boot["ganho"], boot["ic95"]
+    pequena = amostra_pequena(len(a_res))
+    afalso = _media(_casos(depois, "falsos", metrica)) - _media(_casos(antes, "falsos", metrica))
+    t0, t1 = antes["tempo"]["agregado_s"], depois["tempo"]["agregado_s"]
+    pct = round(100.0 * (t1 - t0) / t0, 2) if t0 else None
+    tol = cr.get("tolerancia_categoria", 0.02)
+    quedas = {k: round(_media(antes["resultados"][k]) - _media(depois["resultados"][k]), 6) for k in sorted(antes["resultados"])}
+    piores = {k: q for k, q in quedas.items() if q > tol}
+    tempo = {"nome": "tempo", "ok": cr["tempo_max_aumento_pct"] is None or (pct is not None and pct <= cr["tempo_max_aumento_pct"]), "valor": pct}
+    if cr["tempo_max_aumento_pct"] is None:
+        tempo["observacao"] = "sem limite declarado: só destaca o aumento"
+    criterios = [
+        {"nome": "ganho_minimo", "ok": ganho >= cr["ganho_minimo"], "valor": ganho},
+        {"nome": "alarme_falso", "ok": round(afalso, 6) <= cr["alarme_falso_max_aumento"], "valor": round(afalso, 6)},
+        tempo,
+        {"nome": "categorias", "ok": not piores, "valor": quedas, "observacao": ("queda acima da tolerância em: " + ", ".join(sorted(piores))) if piores else "nenhuma categoria caiu além da tolerância"},
+    ]
+    pos_medida = depois.get("proposta_sha256") != sha
+    duros = [c["nome"] for c in criterios if c["nome"] != "ganho_minimo" and not c["ok"]]
+    if duros:
+        resultado, motivo = "sai", "critério não atendido: " + ", ".join(duros)
+    elif ic[1] < 0:
+        resultado, motivo = "sai", "o ganho é negativo com 95 % de confiança"
+    elif ic[0] > 0 and not pequena:
+        if not criterios[0]["ok"]:
+            resultado, motivo = "sai", f"ganho {ganho} abaixo do mínimo pré-registrado {cr['ganho_minimo']}"
+        elif pos_medida:
+            resultado, motivo = "inconclusivo", "a proposta não estava registrada (hash ausente ou diferente) quando a medição foi feita: pós-medida nunca dá 'fica'"
+        else:
+            resultado, motivo = "fica", "ganho com limite inferior positivo e todos os critérios atendidos"
+    else:
+        resultado = "inconclusivo"
+        motivo = f"amostra pequena (n={len(a_res)} < {AMOSTRA_MINIMA})" if pequena else "o intervalo do ganho inclui zero"
+    return {"proposta": proposta.get("id"), "proposta_sha256": sha, "antes": antes.get("id"), "depois": depois.get("id"),
+            "resultado": resultado, "recusado": False, "pos_medida": pos_medida, "motivo": motivo,
+            "ganho": {"valor": ganho, "ic95": ic}, "n": len(a_res), "amostra_pequena": pequena, "semente": proposta["semente"],
+            "criterios": criterios}
+
+
 # --- linha de comando ------------------------------------------------------------------------------------------
 
 def _cmd_relatorio(a):
@@ -355,6 +489,19 @@ def _cmd_relatorio(a):
     return 0
 
 
+def _cmd_comparar(a):
+    proposta = ler_json(a.proposta)
+    erros = validar_proposta(proposta)
+    if erros:
+        print("proposta inválida:\n  " + "\n  ".join(erros), file=sys.stderr)
+        return 1
+    v = avaliar(proposta, sha256_arquivo(a.proposta), ler_json(a.antes), ler_json(a.depois))
+    saida = a.saida or os.path.join(RAIZ, "docs", "evolucao", "medicao", "vereditos", proposta["id"] + ".json")
+    gravar_json(saida, v)
+    print(f"Veredito de {v['proposta']}: {v['resultado']}" + (" (recusado)" if v["recusado"] else "") + (" [pós-medida]" if v["pos_medida"] else "") + f" - {v['motivo']}")
+    return {"fica": 0, "sai": 1}.get(v["resultado"], 3)
+
+
 def _cmd_lacunas(a):
     rel = ler_json(a.medicao)
     lac = rel.get("lacunas") if "lacunas" in rel else lacunas(rel)
@@ -380,10 +527,13 @@ def main(argv=None):
     r.add_argument("--repositorios", help="(testes) repositorios.json alternativo")
     r.add_argument("--gabaritos", help="(testes) pasta de gabaritos alternativa")
     r.add_argument("--data", help="AAAA-MM-DD; padrão hoje"); r.add_argument("--id")
+    c = sub.add_parser("comparar")
+    c.add_argument("--proposta", required=True); c.add_argument("--antes", required=True)
+    c.add_argument("--depois", required=True); c.add_argument("--saida")
     l = sub.add_parser("lacunas")
     l.add_argument("--medicao", required=True)
     a = ap.parse_args(argv)
-    return {"relatorio": _cmd_relatorio, "lacunas": _cmd_lacunas}[a.cmd](a)
+    return {"relatorio": _cmd_relatorio, "comparar": _cmd_comparar, "lacunas": _cmd_lacunas}[a.cmd](a)
 
 
 if __name__ == "__main__":

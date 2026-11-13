@@ -59,16 +59,16 @@ class Estatistica(unittest.TestCase):
         self.assertEqual(M.AMOSTRA_MINIMA, 20)
 
     def test_bootstrap_mesma_semente_mesmo_intervalo(self):
-        a, d = lj("antes.json")["casos"], lj("depois-melhora.json")["casos"]
+        a, d = lj("antes.json")["resultados"]["sqli"], lj("depois-melhora.json")["resultados"]["sqli"]
         r1, r2 = M.bootstrap_pareado(a, d, 7), M.bootstrap_pareado(a, d, 7)
         self.assertEqual(json.dumps(r1, sort_keys=True), json.dumps(r2, sort_keys=True))
 
     def test_bootstrap_melhora_clara_limite_inferior_positivo(self):
-        r = M.bootstrap_pareado(lj("antes.json")["casos"], lj("depois-melhora.json")["casos"], 7)
+        r = M.bootstrap_pareado(lj("antes.json")["resultados"]["sqli"], lj("depois-melhora.json")["resultados"]["sqli"], 7)
         self.assertGreater(r["ic95"][0], 0)
 
     def test_bootstrap_sem_efeito_inclui_zero(self):
-        r = M.bootstrap_pareado(lj("antes.json")["casos"], lj("depois-igual.json")["casos"], 7)
+        r = M.bootstrap_pareado(lj("antes.json")["resultados"]["sqli"], lj("depois-igual.json")["resultados"]["sqli"], 7)
         self.assertLessEqual(r["ic95"][0], 0)
         self.assertGreaterEqual(r["ic95"][1], 0)
 
@@ -267,8 +267,128 @@ class Lacunas(unittest.TestCase):
 
     def test_subcomandos_ainda_nao_implementados_saem_com_2(self):
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            for sub in ("comparar", "reservado", "amostra", "revisao"):
+            for sub in ("reservado", "amostra", "revisao"):
                 self.assertEqual(M.main([sub]), 2, sub)
+
+
+class Veredito(unittest.TestCase):
+    def setUp(self):
+        self.prop = lj("proposta.json")
+        self.sha = M.sha256_arquivo(os.path.join(FIX, "proposta.json"))
+        self.antes = lj("antes.json")
+
+    def avaliar(self, depois, prop=None, antes=None, sha=None):
+        return M.avaliar(prop or self.prop, sha or self.sha, antes or self.antes, depois)
+
+    def cli(self, depois_nome, saida):
+        args = ["comparar", "--proposta", os.path.join(FIX, "proposta.json"), "--antes", os.path.join(FIX, "antes.json"),
+                "--depois", os.path.join(FIX, depois_nome), "--saida", saida]
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            return M.main(args)
+
+    def test_tres_pares_dao_fica_sai_inconclusivo_com_codigos_0_1_3(self):
+        with tempfile.TemporaryDirectory() as d:
+            for nome, resultado, codigo in (("depois-melhora.json", "fica", 0), ("depois-piora.json", "sai", 1), ("depois-igual.json", "inconclusivo", 3)):
+                s = os.path.join(d, nome)
+                self.assertEqual(self.cli(nome, s), codigo, nome)
+                v = json.loads(ler(s))
+                self.assertEqual(v["resultado"], resultado)
+                self.assertEqual(v["proposta_sha256"], self.sha)
+
+    def test_fica_exige_tudo_ok_e_limite_inferior_positivo(self):
+        v = self.avaliar(lj("depois-melhora.json"))
+        self.assertEqual(v["resultado"], "fica")
+        self.assertFalse(v["pos_medida"]); self.assertFalse(v["recusado"])
+        self.assertGreater(v["ganho"]["ic95"][0], 0)
+        self.assertTrue(all(c["ok"] for c in v["criterios"]))
+        self.assertEqual({c["nome"] for c in v["criterios"]}, {"ganho_minimo", "alarme_falso", "tempo", "categorias"})
+
+    def test_piora_de_uma_categoria_da_sai_mesmo_com_media_melhor(self):
+        d = lj("depois-melhora.json")
+        d["resultados"]["xss"] = [1 if i < 7 else 0 for i in range(30)]   # xss cai de 50 % para 23 %
+        v = self.avaliar(d)
+        media_antes = sum(sum(x) / 30 for x in self.antes["resultados"].values()) / 2
+        media_depois = sum(sum(x) / 30 for x in d["resultados"].values()) / 2
+        self.assertGreater(media_depois, media_antes)
+        self.assertEqual(v["resultado"], "sai")
+        self.assertFalse(next(c for c in v["criterios"] if c["nome"] == "categorias")["ok"])
+
+    def test_intervalo_com_zero_ou_amostra_pequena_nunca_fica(self):
+        self.assertNotEqual(self.avaliar(lj("depois-igual.json"))["resultado"], "fica")
+        a, d = copy.deepcopy(self.antes), lj("depois-melhora.json")
+        for x in (a, d):
+            x["resultados"] = {k: v[:10] for k, v in x["resultados"].items()}
+            x["falsos"] = {k: v[:10] for k, v in x["falsos"].items()}
+        v = self.avaliar(d, antes=a)
+        self.assertEqual(v["resultado"], "inconclusivo")
+        self.assertTrue(v["amostra_pequena"])
+
+    def test_entradas_incomparaveis_sao_recusadas_com_a_lista_do_que_difere(self):
+        casos = {
+            "conjunto": lambda d: d.update(conjunto="validacao"),
+            "commit": lambda d: d["commits"].update({"fix/java-app": "f" * 40}),
+            "ferramentas": lambda d: d["versoes_ferramentas"].update(opengrep="9.9"),
+            "categorias": lambda d: d["resultados"].pop("xss"),
+        }
+        for nome, muda in casos.items():
+            d = lj("depois-melhora.json"); muda(d)
+            v = self.avaliar(d)
+            self.assertTrue(v["recusado"], nome); self.assertEqual(v["resultado"], "inconclusivo", nome)
+            self.assertIn(nome, v["motivo"], v["motivo"])
+
+    def test_recusa_sai_com_codigo_3(self):
+        d = lj("depois-melhora.json"); d["conjunto"] = "validacao"
+        with tempfile.TemporaryDirectory() as t:
+            caminho = os.path.join(t, "d.json"); M.gravar_json(caminho, d)
+            args = ["comparar", "--proposta", os.path.join(FIX, "proposta.json"), "--antes", os.path.join(FIX, "antes.json"),
+                    "--depois", caminho, "--saida", os.path.join(t, "v.json")]
+            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                self.assertEqual(M.main(args), 3)
+
+    def test_hash_ausente_ou_diferente_vira_pos_medida_e_nunca_fica(self):
+        for h in (None, "0" * 64):
+            d = lj("depois-melhora.json"); d["proposta_sha256"] = h
+            v = self.avaliar(d)
+            self.assertTrue(v["pos_medida"], h); self.assertNotEqual(v["resultado"], "fica", h)
+
+    def test_proposta_alterada_depois_da_medicao_vira_pos_medida(self):
+        p = copy.deepcopy(self.prop); p["criterios"]["ganho_minimo"] = 0.01
+        v = M.avaliar(p, M.sha256_bytes(json.dumps(p, sort_keys=True).encode()), self.antes, lj("depois-melhora.json"))
+        self.assertTrue(v["pos_medida"]); self.assertNotEqual(v["resultado"], "fica")
+
+    def test_tempo_acima_do_aceito_impede_fica_e_sem_limite_so_destaca(self):
+        d = lj("depois-melhora.json"); d["tempo"]["agregado_s"] = 150     # +50 % contra limite de 20 %
+        v = self.avaliar(d)
+        self.assertNotEqual(v["resultado"], "fica")
+        self.assertFalse(next(c for c in v["criterios"] if c["nome"] == "tempo")["ok"])
+        p = copy.deepcopy(self.prop); p["criterios"]["tempo_max_aumento_pct"] = None
+        v2 = M.avaliar(p, M.sha256_bytes(json.dumps(p, sort_keys=True).encode()), self.antes, d)
+        tempo = next(c for c in v2["criterios"] if c["nome"] == "tempo")
+        self.assertTrue(tempo["ok"]); self.assertEqual(tempo["valor"], 50.0); self.assertIn("sem limite", tempo["observacao"])
+
+    def test_alarme_falso_acima_do_aceito_da_sai(self):
+        d = lj("depois-melhora.json"); d["falsos"]["sqli"] = [1] * 6 + [0] * 14
+        v = self.avaliar(d)
+        self.assertEqual(v["resultado"], "sai")
+        self.assertFalse(next(c for c in v["criterios"] if c["nome"] == "alarme_falso")["ok"])
+
+    def test_linha_de_base_inexistente_ou_que_nao_e_a_medicao_antes_e_recusada(self):
+        p = copy.deepcopy(self.prop); p["linha_de_base"] = "nao-existe"
+        v = M.avaliar(p, self.sha, self.antes, lj("depois-melhora.json"))
+        self.assertTrue(v["recusado"]); self.assertIn("linha_de_base", v["motivo"]); self.assertIn("nao-existe", v["motivo"])
+
+    def test_validar_proposta_aponta_o_campo_errado(self):
+        p = copy.deepcopy(self.prop); del p["linha_de_base"]; p["criterios"]["ganho_minimo"] = -1; p["semente"] = "x"
+        erros = M.validar_proposta(p)
+        for campo in ("linha_de_base", "ganho_minimo", "semente"):
+            self.assertTrue(any(campo in e for e in erros), (campo, erros))
+        self.assertEqual(M.validar_proposta(self.prop), [])
+
+    def test_veredito_gravado_e_deterministico(self):
+        with tempfile.TemporaryDirectory() as d:
+            a, b = os.path.join(d, "a.json"), os.path.join(d, "b.json")
+            self.cli("depois-melhora.json", a); self.cli("depois-melhora.json", b)
+            self.assertEqual(ler(a, "rb"), ler(b, "rb"))
 
 
 if __name__ == "__main__":
