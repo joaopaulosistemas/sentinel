@@ -1477,6 +1477,13 @@ Só documentação em `specs/006-rastreio-entre-arquivos/`: plan, research, data
 - **NÃO verificado**: nada executado; CI do Actions sem cobrança; limites iniciais (profundidade 12, 20 caminhos, 60 s) são propostas a calibrar.
 - **Pede autorização do João**: campo `trace`/`sources`/`fix` no achado (T023) e `ci.yml` (T035).
 
+## Alinhamento do contrato da spec 003 com a 008 (sem versão nova)
+
+Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publicavel` em `repositorios.json` (obrigatório quando a 008 estiver ativa), conforme `specs/008-prova-externa/contracts/relatorio-prova.md`.
+
+- **Verificado**: texto do contrato relido; nenhuma tarefa da 003 muda.
+- **NÃO verificado**: nada executado; CI do Actions sem cobrança.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
