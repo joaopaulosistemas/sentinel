@@ -1500,6 +1500,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado:** renomear ou mover classe conta como violação resolvida mais nova (FR-007), registrado no esclarecimento e nos casos de borda.
 - **NÃO verificado:** nada implementado.
 
+## Citações de requisitos nas tarefas das specs 003 a 006 (só documentos, sem versão nova)
+
+- **Verificado:** cada FR das specs 003 a 006 agora é citado em ao menos uma tarefa; conferido por varredura.
+- **NÃO verificado:** nada implementado.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
