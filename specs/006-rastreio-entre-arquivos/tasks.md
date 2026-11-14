@@ -40,7 +40,7 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 
 - [ ] T003 [P] Testes do esquema de definição (`contracts/definicao-classe.md`): classe única, argumento inteiro ≥ 0, método qualificado, listas não vazias, sem duplicata em `audit-api/src/test/java/com/sentinel/audit/rastreio/DefinicaoDeClasseTest.java`
 - [ ] T004 [P] Teste de varredura do pacote `rastreio`: sem execução, compilação, rede nem IA (princípio VII, FR-012) em `audit-api/src/test/java/com/sentinel/audit/rastreio/SemExecucaoTest.java`
-- [ ] T005 Criar `audit-rules/taint/sqli.yml` com origens, destinos (JDBC, `JdbcTemplate`, consulta nativa, JPQL/HQL por `EntityManager` e Panache), sanitizadores e propagadores iniciais, revistos só contra treino (princípio III, esclarecimentos 2 a 5)
+- [ ] T005 Criar `audit-rules/taint/sqli.yml` com origens, destinos (JDBC, `JdbcTemplate`, consulta nativa, JPQL/HQL por `EntityManager` e Panache), sanitizadores e propagadores iniciais, revistos só contra treino (princípio III, esclarecimentos 2 a 5) (FR-003)
 - [ ] T006 Implementar `DefinicaoDeClasse` e o carregador em `audit-api/src/main/java/com/sentinel/audit/rastreio/DefinicaoDeClasse.java`, falhando com mensagem útil em definição inválida
 
 **Checkpoint**: testes da fatia A verdes; nenhuma API alterada.

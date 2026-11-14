@@ -59,8 +59,8 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 
 ### Testes (escrever primeiro; devem falhar)
 
-- [ ] T011 [P] [US1] Teste: relatório repetido gera `diff` vazio (SC-002), em `scripts/test_medicao.py`
-- [ ] T012 [P] [US1] Teste: toda taxa traz `n` e `ic95`; `n < 20` traz `amostra_pequena` (SC-003)
+- [ ] T011 [P] [US1] Teste: relatório repetido gera `diff` vazio (SC-002), em `scripts/test_medicao.py` (FR-004)
+- [ ] T012 [P] [US1] Teste: toda taxa traz `n` e `ic95`; `n < 20` traz `amostra_pequena` (SC-003) (FR-002)
 - [ ] T013 [P] [US1] Teste: pilha do escopo sem gabarito aparece como `sem-medida` com motivo e fica **fora** das médias (FR-003)
 - [ ] T014 [P] [US1] Teste: medida incompleta (repositório sem `completa`) não vira zero: entra em pendências com o motivo
 - [ ] T015 [P] [US1] Teste: o `.md` termina com as seções "Verificado" e "NÃO verificado" (FR-016) e traz versão do Sentinel, ferramentas, data e commit de cada repositório (FR-001)
@@ -84,7 +84,7 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 **Teste independente**: toda pilha `sem-medida` do relatório de teste tem uma linha de lacuna.
 
 - [ ] T026 [P] [US5] Teste: `lacunas` lista cada pilha `sem-medida` com `falta` e `prioridade`; ordem: mais repositórios `real` e nenhuma medida primeiro, em `scripts/test_medicao.py`
-- [ ] T027 [US5] Implementar o subcomando `lacunas` e a seção `lacunas[]` do relatório em `scripts/medicao.py`
+- [ ] T027 [US5] Implementar o subcomando `lacunas` e a seção `lacunas[]` do relatório em `scripts/medicao.py` (FR-019)
 - [ ] T028 Fechar a fatia A: LOG, versão nova (ferramenta nova), conferências verdes, PR
 
 **Checkpoint**: fatia A em PR; US1 e US5 entregues e testáveis sozinhas.
@@ -109,8 +109,8 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 ### Implementação
 
 - [ ] T036 [US2] Implementar `sha256` da proposta e a validação do formato (`contracts/arquivos.md`) em `scripts/medicao.py`, exigindo que `linha_de_base` exista e aponte para uma medição real (SC-007)
-- [ ] T037 [US2] Implementar a comparabilidade (conjunto, commits, ferramentas) e a recusa explicada em `scripts/medicao.py`
-- [ ] T038 [US2] Implementar o subcomando `comparar` com bootstrap pareado e o veredito em `scripts/medicao.py`; gravar `docs/evolucao/medicao/vereditos/<proposta>.json`
+- [ ] T037 [US2] Implementar a comparabilidade (conjunto, commits, ferramentas) e a recusa explicada em `scripts/medicao.py` (FR-011)
+- [ ] T038 [US2] Implementar o subcomando `comparar` com bootstrap pareado e o veredito em `scripts/medicao.py`; gravar `docs/evolucao/medicao/vereditos/<proposta>.json` (FR-010)
 - [ ] T039 [P] [US2] Criar `audit-rules/calibracao/propostas/LEIAME.md` com o formato da proposta e um exemplo; as propostas reais nascem nas specs 004 a 007
 - [ ] T040 [US2] Garantir que as travas atuais seguem rodando e valendo (FR-012): rodar `benchmark-owasp.py`, `comparar-calibracao.py` e `precisao-regras.py --verifica` contra os dados atuais e registrar que não mudaram
 - [ ] T041 Fechar a fatia B: LOG, versão, conferências, PR
@@ -131,12 +131,11 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 - [ ] T044 [P] [US3] Teste: nome de repositório reservado em arquivo fora da lista permitida é erro (checagem 7)
 - [ ] T045 [P] [US3] Teste: `consultas.json` com linha editada ou removida em relação à base é erro; linha acrescentada é aceita (checagem 8)
 - [ ] T046 [P] [US3] Teste: medição do reservado com a chave `achados`, `arquivo` ou `linha` é erro na checagem 7 (FR-006)
-- [ ] T047 [P] [US3] Teste: `promover` move reservado → treino, atualiza `conjuntos.json`, `repositorios.json`, `estado.json` e o registro, e o repositório nunca volta a reservado
-- [ ] T048 [P] [US3] Teste: medir o reservado sem `--marco` é recusado; com marco, grava a consulta (data, versão, marco, motivo)
-
+- [ ] T047 [P] [US3] Teste: `promover` move reservado → treino, atualiza `conjuntos.json`, `repositorios.json`, `estado.json` e o registro, e o repositório nunca volta a reservado (FR-007)
+- [ ] T048 [P] [US3] Teste: medir o reservado sem `--marco` é recusado; com marco, grava a consulta (data, versão, marco, motivo) (FR-008)
 ### Implementação
 
-- [ ] T049 [US3] Estender `scripts/verificar-separacao.py` com as checagens 5 a 8 (a 7 também barra, em medições do reservado, as chaves `achados`, `arquivo` e `linha`) mantendo as opções e os códigos de saída atuais; manter a leitura de `descobertos.txt`
+- [ ] T049 [US3] Estender `scripts/verificar-separacao.py` com as checagens 5 a 8 (a 7 também barra, em medições do reservado, as chaves `achados`, `arquivo` e `linha`) mantendo as opções e os códigos de saída atuais; manter a leitura de `descobertos.txt` (FR-005)
 - [ ] T050 ⚠️ Autorização: acrescentar `scripts/test_verificar_separacao.py` à linha de testes dos scripts em `.github/workflows/ci.yml` (nasce aqui, não na fatia A)
 - [ ] T051 [US3] Estender `conjuntos.json` com o grupo `reservado` (`repositorios_fixos`, `regra`, `marcos`) e `audit-rules/calibracao/gabaritos/reservado/LEIAME.json` com a regra de conduta (ninguém lê o código; gabarito só de fonte pública)
 - [ ] T052 [US3] Implementar `reservado consultas` e `reservado promover` e o registro `audit-rules/calibracao/reservado/consultas.json` em `scripts/medicao.py`
@@ -159,7 +158,7 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 - [ ] T059 Conferir cada gabarito de treino no **commit fixado**: comparar o recall medido com o da calibração anterior (`audit-rules/calibracao/baselines/`); se divergir além da tolerância, fixar em `repositorios.json` o commit em que o gabarito foi montado e registrar em `historico` (os gabaritos foram montados em commits antigos; linhas podem ter deslocado)
 - [ ] T060 ⚠️ Autorização: rodar o workflow **uma vez** para o reservado no marco `marco-0-linha-de-base`, registrando a consulta
 - [ ] T061 Gerar `docs/evolucao/medicao/linha-de-base.{json,md}` com `medicao.py relatorio` para os três conjuntos e as lacunas; o João revisa
-- [ ] T062 Repetir a medição de um repositório e conferir números idênticos (SC-002 em ambiente real) e que o CI existente segue verde (SC-009)
+- [ ] T062 Repetir a medição de um repositório e conferir números idênticos (SC-002 em ambiente real) e que o CI existente segue verde (SC-009) (FR-004)
 - [ ] T063 Fechar a fatia D: LOG com **Verificado / NÃO verificado**, versão, conferências, PR
 
 ---
@@ -174,7 +173,7 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 - [ ] T064 [P] [US4] Teste: mesma semente dá a mesma amostra; regras com mais achados são cobertas; cada achado traz localização e trecho (cenário 1, FR-013)
 - [ ] T065 [P] [US4] Teste: `--cego` omite o veredito do agente e não altera as demais colunas
 - [ ] T066 [P] [US4] Teste: precisão por regra usa só linhas com veredito, informa quantas faltam e marca "sem evidência" abaixo do mínimo (cenário 2)
-- [ ] T067 [P] [US4] Teste: concordância e lista de divergências; abaixo de 0,80 a saída é 1 (cenário 3)
+- [ ] T067 [P] [US4] Teste: concordância e lista de divergências; abaixo de 0,80 a saída é 1 (cenário 3) (FR-014)
 - [ ] T068 [P] [US4] Teste: o formato de linha de `docs/evolucao/revisao-humana.md` continua aceito por `scripts/concordancia-revisao.py` (compatibilidade)
 
 ### Implementação

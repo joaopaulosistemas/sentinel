@@ -41,7 +41,7 @@ C1: chaves por sistema, não em `application.properties`. C2: T037 cobre o SARIF
 
 ## Fase 2: Fundação (bloqueia as histórias; fatia A)
 
-- [ ] T003 [P] Testes de `ChangedFiles` com `git diff --name-status -M`: renomeação devolve par antigo→novo; arquivo apagado e adicionado não vira par em `audit-api/src/test/java/com/sentinel/audit/service/ChangedFilesTest.java`
+- [ ] T003 [P] Testes de `ChangedFiles` com `git diff --name-status -M`: renomeação devolve par antigo→novo; arquivo apagado e adicionado não vira par em `audit-api/src/test/java/com/sentinel/audit/service/ChangedFilesTest.java` (FR-002)
 - [ ] T004 [P] Testes de `Baseline`: guarda severidade por fingerprint e contagem por (regra, arquivo); base sem `commitSha` é indecidível em `audit-api/src/test/java/com/sentinel/audit/service/FindingLifecycleServiceTest.java`
 - [ ] T005 [P] Testes da decisão por arquivo (D2): arquivo alterado no branch base depois da auditoria vira INDECIDIDO; sem auditoria base, todos INDECIDIDO em `audit-api/src/test/java/com/sentinel/audit/service/BaseDecisionTest.java`
 - [ ] T006 Estender `ChangedFiles` com renomeação (D3) em `audit-api/src/main/java/com/sentinel/audit/service/ChangedFiles.java`
@@ -76,13 +76,13 @@ C1: chaves por sistema, não em `application.properties`. C2: T037 cobre o SARIF
 - [ ] T019 [US4] Implementar `--json` e gerar `audit-rules/calibracao/precisao-por-regra.json` (D6)
 - [ ] T038 [US4] Empacotar `audit-rules/calibracao/precisao-por-regra.json` junto do catálogo de regras e testar que a API o encontra na imagem (C3)
 - [ ] T020 [P] [US4] Testes de `RuleBandService`: regra ausente = SEM_MEDIDA; campo separado de `confidence` em `audit-api/src/test/java/com/sentinel/audit/service/RuleBandServiceTest.java`
-- [ ] T021 [US4] Implementar `RuleBandService` e expor `ruleBand`/`ruleBandSample` atrás da chave ⚠️ **API pública: autorização do João**
+- [ ] T021 [US4] Implementar `RuleBandService` e expor `ruleBand`/`ruleBandSample` atrás da chave ⚠️ **API pública: autorização do João** (FR-008)
 - [ ] T022 [US4] Mostrar a faixa na tabela do comentário do PR (`contracts/comentario-pr.md`)
 
 ## Fase 6: História 3 — Achados repetidos viram um só (P2) (fatia E)
 
 - [ ] T023 [P] [US3] Testes de agrupamento: chave regra + trecho normalizado; contagem e locais; nota idêntica com e sem agrupar (SC-007) em `audit-api/src/test/java/com/sentinel/audit/service/FindingGroupingTest.java`
-- [ ] T024 [US3] Implementar `GrupoDeAchados` na leitura em `audit-api/src/main/java/com/sentinel/audit/service/FindingGrouping.java`
+- [ ] T024 [US3] Implementar `GrupoDeAchados` na leitura em `audit-api/src/main/java/com/sentinel/audit/service/FindingGrouping.java` (FR-007)
 - [ ] T025 [US3] ⚠️ **Autorização**: parâmetro `groupBy=cause` na listagem e interruptor no painel (`audit-dashboard/`)
 
 ## Fase 7: Rebaixe por precisão (fatia F, US2)
@@ -93,8 +93,8 @@ C1: chaves por sistema, não em `application.properties`. C2: T037 cobre o SARIF
 
 ## Fase 8: Fechamento (fatia G)
 
-- [ ] T029 Rodar gabarito e OWASP Benchmark com chaves ligadas e desligadas; registrar recall (SC-003, trava −0,02) em `docs/evolucao/LOG.md`
-- [ ] T030 Registrar o veredito manual por redução (SC-004) e a medida em código real (SC-005); nenhuma chave vira padrão sem "fica"
+- [ ] T029 Rodar gabarito e OWASP Benchmark com chaves ligadas e desligadas; registrar recall (SC-003, trava −0,02) em `docs/evolucao/LOG.md` (FR-010)
+- [ ] T030 Registrar o veredito manual por redução (SC-004) e a medida em código real (SC-005); nenhuma chave vira padrão sem "fica" (FR-009)
 - [ ] T031 Atualizar `docs/referencia/pacotes-de-regras.md` (seção "Auditoria de PR") e `docs/evolucao/precisao.md`
 - [ ] T032 Conferir `conferir-numeros.py`, `sincronizar-versao.py --check` e o roteiro completo do `quickstart.md`
 
