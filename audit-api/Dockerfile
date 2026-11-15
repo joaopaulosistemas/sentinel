@@ -2,11 +2,12 @@
 #   docker build -f audit-api/Dockerfile -t sentinel-audit-api .
 #
 # VERSÃO SEM VERIFICAÇÃO DE SSL (para redes com inspeção SSL, sem instalar o CA da empresa).
-# Com INSECURE_SSL=true (padrão), a verificação de certificado é DESLIGADA apenas durante o build
+# Por padrão (INSECURE_SSL=false) a verificação de certificado fica LIGADA. Com --build-arg INSECURE_SSL=true (redes com
+# inspeção SSL, como Zscaler) a verificação de certificado é DESLIGADA apenas durante o build
 # (Maven, apt, curl, pip, npm e git). As configurações inseguras são removidas ao final, então a
-# imagem pronta não carrega nada disso. Para voltar ao normal: --build-arg INSECURE_SSL=false
+# imagem pronta não carrega nada disso. Só ligue em rede corporativa que reassina o TLS.
 FROM docker.io/maven:3.9-eclipse-temurin-26-alpine AS build
-ARG INSECURE_SSL=true
+ARG INSECURE_SSL=false
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
@@ -29,7 +30,7 @@ RUN mvn -B -q -pl audit-api -am package -DskipTests
 FROM docker.io/eclipse-temurin:25-jre-jammy
 # Pipes nos RUN abaixo (curl | tar, curl | bash) falham o build se o download falhar
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-ARG INSECURE_SSL=true
+ARG INSECURE_SSL=false
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY

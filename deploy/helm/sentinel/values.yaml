@@ -19,7 +19,7 @@ dashboard:
 secrets:
   existingSecret: ""                      # Secret com as chaves: DB_PASSWORD, API_KEY, SECRETS_KEY
   dbPassword: ""
-  apiKey: ""
+  apiKey: ""                              # obrigatória: vazia (sem OIDC), a API recusa subir
   secretsKey: ""                          # cifra, no banco, os tokens e segredos cadastrados em cada sistema (vazio = usa a apiKey)
 
 database:

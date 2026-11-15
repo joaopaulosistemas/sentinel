@@ -66,6 +66,7 @@ services:
       DB_USER: sentinel_audit
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       API_KEY: ${API_KEY:-}
+      ALLOW_OPEN_API: ${ALLOW_OPEN_API:-false}   # true só em desenvolvimento local, sem API_KEY
       SECRETS_KEY: ${SECRETS_KEY:-}
       OSV_ENABLED: ${OSV_ENABLED:-true}
       OSV_URL: ${OSV_URL:-https://api.osv.dev}
