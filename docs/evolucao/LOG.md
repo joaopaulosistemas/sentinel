@@ -1641,3 +1641,14 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Limite:** não lê `project.json`/tags do Nx nem o `tsconfig`; os tipos vêm do nome da pasta (`feature-*`, `ui-*`, `data-access*`, `util-*`) e o prefixo `@org` é declarado à mão. Regras por escopo (ex.: escopo A só importa de A e shared) ainda não existem.
 - **NÃO verificado localmente:** testes Java; quem verifica é o CI da PR.
 
+## Arquitetura: calibração em projetos públicos (`arq-hexagonal` 1.0.1, `arq-frontend-fsd` 1.1.1)
+
+- **Medição:** workflow `Calibração de arquitetura` (`scripts/calibracao-arquitetura.sh`) audita projetos públicos com o perfil do estilo e lista só os achados de arquitetura.
+- **Resultado 1 (buckpal, hexagonal de referência):** 2 achados, ambos falsos: `SendMoneyService` fica em `application/domain/service` e foi tratado como domínio puro. **Correção:** `application` vem antes de `domain` e as convenções do domínio ignoram `**/application/**`.
+- **Resultado 2 (spring-petclinic, controle sem esses nomes de pasta):** 0 achados, como esperado.
+- **Resultado 3 (nrwl/nx-examples, perfil Nx):** 3 `standalone: false` (verdadeiros: o projeto usa NgModules; ficam como aviso baixo). 0 achados de camadas porque as bibliotecas do exemplo não usam os nomes `feature-*`/`ui-*`: o pacote depende desse nome.
+- **Resultado 4 (feature-sliced/examples, perfil FSD):** 0 achados; as pastas `src/` ficam dentro de subprojetos e os globs partiam da raiz. **Correção:** caminhos do FSD passam a `**/src/...` (a regra `modules`, que parte de um prefixo, segue na raiz).
+- **Testes:** layout `application/domain` do buckpal e FSD em subprojeto.
+- **NÃO verificado localmente:** testes Java; quem verifica é o CI da PR.
+- **Resultado 4, segunda rodada (`arq-frontend-fsd` 1.1.2):** com os globs em `**/src/`, o `todo-app` do `feature-sliced/examples` acusou 3 `export *` em `index.ts`. O próprio exemplo oficial do FSD usa `export *`, então a convenção `index-sem-export-estrela` foi retirada (era opinião nossa, não regra do estilo). Camadas e imports: 0 achados no exemplo oficial. `buckpal`: 0 após a correção.
+

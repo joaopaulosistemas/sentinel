@@ -8,6 +8,7 @@ layers:
   - name: adapter-out
     paths: ["**/adapter/out/**", "**/adapter/outbound/**", "**/adapters/out/**", "**/outbound/**", "**/infrastructure/**"]
     packages: ["*.adapter.out.*", "*.adapter.outbound.*", "*.adapters.out.*", "*.outbound.*", "*.infrastructure.*"]
+  # 'application/domain/**' (layout comum, ex.: buckpal) conta como aplicação: application vem antes de domain.
   - name: application
     paths: ["**/application/**"]
     packages: ["*.application.*"]
@@ -28,14 +29,14 @@ conventions:
   - id: dominio-sem-framework
     title: "Domínio importa framework"
     files: ["**/domain/**/*.java"]
-    exclude: ["**/*Test.java", "**/*Tests.java", "**/test/**"]
+    exclude: ["**/*Test.java", "**/*Tests.java", "**/test/**", "**/application/**"]
     forbid: '^\s*import\s+(static\s+)?(org\.springframework|jakarta\.(persistence|ws\.rs|enterprise|inject|transaction|validation)|javax\.(persistence|ws\.rs|inject|transaction)|io\.quarkus|com\.fasterxml\.jackson)\b[^;]*;'
     severity: high
     message: "O domínio deve ser Java puro. Anotações de persistência, injeção ou serialização pertencem ao adaptador; mapeie o modelo do domínio para elas."
   - id: dominio-sem-transacao
     title: "Transação declarada no domínio"
     files: ["**/domain/**/*.java"]
-    exclude: ["**/*Test.java", "**/test/**"]
+    exclude: ["**/*Test.java", "**/test/**", "**/application/**"]
     forbid: '@Transactional'
     severity: medium
     message: "A fronteira transacional é do caso de uso (camada de aplicação), não do domínio."

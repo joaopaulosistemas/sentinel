@@ -2,12 +2,12 @@
 # Uma camada só importa de camadas estritamente abaixo. Imports entre fatias da mesma camada e imports
 # que furam o index.ts de uma fatia são pegos pelas convenções; ajuste os caminhos ao seu 'src'.
 layers:
-  - {name: app, paths: ["src/app/**"], packages: ["@/app/*", "~/app/*", "@/app", "~/app"]}
-  - {name: pages, paths: ["src/pages/**"], packages: ["@/pages/*", "~/pages/*", "@/pages", "~/pages"]}
-  - {name: widgets, paths: ["src/widgets/**"], packages: ["@/widgets/*", "~/widgets/*", "@/widgets", "~/widgets"]}
-  - {name: features, paths: ["src/features/**"], packages: ["@/features/*", "~/features/*", "@/features", "~/features"]}
-  - {name: entities, paths: ["src/entities/**"], packages: ["@/entities/*", "~/entities/*", "@/entities", "~/entities"]}
-  - {name: shared, paths: ["src/shared/**"], packages: ["@/shared/*", "~/shared/*", "@/shared", "~/shared"]}
+  - {name: app, paths: ["**/src/app/**"], packages: ["@/app/*", "~/app/*", "@/app", "~/app"]}
+  - {name: pages, paths: ["**/src/pages/**"], packages: ["@/pages/*", "~/pages/*", "@/pages", "~/pages"]}
+  - {name: widgets, paths: ["**/src/widgets/**"], packages: ["@/widgets/*", "~/widgets/*", "@/widgets", "~/widgets"]}
+  - {name: features, paths: ["**/src/features/**"], packages: ["@/features/*", "~/features/*", "@/features", "~/features"]}
+  - {name: entities, paths: ["**/src/entities/**"], packages: ["@/entities/*", "~/entities/*", "@/entities", "~/entities"]}
+  - {name: shared, paths: ["**/src/shared/**"], packages: ["@/shared/*", "~/shared/*", "@/shared", "~/shared"]}
 forbid:
   - {from: pages, to: app, severity: high, message: "Em FSD a camada 'pages' fica abaixo de 'app' e não pode importar dela. Suba o código para a camada certa ou injete por propriedade/slot."}
   - {from: widgets, to: app, severity: high, message: "Em FSD a camada 'widgets' fica abaixo de 'app' e não pode importar dela. Suba o código para a camada certa ou injete por propriedade/slot."}
@@ -27,20 +27,14 @@ forbid:
 conventions:
   - id: fatia-sem-import-profundo
     title: "Import fura a API pública da fatia"
-    files: ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+    files: ["**/src/**/*.ts", "**/src/**/*.tsx", "**/src/**/*.vue"]
     exclude: ["**/*.spec.ts", "**/*.test.ts", "**/*.test.tsx", "**/*.stories.tsx"]
     forbid: '(?:from\s+|import\(\s*|require\(\s*)[''"](?:@|~)/(?:pages|widgets|features|entities)/[^/''"]+/[^''"]+[''"]'
     severity: medium
     message: "Importe a fatia pelo index.ts (API pública), não por um arquivo interno. Assim a fatia pode mudar por dentro sem quebrar quem usa."
-  - id: index-sem-export-estrela
-    title: "API pública com export *"
-    files: ["src/pages/*/index.ts", "src/widgets/*/index.ts", "src/features/*/index.ts", "src/entities/*/index.ts"]
-    forbid: '^\s*export\s+\*\s+from'
-    severity: low
-    message: "Exporte nome a nome no index.ts. 'export *' expõe tudo e esconde o que de fato é a API da fatia."
   - id: shared-sem-regra-de-negocio
     title: "Regra de negócio em shared"
-    files: ["src/shared/**/*.ts", "src/shared/**/*.tsx"]
+    files: ["**/src/shared/**/*.ts", "**/src/shared/**/*.tsx"]
     exclude: ["**/*.spec.ts", "**/*.test.ts"]
     forbid: '(?i)\b(?:class|function|const)\s+\w*(?:Pedido|Cliente|Fatura|Pagamento|Order|Customer|Invoice|Payment)\w*'
     severity: low

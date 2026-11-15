@@ -10,13 +10,6 @@
   refs:
     - "https://feature-sliced.design/docs/reference/public-api"
 
-- key: "sentinel-arch-conv-index-sem-export-estrela"
-  summary: "Liste os nomes exportados no index.ts em vez de 'export *'."
-  before: "export * from './ui';"
-  after: "export { Carrinho } from './ui/Carrinho';"
-  refs:
-    - "https://feature-sliced.design/docs/reference/public-api"
-
 - key: "sentinel-arch-conv-shared-sem-regra-de-negocio"
   summary: "Leve a regra de negócio para entities (modelo) ou features (ação do usuário)."
   refs:

@@ -1,6 +1,6 @@
 id: arq-frontend-fsd
 name: "Frontend em camadas (Feature-Sliced Design) (exemplo)"
-version: 1.1.0
+version: 1.1.2
 description: "Camadas app > pages > widgets > features > entities > shared (só importa de baixo), API pública por fatia (index.ts) e shared sem regra de negócio. Serve também de base para React, Vue e Angular com pastas equivalentes."
 author: Sentinel
 languages: [typescript]
