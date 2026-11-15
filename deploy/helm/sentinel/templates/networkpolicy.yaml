@@ -1,0 +1,39 @@
+{{- if .Values.networkPolicy.enabled }}
+# Saída da API restrita: DNS, banco e a internet pública (443). Rede interna, loopback e metadados de nuvem ficam de fora,
+# o que fecha o DNS rebinding que a validação da URL do repositório (ALLOWED_INTERNAL_HOSTS) não alcança.
+# Exige um plugin de rede que aplique NetworkPolicy (Calico, Cilium...); sem ele a política é ignorada.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-api-egress
+spec:
+  podSelector:
+    matchLabels: { app: {{ .Release.Name }}-api }
+  policyTypes: [Egress]
+  egress:
+    - to: [ { namespaceSelector: {} } ]      # DNS do cluster
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+{{- if .Values.database.internal }}
+    - to: [ { podSelector: { matchLabels: { app: {{ .Release.Name }}-postgres } } } ]
+      ports: [ { protocol: TCP, port: 5432 } ]
+{{- else }}
+    - to:
+{{- range .Values.networkPolicy.databaseCidrs }}
+        - ipBlock: { cidr: {{ . | quote }} }
+{{- end }}
+      ports: [ { protocol: TCP, port: 5432 } ]
+{{- end }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+{{- range .Values.networkPolicy.blockedCidrs }}
+              - {{ . | quote }}
+{{- end }}
+      ports: [ { protocol: TCP, port: 443 } ]
+{{- with .Values.networkPolicy.extraEgress }}
+{{ toYaml . | indent 4 }}
+{{- end }}
+{{- end }}
