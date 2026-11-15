@@ -100,6 +100,14 @@ description: "Tarefas da spec 007: Sentinel Premium 5 — Arquitetura verificáv
 - [ ] T035 Rodar o roteiro completo do `quickstart.md`; conferir jobs de pacotes de regras e de testes (SC-004)
 - [ ] T036 Atualizar `docs/referencia/pacotes-de-regras.md` e `docs/arquitetura/ARQUITETURA.md` com o formato estendido e o comando `arquitetura`; registrar tudo no `docs/evolucao/LOG.md`
 
+## Fase extra: requisitos acrescentados pela revisão dos checklists (2026-11-15)
+
+Testes antes do código; cada tarefa cita o requisito que cobre.
+
+- [ ] T037 [P] Teste: camada de Angular, React e Vue por sufixo e decorador exposto pelo modelo; sem sinal, "sem camada" (FR-001) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/CamadaFrontendTest.java`
+- [ ] T038 Implementar a camada inferida de frontend em `audit-api/src/main/java/com/sentinel/audit/arquitetura/CamadaInferida.java` (FR-001)
+- [ ] T039 [P] Teste: limites padrão `metrics.max-fan-out` 20 e instabilidade de módulo 0,8, ajustáveis por sistema, registrados como "a calibrar" (FR-007) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/MetricasLimitesTest.java`
+
 ## Dependências
 
 005 (modelo) e 003 (régua) antes da medição; 004 antes de T025 e T027. Fase 2 antes de tudo; B depende de A e da 005; C depende de B; D depende de C; E depende de C e da 004; F depende de C; G por último.

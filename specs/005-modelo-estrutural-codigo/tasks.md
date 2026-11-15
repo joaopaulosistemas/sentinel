@@ -93,6 +93,13 @@ description: "Tarefas da spec 005: Sentinel Premium 3 — Modelo estrutural do c
 - [ ] T033 Rodar o roteiro completo do `quickstart.md`; conferir jobs de regras, Semgrep e benchmark (SC-006) e que o modelo roda dentro da imagem Docker, com e sem `WITH_ESLINT`, no job de build da imagem (FR-012, A4)
 - [ ] T034 Atualizar `docs/referencia/` com o comando `modelo` e registrar tudo no `docs/evolucao/LOG.md`
 
+## Fase extra: requisitos acrescentados pela revisão dos checklists (2026-11-15)
+
+Testes antes do código; cada tarefa cita o requisito que cobre.
+
+- [ ] T037 [P] Teste: o modelo não expõe módulo de build nem fluxo de valores; a interface pública do pacote `modelo` documenta isso (FR-001) em `audit-api/src/test/java/com/sentinel/audit/modelo/EscopoDoModeloTest.java`
+- [ ] T038 [P] Teste: sem o orçamento de tempo fixado em `criterios`, nenhuma regra baseada no modelo recebe veredito "fica" (FR-009) em `scripts/test_medicao.py`
+
 ## Dependências
 
 Fase 2 antes de tudo. B depende de A e do "sim" em T009. C depende de A (independente de B, mas T022 usa os endpoints de B). D depende de B e C. E depende de B (e de C para regras de frontend); dentro dela, T029 vem primeiro e T035 antes de T031.

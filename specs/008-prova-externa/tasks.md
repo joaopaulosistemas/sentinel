@@ -96,6 +96,15 @@ description: "Tarefas da spec 008: Sentinel Premium 6 — Prova externa"
 - [ ] T034 Rodar o roteiro completo do `quickstart.md` com o relatório final e `prova.py verificar`; conferir 0 trechos não publicáveis (SC-007)
 - [ ] T035 Atualizar `docs/evolucao/PLACAR.md` (eixos 3 e 10) **somente** com o que tiver evidência; registrar tudo no `docs/evolucao/LOG.md` e o relatório fica privado até o João decidir publicar
 
+## Fase extra: requisitos acrescentados pela revisão dos checklists (2026-11-15)
+
+Testes antes do código; cada tarefa cita o requisito que cobre.
+
+- [ ] T036 [P] Teste de `reproduzir`: tempo dentro de ±25 % passa e fora do intervalo é registrado como diferença declarada (SC-001) em `scripts/test_prova.py`
+- [ ] T037 [P] Teste de `concordancia`: divergência relevante (regra com concordância abaixo de 80 % ou com pelo menos 3 divergências) exige correção registrada (FR-006) em `scripts/test_prova.py`
+- [ ] T038 [P] Teste de `amostra-externa` e `verificar`: revisor que julga só parte da amostra gera a seção "parcial" com o total sem julgamento, e o selo externo exige o mínimo do SC-002 em `scripts/test_prova.py`
+- [ ] T039 Implementar a seção "parcial" e a tolerância de tempo em `scripts/prova.py` (FR-006, SC-001)
+
 ## Dependências
 
 003 implementada antes de tudo (e 004 a 007 entregues e medidas). Fase 2 antes das histórias; US1 antes de US2 a US4 (o relatório é o contêiner); US2 depende de T021 para fechar; US3 depende de T024 antes de T025; T026 e T003 dependem da autorização; F por último.
