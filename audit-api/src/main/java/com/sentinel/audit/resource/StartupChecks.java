@@ -1,5 +1,6 @@
 package com.sentinel.audit.resource;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -28,8 +29,27 @@ public class StartupChecks {
     @ConfigProperty(name = "quarkus.hibernate-orm.database.generation")
     String schemaMode;
 
+    @ConfigProperty(name = "quarkus.oidc.tenant-enabled", defaultValue = "false")
+    boolean oidcEnabled;
+
+    @ConfigProperty(name = "sentinel.audit.allow-open-api", defaultValue = "false")
+    boolean allowOpenApi;
+
+    /**
+     * A API sem autenticação só sobe em produção se alguém pedir de forma explícita (ALLOW_OPEN_API=true).
+     * Sem API_KEY e sem OIDC, o padrão é recusar a subida em vez de expor auditorias e segredos.
+     */
+    static boolean deveRecusarApiAberta(boolean semChave, boolean oidc, boolean permitirAberta, boolean producao) {
+        return producao && semChave && !oidc && !permitirAberta;
+    }
+
     void onStart(@Observes StartupEvent event) {
-        if (apiKey.isEmpty() || apiKey.get().isBlank()) {
+        boolean semChave = apiKey.isEmpty() || apiKey.get().isBlank();
+        if (deveRecusarApiAberta(semChave, oidcEnabled, allowOpenApi, LaunchMode.current() == LaunchMode.NORMAL)) {
+            throw new IllegalStateException("API_KEY não definida e OIDC desligado: a API ficaria ABERTA. "
+                    + "Defina API_KEY (ou use o perfil oidc). Só para desenvolvimento local: ALLOW_OPEN_API=true.");
+        }
+        if (semChave && !oidcEnabled) {
             LOG.warn("API_KEY não definida: a API está ABERTA, sem autenticação. Use apenas em desenvolvimento local.");
         }
         boolean hasSecretsKey = secretsKey.isPresent() && !secretsKey.get().isBlank();
