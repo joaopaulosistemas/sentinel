@@ -1675,3 +1675,7 @@ O `quarkus-opentelemetry` do Quarkus 3.40 traz o OpenTelemetry **1.62.0** (confi
 ### Segurança: saída de rede da API (Helm)
 
 Chart Helm ganhou `NetworkPolicy` de saída para a API (ligada por padrão, `networkPolicy.enabled`): DNS, banco e internet pública só na porta 443; loopback, redes privadas, `169.254.0.0/16` (metadados de nuvem) e CGNAT ficam bloqueados. Fecha o DNS rebinding que a validação de URL do repositório não alcança. Git corporativo interno exige `ALLOWED_INTERNAL_HOSTS` **e** uma regra em `networkPolicy.extraEgress`. Banco externo exige `networkPolicy.databaseCidrs`. Precisa de CNI que aplique NetworkPolicy; no Docker Compose a restrição continua sendo responsabilidade do host (firewall). Verificado só pelo CI (`helm template`), não aplicado em cluster.
+
+### OpenTelemetry: CVE-2026-118259 (ReDoS no traceparent)
+
+A imagem traz o OpenTelemetry 1.62.0 (escolhido pelo Quarkus 3.40, a última linha 3.x). A CVE-2026-45292 (baggage) está corrigida na 1.62.0; a CVE-2026-118259 (ReDoS em `W3CTraceContextPropagator.extract`, severidade média 5.3) só na 1.67.0, que forçamos sem sucesso (quebra o exportador do Quarkus). **Mitigação:** `quarkus.otel.propagators=baggage`, de modo que o `traceparent` de fora não é extraído (`OtelPropagatorsTest` guarda a linha). **Custo:** a API não continua traces de outros serviços. **Revisar quando:** sair o Quarkus 4.0 final (previsto para o fim de novembro de 2026) ou um patch 3.40.x com OpenTelemetry >= 1.67.0; aí remover a linha.
