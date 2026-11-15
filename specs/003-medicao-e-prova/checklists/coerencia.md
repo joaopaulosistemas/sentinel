@@ -11,14 +11,14 @@
 ## Completude
 
 - [x] CHK001 Estão definidos todos os campos mínimos do relatório por pilha e categoria, inclusive tempo e tamanho do repositório? [Completeness, Spec §FR-001, §FR-018]
-- [ ] CHK002 Os requisitos dizem o que acontece quando uma medida está incompleta (repositório sem `completa`) em vez de virar zero? [Completeness, Spec §FR-003] — **Lacuna (revisão 2026-11-15):** FR-003 cobre só "sem gabarito"; a medida incompleta (`completa`) está no data-model e na T014, não nos requisitos.
+- [x] CHK002 Os requisitos dizem o que acontece quando uma medida está incompleta (repositório sem `completa`) em vez de virar zero? [Completeness, Spec §FR-003] — corrigido em 2026-11-15
 - [x] CHK003 Está especificado como o histórico de correção de gabarito guarda o valor anterior e o motivo? [Completeness, Spec §FR-015]
 - [x] CHK004 Há requisito para o formato da proposta de mudança e para o que fazer quando o critério é registrado depois da medição? [Completeness, Spec §FR-009]
 
 ## Clareza e mensurabilidade
 
-- [ ] CHK005 O "mínimo das premissas" para amostra pequena está citado com o valor (20) no próprio requisito, e não só nas premissas? [Clarity, Spec §FR-002] — **Lacuna (revisão 2026-11-15):** o requisito remete às premissas; o valor 20 só aparece nas premissas e nas tarefas.
-- [ ] CHK006 A "tolerância" de piora por categoria tem valor ou regra de cálculo definidos, e não só a referência às travas atuais? [Ambiguity, Spec §FR-010] — **Lacuna (revisão 2026-11-15):** o valor padrão 0,02 está no data-model, não no requisito.
+- [x] CHK005 O "mínimo das premissas" para amostra pequena está citado com o valor (20) no próprio requisito, e não só nas premissas? [Clarity, Spec §FR-002] — corrigido em 2026-11-15
+- [x] CHK006 A "tolerância" de piora por categoria tem valor ou regra de cálculo definidos, e não só a referência às travas atuais? [Ambiguity, Spec §FR-010] — corrigido em 2026-11-15
 - [x] CHK007 "Mesmas entradas" na repetibilidade está definido (commit, versão de ferramenta, semente) de modo verificável? [Clarity, Spec §FR-004]
 - [x] CHK008 O critério de "inconclusivo" é distinguível de "sai" por regra objetiva? [Measurability, Spec §FR-010]
 
@@ -31,21 +31,21 @@
 
 ## Cobertura de cenários
 
-- [ ] CHK013 Está definido o que ocorre quando o conjunto reservado precisa ser trocado ou esgotado (promoção sem substituto)? [Coverage, Edge Case, Spec §FR-007] — **Lacuna (revisão 2026-11-15):** não há requisito para o conjunto reservado esgotado ou sem substituto após promoção.
+- [x] CHK013 Está definido o que ocorre quando o conjunto reservado precisa ser trocado ou esgotado (promoção sem substituto)? [Coverage, Edge Case, Spec §FR-007] — corrigido em 2026-11-15
 - [x] CHK014 Há requisito para repositório de medição que sai do ar ou muda de commit? [Edge Case, Gap]
-- [ ] CHK015 Estão definidos limites de tempo e de memória da medição para repositórios muito grandes? [Coverage, Gap] — **Lacuna (revisão 2026-11-15):** não há limite de tempo nem de memória da medição nos requisitos.
+- [x] CHK015 Estão definidos limites de tempo e de memória da medição para repositórios muito grandes? [Coverage, Gap] — corrigido em 2026-11-15
 - [x] CHK016 O que acontece com medições antigas quando a versão da ferramenta muda? [Recovery, Gap]
 
 ## Não funcionais, dependências e premissas
 
 - [x] CHK017 A proibição de executar código auditado (FR-017) cobre também o uso de repositórios como fixtures de teste? [Coverage, Spec §FR-017]
 - [x] CHK018 A dependência de tempo humano para a revisão de precisão está declarada com o que bloqueia se faltar? [Dependency, Spec §SC-008]
-- [ ] CHK019 O bloqueio de GitHub Actions por cobrança está registrado como premissa que afeta as verificações de CI? [Assumption, Gap] — **Lacuna (revisão 2026-11-15):** o bloqueio de cobrança do GitHub Actions não está registrado como premissa.
+- [x] CHK019 O bloqueio de GitHub Actions por cobrança está registrado como premissa que afeta as verificações de CI? [Assumption, Gap] — corrigido em 2026-11-15
 - [x] CHK020 Está claro quais itens exigem autorização do João (T004, T050, T053, T057, T060, T069) e quais já foram autorizados? [Dependency, Traceability]
 - [x] CHK021 Todo FR e SC tem pelo menos uma tarefa que o cobre? [Traceability]
 
 
 ## Notes
 
-- Revisão de 2026-11-15 feita pelo Claude a pedido do João: `[x]` = critério atendido no texto da spec, do plano ou dos contratos; `[ ]` = lacuna descrita no próprio item.
+- Revisão de 2026-11-15 feita pelo Claude a pedido do João: `[x]` = critério atendido no texto da spec, do plano ou dos contratos; `[ ]` = lacuna descrita no próprio item. Todas as lacunas foram corrigidas na spec em 2026-11-15 (itens marcados "corrigido").
 - `/speckit-implement` lê o estado dos itens, mas não os altera.

@@ -13,7 +13,7 @@
 - [x] CHK001 Estão listadas as origens e os destinos de SQL cobertos, incluindo Quarkus Panache e JPQL por `EntityManager`? [Completeness, Spec §FR-002]
 - [x] CHK002 Está definido o formato do achado (origem, passos, destino) e como o caminho truncado é marcado? [Completeness, Spec §FR-004]
 - [x] CHK003 Há requisito de como a lista de propagadores e sanitizadores é versionada e validada? [Gap, Spec §FR-003, §FR-013]
-- [ ] CHK004 Estão definidos os valores padrão de profundidade, caminhos e tempo? [Gap, Spec §FR-010] — **Lacuna (revisão 2026-11-15):** os valores iniciais dos limites dependem da linha de base e não estão definidos.
+- [x] CHK004 Estão definidos os valores padrão de profundidade, caminhos e tempo? [Gap, Spec §FR-010] — corrigido em 2026-11-15
 
 ## Clareza e mensurabilidade
 
@@ -25,7 +25,7 @@
 ## Consistência
 
 - [x] CHK009 A dependência do modelo da 005 sem fluxo de valores é coerente com o que a 005 promete (FR-010)? [Conflict, Spec §FR-001]
-- [ ] CHK010 O comando `rastreio executar` usa o ponto de entrada local e o formato que `benchmark-owasp.py` aceita, sem contradição entre plano e contrato? [Consistency, Gap] — **Lacuna (revisão 2026-11-15):** o formato de `rastreio executar` está só na T033, sem contrato próprio.
+- [x] CHK010 O comando `rastreio executar` usa o ponto de entrada local e o formato que `benchmark-owasp.py` aceita, sem contradição entre plano e contrato? [Consistency, Gap] — corrigido em 2026-11-15
 - [x] CHK011 A fusão com o Joern é compatível com a regra de que o Joern segue rodando? [Consistency, Spec §FR-007]
 - [x] CHK012 As chaves por sistema (`taint.*`) são coerentes com o princípio V? [Consistency]
 
@@ -40,5 +40,5 @@
 
 ## Notes
 
-- Revisão de 2026-11-15 feita pelo Claude a pedido do João: `[x]` = critério atendido no texto da spec, do plano ou dos contratos; `[ ]` = lacuna descrita no próprio item.
+- Revisão de 2026-11-15 feita pelo Claude a pedido do João: `[x]` = critério atendido no texto da spec, do plano ou dos contratos; `[ ]` = lacuna descrita no próprio item. Todas as lacunas foram corrigidas na spec em 2026-11-15 (itens marcados "corrigido").
 - `/speckit-implement` lê o estado dos itens, mas não os altera.
