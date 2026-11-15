@@ -386,6 +386,11 @@ jobs:
             r="$(tail -15 helm.log)"; r="${r//'%'/'%25'}"; r="${r//$'\n'/'%0A'}"
             echo "::error title=Helm falhou::${r:0:3500}"; exit 1
           fi
+          # a política de saída da API deve existir por padrão e bloquear rede interna e metadados de nuvem
+          helm template sentinel deploy/helm/sentinel --set secrets.dbPassword=ci > helm-padrao.yaml
+          grep -q "kind: NetworkPolicy" helm-padrao.yaml && grep -q '169.254.0.0/16' helm-padrao.yaml || { echo "::error title=Helm::NetworkPolicy de saída ausente"; exit 1; }
+          helm template sentinel deploy/helm/sentinel --set secrets.dbPassword=ci --set networkPolicy.enabled=false | grep -q "kind: NetworkPolicy" && { echo "::error title=Helm::networkPolicy.enabled=false ainda gera a política"; exit 1; }
+          helm template sentinel deploy/helm/sentinel --set database.internal=false --set database.url=jdbc:postgresql://db:5432/x --set 'networkPolicy.databaseCidrs={10.20.0.15/32}' --set secrets.dbPassword=ci | grep -q '10.20.0.15/32' || { echo "::error title=Helm::banco externo sem regra de saída"; exit 1; }
 
   calibracao:
     name: Calibração em vários repositórios
