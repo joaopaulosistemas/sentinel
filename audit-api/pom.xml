@@ -59,6 +59,15 @@
         </dependency>
 
         <!-- CDI -->
+        <!-- Observabilidade: métricas (Prometheus, porta de gerenciamento) e traces/logs por OpenTelemetry (desligado até o OTLP ser configurado) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>

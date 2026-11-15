@@ -1,0 +1,81 @@
+# Camada de observabilidade do Sentinel (protótipo): métricas, logs e traces no Grafana.
+#
+#   docker compose -f docker-compose.yml -f deploy/observabilidade/docker-compose.yml up -d
+#   Grafana:    http://localhost:3001   (usuário admin; senha em GRAFANA_PASSWORD, padrão "sentinel")
+#   Prometheus: http://localhost:9090
+#
+# Caminho dos dados:
+#   audit-api --OTLP (traces e logs)--> otel-collector --> tempo (traces) e loki (logs)
+#   audit-api :9000/q/metrics <--raspa-- prometheus
+#   grafana lê prometheus, loki e tempo (e liga log <-> trace pelo traceId)
+# Só o Grafana e o Prometheus abrem porta no host, e só em 127.0.0.1.
+services:
+  audit-api:
+    environment:
+      OTEL_SDK_DISABLED: "false"
+      OTEL_SERVICE_NAME: sentinel-audit-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      MANAGEMENT_PORT: "9000"
+    depends_on:
+      otel-collector:
+        condition: service_started
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./deploy/observabilidade/otel-collector.yaml:/etc/otel/config.yaml:ro
+    depends_on: [tempo, loki]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
+      - --web.enable-lifecycle
+    volumes:
+      - ./deploy/observabilidade/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/observabilidade/alertas.yml:/etc/prometheus/alertas.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.3.2
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - ./deploy/observabilidade/loki.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    volumes:
+      - ./deploy/observabilidade/tempo.yaml:/etc/tempo/config.yaml:ro
+      - tempo_data:/var/tempo
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-sentinel}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./deploy/observabilidade/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/observabilidade/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on: [prometheus, loki, tempo]
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  loki_data:
+  tempo_data:
+  grafana_data:
