@@ -107,3 +107,5 @@ Testes antes do código; cada tarefa cita o requisito que cobre.
 ## Dependências
 
 Fase 2 antes de tudo. US1 (fatia B) depende de A (T037 depende de T012). T038 vem antes de T021. US4 (D) é independente de B, mas T022 depende de B. US3 (E) e fatia F são independentes entre si. G por último.
+
+- **Fase extra:** T039 (teste) e T040 (tempo do cálculo de "novo") dependem de T012 e vêm antes de T029 e T030. T041 (compatibilidade da API) depende de T021 e, se houver, de T025, e vem antes da fatia G.

@@ -1531,6 +1531,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado:** 19 tarefas novas (003: 5, 004: 3, 005: 2, 006: 2, 007: 3, 008: 4), testes antes do código; total agora 82, 37, 38, 37, 39 e 39 tarefas em 003 a 008; todos os FR seguem citados, sem ID duplicado.
 - **NÃO verificado:** dependências e ordem das tarefas novas dentro de cada fatia não foram reanalisadas; nada implementado.
 
+## Ordem e dependências das tarefas novas (só documentos, sem versão nova)
+
+- **Verificado:** cada tarefa da fase extra tem dependências e posição declaradas nas seções "Dependências" (003 a 008); teste antes do código em todas; a 003 fixa os limites antes da linha de base.
+- **NÃO verificado:** nada implementado.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

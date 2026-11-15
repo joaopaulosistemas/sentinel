@@ -103,3 +103,5 @@ Testes antes do código; cada tarefa cita o requisito que cobre.
 ## Dependências
 
 Fase 2 antes de tudo. B depende de A e do "sim" em T009. C depende de A (independente de B, mas T022 usa os endpoints de B). D depende de B e C. E depende de B (e de C para regras de frontend); dentro dela, T029 vem primeiro e T035 antes de T031.
+
+- **Fase extra:** T037 depende de T036 e da fatia B (precisa do modelo para conferir o escopo) e vem antes da fatia D. T038 depende de T028 e vem antes de T032, para que nenhuma regra receba "fica" sem o orçamento fixado.
