@@ -43,12 +43,12 @@ services:
     restart: unless-stopped
 
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: prom/alertmanager:v0.28.1
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
       - --storage.path=/alertmanager
     volumes:
-      - ./deploy/observabilidade/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ${ALERTMANAGER_CONFIG:-./deploy/observabilidade/alertmanager.yml}:/etc/alertmanager/alertmanager.yml:ro
       # URL do webhook (Slack, Teams...) num arquivo seu; o padrão é um exemplo que não entrega nada.
       - ${ALERT_WEBHOOK_FILE:-./deploy/observabilidade/webhook-url.exemplo}:/etc/alertmanager/webhook-url:ro
       - alertmanager_data:/alertmanager

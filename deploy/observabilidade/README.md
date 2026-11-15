@@ -65,8 +65,16 @@ ALERT_WEBHOOK_FILE=~/sentinel-webhook.txt docker compose -f docker-compose.yml -
 ```
 
 Sem `ALERT_WEBHOOK_FILE` usa-se `webhook-url.exemplo`, que não entrega nada. Se a API cair, os alertas de aviso são
-inibidos para não gerar ruído. Repare que o Slack espera um JSON próprio; um webhook genérico recebe o formato do
-Alertmanager, então para Slack/Teams puro use um conversor (n8n, por exemplo) ou o receptor nativo do Alertmanager.
+inibidos para não gerar ruído.
+
+O webhook genérico manda o JSON do próprio Alertmanager. Para **Slack** ou **Teams** use o receptor nativo, escolhido por
+`ALERTMANAGER_CONFIG` (o arquivo com a URL continua sendo `ALERT_WEBHOOK_FILE`):
+
+| Canal | `ALERTMANAGER_CONFIG` | O que vai em `ALERT_WEBHOOK_FILE` |
+|---|---|---|
+| Webhook genérico (padrão) | `alertmanager.yml` | URL do seu receptor (n8n, etc.) |
+| Slack | `alertmanager-slack.yml` | URL do Incoming Webhook do Slack |
+| Microsoft Teams | `alertmanager-teams.yml` | URL do webhook do canal |
 
 ## Verificação
 
@@ -76,6 +84,6 @@ três fontes de dados saudáveis, **todas as consultas do painel válidas**, log
 
 ## Limites do protótipo
 
-- Alertmanager só com webhook (sem e-mail/Slack nativos), sem autenticação própria nos componentes, sem retenção longa (15 dias de métricas, 7 de logs e traces).
+- Alertmanager com webhook, Slack e Teams (sem e-mail), sem autenticação própria nos componentes, sem retenção longa (15 dias de métricas, 7 de logs e traces).
 - Armazenamento local em volumes do Docker; em produção use armazenamento de objetos (S3) para Loki e Tempo.
 - No Kubernetes (Helm) a mesma ideia vale, mas os componentes entram por charts próprios; não está neste protótipo.
