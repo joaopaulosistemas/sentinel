@@ -1,0 +1,7 @@
+id: arq-angular-nx
+name: "Angular em bibliotecas (Nx: feature, ui, data-access, util) (exemplo)"
+version: 1.0.0
+description: "Tipos de biblioteca do Nx como camadas (app, feature, ui, data-access, util), componente de UI sem acesso a dados, sem ciclo entre escopos e componentes standalone. Troque o prefixo '@org' pelo do seu workspace."
+author: Sentinel
+languages: [typescript]
+enabled-by-default: false

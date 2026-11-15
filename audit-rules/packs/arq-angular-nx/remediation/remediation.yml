@@ -1,0 +1,21 @@
+- key: "sentinel-arch-layer-nx"
+  summary: "Respeite o sentido app > feature > ui/data-access > util. Mova o código para a biblioteca do tipo certo ou passe o dado por @Input/@Output."
+  refs:
+    - "https://nx.dev/docs/features/enforce-module-boundaries"
+
+- key: "sentinel-arch-conv-ui-sem-acesso-a-dados"
+  summary: "Deixe a feature buscar os dados e passar para o componente de UI."
+  before: "// ui-lista\nconstructor(private http: HttpClient) {}"
+  after: "// ui-lista\n@Input() itens: Item[] = [];\n// feature-pedidos busca com o data-access"
+  refs:
+    - "https://nx.dev/blog/architecting-angular-applications"
+
+- key: "sentinel-arch-conv-componente-standalone"
+  summary: "Remova 'standalone: false' e importe as dependências no próprio componente."
+  refs:
+    - "https://angular.dev/guide/components"
+
+- key: "sentinel-arch-module-cycle"
+  summary: "Quebre o ciclo entre escopos: extraia o que é comum para um escopo compartilhado ou comunique por evento."
+  refs:
+    - "https://nx.dev/docs/features/enforce-module-boundaries"
