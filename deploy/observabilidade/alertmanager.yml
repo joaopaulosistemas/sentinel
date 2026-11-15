@@ -1,0 +1,18 @@
+# Alertmanager: agrupa os alertas do Prometheus e avisa por webhook (serve para Slack, Teams, n8n etc.).
+# A URL fica num ARQUIVO (url_file), fora do repositório: aponte ALERT_WEBHOOK_FILE para ele (veja o README).
+route:
+  receiver: webhook
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+receivers:
+  - name: webhook
+    webhook_configs:
+      - url_file: /etc/alertmanager/webhook-url
+        send_resolved: true
+inhibit_rules:
+  # Se a API inteira caiu, os alertas derivados (latência, erro) só fazem barulho.
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: [instance]
