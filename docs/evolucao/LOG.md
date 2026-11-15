@@ -1600,3 +1600,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Limite:** `modules` só lê imports Java; imports entre fatias da mesma camada do FSD e ciclos em TypeScript ainda não são vistos. Imports com `*` contam pelo pacote.
 - **NÃO verificado localmente:** os testes Java (o Maven não alcança o Maven Central neste ambiente); quem verifica é o CI da PR.
 
+## Arquitetura: `modules` também em TypeScript (fatias do FSD)
+
+- **Por quê:** o FSD proíbe fatias irmãs de se importarem e exige entrada pelo `index.ts`; o `modules` só lia Java.
+- **Mudança:** `modules` aceita raiz de pasta (`root: src/features`, obrigatório `alias: "@/features"`), lê import por alias e relativo (`.ts/.tsx/.js/.jsx/.mjs/.vue`) e ganha `no-cross` (`sentinel-arch-module-cross`). Com `public-api` informado, só vale o `index` (`sentinel-arch-module-internal`); ciclo entre fatias usa a mesma detecção do Java. `arq-frontend-fsd` passa a 1.1.0 com quatro regras (`pages`, `widgets`, `features`, `entities`).
+- **Testes:** `ArchitecturePolicyAnalyzerTest` (fatia irmã, import profundo, ciclo, caso limpo, alias ausente, pacote embutido).
+- **Limite:** não lê `tsconfig` (alias é declarado à mão) nem `export ... from` com `*` sem aspas simples/duplas.
+- **NÃO verificado localmente:** testes Java; quem verifica é o CI da PR.
+

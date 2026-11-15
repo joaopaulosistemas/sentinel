@@ -73,7 +73,7 @@ final class ArchitectureYaml {
     private static List<ArchitecturePolicy.ModuleRule> parseModules(Object raw, String f, List<String> errors) {
         List<ArchitecturePolicy.ModuleRule> out = new ArrayList<>();
         for (Map<String, Object> r : PackLoader.items(raw, f + " modules", errors)) {
-            PackLoader.checkKeys(r, Set.of("id", "root", "no-cycles", "public-api", "message", "severity"), f + " modules", errors);
+            PackLoader.checkKeys(r, Set.of("id", "root", "no-cycles", "public-api", "message", "severity", "alias", "no-cross"), f + " modules", errors);
             String id = Yamls.str(r, "id");
             String root = Yamls.str(r, "root");
             if (id == null || root == null || root.isBlank()) {
@@ -82,9 +82,13 @@ final class ArchitectureYaml {
             }
             String where = f + " module '" + id + "'";
             boolean noCycles = Yamls.bool(r, "no-cycles", true);
+            if (root.contains("/") && Yamls.str(r, "alias") == null) {
+                errors.add(where + ": raiz de pastas pede 'alias' (ex.: \"@/features\") para ler os imports com alias");
+            }
             List<String> api = Yamls.strings(r, "public-api", errors, where);
             out.add(new ArchitecturePolicy.ModuleRule(id, root, noCycles, api == null ? List.of() : api,
-                    Yamls.str(r, "message"), PackLoader.severity(r, "severity", Severity.HIGH, where, errors)));
+                    Yamls.str(r, "message"), PackLoader.severity(r, "severity", Severity.HIGH, where, errors),
+                    Yamls.str(r, "alias"), Yamls.bool(r, "no-cross", false)));
         }
         return out;
     }

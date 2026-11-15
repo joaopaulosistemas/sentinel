@@ -45,3 +45,10 @@ conventions:
     forbid: '(?i)\b(?:class|function|const)\s+\w*(?:Pedido|Cliente|Fatura|Pagamento|Order|Customer|Invoice|Payment)\w*'
     severity: low
     message: "shared guarda só o que não sabe do negócio (UI base, utilitários, cliente HTTP). Mova a regra para entities ou features."
+
+# Fatias irmãs (mesma camada) não se importam, ninguém fura o index.ts e não há ciclo entre fatias.
+modules:
+  - {id: fatias-pages, root: src/pages, alias: "@/pages", no-cross: true, public-api: [index], severity: medium}
+  - {id: fatias-widgets, root: src/widgets, alias: "@/widgets", no-cross: true, public-api: [index], severity: medium}
+  - {id: fatias-features, root: src/features, alias: "@/features", no-cross: true, public-api: [index], severity: medium}
+  - {id: fatias-entities, root: src/entities, alias: "@/entities", no-cross: true, public-api: [index], severity: medium}
