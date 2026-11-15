@@ -1,0 +1,4 @@
+id: monolito-modular
+name: "Padrão + monólito modular"
+description: "Pacotes padrão para Java mais o pacote arq-monolito-modular: sem ciclo entre módulos e acesso só pela API pública."
+packs: [core-security, core-iac, core-spring, core-persistencia, core-quality, arq-monolito-modular]

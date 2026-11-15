@@ -1,0 +1,48 @@
+# Hexagonal (Cockburn), Clean (Martin) e Onion (Palermo) compartilham a Regra da Dependência:
+# as dependências de código-fonte só apontam para dentro. O núcleo é dono das portas; os adaptadores as implementam.
+layers:
+  # A ordem importa: o primeiro caminho que casa define a camada do arquivo.
+  - name: adapter-in
+    paths: ["**/adapter/in/**", "**/adapter/inbound/**", "**/adapters/in/**", "**/inbound/**"]
+    packages: ["*.adapter.in.*", "*.adapter.inbound.*", "*.adapters.in.*", "*.inbound.*"]
+  - name: adapter-out
+    paths: ["**/adapter/out/**", "**/adapter/outbound/**", "**/adapters/out/**", "**/outbound/**", "**/infrastructure/**"]
+    packages: ["*.adapter.out.*", "*.adapter.outbound.*", "*.adapters.out.*", "*.outbound.*", "*.infrastructure.*"]
+  - name: application
+    paths: ["**/application/**"]
+    packages: ["*.application.*"]
+  - name: domain
+    paths: ["**/domain/**"]
+    packages: ["*.domain.*"]
+
+forbid:
+  - {from: domain, to: application, severity: high, message: "O domínio não pode depender da aplicação: a dependência aponta para dentro. Mova o caso de uso para a aplicação ou inverta a dependência com uma porta."}
+  - {from: domain, to: adapter-in, severity: high, message: "O domínio não pode conhecer adaptadores de entrada (REST, mensageria, CLI)."}
+  - {from: domain, to: adapter-out, severity: high, message: "O domínio não pode conhecer adaptadores de saída (banco, HTTP, filas). Declare uma porta no domínio e implemente-a no adaptador."}
+  - {from: application, to: adapter-in, severity: high, message: "A aplicação não pode depender de adaptadores de entrada: o adaptador chama o caso de uso, não o contrário."}
+  - {from: application, to: adapter-out, severity: high, message: "A aplicação deve usar a porta (interface) e não o adaptador concreto; quem escolhe o adaptador é a configuração (raiz de composição)."}
+  - {from: adapter-in, to: adapter-out, severity: medium, message: "Adaptador de entrada falando direto com adaptador de saída pula o núcleo. Passe por um caso de uso."}
+  - {from: adapter-out, to: adapter-in, severity: medium, message: "Adaptador de saída não deve depender de adaptador de entrada."}
+
+conventions:
+  - id: dominio-sem-framework
+    title: "Domínio importa framework"
+    files: ["**/domain/**/*.java"]
+    exclude: ["**/*Test.java", "**/*Tests.java", "**/test/**"]
+    forbid: '^\s*import\s+(static\s+)?(org\.springframework|jakarta\.(persistence|ws\.rs|enterprise|inject|transaction|validation)|javax\.(persistence|ws\.rs|inject|transaction)|io\.quarkus|com\.fasterxml\.jackson)\b[^;]*;'
+    severity: high
+    message: "O domínio deve ser Java puro. Anotações de persistência, injeção ou serialização pertencem ao adaptador; mapeie o modelo do domínio para elas."
+  - id: dominio-sem-transacao
+    title: "Transação declarada no domínio"
+    files: ["**/domain/**/*.java"]
+    exclude: ["**/*Test.java", "**/test/**"]
+    forbid: '@Transactional'
+    severity: medium
+    message: "A fronteira transacional é do caso de uso (camada de aplicação), não do domínio."
+  - id: aplicacao-sem-web
+    title: "Caso de uso conhece HTTP"
+    files: ["**/application/**/*.java"]
+    exclude: ["**/*Test.java", "**/test/**"]
+    forbid: '^\s*import\s+(jakarta|javax)\.(servlet|ws\.rs)\b[^;]*;|^\s*import\s+org\.springframework\.(web|http)\b[^;]*;'
+    severity: high
+    message: "Caso de uso não deve conhecer HTTP (request, response, status). Receba e devolva objetos do próprio caso de uso."

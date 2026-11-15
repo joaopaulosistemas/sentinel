@@ -101,7 +101,8 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
         for (Path f : files) {
             relPaths.add(rel(root, f));
         }
-        boolean needContent = !pol.layers().isEmpty() || !pol.conventions().isEmpty();
+        boolean needContent = !pol.layers().isEmpty() || !pol.conventions().isEmpty() || !pol.modules().isEmpty();
+        ModuleChecks modules = new ModuleChecks(pol.modules());
         if (needContent) {
             for (Path f : files) {
                 if (out.size() >= MAX_FINDINGS) {
@@ -116,7 +117,9 @@ public class ArchitecturePolicyAnalyzer implements CodeAnalyzer {
                 }
                 checkLayers(rel, content, c, run, out);
                 checkConventions(rel, content, c, run, out);
+                modules.read(rel, content);
             }
+            modules.report(run, out);
         }
         ArchRequiredFiles.check(root, relPaths, pol, run, out);
         ComponentPolicyChecks.check(root, pol, run, out);

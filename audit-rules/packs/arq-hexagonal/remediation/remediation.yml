@@ -1,0 +1,32 @@
+- key: "sentinel-arch-layer-domain"
+  summary: "O domínio é o centro e não conhece nada de fora. Crie uma porta (interface) no domínio ou na aplicação e deixe o adaptador implementá-la."
+  before: "// domain/Pedido.java\nimport com.app.adapter.out.PedidoJpaRepository;"
+  after: "// domain/PedidoRepository.java (porta)\ninterface PedidoRepository { Pedido porId(PedidoId id); }\n// adapter/out/PedidoJpaRepository implements PedidoRepository"
+  refs:
+    - "https://alistair.cockburn.us/hexagonal-architecture/"
+    - "https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"
+
+- key: "sentinel-arch-layer-application"
+  summary: "A aplicação depende de portas, nunca do adaptador concreto. Injete a porta e deixe a configuração escolher o adaptador."
+  before: "import com.app.adapter.out.PedidoJpaRepository;"
+  after: "import com.app.domain.PedidoRepository;"
+  refs:
+    - "https://alistair.cockburn.us/hexagonal-architecture/"
+
+- key: "sentinel-arch-layer-adapter"
+  summary: "Adaptadores conversam com o núcleo, não entre si. Chame um caso de uso."
+  refs:
+    - "https://alistair.cockburn.us/hexagonal-architecture/"
+
+- key: "sentinel-arch-conv-dominio-sem-framework"
+  summary: "Mantenha o domínio em Java puro e coloque as anotações de framework em um modelo de persistência do adaptador, com um mapeador entre os dois."
+  before: "// domain\n@Entity class Pedido { }"
+  after: "// domain\nclass Pedido { }\n// adapter/out\n@Entity class PedidoEntity { }"
+  refs:
+    - "https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"
+
+- key: "sentinel-arch-conv-dominio-sem-transacao"
+  summary: "Abra a transação no caso de uso (aplicação)."
+
+- key: "sentinel-arch-conv-aplicacao-sem-web"
+  summary: "Traduza HTTP no adaptador de entrada e passe ao caso de uso só dados do negócio."

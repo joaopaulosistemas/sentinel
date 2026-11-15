@@ -1,0 +1,4 @@
+id: arquitetura-hexagonal
+name: "Padrão + arquitetura hexagonal"
+description: "Pacotes padrão para Java mais a Regra da Dependência do pacote arq-hexagonal (domínio, aplicação e adaptadores)."
+packs: [core-security, core-iac, core-spring, core-persistencia, core-quality, arq-hexagonal]

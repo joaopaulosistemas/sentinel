@@ -1,0 +1,8 @@
+# Cada pacote logo abaixo de 'root' é um módulo (com.example.pedido, com.example.cliente...).
+# Troque 'root' pelo pacote raiz do seu sistema; com a raiz errada a regra não encontra módulo e não reporta nada.
+modules:
+  - id: modulos
+    root: com.example
+    no-cycles: true
+    public-api: [api, spi, event, events]
+    severity: high

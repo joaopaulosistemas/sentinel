@@ -256,4 +256,148 @@ class ArchitecturePolicyAnalyzerTest {
         assertTrue(ids.contains("sentinel-comp-min-version"), ids.toString());
         assertTrue(ids.contains("sentinel-arch-required-file"), "projeto de teste não tem README: " + ids);
     }
+
+    private static final String MODULES = """
+            modules:
+              - id: modulos
+                root: com.acme
+                no-cycles: true
+                public-api: [api, spi]
+                severity: high
+            """;
+
+    @Test
+    void detectaCicloEntreModulos() throws IOException {
+        Path proj = project(
+                "src/com/acme/pedido/PedidoService.java", "package com.acme.pedido.api;\nimport com.acme.cliente.api.ClienteApi;\nclass A {}\n",
+                "src/com/acme/cliente/ClienteService.java", "package com.acme.cliente.api;\nimport com.acme.pedido.api.PedidoApi;\nclass B {}\n",
+                "src/com/acme/relatorio/R.java", "package com.acme.relatorio;\nimport com.acme.pedido.api.PedidoApi;\nclass R {}\n");
+
+        List<Finding> fs = analyze(proj, policy(MODULES));
+
+        assertEquals(1, fs.size(), rules(fs).toString());
+        assertEquals("sentinel-arch-module-cycle", fs.get(0).getRuleId());
+        assertEquals(Severity.HIGH, fs.get(0).getSeverity());
+        assertTrue(fs.get(0).getDescription().contains("cliente") && fs.get(0).getDescription().contains("pedido"));
+        assertFalse(fs.get(0).getDescription().contains("relatorio"));
+    }
+
+    @Test
+    void acessoAoInternoDeOutroModuloEhProibidoMasApiEClasseDaRaizSaoLivres() throws IOException {
+        Path proj = project(
+                "src/com/acme/pedido/P.java",
+                "package com.acme.pedido;\nimport com.acme.cliente.internal.Repo;\nimport com.acme.cliente.api.ClienteApi;\n"
+                        + "import com.acme.cliente.ClienteFacade;\nimport com.acme.pedido.internal.Meu;\nimport java.util.List;\nclass P {}\n");
+
+        List<Finding> fs = analyze(proj, policy(MODULES));
+
+        assertEquals(List.of("sentinel-arch-module-internal@src/com/acme/pedido/P.java:2"), rules(fs));
+        assertEquals("import com.acme.cliente.internal.Repo;", fs.get(0).getCodeSnippet());
+    }
+
+    @Test
+    void semCicloNemAcessoInternoNaoReportaNada() throws IOException {
+        Path proj = project(
+                "src/com/acme/a/A.java", "package com.acme.a;\nimport com.acme.b.api.B;\nclass A {}\n",
+                "src/com/acme/b/B.java", "package com.acme.b.api;\nclass B {}\n");
+
+        assertEquals(0, analyze(proj, policy(MODULES)).size());
+    }
+
+    @Test
+    void cicloDeTresModulosEReportadoUmaVez() throws IOException {
+        Path proj = project(
+                "a/A.java", "package com.acme.a;\nimport com.acme.b.X;\nclass A {}\n",
+                "b/B.java", "package com.acme.b;\nimport com.acme.c.X;\nclass B {}\n",
+                "c/C.java", "package com.acme.c;\nimport com.acme.a.X;\nclass C {}\n");
+
+        List<Finding> fs = analyze(proj, policy(MODULES));
+
+        assertEquals(1, fs.size());
+        assertTrue(fs.get(0).getDescription().contains("a") && fs.get(0).getDescription().contains("b") && fs.get(0).getDescription().contains("c"));
+    }
+
+    @Test
+    void politicaDeModulosInvalidaEhRejeitadaNoCarregamento() throws IOException {
+        Path root = PackFixtures.tempRoot();
+        Path dir = PackFixtures.pack(root, "arq", "1.0.0", true);
+        PackFixtures.write(dir.resolve("architecture.yml"), "modules:\n  - {id: m, no-cycles: true}\n");
+        assertThrows(RuntimeException.class, () -> PackLoader.load(dir));
+    }
+
+    private static List<String> ruleIds(List<Finding> fs) {
+        return fs.stream().map(Finding::getRuleId).distinct().sorted().toList();
+    }
+
+    private static AuditPolicy builtin(String pack) {
+        return AuditPolicy.defaults(List.of(PackLoader.load(com.sentinel.audit.pack.TestPacks.builtinRoot().resolve(pack))));
+    }
+
+    @Test
+    void pacoteHexagonalPegaDominioQueConheceAdaptadorEFrameworkMasAceitaNucleoLimpo() throws IOException {
+        Path proj = project(
+                "src/main/java/app/domain/Pedido.java",
+                "package app.domain;\nimport app.adapter.out.PedidoJpa;\nimport jakarta.persistence.Entity;\n@Transactional class Pedido {}\n",
+                "src/main/java/app/application/CriarPedido.java",
+                "package app.application;\nimport app.domain.Pedido;\nimport app.adapter.out.PedidoJpa;\nimport jakarta.ws.rs.core.Response;\nclass CriarPedido {}\n",
+                "src/main/java/app/adapter/in/rest/PedidoResource.java",
+                "package app.adapter.in.rest;\nimport app.application.CriarPedido;\nimport app.adapter.out.PedidoJpa;\nclass PedidoResource {}\n",
+                "src/main/java/app/adapter/out/PedidoJpa.java",
+                "package app.adapter.out;\nimport app.domain.Pedido;\nimport jakarta.persistence.Entity;\nclass PedidoJpa {}\n");
+
+        List<String> ids = ruleIds(analyze(proj, builtin("arq-hexagonal")));
+
+        assertEquals(List.of("sentinel-arch-conv-aplicacao-sem-web", "sentinel-arch-conv-dominio-sem-framework",
+                "sentinel-arch-conv-dominio-sem-transacao", "sentinel-arch-layer-adapter-in-adapter-out",
+                "sentinel-arch-layer-application-adapter-out", "sentinel-arch-layer-domain-adapter-out"), ids);
+    }
+
+    @Test
+    void pacoteHexagonalNaoReportaNadaQuandoADependenciaApontaParaDentro() throws IOException {
+        Path proj = project(
+                "src/main/java/app/domain/Pedido.java", "package app.domain;\nimport java.util.List;\nclass Pedido {}\n",
+                "src/main/java/app/domain/PedidoRepository.java", "package app.domain;\ninterface PedidoRepository {}\n",
+                "src/main/java/app/application/CriarPedido.java", "package app.application;\nimport app.domain.PedidoRepository;\nclass CriarPedido {}\n",
+                "src/main/java/app/adapter/out/PedidoJpa.java", "package app.adapter.out;\nimport app.domain.PedidoRepository;\nimport app.application.CriarPedido;\nclass PedidoJpa {}\n");
+
+        assertEquals(List.of(), rules(analyze(proj, builtin("arq-hexagonal"))));
+    }
+
+    @Test
+    void pacoteFsdProibeImportarDeCamadaAcimaEFurarAApiPublicaDaFatia() throws IOException {
+        Path proj = project(
+                "src/entities/usuario/model.ts", "import { Tela } from '@/features/login';\nexport const u = 1;\n",
+                "src/features/login/index.ts", "export * from './ui';\nexport { x } from './model';\n",
+                "src/pages/home/Home.tsx", "import { Botao } from '@/features/login/ui/Botao';\nimport { Login } from '@/features/login';\n",
+                "src/shared/api/pedido.ts", "export function calcularPedido() {}\n");
+
+        List<String> ids = ruleIds(analyze(proj, builtin("arq-frontend-fsd")));
+
+        assertEquals(List.of("sentinel-arch-conv-fatia-sem-import-profundo", "sentinel-arch-conv-index-sem-export-estrela",
+                "sentinel-arch-conv-shared-sem-regra-de-negocio", "sentinel-arch-layer-entities-features"), ids);
+    }
+
+    @Test
+    void pacoteFsdAceitaCamadasQueSoImportamDeBaixo() throws IOException {
+        Path proj = project(
+                "src/pages/home/Home.tsx", "import { Login } from '@/features/login';\nimport { Usuario } from '@/entities/usuario';\n",
+                "src/features/login/index.ts", "export { Login } from './ui/Login';\n",
+                "src/features/login/ui/Login.tsx", "import { Usuario } from '@/entities/usuario';\nimport { http } from '@/shared/api';\n",
+                "src/entities/usuario/index.ts", "export type Usuario = { id: string };\n");
+
+        assertEquals(List.of(), rules(analyze(proj, builtin("arq-frontend-fsd"))));
+    }
+
+    @Test
+    void pacoteMonolitoModularEstaDesligadoPorPadraoEFuncionaComARaizAjustada() throws IOException {
+        RulePack pack = PackLoader.load(com.sentinel.audit.pack.TestPacks.builtinRoot().resolve("arq-monolito-modular"));
+        assertFalse(pack.manifest().enabledByDefault());
+        Path proj = project(
+                "a/A.java", "package com.example.a;\nimport com.example.b.internal.X;\nclass A {}\n",
+                "b/B.java", "package com.example.b;\nimport com.example.a.api.Y;\nclass B {}\n");
+
+        List<String> ids = ruleIds(analyze(proj, AuditPolicy.defaults(List.of(pack))));
+
+        assertEquals(List.of("sentinel-arch-module-cycle", "sentinel-arch-module-internal"), ids);
+    }
 }
