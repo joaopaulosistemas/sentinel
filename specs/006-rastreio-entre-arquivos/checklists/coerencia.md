@@ -10,35 +10,35 @@
 
 ## Completude
 
-- [ ] CHK001 Estão listadas as origens e os destinos de SQL cobertos, incluindo Quarkus Panache e JPQL por `EntityManager`? [Completeness, Spec §FR-002]
-- [ ] CHK002 Está definido o formato do achado (origem, passos, destino) e como o caminho truncado é marcado? [Completeness, Spec §FR-004]
-- [ ] CHK003 Há requisito de como a lista de propagadores e sanitizadores é versionada e validada? [Gap, Spec §FR-003, §FR-013]
-- [ ] CHK004 Estão definidos os valores padrão de profundidade, caminhos e tempo? [Gap, Spec §FR-010]
+- [x] CHK001 Estão listadas as origens e os destinos de SQL cobertos, incluindo Quarkus Panache e JPQL por `EntityManager`? [Completeness, Spec §FR-002]
+- [x] CHK002 Está definido o formato do achado (origem, passos, destino) e como o caminho truncado é marcado? [Completeness, Spec §FR-004]
+- [x] CHK003 Há requisito de como a lista de propagadores e sanitizadores é versionada e validada? [Gap, Spec §FR-003, §FR-013]
+- [ ] CHK004 Estão definidos os valores padrão de profundidade, caminhos e tempo? [Gap, Spec §FR-010] — **Lacuna (revisão 2026-11-15):** os valores iniciais dos limites dependem da linha de base e não estão definidos.
 
 ## Clareza e mensurabilidade
 
-- [ ] CHK005 "Sanitizador declarado" tem forma de declaração e de registro no achado eliminado? [Clarity, Spec §FR-005]
-- [ ] CHK006 "Rastro perdido" tem lista de motivos (reflexão, assíncrono, limite) fechada? [Clarity, Spec §FR-006]
-- [ ] CHK007 "Mesmo destino" para fusão usa arquivo e linha da execução e está livre de ambiguidade quando há várias linhas? [Ambiguity, Spec §FR-007]
-- [ ] CHK008 O "acerto maior ou igual e alarme falso menor ou igual" do SC-002 define a comparação com Joern e com o padrão sobre o mesmo conjunto? [Measurability, Spec §SC-002]
+- [x] CHK005 "Sanitizador declarado" tem forma de declaração e de registro no achado eliminado? [Clarity, Spec §FR-005]
+- [x] CHK006 "Rastro perdido" tem lista de motivos (reflexão, assíncrono, limite) fechada? [Clarity, Spec §FR-006]
+- [x] CHK007 "Mesmo destino" para fusão usa arquivo e linha da execução e está livre de ambiguidade quando há várias linhas? [Ambiguity, Spec §FR-007]
+- [x] CHK008 O "acerto maior ou igual e alarme falso menor ou igual" do SC-002 define a comparação com Joern e com o padrão sobre o mesmo conjunto? [Measurability, Spec §SC-002]
 
 ## Consistência
 
-- [ ] CHK009 A dependência do modelo da 005 sem fluxo de valores é coerente com o que a 005 promete (FR-010)? [Conflict, Spec §FR-001]
-- [ ] CHK010 O comando `rastreio executar` usa o ponto de entrada local e o formato que `benchmark-owasp.py` aceita, sem contradição entre plano e contrato? [Consistency, Gap]
-- [ ] CHK011 A fusão com o Joern é compatível com a regra de que o Joern segue rodando? [Consistency, Spec §FR-007]
-- [ ] CHK012 As chaves por sistema (`taint.*`) são coerentes com o princípio V? [Consistency]
+- [x] CHK009 A dependência do modelo da 005 sem fluxo de valores é coerente com o que a 005 promete (FR-010)? [Conflict, Spec §FR-001]
+- [ ] CHK010 O comando `rastreio executar` usa o ponto de entrada local e o formato que `benchmark-owasp.py` aceita, sem contradição entre plano e contrato? [Consistency, Gap] — **Lacuna (revisão 2026-11-15):** o formato de `rastreio executar` está só na T033, sem contrato próprio.
+- [x] CHK011 A fusão com o Joern é compatível com a regra de que o Joern segue rodando? [Consistency, Spec §FR-007]
+- [x] CHK012 As chaves por sistema (`taint.*`) são coerentes com o princípio V? [Consistency]
 
 ## Cenários e não funcionais
 
-- [ ] CHK013 Há requisito para métodos recursivos e ciclos de chamada no rastreio? [Edge Case, Gap]
-- [ ] CHK014 Está definido o comportamento com tempo esgotado no meio do rastreio? [Exception Flow, Spec §FR-010]
-- [ ] CHK015 A mudança no job `benchmark` do `ci.yml` tem requisito de não alterar o resultado das outras categorias? [Dependency, Spec §FR-009]
-- [ ] CHK016 Os campos novos opcionais do achado têm requisito de compatibilidade para clientes antigos? [Dependency, Gap]
-- [ ] CHK017 Todo FR e SC tem pelo menos uma tarefa que o cobre? [Traceability]
+- [x] CHK013 Há requisito para métodos recursivos e ciclos de chamada no rastreio? [Edge Case, Gap]
+- [x] CHK014 Está definido o comportamento com tempo esgotado no meio do rastreio? [Exception Flow, Spec §FR-010]
+- [x] CHK015 A mudança no job `benchmark` do `ci.yml` tem requisito de não alterar o resultado das outras categorias? [Dependency, Spec §FR-009]
+- [x] CHK016 Os campos novos opcionais do achado têm requisito de compatibilidade para clientes antigos? [Dependency, Gap]
+- [x] CHK017 Todo FR e SC tem pelo menos uma tarefa que o cobre? [Traceability]
 
 
 ## Notes
 
-- Itens ficam desmarcados até a revisão do João; este comando não marca nenhum item.
+- Revisão de 2026-11-15 feita pelo Claude a pedido do João: `[x]` = critério atendido no texto da spec, do plano ou dos contratos; `[ ]` = lacuna descrita no próprio item.
 - `/speckit-implement` lê o estado dos itens, mas não os altera.

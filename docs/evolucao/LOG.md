@@ -1516,6 +1516,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado:** um `checklists/coerencia.md` por spec (106 itens no total, todos desmarcados), sobre a qualidade dos requisitos e não sobre a implementação.
 - **NÃO verificado:** nenhum item foi avaliado; a marcação é do revisor. Nada implementado.
 
+## Revisão dos checklists de coerência das specs 003 a 008 (só documentos, sem versão nova)
+
+- **Verificado:** 106 itens avaliados contra spec, plano, pesquisa, contratos e tarefas; 78 atendidos, 28 com lacuna descrita no próprio item.
+- **NÃO verificado:** a revisão foi feita pelo Claude a pedido do João; a conferência final dos itens é dele. Nada implementado.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
