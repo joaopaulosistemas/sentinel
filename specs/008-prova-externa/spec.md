@@ -97,6 +97,7 @@ O resultado do Sentinel em formato padrão é aceito por um serviço externo rea
 - Repositório do conjunto sai do ar ou muda: a medição daquele repositório fica marcada como não reproduzível.
 - Ferramenta de mercado muda de versão ou licença: a comparação fixa versões, e uma mudança exige nova medição.
 - Resultado no reservado pior que o esperado: publica-se mesmo assim.
+- Revisor externo que não responde ou julga só parte da amostra: o relatório publica só o que foi julgado, informa quanto ficou sem julgamento e a seção sai "parcial"; o selo externo exige o mínimo do SC-002.
 - Dados privados: nenhum trecho de código de repositório sem permissão de publicação vai para o relatório público; só contagens e referências a fontes públicas.
 - Um número publicado depois de corrigido: a versão anterior fica no histórico com o motivo.
 - Nenhum código auditado é executado (princípio VII).
@@ -110,8 +111,8 @@ O resultado do Sentinel em formato padrão é aceito por um serviço externo rea
 - **FR-003**: Pilha ou categoria sem medida MUST ser declarada como tal, sem estimativa.
 - **FR-004**: A amostra para revisão externa MUST ser sorteada de modo reproduzível em código real, e o revisor externo MUST receber a amostra sem os vereditos internos.
 - **FR-005**: O relatório MUST publicar a precisão por regra a partir dos vereditos externos e a concordância entre externos e internos, listando divergências.
-- **FR-006**: Divergências relevantes MUST resultar em correção registrada de regra ou de veredito interno.
-- **FR-007**: A comparação com ferramentas de mercado MUST usar os mesmos conjuntos, a mesma definição de acerto e de alarme falso e versões fixadas, e MUST publicar resultados desfavoráveis.
+- **FR-006**: Divergências relevantes MUST resultar em correção registrada de regra ou de veredito interno. Divergência relevante: regra com concordância abaixo de 80 % ou com pelo menos 3 divergências.
+- **FR-007**: A comparação com ferramentas de mercado MUST usar os mesmos conjuntos, a mesma definição de acerto e de alarme falso e versões fixadas, e MUST publicar resultados desfavoráveis. O mapa regra→categoria de cada ferramenta MUST ser commitado antes de qualquer achado ser lido.
 - **FR-008**: O conjunto reservado MUST ser medido para a versão a publicar, com registro da consulta e total de consultas informado no relatório.
 - **FR-009**: O relatório MUST mostrar a diferença entre treino, validação e reservado, explicando-a quando houver.
 - **FR-010**: O Sentinel MUST ter evidência de aceite real do formato padrão de resultados por um serviço externo.
@@ -132,7 +133,7 @@ O resultado do Sentinel em formato padrão é aceito por um serviço externo rea
 
 ### Resultados mensuráveis
 
-- **SC-001**: Uma pessoa de fora, seguindo o relatório, obtém 100% dos números iguais aos publicados (dentro da tolerância declarada para o tempo).
+- **SC-001**: Uma pessoa de fora, seguindo o relatório, obtém 100% dos números iguais aos publicados (dentro da tolerância declarada para o tempo). Tolerância de tempo proposta: ±25 % do tempo medido, declarada no relatório.
 - **SC-002**: A revisão externa cobre ao menos o critério do placar de credibilidade: 100 achados em 10 repositórios públicos, 60 deles julgados por pessoa de fora, e a concordância é calculada e publicada; abaixo de 80% de concordância, as regras divergentes ficam "sem evidência" até corrigidas.
 - **SC-003**: 100% das taxas publicadas trazem total de casos e intervalo de 95%.
 - **SC-004**: O conjunto reservado tem exatamente uma medição final por versão publicada, com registro; 100% das consultas ao reservado constam do relatório.

@@ -103,14 +103,14 @@ Cada achado traz uma indicação de confiança baseada na precisão **medida** d
 
 ### Requisitos funcionais
 
-- **FR-001**: Em auditoria de PR, o Sentinel MUST comentar e anotar apenas achados **novos ou piorados** pelo PR, decididos por achado, e não por arquivo alterado.
+- **FR-001**: Em auditoria de PR, o Sentinel MUST comentar e anotar apenas achados **novos ou piorados** pelo PR, decididos por achado, e não por arquivo alterado. O tempo adicional do cálculo de "novo" MUST ser registrado por PR e respeitar o orçamento que o João fixar depois da linha de base.
 - **FR-002**: Um achado MUST ser considerado o mesmo, e portanto não novo, quando só mudou de linha, de caminho por renomeação, ou por reformatação.
 - **FR-003**: Quando não for possível decidir o que é novo, o Sentinel MUST dizer isso no comentário e no resultado e usar o comportamento atual por arquivo, nunca omitir achados em silêncio; não poder decidir MUST NOT, por si só, bloquear o PR.
 - **FR-004**: Os achados antigos MUST continuar visíveis no painel e no relatório completo; a regra "só o novo" vale para o comentário e as anotações do PR.
 - **FR-005**: Achados de estilo e qualidade em código gerado MUST ficar fora da nota e do comentário, com a contagem excluída e o motivo no relatório; achados de segurança em código gerado MUST continuar aparecendo. O corte usa a categoria que a regra já tem no catálogo: só o que a regra classifica como segurança permanece; estilo, qualidade, manutenção e desempenho saem.
-- **FR-006**: Rebaixar uma regra por baixa precisão MUST exigir medida registrada (amostra mínima e precisão abaixo do limite) e citá-la; sem medida, a regra não muda.
-- **FR-007**: Achados repetidos pela mesma causa MUST poder ser mostrados agrupados, com contagem e locais; o agrupamento MUST NOT alterar a nota.
-- **FR-008**: Cada achado MUST mostrar a confiança da regra derivada da precisão medida, ou "sem medida". A faixa sai do limite inferior do intervalo de confiança de 95 %: alta ≥ 80 %, média de 50 % a 79 %, baixa < 50 %.
+- **FR-006**: Rebaixar uma regra por baixa precisão MUST exigir medida registrada (amostra mínima e precisão abaixo do limite) e citá-la; sem medida, a regra não muda. O limite é a faixa BAIXA do FR-008 (limite inferior de Wilson 95 % abaixo de 50 %) com amostra de pelo menos 20 casos.
+- **FR-007**: Achados repetidos pela mesma causa MUST poder ser mostrados agrupados, com contagem e locais; o agrupamento MUST NOT alterar a nota. A chave de agrupamento é regra mais trecho normalizado.
+- **FR-008**: Cada achado MUST mostrar a confiança da regra derivada da precisão medida, ou "sem medida". A faixa sai do limite inferior do intervalo de confiança de 95 %: alta ≥ 80 %, média de 50 % a 79 %, baixa < 50 %. Os campos novos da API (`ruleBand`, `ruleBandSample`, `groupBy`) MUST ser aditivos e opcionais; clientes antigos seguem funcionando sem mudança.
 - **FR-009**: Toda redução de ruído desta spec MUST ser avaliada pelo veredito da spec 003, com critérios registrados antes; só "fica" libera a mudança para o padrão.
 - **FR-010**: Nenhuma redução de ruído MUST reduzir a detecção de falhas conhecidas nos conjuntos de treino e validação além da tolerância já usada pelas travas do projeto.
 - **FR-011**: As funcionalidades atuais (modo sombra, supressão, rota de diferença entre auditorias) MUST continuar funcionando como hoje para quem não ativar as novas.
@@ -132,7 +132,7 @@ Cada achado traz uma indicação de confiança baseada na precisão **medida** d
 - **SC-002**: Em PRs de teste que só reformatam, movem ou renomeiam arquivos, 0 achados novos são criados por isso.
 - **SC-003**: A detecção de falhas conhecidas nos conjuntos de treino e validação não cai além da tolerância das travas existentes depois de todas as mudanças desta spec (verificado pela spec 003).
 - **SC-004**: Cada redução de ruído tem veredito "fica" da spec 003 antes de entrar no padrão; as que receberem "sai" ou "inconclusivo" não entram.
-- **SC-005**: A redução do número de achados em comentários de PR, em código real, atinge a meta que João fixar depois da linha de base da spec 003; a medida registra o antes e o depois com os mesmos conjuntos.
+- **SC-005**: A redução do número de achados em comentários de PR, em código real, atinge a meta que João fixar depois da linha de base da spec 003; a medida registra o antes e o depois com os mesmos conjuntos. Gatilho: o João fixa a meta antes da primeira medição em PR; sem meta, o veredito desta medição é "inconclusivo".
 - **SC-006**: 100% das regras rebaixadas por esta spec citam a amostra e a precisão que justificaram.
 - **SC-007**: O agrupamento não altera a nota em nenhum dos repositórios de teste.
 

@@ -98,6 +98,7 @@ O relatório lista, por pilha, o que falta para ter medida (gabarito, fonte, rep
 ### Casos de borda
 
 - Um repositório medido some, é reescrito ou muda de dono: cada repositório é fixado por commit, e o relatório diz qual commit foi medido; se o commit desaparecer, a medição fica marcada como não reproduzível, não zerada.
+- Conjunto reservado esgotado ou sem substituto depois de uma promoção: o relatório declara "reservado insuficiente" e nenhum veredito "fica" usa o reservado até entrarem repositórios novos; repositório promovido nunca volta ao reservado.
 - Uma ferramenta de análise muda de versão entre duas medições: a comparação é recusada (ou o relatório destaca a diferença como causa possível) em vez de atribuir a mudança ao Sentinel.
 - A auditoria de um repositório falha ou estoura o tempo: conta como medição incompleta com o motivo, nunca como "zero achados".
 - O mesmo problema é achado por duas regras ou dois analisadores: a contagem não pode dobrar; vale a regra de deduplicação já usada.
@@ -112,15 +113,15 @@ O relatório lista, por pilha, o que falta para ter medida (gabarito, fonte, rep
 ### Requisitos funcionais
 
 - **FR-001**: O Sentinel MUST produzir um relatório de medição com, para cada pilha do escopo e cada categoria de falha: casos conhecidos, casos achados, alarmes falsos e tempo de auditoria, registrando a versão do Sentinel, as versões das ferramentas, a data e o commit fixo de cada repositório.
-- **FR-002**: Toda taxa do relatório MUST trazer numerador, denominador e faixa de incerteza de 95%; taxa sobre menos casos que o mínimo das premissas MUST levar o aviso "amostra pequena".
-- **FR-003**: Pilha ou categoria sem gabarito MUST aparecer como "sem medida" com o motivo, nunca como zero, e MUST ficar fora de qualquer média.
+- **FR-002**: Toda taxa do relatório MUST trazer numerador, denominador e faixa de incerteza de 95%; taxa sobre menos casos que o mínimo das premissas MUST levar o aviso "amostra pequena". O mínimo é de 20 casos, em constante única do relatório, ajustável pelo João.
+- **FR-003**: Pilha ou categoria sem gabarito MUST aparecer como "sem medida" com o motivo, nunca como zero, e MUST ficar fora de qualquer média. Medida incompleta (repositório sem `completa`) MUST também sair como "sem medida" com motivo, nunca como zero.
 - **FR-004**: Medir de novo as mesmas entradas MUST dar os mesmos números; o relatório MUST guardar o que é preciso para repetir a medição.
 - **FR-005**: Todo repositório medido MUST pertencer a exatamente um grupo: treino, validação ou reservado; o CI MUST barrar duplicidade e mudança não registrada de composição.
 - **FR-006**: O CI MUST falhar quando um arquivo versionado contiver código, trecho ou achado individual de repositório reservado; só contagens e gabarito de fonte pública são permitidos.
 - **FR-007**: Mover um repositório do reservado para qualquer outro grupo MUST ser um ato explícito e registrado, após o qual ele nunca mais conta como reservado.
 - **FR-008**: Toda medição do reservado MUST ser registrada com data, versão, motivo e o total de consultas da versão; medir o reservado fora de um marco MUST exigir motivo escrito.
 - **FR-009**: Toda proposta de mudança MUST registrar, antes da medição, a métrica, o ganho mínimo, o aumento aceito de alarme falso e o aumento aceito de tempo; critérios registrados depois da medição MUST ser marcados como "pós-medida".
-- **FR-010**: O veredito MUST ser "fica", "sai" ou "inconclusivo", com antes e depois lado a lado: "fica" só se todos os critérios forem cumpridos e a faixa do ganho excluir zero; piora de categoria acima da tolerância MUST dar "sai" mesmo com média melhor.
+- **FR-010**: O veredito MUST ser "fica", "sai" ou "inconclusivo", com antes e depois lado a lado: "fica" só se todos os critérios forem cumpridos e a faixa do ganho excluir zero; piora de categoria acima da tolerância MUST dar "sai" mesmo com média melhor. A tolerância padrão de queda por categoria é de 0,02 (2 pontos), registrada na proposta e ajustável por ela.
 - **FR-011**: A comparação MUST ser recusada, com explicação, quando conjuntos, versões de ferramentas ou entradas diferirem além da mudança sob avaliação.
 - **FR-012**: As travas de regressão que já existem (OWASP Benchmark, comparação de calibração, separação treino/validação, revisão de precisão) MUST continuar rodando e valendo; esta spec não as substitui.
 - **FR-013**: Para código real, o Sentinel MUST gerar amostra de revisão sorteada de modo reproduzível, aceitar veredito de pessoa (verdadeiro, falso, dúvida) e calcular precisão por regra apenas sobre achados com veredito, informando quantos faltam e marcando "sem evidência" abaixo do mínimo.
@@ -128,7 +129,7 @@ O relatório lista, por pilha, o que falta para ter medida (gabarito, fonte, rep
 - **FR-015**: Correções de gabarito ou de número já publicado MUST ser registradas com motivo e valor anterior; nada é sobrescrito sem histórico.
 - **FR-016**: Todo relatório MUST terminar com "Verificado" e "NÃO verificado", com o que foi e o que não foi medido.
 - **FR-017**: A medição MUST usar apenas análise estática: nenhum código de repositório auditado é executado, compilado ou instalado; nada de uso interno de empregador é copiado para o repositório do Sentinel.
-- **FR-018**: O tempo de auditoria por repositório, junto de seu tamanho, MUST ser registrado em toda medição, para que o custo seja visível ao lado da qualidade.
+- **FR-018**: O tempo de auditoria por repositório, junto de seu tamanho, MUST ser registrado em toda medição, para que o custo seja visível ao lado da qualidade. A medição MUST ter limite de tempo e de memória por repositório; estourar marca o repositório como "medida incompleta" com motivo. Os limites são fixados pelo João antes de a linha de base ser registrada.
 - **FR-019**: O relatório MUST listar as lacunas de medição por pilha, com o que falta e a prioridade (História 5).
 
 ### Entidades principais
@@ -177,6 +178,7 @@ Os nomes exatos dos jobs ficam para o `/speckit-plan`.
 - O veredito humano de precisão é dado por João. Revisão por pessoa de fora (que dá o "selo externo") é assunto da spec 6.
 - Mínimo para chamar uma taxa de "amostra pequena": 20 casos (ajustável pelo João; o critério é um só para todo o relatório).
 - O tempo de auditoria é medido e mostrado; o **limite de tempo aceito** é definido pelo João depois da linha de base.
+- O GitHub Actions pode ficar indisponível (por exemplo, cobrança): enquanto isso, as verificações de CI e a medição automática não rodam; medidas feitas à mão são registradas como manuais e não substituem a linha de base.
 - A parte em Java e o Docker só são provados no CI do GitHub (a sessão do Claude na nuvem não roda Maven nem Docker).
 - Mostrar o relatório no dashboard é desejável, mas fica fora desta spec; aqui o relatório é um documento versionado e um artefato de CI.
 - Fora do escopo desta spec: mudar qualquer regra, analisador ou pontuação; reduzir alarme falso (spec 2); novos modelos de código (specs 3 a 5); revisão externa (spec 6); novas tecnologias fora do escopo fixo da constituição.

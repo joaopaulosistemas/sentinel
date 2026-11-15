@@ -12,13 +12,13 @@
 
 - [x] CHK001 O relatório de prova lista todas as seções obrigatórias e o que torna o relatório inválido se faltar uma? [Completeness, Spec §FR-001, §FR-012]
 - [x] CHK002 Está definido o procedimento para quem não participou do projeto repetir a medição, inclusive pré-requisitos? [Completeness, Spec §FR-002]
-- [ ] CHK003 Há requisito para o formato do mapa regra→categoria e para o momento em que ele é fixado? [Completeness, Spec §FR-007] — **Lacuna (revisão 2026-11-15):** o mapa regra→categoria, fixado antes da medição, está na pesquisa, não no requisito.
+- [x] CHK003 Há requisito para o formato do mapa regra→categoria e para o momento em que ele é fixado? [Completeness, Spec §FR-007] — corrigido em 2026-11-15
 - [x] CHK004 Está definido o histórico de correção de números já publicados? [Completeness, Spec §FR-012]
 
 ## Clareza e mensurabilidade
 
-- [ ] CHK005 "Dentro da tolerância declarada para o tempo" tem valor numérico? [Ambiguity, Spec §SC-001] — **Lacuna (revisão 2026-11-15):** a tolerância declarada para o tempo não tem valor.
-- [ ] CHK006 "Divergência relevante" tem critério objetivo para exigir correção? [Ambiguity, Spec §FR-006] — **Lacuna (revisão 2026-11-15):** "divergência relevante" não tem critério objetivo.
+- [x] CHK005 "Dentro da tolerância declarada para o tempo" tem valor numérico? [Ambiguity, Spec §SC-001] — corrigido em 2026-11-15
+- [x] CHK006 "Divergência relevante" tem critério objetivo para exigir correção? [Ambiguity, Spec §FR-006] — corrigido em 2026-11-15
 - [x] CHK007 "Aceite real do formato padrão" tem definição verificável (serviço, URL, alertas exportados)? [Measurability, Spec §FR-010, §SC-006]
 - [x] CHK008 "Publicável" é definido por campo de dado do repositório, e não por julgamento caso a caso? [Clarity, Spec §FR-011]
 
@@ -31,7 +31,7 @@
 
 ## Cenários e não funcionais
 
-- [ ] CHK013 Há requisito para quando o revisor externo não responde ou julga só parte da amostra? [Exception Flow, Gap] — **Lacuna (revisão 2026-11-15):** não há requisito para revisor externo que não responde ou julga só parte.
+- [x] CHK013 Há requisito para quando o revisor externo não responde ou julga só parte da amostra? [Exception Flow, Gap] — corrigido em 2026-11-15
 - [x] CHK014 Está definido o tratamento de ferramenta de mercado com licença que impede publicar resultados ou o conjunto de regras? [Dependency, Gap]
 - [x] CHK015 O resultado do reservado pior que o de treino e validação é publicado com explicação, e isso é requisito? [Coverage, Spec §FR-009]
 - [x] CHK016 As ações humanas (T015, T021, T030) estão ligadas a requisitos e a critérios de bloqueio? [Dependency, Traceability]
@@ -40,5 +40,5 @@
 
 ## Notes
 
-- Revisão de 2026-11-15 feita pelo Claude a pedido do João: `[x]` = critério atendido no texto da spec, do plano ou dos contratos; `[ ]` = lacuna descrita no próprio item.
+- Revisão de 2026-11-15 feita pelo Claude a pedido do João: `[x]` = critério atendido no texto da spec, do plano ou dos contratos; `[ ]` = lacuna descrita no próprio item. Todas as lacunas foram corrigidas na spec em 2026-11-15 (itens marcados "corrigido").
 - `/speckit-implement` lê o estado dos itens, mas não os altera.

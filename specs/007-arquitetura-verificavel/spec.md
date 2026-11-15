@@ -113,18 +113,18 @@ Ciclos entre módulos, classes que sabem demais (muitas dependências) e módulo
 
 ### Requisitos funcionais
 
-- **FR-001**: O Sentinel MUST recuperar, a partir do modelo estrutural, o mapa de módulos, camadas e dependências do projeto, cada dependência com pelo menos uma evidência (arquivo e linha). A camada de uma classe MUST ser inferida pelas anotações e estereótipos do framework vindos do modelo; classe sem sinal MUST aparecer como "sem camada", e a inferência MUST NOT usar nome de pacote nem adivinhação.
+- **FR-001**: O Sentinel MUST recuperar, a partir do modelo estrutural, o mapa de módulos, camadas e dependências do projeto, cada dependência com pelo menos uma evidência (arquivo e linha). A camada de uma classe MUST ser inferida pelas anotações e estereótipos do framework vindos do modelo; classe sem sinal MUST aparecer como "sem camada", e a inferência MUST NOT usar nome de pacote nem adivinhação. Para Angular, React e Vue, a camada vem de sufixos e decoradores (componente, serviço, módulo) que o modelo da 005 expuser; sem sinal, "sem camada".
 - **FR-002**: O Sentinel MUST aceitar a arquitetura-alvo no formato atual de política e estendê-lo para dependências indiretas, ciclos proibidos e exceções com motivo.
 - **FR-003**: Cada desvio MUST mostrar o caminho da dependência (direta ou indireta) com localização.
 - **FR-004**: O mapa e os desvios MUST marcar "não resolvido" para o que o modelo não conseguiu determinar.
 - **FR-005**: O Sentinel MUST medir o verificador de arquitetura com violações plantadas em código limpo e em projetos que respeitam a arquitetura, e registrar acerto e alarme falso na régua da spec 003.
 - **FR-006**: O verificador novo MUST substituir o atual somente com veredito "fica" da spec 003; as verificações atuais continuam rodando até lá.
-- **FR-007**: O Sentinel MUST acompanhar, por auditoria, violações novas, resolvidas e persistentes (a violação é identificada pela regra violada mais o par origem→destino, sem a linha), ciclos e, por módulo, a instabilidade de Martin (dependências que saem ÷ (saem + entram), de 0 a 1) mais a contagem bruta de dependências entre módulos; a definição MUST ficar registrada e não mudar sem nova medição.
+- **FR-007**: O Sentinel MUST acompanhar, por auditoria, violações novas, resolvidas e persistentes (a violação é identificada pela regra violada mais o par origem→destino, sem a linha), ciclos e, por módulo, a instabilidade de Martin (dependências que saem ÷ (saem + entram), de 0 a 1) mais a contagem bruta de dependências entre módulos; a definição MUST ficar registrada e não mudar sem nova medição. Limites padrão propostos, a calibrar na linha de base e ajustáveis por sistema: fan-out por classe 20 e instabilidade de módulo 0,8. Se o resumo de métricas exigir campo novo na API pública, o campo MUST ser opcional e aditivo.
 - **FR-008**: Em auditoria de PR, apenas violações introduzidas ou pioradas pelo PR MUST ser comentadas (conforme a spec 004).
-- **FR-009**: Exceções declaradas MUST ter motivo, data de registro e data de validade obrigatória, e MUST aparecer no relatório com os três; dentro da validade não contam como desvio; vencida, a dependência MUST voltar a ser desvio e a exceção MUST aparecer como vencida.
+- **FR-009**: Exceções declaradas MUST ter motivo, data de registro e data de validade obrigatória, e MUST aparecer no relatório com os três; dentro da validade não contam como desvio; vencida, a dependência MUST voltar a ser desvio e a exceção MUST aparecer como vencida. A validade é comparada com a data da auditoria.
 - **FR-010**: O Sentinel MUST NOT exigir que a arquitetura seja declarada para entregar o mapa recuperado.
 - **FR-011**: O peso da dimensão de arquitetura na nota MUST ser mantido; qualquer mudança de peso MUST ser registrada e reavaliada em conjunto (regra do placar).
-- **FR-012**: A funcionalidade MUST rodar no ambiente atual do Sentinel, sem instalar ferramentas na máquina e sem executar código auditado.
+- **FR-012**: A funcionalidade MUST rodar no ambiente atual do Sentinel, sem instalar ferramentas na máquina e sem executar código auditado. As violações plantadas da medição são aplicadas em cópia temporária; o repositório original nunca é alterado.
 
 ### Entidades principais
 
