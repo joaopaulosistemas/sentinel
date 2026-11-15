@@ -42,6 +42,20 @@ services:
       - "127.0.0.1:9090:9090"
     restart: unless-stopped
 
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./deploy/observabilidade/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      # URL do webhook (Slack, Teams...) num arquivo seu; o padrão é um exemplo que não entrega nada.
+      - ${ALERT_WEBHOOK_FILE:-./deploy/observabilidade/webhook-url.exemplo}:/etc/alertmanager/webhook-url:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    restart: unless-stopped
+
   loki:
     image: grafana/loki:3.3.2
     command: ["-config.file=/etc/loki/config.yaml"]
@@ -71,11 +85,12 @@ services:
       - grafana_data:/var/lib/grafana
     ports:
       - "127.0.0.1:3001:3000"
-    depends_on: [prometheus, loki, tempo]
+    depends_on: [prometheus, loki, tempo, alertmanager]
     restart: unless-stopped
 
 volumes:
   prometheus_data:
+  alertmanager_data:
   loki_data:
   tempo_data:
   grafana_data:

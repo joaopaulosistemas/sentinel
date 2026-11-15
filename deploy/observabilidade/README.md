@@ -54,7 +54,19 @@ derruba o Prometheus (a "explosão de cardinalidade").
 ## Alertas de exemplo (`alertas.yml`)
 
 API fora do ar, analisador falhando 3 vezes em 30 min, mais de 20% de auditorias falhas na hora, heap acima de 90%,
-erros 5xx. Para receber aviso por e-mail ou Slack, acrescente um Alertmanager.
+erros 5xx.
+
+O **Alertmanager** (<http://localhost:9093>) agrupa os alertas e avisa por **webhook** (serve para Slack, Teams, n8n...).
+A URL fica num arquivo seu, fora do repositório:
+
+```bash
+echo 'https://hooks.slack.com/services/...' > ~/sentinel-webhook.txt
+ALERT_WEBHOOK_FILE=~/sentinel-webhook.txt docker compose -f docker-compose.yml -f deploy/observabilidade/docker-compose.yml up -d
+```
+
+Sem `ALERT_WEBHOOK_FILE` usa-se `webhook-url.exemplo`, que não entrega nada. Se a API cair, os alertas de aviso são
+inibidos para não gerar ruído. Repare que o Slack espera um JSON próprio; um webhook genérico recebe o formato do
+Alertmanager, então para Slack/Teams puro use um conversor (n8n, por exemplo) ou o receptor nativo do Alertmanager.
 
 ## Verificação
 
@@ -64,6 +76,6 @@ três fontes de dados saudáveis, **todas as consultas do painel válidas**, log
 
 ## Limites do protótipo
 
-- Sem Alertmanager, sem autenticação própria nos componentes, sem retenção longa (15 dias de métricas, 7 de logs e traces).
+- Alertmanager só com webhook (sem e-mail/Slack nativos), sem autenticação própria nos componentes, sem retenção longa (15 dias de métricas, 7 de logs e traces).
 - Armazenamento local em volumes do Docker; em produção use armazenamento de objetos (S3) para Loki e Tempo.
 - No Kubernetes (Helm) a mesma ideia vale, mas os componentes entram por charts próprios; não está neste protótipo.

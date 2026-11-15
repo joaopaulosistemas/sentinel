@@ -33,6 +33,10 @@ for q in 'sum(sentinel_analyzer_duration_seconds_count)' 'sum(sentinel_audit_dur
 done
 curl -fsS "$PROM/api/v1/rules" | python3 -c 'import json,sys; g=json.load(sys.stdin)["data"]["groups"]; sys.exit(0 if sum(len(x["rules"]) for x in g)>=5 else 1)' \
   && ok "regras de alerta carregadas" || falha "as regras de alerta não foram carregadas"
+AM="${AM:-http://localhost:9093}"
+espera 30 curl -fsS "$AM/-/ready" >/dev/null && ok "Alertmanager pronto" || falha "o Alertmanager não ficou pronto"
+espera 30 bash -c "curl -fsS '$PROM/api/v1/alertmanagers' | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)[\"data\"][\"activeAlertmanagers\"] else 1)'" \
+  && ok "o Prometheus enxerga o Alertmanager" || falha "o Prometheus não está ligado ao Alertmanager"
 
 echo "== Grafana"
 curl -fsS -u "$GA" "$GRAF/api/search?query=Sentinel" | grep -q sentinel-visao-geral && ok "painel 'Sentinel — visão geral' provisionado" || falha "painel não encontrado no Grafana"
