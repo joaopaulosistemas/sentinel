@@ -25,6 +25,12 @@ jobs:
           yurisldk/realworld-react-fsd:frontend-em-camadas
           feature-sliced/examples:frontend-em-camadas
           nrwl/nx-examples:angular-nx
+      - name: Referências de DDD e Angular fora do Nx
+        run: >
+          SAIDA=calibracao-arq-saida3 bash scripts/calibracao-arquitetura.sh
+          ddd-by-examples/library:arquitetura-hexagonal
+          citerus/dddsample-core:arquitetura-hexagonal
+          gothinkster/angular-realworld-example-app:angular-nx
       - name: Monólito modular (raiz de pacote dos exemplos do Spring Modulith é "example")
         run: |
           sed -i 's/root: com.example/root: example/' audit-rules/packs/arq-monolito-modular/architecture.yml
