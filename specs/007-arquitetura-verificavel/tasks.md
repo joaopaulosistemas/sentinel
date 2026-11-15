@@ -111,3 +111,5 @@ Testes antes do código; cada tarefa cita o requisito que cobre.
 ## Dependências
 
 005 (modelo) e 003 (régua) antes da medição; 004 antes de T025 e T027. Fase 2 antes de tudo; B depende de A e da 005; C depende de B; D depende de C; E depende de C e da 004; F depende de C; G por último.
+
+- **Fase extra:** T037 (teste) vem antes de T038 (camada de frontend); as duas dependem de T012 e da fatia de frontend da 005 e vêm antes de T020. T039 depende de T028 e vem antes de T033.

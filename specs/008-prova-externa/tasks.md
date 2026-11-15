@@ -108,3 +108,5 @@ Testes antes do código; cada tarefa cita o requisito que cobre.
 ## Dependências
 
 003 implementada antes de tudo (e 004 a 007 entregues e medidas). Fase 2 antes das histórias; US1 antes de US2 a US4 (o relatório é o contêiner); US2 depende de T021 para fechar; US3 depende de T024 antes de T025; T026 e T003 dependem da autorização; F por último.
+
+- **Fase extra:** T036 depende de T013 e T014 (`reproduzir`) e vem antes do fechamento; T037 depende de T017 a T019 (`concordancia`); T038 e T039 dependem de T018 e T021 (`amostra-externa` e revisão) e vêm antes de T021 ser dado como fechado.
