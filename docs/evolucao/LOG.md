@@ -1659,3 +1659,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Limite:** o pacote hexagonal depende dos nomes das pastas; quem usa outros nomes precisa ajustar `layers`.
 - **Segunda calibração, depois da correção (`arq-hexagonal` 1.0.3):** com `entrypoints`/`dataproviders` como adaptadores, o `clean-architecture-example` passou a acusar 11 `application -> adapter` em `application/configuration/`, que é a raiz de composição (liga os adaptadores às portas). Falsos positivos; o pacote ganhou a camada `composition-root` (`config`, `configuration`, `bootstrap`), sem proibições.
 
+## Observabilidade: métricas, traces e logs com painel no Grafana (protótipo)
+
+- **Por quê:** a análise de boas práticas apontou que não havia métricas nem tracing no `audit-api`.
+- **Mudança na API:** `quarkus-micrometer-registry-prometheus` (métricas na porta interna 9000, fora da chave da API) e `quarkus-opentelemetry` (traces e logs por OTLP, desligado até `OTEL_SDK_DISABLED=false`). Métricas de negócio em `AuditMetrics`: duração e situação por analisador, achados por analisador, duração e resultado da auditoria.
+- **Pilha:** `deploy/observabilidade/` (overlay do compose com OpenTelemetry Collector, Prometheus, Loki, Tempo, Grafana; painel e fontes de dados provisionados; alertas de exemplo).
+- **Testes:** `AuditMetricsTest` (Java) e `scripts/verificar-observabilidade.sh` no workflow `Observabilidade`, que sobe a pilha e confere métricas, logs, traces, painel e todas as consultas do painel.
+- **NÃO verificado localmente:** nada (sem Docker nem Maven aqui); o CI é quem prova.
+

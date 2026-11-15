@@ -1,0 +1,28 @@
+# Alertas de exemplo. Para receber aviso, ligue um Alertmanager (não faz parte do protótipo).
+groups:
+  - name: sentinel
+    rules:
+      - alert: SentinelForaDoAr
+        expr: up{job="sentinel-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "A API do Sentinel não responde à raspagem de métricas há 2 minutos"}
+      - alert: AnalisadorFalhando
+        expr: sum by (analyzer) (increase(sentinel_analyzer_duration_seconds_count{status="FALHOU"}[30m])) >= 3
+        labels: {severity: warning}
+        annotations: {summary: "O analisador {{ $labels.analyzer }} falhou 3 vezes ou mais em 30 minutos"}
+      - alert: AuditoriasFalhando
+        expr: sum(increase(sentinel_audit_duration_seconds_count{outcome="FAILED"}[1h])) / clamp_min(sum(increase(sentinel_audit_duration_seconds_count[1h])), 1) > 0.2
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Mais de 20% das auditorias da última hora falharam"}
+      - alert: HeapAlta
+        expr: sum(jvm_memory_used_bytes{area="heap"}) / sum(jvm_memory_max_bytes{area="heap"}) > 0.9
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Heap da JVM acima de 90% por 10 minutos"}
+      - alert: Erros5xx
+        expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "A API devolve mais de 1 erro 5xx a cada 10 segundos"}

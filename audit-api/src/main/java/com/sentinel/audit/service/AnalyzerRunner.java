@@ -124,6 +124,8 @@ final class AnalyzerRunner {
                                 r.partial() ? "PARCIAL" : "OK", r.findings().size(),
                                 r.duration() == null ? 0 : r.duration().toMillis(),
                                 noteOf(r), severityCounts(r.findings())));
+                        AuditMetrics.analyzerFinished(analyzer.getName(), r.partial() ? "PARCIAL" : "OK",
+                                r.duration() == null ? 0 : r.duration().toMillis(), r.findings().size());
                         return new Outcome(r, null);
                     } finally {
                         thread.set(null);
@@ -133,6 +135,7 @@ final class AnalyzerRunner {
                     LOG.errorf(error, "Analisador %s falhou; seguindo sem seus resultados", analyzer.getName());
                     progress.analyzerFinished(runId, analyzer.getName(), AuditProgressTracker.Done.of("FALHOU", 0, 0,
                             RunText.truncate(error.getMessage(), ERROR_NOTE_MAX_CHARS)));
+                    AuditMetrics.analyzerFinished(analyzer.getName(), "FALHOU", 0, 0);
                     return new Outcome(new AnalyzerResult(List.of(), analyzer.getName(), Duration.ZERO),
                             error.getMessage());
                 });

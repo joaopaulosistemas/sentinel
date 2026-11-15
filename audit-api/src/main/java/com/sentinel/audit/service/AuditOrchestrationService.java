@@ -155,17 +155,22 @@ public class AuditOrchestrationService {
 
     private void executeAudit(Long auditRunId) {
         RunState state = new RunState();
+        long startedAt = System.nanoTime();
+        String outcome = "COMPLETED";
         try {
             runPipeline(auditRunId, state);
         } catch (AuditCancelledException e) {
+            outcome = "CANCELLED";
             LOG.infof("Auditoria %d cancelada pelo usuário", auditRunId);
             store.markCancelled(auditRunId);
         } catch (Exception e) {
+            outcome = "FAILED";
             LOG.errorf(e, "Auditoria %d falhou: %s", auditRunId, e.getMessage());
             store.markFailed(auditRunId, e);
             store.notifySafely(auditRunId);
             throw new IllegalStateException("Auditoria " + auditRunId + " falhou", e);
         } finally {
+            AuditMetrics.auditFinished(outcome, (System.nanoTime() - startedAt) / 1_000_000);
             release(auditRunId, state);
         }
     }
