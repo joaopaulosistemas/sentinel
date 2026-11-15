@@ -1,0 +1,4 @@
+id: angular-nx
+name: "Padrão TypeScript + Angular em bibliotecas (Nx)"
+description: "Pacotes padrão para TypeScript/Angular mais o pacote arq-angular-nx (tipos de biblioteca, UI sem dados, sem ciclo entre escopos)."
+packs: [core-security, core-iac, core-persistencia, core-quality, core-frontend, arq-angular-nx]

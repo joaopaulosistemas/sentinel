@@ -447,4 +447,31 @@ class ArchitecturePolicyAnalyzerTest {
 
         assertEquals(List.of("sentinel-arch-module-cross"), ruleIds(analyze(proj, builtin("arq-frontend-fsd"))));
     }
+
+    @Test
+    void pacoteNxPegaUiQueBuscaDadosBibliotecaQueImportaDoAppECicloEntreEscopos() throws IOException {
+        Path proj = project(
+                "libs/loja/ui-lista/src/lista.component.ts",
+                "import { HttpClient } from '@angular/common/http';\nimport { Cart } from '@org/loja/feature-carrinho';\n@Component({standalone: false}) export class L {}\n",
+                "libs/loja/util-formato/src/f.ts", "import { app } from '../../../../apps/web/src/main';\n",
+                "libs/loja/feature-carrinho/src/c.ts", "import { x } from '@org/estoque/data-access-itens';\n",
+                "libs/estoque/data-access-itens/src/d.ts", "import { y } from '@org/loja/util-formato';\n");
+
+        List<String> ids = ruleIds(analyze(proj, builtin("arq-angular-nx")));
+
+        assertEquals(List.of("sentinel-arch-conv-componente-standalone", "sentinel-arch-conv-ui-sem-acesso-a-dados",
+                "sentinel-arch-layer-nx-ui-nx-feature", "sentinel-arch-layer-nx-util-nx-app", "sentinel-arch-module-cycle"), ids);
+    }
+
+    @Test
+    void pacoteNxAceitaFeatureUsandoUiDataAccessEUtil() throws IOException {
+        Path proj = project(
+                "libs/loja/feature-carrinho/src/c.ts",
+                "import { L } from '@org/loja/ui-lista';\nimport { D } from '@org/loja/data-access-itens';\nimport { f } from '@org/loja/util-formato';\n",
+                "libs/loja/data-access-itens/src/d.ts", "import { f } from '@org/loja/util-formato';\n",
+                "libs/loja/ui-lista/src/l.ts", "import { f } from '@org/loja/util-formato';\n",
+                "apps/web/src/main.ts", "import { C } from '@org/loja/feature-carrinho';\n");
+
+        assertEquals(List.of(), rules(analyze(proj, builtin("arq-angular-nx"))));
+    }
 }

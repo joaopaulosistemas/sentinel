@@ -1,0 +1,42 @@
+# Equivale ao depConstraints do @nx/enforce-module-boundaries por tipo de biblioteca:
+#   app > feature (smart) > ui (burra) / data-access > util. Quem está embaixo não importa de quem está em cima.
+layers:
+  # A ordem importa: o primeiro caminho que casa define a camada do arquivo.
+  - {name: nx-feature, paths: ["libs/**/feature-*/**", "libs/**/feature/**"], packages: ["@*/feature-*", "@*/feature"]}
+  - {name: nx-ui, paths: ["libs/**/ui-*/**", "libs/**/ui/**"], packages: ["@*/ui-*", "@*/ui"]}
+  - {name: nx-data-access, paths: ["libs/**/data-access*/**"], packages: ["@*/data-access*"]}
+  - {name: nx-util, paths: ["libs/**/util-*/**", "libs/**/util/**", "libs/**/utils/**"], packages: ["@*/util-*", "@*/util", "@*/utils"]}
+  - {name: nx-app, paths: ["apps/**"]}
+
+forbid:
+  - {from: nx-ui, to: nx-feature, severity: high, message: "Biblioteca ui é burra: recebe dados por @Input e emite @Output. Não pode importar uma feature."}
+  - {from: nx-ui, to: nx-data-access, severity: high, message: "Biblioteca ui não busca dados. Faça a feature buscar e passar para a ui."}
+  - {from: nx-data-access, to: nx-feature, severity: high, message: "data-access não pode depender de feature (a dependência vai de feature para data-access)."}
+  - {from: nx-data-access, to: nx-ui, severity: high, message: "data-access não conhece componentes de UI."}
+  - {from: nx-util, to: nx-feature, severity: high, message: "util é a base e não importa de nenhum outro tipo."}
+  - {from: nx-util, to: nx-ui, severity: high, message: "util é a base e não importa de nenhum outro tipo."}
+  - {from: nx-util, to: nx-data-access, severity: high, message: "util é a base e não importa de nenhum outro tipo."}
+  - {from: nx-feature, to: nx-app, severity: high, message: "Biblioteca nunca importa do app."}
+  - {from: nx-ui, to: nx-app, severity: high, message: "Biblioteca nunca importa do app."}
+  - {from: nx-data-access, to: nx-app, severity: high, message: "Biblioteca nunca importa do app."}
+  - {from: nx-util, to: nx-app, severity: high, message: "Biblioteca nunca importa do app."}
+
+conventions:
+  - id: ui-sem-acesso-a-dados
+    title: "Biblioteca ui acessa dados"
+    files: ["libs/**/ui-*/**/*.ts", "libs/**/ui/**/*.ts"]
+    exclude: ["**/*.spec.ts", "**/*.stories.ts"]
+    forbid: "@angular/common/http|\\bHttpClient\\b|@ngrx/"
+    severity: medium
+    message: "Componente de UI (burro) não usa HttpClient nem store. Receba os dados por @Input e emita eventos por @Output; a feature faz a busca."
+  - id: componente-standalone
+    title: "Componente fora do modelo standalone"
+    files: ["**/*.component.ts"]
+    exclude: ["**/*.spec.ts"]
+    forbid: "standalone:\\s*false"
+    severity: low
+    message: "Prefira componentes standalone (sem NgModule): menos código e carregamento por rota (lazy) mais simples."
+
+# Ciclo entre escopos: libs/<escopo>/... com alias @org/<escopo>/... (troque @org pelo prefixo do seu workspace).
+modules:
+  - {id: escopos, root: libs, alias: "@org", no-cycles: true, severity: high}

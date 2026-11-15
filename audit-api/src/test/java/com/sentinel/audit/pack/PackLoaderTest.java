@@ -27,7 +27,7 @@ class PackLoaderTest {
         PackLoader.Discovery d = PackLoader.discover(TestPacks.builtinRoot());
 
         assertEquals(java.util.Map.of(), d.rejected(), "nenhum pacote embutido pode ser rejeitado");
-        assertEquals(List.of("arq-frontend-fsd", "arq-hexagonal", "arq-monolito-modular", "core-architecture", "core-boas-praticas", "core-corporativo", "core-frontend", "core-iac", "core-persistencia", "core-quality", "core-quarkus", "core-security", "core-spring", "core-vue", "java-cert-sonar", "java-google-style", "market-tools", "ts-clean-code", "ts-clean-code-labs42"),
+        assertEquals(List.of("arq-angular-nx", "arq-frontend-fsd", "arq-hexagonal", "arq-monolito-modular", "core-architecture", "core-boas-praticas", "core-corporativo", "core-frontend", "core-iac", "core-persistencia", "core-quality", "core-quarkus", "core-security", "core-spring", "core-vue", "java-cert-sonar", "java-google-style", "market-tools", "ts-clean-code", "ts-clean-code-labs42"),
                 d.packs().stream().map(RulePack::id).sorted().collect(Collectors.toList()));
         RulePack quality = d.packs().stream().filter(p -> p.id().equals("core-quality")).findFirst().get();
         assertEquals(45, quality.semgrepRuleCount());

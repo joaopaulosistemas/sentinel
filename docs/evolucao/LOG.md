@@ -1633,3 +1633,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Limite:** não lê `tsconfig` (alias é declarado à mão) nem `export ... from` com `*` sem aspas simples/duplas.
 - **NÃO verificado localmente:** testes Java; quem verifica é o CI da PR.
 
+## Arquitetura: pacote `arq-angular-nx` (bibliotecas do Nx)
+
+- **Por quê:** em Angular com Nx a arquitetura é por tipo de biblioteca (app, feature, ui, data-access, util), cobrada pelo `@nx/enforce-module-boundaries`.
+- **Mudança:** pacote exemplo desligado por padrão e perfil `angular-nx`: tipos como camadas (11 proibições, ui só recebe dados por `@Input`, nada importa do app, util é a base), UI sem `HttpClient`/`@ngrx`, `standalone: false` como aviso baixo e ciclo entre escopos (`libs/<escopo>`, alias `@org`).
+- **Testes:** `ArchitecturePolicyAnalyzerTest` (caso ruim com ui buscando dados, util importando do app e ciclo entre escopos; caso bom).
+- **Limite:** não lê `project.json`/tags do Nx nem o `tsconfig`; os tipos vêm do nome da pasta (`feature-*`, `ui-*`, `data-access*`, `util-*`) e o prefixo `@org` é declarado à mão. Regras por escopo (ex.: escopo A só importa de A e shared) ainda não existem.
+- **NÃO verificado localmente:** testes Java; quem verifica é o CI da PR.
+
