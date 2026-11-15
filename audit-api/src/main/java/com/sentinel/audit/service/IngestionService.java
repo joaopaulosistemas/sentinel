@@ -62,6 +62,19 @@ public class IngestionService {
     Optional<String> localRoot = Optional.empty();
 
     /** Hosts que recebem o token quando o sistema não lista os seus. */
+    /** Hosts internos (ex.: GitLab corporativo) que podem ser auditados mesmo resolvendo para rede privada. Vazio = nenhum. */
+    @ConfigProperty(name = "sentinel.audit.git.allowed-internal-hosts")
+    java.util.Optional<String> allowedInternalHosts = java.util.Optional.empty();
+
+    /** Resolução de nomes; trocável nos testes para não depender de DNS. */
+    java.util.function.Function<String, java.net.InetAddress[]> resolver = host -> {
+        try {
+            return java.net.InetAddress.getAllByName(host);
+        } catch (java.net.UnknownHostException e) {
+            return new java.net.InetAddress[0];
+        }
+    };
+
     static final List<String> DEFAULT_TOKEN_HOSTS = List.of("github.com");
 
     @ConfigProperty(name = "sentinel.audit.git.clone-timeout-seconds", defaultValue = "300")
@@ -369,7 +382,29 @@ public class IngestionService {
         if (uri.getUserInfo() != null) {
             throw new IllegalArgumentException("A URL do repositório não pode conter credenciais; use o token configurado");
         }
+        requirePublicHost(uri.getHost());
         return uri;
+    }
+
+    /**
+     * Barra repositórios que resolvem para a própria máquina ou rede interna (SSRF: a API clonaria, por exemplo,
+     * um serviço de metadados de nuvem). Hosts de Git corporativo entram em {@code ALLOWED_INTERNAL_HOSTS}.
+     * Não fecha DNS rebinding (o git resolve de novo ao clonar); restrinja também a saída de rede do contêiner.
+     */
+    private void requirePublicHost(String host) {
+        String h = host.toLowerCase(Locale.ROOT);
+        boolean liberado = allowedInternalHosts != null && allowedInternalHosts.isPresent()
+                && java.util.Arrays.stream(allowedInternalHosts.get().split(","))
+                        .map(x -> x.trim().toLowerCase(Locale.ROOT)).anyMatch(h::equals);
+        if (liberado) {
+            return;
+        }
+        for (java.net.InetAddress a : resolver.apply(host)) {
+            if (InternalAddresses.isInternal(a)) {
+                throw new IllegalArgumentException("O repositório aponta para rede interna ou local ("
+                        + host + "); se for um Git corporativo, inclua o host em ALLOWED_INTERNAL_HOSTS");
+            }
+        }
     }
 
     void validateBranch(String branch) {

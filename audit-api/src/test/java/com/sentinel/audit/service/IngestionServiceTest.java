@@ -28,6 +28,55 @@ class IngestionServiceTest {
         service = new IngestionService();
         service.cloneBaseDir = tempDir.toString();
         service.cloneTimeoutSeconds = 60;
+        service.resolver = IngestionServiceTest::resolverSemDns;
+    }
+
+    /** IP literal vira ele mesmo; qualquer nome vira um endereço público fixo (os testes não dependem de DNS). */
+    private static java.net.InetAddress[] resolverSemDns(String host) {
+        try {
+            String h = host.replaceAll("[\\[\\]]", "");
+            boolean literal = h.contains(":") || h.matches("[0-9]+(\\.[0-9]+){3}");
+            return new java.net.InetAddress[] {java.net.InetAddress.getByName(literal ? h : "140.82.112.3")};
+        } catch (java.net.UnknownHostException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Test
+    void deveRejeitarRepositorioEmRedeInternaOuLocal() {
+        for (String url : List.of(
+                "https://127.0.0.1/org/repo.git",
+                "https://10.1.2.3/org/repo.git",
+                "https://192.168.0.5/org/repo.git",
+                "https://169.254.169.254/latest/meta-data",
+                "https://[::1]/org/repo.git")) {
+            assertThrows(IllegalArgumentException.class, () -> service.validateRepoUrl(url), url);
+        }
+    }
+
+    @Test
+    void deveRejeitarNomeQueResolveParaRedeInterna() {
+        service.resolver = host -> {
+            try {
+                return new java.net.InetAddress[] {java.net.InetAddress.getByName("10.0.0.7")};
+            } catch (java.net.UnknownHostException e) {
+                throw new IllegalStateException(e);
+            }
+        };
+        assertThrows(IllegalArgumentException.class, () -> service.validateRepoUrl("https://git.interno.exemplo/org/repo.git"));
+    }
+
+    @Test
+    void deveLiberarHostInternoDaListaPermitida() {
+        service.resolver = host -> {
+            try {
+                return new java.net.InetAddress[] {java.net.InetAddress.getByName("10.0.0.7")};
+            } catch (java.net.UnknownHostException e) {
+                throw new IllegalStateException(e);
+            }
+        };
+        service.allowedInternalHosts = java.util.Optional.of("outro.exemplo, Git.Interno.Exemplo");
+        assertEquals("git.interno.exemplo", service.validateRepoUrl("https://git.interno.exemplo/org/repo.git").getHost());
     }
 
     @Test
