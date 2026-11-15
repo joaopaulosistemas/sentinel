@@ -34,8 +34,16 @@ public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, Lis
      * Módulos de um monólito modular (Java): o módulo é o primeiro segmento do pacote depois de {@code root}.
      * {@code noCycles} proíbe dependência circular entre módulos; {@code publicApi}, quando informado, só deixa
      * outro módulo importar a classe da raiz do módulo ou de um desses subpacotes.
+     * Em TypeScript, {@code root} é a pasta das fatias (ex.: src/features), {@code alias} o prefixo de import (ex.: @/features),
+     * {@code publicApi} qualquer valor liga "só pelo index" e {@code noCross} proíbe fatias irmãs se importarem.
      */
-    public record ModuleRule(String id, String root, boolean noCycles, List<String> publicApi, String message, Severity severity) {}
+    public record ModuleRule(String id, String root, boolean noCycles, List<String> publicApi, String message, Severity severity,
+                             String alias, boolean noCross) {
+        /** Raiz com barra é uma pasta (TypeScript/JS); com ponto é um pacote (Java). */
+        public boolean isPath() {
+            return root.contains("/");
+        }
+    }
 
     public record RequiredFile(String path, String message, Severity severity) {}
 

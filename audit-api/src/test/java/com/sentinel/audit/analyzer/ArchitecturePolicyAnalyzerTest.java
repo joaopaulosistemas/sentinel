@@ -400,4 +400,51 @@ class ArchitecturePolicyAnalyzerTest {
 
         assertEquals(List.of("sentinel-arch-module-cycle", "sentinel-arch-module-internal"), ids);
     }
+
+    private static final String TS_MODULES = """
+            modules:
+              - {id: fatias, root: src/features, alias: "@/features", no-cross: true, no-cycles: true, public-api: [index], severity: medium}
+            """;
+
+    @Test
+    void fatiasIrmasNaoSeImportamEImportProfundoFuraOIndex() throws IOException {
+        Path proj = project(
+                "src/features/login/ui/Login.tsx", "import { Carrinho } from '@/features/carrinho';\nimport { x } from '../model';\n",
+                "src/features/carrinho/index.ts", "export { Carrinho } from './ui/Carrinho';\n",
+                "src/features/carrinho/ui/Carrinho.tsx", "import { y } from '../../login/ui/Login';\n",
+                "src/pages/Home.tsx", "import { Login } from '@/features/login/ui/Login';\nimport { Carrinho } from '@/features/carrinho';\n");
+
+        List<Finding> fs = analyze(proj, policy(TS_MODULES));
+
+        assertEquals(List.of(
+                "sentinel-arch-module-cross@src/features/carrinho/ui/Carrinho.tsx:1",
+                "sentinel-arch-module-cross@src/features/login/ui/Login.tsx:1",
+                "sentinel-arch-module-cycle@src/features/carrinho/ui/Carrinho.tsx:1"), rules(fs).stream().filter(x -> !x.contains("internal")).toList());
+    }
+
+    @Test
+    void fatiaImportadaPeloIndexDeOutraCamadaNaoReportaNada() throws IOException {
+        Path proj = project(
+                "src/features/login/index.ts", "export const a = 1;\n",
+                "src/features/login/ui/Login.tsx", "import { a } from '../index';\nimport { b } from './util';\n");
+
+        assertEquals(List.of(), rules(analyze(proj, policy(TS_MODULES))));
+    }
+
+    @Test
+    void raizDePastasSemAliasEhRejeitada() throws IOException {
+        Path root = PackFixtures.tempRoot();
+        Path dir = PackFixtures.pack(root, "arq", "1.0.0", true);
+        PackFixtures.write(dir.resolve("architecture.yml"), "modules:\n  - {id: m, root: src/features}\n");
+        assertThrows(RuntimeException.class, () -> PackLoader.load(dir));
+    }
+
+    @Test
+    void pacoteFsdPegaFatiaIrmaNaMesmaCamada() throws IOException {
+        Path proj = project(
+                "src/features/login/index.ts", "import { c } from '@/features/carrinho';\nexport const l = 1;\n",
+                "src/features/carrinho/index.ts", "export const c = 1;\n");
+
+        assertEquals(List.of("sentinel-arch-module-cross"), ruleIds(analyze(proj, builtin("arq-frontend-fsd"))));
+    }
 }
