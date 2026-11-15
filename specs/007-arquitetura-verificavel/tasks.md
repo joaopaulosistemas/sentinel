@@ -56,7 +56,7 @@ description: "Tarefas da spec 007: Sentinel Premium 5 — Arquitetura verificáv
 - [ ] T009 [P] [US1] Testes de camada inferida: por anotação e estereótipo; classe sem sinal em "sem camada"; nunca por nome de pacote (esclarecimento 1) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/CamadaInferidaTest.java`
 - [ ] T010 [P] [US1] Testes de dependência "não resolvida" com motivo, nunca ausente (FR-004, SC-007); teste e código gerado fora do mapa, contados; monorepo separado por sistema em `audit-api/src/test/java/com/sentinel/audit/arquitetura/MapaBordaTest.java`
 - [ ] T011 [P] [US1] Teste do mapa sem `architecture.yml`: entrega o mapa sem desvios e o relatório sugere por onde começar (FR-010) em `audit-api/src/test/java/com/sentinel/audit/arquitetura/MapaSemDeclaracaoTest.java`
-- [ ] T012 [US1] Implementar `Mapa`, `Modulo`, `CamadaInferida` e `DependenciaDoMapa` sobre o modelo da 005 em `audit-api/src/main/java/com/sentinel/audit/arquitetura/` (FR-001)
+- [ ] T012 [US1] Implementar `Mapa`, `Modulo`, `CamadaInferida` e `DependenciaDoMapa` sobre o modelo da 005 em `audit-api/src/main/java/com/sentinel/audit/arquitetura/` (FR-001) Os módulos de build vêm da leitura própria de `pom.xml`, Gradle e `package.json` (texto apenas), não do modelo da 005.
 - [ ] T013 [US1] Comando `sentinel arquitetura mapa` (texto e `--json` determinístico) no ponto de entrada local (`audit-api/.../local/LocalMain.java`)
 
 ## Fase 4: História 2 — Declarar a meta e ver os desvios (P1) (fatia C)

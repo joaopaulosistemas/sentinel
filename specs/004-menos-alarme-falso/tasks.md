@@ -76,21 +76,19 @@ C1: chaves por sistema, não em `application.properties`. C2: T037 cobre o SARIF
 - [ ] T019 [US4] Implementar `--json` e gerar `audit-rules/calibracao/precisao-por-regra.json` (D6)
 - [ ] T038 [US4] Empacotar `audit-rules/calibracao/precisao-por-regra.json` junto do catálogo de regras e testar que a API o encontra na imagem (C3)
 - [ ] T020 [P] [US4] Testes de `RuleBandService`: regra ausente = SEM_MEDIDA; campo separado de `confidence` em `audit-api/src/test/java/com/sentinel/audit/service/RuleBandServiceTest.java`
-- [ ] T021 [US4] Implementar `RuleBandService` e expor `ruleBand`/`ruleBandSample` atrás da chave ⚠️ **API pública: autorização do João** (FR-008)
+- [ ] T021 [US4] Implementar `RuleBandService` e expor `ruleBand`/`ruleBandSample` atrás da chave ⚠️ **API pública: autorização do João** (FR-008) ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 - [ ] T022 [US4] Mostrar a faixa na tabela do comentário do PR (`contracts/comentario-pr.md`)
 
 ## Fase 6: História 3 — Achados repetidos viram um só (P2) (fatia E)
 
 - [ ] T023 [P] [US3] Testes de agrupamento: chave regra + trecho normalizado; contagem e locais; nota idêntica com e sem agrupar (SC-007) em `audit-api/src/test/java/com/sentinel/audit/service/FindingGroupingTest.java`
 - [ ] T024 [US3] Implementar `GrupoDeAchados` na leitura em `audit-api/src/main/java/com/sentinel/audit/service/FindingGrouping.java` (FR-007)
-- [ ] T025 [US3] ⚠️ **Autorização**: parâmetro `groupBy=cause` na listagem e interruptor no painel (`audit-dashboard/`)
-
+- [ ] T025 [US3] ⚠️ **Autorização**: parâmetro `groupBy=cause` na listagem e interruptor no painel (`audit-dashboard/`) ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 ## Fase 7: Rebaixe por precisão (fatia F, US2)
 
 - [ ] T026 [P] [US2] Testes de `precisao-regras.py --verifica`: `shadow: true` novo sem comentário `# precisao.md: k VP de n` falha; número divergente de `precisao.md` falha; regra corrigida depois da amostra falha (FR-006, SC-006)
 - [ ] T027 [US2] Implementar a verificação em `scripts/precisao-regras.py`
-- [ ] T028 ⚠️ **Autorização**: se `scripts/test_precisao_regras.py` for novo, acrescentá-lo à linha de testes de scripts em `.github/workflows/ci.yml`
-
+- [ ] T028 ⚠️ **Autorização**: se `scripts/test_precisao_regras.py` for novo, acrescentá-lo à linha de testes de scripts em `.github/workflows/ci.yml` ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 ## Fase 8: Fechamento (fatia G)
 
 - [ ] T029 Rodar gabarito e OWASP Benchmark com chaves ligadas e desligadas; registrar recall (SC-003, trava −0,02) em `docs/evolucao/LOG.md` (FR-010)
