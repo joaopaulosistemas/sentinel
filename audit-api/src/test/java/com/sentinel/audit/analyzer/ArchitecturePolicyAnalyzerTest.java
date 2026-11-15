@@ -500,4 +500,12 @@ class ArchitecturePolicyAnalyzerTest {
 
         assertEquals(List.of(), rules(analyze(proj, builtin("arq-hexagonal"))));
     }
+
+    @Test
+    void pacoteHexagonalDeixaARaizDeComposicaoConhecerOsAdaptadores() throws IOException {
+        Path proj = project("application/configuration/src/main/java/app/configuration/EndpointConfiguration.java",
+                "package app.configuration;\nimport app.entrypoints.rest.Endpoint;\nimport app.dataproviders.db.Provider;\nclass EndpointConfiguration {}\n");
+
+        assertEquals(List.of(), rules(analyze(proj, builtin("arq-hexagonal"))));
+    }
 }
