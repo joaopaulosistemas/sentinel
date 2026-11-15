@@ -1526,6 +1526,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado:** as 28 lacunas das specs 003 a 008 foram levadas aos requisitos (valores já decididos, comportamentos de borda, compatibilidade da API, comando local); os 106 itens estão marcados.
 - **NÃO verificado:** valores propostos (limites do rastreio, fan-out 20, instabilidade 0,8, tolerância de tempo ±25 %, divergência com 3 casos) ainda precisam da calibração na linha de base e do aceite do João; as tarefas não ganharam itens novos para os requisitos acrescentados. Nada implementado.
 
+## Tarefas para os requisitos acrescentados pelos checklists (só documentos, sem versão nova)
+
+- **Verificado:** 19 tarefas novas (003: 5, 004: 3, 005: 2, 006: 2, 007: 3, 008: 4), testes antes do código; total agora 82, 37, 38, 37, 39 e 39 tarefas em 003 a 008; todos os FR seguem citados, sem ID duplicado.
+- **NÃO verificado:** dependências e ordem das tarefas novas dentro de cada fatia não foram reanalisadas; nada implementado.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).

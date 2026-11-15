@@ -96,6 +96,14 @@ C1: chaves por sistema, não em `application.properties`. C2: T037 cobre o SARIF
 - [ ] T031 Atualizar `docs/referencia/pacotes-de-regras.md` (seção "Auditoria de PR") e `docs/evolucao/precisao.md`
 - [ ] T032 Conferir `conferir-numeros.py`, `sincronizar-versao.py --check` e o roteiro completo do `quickstart.md`
 
+## Fase extra: requisitos acrescentados pela revisão dos checklists (2026-11-15)
+
+Testes antes do código; cada tarefa cita o requisito que cobre.
+
+- [ ] T039 [P] Teste de `PrClassifier`: o tempo do cálculo de "novo" é registrado por PR e comparado com o orçamento; sem orçamento fixado a medição sai "inconclusivo" (FR-001, SC-005) em `audit-api/src/test/java/com/sentinel/audit/service/PrClassifierTempoTest.java`
+- [ ] T040 Registrar o tempo do cálculo de "novo" por PR no resultado da auditoria e no relatório, em `audit-api/src/main/java/com/sentinel/audit/service/PrClassifier.java` (FR-001)
+- [ ] T041 [P] Teste de compatibilidade da API: resposta sem `ruleBand`, `ruleBandSample` e `groupBy` continua idêntica à atual e clientes antigos não quebram (FR-008) em `audit-api/src/test/java/com/sentinel/audit/api/CompatibilidadeApiTest.java`
+
 ## Dependências
 
 Fase 2 antes de tudo. US1 (fatia B) depende de A (T037 depende de T012). T038 vem antes de T021. US4 (D) é independente de B, mas T022 depende de B. US3 (E) e fatia F são independentes entre si. G por último.

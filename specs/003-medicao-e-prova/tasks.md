@@ -194,6 +194,16 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 
 ---
 
+## Fase extra: requisitos acrescentados pela revisão dos checklists (2026-11-15)
+
+Testes antes do código; cada tarefa cita o requisito que cobre.
+
+- [ ] T078 [P] Teste em `scripts/test_medicao.py`: repositório que estoura o limite de tempo ou de memória vira `medida incompleta` com motivo e não entra em média; os limites vêm de `criterios` e constam do relatório (FR-018, FR-003)
+- [ ] T079 Implementar o limite de tempo e de memória por repositório em `scripts/medicao.py` e exigir os limites fixados antes de `relatorio` gravar a linha de base (FR-018)
+- [ ] T080 [P] Teste em `scripts/test_medicao.py`: `reservado` esgotado ou sem substituto declara `reservado insuficiente`, nenhum veredito "fica" usa o reservado e repositório promovido não volta (FR-007, FR-008)
+- [ ] T081 Implementar o estado `reservado insuficiente` em `scripts/medicao.py` e `scripts/verificar-separacao.py` (FR-007)
+- [ ] T082 Registrar em `docs/evolucao/medicao/LEIAME.md` o procedimento de medida manual quando o GitHub Actions está indisponível: marcada como manual, nunca substitui a linha de base (premissa de indisponibilidade)
+
 ## Dependências e ordem de execução
 
 - **Fase 1 → Fase 2** (bloqueia tudo) → **US1** → **US5**; **US2** e **US3** dependem só da Fase 2 e podem ir em paralelo à US1 se houver mais de uma pessoa; **Fase 7** depende de A, B e C; **US4** depende de A e da lista de código real; **Fase 9** por último.

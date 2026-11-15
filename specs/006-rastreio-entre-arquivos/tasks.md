@@ -96,6 +96,13 @@ description: "Tarefas da spec 006: Sentinel Premium 4 — Rastreio de dado inseg
 - [ ] T031 Rodar o roteiro completo do `quickstart.md`; conferir jobs de regras, Semgrep, Benchmark e Joern (SC-001 a SC-007)
 - [ ] T032 Atualizar `docs/integracao/joern.md` (convivência) e `docs/referencia/` com o rastreio; registrar tudo no `docs/evolucao/LOG.md`
 
+## Fase extra: requisitos acrescentados pela revisão dos checklists (2026-11-15)
+
+Testes antes do código; cada tarefa cita o requisito que cobre.
+
+- [ ] T036 [P] Teste: sem configuração por sistema, o motor usa os valores iniciais (profundidade 10, 20 caminhos por destino, 30 s) e o relatório os registra quando atingidos (FR-010) em `audit-api/src/test/java/com/sentinel/audit/rastreio/LimitesPadraoTest.java`
+- [ ] T037 Implementar os valores iniciais dos limites em `audit-api/src/main/java/com/sentinel/audit/rastreio/Limites.java`, marcados como "a calibrar na linha de base" (FR-010)
+
 ## Dependências
 
 005 (A e B) e 003 antes da medição. T033 e T034 antes de T035 e de T025. Fase 2 antes de tudo; B depende de A e da 005; C depende de B; D depende de C; E depende de D; F depende de E; G por último.
