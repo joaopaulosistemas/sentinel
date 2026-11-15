@@ -26,6 +26,8 @@ for par in "$@"; do
     case "$status" in COMPLETED|FAILED) break;; esac; sleep 5
   done
   echo "=== $repo ($perfil): $status"
+  rm -rf /tmp/estrutura && git clone -q --depth 1 "https://github.com/$repo" /tmp/estrutura 2>/dev/null \
+    && echo "pastas (até 4 níveis):" && (cd /tmp/estrutura && find . -maxdepth 4 -type d -not -path "./.git*" -not -path "*/node_modules*" | sort | head -40 | sed 's/^/    /')
   curl -sS "${H[@]}" "$API/api/v1/audits/$aid/findings" > "$SAIDA/${repo//\//__}.json"
   REPO="$repo" ARQ="$SAIDA/${repo//\//__}.json" python3 - <<'PY'
 import json, os, collections

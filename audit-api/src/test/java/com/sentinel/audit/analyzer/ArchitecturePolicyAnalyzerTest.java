@@ -474,4 +474,22 @@ class ArchitecturePolicyAnalyzerTest {
 
         assertEquals(List.of(), rules(analyze(proj, builtin("arq-angular-nx"))));
     }
+
+    @Test
+    void pacoteHexagonalTrataApplicationDomainComoAplicacaoENaoComoDominioPuro() throws IOException {
+        // layout do buckpal: o serviço de caso de uso fica em application/domain/service e usa @Transactional
+        Path proj = project("src/main/java/app/application/domain/service/SendMoneyService.java",
+                "package app.application.domain.service;\nimport jakarta.transaction.Transactional;\n@Transactional\nclass SendMoneyService {}\n");
+
+        assertEquals(List.of(), rules(analyze(proj, builtin("arq-hexagonal"))));
+    }
+
+    @Test
+    void pacoteFsdFuncionaEmSubprojetoDeUmMonorepo() throws IOException {
+        Path proj = project(
+                "exemplos/loja/src/entities/usuario/model.ts", "import { Tela } from '@/features/login';\n",
+                "exemplos/loja/src/features/login/index.ts", "export const t = 1;\n");
+
+        assertEquals(List.of("sentinel-arch-layer-entities-features"), ruleIds(analyze(proj, builtin("arq-frontend-fsd"))));
+    }
 }
