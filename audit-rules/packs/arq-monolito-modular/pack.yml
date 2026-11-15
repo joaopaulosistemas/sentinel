@@ -1,0 +1,7 @@
+id: arq-monolito-modular
+name: "Monólito modular (exemplo)"
+version: 1.0.0
+description: "Sem dependência circular entre módulos e acesso a outro módulo só pela API pública (como o Spring Modulith verifica). Troque 'com.example' pelo pacote raiz do seu sistema."
+author: Sentinel
+languages: [java]
+enabled-by-default: false

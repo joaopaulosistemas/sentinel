@@ -1,0 +1,23 @@
+- key: "sentinel-arch-layer"
+  summary: "Em Feature-Sliced Design cada camada só importa das de baixo (app > pages > widgets > features > entities > shared). Mova o código para a camada que o enxerga ou passe-o por propriedade."
+  refs:
+    - "https://feature-sliced.design/docs/reference/layers"
+
+- key: "sentinel-arch-conv-fatia-sem-import-profundo"
+  summary: "Importe pelo index.ts da fatia."
+  before: "import { Carrinho } from '@/features/carrinho/ui/Carrinho';"
+  after: "import { Carrinho } from '@/features/carrinho';"
+  refs:
+    - "https://feature-sliced.design/docs/reference/public-api"
+
+- key: "sentinel-arch-conv-index-sem-export-estrela"
+  summary: "Liste os nomes exportados no index.ts em vez de 'export *'."
+  before: "export * from './ui';"
+  after: "export { Carrinho } from './ui/Carrinho';"
+  refs:
+    - "https://feature-sliced.design/docs/reference/public-api"
+
+- key: "sentinel-arch-conv-shared-sem-regra-de-negocio"
+  summary: "Leve a regra de negócio para entities (modelo) ou features (ação do usuário)."
+  refs:
+    - "https://feature-sliced.design/docs/reference/layers"

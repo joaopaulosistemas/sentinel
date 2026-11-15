@@ -15,10 +15,10 @@ import java.util.Map;
  */
 public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, List<LayerRule> allow, boolean strict,
                                  List<Convention> conventions, List<RequiredFile> requiredFiles,
-                                 Components components) {
+                                 Components components, List<ModuleRule> modules) {
 
     public static final ArchitecturePolicy EMPTY = new ArchitecturePolicy(List.of(), List.of(), List.of(), false,
-            List.of(), List.of(), new Components(List.of(), List.of(), List.of(), List.of()));
+            List.of(), List.of(), new Components(List.of(), List.of(), List.of(), List.of()), List.of());
 
     /** Camada: arquivos por glob de caminho; pacotes (Java) ou módulos (TS) por glob de import. */
     public record Layer(String name, List<String> paths, List<String> packages) {}
@@ -29,6 +29,13 @@ public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, Lis
     /** Arquivos que casam com {@code files} (e não com {@code exclude}) devem conter {@code require} / não conter {@code forbid}. */
     public record Convention(String id, String title, List<String> files, List<String> exclude, String require,
                              String forbid, String message, Severity severity, Category category) {}
+
+    /**
+     * Módulos de um monólito modular (Java): o módulo é o primeiro segmento do pacote depois de {@code root}.
+     * {@code noCycles} proíbe dependência circular entre módulos; {@code publicApi}, quando informado, só deixa
+     * outro módulo importar a classe da raiz do módulo ou de um desses subpacotes.
+     */
+    public record ModuleRule(String id, String root, boolean noCycles, List<String> publicApi, String message, Severity severity) {}
 
     public record RequiredFile(String path, String message, Severity severity) {}
 
@@ -48,7 +55,7 @@ public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, Lis
     }
 
     public boolean isEmpty() {
-        return noLayerRules() && conventions.isEmpty() && requiredFiles.isEmpty() && noComponentRules();
+        return noLayerRules() && conventions.isEmpty() && requiredFiles.isEmpty() && noComponentRules() && modules.isEmpty();
     }
 
     /** Junta as políticas de vários pacotes; camada com o mesmo nome é substituída pela do pacote mais adiante. */
@@ -62,6 +69,7 @@ public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, Lis
         List<DepRule> min = new ArrayList<>();
         List<DepRule> required = new ArrayList<>();
         List<DepRule> approved = new ArrayList<>();
+        List<ModuleRule> modules = new ArrayList<>();
         boolean strict = false;
         for (ArchitecturePolicy p : policies) {
             p.layers().forEach(l -> layers.put(l.name(), l));
@@ -73,9 +81,10 @@ public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, Lis
             min.addAll(p.components().minVersion());
             required.addAll(p.components().required());
             approved.addAll(p.components().approvedOnly());
+            modules.addAll(p.modules());
             strict |= p.strict();
         }
         return new ArchitecturePolicy(new ArrayList<>(layers.values()), forbid, allow, strict, conventions, files,
-                new Components(forbidden, min, required, approved));
+                new Components(forbidden, min, required, approved), modules);
     }
 }

@@ -1,0 +1,13 @@
+- key: "sentinel-arch-module-cycle"
+  summary: "Quebre o ciclo: publique um evento em vez de chamar o outro módulo, mova o código comum para um módulo base, ou crie uma interface no módulo dono e implemente-a no outro."
+  before: "// pedido -> cliente e cliente -> pedido"
+  after: "// pedido publica PedidoCriado; cliente escuta o evento (só cliente -> pedido.event)"
+  refs:
+    - "https://docs.spring.io/spring-modulith/reference/verification.html"
+
+- key: "sentinel-arch-module-internal"
+  summary: "Use só a API pública do módulo (pacote api/spi/event ou a classe da raiz). Se falta algo, exponha na API em vez de importar o interior."
+  before: "import com.example.cliente.internal.ClienteRepository;"
+  after: "import com.example.cliente.api.ClienteApi;"
+  refs:
+    - "https://docs.spring.io/spring-modulith/reference/fundamentals.html"

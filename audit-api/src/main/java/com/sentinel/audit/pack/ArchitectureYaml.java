@@ -33,7 +33,7 @@ final class ArchitectureYaml {
             return ArchitecturePolicy.EMPTY;
         }
         String f = "architecture.yml";
-        PackLoader.checkKeys(m, Set.of("layers", "forbid", "allow", "strict", "conventions", "required-files", "components"), f, errors);
+        PackLoader.checkKeys(m, Set.of("layers", "forbid", "allow", "strict", "conventions", "required-files", "components", "modules"), f, errors);
 
         List<ArchitecturePolicy.Layer> layers = parseLayers(m.get("layers"), f, errors);
         Set<String> layerNames = new HashSet<>();
@@ -43,7 +43,8 @@ final class ArchitectureYaml {
         List<ArchitecturePolicy.Convention> conventions = parseConventions(m.get("conventions"), f, errors);
         List<ArchitecturePolicy.RequiredFile> required = parseRequiredFiles(m.get("required-files"), f, errors);
         ArchitecturePolicy.Components components = parseComponents(Yamls.map(m.get("components")), f, errors);
-        return new ArchitecturePolicy(layers, forbid, allow, Yamls.bool(m, "strict", false), conventions, required, components);
+        return new ArchitecturePolicy(layers, forbid, allow, Yamls.bool(m, "strict", false), conventions, required, components,
+                parseModules(m.get("modules"), f, errors));
     }
 
     private static List<ArchitecturePolicy.Layer> parseLayers(Object raw, String f, List<String> errors) {
@@ -67,6 +68,25 @@ final class ArchitectureYaml {
             layers.add(new ArchitecturePolicy.Layer(name, paths == null ? List.of() : paths, pkgs == null ? List.of() : pkgs));
         }
         return layers;
+    }
+
+    private static List<ArchitecturePolicy.ModuleRule> parseModules(Object raw, String f, List<String> errors) {
+        List<ArchitecturePolicy.ModuleRule> out = new ArrayList<>();
+        for (Map<String, Object> r : PackLoader.items(raw, f + " modules", errors)) {
+            PackLoader.checkKeys(r, Set.of("id", "root", "no-cycles", "public-api", "message", "severity"), f + " modules", errors);
+            String id = Yamls.str(r, "id");
+            String root = Yamls.str(r, "root");
+            if (id == null || root == null || root.isBlank()) {
+                errors.add(f + " modules: 'id' e 'root' (pacote Java) são obrigatórios");
+                continue;
+            }
+            String where = f + " module '" + id + "'";
+            boolean noCycles = Yamls.bool(r, "no-cycles", true);
+            List<String> api = Yamls.strings(r, "public-api", errors, where);
+            out.add(new ArchitecturePolicy.ModuleRule(id, root, noCycles, api == null ? List.of() : api,
+                    Yamls.str(r, "message"), PackLoader.severity(r, "severity", Severity.HIGH, where, errors)));
+        }
+        return out;
     }
 
     private static List<ArchitecturePolicy.Convention> parseConventions(Object raw, String f, List<String> errors) {

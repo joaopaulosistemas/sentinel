@@ -1,0 +1,4 @@
+id: frontend-em-camadas
+name: "Padrão TypeScript + frontend em camadas (FSD)"
+description: "Pacotes padrão para TypeScript/Angular/React mais o pacote arq-frontend-fsd (camadas, API pública por fatia e shared sem negócio)."
+packs: [core-security, core-iac, core-persistencia, core-quality, core-frontend, arq-frontend-fsd]

@@ -1590,3 +1590,13 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Por quê:** o PMD terminou com código 1 e o aviso mostrava só os últimos 300 caracteres do stderr, que são a frase padrão "report this issue"; a causa ficava fora.
 - **Mudança:** quando o stderr é maior que o trecho final, o aviso passa a trazer as duas primeiras linhas de exceção (`...Exception: mensagem`, `Caused by: ...`) antes do trecho final. Stderr curto continua igual.
 - **Testes:** `AnalyzerHonestStatusTest` (stderr de PMD com stack trace longo).
+
+## Arquitetura: três estilos de mercado e regras de módulo (`arq-hexagonal`, `arq-monolito-modular`, `arq-frontend-fsd`)
+
+- **Por quê:** o `core-architecture` só tinha um exemplo de camadas em linha reta. Estilos conhecidos (hexagonal/limpa/cebola, monólito modular com Spring Modulith, Feature-Sliced Design) pedem Regra da Dependência com camadas de adaptadores, ausência de ciclo entre módulos, acesso só pela API pública e API por fatia no frontend.
+- **Mudança no analisador:** `architecture.yml` ganha `modules` (Java): `root`, `no-cycles`, `public-api`, `severity`. O módulo é o primeiro segmento do pacote depois de `root`. Reporta `sentinel-arch-module-cycle` (um achado por grupo de módulos em círculo, achado por componente fortemente conexo) e `sentinel-arch-module-internal` (import do interior de outro módulo). Classe na raiz do módulo conta como API.
+- **Pacotes novos (desligados por padrão, exemplos para copiar):** `arq-hexagonal` (camadas domain/application/adapter-in/adapter-out, 7 proibições, domínio sem framework e sem `@Transactional`, aplicação sem HTTP), `arq-monolito-modular` (troque `root: com.example`), `arq-frontend-fsd` (6 camadas, 15 proibições, import profundo, `export *`, regra de negócio em `shared`). Perfis `arquitetura-hexagonal`, `monolito-modular` e `frontend-em-camadas`.
+- **Testes:** `ArchitecturePolicyAnalyzerTest` (ciclo de 2 e de 3 módulos, acesso interno, sem violação, política inválida, e cada pacote embutido com projeto bom e ruim).
+- **Limite:** `modules` só lê imports Java; imports entre fatias da mesma camada do FSD e ciclos em TypeScript ainda não são vistos. Imports com `*` contam pelo pacote.
+- **NÃO verificado localmente:** os testes Java (o Maven não alcança o Maven Central neste ambiente); quem verifica é o CI da PR.
+
