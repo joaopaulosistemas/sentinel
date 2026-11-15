@@ -2,12 +2,16 @@
 # as dependências de código-fonte só apontam para dentro. O núcleo é dono das portas; os adaptadores as implementam.
 layers:
   # A ordem importa: o primeiro caminho que casa define a camada do arquivo.
+  # Raiz de composição: único lugar que conhece os adaptadores concretos para ligá-los às portas. Sem proibições.
+  - name: composition-root
+    paths: ["**/config/**", "**/configuration/**", "**/bootstrap/**"]
+    packages: ["*.config.*", "*.configuration.*", "*.bootstrap.*"]
   - name: adapter-in
-    paths: ["**/adapter/in/**", "**/adapter/inbound/**", "**/adapters/in/**", "**/inbound/**"]
-    packages: ["*.adapter.in.*", "*.adapter.inbound.*", "*.adapters.in.*", "*.inbound.*"]
+    paths: ["**/adapter/in/**", "**/adapter/inbound/**", "**/adapters/in/**", "**/inbound/**", "**/entrypoints/**", "**/entrypoint/**"]
+    packages: ["*.adapter.in.*", "*.adapter.inbound.*", "*.adapters.in.*", "*.inbound.*", "*.entrypoints.*", "*.entrypoint.*"]
   - name: adapter-out
-    paths: ["**/adapter/out/**", "**/adapter/outbound/**", "**/adapters/out/**", "**/outbound/**", "**/infrastructure/**"]
-    packages: ["*.adapter.out.*", "*.adapter.outbound.*", "*.adapters.out.*", "*.outbound.*", "*.infrastructure.*"]
+    paths: ["**/adapter/out/**", "**/adapter/outbound/**", "**/adapters/out/**", "**/outbound/**", "**/infrastructure/**", "**/dataproviders/**"]
+    packages: ["*.adapter.out.*", "*.adapter.outbound.*", "*.adapters.out.*", "*.outbound.*", "*.infrastructure.*", "*.dataproviders.*"]
   # 'application/domain/**' (layout comum, ex.: buckpal) conta como aplicação: application vem antes de domain.
   - name: application
     paths: ["**/application/**"]
@@ -43,7 +47,7 @@ conventions:
   - id: aplicacao-sem-web
     title: "Caso de uso conhece HTTP"
     files: ["**/application/**/*.java"]
-    exclude: ["**/*Test.java", "**/test/**"]
+    exclude: ["**/*Test.java", "**/test/**", "**/entrypoints/**", "**/entrypoint/**", "**/adapter/**", "**/adapters/**", "**/inbound/**"]
     forbid: '^\s*import\s+(jakarta|javax)\.(servlet|ws\.rs)\b[^;]*;|^\s*import\s+org\.springframework\.(web|http)\b[^;]*;'
     severity: high
     message: "Caso de uso não deve conhecer HTTP (request, response, status). Receba e devolva objetos do próprio caso de uso."

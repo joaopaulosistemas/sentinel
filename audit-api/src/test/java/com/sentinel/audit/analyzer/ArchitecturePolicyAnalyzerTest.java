@@ -491,4 +491,21 @@ class ArchitecturePolicyAnalyzerTest {
 
         assertEquals(List.of("sentinel-arch-layer-entities-features"), ruleIds(analyze(proj, builtin("arq-frontend-fsd"))));
     }
+
+    @Test
+    void pacoteHexagonalTrataEntrypointsDentroDeApplicationComoAdaptadorDeEntrada() throws IOException {
+        // layout do clean-architecture-example: application/entrypoints/... guarda os endpoints REST
+        Path proj = project("application/entrypoints/src/main/java/com/clean/rest/Endpoint.java",
+                "package com.clean.entrypoints.rest;\nimport org.springframework.web.bind.annotation.GetMapping;\nclass Endpoint {}\n");
+
+        assertEquals(List.of(), rules(analyze(proj, builtin("arq-hexagonal"))));
+    }
+
+    @Test
+    void pacoteHexagonalDeixaARaizDeComposicaoConhecerOsAdaptadores() throws IOException {
+        Path proj = project("application/configuration/src/main/java/app/configuration/EndpointConfiguration.java",
+                "package app.configuration;\nimport app.entrypoints.rest.Endpoint;\nimport app.dataproviders.db.Provider;\nclass EndpointConfiguration {}\n");
+
+        assertEquals(List.of(), rules(analyze(proj, builtin("arq-hexagonal"))));
+    }
 }

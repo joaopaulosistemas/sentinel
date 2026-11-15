@@ -1652,3 +1652,10 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **NÃO verificado localmente:** testes Java; quem verifica é o CI da PR.
 - **Resultado 4, segunda rodada (`arq-frontend-fsd` 1.1.2):** com os globs em `**/src/`, o `todo-app` do `feature-sliced/examples` acusou 3 `export *` em `index.ts`. O próprio exemplo oficial do FSD usa `export *`, então a convenção `index-sem-export-estrela` foi retirada (era opinião nossa, não regra do estilo). Camadas e imports: 0 achados no exemplo oficial. `buckpal`: 0 após a correção.
 
+## Arquitetura: segunda calibração (`arq-hexagonal` 1.0.2)
+
+- **Projetos:** `mattia-battiston/clean-architecture-example`, `thombergs/buckpal` e `spring-projects/spring-petclinic` (hexagonal); `yurisldk/realworld-react-fsd` e `feature-sliced/examples` (FSD); `nrwl/nx-examples` (Nx); `spring-projects/spring-modulith` (monólito modular, com `root: example`).
+- **Resultados:** `clean-architecture-example` acusou 8 `aplicacao-sem-web`, todos falsos: os endpoints REST ficam em `application/entrypoints/`, e a pasta `application` do projeto é o módulo de aplicação, não a camada. **Correção:** `entrypoints`/`entrypoint` contam como adaptador de entrada, `dataproviders` como de saída, e a convenção ignora essas pastas. FSD (2 projetos) e buckpal: 0. Spring Modulith: 0 (esperado, os exemplos passam no `verify()`; sem controle positivo, o 0 não prova que o pacote viu os módulos, só os testes unitários provam).
+- **Limite:** o pacote hexagonal depende dos nomes das pastas; quem usa outros nomes precisa ajustar `layers`.
+- **Segunda calibração, depois da correção (`arq-hexagonal` 1.0.3):** com `entrypoints`/`dataproviders` como adaptadores, o `clean-architecture-example` passou a acusar 11 `application -> adapter` em `application/configuration/`, que é a raiz de composição (liga os adaptadores às portas). Falsos positivos; o pacote ganhou a camada `composition-root` (`config`, `configuration`, `bootstrap`), sem proibições.
+

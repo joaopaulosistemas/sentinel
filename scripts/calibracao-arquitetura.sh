@@ -6,7 +6,7 @@ set -u
 KEY="cal-$(date +%s)"; NET="sentinel-calarq"; API="http://127.0.0.1:18082"
 H=(-H "X-API-Key: $KEY" -H "Content-Type: application/json")
 SAIDA="${SAIDA:-calibracao-arq-saida}"; mkdir -p "$SAIDA"
-docker network create "$NET" >/dev/null 2>&1
+docker rm -f calarq-api calarq-db >/dev/null 2>&1; docker network create "$NET" >/dev/null 2>&1
 docker run -d --name calarq-db --network "$NET" -e POSTGRES_DB=sentinel_audit -e POSTGRES_USER=sentinel_audit -e POSTGRES_PASSWORD=cal postgres:16-alpine >/dev/null
 for _ in $(seq 1 30); do docker exec calarq-db pg_isready -U sentinel_audit >/dev/null 2>&1 && break; sleep 2; done
 docker run -d --name calarq-api --network "$NET" -p 127.0.0.1:18082:8080 \
@@ -17,9 +17,9 @@ for _ in $(seq 1 60); do curl -fsS "${H[@]}" "$API/api/v1/health" >/dev/null 2>&
 for par in "$@"; do
   repo="${par%%:*}"; perfil="${par##*:}"
   branch="$(gh api "repos/$repo" --jq .default_branch 2>/dev/null || echo main)"
-  sid="$(curl -sS "${H[@]}" -X POST "$API/api/v1/systems" -d "{\"name\":\"${repo//\//-}\",\"repoUrl\":\"https://github.com/$repo\",\"stack\":\"MIXED\",\"gitHistoryDepth\":1}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+  sid="$(curl -sS "${H[@]}" -X POST "$API/api/v1/systems" -d "{\"name\":\"${repo//\//-}\",\"repoUrl\":\"https://github.com/$repo\",\"stack\":\"MIXED\",\"gitHistoryDepth\":1}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')" || { echo "=== $repo: cadastro falhou"; continue; }
   curl -sS "${H[@]}" -X PUT "$API/api/v1/systems/$sid/profile" -d "{\"profile\":\"$perfil\"}" >/dev/null
-  aid="$(curl -sS "${H[@]}" -X POST "$API/api/v1/audits" -d "{\"systemId\":$sid,\"branch\":\"$branch\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+  aid="$(curl -sS "${H[@]}" -X POST "$API/api/v1/audits" -d "{\"systemId\":$sid,\"branch\":\"$branch\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')" || { echo "=== $repo: pedido de auditoria falhou"; continue; }
   status=""
   for _ in $(seq 1 240); do
     status="$(curl -sS "${H[@]}" "$API/api/v1/audits/$aid" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status",""))')"
