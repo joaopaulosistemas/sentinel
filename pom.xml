@@ -52,13 +52,9 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-bom</artifactId>
-                <version>${opentelemetry.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+            <!-- Só a API é fixada na versão corrigida. O BOM inteiro do OpenTelemetry não pode ser importado aqui: com o
+                 quarkus-opentelemetry, o exportador (opentelemetry-exporter-*) precisa vir da versão que o Quarkus
+                 espera, senão a API não sobe (NoSuchMethodError em ExporterBuilderUtil.validateEndpoint). -->
             <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-api</artifactId>
