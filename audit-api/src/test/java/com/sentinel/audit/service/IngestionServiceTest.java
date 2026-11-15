@@ -142,6 +142,7 @@ class IngestionServiceTest {
 
     @Test
     void cloneInvalidoFalhaSemDeixarLixoNemVazarToken() throws IOException {
+        service.allowedInternalHosts = java.util.Optional.of("127.0.0.1");
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> service.cloneRepository("https://127.0.0.1:9/org/repo.git", "main", "ghp_SEGREDO_MUITO_SECRETO", "127.0.0.1"));
         assertFalse(error.getMessage().contains("SEGREDO"), "mensagem de erro não pode conter o token");
@@ -152,6 +153,7 @@ class IngestionServiceTest {
 
     @Test
     void tokenDoSistemaComSeusHostsTambemNaoVazaNoErro() {
+        service.allowedInternalHosts = java.util.Optional.of("127.0.0.1");
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> service.cloneRepository("https://127.0.0.1:9/org/repo.git", "main", "ghp_DO_SISTEMA", "git.interno, 127.0.0.1"));
         assertFalse(error.getMessage().contains("DO_SISTEMA"));
