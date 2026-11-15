@@ -373,8 +373,7 @@ class ArchitecturePolicyAnalyzerTest {
 
         List<String> ids = ruleIds(analyze(proj, builtin("arq-frontend-fsd")));
 
-        assertEquals(List.of("sentinel-arch-conv-fatia-sem-import-profundo", "sentinel-arch-conv-index-sem-export-estrela",
-                "sentinel-arch-conv-shared-sem-regra-de-negocio", "sentinel-arch-layer-entities-features"), ids);
+        assertEquals(List.of("sentinel-arch-conv-fatia-sem-import-profundo", "sentinel-arch-conv-shared-sem-regra-de-negocio", "sentinel-arch-layer-entities-features"), ids);
     }
 
     @Test

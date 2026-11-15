@@ -32,12 +32,6 @@ conventions:
     forbid: '(?:from\s+|import\(\s*|require\(\s*)[''"](?:@|~)/(?:pages|widgets|features|entities)/[^/''"]+/[^''"]+[''"]'
     severity: medium
     message: "Importe a fatia pelo index.ts (API pública), não por um arquivo interno. Assim a fatia pode mudar por dentro sem quebrar quem usa."
-  - id: index-sem-export-estrela
-    title: "API pública com export *"
-    files: ["**/src/pages/*/index.ts", "**/src/widgets/*/index.ts", "**/src/features/*/index.ts", "**/src/entities/*/index.ts"]
-    forbid: '^\s*export\s+\*\s+from'
-    severity: low
-    message: "Exporte nome a nome no index.ts. 'export *' expõe tudo e esconde o que de fato é a API da fatia."
   - id: shared-sem-regra-de-negocio
     title: "Regra de negócio em shared"
     files: ["**/src/shared/**/*.ts", "**/src/shared/**/*.tsx"]
