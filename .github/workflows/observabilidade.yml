@@ -19,7 +19,7 @@ jobs:
       - name: Construir a imagem da API
         run: docker buildx build --load -f audit-api/Dockerfile -t sentinel-audit-api . > build-api.log 2>&1 || { tail -15 build-api.log; exit 1; }
       - name: Versões do OpenTelemetry na imagem (para conferir CVEs das auditorias)
-        run: docker run --rm --entrypoint sh sentinel-audit-api -c 'find / -name "opentelemetry-api-*.jar" -o -name "opentelemetry-sdk-1*.jar" -o -name "opentelemetry-exporter-otlp-1*.jar" 2>/dev/null | sed "s|.*/||" | sort -u'
+        run: docker run --rm --entrypoint sh sentinel-audit-api -c 'find / -name "*opentelemetry-api-1*.jar" -o -name "*opentelemetry-sdk-1*.jar" 2>/dev/null | sed "s|.*/||" | sort -u'
       - name: Subir a pilha (API, banco, Collector, Prometheus, Loki, Tempo e Grafana)
         run: >
           docker compose -f docker-compose.yml -f deploy/observabilidade/docker-compose.yml up -d --no-build
