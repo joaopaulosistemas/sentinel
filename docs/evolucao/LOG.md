@@ -1667,3 +1667,7 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Testes:** `AuditMetricsTest` (Java) e `scripts/verificar-observabilidade.sh` no workflow `Observabilidade`, que sobe a pilha e confere métricas, logs, traces, painel e todas as consultas do painel.
 - **NÃO verificado localmente:** nada (sem Docker nem Maven aqui); o CI é quem prova.
 
+
+### Observabilidade: versão do OpenTelemetry
+
+O `quarkus-opentelemetry` do Quarkus 3.40 traz o OpenTelemetry **1.62.0** (confirmado no jar da imagem). Forçar 1.67.0 (BOM inteiro ou só o `opentelemetry-api`) quebra a subida da API (`NoSuchMethodError ExporterBuilderUtil.validateEndpoint` / `NoClassDefFoundError ConfigUtil`), porque o exportador do Quarkus é compilado contra a 1.62.0. Por isso o pin antigo do `opentelemetry-api` foi removido. **Pendência:** reavaliar as CVEs do `opentelemetry-api` (auditorias #75/#95) ao atualizar a plataforma Quarkus, em vez de forçar a versão.
