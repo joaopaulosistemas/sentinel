@@ -17,10 +17,16 @@ jobs:
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Construir a imagem da API
         run: docker buildx build --load -f audit-api/Dockerfile -t sentinel-audit-api:ci . > build-api.log 2>&1 || { tail -15 build-api.log; exit 1; }
-      - name: Auditar os projetos de referência
+      - name: Auditar projetos de referência (hexagonal e FSD)
         run: >
           bash scripts/calibracao-arquitetura.sh
+          mattia-battiston/clean-architecture-example:arquitetura-hexagonal
           thombergs/buckpal:arquitetura-hexagonal
-          spring-projects/spring-petclinic:arquitetura-hexagonal
-          nrwl/nx-examples:angular-nx
+          yurisldk/realworld-react-fsd:frontend-em-camadas
           feature-sliced/examples:frontend-em-camadas
+          nrwl/nx-examples:angular-nx
+      - name: Monólito modular (raiz de pacote dos exemplos do Spring Modulith é "example")
+        run: |
+          sed -i 's/root: com.example/root: example/' audit-rules/packs/arq-monolito-modular/architecture.yml
+          docker buildx build --load -f audit-api/Dockerfile -t sentinel-audit-api:ci . > build-api2.log 2>&1 || { tail -15 build-api2.log; exit 1; }
+          SAIDA=calibracao-arq-saida2 bash scripts/calibracao-arquitetura.sh spring-projects/spring-modulith:monolito-modular
