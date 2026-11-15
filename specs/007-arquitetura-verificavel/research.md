@@ -30,7 +30,7 @@ Observação: o analisador atual decide a camada por **caminho** (glob). Isso é
 
 ## D3. Mapa recuperado
 
-**Decisão:** módulos = módulos de build (`pom.xml`, Gradle, workspaces de `package.json`) e, sem eles, pacotes de primeiro nível; camadas = anotações e estereótipos do modelo, com "sem camada" para o resto (esclarecimento 1); dependência = relações do modelo entre unidades de módulos diferentes, cada uma com ao menos uma evidência (arquivo e linha, FR-001); relação não resolvida do modelo vira dependência "não resolvida" (FR-004). Testes e código gerado ficam fora, contados (reuso de `GeneratedFiles`).
+**Decisão:** módulos = módulos de build (`pom.xml`, Gradle, workspaces de `package.json`) e, sem eles, pacotes de primeiro nível; camadas = anotações e estereótipos do modelo, com "sem camada" para o resto (esclarecimento 1); dependência = relações do modelo entre unidades de módulos diferentes, cada uma com ao menos uma evidência (arquivo e linha, FR-001); relação não resolvida do modelo vira dependência "não resolvida" (FR-004). Testes e código gerado ficam fora, contados (reuso de `GeneratedFiles`). **Nota de coerência com a 005:** o modelo da 005 não guarda o módulo de build de cada arquivo; a 007 lê `pom.xml`, Gradle e `package.json` por conta própria, só como texto, e associa cada arquivo do modelo ao seu módulo.
 **Alternativa:** inferir camada por nome de pacote: descartada no esclarecimento 1 (pouco objetiva).
 
 ## D4. Desvio direto e indireto

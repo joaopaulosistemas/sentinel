@@ -35,8 +35,7 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 - [ ] T001 Criar a pasta de dados de teste `scripts/fixtures/medicao/` com `medidas/` (3 repositórios pequenos: um Java, um JavaScript, um incompleto), `gabaritos/` e `antes.json`/`depois-melhora.json`/`depois-piora.json`/`depois-igual.json` (números só de teste, com comentário `_comentario` dizendo isso)
 - [ ] T002 Criar `audit-rules/calibracao/repositorios.json` com um registro por repositório hoje em `conjuntos.json` (treino e validação): `grupo`, `origem`, `pilhas` do escopo fixo e `commit` de 40 caracteres (**provisório**: o do HEAD de hoje; a conferência contra os gabaritos está na tarefa de coleta real). O commit é buscado via `git ls-remote` no GitHub (só leitura de metadados, sem clonar código); se algum não puder ser fixado, o registro leva `commit: null` e o relatório o marca "não reproduzível"
 - [ ] T003 [P] Criar o esqueleto de `scripts/medicao.py` (subcomandos `relatorio`, `comparar`, `reservado`, `amostra`, `revisao`, `lacunas`, cada um devolvendo "não implementado" com código 2) e o esqueleto de `scripts/test_medicao.py` que carrega o módulo por caminho (compatível com `python3 -I`)
-- [ ] T004 ⚠️ Autorização: acrescentar **só** `scripts/test_medicao.py` (o outro arquivo de teste só existe na fatia C) à linha "Testes dos scripts de regras" em `.github/workflows/ci.yml` (mesma mudança de uma linha feita no PR #252)
-
+- [ ] T004 ⚠️ Autorização: acrescentar **só** `scripts/test_medicao.py` (o outro arquivo de teste só existe na fatia C) à linha "Testes dos scripts de regras" em `.github/workflows/ci.yml` (mesma mudança de uma linha feita no PR #252) ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 ## Fase 2: Fundação (bloqueia todas as histórias; fatia A)
 
 **⚠️ Nenhuma história começa antes desta fase.**
@@ -136,7 +135,7 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 ### Implementação
 
 - [ ] T049 [US3] Estender `scripts/verificar-separacao.py` com as checagens 5 a 8 (a 7 também barra, em medições do reservado, as chaves `achados`, `arquivo` e `linha`) mantendo as opções e os códigos de saída atuais; manter a leitura de `descobertos.txt` (FR-005)
-- [ ] T050 ⚠️ Autorização: acrescentar `scripts/test_verificar_separacao.py` à linha de testes dos scripts em `.github/workflows/ci.yml` (nasce aqui, não na fatia A)
+- [ ] T050 ⚠️ Autorização: acrescentar `scripts/test_verificar_separacao.py` à linha de testes dos scripts em `.github/workflows/ci.yml` (nasce aqui, não na fatia A) ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 - [ ] T051 [US3] Estender `conjuntos.json` com o grupo `reservado` (`repositorios_fixos`, `regra`, `marcos`) e `audit-rules/calibracao/gabaritos/reservado/LEIAME.json` com a regra de conduta (ninguém lê o código; gabarito só de fonte pública)
 - [ ] T052 [US3] Implementar `reservado consultas` e `reservado promover` e o registro `audit-rules/calibracao/reservado/consultas.json` em `scripts/medicao.py`
 - [ ] T053 ⚠️ Autorização: **propor a lista inicial de repositórios reservados** só por metadados públicos (linguagem, tamanho, atividade, existência de lista pública de falhas), **sem abrir o código**, com a fonte pública do gabarito de cada um; o João aprova a lista antes de ela entrar em `conjuntos.json`
@@ -153,7 +152,7 @@ description: "Tarefas da spec 003: Sentinel Premium 1 — Medição e prova"
 **Depende de**: fatias A, B e C. **Só se prova no GitHub.**
 
 - [ ] T056 [P] Estender `scripts/auditoria-completa.sh` para escrever `Duração (s)` e `Arquivos de código` no resumo sem alterar as linhas atuais; teste com saída simulada em `scripts/test_medicao.py` (leitura dos campos novos)
-- [ ] T057 ⚠️ Autorização: criar `.github/workflows/medicao.yml` (disparo manual; busca cada repositório **no commit fixado**, roda a auditoria completa, publica as medidas como artefato; permissões mínimas e ações fixadas por SHA como os demais; sem executar código dos alvos)
+- [ ] T057 ⚠️ Autorização: criar `.github/workflows/medicao.yml` (disparo manual; busca cada repositório **no commit fixado**, roda a auditoria completa, publica as medidas como artefato; permissões mínimas e ações fixadas por SHA como os demais; sem executar código dos alvos) ✅ **Autorizado pelo João em 2026-11-13** (decisão recomendada; vale quando a implementação for liberada).
 - [ ] T058 Rodar o workflow para treino e validação; conferir que as medidas são completas ou têm motivo de incompletude
 - [ ] T059 Conferir cada gabarito de treino no **commit fixado**: comparar o recall medido com o da calibração anterior (`audit-rules/calibracao/baselines/`); se divergir além da tolerância, fixar em `repositorios.json` o commit em que o gabarito foi montado e registrar em `historico` (os gabaritos foram montados em commits antigos; linhas podem ter deslocado)
 - [ ] T060 ⚠️ Autorização: rodar o workflow **uma vez** para o reservado no marco `marco-0-linha-de-base`, registrando a consulta

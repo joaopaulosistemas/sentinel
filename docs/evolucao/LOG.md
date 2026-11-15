@@ -1505,6 +1505,12 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado:** cada FR das specs 003 a 006 agora é citado em ao menos uma tarefa; conferido por varredura.
 - **NÃO verificado:** nada implementado.
 
+## Revisão de coerência das specs 003 a 008 (só documentos, sem versão nova)
+
+- **Verificado:** subcomandos de `medicao.py` usados por 008 existem na 003; limiares (amostra mínima 20, Wilson 95 %, concordância 0,80) iguais nas specs; dependências entre specs declaradas (005→006/007, 003→004 a 008, 004→007); nenhuma tarefa ainda marcada como feita.
+- **Corrigido:** a 007 depende de módulos de build que o modelo da 005 não guarda; ficou registrado que a 007 os lê sozinha. Autorizações recomendadas de 003 (T004, T050, T057) e 004 (T021, T025, T028) marcadas; T053, T060 e T069 da 003 continuam decisões humanas.
+- **NÃO verificado:** nada implementado.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
