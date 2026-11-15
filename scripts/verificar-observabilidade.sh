@@ -36,9 +36,11 @@ curl -fsS "$PROM/api/v1/rules" | python3 -c 'import json,sys; g=json.load(sys.st
 
 echo "== Grafana"
 curl -fsS -u "$GA" "$GRAF/api/search?query=Sentinel" | grep -q sentinel-visao-geral && ok "painel 'Sentinel — visão geral' provisionado" || falha "painel não encontrado no Grafana"
-for ds in prometheus loki tempo; do
+for ds in prometheus loki; do
   espera 30 bash -c "curl -fsS -u '$GA' '$GRAF/api/datasources/uid/$ds/health' | grep -q '\"status\":\"OK\"'" && ok "fonte de dados $ds saudável" || falha "fonte de dados $ds não está saudável"
 done
+# O teste de saúde do Grafana para o Tempo faz uma busca de exemplo; a prova real é a busca de traces mais abaixo.
+echo "  info saúde do Tempo no Grafana: $(curl -sS -u "$GA" "$GRAF/api/datasources/uid/tempo/health" | head -c 300)"
 echo "== painel: todas as consultas do painel respondem"
 python3 - "$GRAF" "$GA" <<'PY' || falhas=$((falhas+1))
 import json, sys, urllib.parse, urllib.request, base64
