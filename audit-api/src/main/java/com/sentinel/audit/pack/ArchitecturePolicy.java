@@ -39,9 +39,9 @@ public record ArchitecturePolicy(List<Layer> layers, List<LayerRule> forbid, Lis
      */
     public record ModuleRule(String id, String root, boolean noCycles, List<String> publicApi, String message, Severity severity,
                              String alias, boolean noCross) {
-        /** Raiz com barra é uma pasta (TypeScript/JS); com ponto é um pacote (Java). */
+        /** Raiz com barra ou com alias de import é uma pasta (TypeScript/JS); sem isso é um pacote (Java). */
         public boolean isPath() {
-            return root.contains("/");
+            return root.contains("/") || alias != null;
         }
     }
 
