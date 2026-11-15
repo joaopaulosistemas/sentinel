@@ -1,0 +1,22 @@
+# Alertmanager -> Slack (receptor nativo). Use: ALERTMANAGER_CONFIG=./deploy/observabilidade/alertmanager-slack.yml
+# e ALERT_WEBHOOK_FILE apontando para um arquivo com a URL do Incoming Webhook do Slack (https://hooks.slack.com/services/...).
+# Alertmanager: agrupa os alertas do Prometheus e avisa por webhook (serve para Slack, Teams, n8n etc.).
+# A URL fica num ARQUIVO (url_file), fora do repositório: aponte ALERT_WEBHOOK_FILE para ele (veja o README).
+route:
+  receiver: slack
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+receivers:
+  - name: slack
+    slack_configs:
+      - api_url_file: /etc/alertmanager/webhook-url
+        send_resolved: true
+        title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+        text: "{{ range .Alerts }}• {{ .Annotations.summary }}{{ if .Annotations.description }}: {{ .Annotations.description }}{{ end }}\n{{ end }}"
+inhibit_rules:
+  # Se a API inteira caiu, os alertas derivados (latência, erro) só fazem barulho.
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: [instance]

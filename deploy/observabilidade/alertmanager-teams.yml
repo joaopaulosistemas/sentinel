@@ -1,0 +1,20 @@
+# Alertmanager -> Microsoft Teams (receptor nativo). Use: ALERTMANAGER_CONFIG=./deploy/observabilidade/alertmanager-teams.yml
+# e ALERT_WEBHOOK_FILE apontando para um arquivo com a URL do webhook do canal do Teams (Workflows/Incoming Webhook).
+# Alertmanager: agrupa os alertas do Prometheus e avisa por webhook (serve para Slack, Teams, n8n etc.).
+# A URL fica num ARQUIVO (url_file), fora do repositório: aponte ALERT_WEBHOOK_FILE para ele (veja o README).
+route:
+  receiver: teams
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+receivers:
+  - name: teams
+    msteams_configs:
+      - webhook_url_file: /etc/alertmanager/webhook-url
+        send_resolved: true
+inhibit_rules:
+  # Se a API inteira caiu, os alertas derivados (latência, erro) só fazem barulho.
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: [instance]
