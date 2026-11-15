@@ -27,6 +27,7 @@
         <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
         <!-- 2.22.4: corrige as CVEs do jackson-databind apontadas pela auditoria #73 (2.17.2 não tem correção) -->
         <jackson.version>2.23.0</jackson.version>
+        <opentelemetry.version>1.67.0</opentelemetry.version>
     </properties>
 
     <dependencyManagement>
@@ -50,10 +51,15 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-            <!-- OpenTelemetry: sem BOM nem versão fixa aqui. O quarkus-opentelemetry exige API, SDK e exportador na mesma
-                 versão que o Quarkus escolheu; fixar só uma parte (1.68.0) derrubava a API na subida
-                 (NoSuchMethodError em ExporterBuilderUtil e NoClassDefFoundError em ConfigUtil). A versão em uso é
-                 conferida no workflow "Observabilidade" e pelas auditorias de dependência do Sentinel. -->
+            <!-- OpenTelemetry 1.67.0 (corrige as CVEs do opentelemetry-api apontadas pelas auditorias #75 e #95): o BOM inteiro
+                 precisa andar junto, pois API, SDK e exportador devem ter a mesma versão. O Quarkus 3.40 traz 1.62.0. -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-bom</artifactId>
