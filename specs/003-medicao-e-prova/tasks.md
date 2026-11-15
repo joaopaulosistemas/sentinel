@@ -210,6 +210,8 @@ Testes antes do código; cada tarefa cita o requisito que cobre.
 - Dentro de cada fase: testes (falham) → implementação → fechamento.
 - Tarefas ⚠️ param e perguntam: T004, T050, T053, T057, T060, T069.
 
+- **Fase extra:** T078 (teste) e T079 (limites de tempo e memória) dependem da Fase 2 e vêm antes de T058 e T061, porque os limites precisam estar fixados antes da linha de base. T080 e T081 (reservado insuficiente) dependem da fatia C (T049 a T052) e vêm antes de T060. T082 (medida manual) vem antes de T058. Nenhuma delas começa antes de T004 ser autorizada.
+
 ### Oportunidades de paralelismo
 
 - Fase 2: T005 a T008 juntas.
