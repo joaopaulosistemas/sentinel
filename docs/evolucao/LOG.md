@@ -1719,3 +1719,7 @@ O `pip` das ferramentas de mercado (njsscan, checkov, sqlfluff) falhava com `CER
 ### Hora dos relatórios no fuso de Brasília
 
 Os relatórios (HTML e PDF) formatavam as datas no relógio do contêiner (UTC), 3 horas à frente de Brasília. O painel já mostrava certo (o navegador converte o instante com fuso que a API manda). Agora `HorarioDeExibicao` converte a data gravada para `REPORT_TIMEZONE` (padrão `America/Sao_Paulo`); o banco não muda, então as auditorias antigas também saem certas.
+
+### Stylelint 18 (substitui o PR #318 do Dependabot)
+
+`stylelint-config-standard-scss` 18 pede `stylelint` 18, e `stylelint-config-standard` 41 também; subir só um quebrava o `npm install`. Os três sobem juntos. O Stylelint 18 removeu a regra `declaration-block-single-line-max-declarations`, que estava desligada no `stylelintrc.json`: virou "Unknown rule" e saiu da configuração. Testado com um SCSS de exemplo e com o CSS do painel (0 erros).
