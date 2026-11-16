@@ -16,10 +16,10 @@ cp .env.example .env     # defina POSTGRES_PASSWORD (obrigatória); API_KEY reco
 docker compose up -d --build
 ```
 
-- **Painel:** http://localhost:3000 · **API:** http://localhost:8080 (Swagger só em modo dev).
+- **Painel:** http://localhost:3000 · **API:** http://localhost:8080 (Swagger UI só em modo dev; o documento fica em `/q/openapi`, com `API_KEY`, veja [a referência da API](../referencia/auditoria-e-api.md#como-ver-a-documentação-da-api-swagger)). Painel de métricas, logs e traces: [observabilidade](observabilidade.md).
 - O Compose expõe tudo apenas em `127.0.0.1`. O painel injeta a `API_KEY` no proxy (nginx), então a chave não vai para o navegador.
 - **Ferramentas na imagem da API** (build args, todos no `.env.example` ou em `docker-compose.yml`): `WITH_OPENGREP`, `WITH_TRIVY`, `WITH_GITLEAKS`, `WITH_BETTERLEAKS` (instalado, mas só roda com `BETTERLEAKS_ENABLED=true`), `WITH_PMD`, `WITH_ESLINT` e `WITH_MARKET_TOOLS` vêm ligados; `WITH_SEMGREP` e `WITH_JOERN` (taint entre arquivos, cerca de 2 GB a mais) vêm desligados. Exemplo: `docker compose build --build-arg WITH_JOERN=true audit-api`.
-- **Rede com inspeção SSL:** coloque o CA raiz da empresa (`.crt`, PEM) em `audit-api/certs/` antes do build. Proxy: `HTTP_PROXY`, `HTTPS_PROXY` e `NO_PROXY` no `.env`.
+- **Rede com inspeção SSL:** coloque o CA raiz da empresa (`.crt`, PEM) em `audit-api/certs/` antes do build. A verificação de certificado vem **ligada** (`INSECURE_SSL=false`); só desligue com `--build-arg INSECURE_SSL=true` em rede que reassina o TLS. Proxy: `HTTP_PROXY`, `HTTPS_PROXY` e `NO_PROXY` no `.env`.
 - **Só o banco** (para a API em modo dev): `docker compose up -d postgres` (porta local 5433).
 
 ## Opção 2 — Desenvolvimento local
@@ -36,7 +36,9 @@ Variáveis úteis (todas opcionais em dev):
 
 | Variável | Para quê |
 |----------|----------|
-| `API_KEY` | Se definida, **toda** a API exige `X-API-Key: <chave>` (ou `Authorization: Bearer`). `/api/v1/health` é livre. Sem ela a API fica aberta e um aviso é logado. |
+| `API_KEY` | Se definida, **toda** a API exige `X-API-Key: <chave>` (ou `Authorization: Bearer`). `/api/v1/health` é livre. Sem ela (e sem OIDC) a API **recusa subir** em produção; só para desenvolvimento local use `ALLOW_OPEN_API=true`, que a deixa aberta com um aviso. |
+| `ALLOW_OPEN_API` | `true` libera a API sem `API_KEY` nem OIDC (somente desenvolvimento local). Padrão `false`. |
+| `ALLOWED_INTERNAL_HOSTS` | Hosts Git em rede interna que a API pode auditar (ex.: `gitlab.empresa.local`, lista separada por vírgula). Por padrão, repositórios que resolvem para rede interna ou local são recusados. No Helm, libere também a saída em `networkPolicy.extraEgress`. |
 | `DB_URL` / `DB_USER` / `DB_PASSWORD` | Banco. Com o Postgres do Compose use `DB_URL=jdbc:postgresql://localhost:5433/sentinel_audit`. |
 | `DB_SCHEMA_MODE` | Padrão `none`: o esquema é do Flyway (`db/migration`); bancos antigos entram em baseline na versão 1. `validate` confere o mapeamento. **Nunca** use `drop-and-create` fora de testes: apaga os dados a cada start. |
 | Token Git (cadastro do sistema) | Fica cifrado no banco e nunca volta pela API. A chave vem de `SECRETS_KEY` (ou `API_KEY`); se as duas estiverem vazias, a API cria uma chave aleatória no volume `audit_secrets` (`/var/lib/sentinel/secrets.key`) e a reutiliza, então o token pode ser digitado só na tela. Guarde esse volume junto com o banco: sem a chave os tokens salvos não abrem; só é enviado aos hosts listados no sistema (padrão `github.com`); só URLs `https://` são aceitas. |

@@ -69,7 +69,7 @@ export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/re
 
 ## O contrato OpenAPI
 
-O Swagger UI (`/swagger-ui`, só em modo dev) e o documento (`/q/openapi`) saem das anotações das rotas. A cada execução do CI, o job **Integração HTTP** grava o documento do build, valida a estrutura (`scripts/validar-openapi.py`) e o publica como artefato `openapi` (arquivo `openapi.json`) na página da execução. O teste de contrato falha se uma rota ficar sem descrição, resposta, erro documentado ou parâmetro descrito.
+O documento OpenAPI (`/q/openapi`) e o Swagger UI (`/swagger-ui`, só em modo dev) saem das anotações das rotas. A cada execução do CI, o job **Integração HTTP** grava o documento do build, valida a estrutura (`scripts/validar-openapi.py`) e o publica como artefato `openapi` (arquivo `openapi.json`) na página da execução. O teste de contrato falha se uma rota ficar sem descrição, resposta, erro documentado ou parâmetro descrito.
 
 ## Endpoints da API
 
@@ -120,7 +120,21 @@ O Swagger UI (`/swagger-ui`, só em modo dev) e o documento (`/q/openapi`) saem 
 | `POST` | `/api/v1/systems/check-path` · `GET /api/v1/systems/local-source` | Confere uma pasta local dentro da raiz do servidor (é Git? branch, arquivos, alterações não commitadas) · informa se a origem "pasta local" está ligada |
 | `GET` | `/api/v1/health` | Health check |
 
-Documentação interativa (somente modo dev): **http://localhost:8080/swagger-ui**
+### Como ver a documentação da API (Swagger)
+
+| Onde roda | Swagger UI | Documento OpenAPI |
+|---|---|---|
+| Modo dev (`mvn quarkus:dev`) | **http://localhost:8080/swagger-ui**, com o botão **Authorize** | http://localhost:8080/q/openapi |
+| Compose / imagem de produção | **não existe** (o Swagger UI só é incluído em dev e teste) | http://localhost:8080/q/openapi?format=json |
+
+Na imagem de produção o documento **exige a `API_KEY`** (só `/api/v1/health`, webhooks e MCP são livres):
+
+```bash
+curl -H "X-API-Key: $API_KEY" "http://localhost:8080/q/openapi?format=json" -o openapi.json
+```
+
+Para navegar nele com a interface do Swagger, importe o `openapi.json` no [Swagger Editor](https://editor.swagger.io), no
+Postman ou no Insomnia. O CI também publica o documento de cada build como artefato `openapi`.
 
 O documento OpenAPI (JSON em `/q/openapi?format=json`) declara as formas de autenticação: chave no cabeçalho `X-API-Key` ou `Authorization: Bearer <chave>` (a mesma `API_KEY` do servidor) e, só no MCP, a chave de acesso do sistema. No Swagger UI, **Authorize** guarda a chave uma vez para todas as chamadas. Saúde, webhooks e MCP não usam a chave global. Toda rota protegida documenta o 401, e os dois formatos de erro (`{"message": …}` e `{"error": …}`) estão em `components/schemas` (`ApiError`, `ApiKeyError`). Um teste de integração falha se uma rota ficar sem resumo, tag, resposta ou 401.
 
