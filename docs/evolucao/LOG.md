@@ -1689,3 +1689,7 @@ Três repositórios novos: `ddd-by-examples/library`, `citerus/dddsample-core` (
 ### Login com Keycloak (admin e executor)
 
 Protótipo de login: Keycloak 26 com realm importado (`deploy/keycloak/`), usuários `admin` (`sentinel-admin`) e `executor` (`sentinel-executor`), painel com código + PKCE, e a API validando o JWT (assinatura, emissor, audiência `sentinel-api`) e aplicando papéis (`RolePolicy`, `RoleAuthorizationFilter`, `GET /api/v1/me`). Imagem da API com `WITH_OIDC=true`. Verificação de ponta a ponta no workflow "Login com Keycloak" (401 sem token, token inventado e audiência errada; 403 do executor em cadastros e configurações). O Keycloak fica num overlay do Compose, fora do `docker-compose.yml` principal. **Pendências:** Helm sem modo OIDC; senhas e `start-dev` só para teste; sem separação por squad nem trilha de quem disparou cada auditoria; fluxo no navegador não automatizado. Também: o aviso de falha parcial do PMD agora cita os arquivos com erro de processamento (#307) e a regra de segredo em `application.properties` deixou de acusar chaves `*-claim`.
+
+### Topo do painel: menu do usuário
+
+O canto direito do cabeçalho ficou só com a versão, o tema e um menu: com login, avatar + nome + etiqueta do papel (azul admin, verde-água executor); sem login, um botão "Aparência". Dentro do menu: tamanho do texto (Pequeno/Normal/Grande), paleta e Sair. Substitui as duas caixas de seleção soltas da barra. Fecha com Esc ou clique fora.
