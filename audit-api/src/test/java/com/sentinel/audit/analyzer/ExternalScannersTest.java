@@ -82,7 +82,7 @@ class ExternalScannersTest {
         Finding fb = new GitleaksAnalyzer().parse(b, Path.of("/work/proj"), run()).get(0);
         assertEquals(Fingerprints.compute(fa), Fingerprints.compute(fb));
 
-        String outroSegredo = GITLEAKS_JSON.replace(SECRET, "AKIAABCDEFGHIJKLMNOP");
+        String outroSegredo = GITLEAKS_JSON.replace(SECRET, "AKIA" + "ABCDEFGHIJKLMNOP");
         Finding fc = new GitleaksAnalyzer().parse(outroSegredo, Path.of("/work/proj"), run()).get(0);
         assertNotEquals(Fingerprints.compute(fa), Fingerprints.compute(fc));    // outro segredo = outro problema
     }

@@ -1697,3 +1697,11 @@ O canto direito do cabeçalho ficou só com a versão, o tema e um menu: com log
 ### Swagger UI no Compose
 
 O Swagger UI (`/swagger-ui`) passa a vir na imagem do Compose por padrão, sem modo dev (`SWAGGER_UI=true` no build; `false` no `.env` tira). É decisão de build do Quarkus (`always-include`), por isso mudar exige `--build`. Fora do Compose a imagem continua sem ele, salvo `--build-arg SWAGGER_UI=true`. A página é estática e pública; as chamadas continuam pedindo a `API_KEY` (botão Authorize). O workflow "Login com Keycloak" constrói com ele ligado e confere o 200.
+
+### Auditoria #57 do próprio Sentinel: ruído de ferramenta
+
+Dos 416 achados, a maioria era ruído, não defeito:
+- **200 do Opengrep em `audit-dashboard/coverage/lcov-report`** (HTML/JS gerado pelo Istanbul): `coverage`, `lcov-report` e `htmlcov` entraram na lista de exclusões do Opengrep.
+- **98 do PMD `AvoidCatchingGenericException`**: o PMD 7.25+ moveu a regra de `design` para `errorprone`, e o ruleset só a excluía em `design`. Agora exclui nos dois.
+- **44 do PMD `SystemPrintln` no CLI**: a saída do terminal é o produto do `audit-cli`; `@SuppressWarnings("PMD.SystemPrintln")` na classe, com o motivo.
+- **5 do Gitleaks em testes**: chaves de fixture (AWS, Stripe, chave privada) montadas por concatenação, para o literal não existir no código.

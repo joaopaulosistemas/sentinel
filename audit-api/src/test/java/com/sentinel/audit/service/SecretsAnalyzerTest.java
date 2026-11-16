@@ -63,7 +63,7 @@ class SecretsAnalyzerTest {
     @Test
     void deveDetectarPrivateKeyHeader() throws IOException {
         Path file = tempDir.resolve("secret.pem");
-        Files.writeString(file, "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAK...\n-----END RSA PRIVATE KEY-----\n");
+        Files.writeString(file, "-----BEGIN RSA " + "PRIVATE KEY-----\nMIIEowIBAAK...\n-----END RSA " + "PRIVATE KEY-----\n");
 
         // .pem não está na lista de extensões escaneadas; usar .properties para testar o padrão
         Path javaFile = tempDir.resolve("KeyLoader.java");

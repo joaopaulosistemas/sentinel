@@ -99,6 +99,9 @@ class LintAnalyzersTest {
 
     @Test
     void pmdNaoUsaARegraDeRetornoNuloQueTambemApontaArrays() {
+        // PMD >= 7.25 moveu AvoidCatchingGenericException de design para errorprone: a exclusão vale nos dois
+        String regra = "<exclude name=\"AvoidCatchingGenericException\"/>";
+        assertEquals(2, PmdAnalyzer.DEFAULT_RULESET.split(regra, -1).length - 1, "excluída em design e em errorprone");
         assertTrue(PmdAnalyzer.DEFAULT_RULESET.contains("<exclude name=\"ReturnEmptyCollectionRatherThanNull\"/>"),
                 "null em byte[] é sinal de entrada inválida; coleções ficam com a regra Semgrep");
     }

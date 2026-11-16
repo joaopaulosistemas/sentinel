@@ -137,6 +137,6 @@ class SemgrepAnalyzerTest {
     @Test
     void ignoraBibliotecasDeTerceirosEArquivosGerados() {
         assertTrue(SemgrepAnalyzer.VENDORED_EXCLUDES.containsAll(
-                List.of("node_modules", "vendor", "libs", "*.min.js")));
+                List.of("node_modules", "vendor", "libs", "*.min.js", "coverage", "lcov-report", "htmlcov")));
     }
 }
