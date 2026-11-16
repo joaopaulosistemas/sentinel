@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { abrirComToken, aoClicarLink } from '../../auth/abrirComToken';
 import { PageShell } from '../../components/PageShell';
 import { SpinnerIcon } from '../../components/StatusIcons';
 import { useAuditRuns } from '../../hooks/useAuditRuns';
@@ -208,7 +209,7 @@ function HistoryRow({ entry: e, fresh }: { entry: IReportHistoryEntry; fresh: bo
       <span style={{ color: 'var(--s-text-2)' }}>{e.systemName}</span>
       <span style={{ fontFamily: mono, fontSize: 12 }}>{formatName(e.format)}</span>
       <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>{fresh ? 'agora' : whenLabel(e.generatedAt)}</span>
-      <a href={e.url} target="_blank" rel="noreferrer" style={{ textAlign: 'right' }}>
+      <a href={e.url} target="_blank" rel="noreferrer" onClick={aoClicarLink(e.url)} style={{ textAlign: 'right' }}>
         Abrir
       </a>
     </div>
@@ -292,7 +293,7 @@ export function ReportsPage() {
 
   function generate() {
     if (!url) return;
-    window.open(url, '_blank', 'noreferrer');
+    void abrirComToken(url);
     reports.add({
       id: `${scope}-${type}-${format}-${Date.now()}`,
       title: reportTitle({ type, days, auditId }),
