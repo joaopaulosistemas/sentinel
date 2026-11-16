@@ -1711,3 +1711,7 @@ Dos 416 achados, a maioria era ruído, não defeito:
 - Logs de `catch` agora levam a exceção (OSV, Semgrep, SecretBox); `ProjectExclusions` é `@FunctionalInterface`; `AssignmentInOperand` removido (SourceSanitizer, relatórios, ciclos); `RolePolicy.need`, `StartupChecks.onStart`, `ModuleChecks.read`, `InternalAddresses` divididos em métodos menores (mesmo comportamento, testes existentes).
 - `AuthGate`: `fetch` com `AbortSignal.timeout` e o JSON de `/config.json` e `/api/v1/me` conferido em vez de afirmado com `as` (`lerConfigDe`, `lerPerfilDe`, com testes).
 - Não corrigido de propósito: CVE do `opentelemetry-api` (mitigado com `quarkus.otel.propagators=baggage`), migrações Flyway já aplicadas (V2, V3, V6), retorno `null` de `Yamls`/`Versions` (distingue "campo ausente" de "lista vazia"), CSS do tema Keycloak (seletores `#kc-*` são o que o Keycloak oferece), acoplamento/entidades JPA com muitos campos.
+
+### Build da imagem em rede com inspeção de TLS
+
+O `pip` das ferramentas de mercado (njsscan, checkov, sqlfluff) falhava com `CERTIFICATE_VERIFY_FAILED`: o CA corporativo só era instalado no fim do Dockerfile, depois das ferramentas, e o `pip` usa o próprio pacote de certificados. Agora o CA entra antes das ferramentas e o `pip` usa o bundle do sistema (`PIP_CERT`). O Compose passa `INSECURE_SSL` (padrão `false`) como argumento de build, que antes só existia no `docker build` manual.
