@@ -2,6 +2,7 @@ package com.sentinel.audit.security;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -23,7 +24,7 @@ public class RoleAuthorizationFilter implements ContainerRequestFilter {
     boolean oidcEnabled;
 
     @Inject
-    SecurityIdentity identity;
+    Instance<SecurityIdentity> identities;
 
     @Override
     public void filter(ContainerRequestContext ctx) {
@@ -34,6 +35,7 @@ public class RoleAuthorizationFilter implements ContainerRequestFilter {
         if (need == RolePolicy.Need.PUBLIC) {
             return;
         }
+        SecurityIdentity identity = identities.isResolvable() ? identities.get() : null;
         if (identity == null || identity.isAnonymous()) {
             ctx.abortWith(resposta(Response.Status.UNAUTHORIZED, "Token ausente ou inválido"));
             return;

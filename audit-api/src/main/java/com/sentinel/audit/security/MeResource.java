@@ -1,6 +1,7 @@
 package com.sentinel.audit.security;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -34,13 +35,14 @@ public class MeResource {
     Optional<String> apiKey;
 
     @Inject
-    SecurityIdentity identity;
+    Instance<SecurityIdentity> identities;
 
     @GET
     @Operation(summary = "Usuário atual", description = "Nome, papéis e permissões de quem fez a chamada (login corporativo, API key ou API aberta)")
     @APIResponse(responseCode = "200", description = "Perfil do usuário autenticado")
     public Me me() {
         if (oidcEnabled) {
+            SecurityIdentity identity = identities.get();
             Set<String> roles = new TreeSet<>(identity.getRoles());
             return of("oidc", identity.getPrincipal().getName(), roles);
         }
