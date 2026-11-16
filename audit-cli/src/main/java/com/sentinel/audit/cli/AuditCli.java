@@ -42,6 +42,7 @@ import java.util.Map;
  *   <li>{@code 3} — Timeout aguardando conclusão da auditoria</li>
  * </ul>
  */
+@SuppressWarnings("PMD.SystemPrintln") // a saída do CLI É o produto: o resultado vai para o terminal e para o log do CI
 public class AuditCli {
 
     private static final int CONNECT_TIMEOUT_SECONDS = 30;

@@ -139,6 +139,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
      */
     static final List<String> VENDORED_EXCLUDES = List.of(
             "node_modules", "vendor", "vendors", "third_party", "thirdparty", "bower_components", "libs",
+            "coverage", "lcov-report", "htmlcov",     // relatórios de cobertura (HTML/JS gerado pelo Istanbul, JaCoCo e coverage.py)
             "*.min.js", "*.min.css", "*.bundle.js", "*.pack.js",
             "jquery*.js", "jquery*.css", "font-awesome*.css", "fontawesome*.css", "patternfly*.css", "patternfly*.js",
             "js/bootstrap*.js", "css/bootstrap*.css",

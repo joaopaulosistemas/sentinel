@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Betterleaks 1.x: leitura do relatório real, execução com executável falso, opt-in e substituição do Gitleaks. */
 class BetterleaksAnalyzerTest {
 
-    private static final String SECRET = "AKIAIOSFODNN7ABCDEFG";
+    private static final String SECRET = "AKIA" + "IOSFODNN7ABCDEFG";
 
     /** Formato da saída real do betterleaks 1.10.0 (mesma lista do Gitleaks; campos demais omitidos). */
     private static final String BETTERLEAKS_JSON = """

@@ -65,6 +65,7 @@ public class PmdAnalyzer implements CodeAnalyzer {
                 <exclude name="AvoidLiteralsInIfCondition"/>
                 <exclude name="AvoidFieldNameMatchingMethodName"/>
                 <exclude name="ReturnEmptyCollectionRatherThanNull"/>
+                <exclude name="AvoidCatchingGenericException"/>
               </rule>
               <rule ref="category/java/design.xml">
                 <exclude name="LawOfDemeter"/>
