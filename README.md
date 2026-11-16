@@ -41,7 +41,7 @@ cp .env.example .env            # defina POSTGRES_PASSWORD; API_KEY recomendada
 docker compose up -d --build
 ```
 
-Painel em http://localhost:3000 e API em http://localhost:8080. Modo desenvolvimento, CLI para CI/CD, build args da imagem (Joern, Semgrep etc.) e migração: [guia de instalação](docs/guia/instalacao.md). Documento da API em `/q/openapi` (Swagger UI só em dev): [referência da API](docs/referencia/auditoria-e-api.md#como-ver-a-documentação-da-api-swagger). Métricas, logs, traces e alertas no Grafana: [observabilidade](docs/guia/observabilidade.md).
+Painel em http://localhost:3000 e API em http://localhost:8080. Modo desenvolvimento, CLI para CI/CD, build args da imagem (Joern, Semgrep etc.) e migração: [guia de instalação](docs/guia/instalacao.md). Documento da API em `/q/openapi` (Swagger UI só em dev): [referência da API](docs/referencia/auditoria-e-api.md#como-ver-a-documentação-da-api-swagger). Métricas, logs, traces e alertas no Grafana: [observabilidade](docs/guia/observabilidade.md). Login com Keycloak (admin e executor): [guia de login](docs/guia/login-keycloak.md).
 
 ## Stack
 
