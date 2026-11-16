@@ -1,3 +1,7 @@
 # Carregado (source) pelo entrypoint do nginx antes do envsubst: garante que API_KEY exista (vazia)
 # sem gravar nenhum valor padrão de segredo na imagem.
 export API_KEY="${API_KEY-}"
+# Login corporativo (Keycloak/OIDC): vazio = sem login. OIDC_ORIGIN entra no connect-src da política de segurança.
+export OIDC_AUTHORITY="${OIDC_AUTHORITY-}"
+export OIDC_CLIENT_ID="${OIDC_CLIENT_ID-}"
+export OIDC_ORIGIN="${OIDC_ORIGIN-}"

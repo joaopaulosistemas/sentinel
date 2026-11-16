@@ -34,6 +34,7 @@ import type {
   ISystemSummaryResponse,
   ITrendPoint,
 } from '../types';
+import { authHeader } from '../auth/session';
 
 // URLs relativas: em dev o proxy do Vite e, em produção, o nginx encaminham /api para a API.
 // VITE_API_URL só é necessário se a API estiver em outro host (e então exige CORS).
@@ -87,7 +88,7 @@ function isShortPlainText(raw: string): boolean {
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: { 'Content-Type': 'application/json', ...authHeader(), ...options?.headers },
     ...options,
     // Sem limite, uma API travada deixaria a tela esperando para sempre.
     signal: options?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -106,7 +107,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 /** Resposta em texto (o CLAUDE.md vem como Markdown, não JSON). */
 async function apiText(path: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}${path}`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  const res = await fetch(`${BASE_URL}${path}`, { headers: authHeader(), signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   if (!res.ok) {
     const detail = await readErrorDetail(res);
     throw new Error(detail || `HTTP ${res.status}: ${res.statusText}`);

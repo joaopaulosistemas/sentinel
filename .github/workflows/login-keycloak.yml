@@ -1,0 +1,32 @@
+name: Login com Keycloak
+on:
+  pull_request:
+    paths: ["deploy/keycloak/**", "scripts/verificar-login-keycloak.sh", ".github/workflows/login-keycloak.yml", "audit-api/src/main/java/com/sentinel/audit/security/**", "audit-api/src/main/resources/application.properties", "audit-dashboard/nginx.conf.template", "audit-dashboard/src/auth/**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  login:
+    name: Login e papéis de ponta a ponta
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      COMPOSE_PROJECT_NAME: sentinel
+      POSTGRES_PASSWORD: ci-login
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Construir a imagem da API com o OIDC
+        run: docker buildx build --load --build-arg WITH_OIDC=true -f audit-api/Dockerfile -t sentinel-audit-api . > build-api.log 2>&1 || { tail -15 build-api.log; exit 1; }
+      - name: Construir o painel
+        run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml build audit-dashboard
+      - name: Subir Keycloak, API e painel
+        run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --no-build postgres keycloak audit-api audit-dashboard
+      - name: Conferir token, papéis e painel
+        run: bash scripts/verificar-login-keycloak.sh
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml logs --tail 80 keycloak audit-api audit-dashboard
+      - name: Derrubar a pilha
+        if: always()
+        run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml down -v
