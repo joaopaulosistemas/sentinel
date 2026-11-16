@@ -198,7 +198,8 @@ public final class DependencyCycles {
 
         private void enter(String node) {
             index.put(node, counter);
-            low.put(node, counter++);
+            low.put(node, counter);
+            counter++;
             stack.push(node);
             onStack.add(node);
             work.push(new Frame(node, graph.getOrDefault(node, Set.of()).iterator()));

@@ -44,20 +44,28 @@ public class StartupChecks {
     }
 
     void onStart(@Observes StartupEvent event) {
-        boolean semChave = apiKey.isEmpty() || apiKey.get().isBlank();
+        boolean semChave = !temTexto(apiKey);
         if (deveRecusarApiAberta(semChave, oidcEnabled, allowOpenApi, LaunchMode.current() == LaunchMode.NORMAL)) {
             throw new IllegalStateException("API_KEY não definida e OIDC desligado: a API ficaria ABERTA. "
                     + "Defina API_KEY (ou use o perfil oidc). Só para desenvolvimento local: ALLOW_OPEN_API=true.");
         }
+        avisos(semChave);
+    }
+
+    /** Avisos de configuração que não impedem a subida. */
+    private void avisos(boolean semChave) {
         if (semChave && !oidcEnabled) {
             LOG.warn("API_KEY não definida: a API está ABERTA, sem autenticação. Use apenas em desenvolvimento local.");
         }
-        boolean hasSecretsKey = secretsKey.isPresent() && !secretsKey.get().isBlank();
-        if (!hasSecretsKey && apiKey.isPresent() && !apiKey.get().isBlank()) {
+        if (!temTexto(secretsKey) && temTexto(apiKey)) {
             LOG.warn(AVISO_SEM_CHAVE_PROPRIA);
         }
         if (schemaMode.startsWith("drop-and-create") || "create".equals(schemaMode)) {
             LOG.warnf("DB_SCHEMA_MODE=%s: o banco será APAGADO a cada inicialização (histórico de auditorias perdido).", schemaMode);
         }
+    }
+
+    private static boolean temTexto(java.util.Optional<String> valor) {
+        return valor.isPresent() && !valor.get().isBlank();
     }
 }

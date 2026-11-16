@@ -59,10 +59,10 @@ public enum RuleSide {
      * e o teste dos pacotes exige {@code metadata.side} escrito.
      */
     public static boolean isInfrastructure(List<String> languages, List<String> includes) {
-        if (languages != null && languages.size() == 1 && "dockerfile".equals(languages.get(0).strip().toLowerCase(Locale.ROOT))) {
-            return true;
-        }
-        return includes != null && includes.stream().anyMatch(g -> INFRA.matcher(g.strip().toLowerCase(Locale.ROOT)).find());
+        boolean soDockerfile = languages != null && languages.size() == 1
+                && "dockerfile".equals(languages.get(0).strip().toLowerCase(Locale.ROOT));
+        return soDockerfile
+                || (includes != null && includes.stream().anyMatch(g -> INFRA.matcher(g.strip().toLowerCase(Locale.ROOT)).find()));
     }
 
     /** O lado que as linguagens decidem; vazio quando não decidem (sem linguagem, ou uma mistura). */

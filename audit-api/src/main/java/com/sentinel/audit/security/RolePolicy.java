@@ -24,26 +24,30 @@ public final class RolePolicy {
 
     public static Need need(String method, String path) {
         String p = normalize(path);
-        if (!p.startsWith("api/")) {
+        if (!p.startsWith("api/") || isOpenPath(p)) {
             return Need.PUBLIC; // fora de /api (MCP, /q/...) a proteção é de outra camada
-        }
-        if (p.equals("api/v1/health") || p.startsWith("api/v1/health/") || p.startsWith("api/v1/webhooks/")) {
-            return Need.PUBLIC;
         }
         if (p.equals("api/v1/me")) {
             return Need.ANY_AUTHENTICATED;
         }
-        if (p.equals("api/v1/settings") || p.startsWith("api/v1/settings/")) {
+        if (isUnder(p, "api/v1/settings")) {
             return Need.ADMIN; // as configurações revelam e mudam o ambiente do servidor
         }
         String m = method == null ? "" : method.toUpperCase(Locale.ROOT);
         if (m.equals("GET") || m.equals("HEAD") || m.equals("OPTIONS")) {
             return Need.READ;
         }
-        if (m.equals("POST") && (p.equals("api/v1/audits") || p.startsWith("api/v1/audits/"))) {
-            return Need.EXECUTE;
-        }
-        return Need.ADMIN;
+        return m.equals("POST") && isUnder(p, "api/v1/audits") ? Need.EXECUTE : Need.ADMIN;
+    }
+
+    /** Saúde e webhooks não pedem login (webhooks se autenticam por assinatura própria). */
+    private static boolean isOpenPath(String p) {
+        return isUnder(p, "api/v1/health") || p.startsWith("api/v1/webhooks/");
+    }
+
+    /** O caminho é {@code base} ou algo dentro dela. */
+    private static boolean isUnder(String p, String base) {
+        return p.equals(base) || p.startsWith(base + "/");
     }
 
     public static boolean allows(Need need, Set<String> roles) {

@@ -8,6 +8,7 @@ import java.util.function.Predicate;
  * O analisador declara a interface e o serviço a implementa, para o pacote {@code analyzer} não depender de
  * {@code service}.
  */
+@FunctionalInterface
 public interface ProjectExclusions {
 
     /** Nenhuma exclusão: tudo entra na auditoria. */

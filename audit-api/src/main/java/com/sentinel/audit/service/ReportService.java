@@ -135,7 +135,8 @@ public class ReportService {
     private void appendNumbered(StringBuilder h, List<Finding> findings, boolean withRemediation) {
         int n = 1;
         for (Finding f : findings) {
-            appendFinding(h, n++, f, withRemediation);
+            appendFinding(h, n, f, withRemediation);
+            n++;
         }
     }
 
@@ -216,9 +217,10 @@ public class ReportService {
         h.append("<table><tr><th>#</th><th>Problema</th><th>Severidade</th><th>Ocorrências</th><th>Ganho na nota</th></tr>");
         int n = 1;
         for (FixPlanDto.Item it : plan.items().stream().limit(FIX_PLAN_ITEMS).toList()) {
-            h.append("<tr><td>").append(n++).append("</td><td>").append(esc(it.title())).append("</td><td><span class=\"badge ")
+            h.append("<tr><td>").append(n).append("</td><td>").append(esc(it.title())).append("</td><td><span class=\"badge ")
                     .append(it.severity()).append("\">").append(it.severity()).append("</span></td><td>").append(it.occurrences())
                     .append("</td><td>+").append(fmt(it.scoreGain())).append("</td></tr>");
+            n++;
         }
         h.append("</table>");
     }

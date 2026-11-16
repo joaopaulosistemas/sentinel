@@ -88,7 +88,7 @@ public class SemgrepAnalyzer implements CodeAnalyzer {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOG.warn("Execução do Semgrep interrompida");
+            LOG.warn("Execução do Semgrep interrompida", e);
             partial = "execução interrompida";
         } catch (Exception e) {
             LOG.errorf(e, "Erro ao executar Semgrep");

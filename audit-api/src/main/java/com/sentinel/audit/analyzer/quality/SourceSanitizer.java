@@ -118,27 +118,33 @@ public final class SourceSanitizer {
             return c == '"' && next == '"' && at(i + 2) == '"';
         }
 
+        /** Apaga o caractere atual e anda uma posição. */
+        private void eraseAndAdvance() {
+            out[i] = ' ';
+            i++;
+        }
+
         private static boolean isQuote(char c) {
             return c == '"' || c == '\'' || c == '`';
         }
 
         private void lineComment() {
             while (i < n && in[i] != '\n') {
-                out[i++] = ' ';
+                eraseAndAdvance();
             }
         }
 
         private void blockComment() {
-            out[i++] = ' ';
-            out[i++] = ' ';
+            eraseAndAdvance();
+            eraseAndAdvance();
             while (i < n && !(in[i] == '*' && at(i + 1) == '/')) {
                 blank(i);
                 i++;
             }
             if (i < n) {                                         // fecha "*/"
-                out[i++] = ' ';
+                eraseAndAdvance();
                 if (i < n) {
-                    out[i++] = ' ';
+                    eraseAndAdvance();
                 }
             }
         }
@@ -173,7 +179,7 @@ public final class SourceSanitizer {
         /** Barra invertida: apaga ela e deixa o caractere seguinte para o laço apagar. */
         private void skipEscape() {
             if (in[i] == '\\' && i + 1 < n) {
-                out[i++] = ' ';
+                eraseAndAdvance();
             }
         }
 
