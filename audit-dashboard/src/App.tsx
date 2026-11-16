@@ -1,7 +1,8 @@
 import { Suspense, lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { SkeletonText } from '@carbon/react';
 import { AppShell } from './components/Layout/AppShell';
+import { useAuth } from './auth/AuthContext';
 
 // Cada tela vira um pacote próprio: quem abre só a visão geral não baixa gráficos, relatórios nem configurações.
 const OverviewPage = lazy(() => import('./pages/Overview/OverviewPage').then((m) => ({ default: m.OverviewPage })));
@@ -17,6 +18,7 @@ const ReportsPage = lazy(() => import('./pages/Reports/ReportsPage').then((m) =>
 const SettingsPage = lazy(() => import('./pages/Settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 
 export function App() {
+  const { admin } = useAuth();
   return (
     <AppShell>
       <Suspense fallback={<SkeletonText paragraph lineCount={4} />}>
@@ -29,7 +31,7 @@ export function App() {
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/findings" element={<FindingsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings" element={admin ? <SettingsPage /> : <Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </AppShell>

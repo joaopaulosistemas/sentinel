@@ -1,0 +1,42 @@
+# Login corporativo de protótipo: Keycloak + API validando o token + painel com tela de login.
+# Uso (na raiz do repositório, uma linha só):
+#   docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --build
+# Painel: http://localhost:3000  ·  Keycloak: http://localhost:8180 (admin do Keycloak: kcadmin / kcadmin)
+# Usuários de teste (SÓ PROTÓTIPO, mude em qualquer ambiente real): admin/admin e executor/executor.
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: kcadmin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-kcadmin}
+      # O emissor (iss) dos tokens fica fixo em localhost:8180, seja quem for que pergunte (navegador ou a API em rede Docker).
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./deploy/keycloak/realm-sentinel.json:/opt/keycloak/data/import/realm-sentinel.json:ro
+    ports:
+      - "127.0.0.1:8180:8080"
+    restart: unless-stopped
+
+  audit-api:
+    build:
+      args:
+        WITH_OIDC: "true"
+    depends_on:
+      keycloak:
+        condition: service_started
+    environment:
+      QUARKUS_PROFILE: oidc
+      API_KEY: ""            # com o login ligado, a autenticação é o token; uma chave estática faria a API recusar o token
+      OIDC_AUTH_SERVER_URL: http://keycloak:8080/realms/sentinel
+      OIDC_CLIENT_ID: sentinel-api
+      OIDC_AUDIENCE: sentinel-api
+
+  audit-dashboard:
+    environment:
+      API_KEY: ""
+      OIDC_AUTHORITY: http://localhost:8180/realms/sentinel
+      OIDC_CLIENT_ID: sentinel-dashboard
+      OIDC_ORIGIN: http://localhost:8180

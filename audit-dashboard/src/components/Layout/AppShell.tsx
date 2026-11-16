@@ -14,6 +14,8 @@ import {
 import { Application, Book, ChartBar, Dashboard, Report, Security, Settings } from '@carbon/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../auth/AuthContext';
+import { UserMenu } from '../../auth/UserMenu';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { MENU_MIN, MENU_PADRAO, MENU_TRILHO, clampMenu, menuMaxFor, readMenuWidth, saveMenuWidth } from '../../utils/menuWidth';
 import { PALETTES, TEXT_SIZES, useThemeStore, type Palette, type TextSize } from '../../store/useThemeStore';
@@ -184,6 +186,7 @@ function ShellHeader({ fixo, aberto, onToggleMenu }: { fixo: boolean; aberto: bo
         onChange={setPalette}
       />
       <HeaderGlobalBar style={{ flex: '0 0 auto' }}>
+        <UserMenu />
         <HeaderGlobalAction
           aria-label={dark ? 'Trocar para o tema normal' : 'Trocar para o tema escuro'}
           tooltipAlignment="end"
@@ -239,12 +242,15 @@ interface IShellMenuProps {
 function ShellMenu({ fixo, aberto, largura, trilho, onClose }: IShellMenuProps) {
   const location = useLocation();
   const pending = usePendingClaude().total;
+  const { admin } = useAuth();
+  // Configurações são só do administrador (a API também recusa: 403). Sem login ligado, todos os itens aparecem.
+  const itens = ITENS.filter((i) => admin || i.rota !== '/settings');
   const className = fixo ? `sentinel-menu-redim${trilho ? ' sentinel-menu-trilho' : ''}` : undefined;
   const style = fixo ? ({ '--s-menu-w': `${largura}px` } as React.CSSProperties) : undefined;
   return (
     <SideNav isFixedNav expanded={fixo || aberto} className={className} style={style} isChildOfHeader={!fixo} onOverlayClick={onClose} aria-label="Navegação principal">
       <SideNavItems>
-        {ITENS.map((i) => (
+        {itens.map((i) => (
           <MenuLink key={i.rota} item={i} active={isActiveRoute(i, location.pathname)} trilho={trilho} pending={pending} />
         ))}
       </SideNavItems>

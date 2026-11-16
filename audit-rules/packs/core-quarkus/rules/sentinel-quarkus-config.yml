@@ -1,7 +1,7 @@
 # Segredo em application.properties. Caso de teste: tests/sentinel-quarkus-config.properties
 rules:
   - id: sentinel-quarkus-segredo-em-properties
-    pattern-regex: '(?m)^\s*(?:%\w+\.)?quarkus\.[\w.\-]*(?:password|secret|token|credentials)[\w.\-]*\s*[=:]\s*(?!\$\{)(?!\s*$)[^\s#]+'
+    pattern-regex: '(?m)^\s*(?:%\w+\.)?quarkus\.[\w.\-]*(?:password|secret|token|credentials)[\w.\-]*(?<!-claim)(?<!-claim-path)\s*[=:]\s*(?!\$\{)(?!\s*$)[^\s#]+'
     message: >
       Segredo escrito direto no application.properties. Leia do ambiente (quarkus.datasource.password=${DB_PASSWORD}),
       de um Secret do Kubernetes ou de um cofre; o arquivo vai para o Git.
