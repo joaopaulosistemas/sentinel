@@ -98,4 +98,18 @@ class PmdProcessingErrorsTest {
         assertFalse(PmdAnalyzer.hasReadableReport("{\"files\":[{\"filename\":"));
         assertFalse(PmdAnalyzer.hasReadableReport("{\"outra\":1}"));
     }
+
+    @Test
+    void falhaComRelatorioQueListaArquivosCitaOsArquivosEmVezDoStderr() {
+        String json = relatorio(erro("src/Foo.java", "ParseException: x"), erro("src/Bar.java", "RuleException: y"));
+        String nota = PmdAnalyzer.salvageNote(1, "terminou com código 1 — …stack-trace", json, ROOT, c -> false);
+        assertTrue(nota.startsWith("terminou com código 1 — o PMD não conseguiu analisar 2 arquivo(s): src/Foo.java"), nota);
+        assertFalse(nota.contains("stack-trace"), nota);
+    }
+
+    @Test
+    void falhaSemListaDeArquivosMantemOTextoDoStderr() {
+        assertEquals("terminou com código 1 — x", PmdAnalyzer.salvageNote(1, "terminou com código 1 — x", "{\"files\":[]}", ROOT, c -> false));
+        assertEquals("terminou com código 1 — x", PmdAnalyzer.salvageNote(1, "terminou com código 1 — x", "", ROOT, c -> false));
+    }
 }

@@ -150,7 +150,8 @@ public class PmdAnalyzer implements CodeAnalyzer {
             List<Finding> salvos = readableFindings(report, projectPath, auditRun);
             if (!salvos.isEmpty()) {
                 LOG.infof("PMD: %d problemas aproveitados do relatório parcial", salvos.size());
-                return new ToolRun.Outcome(salvos, partial + " (os achados já gravados foram aproveitados)");
+                String aviso = salvageNote(code, partial, readQuietly(report), projectPath, exclusions.forProject(projectPath));
+                return new ToolRun.Outcome(salvos, aviso + " (os achados já gravados foram aproveitados)");
             }
             return new ToolRun.Outcome(new ArrayList<>(), partial);
         }
@@ -224,6 +225,27 @@ public class PmdAnalyzer implements CodeAnalyzer {
         String more = unread.size() > NOTE_FILES ? " e mais " + (unread.size() - NOTE_FILES) : "";
         return "o PMD não conseguiu analisar " + unread.size() + " arquivo(s): " + shown + more
                 + "; os demais foram analisados";
+    }
+
+    /**
+     * Aviso quando o PMD falhou mas o relatório foi aproveitado. Se o relatório lista os arquivos com erro de
+     * processamento, o aviso os cita (o rabo do stderr é só "report this issue" e não diz o que quebrou); senão mantém
+     * o texto do stderr.
+     */
+    static String salvageNote(int code, String stderrNote, String json, Path projectPath, Predicate<String> excluded) {
+        java.util.Optional<List<String>> listed = unreadFiles(json, projectPath, excluded);
+        if (listed.isEmpty() || listed.get().isEmpty()) {
+            return stderrNote;
+        }
+        return "terminou com código " + code + " — " + recoverableNote(json, projectPath, excluded);
+    }
+
+    private static String readQuietly(Path report) {
+        try {
+            return Files.readString(report, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return "";
+        }
     }
 
     /** "caminho (TipoDoErro)" de cada erro de processamento fora dos excluídos; vazio se o JSON não lista nenhum (ou não lê). */
