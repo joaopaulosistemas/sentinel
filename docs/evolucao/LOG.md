@@ -1693,3 +1693,7 @@ Protótipo de login: Keycloak 26 com realm importado (`deploy/keycloak/`), usuá
 ### Topo do painel: menu do usuário
 
 O canto direito do cabeçalho ficou só com a versão, o tema e um menu: com login, avatar + nome + etiqueta do papel (azul admin, verde-água executor); sem login, um botão "Aparência". Dentro do menu: tamanho do texto (Pequeno/Normal/Grande), paleta e Sair. Substitui as duas caixas de seleção soltas da barra. Fecha com Esc ou clique fora.
+
+### Swagger UI no Compose
+
+O Swagger UI (`/swagger-ui`) passa a vir na imagem do Compose por padrão, sem modo dev (`SWAGGER_UI=true` no build; `false` no `.env` tira). É decisão de build do Quarkus (`always-include`), por isso mudar exige `--build`. Fora do Compose a imagem continua sem ele, salvo `--build-arg SWAGGER_UI=true`. A página é estática e pública; as chamadas continuam pedindo a `API_KEY` (botão Authorize). O workflow "Login com Keycloak" constrói com ele ligado e confere o 200.

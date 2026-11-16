@@ -43,6 +43,7 @@ services:
       context: .                       # raiz: o módulo depende do pom pai
       dockerfile: audit-api/Dockerfile
       args:
+        SWAGGER_UI: ${SWAGGER_UI:-true}      # Swagger UI em http://localhost:8080/swagger-ui (false remove da imagem)
         WITH_ESLINT: ${WITH_ESLINT:-true}   # Node 20 + ESLint + Stylelint (stack web)
         WITH_OPENGREP: ${WITH_OPENGREP:-true}
         WITH_SEMGREP: ${WITH_SEMGREP:-false}

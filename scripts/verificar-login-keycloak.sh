@@ -66,6 +66,10 @@ case "$CSS_URL" in http*) ;; /*) CSS_URL="$KC$CSS_URL" ;; esac
 curl -fsS "$CSS_URL" 2>/dev/null | grep -q 'IBM Plex Sans' && ok "o CSS do tema é servido (IBM Plex Sans)" || falha "CSS do tema não servido: $CSS_URL"
 curl -fsS -o /dev/null "${CSS_URL%css/sentinel.css}fonts/ibm-plex-sans-latin-400-normal.woff2" && ok "a fonte do tema é servida" || falha "fonte do tema não servida"
 
+echo "== Swagger UI"
+SW="$(curl -sS -o /dev/null -w '%{http_code}' -L "$API/swagger-ui/")"
+[ "$SW" = "200" ] && ok "Swagger UI servido pela imagem (200)" || falha "Swagger UI: esperava 200 e veio $SW"
+
 echo "== Painel"
 curl -fsS "$PAINEL/config.json" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["oidcAuthority"].endswith("/realms/sentinel") and d["oidcClientId"]=="sentinel-dashboard" else 1)' \
   && ok "o painel publica a configuração do login" || falha "config.json do painel"

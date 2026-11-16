@@ -27,8 +27,10 @@ RUN mvn -B -q -pl audit-api -am dependency:go-offline || true
 COPY audit-api/src audit-api/src
 # Login corporativo (Keycloak/OIDC): --build-arg WITH_OIDC=true inclui o quarkus-oidc (e depois QUARKUS_PROFILE=oidc).
 ARG WITH_OIDC=false
+# Swagger UI na imagem (em /swagger-ui): --build-arg SWAGGER_UI=true. É decisão de build do Quarkus, não dá para ligar em tempo de execução.
+ARG SWAGGER_UI=false
 RUN if [ "$WITH_OIDC" = "true" ]; then OIDC_PROFILE="-Poidc"; else OIDC_PROFILE=""; fi \
-    && mvn -B -q -pl audit-api -am package -DskipTests $OIDC_PROFILE
+    && mvn -B -q -pl audit-api -am package -DskipTests $OIDC_PROFILE -Dquarkus.swagger-ui.always-include=$SWAGGER_UI
 
 FROM docker.io/eclipse-temurin:25-jre-jammy
 # Pipes nos RUN abaixo (curl | tar, curl | bash) falham o build se o download falhar
