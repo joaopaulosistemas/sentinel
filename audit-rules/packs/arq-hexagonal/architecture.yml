@@ -17,8 +17,9 @@ layers:
     paths: ["**/application/**"]
     packages: ["*.application.*"]
   - name: domain
-    paths: ["**/domain/**"]
-    packages: ["*.domain.*"]
+    # 'model' é o nome do domínio em muitos projetos DDD (ex.: lending/patron/model). Adaptadores e aplicação vêm antes.
+    paths: ["**/domain/**", "**/model/**"]
+    packages: ["*.domain.*", "*.model.*"]
 
 forbid:
   - {from: domain, to: application, severity: high, message: "O domínio não pode depender da aplicação: a dependência aponta para dentro. Mova o caso de uso para a aplicação ou inverta a dependência com uma porta."}
@@ -32,11 +33,19 @@ forbid:
 conventions:
   - id: dominio-sem-framework
     title: "Domínio importa framework"
-    files: ["**/domain/**/*.java"]
-    exclude: ["**/*Test.java", "**/*Tests.java", "**/test/**", "**/application/**"]
-    forbid: '^\s*import\s+(static\s+)?(org\.springframework|jakarta\.(persistence|ws\.rs|enterprise|inject|transaction|validation)|javax\.(persistence|ws\.rs|inject|transaction)|io\.quarkus|com\.fasterxml\.jackson)\b[^;]*;'
+    files: ["**/domain/**/*.java", "**/model/**/*.java"]
+    exclude: ["**/*Test.java", "**/*Tests.java", "**/test/**", "**/application/**", "**/adapter/**", "**/adapters/**", "**/infrastructure/**"]
+    forbid: '^\s*import\s+(static\s+)?(org\.springframework|jakarta\.(ws\.rs|enterprise|inject|transaction|validation)|javax\.(ws\.rs|inject|transaction)|io\.quarkus|com\.fasterxml\.jackson)\b[^;]*;'
     severity: high
-    message: "O domínio deve ser Java puro. Anotações de persistência, injeção ou serialização pertencem ao adaptador; mapeie o modelo do domínio para elas."
+    message: "O domínio deve ser Java puro. Anotações de injeção, web ou serialização pertencem ao adaptador; mapeie o modelo do domínio para elas."
+  # JPA no domínio é um trade-off comum e consciente (DDD pragmático): fica em média, separado de Spring/Jackson/Quarkus.
+  - id: dominio-sem-persistencia
+    title: "Domínio com anotações de persistência (JPA)"
+    files: ["**/domain/**/*.java", "**/model/**/*.java"]
+    exclude: ["**/*Test.java", "**/*Tests.java", "**/test/**", "**/application/**", "**/adapter/**", "**/adapters/**", "**/infrastructure/**"]
+    forbid: '^\s*import\s+(static\s+)?(jakarta|javax)\.persistence\b[^;]*;'
+    severity: medium
+    message: "Anotações JPA no domínio acoplam o modelo ao banco. Aceitável como trade-off consciente; o ideal é um modelo de persistência no adaptador com mapeador."
   - id: dominio-sem-transacao
     title: "Transação declarada no domínio"
     files: ["**/domain/**/*.java"]

@@ -1,6 +1,6 @@
 id: arq-hexagonal
 name: "Arquitetura hexagonal / limpa / em cebola (exemplo)"
-version: 1.0.3
+version: 1.1.0
 description: "Regra da Dependência: o domínio não conhece aplicação nem adaptadores, a aplicação não conhece adaptadores e os adaptadores de entrada e de saída não se conhecem. Ajuste os caminhos ao seu projeto."
 author: Sentinel
 languages: [java]
