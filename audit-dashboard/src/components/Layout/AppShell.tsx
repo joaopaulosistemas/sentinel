@@ -18,7 +18,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { UserMenu } from '../../auth/UserMenu';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { MENU_MIN, MENU_PADRAO, MENU_TRILHO, clampMenu, menuMaxFor, readMenuWidth, saveMenuWidth } from '../../utils/menuWidth';
-import { PALETTES, TEXT_SIZES, useThemeStore, type Palette, type TextSize } from '../../store/useThemeStore';
+import { useThemeStore } from '../../store/useThemeStore';
 
 interface IAppShellProps {
   children: React.ReactNode;
@@ -136,32 +136,10 @@ function useMenuLargura() {
   return { largura, arrastando, props: { onPointerDown: iniciar, onPointerMove: mover, onPointerUp: soltar, onPointerCancel: soltar, onKeyDown: teclado, onDoubleClick: () => aplicar(MENU_PADRAO) } };
 }
 
-const headerSelectStyle = { marginRight: '0.5rem', height: 32, background: 'transparent', color: '#c6c6c6', border: '1px solid #525252', fontSize: 12, padding: '0 8px' } as const;
-
-function HeaderSelect<T extends string>({ label, title, value, options, onChange }: {
-  label: string;
-  title: string;
-  value: T;
-  options: ReadonlyArray<{ id: T; label: string }>;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <select aria-label={label} className="sentinel-hide-narrow" title={title} value={value} onChange={(e) => onChange(e.target.value as T)} style={headerSelectStyle}>
-      {options.map((o) => (
-        <option key={o.id} value={o.id} style={{ color: '#161616' }}>{o.label}</option>
-      ))}
-    </select>
-  );
-}
-
 function ShellHeader({ fixo, aberto, onToggleMenu }: { fixo: boolean; aberto: boolean; onToggleMenu: () => void }) {
   const navigate = useNavigate();
   const dark = useThemeStore((st) => st.mode) === 'dark';
   const toggleTheme = useThemeStore((st) => st.toggle);
-  const palette = useThemeStore((st) => st.palette);
-  const setPalette = useThemeStore((st) => st.setPalette);
-  const textSize = useThemeStore((st) => st.textSize);
-  const setTextSize = useThemeStore((st) => st.setTextSize);
   return (
     <Header aria-label="Sentinel Audit Tool">
       <SkipToContent />
@@ -177,16 +155,7 @@ function ShellHeader({ fixo, aberto, onToggleMenu }: { fixo: boolean; aberto: bo
       <span className="sentinel-hide-narrow" style={{ marginLeft: 'auto', paddingRight: '1rem', color: '#c6c6c6', fontSize: '0.75rem' }}>
         v{__APP_VERSION__}
       </span>
-      <HeaderSelect<TextSize> label="Tamanho do texto" title="Tamanho do texto da área de conteúdo" value={textSize} options={TEXT_SIZES} onChange={setTextSize} />
-      <HeaderSelect<Palette>
-        label="Paleta de cores"
-        title="Paleta de cores: Suave e Alternativo reduzem o contraste para cansar menos a vista"
-        value={palette}
-        options={PALETTES}
-        onChange={setPalette}
-      />
       <HeaderGlobalBar style={{ flex: '0 0 auto' }}>
-        <UserMenu />
         <HeaderGlobalAction
           aria-label={dark ? 'Trocar para o tema normal' : 'Trocar para o tema escuro'}
           tooltipAlignment="end"
@@ -194,6 +163,8 @@ function ShellHeader({ fixo, aberto, onToggleMenu }: { fixo: boolean; aberto: bo
         >
           <ThemeIcon dark={dark} />
         </HeaderGlobalAction>
+        <span aria-hidden="true" style={{ width: 1, height: 24, background: '#393939', margin: '0 0.5rem' }} />
+        <UserMenu />
       </HeaderGlobalBar>
     </Header>
   );

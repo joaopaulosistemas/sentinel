@@ -41,6 +41,7 @@ describe('troca de tema', () => {
 
   it('a caixa de paleta troca entre clássico, suave e alternativo, e lembra a escolha', () => {
     renderShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Aparência' }));
     const caixa = screen.getByRole('combobox', { name: 'Paleta de cores' });
     expect(document.documentElement.getAttribute('data-palette')).toBe('suave');
 
