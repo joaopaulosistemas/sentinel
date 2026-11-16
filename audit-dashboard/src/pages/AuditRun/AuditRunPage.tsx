@@ -15,6 +15,7 @@ import { ResultSteps } from '../../components/ResultSteps';
 import { useAuditStore } from '../../store/useAuditStore';
 import type { IAnalyzerProgress, IAuditProgress, IAuditRunResponse } from '../../types';
 import { timeAgo } from '../../utils/timeAgo';
+import { aoClicarLink } from '../../auth/abrirComToken';
 import { reportUrl } from '../Reports/reportLinks';
 import {
   PHASES,
@@ -130,7 +131,7 @@ function CompletedHeader({ run, seconds, onRerun }: { run: IAuditRunResponse; se
         </span>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <Button kind="tertiary" href={reportUrl({ base: BASE_URL, auditId: run.id, format: 'html' })} target="_blank" rel="noreferrer">
+        <Button kind="tertiary" href={reportUrl({ base: BASE_URL, auditId: run.id, format: 'html' })} target="_blank" rel="noreferrer" onClick={aoClicarLink(reportUrl({ base: BASE_URL, auditId: run.id, format: 'html' }))}>
           Baixar relatório
         </Button>
         {run.systemId !== undefined && <Button onClick={onRerun}>Auditar de novo</Button>}

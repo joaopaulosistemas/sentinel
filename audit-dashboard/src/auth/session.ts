@@ -9,3 +9,8 @@ export function setAccessToken(token: string | undefined): void {
 export function authHeader(): Record<string, string> {
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 }
+
+/** Há login corporativo ativo (token em memória)? Sem ele, os links da API funcionam direto (o nginx injeta a API_KEY). */
+export function temToken(): boolean {
+  return accessToken !== undefined;
+}
