@@ -4,6 +4,7 @@ import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Hora que aparece nos relatórios (HTML e PDF). O banco guarda {@code LocalDateTime} no relógio do servidor, que no
@@ -20,7 +21,16 @@ public final class HorarioDeExibicao {
 
     /** Formata a data gravada (relógio do servidor) no fuso de exibição. */
     public static String formatar(LocalDateTime gravada) {
-        return formatar(gravada, ZoneId.systemDefault(), fusoDeExibicao(System.getenv("REPORT_TIMEZONE")));
+        return formatar(gravada, ZoneId.systemDefault(), fusoDeExibicao(pedido()));
+    }
+
+    /** {@code sentinel.report.timezone} (ligada a {@code REPORT_TIMEZONE} no application.properties). */
+    private static String pedido() {
+        try {
+            return ConfigProvider.getConfig().getOptionalValue("sentinel.report.timezone", String.class).orElse(null);
+        } catch (IllegalStateException | NoClassDefFoundError e) {
+            return System.getenv("REPORT_TIMEZONE");
+        }
     }
 
     static String formatar(LocalDateTime gravada, ZoneId fusoDoServidor, ZoneId fusoDeExibicao) {
