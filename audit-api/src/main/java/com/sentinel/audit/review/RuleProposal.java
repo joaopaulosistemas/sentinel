@@ -59,6 +59,7 @@ public class RuleProposal {
     private LocalDateTime decidedAt;
 
     @Column(name = "created_at", nullable = false)
+    @SuppressWarnings("PMD.ImmutableField") // o Hibernate atribui o campo ao carregar a entidade: não pode ser final
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Long getId() { return id; }

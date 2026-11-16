@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthGate, ehRetornoDoLogin, lerConfig } from './AuthGate';
+import { AuthGate, ehRetornoDoLogin, lerConfig, lerConfigDe, lerPerfilDe } from './AuthGate';
 import { useAuth } from './AuthContext';
 import { rotuloDoPapel } from './UserMenu';
 import { authHeader, setAccessToken } from './session';
@@ -102,5 +102,26 @@ describe('helpers do login', () => {
     expect(rotuloDoPapel(true, true)).toBe('Administrador');
     expect(rotuloDoPapel(false, true)).toBe('Executor');
     expect(rotuloDoPapel(false, false)).toBe('Sem papel no Sentinel');
+  });
+});
+
+describe('conferência dos dados recebidos', () => {
+  it('lerConfigDe só aceita os dois campos preenchidos', () => {
+    expect(lerConfigDe({ oidcAuthority: 'http://kc', oidcClientId: 'sentinel' })).toEqual({ oidcAuthority: 'http://kc', oidcClientId: 'sentinel' });
+    expect(lerConfigDe({ oidcAuthority: 'http://kc' })).toBeNull();
+    expect(lerConfigDe({ oidcAuthority: 1, oidcClientId: 'x' })).toBeNull();
+    expect(lerConfigDe(null)).toBeNull();
+    expect(lerConfigDe('texto')).toBeNull();
+  });
+
+  it('lerPerfilDe descarta o que não é do tipo esperado e rejeita perfil inválido', () => {
+    expect(lerPerfilDe({ username: 'ana', roles: ['admin', 3], admin: true, canExecute: 'sim' })).toEqual({
+      username: 'ana',
+      roles: ['admin'],
+      admin: true,
+      canExecute: false,
+    });
+    expect(() => lerPerfilDe({ roles: [] })).toThrow('perfil inválido');
+    expect(() => lerPerfilDe(undefined)).toThrow('perfil inválido');
   });
 });

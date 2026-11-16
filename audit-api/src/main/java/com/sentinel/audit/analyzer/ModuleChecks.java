@@ -44,11 +44,12 @@ final class ModuleChecks {
         }
         if (rel.matches(".*\\.(ts|tsx|js|jsx|mjs|vue)$")) {
             readTs(rel, content);
-            return;
+        } else if (rel.endsWith(".java")) {
+            readJava(rel, content);
         }
-        if (!rel.endsWith(".java")) {
-            return;
-        }
+    }
+
+    private void readJava(String rel, String content) {
         Matcher pm = PACKAGE.matcher(content);
         if (!pm.find()) {
             return;
@@ -245,7 +246,8 @@ final class ModuleChecks {
 
         private void visit(String v) {
             index.put(v, counter);
-            low.put(v, counter++);
+            low.put(v, counter);
+            counter++;
             stack.add(v);
             onStack.add(v);
             for (String w : graph.get(v)) {

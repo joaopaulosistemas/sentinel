@@ -6,6 +6,11 @@ import java.net.InetAddress;
 final class InternalAddresses {
 
     private static final int IPV4_BYTES = 4;
+    private static final int BYTE_MASK = 0xff;
+    private static final int CGNAT_MASK = 0xc0;
+    private static final int CGNAT_PREFIX = 64;
+    private static final int BENCHMARK_MASK = 0xfe;
+    private static final int BENCHMARK_PREFIX = 18;
     private static final int IPV6_BYTES = 16;
     private static final int IPV6_ULA_MASK = 0xfe;
     private static final int IPV6_ULA_PREFIX = 0xfc;
@@ -26,13 +31,25 @@ final class InternalAddresses {
         if (b.length != IPV4_BYTES) {
             return false;
         }
-        int first = b[0] & 0xff;
-        int second = b[1] & 0xff;
-        int third = b[2] & 0xff;
-        return first == 0
-                || (first == 100 && (second & 0xc0) == 64)
-                || (first == 192 && second == 0 && third == 0)
-                || (first == 198 && (second & 0xfe) == 18);
+        int first = b[0] & BYTE_MASK;
+        int second = b[1] & BYTE_MASK;
+        int third = b[2] & BYTE_MASK;
+        return first == 0 || isCgnat(first, second) || isIetfProtocol(first, second, third) || isBenchmark(first, second);
+    }
+
+    /** 100.64.0.0/10: espaço compartilhado de operadora. */
+    private static boolean isCgnat(int first, int second) {
+        return first == 100 && (second & CGNAT_MASK) == CGNAT_PREFIX;
+    }
+
+    /** 192.0.0.0/24. */
+    private static boolean isIetfProtocol(int first, int second, int third) {
+        return first == 192 && second == 0 && third == 0;
+    }
+
+    /** 198.18.0.0/15: faixa de testes de rede. */
+    private static boolean isBenchmark(int first, int second) {
+        return first == 198 && (second & BENCHMARK_MASK) == BENCHMARK_PREFIX;
     }
 
     private static boolean isUniqueLocalV6(InetAddress a) {

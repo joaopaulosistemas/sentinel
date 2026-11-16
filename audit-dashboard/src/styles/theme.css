@@ -21,7 +21,7 @@
   --s-primary: #0f62fe;
   --s-danger-text: #a2191f;
   --s-success-text: #198038;
-  --s-shadow: rgba(22, 22, 22, 0.6);
+  --s-shadow: rgb(22 22 22 / 60%);
   --s-success-strong: #044317;
   --s-warn-text: #8a6a00;
   --s-crit-text: #750e13;
@@ -50,7 +50,7 @@
   --s-primary: #0f62fe;
   --s-danger-text: #ff8389;
   --s-success-text: #42be65;
-  --s-shadow: rgba(0, 0, 0, 0.7);
+  --s-shadow: rgb(0 0 0 / 70%);
   --s-success-strong: #6fdc8c;
   --s-warn-text: #f1c21b;
   --s-crit-text: #ff8389;

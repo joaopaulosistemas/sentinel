@@ -33,7 +33,6 @@ public record SystemTuning(Map<String, RuleOverride> rules, Map<String, Integer>
         this(rules, thresholds, enablePacks, disablePacks, disableAnalyzers, Set.of(), Set.of());
     }
 
-    @SuppressWarnings("PMD.UnusedAssignment")   // normaliza os componentes do record no construtor compacto
     public SystemTuning {
         rules = rules == null ? Map.of() : copyRules(rules);
         thresholds = thresholds == null ? Map.of() : Map.copyOf(thresholds);

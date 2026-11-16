@@ -1705,3 +1705,9 @@ Dos 416 achados, a maioria era ruído, não defeito:
 - **98 do PMD `AvoidCatchingGenericException`**: o PMD 7.25+ moveu a regra de `design` para `errorprone`, e o ruleset só a excluía em `design`. Agora exclui nos dois.
 - **44 do PMD `SystemPrintln` no CLI**: a saída do terminal é o produto do `audit-cli`; `@SuppressWarnings("PMD.SystemPrintln")` na classe, com o motivo.
 - **5 do Gitleaks em testes**: chaves de fixture (AWS, Stripe, chave privada) montadas por concatenação, para o literal não existir no código.
+
+### Auditoria #57: achados reais de código
+
+- Logs de `catch` agora levam a exceção (OSV, Semgrep, SecretBox); `ProjectExclusions` é `@FunctionalInterface`; `AssignmentInOperand` removido (SourceSanitizer, relatórios, ciclos); `RolePolicy.need`, `StartupChecks.onStart`, `ModuleChecks.read`, `InternalAddresses` divididos em métodos menores (mesmo comportamento, testes existentes).
+- `AuthGate`: `fetch` com `AbortSignal.timeout` e o JSON de `/config.json` e `/api/v1/me` conferido em vez de afirmado com `as` (`lerConfigDe`, `lerPerfilDe`, com testes).
+- Não corrigido de propósito: CVE do `opentelemetry-api` (mitigado com `quarkus.otel.propagators=baggage`), migrações Flyway já aplicadas (V2, V3, V6), retorno `null` de `Yamls`/`Versions` (distingue "campo ausente" de "lista vazia"), CSS do tema Keycloak (seletores `#kc-*` são o que o Keycloak oferece), acoplamento/entidades JPA com muitos campos.

@@ -18,13 +18,36 @@ interface IMe {
 
 type Estado = { fase: 'carregando' } | { fase: 'livre' } | { fase: 'erro'; mensagem: string } | { fase: 'ok'; me: IMe };
 
+const TIMEOUT_MS = 10_000;
+const HTTP_NAO_AUTORIZADO = 401;
+
+const ehTexto = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+
+/** Confere o JSON da configuração em vez de confiar nele: só vale com os dois campos preenchidos. */
+export function lerConfigDe(dado: unknown): IConfig | null {
+  if (typeof dado !== 'object' || dado === null) return null;
+  const { oidcAuthority, oidcClientId } = dado as Record<string, unknown>;
+  return ehTexto(oidcAuthority) && ehTexto(oidcClientId) ? { oidcAuthority, oidcClientId } : null;
+}
+
+/** Confere a resposta de /api/v1/me: um dado fora do formato vira erro, não um painel quebrado. */
+export function lerPerfilDe(dado: unknown): IMe {
+  const d = (typeof dado === 'object' && dado !== null ? dado : {}) as Record<string, unknown>;
+  if (!ehTexto(d.username) || !Array.isArray(d.roles)) throw new Error('A API devolveu um perfil inválido.');
+  return {
+    username: d.username,
+    roles: d.roles.filter((r): r is string => typeof r === 'string'),
+    admin: d.admin === true,
+    canExecute: d.canExecute === true,
+  };
+}
+
 /** Lê a configuração do login (servida pelo nginx). Qualquer falha ou valor vazio significa "sem login". */
 export async function lerConfig(): Promise<IConfig | null> {
   try {
-    const res = await fetch('/config.json', { cache: 'no-store' });
+    const res = await fetch('/config.json', { cache: 'no-store', signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!res.ok) return null;
-    const cfg = (await res.json()) as IConfig;
-    return cfg.oidcAuthority && cfg.oidcClientId ? cfg : null;
+    return lerConfigDe(await res.json());
   } catch {
     return null; // em desenvolvimento /config.json cai no index.html: não é JSON
   }
@@ -36,10 +59,34 @@ export function ehRetornoDoLogin(search: string): boolean {
   return p.has('code') && p.has('state');
 }
 
+function criarGerenciador(cfg: IConfig): UserManager {
+  const m = new UserManager({
+    authority: cfg.oidcAuthority ?? '',
+    client_id: cfg.oidcClientId ?? '',
+    redirect_uri: `${window.location.origin}/`,
+    post_logout_redirect_uri: `${window.location.origin}/`,
+    response_type: 'code',
+    scope: 'openid profile',
+    automaticSilentRenew: true,
+    userStore: new WebStorageStateStore({ store: window.sessionStorage }),
+  });
+  m.events.addUserLoaded((u: User) => setAccessToken(u.access_token));
+  m.events.addAccessTokenExpired(() => void m.signinRedirect());
+  return m;
+}
+
+/** O usuário da volta do Keycloak (se a URL trouxer o código) ou o que já estava guardado. */
+async function obterUsuario(m: UserManager): Promise<User | null | undefined> {
+  if (!ehRetornoDoLogin(window.location.search)) return m.getUser();
+  const user = await m.signinRedirectCallback();
+  window.history.replaceState({}, '', '/');
+  return user;
+}
+
 async function buscarPerfil(): Promise<IMe> {
-  const res = await fetch('/api/v1/me', { headers: authHeader() });
-  if (!res.ok) throw new Error(res.status === 401 ? 'A API recusou o token.' : `A API respondeu ${res.status}.`);
-  return (await res.json()) as IMe;
+  const res = await fetch('/api/v1/me', { headers: authHeader(), signal: AbortSignal.timeout(TIMEOUT_MS) });
+  if (!res.ok) throw new Error(res.status === HTTP_NAO_AUTORIZADO ? 'A API recusou o token.' : `A API respondeu ${res.status}.`);
+  return lerPerfilDe(await res.json());
 }
 
 /**
@@ -59,27 +106,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
         setEstado({ fase: 'livre' });
         return;
       }
-      const m = new UserManager({
-        authority: cfg.oidcAuthority!,
-        client_id: cfg.oidcClientId!,
-        redirect_uri: `${window.location.origin}/`,
-        post_logout_redirect_uri: `${window.location.origin}/`,
-        response_type: 'code',
-        scope: 'openid profile',
-        automaticSilentRenew: true,
-        userStore: new WebStorageStateStore({ store: window.sessionStorage }),
-      });
+      const m = criarGerenciador(cfg);
       setMgr(m);
-      m.events.addUserLoaded((u: User) => setAccessToken(u.access_token));
-      m.events.addAccessTokenExpired(() => void m.signinRedirect());
       try {
-        let user: User | null | undefined;
-        if (ehRetornoDoLogin(window.location.search)) {
-          user = await m.signinRedirectCallback();
-          window.history.replaceState({}, '', '/');
-        } else {
-          user = await m.getUser();
-        }
+        const user = await obterUsuario(m);
         if (!user || user.expired) {
           await m.signinRedirect();
           return; // a página sai daqui para o Keycloak

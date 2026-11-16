@@ -142,8 +142,9 @@ public class PdfReportService {
             List<List<String>> rows = new java.util.ArrayList<>();
             int n = 1;
             for (FixPlanDto.Item it : plan.items().stream().limit(FIX_PLAN_ITEMS).toList()) {
-                rows.add(List.of(String.valueOf(n++), nz(it.title()), String.valueOf(it.severity()),
+                rows.add(List.of(String.valueOf(n), nz(it.title()), String.valueOf(it.severity()),
                         String.valueOf(it.occurrences()), "+" + fmt(it.scoreGain())));
+                n++;
             }
             table(doc, List.of("#", "Problema", "Severidade", "Ocorrências", "Ganho na nota"), rows,
                     FIX_PLAN_COLUMNS);
