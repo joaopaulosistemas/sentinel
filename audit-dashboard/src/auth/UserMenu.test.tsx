@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useThemeStore } from '../store/useThemeStore';
 import { AuthContext, SEM_LOGIN, type IAuth } from './AuthContext';
-import { inicial, papelDe, rotuloDoPapel, UserMenu } from './UserMenu';
+import { inicial, OPCAO_ESTILO, papelDe, rotuloDoPapel, UserMenu } from './UserMenu';
 
 const logout = vi.fn();
 const ADMIN: IAuth = { enabled: true, username: 'admin', roles: ['sentinel-admin'], admin: true, canExecute: true, logout };
@@ -86,6 +86,20 @@ describe('menu do usuário', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Menu de admin' }));
     fireEvent.change(screen.getByRole('combobox', { name: 'Paleta de cores' }), { target: { value: 'alternativo' } });
     expect(useThemeStore.getState().palette).toBe('alternativo');
+  });
+
+  it('as opções da paleta têm texto claro sobre fundo escuro (legíveis nos dois temas)', () => {
+    renderMenu(ADMIN);
+    fireEvent.click(screen.getByRole('button', { name: 'Menu de admin' }));
+    const caixa = screen.getByRole('combobox', { name: 'Paleta de cores' }) as HTMLSelectElement;
+    expect(caixa.style.colorScheme).toBe('dark');
+    const opcoes = Array.from(caixa.options);
+    expect(opcoes.length).toBe(3);
+    for (const o of opcoes) {
+      expect(o.style.color).toBe('rgb(244, 244, 244)');
+      expect(o.style.background).toBe('rgb(38, 38, 38)');
+    }
+    expect(OPCAO_ESTILO.color).toBe('#f4f4f4');
   });
 
   it('Sair chama o logout e fecha o menu', () => {

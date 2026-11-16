@@ -62,6 +62,9 @@ function EtiquetaDoPapel({ papel, rotulo }: { papel: Papel; rotulo: string }) {
   );
 }
 
+/** A lista da caixa abre sobre o fundo do navegador: cor e fundo explícitos mantêm o texto legível nos dois temas. */
+export const OPCAO_ESTILO = { background: '#262626', color: '#f4f4f4' } as const;
+
 const ROTULO_ESTILO = { fontSize: 12, color: '#c6c6c6' } as const;
 
 /** Fecha o menu com Esc ou clique fora dele. */
@@ -183,10 +186,10 @@ export function UserMenu() {
               title="Suave e Alternativo reduzem o contraste para cansar menos a vista"
               value={palette}
               onChange={(e) => setPalette(e.target.value as Palette)}
-              style={{ height: 36, background: '#161616', color: '#f4f4f4', border: '1px solid #393939', borderRadius: 6, fontSize: 13, padding: '0 8px' }}
+              style={{ height: 36, background: '#161616', color: '#f4f4f4', colorScheme: 'dark', border: '1px solid #393939', borderRadius: 6, fontSize: 13, padding: '0 8px' }}
             >
               {PALETTES.map((p) => (
-                <option key={p.id} value={p.id} style={{ color: '#161616' }}>{p.label}</option>
+                <option key={p.id} value={p.id} style={OPCAO_ESTILO}>{p.label}</option>
               ))}
             </select>
           </label>
