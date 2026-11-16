@@ -16,7 +16,7 @@ cp .env.example .env     # defina POSTGRES_PASSWORD (obrigatória); API_KEY reco
 docker compose up -d --build
 ```
 
-- **Painel:** http://localhost:3000 · **API:** http://localhost:8080 (Swagger UI só em modo dev; o documento fica em `/q/openapi`, com `API_KEY`, veja [a referência da API](../referencia/auditoria-e-api.md#como-ver-a-documentação-da-api-swagger)). Painel de métricas, logs e traces: [observabilidade](observabilidade.md).
+- **Painel:** http://localhost:3000 · **API:** http://localhost:8080 (Swagger UI em http://localhost:8080/swagger-ui, ligado por padrão no Compose; o documento fica em `/q/openapi`, com `API_KEY`, veja [a referência da API](../referencia/auditoria-e-api.md#como-ver-a-documentação-da-api-swagger)). Painel de métricas, logs e traces: [observabilidade](observabilidade.md).
 - O Compose expõe tudo apenas em `127.0.0.1`. O painel injeta a `API_KEY` no proxy (nginx), então a chave não vai para o navegador.
 - **Ferramentas na imagem da API** (build args, todos no `.env.example` ou em `docker-compose.yml`): `WITH_OPENGREP`, `WITH_TRIVY`, `WITH_GITLEAKS`, `WITH_BETTERLEAKS` (instalado, mas só roda com `BETTERLEAKS_ENABLED=true`), `WITH_PMD`, `WITH_ESLINT` e `WITH_MARKET_TOOLS` vêm ligados; `WITH_SEMGREP` e `WITH_JOERN` (taint entre arquivos, cerca de 2 GB a mais) vêm desligados. Exemplo: `docker compose build --build-arg WITH_JOERN=true audit-api`.
 - **Rede com inspeção SSL:** coloque o CA raiz da empresa (`.crt`, PEM) em `audit-api/certs/` antes do build. A verificação de certificado vem **ligada** (`INSECURE_SSL=false`); só desligue com `--build-arg INSECURE_SSL=true` em rede que reassina o TLS. Proxy: `HTTP_PROXY`, `HTTPS_PROXY` e `NO_PROXY` no `.env`.
@@ -29,7 +29,7 @@ docker compose up -d --build
    ```bash
    mvn quarkus:dev -s settings-local.xml -f audit-api/pom.xml
    ```
-   Pronto quando aparecer `Listening on: http://localhost:8080`. O Swagger fica em http://localhost:8080/swagger-ui (só em modo dev). O `openapi.json` de cada versão está no artefato `openapi` da execução do CI.
+   Pronto quando aparecer `Listening on: http://localhost:8080`. O Swagger fica em http://localhost:8080/swagger-ui. O `openapi.json` de cada versão está no artefato `openapi` da execução do CI.
 
 
 Variáveis úteis (todas opcionais em dev):

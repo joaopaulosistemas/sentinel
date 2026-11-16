@@ -71,7 +71,7 @@ A API valida assinatura, emissor e audiência (`OIDC_AUDIENCE`, padrão `sentine
 
 ## O contrato OpenAPI
 
-O documento OpenAPI (`/q/openapi`) e o Swagger UI (`/swagger-ui`, só em modo dev) saem das anotações das rotas. A cada execução do CI, o job **Integração HTTP** grava o documento do build, valida a estrutura (`scripts/validar-openapi.py`) e o publica como artefato `openapi` (arquivo `openapi.json`) na página da execução. O teste de contrato falha se uma rota ficar sem descrição, resposta, erro documentado ou parâmetro descrito.
+O documento OpenAPI (`/q/openapi`) e o Swagger UI (`/swagger-ui`; ligado no Compose, em dev e teste; fora disso, `--build-arg SWAGGER_UI=true`) saem das anotações das rotas. A cada execução do CI, o job **Integração HTTP** grava o documento do build, valida a estrutura (`scripts/validar-openapi.py`) e o publica como artefato `openapi` (arquivo `openapi.json`) na página da execução. O teste de contrato falha se uma rota ficar sem descrição, resposta, erro documentado ou parâmetro descrito.
 
 ## Endpoints da API
 
@@ -127,7 +127,8 @@ O documento OpenAPI (`/q/openapi`) e o Swagger UI (`/swagger-ui`, só em modo de
 | Onde roda | Swagger UI | Documento OpenAPI |
 |---|---|---|
 | Modo dev (`mvn quarkus:dev`) | **http://localhost:8080/swagger-ui**, com o botão **Authorize** | http://localhost:8080/q/openapi |
-| Compose / imagem de produção | **não existe** (o Swagger UI só é incluído em dev e teste) | http://localhost:8080/q/openapi?format=json |
+| Compose | **http://localhost:8080/swagger-ui** (padrão; `SWAGGER_UI=false` no `.env` e `--build` tiram da imagem). A página é pública; as chamadas pedem a `API_KEY` pelo botão **Authorize** | http://localhost:8080/q/openapi?format=json |
+| Imagem de produção fora do Compose | só com `--build-arg SWAGGER_UI=true` | http://localhost:8080/q/openapi?format=json |
 
 Na imagem de produção o documento **exige a `API_KEY`** (só `/api/v1/health`, webhooks e MCP são livres):
 
