@@ -1723,3 +1723,9 @@ Os relatórios (HTML e PDF) formatavam as datas no relógio do contêiner (UTC),
 ### Stylelint 18 (substitui o PR #318 do Dependabot)
 
 `stylelint-config-standard-scss` 18 pede `stylelint` 18, e `stylelint-config-standard` 41 também; subir só um quebrava o `npm install`. Os três sobem juntos. O Stylelint 18 removeu a regra `declaration-block-single-line-max-declarations`, que estava desligada no `stylelintrc.json`: virou "Unknown rule" e saiu da configuração. Testado com um SCSS de exemplo e com o CSS do painel (0 erros).
+
+### Documentos que faltavam
+
+Revisão da pasta `docs/` contra o que já foi construído. Entram: `referencia/banco-de-dados.md` e `.html` (tabelas, relações, migrações V1 a V6 e o diagrama), `guia/compose-combinacoes.md` (overlays do Keycloak e da observabilidade, `COMPOSE_FILE`, 502 depois de recriar a API), `guia/solucao-de-problemas.md`, `guia/operacao.md` (backup, restauração, atualização), `guia/kubernetes-helm.md`, `referencia/variaveis-de-ambiente.md`, e `CONTRIBUTING.md` e `SECURITY.md` na raiz. `docs/schema-referencia.sql` sai: citava o `V1__init.sql`, que já não existe, e o esquema real é o das migrações (o `.sentinel.yml` e o `ARQUITETURA` foram ajustados e o HTML regenerado).
+
+**Verificado:** links relativos dos documentos novos e do índice; `scripts/conferir-numeros.py` e `scripts/sincronizar-versao.py --check`; nenhuma referência restante a `schema-referencia`. **NÃO verificado:** os comandos de backup e restauração e o `helm upgrade --install` não foram executados aqui (sem Docker nem cluster); o CI roda `helm lint` e `helm template`, mas não exercita a instalação.

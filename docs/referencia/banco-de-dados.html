@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sentinel · Diagrama do banco de dados</title>
+<style>
+:root{--bg:#f4f4f4;--card:#fff;--tx:#161616;--mu:#525252;--bd:#c6c6c6;--hd:#0f62fe;--hdtx:#fff;--pk:#8a3ffc;--fk:#0f62fe;--ln:#525252;--lg:#8d8d8d}
+@media (prefers-color-scheme:dark){:root{--bg:#161616;--card:#262626;--tx:#f4f4f4;--mu:#c6c6c6;--bd:#525252;--hd:#4589ff;--hdtx:#0b0b0b;--pk:#be95ff;--fk:#78a9ff;--ln:#c6c6c6;--lg:#8d8d8d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1320px;margin:0 auto;padding:28px 20px 60px}h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:36px 0 10px}
+.sub{color:var(--mu);margin:0 0 18px}.mono{font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+.cards{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.c{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:10px 14px;min-width:150px}.c b{font-size:22px;display:block}.c span{color:var(--mu);font-size:13px}
+.dg{background:var(--card);border:1px solid var(--bd);border-radius:8px;overflow:auto;padding:8px}
+#er{width:100%;min-width:980px;height:auto;display:block}
+#er .box{fill:var(--card);stroke:var(--bd);stroke-width:1.2}#er .hd{fill:var(--hd)}#er .tn{fill:var(--hdtx);font:600 14px "IBM Plex Mono",ui-monospace,monospace}
+#er .cn{fill:var(--tx);font:12.5px "IBM Plex Mono",ui-monospace,monospace}#er .ct{fill:var(--mu);font:11.5px "IBM Plex Mono",ui-monospace,monospace}#er .more{fill:var(--mu);font:italic 12px system-ui}
+#er .k{font:700 9.5px system-ui}#er .k.PK{fill:var(--pk)}#er .k.FK,#er .k.FKl{fill:var(--fk)}
+#er .e{fill:none;stroke:var(--ln);stroke-width:1.6}#er .e.lg{stroke:var(--lg);stroke-dasharray:6 4}#er .card{fill:var(--tx);font:700 12px system-ui}
+.lg-row{display:flex;flex-wrap:wrap;gap:18px;margin:10px 2px;color:var(--mu);font-size:13px}.lg-row i{display:inline-block;width:34px;border-top:2px solid var(--ln);vertical-align:middle;margin-right:6px}.lg-row i.d{border-top:2px dashed var(--lg)}
+details{background:var(--card);border:1px solid var(--bd);border-radius:6px;margin:8px 0}summary{cursor:pointer;padding:11px 14px;display:grid;grid-template-columns:230px 1fr auto;gap:12px;align-items:baseline}summary .d{color:var(--mu);font-size:13.5px}summary .n{color:var(--mu);font-size:12.5px}
+summary span.mono{font-weight:600}table{width:100%;border-collapse:collapse;font-size:13.5px}th,td{text-align:left;padding:6px 14px;border-top:1px solid var(--bd)}th{color:var(--mu);font-weight:600;font-size:12px}.ty{color:var(--mu)}.kb{color:var(--pk)}.ref{color:var(--fk)}.uk{margin:0 14px 8px;color:var(--mu);font-size:13px}
+ul{padding-left:20px}li{margin:4px 0}code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;background:var(--card);border:1px solid var(--bd);border-radius:4px;padding:1px 5px}
+@media(max-width:700px){summary{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<h1>Sentinel · Banco de dados</h1>
+<p class="sub">PostgreSQL 16, gerenciado por Flyway (migrações V1 a V6). Gerado a partir das migrações em <code>audit-api/src/main/resources/db/migration</code>.</p>
+<div class="cards"><div class="c"><b>12</b><span>tabelas</span></div><div class="c"><b>3</b><span>chaves estrangeiras no banco</span></div><div class="c"><b>9</b><span>relações só lógicas (sem FK)</span></div><div class="c"><b>6</b><span>migrações Flyway</span></div></div>
+<h2>Diagrama entidade-relacionamento</h2>
+<div class="dg"><svg id="er" viewBox="0 0 1300 1070" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagrama entidade-relacionamento do banco do Sentinel"><path class="e" d="M520,293.5 C460,293.5 380,394.5 320,394.5"/>
+<text class="card" x="510" y="287.5" text-anchor="end">1</text>
+<text class="card" x="330" y="388.5" text-anchor="start">N</text>
+<path class="e" d="M180.0,330 L180.0,244"/>
+<text class="card" x="190.0" y="324" text-anchor="start">1</text>
+<text class="card" x="190.0" y="258" text-anchor="start">N</text>
+<path class="e" d="M800,293.5 C860,293.5 930,104.5 990,104.5"/>
+<text class="card" x="810" y="287.5" text-anchor="start">1</text>
+<text class="card" x="980" y="98.5" text-anchor="end">N</text>
+<path class="e lg" d="M800,293.5 C860,293.5 930,304.5 990,304.5"/>
+<text class="card" x="810" y="287.5" text-anchor="start">1</text>
+<text class="card" x="980" y="298.5" text-anchor="end">1</text>
+<path class="e lg" d="M800,293.5 C860,293.5 930,494.5 990,494.5"/>
+<text class="card" x="810" y="287.5" text-anchor="start">1</text>
+<text class="card" x="980" y="488.5" text-anchor="end">N</text>
+<path class="e lg" d="M660.0,454 L660.0,610"/>
+<text class="card" x="670.0" y="468" text-anchor="start">1</text>
+<text class="card" x="670.0" y="604" text-anchor="start">N</text>
+<path class="e lg" d="M520,293.5 C460,293.5 380,944.5 320,944.5"/>
+<text class="card" x="510" y="287.5" text-anchor="end">1</text>
+<text class="card" x="330" y="938.5" text-anchor="start">N</text>
+<path class="e lg" d="M800,293.5 C860,293.5 930,864.5 990,864.5"/>
+<text class="card" x="810" y="287.5" text-anchor="start">1</text>
+<text class="card" x="980" y="858.5" text-anchor="end">N</text>
+<path class="e lg" d="M800,293.5 C860,293.5 930,684.5 990,684.5"/>
+<text class="card" x="810" y="287.5" text-anchor="start">1</text>
+<text class="card" x="980" y="678.5" text-anchor="end">1</text>
+<path class="e lg" d="M180.0,534 L180.0,640"/>
+<text class="card" x="190.0" y="548" text-anchor="start">1</text>
+<text class="card" x="190.0" y="634" text-anchor="start">1</text>
+<path class="e lg" d="M320,373.5 C380,373.5 460,737.5 520,737.5"/>
+<text class="card" x="330" y="367.5" text-anchor="start">1</text>
+<text class="card" x="510" y="731.5" text-anchor="end">N</text>
+<path class="e lg" d="M1270,924.5 h18 v-50 h-140 v20"/><text class="card" x="1200" y="862.5" text-anchor="end">copied_from_id</text>
+<g class="tb">
+<rect class="box" x="380" y="880" width="280" height="99" rx="6"/>
+<path class="hd" d="M380,910 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="392" y="900">app_setting</text>
+<text class="cn" x="414" y="925">setting_key</text><text class="ct" x="650" y="925" text-anchor="end">varchar(100)</text>
+<text class="k PK" x="390" y="925">PK</text>
+<text class="cn" x="414" y="946">setting_value</text><text class="ct" x="650" y="946" text-anchor="end">varchar(2000)</text>
+<text class="cn" x="414" y="967">updated_at</text><text class="ct" x="650" y="967" text-anchor="end">timestamptz</text>
+</g>
+<g class="tb">
+<rect class="box" x="40" y="640" width="280" height="99" rx="6"/>
+<path class="hd" d="M40,670 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="52" y="660">audit_progress</text>
+<text class="cn" x="74" y="685">audit_run_id</text><text class="ct" x="310" y="685" text-anchor="end">bigint</text>
+<text class="k PK" x="50" y="685">PK</text>
+<text class="cn" x="74" y="706">payload</text><text class="ct" x="310" y="706" text-anchor="end">varchar(100000)</text>
+<text class="cn" x="74" y="727">updated_at</text><text class="ct" x="310" y="727" text-anchor="end">timestamptz</text>
+</g>
+<g class="tb">
+<rect class="box" x="40" y="330" width="280" height="204" rx="6"/>
+<path class="hd" d="M40,360 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="52" y="350">audit_run</text>
+<text class="cn" x="74" y="375">id</text><text class="ct" x="310" y="375" text-anchor="end">bigint</text>
+<text class="k PK" x="50" y="375">PK</text>
+<text class="cn" x="74" y="396">system_id</text><text class="ct" x="310" y="396" text-anchor="end">bigint</text>
+<text class="k FK" x="50" y="396">FK</text>
+<text class="cn" x="74" y="417">status</text><text class="ct" x="310" y="417" text-anchor="end">varchar(50)</text>
+<text class="cn" x="74" y="438">overall</text><text class="ct" x="310" y="438" text-anchor="end">double</text>
+<text class="cn" x="74" y="459">started_at</text><text class="ct" x="310" y="459" text-anchor="end">timestamptz</text>
+<text class="cn" x="74" y="480">disabled_sides</text><text class="ct" x="310" y="480" text-anchor="end">varchar(20)</text>
+<text class="cn" x="74" y="501">incomplete</text><text class="ct" x="310" y="501" text-anchor="end">boolean</text>
+<text class="more" x="74" y="522">+ 16 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="520" y="250" width="280" height="204" rx="6"/>
+<path class="hd" d="M520,280 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="532" y="270">audited_system</text>
+<text class="cn" x="554" y="295">id</text><text class="ct" x="790" y="295" text-anchor="end">bigint</text>
+<text class="k PK" x="530" y="295">PK</text>
+<text class="cn" x="554" y="316">name</text><text class="ct" x="790" y="316" text-anchor="end">varchar(255)</text>
+<text class="cn" x="554" y="337">stack</text><text class="ct" x="790" y="337" text-anchor="end">varchar(50)</text>
+<text class="cn" x="554" y="358">source_type</text><text class="ct" x="790" y="358" text-anchor="end">varchar(20)</text>
+<text class="cn" x="554" y="379">repo_url</text><text class="ct" x="790" y="379" text-anchor="end">varchar(500)</text>
+<text class="cn" x="554" y="400">profile</text><text class="ct" x="790" y="400" text-anchor="end">varchar(63)</text>
+<text class="cn" x="554" y="421">team</text><text class="ct" x="790" y="421" text-anchor="end">varchar(255)</text>
+<text class="more" x="554" y="442">+ 17 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="40" y="40" width="280" height="204" rx="6"/>
+<path class="hd" d="M40,70 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="52" y="60">finding</text>
+<text class="cn" x="74" y="85">id</text><text class="ct" x="310" y="85" text-anchor="end">bigint</text>
+<text class="k PK" x="50" y="85">PK</text>
+<text class="cn" x="74" y="106">audit_run_id</text><text class="ct" x="310" y="106" text-anchor="end">bigint</text>
+<text class="k FK" x="50" y="106">FK</text>
+<text class="cn" x="74" y="127">severity</text><text class="ct" x="310" y="127" text-anchor="end">varchar(50)</text>
+<text class="cn" x="74" y="148">category</text><text class="ct" x="310" y="148" text-anchor="end">varchar(50)</text>
+<text class="cn" x="74" y="169">rule_id</text><text class="ct" x="310" y="169" text-anchor="end">varchar(255)</text>
+<text class="cn" x="74" y="190">fingerprint</text><text class="ct" x="310" y="190" text-anchor="end">varchar(64)</text>
+<text class="cn" x="74" y="211">status</text><text class="ct" x="310" y="211" text-anchor="end">varchar(50)</text>
+<text class="more" x="74" y="232">+ 13 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="990" y="40" width="280" height="162" rx="6"/>
+<path class="hd" d="M990,70 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="1002" y="60">finding_suppression</text>
+<text class="cn" x="1024" y="85">id</text><text class="ct" x="1260" y="85" text-anchor="end">bigint</text>
+<text class="k PK" x="1000" y="85">PK</text>
+<text class="cn" x="1024" y="106">system_id</text><text class="ct" x="1260" y="106" text-anchor="end">bigint</text>
+<text class="k FK" x="1000" y="106">FK</text>
+<text class="cn" x="1024" y="127">fingerprint</text><text class="ct" x="1260" y="127" text-anchor="end">varchar(64)</text>
+<text class="cn" x="1024" y="148">reason</text><text class="ct" x="1260" y="148" text-anchor="end">varchar(50)</text>
+<text class="cn" x="1024" y="169">justification</text><text class="ct" x="1260" y="169" text-anchor="end">varchar(1000)</text>
+<text class="more" x="1024" y="190">+ 6 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="990" y="240" width="280" height="162" rx="6"/>
+<path class="hd" d="M990,270 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="1002" y="260">mcp_access</text>
+<text class="cn" x="1024" y="285">id</text><text class="ct" x="1260" y="285" text-anchor="end">bigint</text>
+<text class="k PK" x="1000" y="285">PK</text>
+<text class="cn" x="1024" y="306">system_id</text><text class="ct" x="1260" y="306" text-anchor="end">bigint</text>
+<text class="k FKl" x="1000" y="306">FK*</text>
+<text class="cn" x="1024" y="327">data_level</text><text class="ct" x="1260" y="327" text-anchor="end">varchar(20)</text>
+<text class="cn" x="1024" y="348">enabled</text><text class="ct" x="1260" y="348" text-anchor="end">boolean</text>
+<text class="cn" x="1024" y="369">key_hash</text><text class="ct" x="1260" y="369" text-anchor="end">varchar(64)</text>
+<text class="more" x="1024" y="390">+ 4 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="990" y="430" width="280" height="162" rx="6"/>
+<path class="hd" d="M990,460 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="1002" y="450">mcp_call_log</text>
+<text class="cn" x="1024" y="475">id</text><text class="ct" x="1260" y="475" text-anchor="end">bigint</text>
+<text class="k PK" x="1000" y="475">PK</text>
+<text class="cn" x="1024" y="496">system_id</text><text class="ct" x="1260" y="496" text-anchor="end">bigint</text>
+<text class="k FKl" x="1000" y="496">FK*</text>
+<text class="cn" x="1024" y="517">tool</text><text class="ct" x="1260" y="517" text-anchor="end">varchar(60)</text>
+<text class="cn" x="1024" y="538">ok</text><text class="ct" x="1260" y="538" text-anchor="end">boolean</text>
+<text class="cn" x="1024" y="559">duration_ms</text><text class="ct" x="1260" y="559" text-anchor="end">bigint</text>
+<text class="more" x="1024" y="580">+ 2 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="520" y="610" width="280" height="162" rx="6"/>
+<path class="hd" d="M520,640 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="532" y="630">pending_action</text>
+<text class="cn" x="554" y="655">id</text><text class="ct" x="790" y="655" text-anchor="end">bigint</text>
+<text class="k PK" x="530" y="655">PK</text>
+<text class="cn" x="554" y="676">system_id</text><text class="ct" x="790" y="676" text-anchor="end">bigint</text>
+<text class="k FKl" x="530" y="676">FK*</text>
+<text class="cn" x="554" y="697">kind</text><text class="ct" x="790" y="697" text-anchor="end">varchar(30)</text>
+<text class="cn" x="554" y="718">status</text><text class="ct" x="790" y="718" text-anchor="end">varchar(20)</text>
+<text class="cn" x="554" y="739">result_audit_run_id</text><text class="ct" x="790" y="739" text-anchor="end">bigint</text>
+<text class="k FKl" x="530" y="739">FK*</text>
+<text class="more" x="554" y="760">+ 6 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="40" y="880" width="280" height="141" rx="6"/>
+<path class="hd" d="M40,910 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="52" y="900">review_suggestion</text>
+<text class="cn" x="74" y="925">id</text><text class="ct" x="310" y="925" text-anchor="end">bigint</text>
+<text class="k PK" x="50" y="925">PK</text>
+<text class="cn" x="74" y="946">system_id</text><text class="ct" x="310" y="946" text-anchor="end">bigint</text>
+<text class="k FKl" x="50" y="946">FK*</text>
+<text class="cn" x="74" y="967">title</text><text class="ct" x="310" y="967" text-anchor="end">varchar(200)</text>
+<text class="cn" x="74" y="988">status</text><text class="ct" x="310" y="988" text-anchor="end">varchar(20)</text>
+<text class="more" x="74" y="1009">+ 5 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="990" y="800" width="280" height="162" rx="6"/>
+<path class="hd" d="M990,830 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="1002" y="820">rule_proposal</text>
+<text class="cn" x="1024" y="845">id</text><text class="ct" x="1260" y="845" text-anchor="end">bigint</text>
+<text class="k PK" x="1000" y="845">PK</text>
+<text class="cn" x="1024" y="866">system_id</text><text class="ct" x="1260" y="866" text-anchor="end">bigint</text>
+<text class="k FKl" x="1000" y="866">FK*</text>
+<text class="cn" x="1024" y="887">slug</text><text class="ct" x="1260" y="887" text-anchor="end">varchar(60)</text>
+<text class="cn" x="1024" y="908">stage</text><text class="ct" x="1260" y="908" text-anchor="end">varchar(20)</text>
+<text class="cn" x="1024" y="929">copied_from_id</text><text class="ct" x="1260" y="929" text-anchor="end">bigint</text>
+<text class="k FKl" x="1000" y="929">FK*</text>
+<text class="more" x="1024" y="950">+ 8 colunas…</text>
+</g>
+<g class="tb">
+<rect class="box" x="990" y="620" width="280" height="120" rx="6"/>
+<path class="hd" d="M990,650 v-24 a6,6 0 0 1 6,-6 h268 a6,6 0 0 1 6,6 v24 z"/>
+<text class="tn" x="1002" y="640">system_engine_config</text>
+<text class="cn" x="1024" y="665">id</text><text class="ct" x="1260" y="665" text-anchor="end">bigint</text>
+<text class="k PK" x="1000" y="665">PK</text>
+<text class="cn" x="1024" y="686">system_id</text><text class="ct" x="1260" y="686" text-anchor="end">bigint</text>
+<text class="k FKl" x="1000" y="686">FK*</text>
+<text class="cn" x="1024" y="707">config</text><text class="ct" x="1260" y="707" text-anchor="end">varchar(20000)</text>
+<text class="cn" x="1024" y="728">updated_at</text><text class="ct" x="1260" y="728" text-anchor="end">timestamptz</text>
+</g></svg></div>
+<div class="lg-row"><span><i></i>chave estrangeira no banco</span><span><i class="d"></i>relação lógica (a aplicação garante, o banco não)</span><span><b style="color:var(--pk)">PK</b> chave primária</span><span><b style="color:var(--fk)">FK</b> chave estrangeira · <b style="color:var(--fk)">FK*</b> referência lógica</span><span><b>1</b> um · <b>N</b> muitos</span></div>
+<h2>Como ler</h2>
+<ul>
+<li><b>audited_system</b> é o centro: tudo pertence a um sistema auditado. Cada <b>audit_run</b> (execução) tem muitos <b>finding</b> (achados).</li>
+<li>Só três relações têm chave estrangeira real: <code>audit_run.system_id</code>, <code>finding.audit_run_id</code> e <code>finding_suppression.system_id</code>. As demais (<code>mcp_*</code>, <code>pending_action</code>, <code>review_suggestion</code>, <code>rule_proposal</code>, <code>system_engine_config</code>, <code>audit_progress</code>) guardam o id, mas o banco não impede apagar o pai.</li>
+<li><b>fingerprint</b> é o que liga o mesmo achado entre execuções e as supressões: <code>finding_suppression</code> é única por <code>(system_id, fingerprint)</code>.</li>
+<li>Segredos nunca ficam em texto: tokens e segredos de webhook são cifrados (<code>*_enc</code>) e a chave do MCP guarda só o hash (<code>key_hash</code>).</li>
+<li>Todas as datas são <code>timestamptz</code> (V5: as antigas foram lidas como UTC). <code>audit_run.disabled_sides</code> veio na V6.</li>
+</ul>
+<h2>Tabelas e colunas</h2>
+<details id="t-audited_system"><summary><span class="mono">audited_system</span><span class="d">Sistema auditado: de onde vem o código, perfil, agenda e notificações. Tokens e segredos ficam cifrados (*_enc).</span><span class="n">24 colunas</span></summary><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">audit_interval_hours</td><td class="mono ty">integer</td><td></td><td></td></tr><tr><td class="mono">audit_on_push</td><td class="mono ty">boolean</td><td></td><td></td></tr><tr><td class="mono">created_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr><tr><td class="mono">description</td><td class="mono ty">varchar(1000)</td><td></td><td></td></tr><tr><td class="mono">git_history_depth</td><td class="mono ty">integer</td><td></td><td></td></tr><tr><td class="mono">git_token_enc</td><td class="mono ty">varchar(1000)</td><td></td><td></td></tr><tr><td class="mono">git_token_hosts</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">local_path</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">local_snapshot</td><td class="mono ty">varchar(20)</td><td></td><td></td></tr><tr><td class="mono">name</td><td class="mono ty">varchar(255)</td><td>sim</td><td></td></tr><tr><td class="mono">notify_format</td><td class="mono ty">varchar(20)</td><td></td><td></td></tr><tr><td class="mono">notify_min_score_drop</td><td class="mono ty">double</td><td></td><td></td></tr><tr><td class="mono">notify_min_severity</td><td class="mono ty">varchar(20)</td><td></td><td></td></tr><tr><td class="mono">notify_public_url</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">notify_url_enc</td><td class="mono ty">varchar(1000)</td><td></td><td></td></tr><tr><td class="mono">profile</td><td class="mono ty">varchar(63)</td><td></td><td></td></tr><tr><td class="mono">repo_url</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">scheduled_branch</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">source_type</td><td class="mono ty">varchar(20)</td><td></td><td></td></tr><tr><td class="mono">stack</td><td class="mono ty">varchar(50)</td><td>sim</td><td></td></tr><tr><td class="mono">team</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">updated_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">webhook_secret_enc</td><td class="mono ty">varchar(1000)</td><td></td><td></td></tr></tbody></table></details><details id="t-audit_run"><summary><span class="mono">audit_run</span><span class="d">Uma execução de auditoria: pontuações por dimensão, status e quais lados (regras/ferramentas) rodaram.</span><span class="n">23 colunas</span></summary><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">base_ref</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">branch</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">commit_sha</td><td class="mono ty">varchar(64)</td><td></td><td></td></tr><tr><td class="mono">completed_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">context_json</td><td class="mono ty">text</td><td></td><td></td></tr><tr><td class="mono">error_message</td><td class="mono ty">varchar(1000)</td><td></td><td></td></tr><tr><td class="mono">incomplete</td><td class="mono ty">boolean</td><td></td><td></td></tr><tr><td class="mono">incomplete_reasons</td><td class="mono ty">varchar(1000)</td><td></td><td></td></tr><tr><td class="mono">lines_of_code</td><td class="mono ty">bigint</td><td></td><td></td></tr><tr><td class="mono">architecture</td><td class="mono ty">double</td><td></td><td></td></tr><tr><td class="mono">dependencies</td><td class="mono ty">double</td><td></td><td></td></tr><tr><td class="mono">observability</td><td class="mono ty">double</td><td></td><td></td></tr><tr><td class="mono">overall</td><td class="mono ty">double</td><td></td><td></td></tr><tr><td class="mono">performance</td><td class="mono ty">double</td><td></td><td></td></tr><tr><td class="mono">quality</td><td class="mono ty">double</td><td></td><td></td></tr><tr><td class="mono">security</td><td class="mono ty">double</td><td></td><td></td></tr><tr><td class="mono">sbom_json</td><td class="mono ty">text</td><td></td><td></td></tr><tr><td class="mono">started_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">status</td><td class="mono ty">varchar(50)</td><td>sim</td><td></td></tr><tr><td class="mono">triggered_by</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">system_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK</b> <span class="ref">→ audited_system.id</span></td></tr><tr><td class="mono">disabled_sides</td><td class="mono ty">varchar(20)</td><td></td><td></td></tr></tbody></table></details><details id="t-finding"><summary><span class="mono">finding</span><span class="d">Achado de uma auditoria: severidade, categoria, regra, arquivo e linha. fingerprint liga o mesmo achado entre execuções.</span><span class="n">20 colunas</span></summary><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">ai_recommendation</td><td class="mono ty">varchar(2000)</td><td></td><td></td></tr><tr><td class="mono">category</td><td class="mono ty">varchar(50)</td><td>sim</td><td></td></tr><tr><td class="mono">code_snippet</td><td class="mono ty">varchar(2000)</td><td></td><td></td></tr><tr><td class="mono">confidence</td><td class="mono ty">varchar(10)</td><td></td><td></td></tr><tr><td class="mono">confidence_reason</td><td class="mono ty">varchar(300)</td><td></td><td></td></tr><tr><td class="mono">created_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr><tr><td class="mono">cve_id</td><td class="mono ty">varchar(50)</td><td></td><td></td></tr><tr><td class="mono">description</td><td class="mono ty">varchar(2000)</td><td></td><td></td></tr><tr><td class="mono">file_path</td><td class="mono ty">varchar(1000)</td><td></td><td></td></tr><tr><td class="mono">fingerprint</td><td class="mono ty">varchar(64)</td><td></td><td></td></tr><tr><td class="mono">is_new</td><td class="mono ty">boolean</td><td></td><td></td></tr><tr><td class="mono">line_number</td><td class="mono ty">integer</td><td></td><td></td></tr><tr><td class="mono">rule_id</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">severity</td><td class="mono ty">varchar(50)</td><td>sim</td><td></td></tr><tr><td class="mono">shadow</td><td class="mono ty">boolean</td><td></td><td></td></tr><tr><td class="mono">status</td><td class="mono ty">varchar(50)</td><td>sim</td><td></td></tr><tr><td class="mono">title</td><td class="mono ty">varchar(500)</td><td>sim</td><td></td></tr><tr><td class="mono">tool_source</td><td class="mono ty">varchar(100)</td><td></td><td></td></tr><tr><td class="mono">audit_run_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK</b> <span class="ref">→ audit_run.id</span></td></tr></tbody></table></details><details id="t-finding_suppression"><summary><span class="mono">finding_suppression</span><span class="d">Decisão de suprimir um achado (falso positivo, risco aceito, não corrigir), por fingerprint.</span><span class="n">11 colunas</span></summary><p class="uk">Único: (system_id, fingerprint)</p><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">created_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr><tr><td class="mono">created_by</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">expires_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">file_path</td><td class="mono ty">varchar(1000)</td><td></td><td></td></tr><tr><td class="mono">fingerprint</td><td class="mono ty">varchar(64)</td><td>sim</td><td></td></tr><tr><td class="mono">justification</td><td class="mono ty">varchar(1000)</td><td>sim</td><td></td></tr><tr><td class="mono">reason</td><td class="mono ty">varchar(50)</td><td>sim</td><td></td></tr><tr><td class="mono">rule_id</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">title</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">system_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK</b> <span class="ref">→ audited_system.id</span></td></tr></tbody></table></details><details id="t-audit_progress"><summary><span class="mono">audit_progress</span><span class="d">Progresso ao vivo da execução em andamento (1 linha por audit_run, descartável).</span><span class="n">3 colunas</span></summary><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">audit_run_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> <span class="ref">→ audit_run.id (lógica)</span></td></tr><tr><td class="mono">payload</td><td class="mono ty">varchar(100000)</td><td>sim</td><td></td></tr><tr><td class="mono">updated_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr></tbody></table></details><details id="t-mcp_access"><summary><span class="mono">mcp_access</span><span class="d">Acesso do servidor MCP ao sistema: chave (só o hash), nível de dados e ferramentas liberadas.</span><span class="n">9 colunas</span></summary><p class="uk">Único: (system_id)</p><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">data_level</td><td class="mono ty">varchar(20)</td><td>sim</td><td></td></tr><tr><td class="mono">enabled</td><td class="mono ty">boolean</td><td>sim</td><td></td></tr><tr><td class="mono">key_created_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">key_hash</td><td class="mono ty">varchar(64)</td><td></td><td></td></tr><tr><td class="mono">key_prefix</td><td class="mono ty">varchar(16)</td><td></td><td></td></tr><tr><td class="mono">system_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK*</b> <span class="ref">→ audited_system.id (lógica)</span></td></tr><tr><td class="mono">tools</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">updated_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr></tbody></table></details><details id="t-mcp_call_log"><summary><span class="mono">mcp_call_log</span><span class="d">Registro de cada chamada MCP: ferramenta, duração e se deu certo.</span><span class="n">7 colunas</span></summary><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">called_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr><tr><td class="mono">detail</td><td class="mono ty">varchar(300)</td><td></td><td></td></tr><tr><td class="mono">duration_ms</td><td class="mono ty">bigint</td><td></td><td></td></tr><tr><td class="mono">ok</td><td class="mono ty">boolean</td><td>sim</td><td></td></tr><tr><td class="mono">system_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK*</b> <span class="ref">→ audited_system.id (lógica)</span></td></tr><tr><td class="mono">tool</td><td class="mono ty">varchar(60)</td><td>sim</td><td></td></tr></tbody></table></details><details id="t-pending_action"><summary><span class="mono">pending_action</span><span class="d">Ação pedida por um agente via MCP que espera aprovação humana (iniciar auditoria ou suprimir achado).</span><span class="n">11 colunas</span></summary><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">created_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr><tr><td class="mono">decided_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">expires_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr><tr><td class="mono">kind</td><td class="mono ty">varchar(30)</td><td>sim</td><td></td></tr><tr><td class="mono">payload</td><td class="mono ty">varchar(2000)</td><td>sim</td><td></td></tr><tr><td class="mono">result_audit_run_id</td><td class="mono ty">bigint</td><td></td><td><b class=kb>FK*</b> <span class="ref">→ audit_run.id (lógica)</span></td></tr><tr><td class="mono">result_note</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">status</td><td class="mono ty">varchar(20)</td><td>sim</td><td></td></tr><tr><td class="mono">summary</td><td class="mono ty">varchar(600)</td><td>sim</td><td></td></tr><tr><td class="mono">system_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK*</b> <span class="ref">→ audited_system.id (lógica)</span></td></tr></tbody></table></details><details id="t-review_suggestion"><summary><span class="mono">review_suggestion</span><span class="d">Sugestão de revisão de código para um sistema, com arquivo e linha.</span><span class="n">9 colunas</span></summary><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">created_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr><tr><td class="mono">detail</td><td class="mono ty">varchar(2000)</td><td></td><td></td></tr><tr><td class="mono">file_path</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">line_number</td><td class="mono ty">integer</td><td></td><td></td></tr><tr><td class="mono">rule_ref</td><td class="mono ty">varchar(255)</td><td></td><td></td></tr><tr><td class="mono">status</td><td class="mono ty">varchar(20)</td><td>sim</td><td></td></tr><tr><td class="mono">system_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK*</b> <span class="ref">→ audited_system.id (lógica)</span></td></tr><tr><td class="mono">title</td><td class="mono ty">varchar(200)</td><td>sim</td><td></td></tr></tbody></table></details><details id="t-rule_proposal"><summary><span class="mono">rule_proposal</span><span class="d">Regra Semgrep proposta, que passa por revisão, amostra e observação até ser promovida.</span><span class="n">13 colunas</span></summary><p class="uk">Único: (system_id, slug)</p><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">copied_from_id</td><td class="mono ty">bigint</td><td></td><td><b class=kb>FK*</b> <span class="ref">→ rule_proposal.id (lógica)</span></td></tr><tr><td class="mono">created_at</td><td class="mono ty">timestamptz</td><td>sim</td><td></td></tr><tr><td class="mono">decided_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">decision_note</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">observation_started_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">rationale</td><td class="mono ty">varchar(2000)</td><td></td><td></td></tr><tr><td class="mono">sample_note</td><td class="mono ty">varchar(500)</td><td></td><td></td></tr><tr><td class="mono">semgrep_yaml</td><td class="mono ty">varchar(8000)</td><td>sim</td><td></td></tr><tr><td class="mono">slug</td><td class="mono ty">varchar(60)</td><td>sim</td><td></td></tr><tr><td class="mono">stage</td><td class="mono ty">varchar(20)</td><td>sim</td><td></td></tr><tr><td class="mono">system_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK*</b> <span class="ref">→ audited_system.id (lógica)</span></td></tr><tr><td class="mono">title</td><td class="mono ty">varchar(200)</td><td>sim</td><td></td></tr></tbody></table></details><details id="t-system_engine_config"><summary><span class="mono">system_engine_config</span><span class="d">Configuração do motor por sistema (JSON), uma por sistema.</span><span class="n">4 colunas</span></summary><p class="uk">Único: (system_id)</p><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">config</td><td class="mono ty">varchar(20000)</td><td>sim</td><td></td></tr><tr><td class="mono">system_id</td><td class="mono ty">bigint</td><td>sim</td><td><b class=kb>FK*</b> <span class="ref">→ audited_system.id (lógica)</span></td></tr><tr><td class="mono">updated_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr></tbody></table></details><details id="t-app_setting"><summary><span class="mono">app_setting</span><span class="d">Configurações globais da aplicação (chave e valor).</span><span class="n">3 colunas</span></summary><table><thead><tr><th>Coluna</th><th>Tipo</th><th>Obrigatória</th><th>Chave</th></tr></thead><tbody><tr><td class="mono">setting_key</td><td class="mono ty">varchar(100)</td><td>sim</td><td><b class=kb>PK</b> </td></tr><tr><td class="mono">updated_at</td><td class="mono ty">timestamptz</td><td></td><td></td></tr><tr><td class="mono">setting_value</td><td class="mono ty">varchar(2000)</td><td>sim</td><td></td></tr></tbody></table></details>
+<h2>Histórico das migrações</h2>
+<ul><li><b>V1</b> baseline com as 12 tabelas, chaves, únicos e índices.</li><li><b>V2</b> remove checagens antigas de status e categoria em bancos legados.</li><li><b>V3</b> remove o índice redundante <code>idx_suppression_system</code>.</li><li><b>V4</b> completa bancos antigos (cria o que faltar, sem alterar o que existe).</li><li><b>V5</b> todas as datas passam para <code>timestamptz</code>.</li><li><b>V6</b> adiciona <code>audit_run.disabled_sides</code>.</li></ul>
+</div></body></html>

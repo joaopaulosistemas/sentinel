@@ -17,8 +17,8 @@ exclude:
   - "audit-api/joern/testes/**"
   # Gerado por scripts/gerar-arquitetura-html.py a partir do ARQUITETURA.md (o estilo inline é do gerador).
   - "docs/arquitetura/ARQUITETURA.html"
-  # Referência do schema para leitura; o schema real é gerado pelo Hibernate.
-  - "docs/schema-referencia.sql"
+  # Diagrama do banco: página HTML única, com estilo inline (como o ARQUITETURA.html).
+  - "docs/referencia/banco-de-dados.html"
 
 # Achados aceitos: continuam na lista, marcados como suprimidos, e não pesam na nota.
 suppress:
