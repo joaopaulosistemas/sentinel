@@ -58,7 +58,7 @@ espera_codigo 403 "executor NÃO lê configurações" "$(codigo GET /api/v1/sett
 espera_codigo 200 "admin lê configurações" "$(codigo GET /api/v1/settings "$ADMIN")"
 
 echo "== Tela de login (tema do Sentinel)"
-TELA="$(curl -sS "$REALM/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid")"
+TELA="$(curl -sS "$REALM/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256")"
 echo "$TELA" | grep -q 'sentinel.css' && ok "a tela de login usa o CSS do tema sentinel" || falha "a tela de login não referencia sentinel.css (tema não aplicado)"
 echo "$TELA" | grep -qi 'lang="pt-BR"' && ok "a tela de login está em português" || falha "a tela de login não está em pt-BR"
 CSS_URL="$(echo "$TELA" | grep -o '[^"]*sentinel\.css' | head -1)"

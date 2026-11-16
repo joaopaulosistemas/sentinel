@@ -29,9 +29,9 @@ jobs:
         run: |
           npx --yes playwright@1.49.1 install --with-deps chromium >/dev/null 2>&1
           npx --yes playwright@1.49.1 screenshot --viewport-size=1280,760 --wait-for-timeout=1500 \
-            "http://localhost:8180/realms/sentinel/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid" tela-login.png
+            "http://localhost:8180/realms/sentinel/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256" tela-login.png
           npx --yes playwright@1.49.1 screenshot --viewport-size=390,800 --wait-for-timeout=1500 \
-            "http://localhost:8180/realms/sentinel/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid" tela-login-celular.png
+            "http://localhost:8180/realms/sentinel/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256" tela-login-celular.png
       - name: Guardar as capturas
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
