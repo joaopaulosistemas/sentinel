@@ -24,6 +24,21 @@ jobs:
         run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --no-build postgres keycloak audit-api audit-dashboard
       - name: Conferir token, papéis e painel
         run: bash scripts/verificar-login-keycloak.sh
+      - name: Captura da tela de login
+        if: always()
+        run: |
+          npx --yes playwright@1.49.1 install --with-deps chromium >/dev/null 2>&1
+          npx --yes playwright@1.49.1 screenshot --viewport-size=1280,760 --wait-for-timeout=1500 \
+            "http://localhost:8180/realms/sentinel/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid" tela-login.png
+          npx --yes playwright@1.49.1 screenshot --viewport-size=390,800 --wait-for-timeout=1500 \
+            "http://localhost:8180/realms/sentinel/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid" tela-login-celular.png
+      - name: Guardar as capturas
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tela-login-keycloak
+          path: tela-login*.png
+          if-no-files-found: ignore
       - name: Logs em caso de falha
         if: failure()
         run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml logs --tail 80 keycloak audit-api audit-dashboard

@@ -16,6 +16,7 @@ services:
       KC_HTTP_ENABLED: "true"
     volumes:
       - ./deploy/keycloak/realm-sentinel.json:/opt/keycloak/data/import/realm-sentinel.json:ro
+      - ./deploy/keycloak/themes/sentinel:/opt/keycloak/themes/sentinel:ro
     ports:
       - "127.0.0.1:8180:8080"
     restart: unless-stopped

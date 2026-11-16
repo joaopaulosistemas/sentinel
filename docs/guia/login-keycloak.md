@@ -54,3 +54,7 @@ A API só aceita um token que (1) tenha assinatura válida do Keycloak, (2) venh
 As senhas e o `start-dev` são só para teste. Em produção, use um Keycloak real e configure na API `QUARKUS_PROFILE=oidc`, `OIDC_AUTH_SERVER_URL`, `OIDC_CLIENT_ID` e `OIDC_AUDIENCE`, e no painel `OIDC_AUTHORITY`, `OIDC_CLIENT_ID` e `OIDC_ORIGIN`. A imagem da API precisa do build arg `WITH_OIDC=true`. O Helm ainda não tem este modo. Limitação: o login separa por papel, não por squad.
 
 Verificação de ponta a ponta: `scripts/verificar-login-keycloak.sh` (roda no CI no workflow "Login com Keycloak").
+
+## Tela de login (tema do Sentinel)
+
+A tela de login do Keycloak usa o tema `sentinel` (`deploy/keycloak/themes/sentinel/login/`): painel de marca escuro à esquerda e formulário claro à direita, com a IBM Plex Sans (fonte do painel, em `resources/fonts`, licença OFL) e as cores da paleta Suave. É só CSS sobre o tema padrão `keycloak.v2`, ligado pelo realm (`loginTheme`) e montado no container pelo overlay do Compose. O realm também fica em português (`pt-BR`). Para trocar a frase ou as cores, edite `resources/css/sentinel.css` e reinicie o Keycloak. O workflow "Login com Keycloak" guarda uma captura da tela (artefato `tela-login-keycloak`).

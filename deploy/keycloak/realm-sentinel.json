@@ -128,5 +128,11 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": true
     }
-  ]
+  ],
+  "loginTheme": "sentinel",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "pt-BR"
+  ],
+  "defaultLocale": "pt-BR"
 }
