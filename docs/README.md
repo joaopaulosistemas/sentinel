@@ -7,6 +7,7 @@
 |---|---|
 | [guia/instalacao.md](guia/instalacao.md) | Subir com Compose, rodar em modo desenvolvimento, primeira auditoria, CLI para CI/CD, estrutura do projeto, migração de instalação antiga |
 | [guia/certificados.md](guia/certificados.md) | Rede com inspeção SSL: instalar o CA da empresa na imagem |
+| [guia/observabilidade.md](guia/observabilidade.md) | Painel no Grafana, métricas, logs, traces e alertas (Slack/Teams), com a pilha de `deploy/observabilidade/` |
 | [guia/cache-maven.md](guia/cache-maven.md) | Cache Maven do host para o Trivy resolver POMs sem ir ao Maven Central (`M2_HOST_DIR`, `TRIVY_OFFLINE`) |
 | [pasta-local/README.md](pasta-local/README.md) | Auditar uma pasta local sem Git |
 | [evidencias/README.md](evidencias/README.md) | Evidências offline (schema, planos, cobertura, heap) |
