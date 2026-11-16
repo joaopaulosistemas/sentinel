@@ -57,6 +57,15 @@ espera_codigo 400 "executor dispara auditoria (passou pelo papel; corpo vazio é
 espera_codigo 403 "executor NÃO lê configurações" "$(codigo GET /api/v1/settings "$EXEC")"
 espera_codigo 200 "admin lê configurações" "$(codigo GET /api/v1/settings "$ADMIN")"
 
+echo "== Tela de login (tema do Sentinel)"
+TELA="$(curl -sS "$REALM/protocol/openid-connect/auth?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/&response_type=code&scope=openid&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256")"
+echo "$TELA" | grep -q 'sentinel.css' && ok "a tela de login usa o CSS do tema sentinel" || falha "a tela de login não referencia sentinel.css (tema não aplicado)"
+echo "$TELA" | grep -qi 'lang="pt-BR"' && ok "a tela de login está em português" || falha "a tela de login não está em pt-BR"
+CSS_URL="$(echo "$TELA" | grep -o '[^"]*sentinel\.css' | head -1)"
+case "$CSS_URL" in http*) ;; /*) CSS_URL="$KC$CSS_URL" ;; esac
+curl -fsS "$CSS_URL" 2>/dev/null | grep -q 'IBM Plex Sans' && ok "o CSS do tema é servido (IBM Plex Sans)" || falha "CSS do tema não servido: $CSS_URL"
+curl -fsS -o /dev/null "${CSS_URL%css/sentinel.css}fonts/ibm-plex-sans-latin-400-normal.woff2" && ok "a fonte do tema é servida" || falha "fonte do tema não servida"
+
 echo "== Painel"
 curl -fsS "$PAINEL/config.json" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["oidcAuthority"].endswith("/realms/sentinel") and d["oidcClientId"]=="sentinel-dashboard" else 1)' \
   && ok "o painel publica a configuração do login" || falha "config.json do painel"
