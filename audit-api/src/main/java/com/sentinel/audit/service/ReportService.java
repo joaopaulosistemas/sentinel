@@ -15,7 +15,6 @@ import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.Severity;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,6 @@ public class ReportService {
     private static final int SHORT_SHA_CHARS = 7;
 
 
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     public String generateHtmlReport(AuditRun run, List<Finding> findings) {
         List<Finding> active = findings.stream().filter(f -> f.getStatus() != FindingStatus.SUPPRESSED).toList();
@@ -57,8 +55,8 @@ public class ReportService {
                 .append(meta("Branch", esc(run.getBranch())))
                 .append(meta("Commit", esc(shortSha(run.getCommitSha()))))
                 .append(meta("Executado por", esc(run.getTriggeredBy())))
-                .append(meta("Início", run.getStartedAt() != null ? run.getStartedAt().format(DATE_FMT) : "—"))
-                .append(meta("Conclusão", run.getCompletedAt() != null ? run.getCompletedAt().format(DATE_FMT) : "—"))
+                .append(meta("Início", run.getStartedAt() != null ? HorarioDeExibicao.formatar(run.getStartedAt()) : "—"))
+                .append(meta("Conclusão", run.getCompletedAt() != null ? HorarioDeExibicao.formatar(run.getCompletedAt()) : "—"))
                 .append("</dl>");
 
         appendSummary(h, run, active, suppressed);
@@ -170,7 +168,7 @@ public class ReportService {
         h.append("<h1>Relatório executivo</h1><dl class=\"meta\">")
                 .append(meta("Sistema", esc(run.getSystem().getName())))
                 .append(meta("Auditoria", "#" + run.getId() + " · " + esc(run.getBranch())))
-                .append(meta("Concluída em", run.getCompletedAt() != null ? run.getCompletedAt().format(DATE_FMT) : "—"))
+                .append(meta("Concluída em", run.getCompletedAt() != null ? HorarioDeExibicao.formatar(run.getCompletedAt()) : "—"))
                 .append("</dl>");
         appendExecutiveScore(h, executiveScore(run, plan), scoreDelta, target, run);
 
@@ -255,7 +253,7 @@ public class ReportService {
         for (TrendPoint p : points) {
             Double change = previous == null || p.overall() == null ? null : p.overall() - previous;
             h.append("<tr><td>#").append(p.auditId()).append("</td><td>").append(esc(p.branch())).append("</td><td>")
-                    .append(p.completedAt() == null ? "—" : p.completedAt().format(DATE_FMT)).append("</td><td>").append(fmt(p.overall()))
+                    .append(p.completedAt() == null ? "—" : HorarioDeExibicao.formatar(p.completedAt())).append("</td><td>").append(fmt(p.overall()))
                     .append("</td><td>").append(change == null ? "—" : (change > 0 ? "+" : "") + fmt(change)).append("</td><td>")
                     .append(p.findings().getOrDefault(Severity.CRITICAL, 0L)).append("</td><td>")
                     .append(p.findings().getOrDefault(Severity.HIGH, 0L)).append("</td><td>")

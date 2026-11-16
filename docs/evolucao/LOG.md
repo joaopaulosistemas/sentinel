@@ -1715,3 +1715,7 @@ Dos 416 achados, a maioria era ruído, não defeito:
 ### Build da imagem em rede com inspeção de TLS
 
 O `pip` das ferramentas de mercado (njsscan, checkov, sqlfluff) falhava com `CERTIFICATE_VERIFY_FAILED`: o CA corporativo só era instalado no fim do Dockerfile, depois das ferramentas, e o `pip` usa o próprio pacote de certificados. Agora o CA entra antes das ferramentas e o `pip` usa o bundle do sistema (`PIP_CERT`). O Compose passa `INSECURE_SSL` (padrão `false`) como argumento de build, que antes só existia no `docker build` manual.
+
+### Hora dos relatórios no fuso de Brasília
+
+Os relatórios (HTML e PDF) formatavam as datas no relógio do contêiner (UTC), 3 horas à frente de Brasília. O painel já mostrava certo (o navegador converte o instante com fuso que a API manda). Agora `HorarioDeExibicao` converte a data gravada para `REPORT_TIMEZONE` (padrão `America/Sao_Paulo`); o banco não muda, então as auditorias antigas também saem certas.
