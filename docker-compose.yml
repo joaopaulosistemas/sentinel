@@ -54,6 +54,7 @@ services:
         WITH_MARKET_TOOLS: ${WITH_MARKET_TOOLS:-true}
         WITH_HADOLINT: ${WITH_HADOLINT:-false}
         WITH_JOERN: ${WITH_JOERN:-false}
+        INSECURE_SSL: ${INSECURE_SSL:-false}  # true só em rede que reassina o TLS e sem o CA em audit-api/certs/ (desliga a verificação SÓ no build)
         HTTP_PROXY: ${HTTP_PROXY:-}
         HTTPS_PROXY: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-}
