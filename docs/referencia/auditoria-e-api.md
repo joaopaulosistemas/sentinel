@@ -57,13 +57,15 @@ API: `GET /api/v1/settings`, `PUT /api/v1/settings` (`{"values": {"CHAVE": "valo
 
 ## Login corporativo (OIDC/Keycloak) — opcional
 
+Guia completo, com usuários de teste, papéis e como criar usuários: [login com Keycloak](../guia/login-keycloak.md).
+
 ```bash
-mvn package -Poidc -f audit-api/pom.xml          # inclui quarkus-oidc
-export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/realms/sentinel OIDC_CLIENT_ID=sentinel-audit
-# deixe API_KEY vazia: a autenticação passa a ser o token Bearer do provedor
+docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --build   # protótipo local
+# ou, fora do Compose: mvn package -Poidc -f audit-api/pom.xml e
+export QUARKUS_PROFILE=oidc OIDC_AUTH_SERVER_URL=https://keycloak.exemplo.com/realms/sentinel OIDC_CLIENT_ID=sentinel-api
 ```
 
-`/api/v1/health` e os webhooks seguem públicos. **Limitação:** isto autentica; não separa dados por squad. Isso exigiria filtrar sistemas pela claim do token e ainda não foi feito.
+A API valida assinatura, emissor e audiência (`OIDC_AUDIENCE`, padrão `sentinel-api`) e aplica dois papéis: `sentinel-admin` (tudo) e `sentinel-executor` (consulta e dispara auditorias; 403 em cadastros e configurações). `GET /api/v1/me` devolve o usuário e os papéis. `/api/v1/health` e os webhooks seguem públicos. **Limitação:** separa por papel, não por squad (isso exigiria filtrar sistemas pela claim do token).
 
 ---
 
