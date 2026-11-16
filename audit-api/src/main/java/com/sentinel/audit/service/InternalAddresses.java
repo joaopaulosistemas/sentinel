@@ -6,6 +6,11 @@ import java.net.InetAddress;
 final class InternalAddresses {
 
     private static final int IPV4_BYTES = 4;
+    private static final int BYTE_MASK = 0xff;
+    private static final int CGNAT_MASK = 0xc0;
+    private static final int CGNAT_PREFIX = 64;
+    private static final int BENCHMARK_MASK = 0xfe;
+    private static final int BENCHMARK_PREFIX = 18;
     private static final int IPV6_BYTES = 16;
     private static final int IPV6_ULA_MASK = 0xfe;
     private static final int IPV6_ULA_PREFIX = 0xfc;
