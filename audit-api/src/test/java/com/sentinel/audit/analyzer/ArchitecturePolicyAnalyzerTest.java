@@ -337,7 +337,7 @@ class ArchitecturePolicyAnalyzerTest {
     void pacoteHexagonalPegaDominioQueConheceAdaptadorEFrameworkMasAceitaNucleoLimpo() throws IOException {
         Path proj = project(
                 "src/main/java/app/domain/Pedido.java",
-                "package app.domain;\nimport app.adapter.out.PedidoJpa;\nimport jakarta.persistence.Entity;\n@Transactional class Pedido {}\n",
+                "package app.domain;\nimport app.adapter.out.PedidoJpa;\nimport jakarta.persistence.Entity;\nimport org.springframework.stereotype.Component;\n@Transactional class Pedido {}\n",
                 "src/main/java/app/application/CriarPedido.java",
                 "package app.application;\nimport app.domain.Pedido;\nimport app.adapter.out.PedidoJpa;\nimport jakarta.ws.rs.core.Response;\nclass CriarPedido {}\n",
                 "src/main/java/app/adapter/in/rest/PedidoResource.java",
@@ -348,8 +348,35 @@ class ArchitecturePolicyAnalyzerTest {
         List<String> ids = ruleIds(analyze(proj, builtin("arq-hexagonal")));
 
         assertEquals(List.of("sentinel-arch-conv-aplicacao-sem-web", "sentinel-arch-conv-dominio-sem-framework",
-                "sentinel-arch-conv-dominio-sem-transacao", "sentinel-arch-layer-adapter-in-adapter-out",
+                "sentinel-arch-conv-dominio-sem-persistencia", "sentinel-arch-conv-dominio-sem-transacao", "sentinel-arch-layer-adapter-in-adapter-out",
                 "sentinel-arch-layer-application-adapter-out", "sentinel-arch-layer-domain-adapter-out"), ids);
+    }
+
+    @Test
+    void pacoteHexagonalTrataJpaNoDominioComoMediaEPacotesModelComoDominio() throws IOException {
+        Path proj = project(
+                "src/main/java/app/lending/model/Patron.java",
+                "package app.lending.model;\nimport jakarta.persistence.Entity;\nimport app.lending.infrastructure.PatronJpa;\nclass Patron {}\n",
+                "src/main/java/app/lending/infrastructure/PatronJpa.java",
+                "package app.lending.infrastructure;\nclass PatronJpa {}\n");
+
+        List<Finding> fs = analyze(proj, builtin("arq-hexagonal"));
+
+        assertEquals(List.of("sentinel-arch-conv-dominio-sem-persistencia", "sentinel-arch-layer-domain-adapter-out"), ruleIds(fs));
+        assertEquals("medium", fs.stream().filter(f -> f.getRuleId().endsWith("sem-persistencia")).findFirst().orElseThrow()
+                .getSeverity().name().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    @Test
+    void pacoteHexagonalNaoTrataModelDeAdaptadorNemDeAplicacaoComoDominio() throws IOException {
+        Path proj = project(
+                "src/main/java/app/adapter/out/model/Linha.java",
+                "package app.adapter.out.model;\nimport jakarta.persistence.Entity;\nimport app.domain.Pedido;\nclass Linha {}\n",
+                "src/main/java/app/domain/Pedido.java", "package app.domain;\nclass Pedido {}\n",
+                "src/main/java/app/application/model/Comando.java",
+                "package app.application.model;\nimport app.domain.Pedido;\nclass Comando {}\n");
+
+        assertEquals(List.of(), rules(analyze(proj, builtin("arq-hexagonal"))));
     }
 
     @Test

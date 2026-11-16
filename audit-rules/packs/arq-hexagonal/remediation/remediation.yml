@@ -25,6 +25,11 @@
   refs:
     - "https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"
 
+- key: "sentinel-arch-conv-dominio-sem-persistencia"
+  summary: "Se quiser o domínio puro, mova as anotações JPA para um modelo de persistência no adaptador de saída, com um mapeador. Se aceitou o trade-off, suprima este achado."
+  refs:
+    - "https://www.baeldung.com/hexagonal-architecture-ddd-spring"
+
 - key: "sentinel-arch-conv-dominio-sem-transacao"
   summary: "Abra a transação no caso de uso (aplicação)."
 
