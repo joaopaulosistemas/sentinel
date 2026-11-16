@@ -373,7 +373,7 @@ jobs:
           name: esquema-postgres
           path: ${{ runner.temp }}/schema.sql
           if-no-files-found: ignore
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
       - name: Conferir a fonte única da versão
         run: python3 scripts/sincronizar-versao.py --check
       - name: Conferir os números da documentação
