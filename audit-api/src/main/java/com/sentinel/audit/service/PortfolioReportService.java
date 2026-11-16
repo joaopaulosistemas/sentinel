@@ -8,7 +8,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -27,7 +26,6 @@ public class PortfolioReportService {
     private static final int REPORT_BUFFER_CHARS = 4096;
 
 
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @Inject
     PdfReportService pdf;
@@ -197,7 +195,7 @@ public class PortfolioReportService {
     }
 
     private static String date(LocalDateTime t) {
-        return t == null ? "-" : t.format(DATE_FMT);
+        return t == null ? "-" : HorarioDeExibicao.formatar(t);
     }
 
     private static String nz(String s) {

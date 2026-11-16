@@ -21,7 +21,6 @@ import org.openpdf.text.pdf.PdfWriter;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -47,7 +46,6 @@ public class PdfReportService {
     private static final char LAST_LATIN1 = 0xFF;
 
 
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final Font H1 = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
     private static final Font H2 = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13);
     private static final Font BODY = FontFactory.getFont(FontFactory.HELVETICA, 10);
@@ -179,7 +177,7 @@ public class PdfReportService {
         for (TrendPoint p : points) {
             Double change = previous == null || p.overall() == null ? null : p.overall() - previous;
             rows.add(List.of("#" + p.auditId(), nz(p.branch()),
-                    p.completedAt() == null ? "-" : p.completedAt().format(DATE_FMT), fmt(p.overall()),
+                    p.completedAt() == null ? "-" : HorarioDeExibicao.formatar(p.completedAt()), fmt(p.overall()),
                     change == null ? "-" : (change > 0 ? "+" : "") + fmt(change),
                     String.valueOf(p.findings().getOrDefault(Severity.CRITICAL, 0L)),
                     String.valueOf(p.findings().getOrDefault(Severity.HIGH, 0L)),
@@ -254,8 +252,8 @@ public class PdfReportService {
         doc.add(new Paragraph("Auditoria #" + run.getId() + " | Branch: " + clean(nz(run.getBranch()))
                 + " | Commit: " + clean(ReportService.shortSha(run.getCommitSha()))
                 + " | Executado por: " + clean(nz(run.getTriggeredBy())), BODY));
-        doc.add(new Paragraph("Início: " + (run.getStartedAt() == null ? "-" : run.getStartedAt().format(DATE_FMT))
-                + " | Conclusão: " + (run.getCompletedAt() == null ? "-" : run.getCompletedAt().format(DATE_FMT)), BODY));
+        doc.add(new Paragraph("Início: " + (run.getStartedAt() == null ? "-" : HorarioDeExibicao.formatar(run.getStartedAt()))
+                + " | Conclusão: " + (run.getCompletedAt() == null ? "-" : HorarioDeExibicao.formatar(run.getCompletedAt())), BODY));
     }
 
     private static Paragraph h2(String text) {
