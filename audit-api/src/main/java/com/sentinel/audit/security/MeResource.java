@@ -9,6 +9,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -25,7 +26,12 @@ import java.util.TreeSet;
 public class MeResource {
 
     /** Resposta: {@code authMode} é oidc, api-key ou open. */
-    public record Me(String authMode, String username, List<String> roles, boolean admin, boolean canExecute) {
+    public record Me(
+            @Schema(description = "Como a API autentica: oidc (login corporativo), api-key ou open (sem proteção).", example = "oidc") String authMode,
+            @Schema(description = "Nome de usuário (preferred_username do token); vazio fora do modo oidc.", example = "executor") String username,
+            @Schema(description = "Papéis do usuário (sentinel-admin, sentinel-executor).") List<String> roles,
+            @Schema(description = "Pode administrar: cadastros e configurações.", example = "false") boolean admin,
+            @Schema(description = "Pode disparar auditorias.", example = "true") boolean canExecute) {
     }
 
     @ConfigProperty(name = "quarkus.oidc.tenant-enabled", defaultValue = "false")
