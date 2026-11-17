@@ -2,11 +2,54 @@
  "_comentario": "Falhas de edu-secmachine/reactvulna lidas no código (treino), volta 42; exercícios do readme: XSS, WebSocket, CSRF, tabnabbing. Gabarito escrito pelo mesmo agente que corrige.",
  "repo": "edu-secmachine/reactvulna",
  "falhas": [
-  {"arquivo": "src/Users.js", "linha": 56, "cwe": "CWE-79", "regras": []},
-  {"arquivo": "src/Users.js", "linha": 100, "cwe": "CWE-79", "regras": []},
-  {"arquivo": "src/Users.js", "linha": 90, "cwe": "CWE-1022", "regras": []},
-  {"arquivo": "src/Constants.js", "linha": 4, "cwe": "CWE-319", "regras": []},
-  {"arquivo": "src/Constants.js", "linha": 5, "cwe": "CWE-319", "regras": []},
-  {"arquivo": "src/Login.js", "linha": 47, "cwe": "CWE-922", "regras": []}
+  {
+   "arquivo": "src/Users.js",
+   "linha": 56,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-inner-html",
+    "no-unsanitized/property"
+   ]
+  },
+  {
+   "arquivo": "src/Users.js",
+   "linha": 100,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jquery-html"
+   ]
+  },
+  {
+   "arquivo": "src/Users.js",
+   "linha": 90,
+   "cwe": "CWE-1022",
+   "regras": [
+    "sentinel-react-target-blank-sem-noopener"
+   ]
+  },
+  {
+   "arquivo": "src/Constants.js",
+   "linha": 4,
+   "cwe": "CWE-319",
+   "regras": [
+    "sentinel-http-url-base-sem-tls"
+   ]
+  },
+  {
+   "arquivo": "src/Constants.js",
+   "linha": 5,
+   "cwe": "CWE-319",
+   "regras": [
+    "sentinel-http-url-base-sem-tls"
+   ]
+  },
+  {
+   "arquivo": "src/Login.js",
+   "linha": 47,
+   "cwe": "CWE-922",
+   "regras": [
+    "sentinel-storage-token-web"
+   ]
+  }
  ]
 }

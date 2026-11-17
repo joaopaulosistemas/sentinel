@@ -1,0 +1,31 @@
+{
+ "repo": "edu-secmachine/reactvulna",
+ "nota": 77.38,
+ "total": 62,
+ "porSeveridade": {
+  "MEDIUM": 28,
+  "LOW": 33,
+  "INFO": 1
+ },
+ "porRegra": {
+  "Opengrep/sentinel-react-target-blank-sem-noopener": 1,
+  "Opengrep/sentinel-int-fetch-sem-timeout": 7,
+  "Opengrep/sentinel-ts-var": 8,
+  "Opengrep/sentinel-http-url-base-sem-tls": 2,
+  "Opengrep/sentinel-xss-inner-html": 1,
+  "Opengrep/sentinel-xss-jquery-html": 1,
+  "ESLint/eslint-@typescript-eslint/no-unused-vars": 7,
+  "ESLint/eslint-no-unsanitized/property": 1,
+  "ESLint/eslint-prefer-const": 1,
+  "Higiene do projeto/sentinel-proj-no-ci": 1,
+  "Higiene do projeto/sentinel-proj-no-lockfile": 1,
+  "Opengrep/sentinel-ts-console-log": 18,
+  "ESLint/eslint-no-console": 1,
+  "ESLint/eslint-promise/catch-or-return": 5,
+  "ESLint/eslint-promise/no-nesting": 2,
+  "ESLint/eslint-security/detect-unsafe-regex": 1,
+  "CleanCode/sentinel-cc-aninhamento": 1,
+  "Stylelint/stylelint-a11y/media-prefers-reduced-motion": 2,
+  "Código morto/sentinel-morto-export-interno": 1
+ }
+}
