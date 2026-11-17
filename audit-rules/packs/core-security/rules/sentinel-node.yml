@@ -346,6 +346,15 @@ rules:
               metavariable: $REQ
               regex: ^(req|request)$
       - patterns:
+          # Express sem `req.query`: `url.parse(req.url, true)` devolve o objeto cujo `.query` vem do usuário
+          - pattern: $P.parse($REQ.url, true)
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(url|nodeUrl)$
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+      - patterns:
           - pattern-inside: |
               class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
           - metavariable-regex:
@@ -540,6 +549,15 @@ rules:
               - pattern: $REQ.params
               - pattern: $REQ.body
               - pattern: $REQ.headers
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+      - patterns:
+          # Express sem `req.query`: `url.parse(req.url, true)` devolve o objeto cujo `.query` vem do usuário
+          - pattern: $P.parse($REQ.url, true)
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(url|nodeUrl)$
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
@@ -1148,6 +1166,8 @@ rules:
           - pattern: $M.findByIdAndUpdate($I, $REQ.body, ...)
           - pattern: $M.findOneAndUpdate($F, $REQ.body, ...)
           - pattern: new $M($REQ.body)
+          - pattern: 'new $M({..., ...$REQ.body, ...})'
+          - pattern: '$M.create({..., ...$REQ.body, ...})'
           - pattern: Object.assign($X, $REQ.body)
       - metavariable-regex:
           metavariable: $REQ

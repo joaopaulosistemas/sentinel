@@ -134,6 +134,25 @@ export function redirecionarSeguro (req: any, res: any) {
   res.redirect('/inicio')
 }
 
+// ---------- consulta lida de url.parse(req.url, true) (Express sem req.query) ----------
+export function ssrfPorUrlParse (req: any, res: any, url: any, needle: any) {
+  const partes = url.parse(req.url, true)
+  const consulta = partes.query
+  // ruleid: sentinel-node-ssrf
+  needle.get(consulta.url, { timeout: 3000 }, () => {})
+  // ruleid: sentinel-node-open-redirect
+  res.redirect(consulta.url)
+}
+
+export function ssrfPorUrlParseFixo (req: any, res: any, url: any, needle: any) {
+  const partes = url.parse(req.url, true)
+  console.log(partes.pathname)
+  // ok: sentinel-node-ssrf
+  needle.get('https://api.exemplo.com/status', { timeout: 3000 }, () => {})
+  // ok: sentinel-node-open-redirect
+  res.redirect('/inicio')
+}
+
 // ---------- path traversal ----------
 export function baixar (req: any, res: any) {
   const arquivo = req.params.arquivo
@@ -607,6 +626,18 @@ export async function criarComTudo (req: any, Usuario: any) {
 export async function atualizarComTudo (req: any, Usuario: any) {
   // ruleid: sentinel-node-mass-assignment
   return Usuario.findByIdAndUpdate(req.params.id, req.body)
+}
+
+export async function criarComEspalhamento (req: any, Tarefa: any, usuario: any) {
+  // ruleid: sentinel-node-mass-assignment
+  const tarefa = new Tarefa({ ...req.body, owner: usuario._id })
+  return tarefa
+}
+
+export async function criarComEspalhamentoSeguro (req: any, Tarefa: any, usuario: any) {
+  // ok: sentinel-node-mass-assignment
+  const tarefa = new Tarefa({ ...opcoesPadrao(), titulo: req.body.titulo, owner: usuario._id })
+  return tarefa
 }
 
 export async function cadastrarSeguro (req: any, Usuario: any) {
