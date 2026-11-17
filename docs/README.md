@@ -10,6 +10,7 @@
 | [guia/observabilidade.md](guia/observabilidade.md) | Painel no Grafana, métricas, logs, traces e alertas (Slack/Teams), com a pilha de `deploy/observabilidade/` |
 | [guia/login-keycloak.md](guia/login-keycloak.md) | Login com Keycloak: usuários de teste, papéis admin e executor, como criar usuários e validação do token |
 | [guia/compose-combinacoes.md](guia/compose-combinacoes.md) | Subir o Compose com Keycloak e/ou observabilidade (overlays), `COMPOSE_FILE` e o 502 depois de recriar a API |
+| [guia/https.md](guia/https.md) | HTTPS na frente do painel com Caddy, sem domínio público: certificado de autoridade local, aviso do navegador e Keycloak |
 | [guia/solucao-de-problemas.md](guia/solucao-de-problemas.md) | Erros comuns (502, 401, TLS no build, API que não sobe, hora do relatório) com causa e correção |
 | [guia/operacao.md](guia/operacao.md) | Backup e restauração do PostgreSQL, atualização de versão, migrações e retenção |
 | [guia/kubernetes-helm.md](guia/kubernetes-helm.md) | Instalar com o chart Helm: imagens, Secret, banco, réplicas, rede e limites |

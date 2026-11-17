@@ -1,0 +1,6 @@
+# Termina o TLS e entrega ao painel (nginx), que já repassa /api para a API.
+{$SENTINEL_HOST:localhost} {
+	tls internal
+	encode zstd gzip
+	reverse_proxy audit-dashboard:8080
+}

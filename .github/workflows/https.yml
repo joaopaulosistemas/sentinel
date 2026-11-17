@@ -1,0 +1,20 @@
+name: HTTPS
+on:
+  pull_request:
+    paths: ["deploy/https/**", "scripts/verificar-https.sh", ".github/workflows/https.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  caddy:
+    name: Overlay de HTTPS (Caddy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      POSTGRES_PASSWORD: ci-https
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: A composição com o arquivo base é válida
+        run: docker compose -f docker-compose.yml -f deploy/https/docker-compose.yml config -q
+      - name: TLS e redirecionamento de ponta a ponta
+        run: bash scripts/verificar-https.sh

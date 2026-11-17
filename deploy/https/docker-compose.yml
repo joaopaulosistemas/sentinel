@@ -1,0 +1,26 @@
+# HTTPS na frente do painel, com Caddy. Overlay: não funciona sozinho, use junto do docker-compose.yml da raiz.
+#   docker compose -f docker-compose.yml -f deploy/https/docker-compose.yml up -d --build
+#
+# SENTINEL_HOST (no .env) é o endereço pelo qual as pessoas acessam: um nome interno ou o IP da máquina.
+# Sem ele, vale "localhost". O certificado é emitido pela autoridade local do Caddy (tls internal); veja docs/guia/https.md
+# para instalar essa autoridade nos computadores e o navegador deixar de avisar.
+# O painel (3000) e a API (8080) continuam só em 127.0.0.1: de fora só se chega pelo HTTPS.
+services:
+  https:
+    image: docker.io/caddy:2-alpine
+    container_name: sentinel-audit-https
+    restart: unless-stopped
+    depends_on:
+      - audit-dashboard
+    environment:
+      SENTINEL_HOST: ${SENTINEL_HOST:-localhost}
+    ports:
+      - "80:80"     # só redireciona para o HTTPS
+      - "443:443"
+    volumes:
+      - ./deploy/https/Caddyfile:/etc/caddy/Caddyfile:ro
+      - https_data:/data      # guarda a autoridade local e os certificados: não apague, ou cada computador precisa confiar de novo
+
+volumes:
+  https_data:
+    name: sentinel-audit-https-data

@@ -7,7 +7,8 @@ O `docker-compose.yml` da raiz sobe o Sentinel completo (PostgreSQL, API e paine
 | Só o Sentinel | `docker compose up -d --build` |
 | Com login Keycloak | `docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --build` |
 | Com observabilidade | `docker compose -f docker-compose.yml -f deploy/observabilidade/docker-compose.yml up -d --build` |
-| Com os dois | `docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml -f deploy/observabilidade/docker-compose.yml up -d --build` |
+| Com HTTPS | `docker compose -f docker-compose.yml -f deploy/https/docker-compose.yml up -d --build` ([https.md](https.md)) |
+| Com os dois (Keycloak e observabilidade) | `docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml -f deploy/observabilidade/docker-compose.yml up -d --build` |
 
 Detalhes: [login-keycloak.md](login-keycloak.md) e [observabilidade.md](observabilidade.md).
 
