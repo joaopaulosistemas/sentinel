@@ -930,3 +930,31 @@
   after: "cookie: { httpOnly: true, secure: true, sameSite: 'lax' }"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+
+- key: "sentinel-node-eval-callback"
+  summary: "Não execute texto baixado: publique o código junto da extensão/aplicação ou use dados (JSON.parse)."
+  before: "fetch(url).then((r) => r.text()).then(eval)"
+  after: "fetch(url).then((r) => r.json()).then(aplicarConfiguracao)"
+  refs:
+    - "https://developer.chrome.com/docs/extensions/develop/migrate/improve-security"
+
+- key: "sentinel-node-credencial-literal-comparada"
+  summary: "Valide a chave no servidor ou compare com o hash de um segredo guardado fora do código."
+  before: "if (apiKey === 'adminadmin') { ... }"
+  after: "if (await servidor.validarChave(apiKey)) { ... }"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/798.html"
+
+- key: "sentinel-ext-recurso-publico-curinga"
+  summary: "Liste só os arquivos necessários em web_accessible_resources e limite matches aos sites que precisam deles."
+  before: "\"web_accessible_resources\": [\"*\"]"
+  after: "\"web_accessible_resources\": [{ \"resources\": [\"imagens/logo.png\"], \"matches\": [\"https://exemplo.com/*\"] }]"
+  refs:
+    - "https://developer.chrome.com/docs/extensions/reference/manifest/web-accessible-resources"
+
+- key: "sentinel-ext-permissao-ampla"
+  summary: "Peça só as permissões necessárias e use optional_permissions para o uso ocasional."
+  before: "\"permissions\": [\"cookies\", \"history\", \"clipboardRead\"]"
+  after: "\"permissions\": [\"activeTab\"], \"optional_permissions\": [\"cookies\"]"
+  refs:
+    - "https://developer.chrome.com/docs/extensions/develop/concepts/permissions-and-warnings"

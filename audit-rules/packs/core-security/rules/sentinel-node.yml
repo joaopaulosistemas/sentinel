@@ -1328,3 +1328,45 @@ rules:
       category: security
       cwe: "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
       owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-node-eval-callback
+    pattern-either:
+      - pattern: $P.then(eval)
+      - pattern: $P.then(Function)
+    message: >
+      `eval` (ou `Function`) entregue direto a `.then(...)` executa como código o texto recebido (CWE-95/CWE-494). Com
+      `fetch` de uma URL, quem controla o servidor ou intercepta a conexão (principalmente em http) roda código no
+      seu processo. Não execute texto baixado: empacote o código na versão publicada, ou use dados (JSON.parse).
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: common
+      category: security
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-node-credencial-literal-comparada
+    patterns:
+      - pattern-either:
+          - pattern: $X === $S
+          - pattern: $X == $S
+          - pattern: $S === $X
+          - pattern: $S == $X
+      # nome da variável é de credencial; o outro lado é texto fixo de 6+ caracteres (sem espaço: frase não é segredo)
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i)^(\w+\.)*(api_?key|apikey|api_?secret|password|passwd|senha|secret|(auth|access|api)_?token)$
+      - metavariable-regex:
+          metavariable: $S
+          regex: ^["'`][^\s"'`]{6,}["'`]$
+    message: >
+      O código compara o que o usuário informou com uma chave ou senha escrita no código (CWE-798). Quem lê o
+      pacote (inclusive o JavaScript de uma extensão ou do navegador) vê o valor e passa pela verificação. Valide no
+      servidor ou compare com o hash de um segredo guardado fora do código.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: common
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures

@@ -1073,3 +1073,33 @@ export const cookieSessaoSeguro = {
   httpOnly: true,
   sameSite: 'lax'
 }
+
+// ---------- eval passado como função de retorno (código remoto executado) ----------
+export function atualizarScript(): void {
+  // ruleid: sentinel-node-eval-callback
+  fetch('http://example.com/update-script.js').then((r) => r.text()).then(eval);
+
+  // ruleid: sentinel-node-eval-callback
+  carregar().then(Function);
+
+  // ok: sentinel-node-eval-callback
+  fetch('/config.json').then((r) => r.json()).then(aplicarConfig);
+}
+
+// ---------- credencial escrita no código e comparada com o que o usuário digitou ----------
+export function checarChave(apiKey: string, senha: string, modo: string): boolean {
+  // ruleid: sentinel-node-credencial-literal-comparada
+  if (apiKey === 'adminadmin') {
+    return true;
+  }
+  // ruleid: sentinel-node-credencial-literal-comparada
+  if ('S3nhaMestra!' == senha) {
+    return true;
+  }
+  // ok: sentinel-node-credencial-literal-comparada
+  if (modo === 'administrador') {
+    return true;
+  }
+  // ok: sentinel-node-credencial-literal-comparada
+  return apiKey === process.env.API_KEY;
+}
