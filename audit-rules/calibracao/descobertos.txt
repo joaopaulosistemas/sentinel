@@ -49,3 +49,4 @@ aligorithm/Zero-Health
 ShiftLeftSecurity/tarpit-java
 DamnVulnerableCryptoApp/DamnVulnerableCryptoApp
 dogangcr/vulnerable-sso
+SasanLabs/VulnerableApp-facade
