@@ -1,0 +1,18 @@
+# URL base de API em HTTP puro. Casos de teste: tests/sentinel-http-url-base.js
+rules:
+  - id: sentinel-http-url-base-sem-tls
+    # Atribuição de literal `http://` a nome terminado em url/uri/endpoint (ex.: backendUrlBase, API_URL, baseURL).
+    # Fora: loopback, rede local, `.local`, namespaces de padrões (w3.org, xml.org etc.) e nomes sem "url/uri/endpoint".
+    pattern-regex: '(?i)\b\w*(?:url|uri|endpoint)\w*\s*[:=]\s*["''`]http://(?!localhost\b|127\.|0\.0\.0\.0|\[::1\]|10\.|192\.168\.|[\w.-]*\.local\b|host\.docker\.internal|www\.w3\.org|schemas\.|xmlns|json-schema\.org|example\.)'
+    message: >
+      URL de backend em HTTP puro: o tráfego (credenciais, cookie de sessão, dados) viaja sem criptografia e pode ser
+      lido ou alterado na rede (CWE-319). Use HTTPS.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.js", "*.jsx", "*.ts", "*.tsx", "*.vue"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "**/tests/**", "*.spec.*", "*.test.*", "**/environment.ts", "**/environment.dev.ts"]
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      owasp: A02:2021 - Cryptographic Failures

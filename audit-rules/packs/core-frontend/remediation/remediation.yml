@@ -218,3 +218,12 @@
   after: "constructor(private contas: ContaService) {}"
   effort: M
   regression-risk: LOW
+
+- key: "sentinel-react-target-blank-sem-noopener"
+  summary: "Acrescente rel=\"noopener noreferrer\" a links com target=\"_blank\" e destino dinâmico."
+  before: "<a href={url} target=\"_blank\">site</a>"
+  after: "<a href={url} target=\"_blank\" rel=\"noopener noreferrer\">site</a>"
+  effort: S
+  regression-risk: LOW
+  refs:
+    - "https://owasp.org/www-community/attacks/Reverse_Tabnabbing"

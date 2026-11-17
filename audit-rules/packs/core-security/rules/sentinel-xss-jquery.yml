@@ -1,0 +1,34 @@
+# XSS por jQuery. Casos de teste: tests/sentinel-xss-jquery.js
+rules:
+  - id: sentinel-xss-jquery-html
+    # Só em arquivo que importa jQuery. `.html`/`.replaceWith` com argumento não literal; `.append`/`.prepend`/`.before`/
+    # `.after` só quando o argumento é montado por concatenação ou template (evita marcar elemento jQuery já pronto).
+    patterns:
+      - pattern-inside: |
+          import $ from 'jquery';
+          ...
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $J.html($X)
+                  - pattern: $J.replaceWith($X)
+              - pattern-not: $J.$M("...")
+              - pattern-not: $J.$M(document.createTextNode(...))
+              - pattern-not: $J.$M($S.text())
+          - patterns:
+              - pattern-either:
+                  - pattern: $J.append($A + $B)
+                  - pattern: $J.prepend($A + $B)
+                  - pattern: $J.before($A + $B)
+                  - pattern: $J.after($A + $B)
+                  - pattern: $J.append(`...${$X}...`)
+                  - pattern: $J.prepend(`...${$X}...`)
+    message: >
+      Possível XSS (OWASP A03): HTML montado com dado dinâmico e inserido por jQuery ('.html', '.replaceWith',
+      '.append'...). Use '.text()' ou sanitize com DOMPurify antes de inserir.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
