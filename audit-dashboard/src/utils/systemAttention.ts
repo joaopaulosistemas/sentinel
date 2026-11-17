@@ -52,7 +52,7 @@ export function systemsNeedingAttention(systems: ISystemSummaryResponse[], now: 
   return items.sort((a, b) => b.weight - a.weight || a.system.name.localeCompare(b.system.name));
 }
 
-export interface IAttentionRow {
+interface IAttentionRow {
   system: ISystemSummaryResponse;
   /** Nulo quando nunca foi auditado */
   score: number | null;

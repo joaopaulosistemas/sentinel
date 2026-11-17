@@ -39,6 +39,8 @@ import java.util.concurrent.Executors;
  */
 @ApplicationScoped
 public class AuditOrchestrationService {
+    private static final long NANOS_POR_MILISSEGUNDO = 1_000_000L;
+
 
     private static final Logger LOG = Logger.getLogger(AuditOrchestrationService.class);
 
@@ -170,7 +172,7 @@ public class AuditOrchestrationService {
             store.notifySafely(auditRunId);
             throw new IllegalStateException("Auditoria " + auditRunId + " falhou", e);
         } finally {
-            AuditMetrics.auditFinished(outcome, (System.nanoTime() - startedAt) / 1_000_000);
+            AuditMetrics.auditFinished(outcome, (System.nanoTime() - startedAt) / NANOS_POR_MILISSEGUNDO);
             release(auditRunId, state);
         }
     }

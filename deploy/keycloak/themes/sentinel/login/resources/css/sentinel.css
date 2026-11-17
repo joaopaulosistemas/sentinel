@@ -1,3 +1,4 @@
+/* stylelint-disable a11y/content-property-no-static-value -- o painel de marca é decorativo e não carrega informação */
 /*
  * Tema de login do Sentinel: painel de marca escuro à esquerda e formulário claro à direita, com a IBM Plex Sans e as
  * cores da paleta "Suave" do painel (audit-dashboard/src/styles/paletas.css). Só CSS sobre o tema keycloak.v2.
@@ -21,21 +22,21 @@ html, body, .pf-v5-c-login { font-family: 'IBM Plex Sans', system-ui, sans-serif
 body { background: var(--sn-surface); color: var(--sn-text); }
 
 /* Formulário à direita (45%), centralizado. */
-.pf-v5-c-login {
-  display: flex; justify-content: flex-end; min-height: 100vh; background: var(--sn-surface) !important;
+.pf-v5-c-login.pf-v5-c-login {
+  display: flex; justify-content: flex-end; min-height: 100dvh; background: var(--sn-surface);
 }
 .pf-v5-c-login__container {
   display: flex; flex-direction: column; justify-content: center; align-items: stretch; box-sizing: border-box;
-  width: 45%; max-width: none; margin: 0; padding: 48px clamp(24px, 5vw, 80px);
+  width: 45%; max-width: none; margin: 0; padding: 48px clamp(24px, 5vw, 80px); position: relative; z-index: 2;
 }
 .pf-v5-c-login__main { background: transparent; box-shadow: none; max-width: 420px; width: 100%; margin: 0 auto; }
 .pf-v5-c-login__main-header { padding-inline: 0; }
 .pf-v5-c-login__main-body { padding-inline: 0; }
-#kc-page-title { font-size: 1.75rem; font-weight: 600; color: var(--sn-text); }
+[id='kc-page-title'] { font-size: 1.75rem; font-weight: 600; color: var(--sn-text); }
 .pf-v5-c-form__label-text, label { color: var(--sn-text-2); font-size: 0.8125rem; }
 .pf-v5-c-form-control, .pf-v5-c-form-control input { min-height: 44px; border-radius: 4px; border-color: var(--sn-border); background: #fff; font-size: 0.9375rem; }
-.pf-v5-c-button.pf-m-primary, #kc-login { min-height: 48px; border-radius: 4px; background: var(--sn-primary); font-weight: 600; font-size: 0.9375rem; }
-.pf-v5-c-button.pf-m-primary:hover, #kc-login:hover { background: var(--sn-primary-hover); }
+.pf-v5-c-button.pf-m-primary, [id='kc-login'] { min-height: 48px; border-radius: 4px; background: var(--sn-primary); font-weight: 600; font-size: 0.9375rem; }
+.pf-v5-c-button.pf-m-primary:hover, .pf-v5-c-button.pf-m-primary:focus, [id='kc-login']:hover, [id='kc-login']:focus { background: var(--sn-primary-hover); }
 a { color: var(--sn-primary); }
 :focus-visible { outline: 2px solid var(--sn-primary); outline-offset: 2px; }
 
@@ -54,14 +55,13 @@ body::before {
   position: fixed; left: 64px; bottom: 20%; width: calc(55% - 128px); max-width: 460px; z-index: 1;
   color: var(--sn-chrome-text-2); font: 400 1rem/1.6 'IBM Plex Sans', system-ui, sans-serif;
 }
-.pf-v5-c-login__container { position: relative; z-index: 2; }
 /* A marca já está no painel: esconde o cabeçalho com o nome do realm. */
-#kc-header, .pf-v5-c-login__header { display: none; }
+[id='kc-header'], .pf-v5-c-login__header { display: none; }
 
 /* Telas estreitas: sem painel de marca, formulário em largura total. */
 @media (max-width: 900px) {
   body::before, .pf-v5-c-login::before, .pf-v5-c-login::after { display: none; }
   .pf-v5-c-login { justify-content: center; }
   .pf-v5-c-login__container { width: 100%; }
-  #kc-header, .pf-v5-c-login__header { display: block; }
+  [id='kc-header'], .pf-v5-c-login__header { display: block; }
 }

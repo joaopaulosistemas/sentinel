@@ -461,20 +461,26 @@ function RunningView({ run, progress, history, mcp, seconds }: IRunningViewProps
   );
 }
 
+const terminou = (run: IAuditRunResponse | undefined): boolean => run !== undefined && FINISHED.includes(run.status);
+
+/** Guarda o último andamento visto (estado ajustado durante o render): o servidor o omite quando a auditoria conclui. */
+function useUltimoAndamento(atual: IAuditProgress | null | undefined): IAuditProgress | null {
+  const [ultimo, setUltimo] = useState<IAuditProgress | null>(null);
+  if (atual && atual !== ultimo) setUltimo(atual);
+  return atual ?? ultimo;
+}
+
 /** Painel de acompanhamento: o que a auditoria está fazendo agora e, ao terminar, o resumo do resultado. */
 export function AuditRunPage() {
   const { auditId } = useParams<{ auditId: string }>();
   const id = Number(auditId);
   const { data: run, isLoading, error } = useAudit(id);
-  const finished = run !== undefined && FINISHED.includes(run.status);
-  const [lastProgress, setLastProgress] = useState<IAuditProgress | null>(null);
+  const finished = terminou(run);
+  const progress = useUltimoAndamento(run?.progress);
   // Histórico do mesmo sistema: base da estimativa de tempo.
   const { data: history } = useAuditRuns(run?.systemId ?? 0);
   // O que o Claude (MCP) fez com este sistema desde que a auditoria começou. Só informação: não entra na nota.
   const mcp = useMcpActivity({ systemId: run?.systemId, refresh: run !== undefined && !finished });
-
-  // Guarda o último andamento visto (estado ajustado durante o render): o servidor o omite quando a auditoria conclui.
-  if (run?.progress && run.progress !== lastProgress) setLastProgress(run.progress);
 
   useRefreshListsWhenFinished({ finished, runId: run?.id });
 
@@ -483,7 +489,5 @@ export function AuditRunPage() {
 
   const seconds = elapsedSeconds(run);
   if (run.status === 'COMPLETED') return <CompletedView key={run.id} run={run} seconds={seconds} />;
-  // O servidor só devolve o andamento enquanto a auditoria roda; ao concluir, guarda-se o último visto.
-  const progress = run.progress ?? lastProgress;
   return <RunningView run={run} progress={progress} history={history} mcp={mcp} seconds={seconds} />;
 }

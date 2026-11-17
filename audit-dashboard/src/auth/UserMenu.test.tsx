@@ -25,10 +25,10 @@ afterEach(() => window.localStorage.clear());
 
 describe('funções do menu do usuário', () => {
   it('papel e rótulo vêm das permissões', () => {
-    expect(papelDe(true, true)).toBe('admin');
-    expect(papelDe(false, true)).toBe('executor');
-    expect(papelDe(false, false)).toBe('nenhum');
-    expect(rotuloDoPapel(false, false)).toBe('Sem papel no Sentinel');
+    expect(papelDe({ admin: true, canExecute: true })).toBe('admin');
+    expect(papelDe({ admin: false, canExecute: true })).toBe('executor');
+    expect(papelDe({ admin: false, canExecute: false })).toBe('nenhum');
+    expect(rotuloDoPapel({ admin: false, canExecute: false })).toBe('Sem papel no Sentinel');
   });
 
   it('a inicial do avatar sai do nome, e "?" se vier vazio', () => {

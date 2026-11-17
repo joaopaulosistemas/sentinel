@@ -99,9 +99,9 @@ describe('helpers do login', () => {
   });
 
   it('rótulo do papel', () => {
-    expect(rotuloDoPapel(true, true)).toBe('Administrador');
-    expect(rotuloDoPapel(false, true)).toBe('Executor');
-    expect(rotuloDoPapel(false, false)).toBe('Sem papel no Sentinel');
+    expect(rotuloDoPapel({ admin: true, canExecute: true })).toBe('Administrador');
+    expect(rotuloDoPapel({ admin: false, canExecute: true })).toBe('Executor');
+    expect(rotuloDoPapel({ admin: false, canExecute: false })).toBe('Sem papel no Sentinel');
   });
 });
 

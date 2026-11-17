@@ -32,13 +32,13 @@ export function lerConfigDe(dado: unknown): IConfig | null {
 
 /** Confere a resposta de /api/v1/me: um dado fora do formato vira erro, não um painel quebrado. */
 export function lerPerfilDe(dado: unknown): IMe {
-  const d = (typeof dado === 'object' && dado !== null ? dado : {}) as Record<string, unknown>;
-  if (!ehTexto(d.username) || !Array.isArray(d.roles)) throw new Error('A API devolveu um perfil inválido.');
+  const perfil = (typeof dado === 'object' && dado !== null ? dado : {}) as Record<string, unknown>;
+  if (!ehTexto(perfil.username) || !Array.isArray(perfil.roles)) throw new Error('A API devolveu um perfil inválido.');
   return {
-    username: d.username,
-    roles: d.roles.filter((r): r is string => typeof r === 'string'),
-    admin: d.admin === true,
-    canExecute: d.canExecute === true,
+    username: perfil.username,
+    roles: perfil.roles.filter((r): r is string => typeof r === 'string'),
+    admin: perfil.admin === true,
+    canExecute: perfil.canExecute === true,
   };
 }
 
