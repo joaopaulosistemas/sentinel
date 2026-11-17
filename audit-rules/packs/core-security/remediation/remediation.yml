@@ -902,3 +902,24 @@
   effort: S
   regression-risk: LOW
 
+
+- key: "sentinel-node-hash-fraco-pacote"
+  summary: "Para senha use bcrypt, scrypt ou argon2. Para integridade use SHA-256 ou superior."
+  before: "const md5 = require('md5'); md5(senha)"
+  after: "await bcrypt.hash(senha, 12)"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
+- key: "sentinel-node-jwt-decode-sem-verificar"
+  summary: "Troque jwt.decode por jwt.verify com segredo da configuração e algoritmo fixo."
+  before: "const dados = jwt.decode(token)"
+  after: "const dados = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
+- key: "sentinel-node-cookie-httponly-desligado"
+  summary: "Ligue httpOnly (e secure, sameSite) no cookie de sessão."
+  before: "cookie: { httpOnly: false }"
+  after: "cookie: { httpOnly: true, secure: true, sameSite: 'lax' }"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"

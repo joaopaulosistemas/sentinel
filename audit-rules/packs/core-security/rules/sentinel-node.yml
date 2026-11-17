@@ -1268,3 +1268,63 @@ rules:
       category: security
       cwe: "CWE-295: Improper Certificate Validation"
       owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-node-hash-fraco-pacote
+    patterns:
+      - pattern: $M($ARG)
+      - pattern-either:
+          - pattern-inside: |
+              const $M = require("$PKG");
+              ...
+          - pattern-inside: |
+              var $M = require("$PKG");
+              ...
+          - pattern-inside: |
+              let $M = require("$PKG");
+              ...
+      - metavariable-regex:
+          metavariable: $PKG
+          regex: ^(md5|sha1|md5-hex|sha-1|js-md5|js-sha1)$
+    message: >
+      Hash fraco (CWE-328): o pacote `md5`/`sha1` calcula MD5 ou SHA-1, que permitem colisão e são rápidos demais
+      para guardar senha. Para senha use `bcrypt`, `scrypt` ou `argon2`; para integridade use SHA-256 ou superior.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-328: Use of Weak Hash"
+      owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-node-jwt-decode-sem-verificar
+    patterns:
+      - pattern: $J.decode(...)
+      - pattern-either:
+          - pattern-inside: ($REQ, $RES, $NEXT) => {...}
+          - pattern-inside: function ($REQ, $RES, $NEXT) {...}
+      - metavariable-regex:
+          metavariable: $J
+          regex: ^(jwt|jsonwebtoken|jwtLib)$
+    message: >
+      Middleware de autenticação usa `jwt.decode`, que só lê o conteúdo do token e NÃO confere a assinatura
+      (CWE-347): quem monta um token qualquer passa. Para autenticar use `jwt.verify(token, segredo, { algorithms: ['HS256'] })`.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-node-cookie-httponly-desligado
+    pattern: '{..., httpOnly: false, ...}'
+    message: >
+      Cookie de sessão com `httpOnly: false` (CWE-1004): um XSS consegue ler o identificador da sessão. Use
+      `httpOnly: true` (e `secure: true`, `sameSite: 'lax'`).
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp: A05:2021 - Security Misconfiguration

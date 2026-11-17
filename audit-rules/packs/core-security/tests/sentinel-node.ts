@@ -1015,3 +1015,61 @@ export function mapaNaoEhBanco (req: any, cache: Map<string, string>) {
   // ok: sentinel-node-sql-injection
   return cache.get(req.query.chave)
 }
+
+// ---------- hash fraco por pacote (md5, sha1) ----------
+export function senhaMd5Pacote (senha: string) {
+  const md5 = require('md5')
+  // ruleid: sentinel-node-hash-fraco-pacote
+  return md5(senha)
+}
+
+export function assinaturaSha1Pacote (dado: string) {
+  const sha1 = require('sha1')
+  // ruleid: sentinel-node-hash-fraco-pacote
+  return sha1(dado)
+}
+
+export function funcaoLocalMd5 (dado: string) {
+  const md5 = (x: string) => x.toUpperCase()
+  // ok: sentinel-node-hash-fraco-pacote
+  return md5(dado)
+}
+
+export function hashPacoteForte (dado: string) {
+  const hash = require('hash.js')
+  // ok: sentinel-node-hash-fraco-pacote
+  return hash.sha256().update(dado).digest('hex')
+}
+
+// ---------- jwt.decode sem verificar assinatura ----------
+export const verificaToken = (req: any, res: any, next: any) => {
+  // ruleid: sentinel-node-jwt-decode-sem-verificar
+  const dados = jwt.decode(req.headers.token)
+  req.userId = dados.id
+  next()
+}
+
+export function tokenVerificado (req: any) {
+  // ok: sentinel-node-jwt-decode-sem-verificar
+  return jwt.verify(req.headers.token, process.env.JWT_SECRET, { algorithms: ['HS256'] })
+}
+
+export function decodeDeOutraBiblioteca (valor: string) {
+  // ok: sentinel-node-jwt-decode-sem-verificar
+  return base64.decode(valor)
+}
+
+// ---------- cookie com httpOnly desligado ----------
+// ruleid: sentinel-node-cookie-httponly-desligado
+const cookieSessaoInseguro = {
+  secure: false,
+  httpOnly: false,
+  sameSite: 'lax'
+}
+
+// ok: sentinel-node-cookie-httponly-desligado
+export const cookieSessaoSeguro = {
+  secure: true,
+  httpOnly: true,
+  sameSite: 'lax'
+}
