@@ -41,5 +41,9 @@ export const URL_SEGURA = 'https://api.parceiro.com.br/v1';
 // ok: sentinel-int-http-sem-tls
 export const URL_LOCAL = 'http://localhost:3000';
 
+// identificador de recurso SAX (não é uma conexão)
+// ok: sentinel-int-http-sem-tls
+export const FEATURE_SAX = 'http://xml.org/sax/features/external-general-entities';
+
 // ok: sentinel-int-http-sem-tls
 export const NAMESPACE_PMD = 'http://pmd.sourceforge.net/ruleset/2.0.0';
