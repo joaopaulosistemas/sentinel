@@ -9,6 +9,9 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 const apiUrl = process.env.API_URL || 'http://localhost:8080';
 const apiKey = process.env.API_KEY;
 
+const ehBibliotecaDeGraficos = (id: string): boolean =>
+  id.includes('/recharts/') || id.includes('/d3-') || id.includes('/victory-vendor/');
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -20,7 +23,7 @@ export default defineConfig({
         manualChunks(id: string) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('/@carbon/')) return 'carbon';
-          if (id.includes('/recharts/') || id.includes('/d3-') || id.includes('/victory-vendor/')) return 'charts';
+          if (ehBibliotecaDeGraficos(id)) return 'charts';
           if (/\/node_modules\/(react|react-dom|react-router|react-router-dom|@tanstack\/react-query|scheduler)\//.test(id)) return 'react';
           return undefined;
         },
