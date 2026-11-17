@@ -605,6 +605,13 @@
   refs:
     - "https://developer.android.com/privacy-and-security/risks/backup-best-practices"
 
+- key: "sentinel-android-manifest-debuggable"
+  summary: "Remova android:debuggable do manifesto; só o build debug deve ser depurável."
+  before: "android:debuggable=\"true\""
+  after: "<!-- sem android:debuggable: o build de release já o desliga -->"
+  refs:
+    - "https://developer.android.com/privacy-and-security/risks/android-debuggable"
+
 - key: "sentinel-android-manifest-cleartext"
   summary: "Use HTTPS e remova o tráfego em texto puro."
   before: "android:usesCleartextTraffic=\"true\""
