@@ -1,0 +1,152 @@
+{
+ "_comentario": "Falhas de SirAppSec/vuln-node.js-express.js-app lidas no código (treino), volta 37. Gabarito escrito pelo mesmo agente que corrige. BFLA, IDOR, ReDoS, upload sem filtro e XSS por |safe em template (nunjucks) são metas sem regra.",
+ "repo": "SirAppSec/vuln-node.js-express.js-app",
+ "falhas": [
+  {
+   "arquivo": "src/router/routes/system.js",
+   "linha": 17,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection-requisicao",
+    "sentinel-node-command-injection",
+    "sentinel-node-exec-dinamico"
+   ]
+  },
+  {
+   "arquivo": "src/router/routes/system.js",
+   "linha": 37,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-node-open-redirect",
+    "sentinel-open-redirect-requisicao"
+   ]
+  },
+  {
+   "arquivo": "src/router/routes/system.js",
+   "linha": 64,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-node-desserializacao"
+   ]
+  },
+  {
+   "arquivo": "src/router/routes/system.js",
+   "linha": 81,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-node-ssrf"
+   ]
+  },
+  {
+   "arquivo": "src/router/routes/order.js",
+   "linha": 65,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-concatenado",
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "src/router/routes/order.js",
+   "linha": 33,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "src/router/routes/admin.js",
+   "linha": 93,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-node-xxe"
+   ]
+  },
+  {
+   "arquivo": "src/router/routes/user.js",
+   "linha": 18,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js",
+    "sentinel-api-jwt-segredo-padrao-js"
+   ]
+  },
+  {
+   "arquivo": "src/middleware/authJwt.js",
+   "linha": 13,
+   "cwe": "CWE-347",
+   "regras": [
+    "sentinel-node-jwt-sem-algoritmo"
+   ]
+  },
+  {
+   "arquivo": "src/config/index.js",
+   "linha": 12,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-segredo-padrao-js"
+   ]
+  },
+  {
+   "arquivo": "src/server.js",
+   "linha": 43,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "src/server.js",
+   "linha": 39,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-cookie-sem-secure",
+    "sentinel-node-cookie-sem-flags"
+   ]
+  },
+  {
+   "arquivo": "src/router/routes/frontend.js",
+   "linha": 86,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-node-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "src/templates/profile.html",
+   "linha": 136,
+   "cwe": "CWE-79",
+   "regras": []
+  },
+  {
+   "arquivo": "src/templates/user.html",
+   "linha": 139,
+   "cwe": "CWE-79",
+   "regras": []
+  },
+  {
+   "arquivo": "src/router/routes/user.js",
+   "linha": 89,
+   "cwe": "CWE-1333",
+   "regras": []
+  },
+  {
+   "arquivo": "src/router/routes/admin.js",
+   "linha": 50,
+   "cwe": "CWE-434",
+   "regras": []
+  },
+  {
+   "arquivo": "src/router/routes/user.js",
+   "linha": 64,
+   "cwe": "CWE-862",
+   "regras": []
+  },
+  {
+   "arquivo": "src/router/routes/user.js",
+   "linha": 51,
+   "cwe": "CWE-639",
+   "regras": []
+  }
+ ]
+}
