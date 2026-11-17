@@ -9,7 +9,7 @@ rules:
     severity: WARNING
     languages: [regex]
     paths:
-      include: ["*.tsx", "*.jsx"]
+      include: ["*.tsx", "*.jsx", "*.js"]
       exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
     metadata:
       category: security
