@@ -1,0 +1,12 @@
+{
+ "_comentario": "Falhas de infosecak/DVBE lidas no código (treino), volta 39. Gabarito escrito pelo mesmo agente que corrige. Entradas com __sem_regra__ são metas sem regra.",
+ "repo": "infosecak/DVBE",
+ "falhas": [
+  {"arquivo": "DVBE/background.js", "linha": 4, "cwe": "CWE-95", "regras": ["__sem_regra__"], "_nota": "fetch de script remoto seguido de eval (código remoto executado, via http)"},
+  {"arquivo": "DVBE/popup.js", "linha": 131, "cwe": "CWE-79", "regras": ["__sem_regra__"], "_nota": "innerHTML com notas do usuário em template string"},
+  {"arquivo": "DVBE/popup.js", "linha": 68, "cwe": "CWE-798", "regras": ["__sem_regra__"], "_nota": "chave de API admin literal em comparação no cliente"},
+  {"arquivo": "DVBE/popup.js", "linha": 67, "cwe": "CWE-922", "regras": ["__sem_regra__"], "_nota": "chave de API lida/gravada em localStorage"},
+  {"arquivo": "DVBE/manifest.json", "linha": 25, "cwe": "CWE-1021", "regras": ["__sem_regra__"], "_nota": "web_accessible_resources '*' permite clickjacking do popup"},
+  {"arquivo": "DVBE/manifest.json", "linha": 17, "cwe": "CWE-250", "regras": ["__sem_regra__"], "_nota": "permissões excessivas (cookies, history, clipboardRead, audioCapture)"}
+ ]
+}
