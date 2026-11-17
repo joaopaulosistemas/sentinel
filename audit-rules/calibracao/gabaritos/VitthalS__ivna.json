@@ -118,6 +118,14 @@
    "linha": 244,
    "cwe": "CWE-200",
    "regras": []
+  },
+  {
+   "arquivo": "public/js/client-app.js",
+   "linha": 196,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-inner-html"
+   ]
   }
  ]
 }
