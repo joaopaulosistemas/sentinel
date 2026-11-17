@@ -1,9 +1,9 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 26,
-  "ultimoRepositorioTreino": "SasanLabs/VulnerableApp",
-  "ultimaStack": "JAVA",
-  "branchAtual": "ciclo/estabilizacao-10",
+  "ultimaVolta": 27,
+  "ultimoRepositorioTreino": "effortlessdevsec/ninjasworkout",
+  "ultimaStack": "JAVASCRIPT",
+  "branchAtual": "ciclo/estabilizacao-11",
   "proximaBranch": null,
   "voltasNaBranch": 1,
   "voltasSemGanhoSeguidas": 0,
@@ -31,6 +31,7 @@
     "Fontes de taint Java copiadas em ~10 regras (item G do relatório de conflitos) e peso do estilo (tsp-*, cct-*) na nota (item I, decisão de produto)",
     "oss-oopssec-store: nota do dvja 48,22 vs 48,95 da volta 24 com contagem igual (176), causa não investigada; lógica de acesso/IDOR sem regra",
     "Gabarito de validação: só bnematzadeh/vulnerable-rest-api (README, 13 itens); dvja/NodeGoat/dvna/nodejs-goof seguem sem fonte pública acessível (robots/erro); próximo: lições do terracotta-bank",
-    "Volta 26 (VulnerableApp): MD5/SHA-1 por MessageDigest.getInstance(algoritmo dinâmico) sem regra; IDOR, JWT, upload e reset de senha por lógica sem regra; dvja 176->173 achados já na main antes da branch 10, causa não investigada"
+    "Volta 26 (VulnerableApp): MD5/SHA-1 por MessageDigest.getInstance(algoritmo dinâmico) sem regra; IDOR, JWT, upload e reset de senha por lógica sem regra; dvja 176->173 achados já na main antes da branch 10, causa não investigada",
+    "Volta 27 (ninjasworkout): XSS refletido em response.write com URL da query, senha em texto puro no findOne (CWE-256), traversal por express-blinker, upload global sem autenticação e CSRF sem csurf aplicado sem regra; SSRF em handler XML-RPC (dvws-node, params como fonte) segue sem regra; nota do NodeGoat 45,98 -> 45,74 com 280 achados iguais (deriva, causa não investigada)"
   ]
 }
