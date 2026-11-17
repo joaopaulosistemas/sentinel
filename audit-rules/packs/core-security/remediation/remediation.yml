@@ -852,3 +852,17 @@
     });
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-groovy-evaluate-dinamico"
+  summary: "Não avalie texto externo como Groovy; use uma lista fechada de operações."
+  before: "new GroovyShell().evaluate(cmd)"
+  after: "switch (operacao) { case SOMA -> a + b; case SUBTRACAO -> a - b; }"
+  effort: M
+  regression-risk: HIGH
+
+- key: "sentinel-jndi-lookup-dinamico"
+  summary: "Use nome JNDI fixo ou valide contra uma lista fechada de nomes; nunca passe texto do usuário ao lookup."
+  before: "ctx.lookup(nomeDaRequisicao)"
+  after: "ctx.lookup(NOMES_PERMITIDOS.get(chave))"
+  effort: S
+  regression-risk: MEDIUM

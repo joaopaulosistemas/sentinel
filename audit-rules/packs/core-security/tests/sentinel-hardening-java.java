@@ -58,6 +58,16 @@ class HardeningJava {
         return engine.eval(expressao);
     }
 
+    Object avaliaComBindings(ScriptEngine engine, String url, javax.script.Bindings b) throws Exception {
+        // ruleid: sentinel-script-engine-eval-dinamico
+        return engine.eval(String.format("load('%s')", url), b);
+    }
+
+    Object avaliaFixoComBindings(ScriptEngine engine, javax.script.Bindings b) throws Exception {
+        // ok: sentinel-script-engine-eval-dinamico
+        return engine.eval("1 + 1", b);
+    }
+
     Object avaliaFixo(ScriptEngine engine) throws Exception {
         // ok: sentinel-script-engine-eval-dinamico
         return engine.eval("1 + 1");
@@ -96,5 +106,30 @@ class HardeningJava {
         // ok: sentinel-chave-assimetrica-curta
         KeyPairGenerator ec = KeyPairGenerator.getInstance("EC");
         ec.initialize(256);
+    }
+
+    // ---- Groovy e JNDI -------------------------------------------------------------------------
+    void groovyDinamico(String cmd) {
+        groovy.lang.GroovyShell shell = new groovy.lang.GroovyShell();
+        // ruleid: sentinel-groovy-evaluate-dinamico
+        shell.evaluate(cmd);
+    }
+
+    void groovyFixo() {
+        groovy.lang.GroovyShell shell = new groovy.lang.GroovyShell();
+        // ok: sentinel-groovy-evaluate-dinamico
+        shell.evaluate("1 + 1");
+    }
+
+    Object jndiDinamico(String nome) throws Exception {
+        javax.naming.Context ctx = new javax.naming.InitialContext();
+        // ruleid: sentinel-jndi-lookup-dinamico
+        return ctx.lookup(nome);
+    }
+
+    Object jndiFixo() throws Exception {
+        javax.naming.Context ctx = new javax.naming.InitialContext();
+        // ok: sentinel-jndi-lookup-dinamico
+        return ctx.lookup("java:comp/env/jdbc/ds");
     }
 }
