@@ -312,6 +312,46 @@ rules:
       cwe: "CWE-798: Use of Hard-coded Credentials"
       owasp: A07:2021 - Identification and Authentication Failures
 
+  - id: sentinel-spring-oauth-segredo-fixo
+    patterns:
+      - pattern: $B.withClient(...). ... .secret("$SEG")
+      - focus-metavariable: $SEG
+      - metavariable-regex:
+          metavariable: $SEG
+          regex: .+
+    message: >
+      O segredo do cliente OAuth2 está escrito no código (ClientDetailsServiceConfigurer ... .secret("...")). Quem
+      lê o repositório passa a se passar por esse cliente. Leia o segredo de configuração externa ou de um cofre,
+      guarde-o codificado (PasswordEncoder) e troque o que já foi exposto.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-spring-usuario-memoria-senha-fixa
+    patterns:
+      - pattern: $A.inMemoryAuthentication(). ... .withUser(...). ... .password("$PASS")
+      - focus-metavariable: $PASS
+      - metavariable-regex:
+          metavariable: $PASS
+          regex: .+
+    message: >
+      O usuário em memória do Spring Security tem a senha escrita no código (inMemoryAuthentication ... password("...")).
+      Ela vai para o Git e para todo build. Use um repositório de usuários real ou leia a senha de configuração externa,
+      sempre codificada, e troque a que já foi exposta.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
+
   - id: sentinel-system-exit
     pattern: System.exit(...)
     message: >
