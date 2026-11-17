@@ -98,6 +98,9 @@ export function armazenamento(t: string): void {
   // ruleid: sentinel-ts-token-em-localstorage
   sessionStorage.setItem('jwt', t);
 
+  // ruleid: sentinel-ts-token-em-localstorage
+  localStorage.setItem('api_key', t);
+
   // ok: sentinel-ts-token-em-localstorage
   localStorage.setItem('tema', 'escuro');
 }

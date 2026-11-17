@@ -154,7 +154,7 @@ rules:
           - pattern: sessionStorage.setItem($K, ...)
       - metavariable-regex:
           metavariable: $K
-          regex: (?i)["'`].*(token|jwt|senha|password|secret|credential).*["'`]
+          regex: (?i)["'`].*(token|jwt|senha|password|secret|credential|api[_-]?key|apikey|bearer).*["'`]
     message: >
       Token/credencial guardado em localStorage/sessionStorage fica acessível a qualquer script da página
       (um único XSS leva a sessão). Prefira cookie HttpOnly + Secure + SameSite.
