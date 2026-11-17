@@ -1,0 +1,128 @@
+{
+ "_comentario": "Falhas de nr-yolo/Vulnshop lidas no código (treino), volta 35. Gabarito escrito pelo mesmo agente que corrige. XXE simulado à mão (readFileSync por regex) e SSRF por protocol.get(entityUrl) são metas sem regra (marcadas __sem_regra__); BOLA/IDOR, upload sem validação e regras de negócio não têm regra.",
+ "repo": "nr-yolo/Vulnshop",
+ "falhas": [
+  {
+   "arquivo": "backend/server.js",
+   "linha": 236,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 545,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 1045,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-command-injection"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 792,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 830,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 1110,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-node-open-redirect"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 246,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-node-cookie-sem-flags"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 245,
+   "cwe": "CWE-328",
+   "regras": [
+    "sentinel-node-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 251,
+   "cwe": "CWE-338",
+   "regras": [
+    "sentinel-node-math-random-segredo"
+   ]
+  },
+  {
+   "arquivo": "frontend/src/App.js",
+   "linha": 245,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ]
+  },
+  {
+   "arquivo": "frontend/src/App.js",
+   "linha": 1208,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 1119,
+   "cwe": "CWE-798",
+   "regras": [
+    "gitleaks",
+    "sentinel-seg-segredo-fixo",
+    "hardcoded"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 1055,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 676,
+   "cwe": "CWE-611",
+   "regras": [
+    "__sem_regra__"
+   ]
+  },
+  {
+   "arquivo": "backend/server.js",
+   "linha": 702,
+   "cwe": "CWE-918",
+   "regras": [
+    "__sem_regra__"
+   ]
+  }
+ ]
+}
