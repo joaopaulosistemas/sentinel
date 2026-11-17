@@ -123,3 +123,24 @@
   after: "public ContaDto buscar(Long id)"
   effort: M
   regression-risk: LOW
+
+- key: "sentinel-spring-value-segredo-padrao"
+  summary: "Tire o valor padrão do segredo: sem a propriedade a aplicação falha na partida, e o segredo vem de variável de ambiente ou cofre."
+  before: '@Value("${spring.jwt.secret:eLgvVuw3...}") private String jwtSecret;'
+  after: '@Value("${spring.jwt.secret}") private String jwtSecret;   // definido por SPRING_JWT_SECRET'
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-spring-thymeleaf-utext-variavel"
+  summary: "Troque th:utext por th:text (escapa o HTML) ou sanitize o conteúdo no servidor antes de exibi-lo sem escape."
+  before: '<span th:utext="${keywords}"></span>'
+  after: '<span th:text="${keywords}"></span>'
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-spring-thymeleaf-preprocessamento-variavel"
+  summary: "Não monte expressão por pré-processamento: guarde o valor no modelo e use ${nome} direto."
+  before: '<span th:text="${__${campo}__}"></span>'
+  after: '<span th:text="${campo}"></span>'
+  effort: S
+  regression-risk: MEDIUM
