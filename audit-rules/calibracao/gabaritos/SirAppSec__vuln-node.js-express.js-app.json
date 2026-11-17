@@ -76,6 +76,7 @@
    "linha": 13,
    "cwe": "CWE-347",
    "regras": [
+    "sentinel-node-jwt-decode-sem-verificar",
     "sentinel-node-jwt-sem-algoritmo"
    ]
   },
@@ -97,10 +98,11 @@
   },
   {
    "arquivo": "src/server.js",
-   "linha": 39,
+   "linha": 37,
    "cwe": "CWE-1004",
    "regras": [
     "sentinel-cookie-sem-secure",
+    "sentinel-node-cookie-httponly-desligado",
     "sentinel-node-cookie-sem-flags"
    ]
   },
@@ -109,7 +111,8 @@
    "linha": 86,
    "cwe": "CWE-327",
    "regras": [
-    "sentinel-node-hash-fraco"
+    "sentinel-node-hash-fraco",
+    "sentinel-node-hash-fraco-pacote"
    ]
   },
   {
