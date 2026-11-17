@@ -866,3 +866,17 @@
   after: "ctx.lookup(NOMES_PERMITIDOS.get(chave))"
   effort: S
   regression-risk: MEDIUM
+
+- key: "sentinel-node-math-random-retorno"
+  summary: "Gere códigos e tokens com crypto.randomInt ou crypto.randomBytes, nunca com Math.random."
+  before: "return Math.floor(1000 + Math.random() * 9000).toString()"
+  after: "return crypto.randomInt(100000, 1000000).toString()"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
+- key: "sentinel-node-tls-desligado"
+  summary: "Mantenha a verificação do certificado ligada; para CA interna use a opção ca."
+  before: "tls: { rejectUnauthorized: false }"
+  after: "tls: { ca: fs.readFileSync('ca-interna.pem') }"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"

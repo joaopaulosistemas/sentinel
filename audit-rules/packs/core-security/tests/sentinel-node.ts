@@ -950,3 +950,44 @@ export function loginNavegador2 () {
   // ok: sentinel-node-ssrf
   return fetch(`/api/auth/login?token=${token}`)
 }
+
+// ---------- Math.random devolvido por função de segurança e TLS desligado (volta 34) ----------
+export function generateOTP () {
+  // ruleid: sentinel-node-math-random-retorno
+  return Math.floor(1000 + Math.random() * 9000).toString()
+}
+
+export const gerarToken = () => {
+  // ruleid: sentinel-node-math-random-retorno
+  return Math.random().toString(36).slice(2)
+}
+
+export function sortearCarta () {
+  // ok: sentinel-node-math-random-retorno
+  return Math.floor(Math.random() * 52)
+}
+
+export function criarTransporte (nodemailer: any) {
+  return nodemailer.createTransport({
+    host: 'smtp.exemplo.com',
+    tls: {
+      // ruleid: sentinel-node-tls-desligado
+      rejectUnauthorized: false
+    }
+  })
+}
+
+export function clienteHttps (https: any) {
+  // ruleid: sentinel-node-tls-desligado
+  return new https.Agent({ rejectUnauthorized: false })
+}
+
+export function desligaGlobal () {
+  // ruleid: sentinel-node-tls-desligado
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+}
+
+export function clienteSeguro (https: any) {
+  // ok: sentinel-node-tls-desligado
+  return new https.Agent({ rejectUnauthorized: true })
+}
