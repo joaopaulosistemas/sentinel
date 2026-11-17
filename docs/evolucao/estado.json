@@ -12,7 +12,7 @@
   "gabaritosValidacao": [
     "bnematzadeh/vulnerable-rest-api"
   ],
-  "conjuntosSha256": "80a405ba72687683cbd93ab057ff60705dae5bf586d08baf167fed2f252f7dce",
+  "conjuntosSha256": "d3f426436896d5a84f790cb11d9379d95de05919f8c0ee356cae2cb41a2c9d84",
   "pendencias": [
     "Volta dedicada a avaliar o Joern para JS/TS (decisão pendente desde a 12.65.0)",
     "Aplicar no GitHub a proteção de .github/agente/protecao-main.json (exige o João)",
