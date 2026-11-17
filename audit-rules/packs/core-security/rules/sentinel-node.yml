@@ -555,6 +555,18 @@ rules:
               - pattern: got($U, ...)
               - pattern: got.get($U, ...)
               - pattern: request($U, ...)
+              - pattern: needle.get($U, ...)
+              - pattern: needle.post($U, ...)
+              - pattern: needle.put($U, ...)
+              - pattern: needle.patch($U, ...)
+              - pattern: needle.delete($U, ...)
+              - pattern: needle.head($U, ...)
+              - pattern: superagent.get($U, ...)
+              - pattern: superagent.post($U, ...)
+              - pattern: superagent.put($U, ...)
+              - pattern: superagent.delete($U, ...)
+              - pattern: http.request($U, ...)
+              - pattern: https.request($U, ...)
           - focus-metavariable: $U
     message: >
       Possível SSRF (CWE-918): o servidor faz uma requisição para uma URL vinda do usuário. Valide o destino contra

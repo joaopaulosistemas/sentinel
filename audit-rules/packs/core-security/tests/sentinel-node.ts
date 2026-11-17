@@ -140,6 +140,42 @@ export async function chamarComCorpo (req: any) {
   return axios.post('https://api.exemplo.com/eventos', req.body)
 }
 
+// ---------- SSRF com needle, superagent e http.request (volta 27) ----------
+declare const needle: any
+declare const superagent: any
+declare const https: any
+
+export function buscarComNeedle (request: any, response: any) {
+  const url = request.query['url']
+  // ruleid: sentinel-node-ssrf
+  needle.get(url, { timeout: 3000 }, (erro: any, resposta: any) => response.send(resposta.body))
+}
+
+export function enviarComNeedle (req: any) {
+  // ruleid: sentinel-node-ssrf
+  return needle.post(req.body.destino, { a: 1 })
+}
+
+export function buscarComSuperagent (req: any) {
+  // ruleid: sentinel-node-ssrf
+  return superagent.get(req.query.alvo)
+}
+
+export function buscarComHttpsRequest (req: any) {
+  // ruleid: sentinel-node-ssrf
+  return https.request(req.query.alvo, () => {})
+}
+
+export function needleFixo () {
+  // ok: sentinel-node-ssrf
+  return needle.get('https://api.exemplo.com/status')
+}
+
+export function superagentFixo (req: any) {
+  // ok: sentinel-node-ssrf
+  return superagent.post('https://api.exemplo.com/eventos').send(req.body)
+}
+
 // ---------- hash fraco ----------
 export const hashMd5 = (dado: string) =>
   // ruleid: sentinel-node-hash-fraco
