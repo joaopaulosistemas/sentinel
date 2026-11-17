@@ -57,6 +57,13 @@ rules:
       - pattern: parseInt(...)
       - pattern: Number(...)
       - pattern: $X.escape(...)
+      # template com tag de consulta parametrizada (@nearform/sql, sql-template-strings, slonik): a tag
+      # transforma cada ${valor} em parâmetro do driver, não concatena no texto do SQL
+      - patterns:
+          - pattern: $TAG`...`
+          - metavariable-regex:
+              metavariable: $TAG
+              regex: ^(SQL|sql|Sql|SQLStatement|sqlTag)$
     message: >
       Possível SQL injection (CWE-89): dado da requisição entra no texto da consulta. Use parâmetros
       (`replacements`/`bind` do Sequelize, `?` no driver) em vez de montar o SQL com `+` ou template string.
@@ -1281,6 +1288,13 @@ rules:
               ...
           - pattern-inside: |
               let $M = require("$PKG");
+              ...
+          # módulo ES: `import md5 from 'md5'` (padrão nos projetos com "type": "module")
+          - pattern-inside: |
+              import $M from "$PKG";
+              ...
+          - pattern-inside: |
+              import * as $M from "$PKG";
               ...
       - metavariable-regex:
           metavariable: $PKG

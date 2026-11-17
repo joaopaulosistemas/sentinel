@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import vm from 'vm'
 import axios from 'axios'
+import md5Esm from 'md5'
 
 // ---------- SQL injection ----------
 export function login (req: any, res: any) {
@@ -60,6 +61,22 @@ export function historicoNumerico (req: any, res: any) {
   const userId = Number(req.user.id)
   // ok: sentinel-node-sql-injection
   return pool.query(`SELECT * FROM chat_history WHERE user_id = ${userId}`)
+}
+
+export function perfilEtiquetado (req: any, fastify: any) {
+  const { username } = req.query
+  // ok: sentinel-node-sql-injection
+  return fastify.pg.query(SQL`SELECT id FROM users WHERE username = ${username}`)
+}
+
+export function perfilEtiquetadoMinusculo (req: any, pool: any) {
+  // ok: sentinel-node-sql-injection
+  return pool.query(sql`SELECT id FROM users WHERE id = ${req.params.id}`)
+}
+
+export function perfilConcatenadoComSql (req: any, pool: any) {
+  // ruleid: sentinel-node-sql-injection
+  return pool.query(`SELECT id FROM users WHERE name = '${req.query.name}'`)
 }
 
 export function consultaFixa () {
@@ -1027,6 +1044,11 @@ export function assinaturaSha1Pacote (dado: string) {
   const sha1 = require('sha1')
   // ruleid: sentinel-node-hash-fraco-pacote
   return sha1(dado)
+}
+
+export function senhaMd5Esm (senha: string) {
+  // ruleid: sentinel-node-hash-fraco-pacote
+  return md5Esm(senha)
 }
 
 export function funcaoLocalMd5 (dado: string) {
