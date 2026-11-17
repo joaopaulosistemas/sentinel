@@ -1,11 +1,11 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 28,
-  "ultimoRepositorioTreino": "aligorithm/Zero-Health",
-  "ultimaStack": "MIXED",
+  "ultimaVolta": 29,
+  "ultimoRepositorioTreino": "ShiftLeftSecurity/tarpit-java",
+  "ultimaStack": "JAVA",
   "branchAtual": "ciclo/estabilizacao-11",
   "proximaBranch": null,
-  "voltasNaBranch": 2,
+  "voltasNaBranch": 3,
   "voltasSemGanhoSeguidas": 0,
   "limiteVoltasPorBranch": 6,
   "ultimoPrMesclado": "#151",
@@ -33,6 +33,7 @@
     "Gabarito de validação: só bnematzadeh/vulnerable-rest-api (README, 13 itens); dvja/NodeGoat/dvna/nodejs-goof seguem sem fonte pública acessível (robots/erro); próximo: lições do terracotta-bank",
     "Volta 26 (VulnerableApp): MD5/SHA-1 por MessageDigest.getInstance(algoritmo dinâmico) sem regra; IDOR, JWT, upload e reset de senha por lógica sem regra; dvja 176->173 achados já na main antes da branch 10, causa não investigada",
     "Volta 27 (ninjasworkout): XSS refletido em response.write com URL da query, senha em texto puro no findOne (CWE-256), traversal por express-blinker, upload global sem autenticação e CSRF sem csurf aplicado sem regra; SSRF em handler XML-RPC (dvws-node, params como fonte) segue sem regra; nota do NodeGoat 45,98 -> 45,74 com 280 achados iguais (deriva, causa não investigada)",
-    "Volta 28 (Zero-Health): upload multer com fileFilter fraco (CWE-434), mass assignment por Object.keys(req.body) (CWE-915), segredo JWT devolvido em resposta (CWE-200) e innerHTML em script inline de template string sem regra; nota do oss-oopssec-store 42,46 -> 43,73 e +9 achados fora da regra de SQLi (causa: regras/CVEs de voltas anteriores, nao conferida item a item); Generalizacao: sem gabarito de validacao novo nesta volta"
+    "Volta 28 (Zero-Health): upload multer com fileFilter fraco (CWE-434), mass assignment por Object.keys(req.body) (CWE-915), segredo JWT devolvido em resposta (CWE-200) e innerHTML em script inline de template string sem regra; nota do oss-oopssec-store 42,46 -> 43,73 e +9 achados fora da regra de SQLi (causa: regras/CVEs de voltas anteriores, nao conferida item a item); Generalizacao: sem gabarito de validacao novo nesta volta",
+    "Volta 29 (tarpit-java): Zip Slip por zip4j extractAll, exec(new String[]{\"sh\",\"-c\",var}), defineClass com bytes da requisicao e senha literal em construtor de EmailService sem regra; dvja 173 -> 184 achados ja na main antes desta mudanca (reauditado na main: 184, identico), causa nao investigada; Generalizacao: sem gabarito de validacao novo"
   ]
 }
