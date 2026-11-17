@@ -39,6 +39,29 @@ export function transferirSeguro (req: any) {
   return { saldo: Sequelize.literal(`balance - ${valor}`) }
 }
 
+export function historico (req: any, res: any) {
+  const userId = req.user.id
+  const consulta = `SELECT * FROM chat_history WHERE user_id = ${userId} ORDER BY created_at`
+  // ruleid: sentinel-node-sql-injection
+  return pool.query(consulta)
+}
+
+export function inserirPorSessao (req: any, res: any) {
+  // ruleid: sentinel-node-sql-injection
+  return pool.query(`INSERT INTO notas (dono) VALUES ('${req.session.userId}')`)
+}
+
+export function historicoSeguro (req: any, res: any) {
+  // ok: sentinel-node-sql-injection
+  return pool.query('SELECT * FROM chat_history WHERE user_id = $1', [req.user.id])
+}
+
+export function historicoNumerico (req: any, res: any) {
+  const userId = Number(req.user.id)
+  // ok: sentinel-node-sql-injection
+  return pool.query(`SELECT * FROM chat_history WHERE user_id = ${userId}`)
+}
+
 export function consultaFixa () {
   // ok: sentinel-node-sql-injection
   return models.sequelize.query('SELECT sql FROM sqlite_master')

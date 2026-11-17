@@ -20,6 +20,11 @@ rules:
               - pattern: $REQ.body
               - pattern: $REQ.headers
               - pattern: $REQ.cookies
+              # claims do token e da sessão (req.user, req.session) também chegam ao SQL sem escape:
+              # com chave JWT fixa ou algoritmo `none` o cliente forja o valor, e a concatenação
+              # continua errada mesmo com o token legítimo (injeção de segunda ordem)
+              - pattern: $REQ.user
+              - pattern: $REQ.session
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
