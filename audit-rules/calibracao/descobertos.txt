@@ -53,3 +53,4 @@ SasanLabs/VulnerableApp-facade
 j3ers3/Hello-Java-Sec
 abigailajohn/VVMA
 nr-yolo/Vulnshop
+terracotta-bank/terracotta-bank

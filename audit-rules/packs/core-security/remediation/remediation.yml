@@ -880,3 +880,25 @@
   after: "tls: { ca: fs.readFileSync('ca-interna.pem') }"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
+
+- key: "sentinel-open-redirect-requisicao"
+  summary: "Valide o destino contra uma lista de caminhos internos permitidos antes de redirecionar."
+  before: "response.sendRedirect(request.getParameter(\"relay\"))"
+  after: "response.sendRedirect(destinoPermitido(request.getParameter(\"relay\")))"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-sql-literal-concatenado"
+  summary: "Troque a concatenação por parâmetros (?) no método que executa a consulta."
+  before: "runQuery(\"SELECT * FROM users WHERE username = '\" + username + \"'\", ...)"
+  after: "runQuery(\"SELECT * FROM users WHERE username = ?\", ps -> ps.setString(1, username), ...)"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-httponly-desligado"
+  summary: "Deixe o HttpOnly ligado no cookie de sessão."
+  before: "cookie.setHttpOnly(false)"
+  after: "cookie.setHttpOnly(true)"
+  effort: S
+  regression-risk: LOW
+

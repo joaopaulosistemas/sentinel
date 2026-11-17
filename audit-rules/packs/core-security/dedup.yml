@@ -74,3 +74,9 @@
     - "sentinel-crossorigin-aberto"
     - "sentinel-api-cors-wildcard"
   max-lines: 1
+
+- name: open-redirect-java-servlet
+  order:
+    - "sentinel-open-redirect-requisicao"
+    - "sentinel-open-redirect"
+  max-lines: 1
