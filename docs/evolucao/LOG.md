@@ -1792,3 +1792,15 @@ O PDF lista os achados ativos junto com os 105 já suprimidos, o que tinha me le
 - **Generalização:** recall na validação — sem gabarito novo nesta volta; Benchmark OWASP — não rodado, regra Java intacta; amostra de 20 achados — não feita.
 - **Não feito (sem regra):** JWT `alg: none` aceito por `switch` caseiro (CWE-347), `Math.random` em desafio de previsibilidade (CWE-338), comparação não constante de senha/assinatura (CWE-208), RC4 implementado à mão, chaves e senhas fixas em atributos estáticos de classe. O gabarito mantém essas entradas como meta.
 - **Verificado:** `semgrep --test` (33/33), Opengrep 1.30.0 (testes e `paridade-motores.py`: 877 achados nos dois motores), `sincronizar-versao.py --check`, 3 auditorias no CI (DVCA antes e depois, NodeGoat). **NÃO verificado:** JUnit e dashboard (não mudaram), dvja, Benchmark OWASP, precisão além dos 8 achados novos (conferidos nas linhas do gabarito); gabarito escrito pelo mesmo agente que corrige. Branch com 4 voltas, sem PR.
+
+## Dashboard 12.101.0 — Ciclo, volta 31 (branch `ciclo/estabilizacao-11`): dogangcr/vulnerable-sso (treino novo, Java/Spring Security OAuth2), segredo fixo de cliente OAuth2 e senha fixa em `inMemoryAuthentication`
+
+- **Repositório novo:** dogangcr/vulnerable-sso (SSO/OAuth2 com Spring Boot 1.3, 155 estrelas, branch `master`, JAVA; 10 arquivos Java), registrado como treino em `conjuntos.json` e `descobertos.txt`.
+- **Medido (antes):** 76 achados, nota 73,87; recall 1/5 = 20 % (Wilson 4 a 62 %) no gabarito novo `gabaritos/dogangcr__vulnerable-sso.json`, lido no código.
+- **Detecção nova: 2 achados conferidos.** `sentinel-spring-oauth-segredo-fixo` (`.secret("...")` em `ClientDetailsServiceConfigurer`, `AuthServerConfig:30`) e `sentinel-spring-usuario-memoria-senha-fixa` (`inMemoryAuthentication ... password("...")`, `SecurityConfig:65`), ambas CWE-798. Teste primeiro (falhava, passa), regras gerais. Ruído removido: 0.
+- **Depois:** 78 achados, nota 70,57; recall 4/5 = 80 % (Wilson 38 a 96 %). Atenção: o crédito da linha 33 (`autoApprove(true)`) vem da proximidade com o achado da linha 30, não de regra própria; ganho real = 2 falhas novas (3/5 = 60 %). A nota caiu porque entraram 2 achados HIGH reais; não prova melhoria nem piora.
+- **Regressão (números do CI):** dvja (validação) 184 achados, nota 47,84, igual à volta 29. tarpit-java (treino antigo, Java) 272 achados, nota 33,13, igual ao baseline. NodeGoat não reauditado (mudança só em regra Java).
+- **Não feito (sem regra):** XSS por EL `${code}` em JSP (`showcode.jsp:9`, JSP fora do alcance do Opengrep) e `autoApprove(true)` de cliente OAuth2.
+- **Generalização:** recall da validação (bnematzadeh/vulnerable-rest-api) não remedido nesta volta; sem Benchmark OWASP local nem amostra de 20 achados (a de 3 voltas fica para a próxima). NÃO verificado.
+- **Verificado:** `semgrep --test` (21/21), `paridade-motores.py` (881 achados nos dois motores), `verificar-regras.py` (316 regras, 0 problema), `verificar-separacao.py`, 4 auditorias no CI. **NÃO verificado:** `opengrep --test` do binário (só paridade), JUnit (nada de Java do analisador mudou), dashboard.
+
