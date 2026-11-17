@@ -991,3 +991,27 @@ export function clienteSeguro (https: any) {
   // ok: sentinel-node-tls-desligado
   return new https.Agent({ rejectUnauthorized: true })
 }
+
+// ---------- SQL injection em driver sqlite3 (db.get/all/run/each/exec) ----------
+export function loginSqlite (req: any, res: any, db: any) {
+  const { username, password } = req.body
+  const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`
+  // ruleid: sentinel-node-sql-injection
+  db.get(query, (err: any, user: any) => res.json(user))
+}
+
+export function buscaSqlite (req: any, res: any, db: any) {
+  const busca = req.query.search || ''
+  // ruleid: sentinel-node-sql-injection
+  db.all(`SELECT * FROM products WHERE name LIKE '%${busca}%'`, (err: any, rows: any) => res.json(rows))
+}
+
+export function buscaSqliteSegura (req: any, res: any, db: any) {
+  // ok: sentinel-node-sql-injection
+  db.get('SELECT * FROM users WHERE id = ?', [req.params.id], (err: any, row: any) => res.json(row))
+}
+
+export function mapaNaoEhBanco (req: any, cache: Map<string, string>) {
+  // ok: sentinel-node-sql-injection
+  return cache.get(req.query.chave)
+}

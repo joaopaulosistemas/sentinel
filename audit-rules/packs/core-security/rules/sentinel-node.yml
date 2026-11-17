@@ -38,6 +38,16 @@ rules:
               metavariable: $METHOD
               regex: ^(query|raw|execute)$
           - focus-metavariable: $Q
+      # driver sqlite3 (db.get/all/run/each/exec): só em objeto com nome de conexão, para não pegar Map.get etc.
+      - patterns:
+          - pattern: $DB.$METHOD($Q, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(get|all|run|each|exec)$
+          - metavariable-regex:
+              metavariable: $DB
+              regex: ^(db|database|sqlite|sqlite3|conn|connection)$
+          - focus-metavariable: $Q
       - patterns:
           - pattern-either:
               - pattern: Sequelize.literal($Q)
