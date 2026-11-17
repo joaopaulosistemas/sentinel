@@ -13,13 +13,6 @@ export class Exemplo {
     el.nativeElement.textContent = v;
   }
 
-  public achar(): void {
-    // ruleid: sentinel-ng-dom-direto
-    document.getElementById('x');
-    // ok: sentinel-ng-dom-direto
-    this._renderer.setProperty(this._el.nativeElement, 'id', 'x');
-  }
-
   public buscar(): void {
     // ruleid: sentinel-ng-http-any
     this._http.get<any>('/api/contas').subscribe();

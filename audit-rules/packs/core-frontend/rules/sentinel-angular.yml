@@ -37,8 +37,9 @@ rules:
       Renderer2 ou binding no template.
     severity: INFO
     languages: [regex]
+    # Só em arquivos com nome de Angular: em *.ts genérico (React, Vue, Node) o "componente Angular" não existe.
     paths:
-      include: ["*.ts"]
+      include: ["*.component.ts", "*.directive.ts", "*.pipe.ts", "*.service.ts"]
       exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
     metadata:
       category: quality
