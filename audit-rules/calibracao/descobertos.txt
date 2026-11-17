@@ -46,3 +46,4 @@ kOaDT/oss-oopssec-store
 SasanLabs/VulnerableApp
 effortlessdevsec/ninjasworkout
 aligorithm/Zero-Health
+ShiftLeftSecurity/tarpit-java

@@ -1,0 +1,200 @@
+{
+ "_comentario": "Falhas de ShiftLeftSecurity/tarpit-java lidas no codigo (treino), volta 29. O XXE do README NAO consta: DocumentTarpit liga disallow-doctype-decl, o parser esta protegido. Entradas com 'lacuna' eram sem regra na medida inicial. Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li.",
+ "repo": "ShiftLeftSecurity/tarpit-java",
+ "falhas": [
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 41,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-crypto-chave-fixa-no-codigo",
+    "gitleaks-generic-api-key"
+   ]
+  },
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 42,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-crypto-chave-fixa-no-codigo",
+    "gitleaks-generic-api-key"
+   ]
+  },
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 55,
+   "cwe": "CWE-532",
+   "regras": [
+    "sentinel-log-dado-sensivel"
+   ]
+  },
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 63,
+   "cwe": "CWE-94",
+   "regras": [
+    "sentinel-script-engine-eval-dinamico"
+   ]
+  },
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 67,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-crypto-cifra-fraca"
+   ]
+  },
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 76,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 96,
+   "cwe": "CWE-614",
+   "regras": [
+    "sentinel-cookie-sem-secure"
+   ]
+  },
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 104,
+   "cwe": "CWE-117",
+   "regras": [
+    "sentinel-log-injection"
+   ]
+  },
+  {
+   "arquivo": "ServletTarPit.java",
+   "linha": 127,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-jdbc-senha-fixa"
+   ],
+   "lacuna": "sem-regra na medida inicial"
+  },
+  {
+   "arquivo": "Insider.java",
+   "linha": 78,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection-requisicao"
+   ]
+  },
+  {
+   "arquivo": "Insider.java",
+   "linha": 85,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-servlet-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "Insider.java",
+   "linha": 148,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "Insider.java",
+   "linha": 204,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection-variable"
+   ]
+  },
+  {
+   "arquivo": "Insider.java",
+   "linha": 135,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection-shell",
+    "sentinel-command-injection-variable"
+   ],
+   "lacuna": "sem-regra: exec(new String[]{\"sh\",\"-c\",var}) com texto montado em tempo de execucao"
+  },
+  {
+   "arquivo": "Insider.java",
+   "linha": 117,
+   "cwe": "CWE-470",
+   "regras": [
+    "sentinel-defineclass-dinamico"
+   ],
+   "lacuna": "sem-regra: defineClass com bytes vindos do parametro da requisicao"
+  },
+  {
+   "arquivo": "OrderStatus.java",
+   "linha": 55,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "OrderStatus.java",
+   "linha": 76,
+   "cwe": "CWE-614",
+   "regras": [
+    "sentinel-cookie-sem-secure"
+   ]
+  },
+  {
+   "arquivo": "OrderStatus.java",
+   "linha": 110,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-jdbc-senha-fixa"
+   ],
+   "lacuna": "sem-regra na medida inicial"
+  },
+  {
+   "arquivo": "OrderProcessor.java",
+   "linha": 95,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-jdbc-senha-fixa"
+   ],
+   "lacuna": "sem-regra na medida inicial"
+  },
+  {
+   "arquivo": "OrderProcessor.java",
+   "linha": 32,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-senha-fixa-no-codigo"
+   ],
+   "lacuna": "sem-regra: senha literal no construtor de EmailService"
+  },
+  {
+   "arquivo": "UnusedObject.java",
+   "linha": 8,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-jackson-default-typing"
+   ]
+  },
+  {
+   "arquivo": "FileUploader.java",
+   "linha": 48,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-api-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "Unzipper.java",
+   "linha": 31,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-zip-slip"
+   ],
+   "lacuna": "sem-regra: zip4j extractAll com destino montado (Zip Slip)"
+  }
+ ]
+}
