@@ -444,6 +444,20 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
 
+- key: "sentinel-node-cifra-ecb"
+  summary: "Troque o modo ECB por GCM (ou CBC com HMAC) e use IV aleatório por mensagem."
+  before: "crypto.createCipheriv('aes-128-ecb', chave, '')"
+  after: "const iv = crypto.randomBytes(12); crypto.createCipheriv('aes-256-gcm', chave, iv)"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
+- key: "sentinel-node-iv-fixo"
+  summary: "Gere o IV com crypto.randomBytes a cada mensagem e envie-o junto do texto cifrado."
+  before: "crypto.createCipheriv('aes-256-cbc', chave, IV_FIXO)"
+  after: "const iv = crypto.randomBytes(16); crypto.createCipheriv('aes-256-cbc', chave, iv)"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
 - key: "sentinel-node-xxe"
   summary: "Remova `noent: true`/`replaceEntities: true` e rejeite documentos com DOCTYPE vindos de fora."
   before: "libxml.parseXml(dados, { noent: true })"

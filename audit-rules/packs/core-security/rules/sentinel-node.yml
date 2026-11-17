@@ -606,6 +606,58 @@ rules:
       cwe: "CWE-328: Use of Weak Hash"
       owasp: A02:2021 - Cryptographic Failures
 
+  - id: sentinel-node-cifra-ecb
+    patterns:
+      - pattern-either:
+          - pattern: $C.createCipheriv($ALG, ...)
+          - pattern: $C.createDecipheriv($ALG, ...)
+      - metavariable-regex:
+          metavariable: $C
+          regex: ^(crypto|nodeCrypto)$
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: (?i)^['"`][a-z0-9-]*-ecb['"`]$
+    message: >
+      Modo ECB (CWE-327): blocos iguais de texto claro viram blocos iguais de texto cifrado, o que revela padrões e permite
+      reordenar ou recortar blocos sem a chave. Use `aes-256-gcm` com IV aleatório e único por mensagem.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-node-iv-fixo
+    patterns:
+      - pattern-either:
+          - pattern: $C.createCipheriv($ALG, $KEY, $IV, ...)
+          - pattern: $C.createDecipheriv($ALG, $KEY, $IV, ...)
+      - metavariable-regex:
+          metavariable: $C
+          regex: ^(crypto|nodeCrypto)$
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: (?i)^(?!.*-ecb)
+      - metavariable-pattern:
+          metavariable: $IV
+          pattern-either:
+            - pattern: '"..."'
+            - pattern: Buffer.from("...", ...)
+            - pattern: Buffer.alloc(...)
+            - pattern-regex: ^[A-Z]\w*\.(IV|iv|Iv|INIT_VECTOR|NONCE)$
+    message: >
+      IV fixo (CWE-329): com o mesmo IV e a mesma chave, mensagens com o mesmo começo geram o mesmo começo cifrado, e em modos de
+      fluxo (CTR, GCM) a repetição permite recuperar o texto claro. Gere um IV novo por mensagem com `crypto.randomBytes(16)`
+      (12 bytes no GCM) e envie-o junto do texto cifrado.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-329: Generation of Predictable IV with CBC Mode"
+      owasp: A02:2021 - Cryptographic Failures
+
   - id: sentinel-node-xxe
     pattern-either:
       - pattern: '$L.parseXml($X, {..., noent: true, ...})'

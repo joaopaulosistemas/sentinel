@@ -212,6 +212,54 @@ export const hashForte = (dado: string) =>
   // ok: sentinel-node-hash-fraco
   crypto.createHash('sha256').update(dado).digest('hex')
 
+// ---------- cifra ECB e IV fixo ----------
+export function cifraEcb (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-cifra-ecb
+  const c = crypto.createCipheriv('aes-128-ecb', chave, '')
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export function decifraEcb (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-cifra-ecb
+  const d = crypto.createDecipheriv('AES-256-ECB', chave, null)
+  return Buffer.concat([d.update(dado), d.final()])
+}
+
+export function cifraCbc (chave: Buffer, dado: Buffer, iv: Buffer) {
+  // ok: sentinel-node-cifra-ecb
+  const c = crypto.createCipheriv('aes-256-cbc', chave, iv)
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export function cifraIvLiteral (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-iv-fixo
+  const c = crypto.createCipheriv('aes-128-cbc', chave, 'super_secure_iv2')
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export function cifraIvBufferLiteral (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-iv-fixo
+  const c = crypto.createCipheriv('aes-256-gcm', chave, Buffer.from('000000000000'))
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export class Segredos {
+  static IV = 'valor-fixo-de-16b'
+}
+
+export function cifraIvEstatico (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-iv-fixo
+  const c = crypto.createCipheriv('aes-256-cbc', chave, Segredos.IV)
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export function cifraIvAleatorio (chave: Buffer, dado: Buffer) {
+  const iv = crypto.randomBytes(16)
+  // ok: sentinel-node-iv-fixo
+  const c = crypto.createCipheriv('aes-256-cbc', chave, iv)
+  return Buffer.concat([iv, c.update(dado), c.final()])
+}
+
 // ---------- XXE ----------
 export function lerXml (libxml: any, dados: string) {
   // ruleid: sentinel-node-xxe
