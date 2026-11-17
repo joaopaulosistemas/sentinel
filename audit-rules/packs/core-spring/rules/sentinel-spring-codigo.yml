@@ -64,6 +64,23 @@ rules:
       cwe: "CWE-1021: Improper Restriction of Rendered UI Layers"
       owasp: A05:2021 - Security Misconfiguration
 
+  - id: sentinel-spring-senha-sem-hash
+    pattern-either:
+      - pattern: org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance()
+      - pattern: NoOpPasswordEncoder.getInstance()
+      - pattern: new NoOpPasswordEncoder()
+    message: >
+      NoOpPasswordEncoder compara e guarda a senha em texto puro: quem lê o banco ou um backup vê todas as senhas.
+      Use BCryptPasswordEncoder, Argon2PasswordEncoder ou PasswordEncoderFactories.createDelegatingPasswordEncoder().
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-256: Plaintext Storage of a Password"
+      owasp: A02:2021 - Cryptographic Failures
+
   - id: sentinel-spring-fetch-eager
     pattern-regex: 'fetch\s*=\s*FetchType\.EAGER'
     message: >

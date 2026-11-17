@@ -1,0 +1,90 @@
+{
+ "_comentario": "Falhas de edu-secmachine/javulna lidas no código (treino), volta 40; confirmadas pelos exercícios do readme (arquivos, serialização, XML, LDAP). Gabarito escrito pelo mesmo agente que corrige. Entrada com regras vazias vale qualquer achado perto da linha.",
+ "repo": "edu-secmachine/javulna",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/MovieService.java",
+   "linha": 49,
+   "cwe": "CWE-89",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/MovieService.java",
+   "linha": 55,
+   "cwe": "CWE-89",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/MovieService.java",
+   "linha": 60,
+   "cwe": "CWE-89",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/MovieService.java",
+   "linha": 65,
+   "cwe": "CWE-89",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/MovieService.java",
+   "linha": 94,
+   "cwe": "CWE-611",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/RemotePasswordChangeService.java",
+   "linha": 36,
+   "cwe": "CWE-611",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/LdapService.java",
+   "linha": 60,
+   "cwe": "CWE-90",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/filter/ExtraAuthenticationCheckFilter.java",
+   "linha": 49,
+   "cwe": "CWE-502",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/utils/SerializationUtil.java",
+   "linha": 49,
+   "cwe": "CWE-502",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/FileStorageService.java",
+   "linha": 40,
+   "cwe": "CWE-22",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/FileStorageService.java",
+   "linha": 51,
+   "cwe": "CWE-22",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/springconfig/WebSecurityConfig.java",
+   "linha": 63,
+   "cwe": "CWE-256",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/springconfig/WebSecurityConfig.java",
+   "linha": 84,
+   "cwe": "CWE-352",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/kalavit/javulna/services/RemotePasswordChangeService.java",
+   "linha": 41,
+   "cwe": "CWE-532",
+   "regras": []
+  }
+ ]
+}

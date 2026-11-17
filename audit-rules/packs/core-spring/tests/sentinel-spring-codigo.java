@@ -80,3 +80,23 @@ class ContaBoa {
 @Data
 class DtoSimples {
 }
+
+class SenhaSemHash {
+    @Bean
+    public PasswordEncoder semHash() {
+        // ruleid: sentinel-spring-senha-sem-hash
+        return NoOpPasswordEncoder.getInstance();
+    }
+
+    @Bean
+    public PasswordEncoder semHashNovo() {
+        // ruleid: sentinel-spring-senha-sem-hash
+        return new NoOpPasswordEncoder();
+    }
+
+    @Bean
+    public PasswordEncoder comHash() {
+        // ok: sentinel-spring-senha-sem-hash
+        return new BCryptPasswordEncoder();
+    }
+}

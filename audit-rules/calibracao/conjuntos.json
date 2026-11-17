@@ -41,7 +41,8 @@
       "terracotta-bank/terracotta-bank",
       "SirAppSec/vuln-node.js-express.js-app",
       "HTBridge/pivaa",
-      "infosecak/DVBE"
+      "infosecak/DVBE",
+      "edu-secmachine/javulna"
     ],
     "_nota_terracotta": "terracotta-bank/terracotta-bank (app bancária Java servlet intencionalmente vulnerável, branch master, stack JAVA, 41 estrelas) entrou em 2026-11-17 na volta 36 (ciclo/estabilizacao-12); treino, código lido para o gabarito.",
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
@@ -76,7 +77,8 @@
     "_nota_hello_java_sec": "j3ers3/Hello-Java-Sec (app Spring Boot de treino de segurança Java, branch master, stack JAVA) entrou em 2026-11-17 na volta 33 (ciclo/estabilizacao-12); treino.",
     "_nota_vvma": "abigailajohn/VVMA (API Node/Express vulnerável de treino, branch main, stack JAVASCRIPT) entrou em 2026-11-17 na volta 34 (ciclo/estabilizacao-12); treino.",
     "_nota_pivaa": "HTBridge/pivaa (app Android Java intencionalmente vulnerável, branch master, stack JAVA, 106 estrelas) entrou em 2026-11-17 na volta 38 (ciclo/estabilizacao-12); treino, código lido para o gabarito.",
-    "_nota_dvbe": "x"
+    "_nota_dvbe": "x",
+    "_nota_javulna": "edu-secmachine/javulna (app Spring Boot intencionalmente vulnerável, branch master, stack JAVA, 19 estrelas) entrou em 2026-11-17 na volta 40 (ciclo/estabilizacao-13); treino, código lido para o gabarito."
   },
   "validacao": {
     "repositorios_fixos": [
