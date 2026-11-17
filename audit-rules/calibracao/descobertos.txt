@@ -54,3 +54,4 @@ j3ers3/Hello-Java-Sec
 abigailajohn/VVMA
 nr-yolo/Vulnshop
 terracotta-bank/terracotta-bank
+SirAppSec/vuln-node.js-express.js-app
