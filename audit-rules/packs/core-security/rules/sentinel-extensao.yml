@@ -1,0 +1,39 @@
+rules:
+  - id: sentinel-ext-recurso-publico-curinga
+    patterns:
+      - pattern-inside: '"web_accessible_resources": [...]'
+      - pattern: '"*"'
+    message: >
+      Extensão de navegador com `web_accessible_resources` liberando "*" (CWE-1021): qualquer site consegue carregar as
+      páginas da extensão (por exemplo o popup, dentro de um iframe invisível) e fazer clickjacking, além de ler seus
+      arquivos. Liste só os arquivos que a página precisa e limite `matches` aos sites necessários.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      side: front
+      category: security
+      cwe: "CWE-1021: Improper Restriction of Rendered UI Layers or Frames"
+      owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-ext-permissao-ampla
+    patterns:
+      - pattern-inside: '"permissions": [...]'
+      - pattern-either:
+          - pattern: '"cookies"'
+          - pattern: '"history"'
+          - pattern: '"clipboardRead"'
+          - pattern: '"<all_urls>"'
+          - pattern: '"*://*/*"'
+          - pattern: '"webRequestBlocking"'
+          - pattern: '"nativeMessaging"'
+    message: >
+      Extensão de navegador pede permissão ampla (CWE-250): cookies, histórico, área de transferência ou acesso a
+      todos os sites ampliam o dano se a extensão tiver uma falha (XSS no popup, script remoto). Peça só o mínimo e
+      use `optional_permissions` para o que for ocasional.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      side: front
+      category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+      owasp: A05:2021 - Security Misconfiguration

@@ -1,0 +1,41 @@
+{
+ "repo": "infosecak/DVBE",
+ "nota": 77.34,
+ "total": 38,
+ "porSeveridade": {
+  "HIGH": 2,
+  "MEDIUM": 10,
+  "LOW": 24,
+  "INFO": 2
+ },
+ "porRegra": {
+  "Opengrep/sentinel-node-credencial-literal-comparada": 1,
+  "Opengrep/sentinel-node-eval-callback": 1,
+  "Opengrep/sentinel-int-fetch-sem-timeout": 1,
+  "Opengrep/sentinel-ts-token-em-localstorage": 1,
+  "Opengrep/sentinel-ext-permissao-ampla": 3,
+  "Opengrep/sentinel-ext-recurso-publico-curinga": 1,
+  "Opengrep/sentinel-xss-inner-html": 1,
+  "ESLint/eslint-no-eval": 1,
+  "ESLint/eslint-no-unsanitized/property": 1,
+  "Higiene do projeto/sentinel-proj-no-ci": 1,
+  "Opengrep/sentinel-fe-html-sem-lang": 2,
+  "ESLint/eslint-@html-eslint/no-empty-headings": 1,
+  "ESLint/eslint-@html-eslint/no-inline-styles": 3,
+  "ESLint/eslint-@html-eslint/no-script-style-type": 1,
+  "ESLint/eslint-@html-eslint/require-button-type": 2,
+  "ESLint/eslint-@html-eslint/require-frame-title": 1,
+  "ESLint/eslint-@html-eslint/require-input-label": 1,
+  "ESLint/eslint-@html-eslint/require-lang": 2,
+  "ESLint/eslint-@html-eslint/require-meta-charset": 1,
+  "ESLint/eslint-@html-eslint/require-meta-viewport": 2,
+  "ESLint/eslint-promise/catch-or-return": 1,
+  "ESLint/eslint-security/detect-possible-timing-attacks": 1,
+  "Mensagens de commit/sentinel-commit-fora-do-padrao": 1,
+  "Higiene do projeto/sentinel-proj-no-gitignore": 1,
+  "Stylelint/stylelint-a11y/selector-pseudo-class-focus": 1,
+  "Stylelint/stylelint-color-function-alias-notation": 1,
+  "Stylelint/stylelint-selector-max-id": 2,
+  "Dependency-Cruiser/dependency-cruiser-modulo-orfao": 2
+ }
+}

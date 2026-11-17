@@ -1,0 +1,13 @@
+{
+ "_comentario": "Falhas de nearform/owasp-top-ten-workshop lidas no código (treino), volta 41; os arquivos solution.js são as correções do workshop e não entram. Gabarito escrito pelo mesmo agente que corrige. Entrada com regras vazias vale qualquer achado perto da linha.",
+ "repo": "nearform/owasp-top-ten-workshop",
+ "falhas": [
+  {"arquivo": "src/a03-injection/routes/customer/index.js", "linha": 14, "cwe": "CWE-89", "regras": ["sentinel-node-sql-injection"]},
+  {"arquivo": "src/a02-cryptographic-failure/utils/crypto.js", "linha": 6, "cwe": "CWE-328", "regras": ["sentinel-node-hash-fraco-pacote"]},
+  {"arquivo": "src/a08-software-data-integrity-failures/routes/profile/index.js", "linha": 11, "cwe": "CWE-502", "regras": ["sentinel-node-desserializacao"]},
+  {"arquivo": "src/a10-server-side-request-forgery/routes/user/index.js", "linha": 14, "cwe": "CWE-918", "regras": ["sentinel-node-ssrf"]},
+  {"arquivo": "src/a06-vulnerable-outdated/routes/profile/index.js", "linha": 14, "cwe": "CWE-918", "regras": ["sentinel-node-ssrf"]},
+  {"arquivo": "src/a05-security-misconfiguration/routes/user/index.js", "linha": 39, "cwe": "CWE-565", "regras": []},
+  {"arquivo": "src/a01-access-control/routes/profile/index.js", "linha": 16, "cwe": "CWE-639", "regras": []}
+ ]
+}

@@ -56,3 +56,6 @@ nr-yolo/Vulnshop
 terracotta-bank/terracotta-bank
 SirAppSec/vuln-node.js-express.js-app
 HTBridge/pivaa
+infosecak/DVBE
+edu-secmachine/javulna
+nearform/owasp-top-ten-workshop

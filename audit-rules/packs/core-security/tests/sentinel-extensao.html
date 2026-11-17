@@ -1,0 +1,26 @@
+<!-- manifest.json de extensão de navegador, escrito dentro de um HTML só para o teste (JSON não aceita comentário) -->
+<pre>
+{
+  "manifest_version": 2,
+  "permissions": [
+    "activeTab",
+    <!-- ruleid: sentinel-ext-permissao-ampla -->
+    "cookies",
+    "idle"
+  ],
+  <!-- ruleid: sentinel-ext-recurso-publico-curinga -->
+  "web_accessible_resources": ["*"]
+}
+</pre>
+<pre>
+{
+  "manifest_version": 3,
+  "permissions": [
+    <!-- ok: sentinel-ext-permissao-ampla -->
+    "activeTab",
+    "storage"
+  ],
+  <!-- ok: sentinel-ext-recurso-publico-curinga -->
+  "web_accessible_resources": [{ "resources": ["imagens/logo.png"], "matches": ["https://exemplo.com/*"] }]
+}
+</pre>

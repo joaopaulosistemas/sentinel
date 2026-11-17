@@ -264,7 +264,7 @@
 
 - key: "sentinel-ts-token-em-localstorage"
   summary: "Qualquer script (XSS) lê o localStorage. Guarde tokens em cookie HttpOnly + SameSite, não em storage acessível ao JS."
-  before: "localStorage.setItem(\"token\", jwt);"
+  before: "localStorage.setItem(\"api_key\", chave);"
   after: "// servidor: Set-Cookie: sid=...; HttpOnly; Secure; SameSite=Strict"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage"

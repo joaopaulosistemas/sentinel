@@ -82,6 +82,13 @@
   effort: S
   regression-risk: LOW
 
+- key: "sentinel-spring-senha-sem-hash"
+  summary: "Troque o NoOpPasswordEncoder por BCrypt (ou o encoder delegante) e regrave as senhas com hash."
+  before: "return NoOpPasswordEncoder.getInstance();"
+  after: "return new BCryptPasswordEncoder();"
+  effort: M
+  regression-risk: HIGH
+
 - key: "sentinel-spring-fetch-eager"
   summary: "Deixe LAZY e use JOIN FETCH ou @EntityGraph nas consultas que precisam da relação."
   before: "@ManyToOne(fetch = FetchType.EAGER)"

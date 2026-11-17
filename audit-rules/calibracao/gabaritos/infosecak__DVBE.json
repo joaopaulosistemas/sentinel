@@ -1,0 +1,12 @@
+{
+ "_comentario": "Falhas de infosecak/DVBE lidas no código (treino), volta 39. Gabarito escrito pelo mesmo agente que corrige. As linhas da primeira versão estavam erradas (contei os arquivos concatenados) e foram corrigidas antes da mudança de regra. Entradas com __sem_regra__ são metas sem regra.",
+ "repo": "infosecak/DVBE",
+ "falhas": [
+  {"arquivo": "DVBE/background.js", "linha": 3, "cwe": "CWE-95", "regras": ["eslint-no-eval", "sentinel-node-eval-callback"], "_nota": "fetch de script remoto (http) seguido de .then(eval)"},
+  {"arquivo": "DVBE/popup.js", "linha": 99, "cwe": "CWE-79", "regras": ["sentinel-xss-inner-html", "eslint-no-unsanitized/property"], "_nota": "innerHTML com notas do usuário em template string"},
+  {"arquivo": "DVBE/popup.js", "linha": 36, "cwe": "CWE-798", "regras": ["sentinel-node-credencial-literal-comparada"], "_nota": "chave de API admin literal comparada no cliente"},
+  {"arquivo": "DVBE/popup.js", "linha": 57, "cwe": "CWE-922", "regras": ["sentinel-ts-token-em-localstorage"], "_nota": "chave de API gravada em localStorage"},
+  {"arquivo": "DVBE/manifest.json", "linha": 26, "cwe": "CWE-1021", "regras": ["sentinel-ext-recurso-publico-curinga"], "_nota": "web_accessible_resources '*' permite clickjacking do popup"},
+  {"arquivo": "DVBE/manifest.json", "linha": 19, "cwe": "CWE-250", "regras": ["sentinel-ext-permissao-ampla"], "_nota": "permissões excessivas (cookies, history, clipboardRead)"}
+ ]
+}
