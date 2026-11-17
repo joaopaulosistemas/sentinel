@@ -33,6 +33,13 @@
   effort: S
   regression-risk: MEDIUM
 
+- key: "sentinel-spring-datasource-senha-vazia"
+  summary: "Defina uma senha forte para o usuário do banco e leia de variável de ambiente ou cofre de segredos."
+  before: "spring.datasource.password="
+  after: "spring.datasource.password=${DB_PASSWORD}"
+  effort: S
+  regression-risk: MEDIUM
+
 - key: "sentinel-spring-ddl-auto-perigoso"
   summary: "Use validate (ou none) e controle o esquema com Flyway ou Liquibase."
   before: "spring.jpa.hibernate.ddl-auto=update"
