@@ -3,15 +3,21 @@ import { useEffect, useRef, useState } from 'react';
 import { PALETTES, TEXT_SIZES, useThemeStore, type Palette, type TextSize } from '../store/useThemeStore';
 import { useAuth } from './AuthContext';
 
+/** O que o login permite: administrador e/ou quem pode disparar auditorias. */
+export interface IPermissoes {
+  admin: boolean;
+  canExecute: boolean;
+}
+
 /** Papel mais alto do usuário, em português. */
-export function rotuloDoPapel(admin: boolean, canExecute: boolean): string {
+export function rotuloDoPapel({ admin, canExecute }: IPermissoes): string {
   if (admin) return 'Administrador';
   return canExecute ? 'Executor' : 'Sem papel no Sentinel';
 }
 
 type Papel = 'admin' | 'executor' | 'nenhum';
 
-export function papelDe(admin: boolean, canExecute: boolean): Papel {
+export function papelDe({ admin, canExecute }: IPermissoes): Papel {
   if (admin) return 'admin';
   return canExecute ? 'executor' : 'nenhum';
 }
@@ -88,6 +94,134 @@ function useFecharFora(aberto: boolean, fechar: () => void) {
   return ref;
 }
 
+const SEPARADOR = <div style={{ height: 1, background: '#393939' }} />;
+
+interface IGatilho {
+  aberto: boolean;
+  comLogin: boolean;
+  username: string;
+  papel: Papel;
+  rotulo: string;
+  aoAlternar: () => void;
+}
+
+/** O botão do cabeçalho que abre o menu. */
+function Gatilho({ aberto, comLogin, username, papel, rotulo, aoAlternar }: IGatilho) {
+  return (
+    <button
+      type="button"
+      aria-haspopup="true"
+      aria-expanded={aberto}
+      aria-label={comLogin ? `Menu de ${username}` : 'Aparência'}
+      onClick={aoAlternar}
+      style={{
+        all: 'unset', boxSizing: 'border-box', height: 36, display: 'flex', alignItems: 'center', gap: 10,
+        padding: comLogin ? '0 8px 0 4px' : '0 10px', borderRadius: 18, background: aberto ? '#393939' : '#262626',
+        color: '#f4f4f4', cursor: 'pointer',
+      }}
+    >
+      {comLogin ? (
+        <>
+          <Avatar nome={username} papel={papel} tamanho={28} />
+          <span className="sentinel-hide-narrow" style={{ fontSize: 13, fontWeight: 500 }}>{username}</span>
+          <span className="sentinel-hide-narrow" style={{ display: 'flex' }}><EtiquetaDoPapel papel={papel} rotulo={rotulo} /></span>
+        </>
+      ) : (
+        <>
+          <ColorPalette size={18} />
+          <span className="sentinel-hide-narrow" style={{ fontSize: 13 }}>Aparência</span>
+        </>
+      )}
+      <ChevronDown size={16} style={{ color: '#c6c6c6' }} />
+    </button>
+  );
+}
+
+/** Avatar, nome e papel de quem está logado, no alto do menu. */
+function CabecalhoDoUsuario({ username, papel, rotulo }: { username: string; papel: Papel; rotulo: string }) {
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Avatar nome={username} papel={papel} tamanho={40} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{username}</span>
+          <EtiquetaDoPapel papel={papel} rotulo={rotulo} />
+        </div>
+      </div>
+      {SEPARADOR}
+    </>
+  );
+}
+
+function SeletorDeTamanho() {
+  const textSize = useThemeStore((st) => st.textSize);
+  const setTextSize = useThemeStore((st) => st.setTextSize);
+  return (
+    <div role="group" aria-label="Tamanho do texto" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span style={ROTULO_ESTILO}>Tamanho do texto</span>
+      <div style={{ display: 'flex', gap: 2, background: '#161616', borderRadius: 6, padding: 2 }}>
+        {TEXT_SIZES.map((t) => {
+          const ativo = t.id === textSize;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              aria-pressed={ativo}
+              onClick={() => setTextSize(t.id)}
+              style={{
+                all: 'unset', flex: 1, textAlign: 'center', padding: '6px 0', fontSize: 13, borderRadius: 4, cursor: 'pointer',
+                background: ativo ? '#0f62fe' : 'transparent', color: ativo ? '#fff' : '#c6c6c6', fontWeight: ativo ? 600 : 400,
+              }}
+            >
+              {TAMANHOS[t.id]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SeletorDePaleta() {
+  const palette = useThemeStore((st) => st.palette);
+  const setPalette = useThemeStore((st) => st.setPalette);
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span style={ROTULO_ESTILO}>Paleta de cores</span>
+      <select
+        aria-label="Paleta de cores"
+        title="Suave e Alternativo reduzem o contraste para cansar menos a vista"
+        value={palette}
+        onChange={(e) => setPalette(e.target.value as Palette)}
+        style={{ height: 36, background: '#161616', color: '#f4f4f4', colorScheme: 'dark', border: '1px solid #393939', borderRadius: 6, fontSize: 13, padding: '0 8px' }}
+      >
+        {PALETTES.map((p) => (
+          <option key={p.id} value={p.id} style={OPCAO_ESTILO}>{p.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function BotaoSair({ aoSair }: { aoSair: () => void }) {
+  return (
+    <>
+      {SEPARADOR}
+      <button
+        type="button"
+        onClick={aoSair}
+        style={{
+          all: 'unset', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 6px',
+          borderRadius: 6, color: '#ff8389', fontSize: 14, fontWeight: 500, cursor: 'pointer',
+        }}
+      >
+        <Logout size={20} />
+        Sair
+      </button>
+    </>
+  );
+}
+
 /**
  * Menu do canto direito do cabeçalho: com o login ligado mostra o avatar, o nome e o papel; sem login vira só
  * "Aparência". Dentro ficam o tamanho do texto, a paleta e (com login) o Sair.
@@ -97,42 +231,19 @@ export function UserMenu() {
   const [aberto, setAberto] = useState(false);
   const fechar = () => setAberto(false);
   const ref = useFecharFora(aberto, fechar);
-  const textSize = useThemeStore((st) => st.textSize);
-  const setTextSize = useThemeStore((st) => st.setTextSize);
-  const palette = useThemeStore((st) => st.palette);
-  const setPalette = useThemeStore((st) => st.setPalette);
-  const papel = papelDe(auth.admin, auth.canExecute);
-  const rotulo = rotuloDoPapel(auth.admin, auth.canExecute);
+  const papel = papelDe(auth);
+  const rotulo = rotuloDoPapel(auth);
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'flex', alignItems: 'center', paddingRight: '0.5rem' }}>
-      <button
-        type="button"
-        aria-haspopup="true"
-        aria-expanded={aberto}
-        aria-label={auth.enabled ? `Menu de ${auth.username}` : 'Aparência'}
-        onClick={() => setAberto((v) => !v)}
-        style={{
-          all: 'unset', boxSizing: 'border-box', height: 36, display: 'flex', alignItems: 'center', gap: 10,
-          padding: auth.enabled ? '0 8px 0 4px' : '0 10px', borderRadius: 18, background: aberto ? '#393939' : '#262626',
-          color: '#f4f4f4', cursor: 'pointer',
-        }}
-      >
-        {auth.enabled ? (
-          <>
-            <Avatar nome={auth.username} papel={papel} tamanho={28} />
-            <span className="sentinel-hide-narrow" style={{ fontSize: 13, fontWeight: 500 }}>{auth.username}</span>
-            <span className="sentinel-hide-narrow" style={{ display: 'flex' }}><EtiquetaDoPapel papel={papel} rotulo={rotulo} /></span>
-          </>
-        ) : (
-          <>
-            <ColorPalette size={18} />
-            <span className="sentinel-hide-narrow" style={{ fontSize: 13 }}>Aparência</span>
-          </>
-        )}
-        <ChevronDown size={16} style={{ color: '#c6c6c6' }} />
-      </button>
-
+      <Gatilho
+        aberto={aberto}
+        comLogin={auth.enabled}
+        username={auth.username}
+        papel={papel}
+        rotulo={rotulo}
+        aoAlternar={() => setAberto((v) => !v)}
+      />
       {aberto && (
         <div
           role="group"
@@ -143,73 +254,10 @@ export function UserMenu() {
             flexDirection: 'column', gap: 14, zIndex: 9000, color: '#f4f4f4',
           }}
         >
-          {auth.enabled && (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Avatar nome={auth.username} papel={papel} tamanho={40} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{auth.username}</span>
-                  <EtiquetaDoPapel papel={papel} rotulo={rotulo} />
-                </div>
-              </div>
-              <div style={{ height: 1, background: '#393939' }} />
-            </>
-          )}
-
-          <div role="group" aria-label="Tamanho do texto" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={ROTULO_ESTILO}>Tamanho do texto</span>
-            <div style={{ display: 'flex', gap: 2, background: '#161616', borderRadius: 6, padding: 2 }}>
-              {TEXT_SIZES.map((t) => {
-                const ativo = t.id === textSize;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    aria-pressed={ativo}
-                    onClick={() => setTextSize(t.id)}
-                    style={{
-                      all: 'unset', flex: 1, textAlign: 'center', padding: '6px 0', fontSize: 13, borderRadius: 4, cursor: 'pointer',
-                      background: ativo ? '#0f62fe' : 'transparent', color: ativo ? '#fff' : '#c6c6c6', fontWeight: ativo ? 600 : 400,
-                    }}
-                  >
-                    {TAMANHOS[t.id]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={ROTULO_ESTILO}>Paleta de cores</span>
-            <select
-              aria-label="Paleta de cores"
-              title="Suave e Alternativo reduzem o contraste para cansar menos a vista"
-              value={palette}
-              onChange={(e) => setPalette(e.target.value as Palette)}
-              style={{ height: 36, background: '#161616', color: '#f4f4f4', colorScheme: 'dark', border: '1px solid #393939', borderRadius: 6, fontSize: 13, padding: '0 8px' }}
-            >
-              {PALETTES.map((p) => (
-                <option key={p.id} value={p.id} style={OPCAO_ESTILO}>{p.label}</option>
-              ))}
-            </select>
-          </label>
-
-          {auth.enabled && (
-            <>
-              <div style={{ height: 1, background: '#393939' }} />
-              <button
-                type="button"
-                onClick={() => { fechar(); auth.logout(); }}
-                style={{
-                  all: 'unset', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 6px',
-                  borderRadius: 6, color: '#ff8389', fontSize: 14, fontWeight: 500, cursor: 'pointer',
-                }}
-              >
-                <Logout size={20} />
-                Sair
-              </button>
-            </>
-          )}
+          {auth.enabled && <CabecalhoDoUsuario username={auth.username} papel={papel} rotulo={rotulo} />}
+          <SeletorDeTamanho />
+          <SeletorDePaleta />
+          {auth.enabled && <BotaoSair aoSair={() => { fechar(); auth.logout(); }} />}
         </div>
       )}
     </div>
