@@ -44,3 +44,9 @@ t0thkr1s/allsafe-android
 koenbuyens/Vulnerable-OAuth-2.0-Applications
 kOaDT/oss-oopssec-store
 SasanLabs/VulnerableApp
+effortlessdevsec/ninjasworkout
+aligorithm/Zero-Health
+ShiftLeftSecurity/tarpit-java
+DamnVulnerableCryptoApp/DamnVulnerableCryptoApp
+dogangcr/vulnerable-sso
+SasanLabs/VulnerableApp-facade

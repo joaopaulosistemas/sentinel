@@ -39,6 +39,29 @@ export function transferirSeguro (req: any) {
   return { saldo: Sequelize.literal(`balance - ${valor}`) }
 }
 
+export function historico (req: any, res: any) {
+  const userId = req.user.id
+  const consulta = `SELECT * FROM chat_history WHERE user_id = ${userId} ORDER BY created_at`
+  // ruleid: sentinel-node-sql-injection
+  return pool.query(consulta)
+}
+
+export function inserirPorSessao (req: any, res: any) {
+  // ruleid: sentinel-node-sql-injection
+  return pool.query(`INSERT INTO notas (dono) VALUES ('${req.session.userId}')`)
+}
+
+export function historicoSeguro (req: any, res: any) {
+  // ok: sentinel-node-sql-injection
+  return pool.query('SELECT * FROM chat_history WHERE user_id = $1', [req.user.id])
+}
+
+export function historicoNumerico (req: any, res: any) {
+  const userId = Number(req.user.id)
+  // ok: sentinel-node-sql-injection
+  return pool.query(`SELECT * FROM chat_history WHERE user_id = ${userId}`)
+}
+
 export function consultaFixa () {
   // ok: sentinel-node-sql-injection
   return models.sequelize.query('SELECT sql FROM sqlite_master')
@@ -140,6 +163,42 @@ export async function chamarComCorpo (req: any) {
   return axios.post('https://api.exemplo.com/eventos', req.body)
 }
 
+// ---------- SSRF com needle, superagent e http.request (volta 27) ----------
+declare const needle: any
+declare const superagent: any
+declare const https: any
+
+export function buscarComNeedle (request: any, response: any) {
+  const url = request.query['url']
+  // ruleid: sentinel-node-ssrf
+  needle.get(url, { timeout: 3000 }, (erro: any, resposta: any) => response.send(resposta.body))
+}
+
+export function enviarComNeedle (req: any) {
+  // ruleid: sentinel-node-ssrf
+  return needle.post(req.body.destino, { a: 1 })
+}
+
+export function buscarComSuperagent (req: any) {
+  // ruleid: sentinel-node-ssrf
+  return superagent.get(req.query.alvo)
+}
+
+export function buscarComHttpsRequest (req: any) {
+  // ruleid: sentinel-node-ssrf
+  return https.request(req.query.alvo, () => {})
+}
+
+export function needleFixo () {
+  // ok: sentinel-node-ssrf
+  return needle.get('https://api.exemplo.com/status')
+}
+
+export function superagentFixo (req: any) {
+  // ok: sentinel-node-ssrf
+  return superagent.post('https://api.exemplo.com/eventos').send(req.body)
+}
+
 // ---------- hash fraco ----------
 export const hashMd5 = (dado: string) =>
   // ruleid: sentinel-node-hash-fraco
@@ -152,6 +211,54 @@ export const hashSha1 = (dado: string) =>
 export const hashForte = (dado: string) =>
   // ok: sentinel-node-hash-fraco
   crypto.createHash('sha256').update(dado).digest('hex')
+
+// ---------- cifra ECB e IV fixo ----------
+export function cifraEcb (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-cifra-ecb
+  const c = crypto.createCipheriv('aes-128-ecb', chave, '')
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export function decifraEcb (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-cifra-ecb
+  const d = crypto.createDecipheriv('AES-256-ECB', chave, null)
+  return Buffer.concat([d.update(dado), d.final()])
+}
+
+export function cifraCbc (chave: Buffer, dado: Buffer, iv: Buffer) {
+  // ok: sentinel-node-cifra-ecb
+  const c = crypto.createCipheriv('aes-256-cbc', chave, iv)
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export function cifraIvLiteral (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-iv-fixo
+  const c = crypto.createCipheriv('aes-128-cbc', chave, 'super_secure_iv2')
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export function cifraIvBufferLiteral (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-iv-fixo
+  const c = crypto.createCipheriv('aes-256-gcm', chave, Buffer.from('000000000000'))
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export class Segredos {
+  static IV = 'valor-fixo-de-16b'
+}
+
+export function cifraIvEstatico (chave: Buffer, dado: Buffer) {
+  // ruleid: sentinel-node-iv-fixo
+  const c = crypto.createCipheriv('aes-256-cbc', chave, Segredos.IV)
+  return Buffer.concat([c.update(dado), c.final()])
+}
+
+export function cifraIvAleatorio (chave: Buffer, dado: Buffer) {
+  const iv = crypto.randomBytes(16)
+  // ok: sentinel-node-iv-fixo
+  const c = crypto.createCipheriv('aes-256-cbc', chave, iv)
+  return Buffer.concat([iv, c.update(dado), c.final()])
+}
 
 // ---------- XXE ----------
 export function lerXml (libxml: any, dados: string) {

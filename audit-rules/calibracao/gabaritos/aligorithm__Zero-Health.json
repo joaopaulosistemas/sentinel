@@ -1,0 +1,236 @@
+{
+ "_comentario": "Falhas de aligorithm/Zero-Health lidas no codigo (treino), volta 28; o challenges.md do projeto e o comentario no codigo apontam varias. Entrada com lacuna=sem-regra e lacuna assumida. Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li. Linhas 456, 834 e 1374 (SQL montado com req.user.id/XML dentro de handler) eram lacuna na medida inicial.",
+ "repo": "aligorithm/Zero-Health",
+ "falhas": [
+  {
+   "arquivo": "server.js",
+   "linha": 18,
+   "cwe": "CWE-942",
+   "regras": [
+    "sentinel-api-cors-aberto-js"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 96,
+   "cwe": "CWE-347",
+   "regras": [
+    "sentinel-node-jwt-algoritmo-none"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 196,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 190,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 272,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 698,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 980,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1150,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-command-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1169,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1292,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1327,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-node-xxe"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1350,
+   "cwe": "CWE-95",
+   "regras": [
+    "sentinel-node-eval-dinamico"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1374,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1457,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-exec-dinamico"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1506,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1611,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1757,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 63,
+   "cwe": "CWE-434",
+   "regras": [],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 966,
+   "cwe": "CWE-915",
+   "regras": [],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 1665,
+   "cwe": "CWE-200",
+   "regras": [],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 2030,
+   "cwe": "CWE-79",
+   "regras": [],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "routes/chatbot.js",
+   "linha": 132,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-exec-dinamico"
+   ]
+  },
+  {
+   "arquivo": "routes/chatbot.js",
+   "linha": 456,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection",
+    "sentinel-node-sql-concatenado"
+   ]
+  },
+  {
+   "arquivo": "routes/chatbot.js",
+   "linha": 478,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "routes/chatbot.js",
+   "linha": 834,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection",
+    "sentinel-node-sql-concatenado"
+   ]
+  },
+  {
+   "arquivo": "client/src/components/Chatbot.jsx",
+   "linha": 327,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ]
+  },
+  {
+   "arquivo": "client/src/components/PatientPortal.jsx",
+   "linha": 374,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ]
+  },
+  {
+   "arquivo": "client/src/components/StaffDashboard.jsx",
+   "linha": 796,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ]
+  },
+  {
+   "arquivo": "client/src/components/ResetPassword.jsx",
+   "linha": 78,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously"
+   ]
+  }
+ ]
+}

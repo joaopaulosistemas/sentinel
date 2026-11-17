@@ -1,7 +1,8 @@
 # Armadilhas de React. Casos de teste: tests/sentinel-react.tsx
 rules:
   - id: sentinel-react-dangerously
-    pattern-regex: 'dangerouslySetInnerHTML'
+    # Não marca quando o valor já passa por DOMPurify.sanitize(...) ou por uma função `sanitize*`/`purify*`.
+    pattern-regex: 'dangerouslySetInnerHTML(?!\s*=\s*\{\{\s*__html\s*:\s*(?:[\w$]+\.)*(?:sanitize\w*|purify\w*|DOMPurify\.sanitize)\s*\()'
     message: >
       dangerouslySetInnerHTML injeta HTML sem sanitização: com dado externo é XSS. Sanitize com DOMPurify ou
       renderize como texto/JSX.

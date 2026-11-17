@@ -345,4 +345,56 @@ class SenhaComparadaComLiteral {
         // ok: sentinel-ssrf-url-do-parametro
         return new URL("https://api.parceiro.com.br/cotacao").openStream();
     }
+
+    java.sql.Connection jdbcSenhaNoCodigo() throws Exception {
+        // ruleid: sentinel-jdbc-senha-fixa
+        return java.sql.DriverManager.getConnection("jdbc:mysql://localhost/app", "admin", "1234");
+    }
+
+    java.sql.Connection jdbcSenhaDoAmbiente() throws Exception {
+        // ok: sentinel-jdbc-senha-fixa
+        return java.sql.DriverManager.getConnection("jdbc:mysql://localhost/app", "admin", System.getenv("DB_PASSWORD"));
+    }
+
+    java.sql.Connection jdbcSemSenhaLiteral(String senha) throws Exception {
+        // ok: sentinel-jdbc-senha-fixa
+        return java.sql.DriverManager.getConnection("jdbc:mysql://localhost/app", "admin", senha);
+    }
+
+    java.sql.Connection jdbcSenhaVazia() throws Exception {
+        // ok: sentinel-jdbc-senha-fixa
+        return java.sql.DriverManager.getConnection("jdbc:h2:mem:test", "sa", "");
+    }
+
+    void oauthSegredoDoClienteNoCodigo(ClientDetailsServiceConfigurer clients) throws Exception {
+        clients.inMemory()
+            .withClient("app")
+            // ruleid: sentinel-spring-oauth-segredo-fixo
+            .secret("s3cr3t")
+            .authorizedGrantTypes("authorization_code");
+    }
+
+    void oauthSegredoCodificado(ClientDetailsServiceConfigurer clients, PasswordEncoder enc) throws Exception {
+        clients.inMemory()
+            .withClient("app")
+            // ok: sentinel-spring-oauth-segredo-fixo
+            .secret(enc.encode(System.getenv("CLIENT_SECRET")))
+            .authorizedGrantTypes("authorization_code");
+    }
+
+    void usuarioEmMemoriaComSenhaFixa(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication()
+            .withUser("admin")
+            // ruleid: sentinel-spring-usuario-memoria-senha-fixa
+            .password("admin123")
+            .roles("ADMIN");
+    }
+
+    void usuarioEmMemoriaSenhaDoAmbiente(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication()
+            .withUser("admin")
+            // ok: sentinel-spring-usuario-memoria-senha-fixa
+            .password(System.getenv("ADMIN_PASSWORD"))
+            .roles("ADMIN");
+    }
 }

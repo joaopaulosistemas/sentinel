@@ -1,0 +1,174 @@
+{
+ "_comentario": "Falhas de effortlessdevsec/ninjasworkout lidas no codigo (treino), volta 27; o proprio codigo comenta algumas (privilege escalation, SSRF, directory traversal, weak regex, user enumeration, insecure deserialization). Entrada com lacuna=sem-regra e lacuna assumida. Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li. A linha 17 de app.js e o carregamento do express-blinker (traversal por dependencia), sem padrao sintatico proprio.",
+ "repo": "effortlessdevsec/ninjasworkout",
+ "falhas": [
+  {
+   "arquivo": "routers/index.js",
+   "linha": 97,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 165,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 206,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 523,
+   "cwe": "CWE-347",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js",
+    "sentinel-node-jwt-alg-none"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 148,
+   "cwe": "CWE-943",
+   "regras": [
+    "sentinel-node-nosql-operador"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 263,
+   "cwe": "CWE-943",
+   "regras": [
+    "sentinel-node-nosql-operador"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 316,
+   "cwe": "CWE-915",
+   "regras": [
+    "sentinel-node-mass-assignment-campo"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 727,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-node-desserializacao"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 696,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-node-ssrf"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 43,
+   "cwe": "CWE-942",
+   "regras": [
+    "sentinel-api-cors-aberto-js"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 99,
+   "cwe": "CWE-614",
+   "regras": [
+    "sentinel-node-cookie-sem-flags"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 168,
+   "cwe": "CWE-614",
+   "regras": [
+    "sentinel-node-cookie-sem-flags"
+   ]
+  },
+  {
+   "arquivo": "app.js",
+   "linha": 92,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 700,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-node-xss-resposta"
+   ],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 150,
+   "cwe": "CWE-256",
+   "regras": [
+    "sentinel-node-senha-texto-puro"
+   ],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 517,
+   "cwe": "CWE-204",
+   "regras": [],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "app.js",
+   "linha": 17,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "app.js",
+   "linha": 74,
+   "cwe": "CWE-434",
+   "regras": [],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "routers/index.js",
+   "linha": 30,
+   "cwe": "CWE-352",
+   "regras": [],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "models/strict.js",
+   "linha": 14,
+   "cwe": "CWE-1333",
+   "regras": [],
+   "lacuna": "sem-regra"
+  },
+  {
+   "arquivo": "node_modules",
+   "linha": 1,
+   "cwe": "CWE-1104",
+   "regras": [
+    "sentinel-proj-committed-artifacts"
+   ]
+  }
+ ]
+}
