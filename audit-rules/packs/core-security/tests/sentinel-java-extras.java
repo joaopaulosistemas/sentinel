@@ -345,4 +345,24 @@ class SenhaComparadaComLiteral {
         // ok: sentinel-ssrf-url-do-parametro
         return new URL("https://api.parceiro.com.br/cotacao").openStream();
     }
+
+    java.sql.Connection jdbcSenhaNoCodigo() throws Exception {
+        // ruleid: sentinel-jdbc-senha-fixa
+        return java.sql.DriverManager.getConnection("jdbc:mysql://localhost/app", "admin", "1234");
+    }
+
+    java.sql.Connection jdbcSenhaDoAmbiente() throws Exception {
+        // ok: sentinel-jdbc-senha-fixa
+        return java.sql.DriverManager.getConnection("jdbc:mysql://localhost/app", "admin", System.getenv("DB_PASSWORD"));
+    }
+
+    java.sql.Connection jdbcSemSenhaLiteral(String senha) throws Exception {
+        // ok: sentinel-jdbc-senha-fixa
+        return java.sql.DriverManager.getConnection("jdbc:mysql://localhost/app", "admin", senha);
+    }
+
+    java.sql.Connection jdbcSenhaVazia() throws Exception {
+        // ok: sentinel-jdbc-senha-fixa
+        return java.sql.DriverManager.getConnection("jdbc:h2:mem:test", "sa", "");
+    }
 }

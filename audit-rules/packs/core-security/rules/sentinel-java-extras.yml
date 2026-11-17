@@ -294,6 +294,24 @@ rules:
       cwe: "CWE-798: Use of Hard-coded Credentials"
       owasp: A07:2021 - Identification and Authentication Failures
 
+  - id: sentinel-jdbc-senha-fixa
+    patterns:
+      - pattern: java.sql.DriverManager.getConnection($URL, $USER, "$PASS")
+      - metavariable-regex:
+          metavariable: $PASS
+          regex: .+
+    message: >
+      A senha do banco está escrita no código (terceiro argumento de DriverManager.getConnection). Ela vai para o
+      Git e para todo build. Leia de variável de ambiente ou de um cofre de segredos e troque a senha que já foi exposta.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
+
   - id: sentinel-system-exit
     pattern: System.exit(...)
     message: >
