@@ -52,3 +52,4 @@ dogangcr/vulnerable-sso
 SasanLabs/VulnerableApp-facade
 j3ers3/Hello-Java-Sec
 abigailajohn/VVMA
+nr-yolo/Vulnshop
