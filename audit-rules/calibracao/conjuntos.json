@@ -44,7 +44,8 @@
       "infosecak/DVBE",
       "edu-secmachine/javulna",
       "edu-secmachine/reactvulna",
-      "fortify-presales/IWA-PharmacyDirect"
+      "fortify-presales/IWA-PharmacyDirect",
+      "VitthalS/ivna"
     ],
     "_nota_terracotta": "terracotta-bank/terracotta-bank (app bancária Java servlet intencionalmente vulnerável, branch master, stack JAVA, 41 estrelas) entrou em 2026-11-17 na volta 36 (ciclo/estabilizacao-12); treino, código lido para o gabarito.",
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
@@ -82,7 +83,8 @@
     "_nota_dvbe": "x",
     "_nota_reactvulna": "edu-secmachine/reactvulna (app React deliberadamente vulneravel com exercicios de XSS, WebSocket, CSRF e tabnabbing, branch master, stack JAVASCRIPT, 17 estrelas) entrou em 2026-11-17 na volta 42 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
     "_nota_iwa": "fortify-presales/IWA-PharmacyDirect (Insecure Web App da Fortify, Spring Boot + Thymeleaf, branch main, stack JAVA, 19 estrelas) entrou em 2026-11-17 na volta 43 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
-    "_nota_javulna": "edu-secmachine/javulna (app Spring Boot intencionalmente vulnerável, branch master, stack JAVA, 19 estrelas) entrou em 2026-11-17 na volta 40 (ciclo/estabilizacao-13); treino, código lido para o gabarito."
+    "_nota_javulna": "edu-secmachine/javulna (app Spring Boot intencionalmente vulnerável, branch master, stack JAVA, 19 estrelas) entrou em 2026-11-17 na volta 40 (ciclo/estabilizacao-13); treino, código lido para o gabarito.",
+    "_nota_ivna": "VitthalS/ivna (app Node/Express com MongoDB intencionalmente vulneravel, branch main, stack JAVASCRIPT, 21 estrelas) entrou em 2026-11-17 na volta 44 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito."
   },
   "validacao": {
     "repositorios_fixos": [
