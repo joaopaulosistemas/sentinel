@@ -1,0 +1,10 @@
+{
+ "_comentario": "Sinks de XSS e de carga de script do SasanLabs/VulnerableApp-facade lidos no codigo (treino), volta 32. O repositorio e so o gateway/UI React do VulnerableApp: quase nao tem falha propria, o que e vulneravel mora nos apps registrados. A entrada sem regra e lacuna assumida. ChallengeCard.tsx:82 usa DOMPurify.sanitize e NAO e falha. Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li.",
+ "repo": "SasanLabs/VulnerableApp-facade",
+ "falhas": [
+  {"arquivo": "Components/Content.tsx", "linha": 151, "cwe": "CWE-79", "regras": ["sentinel-react-dangerously"]},
+  {"arquivo": "Components/Content.tsx", "linha": 244, "cwe": "CWE-79", "regras": ["sentinel-react-dangerously"]},
+  {"arquivo": "Utilities/Utils.ts", "linha": 57, "cwe": "CWE-79", "regras": ["sentinel-xss-inner-html"]},
+  {"arquivo": "Utilities/Utils.ts", "linha": 36, "cwe": "CWE-829", "regras": []}
+ ]
+}
