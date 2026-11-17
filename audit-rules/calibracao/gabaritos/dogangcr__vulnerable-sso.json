@@ -1,0 +1,44 @@
+{
+ "_comentario": "Falhas de dogangcr/vulnerable-sso lidas no codigo (treino), volta 31. Entradas com 'lacuna' eram sem regra na medida inicial (JSP e logica de OAuth fora do alcance do Opengrep sobre Java). Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li.",
+ "repo": "dogangcr/vulnerable-sso",
+ "falhas": [
+  {
+   "arquivo": "AuthServerConfig.java",
+   "linha": 30,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-spring-oauth-segredo-fixo"
+   ]
+  },
+  {
+   "arquivo": "SecurityConfig.java",
+   "linha": 65,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-spring-usuario-memoria-senha-fixa"
+   ]
+  },
+  {
+   "arquivo": "application.properties",
+   "linha": 6,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-spring-senha-em-properties"
+   ]
+  },
+  {
+   "arquivo": "showcode.jsp",
+   "linha": 9,
+   "cwe": "CWE-79",
+   "regras": [],
+   "lacuna": "EL ${code} sem escape em JSP, sem regra para JSP"
+  },
+  {
+   "arquivo": "AuthServerConfig.java",
+   "linha": 33,
+   "cwe": "CWE-358",
+   "regras": [],
+   "lacuna": "autoApprove(true) no cliente OAuth2: consentimento nunca pedido"
+  }
+ ]
+}

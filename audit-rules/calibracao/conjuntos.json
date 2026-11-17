@@ -61,6 +61,7 @@
     "_nota_tarpit": "ShiftLeftSecurity/tarpit-java (app Java de servlets vulneravel de treino, branch master, stack JAVA) entrou em 2026-11-17 na volta 29 (ciclo/estabilizacao-11); treino.",
     "_nota_ninjasworkout": "effortlessdevsec/ninjasworkout (app Node/Express com Pug e MongoDB vulneravel de treino, branch master, stack JAVASCRIPT) entrou em 2026-11-17 na volta 27 (ciclo/estabilizacao-11); treino.",
     "_nota_zerohealth": "aligorithm/Zero-Health (portal de saude Express + React/Vite vulneravel de treino, branch main, stack MIXED) entrou em 2026-11-17 na volta 28 (ciclo/estabilizacao-11); treino.",
+    "_nota_vulnsso": "dogangcr/vulnerable-sso (OAuth2 com Spring Boot 1.3 e Spring Security OAuth, vulneravel de treino, branch master, stack JAVA) entrou em 2026-11-17 na volta 31 (ciclo/estabilizacao-11); treino.",
     "_nota_dvca": "DamnVulnerableCryptoApp/DamnVulnerableCryptoApp (app React + Node/TypeScript de treino de criptografia, branch master, stack MIXED) entrou em 2026-11-17 na volta 30 (ciclo/estabilizacao-11); treino."
   },
   "validacao": {
