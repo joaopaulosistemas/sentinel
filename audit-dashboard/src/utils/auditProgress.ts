@@ -173,15 +173,15 @@ export function phaseViews(
     RELATORIO: 'insights e plano de ação',
   };
   return PHASES.map((p, i) => {
-    const state = phaseState(i, index, failed);
+    const state = phaseState(i, index, failed ? 'failed' : 'active');
     return { n: i + 1, id: p.id, name: p.label, state, sub: phaseSub(state, subs[p.id]) };
   });
 }
 
-function phaseState(i: number, current: number, failed: boolean): IPhaseView['state'] {
+function phaseState(i: number, current: number, estadoAtual: 'failed' | 'active'): IPhaseView['state'] {
   if (i < current) return 'done';
   if (i > current) return 'pending';
-  return failed ? 'failed' : 'active';
+  return estadoAtual;
 }
 
 const PHASE_SUB_BY_STATE: Partial<Record<IPhaseView['state'], string>> = {
