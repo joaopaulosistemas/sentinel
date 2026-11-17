@@ -950,3 +950,126 @@ export function loginNavegador2 () {
   // ok: sentinel-node-ssrf
   return fetch(`/api/auth/login?token=${token}`)
 }
+
+// ---------- Math.random devolvido por função de segurança e TLS desligado (volta 34) ----------
+export function generateOTP () {
+  // ruleid: sentinel-node-math-random-retorno
+  return Math.floor(1000 + Math.random() * 9000).toString()
+}
+
+export const gerarToken = () => {
+  // ruleid: sentinel-node-math-random-retorno
+  return Math.random().toString(36).slice(2)
+}
+
+export function sortearCarta () {
+  // ok: sentinel-node-math-random-retorno
+  return Math.floor(Math.random() * 52)
+}
+
+export function criarTransporte (nodemailer: any) {
+  return nodemailer.createTransport({
+    host: 'smtp.exemplo.com',
+    tls: {
+      // ruleid: sentinel-node-tls-desligado
+      rejectUnauthorized: false
+    }
+  })
+}
+
+export function clienteHttps (https: any) {
+  // ruleid: sentinel-node-tls-desligado
+  return new https.Agent({ rejectUnauthorized: false })
+}
+
+export function desligaGlobal () {
+  // ruleid: sentinel-node-tls-desligado
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+}
+
+export function clienteSeguro (https: any) {
+  // ok: sentinel-node-tls-desligado
+  return new https.Agent({ rejectUnauthorized: true })
+}
+
+// ---------- SQL injection em driver sqlite3 (db.get/all/run/each/exec) ----------
+export function loginSqlite (req: any, res: any, db: any) {
+  const { username, password } = req.body
+  const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`
+  // ruleid: sentinel-node-sql-injection
+  db.get(query, (err: any, user: any) => res.json(user))
+}
+
+export function buscaSqlite (req: any, res: any, db: any) {
+  const busca = req.query.search || ''
+  // ruleid: sentinel-node-sql-injection
+  db.all(`SELECT * FROM products WHERE name LIKE '%${busca}%'`, (err: any, rows: any) => res.json(rows))
+}
+
+export function buscaSqliteSegura (req: any, res: any, db: any) {
+  // ok: sentinel-node-sql-injection
+  db.get('SELECT * FROM users WHERE id = ?', [req.params.id], (err: any, row: any) => res.json(row))
+}
+
+export function mapaNaoEhBanco (req: any, cache: Map<string, string>) {
+  // ok: sentinel-node-sql-injection
+  return cache.get(req.query.chave)
+}
+
+// ---------- hash fraco por pacote (md5, sha1) ----------
+export function senhaMd5Pacote (senha: string) {
+  const md5 = require('md5')
+  // ruleid: sentinel-node-hash-fraco-pacote
+  return md5(senha)
+}
+
+export function assinaturaSha1Pacote (dado: string) {
+  const sha1 = require('sha1')
+  // ruleid: sentinel-node-hash-fraco-pacote
+  return sha1(dado)
+}
+
+export function funcaoLocalMd5 (dado: string) {
+  const md5 = (x: string) => x.toUpperCase()
+  // ok: sentinel-node-hash-fraco-pacote
+  return md5(dado)
+}
+
+export function hashPacoteForte (dado: string) {
+  const hash = require('hash.js')
+  // ok: sentinel-node-hash-fraco-pacote
+  return hash.sha256().update(dado).digest('hex')
+}
+
+// ---------- jwt.decode sem verificar assinatura ----------
+export const verificaToken = (req: any, res: any, next: any) => {
+  // ruleid: sentinel-node-jwt-decode-sem-verificar
+  const dados = jwt.decode(req.headers.token)
+  req.userId = dados.id
+  next()
+}
+
+export function tokenVerificado (req: any) {
+  // ok: sentinel-node-jwt-decode-sem-verificar
+  return jwt.verify(req.headers.token, process.env.JWT_SECRET, { algorithms: ['HS256'] })
+}
+
+export function decodeDeOutraBiblioteca (valor: string) {
+  // ok: sentinel-node-jwt-decode-sem-verificar
+  return base64.decode(valor)
+}
+
+// ---------- cookie com httpOnly desligado ----------
+// ruleid: sentinel-node-cookie-httponly-desligado
+const cookieSessaoInseguro = {
+  secure: false,
+  httpOnly: false,
+  sameSite: 'lax'
+}
+
+// ok: sentinel-node-cookie-httponly-desligado
+export const cookieSessaoSeguro = {
+  secure: true,
+  httpOnly: true,
+  sameSite: 'lax'
+}

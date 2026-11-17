@@ -34,8 +34,15 @@
       "aligorithm/Zero-Health",
       "ShiftLeftSecurity/tarpit-java",
       "DamnVulnerableCryptoApp/DamnVulnerableCryptoApp",
-      "SasanLabs/VulnerableApp-facade"
+      "SasanLabs/VulnerableApp-facade",
+      "j3ers3/Hello-Java-Sec",
+      "abigailajohn/VVMA",
+      "nr-yolo/Vulnshop",
+      "terracotta-bank/terracotta-bank",
+      "SirAppSec/vuln-node.js-express.js-app",
+      "HTBridge/pivaa"
     ],
+    "_nota_terracotta": "terracotta-bank/terracotta-bank (app bancária Java servlet intencionalmente vulnerável, branch master, stack JAVA, 41 estrelas) entrou em 2026-11-17 na volta 36 (ciclo/estabilizacao-12); treino, código lido para o gabarito.",
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
     "_nota_juice_shop": "juice-shop/juice-shop foi lido em 2026-11-05 (rotas Express) para escrever as regras sentinel-node-*; por isso é treino. A validação dessas regras usa repositórios Node que ninguém leu.",
     "_nota_javaseclab": "whgojp/JavaSecLab (app Java de treino de segurança, branch i18n-bilingual, stack JAVA) entrou em 2026-11-06 na volta 6 (ciclo/estabilizacao-3); treino.",
@@ -64,7 +71,10 @@
     "_nota_zerohealth": "aligorithm/Zero-Health (portal de saude Express + React/Vite vulneravel de treino, branch main, stack MIXED) entrou em 2026-11-17 na volta 28 (ciclo/estabilizacao-11); treino.",
     "_nota_vulnsso": "dogangcr/vulnerable-sso (OAuth2 com Spring Boot 1.3 e Spring Security OAuth, vulneravel de treino, branch master, stack JAVA) entrou em 2026-11-17 na volta 31 (ciclo/estabilizacao-11); treino.",
     "_nota_dvca": "DamnVulnerableCryptoApp/DamnVulnerableCryptoApp (app React + Node/TypeScript de treino de criptografia, branch master, stack MIXED) entrou em 2026-11-17 na volta 30 (ciclo/estabilizacao-11); treino.",
-    "_nota_vulnerableapp_facade": "SasanLabs/VulnerableApp-facade (gateway e UI React/TypeScript do OWASP VulnerableApp, branch main, stack JAVASCRIPT) entrou em 2026-11-17 na volta 32 (ciclo/estabilizacao-11); treino."
+    "_nota_vulnerableapp_facade": "SasanLabs/VulnerableApp-facade (gateway e UI React/TypeScript do OWASP VulnerableApp, branch main, stack JAVASCRIPT) entrou em 2026-11-17 na volta 32 (ciclo/estabilizacao-11); treino.",
+    "_nota_hello_java_sec": "j3ers3/Hello-Java-Sec (app Spring Boot de treino de segurança Java, branch master, stack JAVA) entrou em 2026-11-17 na volta 33 (ciclo/estabilizacao-12); treino.",
+    "_nota_vvma": "abigailajohn/VVMA (API Node/Express vulnerável de treino, branch main, stack JAVASCRIPT) entrou em 2026-11-17 na volta 34 (ciclo/estabilizacao-12); treino.",
+    "_nota_pivaa": "HTBridge/pivaa (app Android Java intencionalmente vulnerável, branch master, stack JAVA, 106 estrelas) entrou em 2026-11-17 na volta 38 (ciclo/estabilizacao-12); treino, código lido para o gabarito."
   },
   "validacao": {
     "repositorios_fixos": [

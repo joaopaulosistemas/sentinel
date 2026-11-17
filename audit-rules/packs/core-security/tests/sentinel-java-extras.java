@@ -398,3 +398,59 @@ class SenhaComparadaComLiteral {
             .roles("ADMIN");
     }
 }
+
+// Volta 36 (terracotta-bank): regras gerais de servlet e de SQL montado com literal.
+class ServletVolta36 {
+
+    void redirecionaParametro(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String relay = request.getParameter("relay");
+        if (relay == null || relay.isEmpty()) {
+            response.sendRedirect(request.getContextPath());
+        } else {
+            // ruleid: sentinel-open-redirect-requisicao
+            response.sendRedirect(relay);
+        }
+    }
+
+    void redirecionaFixo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String alvo = request.getParameter("x");
+        // ok: sentinel-open-redirect-requisicao
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        // ok: sentinel-open-redirect-requisicao
+        response.sendRedirect(response.encodeRedirectURL("/home"));
+    }
+
+    Object consultaMontada(String username, String senha) {
+        // ruleid: sentinel-sql-literal-concatenado
+        return runQuery("SELECT * FROM users WHERE username = '" + username + "'", null);
+    }
+
+    void atualizaMontada(String id, String nome) {
+        // ruleid: sentinel-sql-literal-concatenado
+        runUpdate("UPDATE users SET name = '" + nome + "' WHERE id = '" + id + "'");
+        // ruleid: sentinel-sql-literal-concatenado
+        runUpdate("DELETE FROM users WHERE username = '" + nome + "'");
+    }
+
+    void semVariavel(String nome) {
+        // ok: sentinel-sql-literal-concatenado
+        runUpdate("DELETE FROM users WHERE " + "id = 1");
+        // ok: sentinel-sql-literal-concatenado
+        log.info("select the best from " + nome);
+        // ok: sentinel-sql-literal-concatenado
+        runUpdate("UPDATE users SET active = 1");
+        // ok: sentinel-sql-literal-concatenado
+        System.out.println("Update the " + nome + " set");
+    }
+
+    void cookieDeSessao(Object tomcat, Cookie c) {
+        // ruleid: sentinel-httponly-desligado
+        tomcat.setUseHttpOnly(false);
+        // ruleid: sentinel-httponly-desligado
+        c.setHttpOnly(false);
+        // ok: sentinel-httponly-desligado
+        c.setHttpOnly(true);
+        // ok: sentinel-httponly-desligado
+        tomcat.setUseHttpOnly(true);
+    }
+}

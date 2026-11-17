@@ -605,6 +605,13 @@
   refs:
     - "https://developer.android.com/privacy-and-security/risks/backup-best-practices"
 
+- key: "sentinel-android-manifest-debuggable"
+  summary: "Remova android:debuggable do manifesto; só o build debug deve ser depurável."
+  before: "android:debuggable=\"true\""
+  after: "<!-- sem android:debuggable: o build de release já o desliga -->"
+  refs:
+    - "https://developer.android.com/privacy-and-security/risks/android-debuggable"
+
 - key: "sentinel-android-manifest-cleartext"
   summary: "Use HTTPS e remova o tráfego em texto puro."
   before: "android:usesCleartextTraffic=\"true\""
@@ -852,3 +859,74 @@
     });
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-groovy-evaluate-dinamico"
+  summary: "Não avalie texto externo como Groovy; use uma lista fechada de operações."
+  before: "new GroovyShell().evaluate(cmd)"
+  after: "switch (operacao) { case SOMA -> a + b; case SUBTRACAO -> a - b; }"
+  effort: M
+  regression-risk: HIGH
+
+- key: "sentinel-jndi-lookup-dinamico"
+  summary: "Use nome JNDI fixo ou valide contra uma lista fechada de nomes; nunca passe texto do usuário ao lookup."
+  before: "ctx.lookup(nomeDaRequisicao)"
+  after: "ctx.lookup(NOMES_PERMITIDOS.get(chave))"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-node-math-random-retorno"
+  summary: "Gere códigos e tokens com crypto.randomInt ou crypto.randomBytes, nunca com Math.random."
+  before: "return Math.floor(1000 + Math.random() * 9000).toString()"
+  after: "return crypto.randomInt(100000, 1000000).toString()"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+
+- key: "sentinel-node-tls-desligado"
+  summary: "Mantenha a verificação do certificado ligada; para CA interna use a opção ca."
+  before: "tls: { rejectUnauthorized: false }"
+  after: "tls: { ca: fs.readFileSync('ca-interna.pem') }"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
+
+- key: "sentinel-open-redirect-requisicao"
+  summary: "Valide o destino contra uma lista de caminhos internos permitidos antes de redirecionar."
+  before: "response.sendRedirect(request.getParameter(\"relay\"))"
+  after: "response.sendRedirect(destinoPermitido(request.getParameter(\"relay\")))"
+  effort: S
+  regression-risk: MEDIUM
+
+- key: "sentinel-sql-literal-concatenado"
+  summary: "Troque a concatenação por parâmetros (?) no método que executa a consulta."
+  before: "runQuery(\"SELECT * FROM users WHERE username = '\" + username + \"'\", ...)"
+  after: "runQuery(\"SELECT * FROM users WHERE username = ?\", ps -> ps.setString(1, username), ...)"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-httponly-desligado"
+  summary: "Deixe o HttpOnly ligado no cookie de sessão."
+  before: "cookie.setHttpOnly(false)"
+  after: "cookie.setHttpOnly(true)"
+  effort: S
+  regression-risk: LOW
+
+
+- key: "sentinel-node-hash-fraco-pacote"
+  summary: "Para senha use bcrypt, scrypt ou argon2. Para integridade use SHA-256 ou superior."
+  before: "const md5 = require('md5'); md5(senha)"
+  after: "await bcrypt.hash(senha, 12)"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
+- key: "sentinel-node-jwt-decode-sem-verificar"
+  summary: "Troque jwt.decode por jwt.verify com segredo da configuração e algoritmo fixo."
+  before: "const dados = jwt.decode(token)"
+  after: "const dados = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+
+- key: "sentinel-node-cookie-httponly-desligado"
+  summary: "Ligue httpOnly (e secure, sameSite) no cookie de sessão."
+  before: "cookie: { httpOnly: false }"
+  after: "cookie: { httpOnly: true, secure: true, sameSite: 'lax' }"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"

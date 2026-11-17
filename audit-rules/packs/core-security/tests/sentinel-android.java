@@ -45,6 +45,10 @@ class AndroidTeste extends android.app.Activity {
         ctx.openOrCreateDatabase("d.db", Context.MODE_WORLD_READABLE, null);
         // ruleid: sentinel-android-modo-mundo
         openOrCreateDatabase("d.db", MODE_WORLD_WRITEABLE, null);
+        // ruleid: sentinel-android-modo-mundo
+        ctx.openFileOutput("lockfile", ctx.MODE_WORLD_WRITEABLE);
+        // ruleid: sentinel-android-modo-mundo
+        ctx.getSharedPreferences("prefs", this.MODE_WORLD_READABLE);
         // ok: sentinel-android-modo-mundo
         getSharedPreferences("prefs", MODE_PRIVATE);
         // ok: sentinel-android-modo-mundo

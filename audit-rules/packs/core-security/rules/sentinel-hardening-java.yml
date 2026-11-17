@@ -51,8 +51,8 @@ rules:
 
   - id: sentinel-script-engine-eval-dinamico
     patterns:
-      - pattern: (ScriptEngine $E).eval($ARG)
-      - pattern-not: (ScriptEngine $E).eval("...")
+      - pattern: (ScriptEngine $E).eval($ARG, ...)
+      - pattern-not: (ScriptEngine $E).eval("...", ...)
     message: >
       ScriptEngine.eval com texto que não é literal: se parte dele vier do usuário, é execução remota de código
       (JavaScript/Groovy rodam com as permissões da aplicação). Não avalie texto externo; use uma lista fechada de
@@ -123,3 +123,49 @@ rules:
       category: security
       cwe: "CWE-326: Inadequate Encryption Strength"
       owasp: A02:2021 - Cryptographic Failures
+
+  - id: sentinel-groovy-evaluate-dinamico
+    patterns:
+      - pattern-either:
+          - pattern: (GroovyShell $S).evaluate($ARG, ...)
+          - pattern: (groovy.lang.GroovyShell $S).evaluate($ARG, ...)
+          - pattern: (GroovyShell $S).parse($ARG, ...)
+          - pattern: (groovy.lang.GroovyShell $S).parse($ARG, ...)
+      - pattern-not: (GroovyShell $S).evaluate("...", ...)
+      - pattern-not: (groovy.lang.GroovyShell $S).evaluate("...", ...)
+      - pattern-not: (GroovyShell $S).parse("...", ...)
+      - pattern-not: (groovy.lang.GroovyShell $S).parse("...", ...)
+    message: >
+      GroovyShell executa o texto recebido como código Groovy com as permissões da aplicação. Se parte dele vier do
+      usuário, é execução remota de código. Não avalie texto externo; use uma lista fechada de operações.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-jndi-lookup-dinamico
+    patterns:
+      - pattern-either:
+          - pattern: (javax.naming.Context $C).lookup($NAME)
+          - pattern: (javax.naming.InitialContext $C).lookup($NAME)
+          - pattern: (Context $C).lookup($NAME)
+          - pattern: (InitialContext $C).lookup($NAME)
+      - pattern-not: (javax.naming.Context $C).lookup("...")
+      - pattern-not: (javax.naming.InitialContext $C).lookup("...")
+      - pattern-not: (Context $C).lookup("...")
+      - pattern-not: (InitialContext $C).lookup("...")
+    message: >
+      Lookup JNDI com nome que não é literal: se o nome vier do usuário, o atacante aponta para um servidor LDAP/RMI
+      próprio e a aplicação carrega e executa classe remota (JNDI injection). Use nomes fixos ou uma lista fechada.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-74: Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')"
+      owasp: A03:2021 - Injection

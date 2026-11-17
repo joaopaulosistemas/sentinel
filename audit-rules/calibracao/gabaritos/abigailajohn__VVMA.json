@@ -1,0 +1,81 @@
+{
+ "_comentario": "Falhas de abigailajohn/VVMA lidas no código (treino), volta 34. Gabarito escrito pelo mesmo agente que corrige. Arquivos models/* não têm extensão .js (groupModel, userModel, resetPasswordModel): o motor não os lê. BOLA/BFLA e mass assignment são metas sem regra.",
+ "repo": "abigailajohn/VVMA",
+ "falhas": [
+  {
+   "arquivo": "src/controllers/v2/authCtrl.js",
+   "linha": 97,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-injection",
+    "sentinel-node-sql-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/controllers/v2/authCtrl.js",
+   "linha": 33,
+   "cwe": "CWE-915",
+   "regras": []
+  },
+  {
+   "arquivo": "src/controllers/v2/authCtrl.js",
+   "linha": 38,
+   "cwe": "CWE-200",
+   "regras": []
+  },
+  {
+   "arquivo": "src/middleware/auth.js",
+   "linha": 11,
+   "cwe": "CWE-347",
+   "regras": [
+    "sentinel-node-jwt-sem-algoritmo"
+   ]
+  },
+  {
+   "arquivo": ".env",
+   "linha": 1,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-proj-committed-env"
+   ]
+  },
+  {
+   "arquivo": "docker-compose.yml",
+   "linha": 15,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-compose-segredo-em-env"
+   ]
+  },
+  {
+   "arquivo": "src/utils/otp.js",
+   "linha": 2,
+   "cwe": "CWE-338",
+   "regras": [
+    "sentinel-node-math-random-retorno"
+   ]
+  },
+  {
+   "arquivo": "src/utils/email.js",
+   "linha": 9,
+   "cwe": "CWE-295",
+   "regras": [
+    "sentinel-node-tls-desligado"
+   ]
+  },
+  {
+   "arquivo": "src/controllers/v2/userCtrl.js",
+   "linha": 124,
+   "cwe": "CWE-639",
+   "regras": []
+  },
+  {
+   "arquivo": "src/models/groupModel",
+   "linha": 101,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-node-ssrf"
+   ]
+  }
+ ]
+}

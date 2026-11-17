@@ -1,0 +1,243 @@
+{
+ "_comentario": "Falhas de j3ers3/Hello-Java-Sec lidas no codigo (treino), volta 33. Entradas sem regra sao lacuna assumida (XStream.fromXML sem allowTypes, fastjson JSON.parse, view name do Thymeleaf vindo do parametro). Gabarito escrito pelo mesmo agente que corrige: recall mede so o que li.",
+ "repo": "j3ers3/Hello-Java-Sec",
+ "falhas": [
+  {
+   "arquivo": "JDBC.java",
+   "linha": 66,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "JDBC.java",
+   "linha": 99,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "JDBC.java",
+   "linha": 133,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "MyBatis.java",
+   "linha": 31,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-mybatis-cifrao-sql"
+   ]
+  },
+  {
+   "arquivo": "UserMapper.xml",
+   "linha": 17,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-mybatis-cifrao-sql"
+   ]
+  },
+  {
+   "arquivo": "UserMapper.java",
+   "linha": 27,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-mybatis-anotacao-cifrao"
+   ]
+  },
+  {
+   "arquivo": "RuntimeVul.java",
+   "linha": 29,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection-requisicao"
+   ]
+  },
+  {
+   "arquivo": "ProcessBuilderVul.java",
+   "linha": 26,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection-requisicao"
+   ]
+  },
+  {
+   "arquivo": "XXE.java",
+   "linha": 63,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-outros-parsers",
+    "sentinel-xxe-parser-xml"
+   ]
+  },
+  {
+   "arquivo": "XXE.java",
+   "linha": 110,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-outros-parsers",
+    "sentinel-xxe-parser-xml"
+   ]
+  },
+  {
+   "arquivo": "XXE.java",
+   "linha": 144,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml"
+   ]
+  },
+  {
+   "arquivo": "SpEL.java",
+   "linha": 42,
+   "cwe": "CWE-917",
+   "regras": [
+    "sentinel-spel-injection"
+   ]
+  },
+  {
+   "arquivo": "Traversal.java",
+   "linha": 40,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-servlet-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "Upload.java",
+   "linha": 41,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-api-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "XPathInjection.java",
+   "linha": 50,
+   "cwe": "CWE-643",
+   "regras": [
+    "sentinel-xpath-injection"
+   ]
+  },
+  {
+   "arquivo": "Redirect.java",
+   "linha": 33,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-open-redirect-spring",
+    "sentinel-open-redirect"
+   ]
+  },
+  {
+   "arquivo": "HttpClientUtils.java",
+   "linha": 16,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-ssrf-url-do-parametro"
+   ]
+  },
+  {
+   "arquivo": "Deserialization.java",
+   "linha": 56,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "ShiroVul.java",
+   "linha": 62,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "JacksonVul.java",
+   "linha": 20,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-jackson-default-typing"
+   ]
+  },
+  {
+   "arquivo": "SnakeYamlVul.java",
+   "linha": 25,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-snakeyaml-construtor-padrao"
+   ]
+  },
+  {
+   "arquivo": "LoadJsVul.java",
+   "linha": 37,
+   "cwe": "CWE-94",
+   "regras": [
+    "sentinel-script-engine-eval-dinamico"
+   ]
+  },
+  {
+   "arquivo": "GroovyVul.java",
+   "linha": 22,
+   "cwe": "CWE-94",
+   "regras": [
+    "sentinel-groovy-evaluate-dinamico"
+   ]
+  },
+  {
+   "arquivo": "JNDIInject.java",
+   "linha": 34,
+   "cwe": "CWE-74",
+   "regras": [
+    "sentinel-jndi-lookup-dinamico"
+   ]
+  },
+  {
+   "arquivo": "SSTI.java",
+   "linha": 189,
+   "cwe": "CWE-1336",
+   "regras": [
+    "sentinel-ssti-modelo-variavel"
+   ]
+  },
+  {
+   "arquivo": "application.properties",
+   "linha": 20,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-spring-senha-em-properties"
+   ]
+  },
+  {
+   "arquivo": "XStreamVul.java",
+   "linha": 23,
+   "cwe": "CWE-502",
+   "regras": []
+  },
+  {
+   "arquivo": "FastjsonVul.java",
+   "linha": 26,
+   "cwe": "CWE-502",
+   "regras": []
+  },
+  {
+   "arquivo": "SSTI.java",
+   "linha": 62,
+   "cwe": "CWE-1336",
+   "regras": []
+  },
+  {
+   "arquivo": "Log4jVul.java",
+   "linha": 25,
+   "cwe": "CWE-117",
+   "regras": [
+    "sentinel-log-injection"
+   ]
+  }
+ ]
+}

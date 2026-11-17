@@ -1,0 +1,174 @@
+{
+ "_comentario": "Falhas de terracotta-bank/terracotta-bank lidas no código (treino), volta 36. Gabarito escrito pelo mesmo agente que corrige. Entrada com regras [] é lacuna assumida (meta). CSRF por doGet, enumeração de usuário, força bruta e senha em texto puro são falhas lógicas sem regra. Linhas corrigidas na própria volta (XXE na criação da fábrica, linha 83; SQL na linha da chamada).",
+ "repo": "terracotta-bank/terracotta-bank",
+ "falhas": [
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/UserService.java",
+   "linha": 40,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/UserService.java",
+   "linha": 47,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/UserService.java",
+   "linha": 67,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/AccountService.java",
+   "linha": 44,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/AccountService.java",
+   "linha": 51,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/ClientService.java",
+   "linha": 44,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/MessageService.java",
+   "linha": 44,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/app/ContentParsingFilter.java",
+   "linha": 83,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml",
+    "sentinel-xxe-outros-parsers"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/app/ContentParsingFilter.java",
+   "linha": 133,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/config/WebConfiguration.java",
+   "linha": 82,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-httponly-desligado"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/CheckService.java",
+   "linha": 73,
+   "cwe": "CWE-22",
+   "regras": []
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/CheckService.java",
+   "linha": 89,
+   "cwe": "CWE-22",
+   "regras": []
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/servlet/DocumentServlet.java",
+   "linha": 51,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-servlet-path-traversal",
+    "sentinel-api-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/servlet/DocumentServlet.java",
+   "linha": 64,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-response-write"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/servlet/LoginServlet.java",
+   "linha": 84,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-open-redirect",
+    "sentinel-open-redirect-requisicao"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/servlet/EmployeeLoginServlet.java",
+   "linha": 58,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-open-redirect",
+    "sentinel-open-redirect-requisicao"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/servlet/SiteStatisticsServlet.java",
+   "linha": 64,
+   "cwe": "CWE-79",
+   "regras": []
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/servlet/AdminLoginServlet.java",
+   "linha": 34,
+   "cwe": "CWE-798",
+   "regras": []
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/service/ServiceSupport.java",
+   "linha": 36,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-jdbc-senha-fixa"
+   ]
+  },
+  {
+   "arquivo": "terracotta-bank-servlet/src/main/java/com/joshcummings/codeplay/terracotta/servlet/ForgotPasswordServlet.java",
+   "linha": 60,
+   "cwe": "CWE-200",
+   "regras": []
+  }
+ ]
+}

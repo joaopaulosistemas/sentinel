@@ -57,6 +57,8 @@ rules:
     pattern-either:
       - pattern: new ObjectInputStream(...).readObject()
       - pattern: (ObjectInputStream $O).readObject()
+      - pattern: new java.io.ObjectInputStream(...).readObject()
+      - pattern: (java.io.ObjectInputStream $O).readObject()
     message: >
       Desserialização nativa do Java (ObjectInputStream.readObject): permite execução de código se a entrada não for confiável.
       Use JSON/Protobuf ou configure um filtro (ObjectInputFilter) com lista de classes permitidas.

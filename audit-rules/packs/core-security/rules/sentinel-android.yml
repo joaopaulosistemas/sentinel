@@ -119,6 +119,20 @@ rules:
       cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
       owasp: M5 - Insecure Communication
 
+  - id: sentinel-android-manifest-debuggable
+    pattern: 'android:debuggable="true"'
+    message: >
+      O app foi publicado como depurável (android:debuggable="true"): quem tem o aparelho anexa o depurador, lê a
+      memória e executa código no processo do app (CWE-489). Remova o atributo (o build de release já o desliga) e
+      deixe a depuração só no build debug.
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      side: common
+      category: security
+      cwe: "CWE-489: Active Debug Code"
+      owasp: M8 - Security Misconfiguration
+
   - id: sentinel-android-manifest-exported
     patterns:
       - pattern: 'android:exported="true"'
@@ -146,7 +160,7 @@ rules:
           regex: ^(getSharedPreferences|openFileOutput|getDir|openOrCreateDatabase)$
       - metavariable-regex:
           metavariable: $MODE
-          regex: ^(Context\.)?MODE_WORLD_(READABLE|WRITEABLE)$
+          regex: ^((Context|this|[a-z]\w*)\.)?MODE_WORLD_(READABLE|WRITEABLE)$
     message: >
       Arquivo, preferência ou banco criado com MODE_WORLD_READABLE/WRITEABLE (CWE-732): qualquer outro app do
       aparelho lê ou altera os dados, inclusive credenciais. Use MODE_PRIVATE e compartilhe por ContentProvider com

@@ -514,3 +514,70 @@ rules:
       category: security
       cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
       owasp: A10:2021 - Server-Side Request Forgery
+
+  # Volta 36 (terracotta-bank): regras gerais de servlet e de SQL montado por concatenação
+  - id: sentinel-open-redirect-requisicao
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getQueryString()
+    pattern-sinks:
+      - patterns:
+          - pattern: $R.sendRedirect($X)
+          - focus-metavariable: $X
+    pattern-sanitizers:
+      - pattern: $E.encodeURL(...)
+      - pattern: $E.encodeRedirectURL(...)
+    message: >
+      Redirecionamento para um destino que vem da requisição (parâmetro ou cabeçalho) sem validação: o atacante
+      leva a vítima para o domínio dele (phishing, roubo de token). Aceite só caminhos relativos internos ou compare
+      com uma lista de destinos permitidos.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"
+      owasp: A01:2021 - Broken Access Control
+
+  - id: sentinel-sql-literal-concatenado
+    patterns:
+      - pattern: $F(<... "$SQL" + $X ...>, ...)
+      - pattern-not: $F(<... "$SQL" + "..." ...>, ...)
+      - metavariable-regex:
+          metavariable: $SQL
+          regex: (?is)^\s*(select\s.+\sfrom\s|insert\s+into\s|update\s+\S+\s+set\s|delete\s+from\s)
+      # sumidouros JDBC conhecidos já são cobertos pela regra de taint; log, impressão e montagem de texto não executam SQL
+      - metavariable-regex:
+          metavariable: $F
+          regex: ^(?!(executeQuery|executeUpdate|executeLargeUpdate|execute|prepareStatement|prepareCall|createQuery|createNativeQuery|addBatch|queryForObject|queryForList|queryForMap|queryForRowSet|batchUpdate|query|update|trace|debug|info|warn|warning|error|fine|finer|finest|severe|log|print|println|printf|format|append|add|put|write|assert\w*|fail|toString|valueOf|String)$)\w+$
+    message: >
+      Instrução SQL montada por concatenação de texto com valor variável e entregue a um método de acesso a dados do
+      projeto (runQuery, runUpdate, find, save...): se o valor vem da requisição, é SQL Injection. Use consulta
+      parametrizada (PreparedStatement com ?, parâmetros nomeados) no método que executa.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-httponly-desligado
+    pattern-either:
+      - pattern: $C.setUseHttpOnly(false)
+      - pattern: $C.setHttpOnly(false)
+    message: >
+      Cookie de sessão sem HttpOnly (setUseHttpOnly(false) ou setHttpOnly(false)): um XSS lê o identificador de
+      sessão com document.cookie e sequestra a conta. Mantenha HttpOnly ligado (e Secure, SameSite).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp: A05:2021 - Security Misconfiguration

@@ -81,3 +81,10 @@
   after: "select id, nome from usuario where nome = #{nome}"
   effort: S
   regression-risk: MEDIUM
+
+- key: "sentinel-mybatis-anotacao-cifrao"
+  summary: "Use #{...} para valores; para coluna, tabela ou ORDER BY, valide contra uma lista fixa antes de chamar o mapeador."
+  before: "@Select(\"select * from users where user like '%${user}%'\")"
+  after: "@Select(\"select * from users where user like CONCAT('%', #{user}, '%')\")"
+  effort: S
+  regression-risk: MEDIUM

@@ -1,9 +1,9 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 32,
-  "ultimoRepositorioTreino": "SasanLabs/VulnerableApp-facade",
-  "ultimaStack": "JAVASCRIPT",
-  "branchAtual": "ciclo/estabilizacao-11",
+  "ultimaVolta": 38,
+  "ultimoRepositorioTreino": "HTBridge/pivaa",
+  "ultimaStack": "JAVA",
+  "branchAtual": "ciclo/estabilizacao-12",
   "proximaBranch": null,
   "voltasNaBranch": 6,
   "voltasSemGanhoSeguidas": 0,
@@ -12,7 +12,7 @@
   "gabaritosValidacao": [
     "bnematzadeh/vulnerable-rest-api"
   ],
-  "conjuntosSha256": "966b21fbdc0d9733fce394356cae8d70b2cab1c3e609d5fc28997f7740e046ed",
+  "conjuntosSha256": "d3f426436896d5a84f790cb11d9379d95de05919f8c0ee356cae2cb41a2c9d84",
   "pendencias": [
     "Volta dedicada a avaliar o Joern para JS/TS (decisão pendente desde a 12.65.0)",
     "Aplicar no GitHub a proteção de .github/agente/protecao-main.json (exige o João)",
@@ -37,6 +37,10 @@
     "Volta 29 (tarpit-java): Zip Slip por zip4j extractAll, exec(new String[]{\"sh\",\"-c\",var}), defineClass com bytes da requisicao e senha literal em construtor de EmailService sem regra; dvja 173 -> 184 achados ja na main antes desta mudanca (reauditado na main: 184, identico), causa nao investigada; Generalizacao: sem gabarito de validacao novo",
     "Volta 30 (DVCA): JWT alg none em switch caseiro, Math.random previsível, comparação não constante (CWE-208) e RC4 manual sem regra; Benchmark/dvja/amostra de 20 não feitos",
     "vulnerable-sso: XSS por EL em JSP (showcode.jsp) e autoApprove(true) de cliente OAuth2 sem regra",
-    "VulnerableApp-facade: ESLint react/no-danger marca ChallengeCard.tsx:82 mesmo com DOMPurify (ferramenta externa, sem ajuste); carga de script com URI vinda do backend (CWE-829, Utils.ts:36) sem regra; ng-dom-direto agora só em *.component/directive/pipe/service.ts (Angular fora desses nomes não é mais marcado)"
+    "VulnerableApp-facade: ESLint react/no-danger marca ChallengeCard.tsx:82 mesmo com DOMPurify (ferramenta externa, sem ajuste); carga de script com URI vinda do backend (CWE-829, Utils.ts:36) sem regra; ng-dom-direto agora só em *.component/directive/pipe/service.ts (Angular fora desses nomes não é mais marcado)",
+    "Volta 33 (Hello-Java-Sec): XStream.fromXML sem allowTypes, fastjson JSON.parse (autotype) e nome de view do Thymeleaf vindo do parâmetro (SSTI) sem regra; 3 achados novos são falso positivo de variante 'safe' do repositório (lista branca/regex antes do Groovy e do JNDI lookup); Generalização: sem gabarito de validação novo, sem Benchmark OWASP, sem amostra de 20",
+    "Volta 34 (VVMA): mass assignment de role (CWE-915), senha devolvida na resposta (CWE-200), BOLA e SSRF sem regra; arquivos sem extensão .js (models/*) não são lidos pelo motor; Generalização: sem gabarito de validação novo, sem Benchmark OWASP, sem amostra de 20 (a de 3 voltas vence na volta 35/36)",
+    "Volta 36 (terracotta-bank): Zip Slip/traversal por concatenação de constante + parâmetro de método (CheckService.updateCheckImage/findCheckImage), XSS armazenado em printf com nome de usuário vindo da sessão (SiteStatisticsServlet) e senha literal em construtor de User (AdminLoginServlet) sem regra; CSRF por doGet, enumeração e força bruta são falhas lógicas; auditoria do CI já perdeu a ferramenta Architecture numa execução (17 achados sumiram e a nota subiu 35,0 para 37,7) sem causa conhecida; Generalização: sem gabarito de validação novo, Benchmark e amostra de 20 não feitos",
+    "Volta 37 (vuln-node.js-express.js-app): segredo JWT/config por `process.env.X | \"literal\"` (operador bitwise por engano, config/index.js:12), XSS por `| safe` em template nunjucks (.html), upload multer sem fileFilter, BFLA/IDOR e ReDoS sem regra"
   ]
 }

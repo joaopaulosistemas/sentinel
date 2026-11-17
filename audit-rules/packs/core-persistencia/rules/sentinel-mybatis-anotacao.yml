@@ -1,0 +1,32 @@
+# MyBatis com SQL em anotação (@Select, @Update, @Delete, @Insert): ${x} é colado no texto do SQL sem parâmetro.
+# O mesmo problema da regra de mapeamento XML (sentinel-mybatis-cifrao-sql). Casos de teste: tests/sentinel-mybatis-anotacao.java
+rules:
+  - id: sentinel-mybatis-anotacao-cifrao
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @Select($SQL)
+              $RET $M(...);
+          - pattern: |
+              @Update($SQL)
+              $RET $M(...);
+          - pattern: |
+              @Delete($SQL)
+              $RET $M(...);
+          - pattern: |
+              @Insert($SQL)
+              $RET $M(...);
+      - metavariable-regex:
+          metavariable: $SQL
+          regex: '(?s)^"[^"]*\$\{[^}]+\}'
+    message: >
+      Em anotação MyBatis, ${...} é colado no texto do SQL sem parâmetro (injeção de SQL se o valor puder vir de
+      fora). Use #{...} para valores; para coluna, tabela ou ORDER BY, valide contra uma lista fixa antes.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
