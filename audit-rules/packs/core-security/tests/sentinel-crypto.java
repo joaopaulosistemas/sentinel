@@ -68,6 +68,13 @@ class CryptoCases {
         }
     }
 
+    Object lerQualificado(String base64) throws Exception {
+        java.io.ByteArrayInputStream stream = new java.io.ByteArrayInputStream(java.util.Base64.getDecoder().decode(base64));
+        java.io.ObjectInputStream in = new java.io.ObjectInputStream(stream);
+        // ruleid: sentinel-desserializacao-insegura
+        return in.readObject();
+    }
+
     Object lerDeParametro(ObjectInputStream entrada) throws Exception {
         // ruleid: sentinel-desserializacao-insegura
         return entrada.readObject();
