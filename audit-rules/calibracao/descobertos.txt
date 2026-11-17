@@ -47,3 +47,4 @@ SasanLabs/VulnerableApp
 effortlessdevsec/ninjasworkout
 aligorithm/Zero-Health
 ShiftLeftSecurity/tarpit-java
+DamnVulnerableCryptoApp/DamnVulnerableCryptoApp
