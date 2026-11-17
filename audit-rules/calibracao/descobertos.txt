@@ -62,3 +62,4 @@ nearform/owasp-top-ten-workshop
 edu-secmachine/reactvulna
 fortify-presales/IWA-PharmacyDirect
 VitthalS/ivna
+Contrast-Security-OSS/vulnerable-spring-boot-application

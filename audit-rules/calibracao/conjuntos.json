@@ -85,8 +85,8 @@
     "_nota_reactvulna": "edu-secmachine/reactvulna (app React deliberadamente vulneravel com exercicios de XSS, WebSocket, CSRF e tabnabbing, branch master, stack JAVASCRIPT, 17 estrelas) entrou em 2026-11-17 na volta 42 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
     "_nota_iwa": "fortify-presales/IWA-PharmacyDirect (Insecure Web App da Fortify, Spring Boot + Thymeleaf, branch main, stack JAVA, 19 estrelas) entrou em 2026-11-17 na volta 43 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
     "_nota_javulna": "edu-secmachine/javulna (app Spring Boot intencionalmente vulnerável, branch master, stack JAVA, 19 estrelas) entrou em 2026-11-17 na volta 40 (ciclo/estabilizacao-13); treino, código lido para o gabarito.",
-    "_nota_ivna": "VitthalS/ivna (app Node/Express com MongoDB intencionalmente vulneravel, branch main, stack JAVASCRIPT, 21 estrelas) entrou em 2026-11-17 na volta 44 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito."
-    "_nota_contrast_spring": "Contrast-Security-OSS/vulnerable-spring-boot-application (app Spring Boot de busca de provedores intencionalmente vulneravel, branch master, stack JAVA, 18 estrelas, 7 arquivos Java) entrou em 2026-11-17 na volta 45 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
+    "_nota_ivna": "VitthalS/ivna (app Node/Express com MongoDB intencionalmente vulneravel, branch main, stack JAVASCRIPT, 21 estrelas) entrou em 2026-11-17 na volta 44 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
+    "_nota_contrast_spring": "Contrast-Security-OSS/vulnerable-spring-boot-application (app Spring Boot de busca de provedores intencionalmente vulneravel, branch master, stack JAVA, 18 estrelas, 7 arquivos Java) entrou em 2026-11-17 na volta 45 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito."
   },
   "validacao": {
     "repositorios_fixos": [
