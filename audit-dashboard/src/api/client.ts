@@ -88,8 +88,9 @@ function isShortPlainText(raw: string): boolean {
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...authHeader(), ...options?.headers },
     ...options,
+    // Depois de ...options: com os headers da chamada antes, eles trocavam o objeto inteiro e o login (Authorization) se perdia.
+    headers: { 'Content-Type': 'application/json', ...authHeader(), ...options?.headers },
     // Sem limite, uma API travada deixaria a tela esperando para sempre.
     signal: options?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });

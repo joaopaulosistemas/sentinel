@@ -1737,3 +1737,7 @@ O PDF reenviado é da mesma auditoria #57, no commit `eeb66f2`, anterior aos PRs
 Fica como está, por decisão já registrada: migrações V2, V3 e V6 já aplicadas (Squawk), CVE do `opentelemetry-api` (mitigada por `quarkus.otel.propagators=baggage`), `null` em `Yamls`/`Versions`/`ProfileLoader` (distingue ausente de vazio), leitura de variável de ambiente nas ferramentas externas, `MeResource` (o `RoleAuthorizationFilter` protege), acoplamento e número de campos das classes, trechos duplicados do jscpd, campos públicos dos filtros de consulta JAX-RS, `System.exit` do `PackTool`, e as evidências antigas em `.sentinel/evidence` (as datas já são `timestamptz` desde o V5).
 
 **Verificado:** `tsc`, ESLint e os 424 testes do painel; Stylelint no tema do Keycloak. **NÃO verificado:** Java (só no CI); o visual do tema do Keycloak depois de trocar `!important` por seletor mais específico não foi visto no navegador.
+
+### 401 ao entregar evidência com o login ligado
+
+"Entregar ao Sentinel" respondia `HTTP 401: Unauthorized`. Em `apiFetch`, o `...options` vinha depois de `headers`: toda chamada com `headers` próprios (só o envio de evidência, `putSystemEvidence`) trocava o objeto inteiro e o `Authorization` do login se perdia. Sem login o erro não aparecia, porque o nginx injeta a `API_KEY`. Agora `...options` vem antes e os cabeçalhos são mesclados; teste novo em `client.test.ts` (falhava antes, passa depois). **Verificado:** `tsc`, ESLint e 425 testes do painel. **NÃO verificado:** o envio real de arquivo contra a API com Keycloak.

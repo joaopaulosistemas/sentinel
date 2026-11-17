@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { setAccessToken } from '../auth/session';
 import { api } from './client';
 
 function stub(res: Response) {
@@ -78,5 +79,19 @@ describe('chamadas com vários valores recebem um objeto', () => {
     const fetchMock = stubCapture();
     await api.decidePendingAction({ systemId: 2, actionId: 9, decision: 'reject' });
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/pending-actions/2/9/reject');
+  });
+});
+
+describe('apiFetch: cabeçalhos', () => {
+  afterEach(() => setAccessToken(undefined));
+
+  it('mantém o token do login quando a chamada traz os próprios headers (envio de evidência)', async () => {
+    setAccessToken('abc123');
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response('{"name":"a.xml","sizeBytes":1}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await api.putSystemEvidence(5, new File(['x'], 'a.xml'));
+    const init = fetchMock.mock.calls[0][1];
+    expect(init?.method).toBe('PUT');
+    expect(init?.headers).toMatchObject({ Authorization: 'Bearer abc123', 'Content-Type': 'application/octet-stream' });
   });
 });
