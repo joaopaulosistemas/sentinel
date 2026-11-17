@@ -50,3 +50,4 @@ ShiftLeftSecurity/tarpit-java
 DamnVulnerableCryptoApp/DamnVulnerableCryptoApp
 dogangcr/vulnerable-sso
 SasanLabs/VulnerableApp-facade
+j3ers3/Hello-Java-Sec
