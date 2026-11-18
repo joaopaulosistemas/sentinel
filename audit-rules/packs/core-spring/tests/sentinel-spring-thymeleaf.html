@@ -13,4 +13,8 @@
   <span th:text="${__${campo}__}"></span>
   <!-- ok: sentinel-spring-thymeleaf-preprocessamento-variavel -->
   <span th:text="${campo}"></span>
+  <!-- ok: sentinel-spring-thymeleaf-preprocessamento-variavel -->
+  <a th:href="@{/lista(page=__${i}__)}">ir</a>
+  <!-- ok: sentinel-spring-thymeleaf-preprocessamento-variavel -->
+  <input th:field="*{__${nome}__}" />
 </div>

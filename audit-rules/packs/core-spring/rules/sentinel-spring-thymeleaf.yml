@@ -16,10 +16,10 @@ rules:
       owasp: A03:2021 - Injection
 
   - id: sentinel-spring-thymeleaf-preprocessamento-variavel
-    pattern-regex: '\bth:\w+\s*=\s*"[^"]*__\$\{'
+    pattern-regex: '\bth:\w+\s*=\s*"[^"]*\$\{\s*__\$\{'
     message: >
-      Pré-processamento do Thymeleaf (__${...}__) avalia o valor da variável como expressão: se ela contém dado do
-      usuário, vira execução de expressão SpEL no servidor (RCE, CWE-917). Passe o valor como variável do modelo e
+      Pré-processamento do Thymeleaf aninhado em expressão de variável (${__${...}__}) avalia o valor da variável como
+      expressão: se ela contém dado do usuário, vira execução de expressão SpEL no servidor (RCE, CWE-917). Passe o valor como variável do modelo e
       referencie-a direto (${nome}), sem montar a expressão por pré-processamento.
     severity: ERROR
     languages: [regex]
