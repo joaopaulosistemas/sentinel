@@ -16,6 +16,25 @@ rules:
       cwe: "CWE-79: Cross-site Scripting"
       owasp: A03:2021 - Injection
 
+  - id: sentinel-react-target-blank-sem-noopener
+    # Só links com href dinâmico (`href={x}`): link para endereço fixo no código é confiável. Browsers atuais já aplicam
+    # noopener por padrão, mas o rel explícito protege os antigos e documenta a intenção (CWE-1022, tabnabbing).
+    patterns:
+      - pattern-regex: '<a\b(?=(?:(?!>)[\s\S])*?\btarget\s*=\s*["'']_blank["''])(?=(?:(?!>)[\s\S])*?\bhref\s*=\s*\{(?!\s*["''`][^{}]*["''`]\s*\}))(?:(?!>)[\s\S])*>'
+      - pattern-not-regex: '\brel\s*=\s*(?:\{\s*)?["''`][^"''`]*(?:noopener|noreferrer)'
+    message: >
+      Link com target="_blank" e href dinâmico sem rel="noopener noreferrer": a página aberta recebe window.opener e
+      pode redirecionar a aba de origem (tabnabbing). Acrescente rel="noopener noreferrer".
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.tsx", "*.jsx", "*.js"]
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*"]
+    metadata:
+      category: security
+      cwe: "CWE-1022: Use of Web Link to Untrusted Target with window.opener Access"
+      owasp: A05:2021 - Security Misconfiguration
+
   - id: sentinel-react-componente-classe
     pattern-regex: 'class\s+\w+\s+extends\s+(?:React\.)?(?:Pure)?Component\b'
     message: >

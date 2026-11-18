@@ -100,3 +100,29 @@ class SenhaSemHash {
         return new BCryptPasswordEncoder();
     }
 }
+
+class ValueComSegredoPadrao {
+    // ruleid: sentinel-spring-value-segredo-padrao
+    @Value("${spring.jwt.secret:eLgvVuw3qIHLNGNH/XNASMiV1RQlVgNakeDsLu7svKQP7jtu2+35wwu}")
+    private String jwtSecret;
+
+    // ruleid: sentinel-spring-value-segredo-padrao
+    @Value("${app.db.password:changeme123}")
+    private String senhaBanco;
+
+    // ok: sentinel-spring-value-segredo-padrao
+    @Value("${spring.jwt.secret}")
+    private String segredoObrigatorio;
+
+    // ok: sentinel-spring-value-segredo-padrao
+    @Value("${spring.mail.password:}")
+    private String senhaEmailVazia;
+
+    // ok: sentinel-spring-value-segredo-padrao
+    @Value("${app.name:Pharmacy Direct Web}")
+    private String nome;
+
+    // ok: sentinel-spring-value-segredo-padrao
+    @Value("${app.token.ttl:3600}")
+    private int ttl;
+}

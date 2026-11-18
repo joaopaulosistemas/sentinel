@@ -1,0 +1,90 @@
+{
+ "_comentario": "Falhas de fortify-presales/IWA-PharmacyDirect lidas no código (treino), volta 43; app Spring Boot 'Insecure Web App' da Fortify. Gabarito escrito pelo mesmo agente que corrige. Entrada com regras vazias vale qualquer achado perto da linha (3 linhas). Ajustes antes de medir a mudança: CSRF anotado na linha 115 (onde a cadeia começa) e 162; a execução de expressão SpEL por pré-processamento do Thymeleaf entra pelos dois templates command-shell.html:60 (o sumidouro), no lugar da linha Java que monta a string.",
+ "repo": "fortify-presales/IWA-PharmacyDirect",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/com/microfocus/example/repository/UserRepositoryImpl.java",
+   "linha": 80,
+   "cwe": "CWE-89",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/repository/ReviewRepositoryImpl.java",
+   "linha": 129,
+   "cwe": "CWE-89",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/web/controllers/UserController.java",
+   "linha": 841,
+   "cwe": "CWE-611",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/web/controllers/UserController.java",
+   "linha": 903,
+   "cwe": "CWE-611",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/utils/JwtUtils.java",
+   "linha": 43,
+   "cwe": "CWE-798",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/config/handlers/UrlAuthenticationSuccessHandler.java",
+   "linha": 123,
+   "cwe": "CWE-601",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/config/WebSecurityConfiguration.java",
+   "linha": 115,
+   "cwe": "CWE-352",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/config/handlers/UrlAuthenticationSuccessHandler.java",
+   "linha": 66,
+   "cwe": "CWE-532",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/web/controllers/DefaultController.java",
+   "linha": 180,
+   "cwe": "CWE-532",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/resources/templates/products/index.html",
+   "linha": 27,
+   "cwe": "CWE-79",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/resources/application-dev.yml",
+   "linha": 77,
+   "cwe": "CWE-798",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/com/microfocus/example/config/WebSecurityConfiguration.java",
+   "linha": 162,
+   "cwe": "CWE-352",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/resources/templates/admin/command-shell.html",
+   "linha": 60,
+   "cwe": "CWE-917",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/resources/templates/user/command-shell.html",
+   "linha": 60,
+   "cwe": "CWE-917",
+   "regras": []
+  }
+ ]
+}

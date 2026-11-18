@@ -1,0 +1,28 @@
+{
+ "_comentario": "Falhas de Contrast-Security-OSS/vulnerable-spring-boot-application lidas no código (treino), volta 45; o readme só diz 'intentionally vulnerable' (SQLi na busca por CEP). Gabarito escrito pelo mesmo agente que corrige. Entrada com regras vazias vale qualquer achado perto da linha.",
+ "repo": "Contrast-Security-OSS/vulnerable-spring-boot-application",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/com/contrastsecurity/demo/providersearch/ProviderSearchDAO.java",
+   "linha": 18,
+   "cwe": "CWE-89",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/resources/application.properties",
+   "linha": 9,
+   "cwe": "CWE-489",
+   "regras": [
+    "sentinel-spring-h2-console"
+   ]
+  },
+  {
+   "arquivo": "src/main/resources/application.properties",
+   "linha": 12,
+   "cwe": "CWE-521",
+   "regras": [
+    "sentinel-spring-datasource-senha-vazia"
+   ]
+  }
+ ]
+}

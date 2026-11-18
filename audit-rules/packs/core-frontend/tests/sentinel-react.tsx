@@ -29,3 +29,11 @@ export function SanitizadoEmVariasLinhas({ html }: { html: string }) {
     />
   );
 }
+
+export function Links({ url, outro }: { url: string; outro: string }) {
+  // ruleid: sentinel-react-target-blank-sem-noopener
+  const a = <a href={url} target="_blank">externo</a>;
+  // ruleid: sentinel-react-target-blank-sem-noopener
+  const b = <a className="x" href={outro} target="_blank" title="t">outro</a>;
+  return [a, b];
+}

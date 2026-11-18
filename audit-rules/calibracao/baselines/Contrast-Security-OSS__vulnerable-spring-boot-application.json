@@ -1,0 +1,27 @@
+{
+ "repo": "Contrast-Security-OSS/vulnerable-spring-boot-application",
+ "nota": 84.78,
+ "total": 16,
+ "porSeveridade": {
+  "CRITICAL": 2,
+  "HIGH": 2,
+  "MEDIUM": 4,
+  "LOW": 7,
+  "INFO": 1
+ },
+ "porRegra": {
+  "Trivy/CVE-2021-42392": 1,
+  "Trivy/CVE-2022-23221": 1,
+  "Opengrep/sentinel-sql-injection": 1,
+  "Opengrep/sentinel-spring-h2-console": 1,
+  "Opengrep/sentinel-camadas-controller-usa-repository": 1,
+  "Opengrep/sentinel-spring-datasource-senha-vazia": 1,
+  "ESLint/eslint-@html-eslint/no-duplicate-id": 2,
+  "Opengrep/sentinel-fe-html-sem-lang": 1,
+  "Opengrep/sentinel-sql-select-estrela": 1,
+  "Opengrep/sentinel-java-autowired-campo": 2,
+  "Checkstyle/class": 1,
+  "ESLint/eslint-@html-eslint/require-input-label": 2,
+  "SQLFluff/sqlfluff-PRS": 1
+ }
+}

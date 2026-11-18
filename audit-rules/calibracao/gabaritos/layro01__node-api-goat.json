@@ -1,0 +1,14 @@
+{
+  "_comentario": "Falhas de layro01/node-api-goat lidas no codigo (treino), volta 46; o proprio autor anota o CWE de cada endpoint em app/server.js. Linhas 32, 54, 62 e 70 corrigidas depois da primeira medida (eu tinha estimado 30, 49, 58 e 65 pelo cabecalho). Gabarito escrito pelo mesmo agente que corrige, antes de ver os achados do Sentinel. Regras aceitas fixadas antes da medida; sentinel-node-header-injection nao existe (lacuna assumida).",
+  "repo": "layro01/node-api-goat",
+  "falhas": [
+    {"arquivo": "app/server.js", "linha": 32, "cwe": "CWE-95", "regras": ["sentinel-node-eval-requisicao", "sentinel-node-eval-dinamico", "eslint-no-eval"]},
+    {"arquivo": "app/server.js", "linha": 54, "cwe": "CWE-73", "regras": ["sentinel-node-path-traversal"]},
+    {"arquivo": "app/server.js", "linha": 62, "cwe": "CWE-79", "regras": ["sentinel-node-xss-refletido"]},
+    {"arquivo": "app/server.js", "linha": 70, "cwe": "CWE-113", "regras": ["sentinel-node-header-injection"]},
+    {"arquivo": "app/server.js", "linha": 80, "cwe": "CWE-79", "regras": ["sentinel-node-xss-refletido"]},
+    {"arquivo": "app/server.js", "linha": 89, "cwe": "CWE-601", "regras": ["sentinel-node-open-redirect", "sentinel-open-redirect-requisicao"]},
+    {"arquivo": "app/server.js", "linha": 97, "cwe": "CWE-502", "regras": ["sentinel-node-desserializacao"]},
+    {"arquivo": "app/server.js", "linha": 106, "cwe": "CWE-78", "regras": ["sentinel-node-command-injection", "sentinel-node-exec-dinamico"]}
+  ]
+}

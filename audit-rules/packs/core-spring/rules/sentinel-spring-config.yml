@@ -60,6 +60,21 @@ rules:
       cwe: "CWE-798: Use of Hard-coded Credentials"
       owasp: A07:2021 - Identification and Authentication Failures
 
+  - id: sentinel-spring-datasource-senha-vazia
+    pattern-regex: '(?m)^[ \t]*spring\.datasource\.password[ \t]*=[ \t]*$'
+    message: >
+      Senha do banco de dados vazia: quem alcançar a porta do banco entra sem credencial. Leia a senha de variável de
+      ambiente (${DB_PASSWORD}) ou de um cofre de segredos e crie o usuário do banco com senha forte.
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.properties"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-521: Weak Password Requirements"
+      owasp: A07:2021 - Identification and Authentication Failures
+
   - id: sentinel-spring-ddl-auto-perigoso
     pattern-regex: '(?m)^[ \t]*spring\.jpa\.hibernate\.ddl-auto[ \t]*=[ \t]*(?:update|create|create-drop)\b'
     message: >

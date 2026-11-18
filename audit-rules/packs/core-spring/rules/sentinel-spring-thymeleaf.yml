@@ -1,0 +1,32 @@
+rules:
+  - id: sentinel-spring-thymeleaf-utext-variavel
+    pattern-regex: '\bth:utext\s*=\s*"(?![^"]*__\$\{)[^"]*\$\{'
+    message: >
+      th:utext escreve o valor sem escapar o HTML: se o dado vier do usuário (parâmetro, cabeçalho, mensagem de erro com
+      entrada), vira XSS refletido ou armazenado. Use th:text, que escapa por padrão; reserve th:utext para HTML que o
+      servidor já sanitizou (por exemplo com OWASP Java HTML Sanitizer).
+    severity: WARNING
+    languages: [regex]
+    paths:
+      include: ["*.html"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-spring-thymeleaf-preprocessamento-variavel
+    pattern-regex: '\bth:\w+\s*=\s*"[^"]*\$\{\s*__\$\{'
+    message: >
+      Pré-processamento do Thymeleaf aninhado em expressão de variável (${__${...}__}) avalia o valor da variável como
+      expressão: se ela contém dado do usuário, vira execução de expressão SpEL no servidor (RCE, CWE-917). Passe o valor como variável do modelo e
+      referencie-a direto (${nome}), sem montar a expressão por pré-processamento.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.html"]
+      exclude: ["**/node_modules/**", "**/target/**", "**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-917: Improper Neutralization of Special Elements used in an Expression Language Statement ('Expression Language Injection')"
+      owasp: A03:2021 - Injection

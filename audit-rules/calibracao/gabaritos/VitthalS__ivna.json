@@ -1,0 +1,131 @@
+{
+ "_comentario": "Falhas de VitthalS/ivna lidas no codigo (treino), volta 44. Gabarito escrito pelo mesmo agente que corrige. IDOR/BOLA (tasks, users por nome), PATCH sem checagem de dono e exposicao de dados sao falhas logicas sem regra (meta). auth.js linha 8 = jwt.verify(token,'hardsecret'); user.js 71 = jwt.sign com segredo literal.",
+ "repo": "VitthalS/ivna",
+ "falhas": [
+  {
+   "arquivo": "src/routers/user.js",
+   "linha": 215,
+   "cwe": "CWE-95",
+   "regras": [
+    "sentinel-node-eval-requisicao",
+    "sentinel-node-eval-dinamico",
+    "eslint-no-eval",
+    "sentinel-node-command-injection"
+   ]
+  },
+  {
+   "arquivo": "src/routers/user.js",
+   "linha": 194,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-node-ssrf"
+   ]
+  },
+  {
+   "arquivo": "src/routers/user.js",
+   "linha": 197,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-node-open-redirect",
+    "sentinel-open-redirect-requisicao"
+   ]
+  },
+  {
+   "arquivo": "src/middleware/auth.js",
+   "linha": 8,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js",
+    "sentinel-node-jwt-segredo-literal",
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "src/models/user.js",
+   "linha": 71,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-api-jwt-chave-fixa-js",
+    "sentinel-node-jwt-segredo-literal",
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "src/routers/user.js",
+   "linha": 22,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-node-cookie-sem-flags",
+    "sentinel-node-cookie-httponly-desligado"
+   ]
+  },
+  {
+   "arquivo": "src/routers/user.js",
+   "linha": 36,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-node-cookie-sem-flags",
+    "sentinel-node-cookie-httponly-desligado"
+   ]
+  },
+  {
+   "arquivo": "src/routers/user.js",
+   "linha": 128,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-node-xss-refletido"
+   ]
+  },
+  {
+   "arquivo": "src/routers/task.js",
+   "linha": 9,
+   "cwe": "CWE-915",
+   "regras": [
+    "sentinel-node-mass-assignment",
+    "sentinel-node-mass-assignment-campo"
+   ]
+  },
+  {
+   "arquivo": "public/src/profile-app.js",
+   "linha": 15,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-inner-html"
+   ]
+  },
+  {
+   "arquivo": "public/contact.html",
+   "linha": 190,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-inner-html"
+   ]
+  },
+  {
+   "arquivo": "src/routers/task.js",
+   "linha": 88,
+   "cwe": "CWE-639",
+   "regras": []
+  },
+  {
+   "arquivo": "src/routers/task.js",
+   "linha": 105,
+   "cwe": "CWE-639",
+   "regras": []
+  },
+  {
+   "arquivo": "src/routers/user.js",
+   "linha": 244,
+   "cwe": "CWE-200",
+   "regras": []
+  },
+  {
+   "arquivo": "public/js/client-app.js",
+   "linha": 196,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-inner-html"
+   ]
+  }
+ ]
+}

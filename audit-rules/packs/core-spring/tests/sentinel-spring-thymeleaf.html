@@ -1,0 +1,20 @@
+<div xmlns:th="https://www.thymeleaf.org">
+  <!-- ruleid: sentinel-spring-thymeleaf-utext-variavel -->
+  <span th:utext="${keywords}"></span>
+  <!-- ruleid: sentinel-spring-thymeleaf-utext-variavel -->
+  <p th:utext="${#session.getAttribute('ERRO').message}"></p>
+  <!-- ok: sentinel-spring-thymeleaf-utext-variavel -->
+  <span th:text="${keywords}"></span>
+  <!-- ok: sentinel-spring-thymeleaf-utext-variavel -->
+  <span th:utext="#{texto.fixo.html}"></span>
+  <!-- ruleid: sentinel-spring-thymeleaf-preprocessamento-variavel -->
+  <span th:utext="${__${shellcmd}__}"></span>
+  <!-- ruleid: sentinel-spring-thymeleaf-preprocessamento-variavel -->
+  <span th:text="${__${campo}__}"></span>
+  <!-- ok: sentinel-spring-thymeleaf-preprocessamento-variavel -->
+  <span th:text="${campo}"></span>
+  <!-- ok: sentinel-spring-thymeleaf-preprocessamento-variavel -->
+  <a th:href="@{/lista(page=__${i}__)}">ir</a>
+  <!-- ok: sentinel-spring-thymeleaf-preprocessamento-variavel -->
+  <input th:field="*{__${nome}__}" />
+</div>

@@ -958,3 +958,17 @@
   after: "\"permissions\": [\"activeTab\"], \"optional_permissions\": [\"cookies\"]"
   refs:
     - "https://developer.chrome.com/docs/extensions/develop/concepts/permissions-and-warnings"
+
+- key: "sentinel-xss-jquery-html"
+  summary: "Insira texto com .text() ou sanitize o HTML com DOMPurify antes de .html/.replaceWith/.append."
+  before: "$('#contato').replaceWith(user.emailAddress);"
+  after: "$('#contato').replaceWith(document.createTextNode(user.emailAddress));"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-http-url-base-sem-tls"
+  summary: "Use HTTPS na URL base do backend (e HSTS no servidor)."
+  before: "static backendUrlBase = \"http://servidor:31337/\";"
+  after: "static backendUrlBase = \"https://servidor/\";"
+  refs:
+    - "https://owasp.org/Top10/A02_2021-Cryptographic_Failures/"

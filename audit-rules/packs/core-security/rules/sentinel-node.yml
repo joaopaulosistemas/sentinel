@@ -346,6 +346,15 @@ rules:
               metavariable: $REQ
               regex: ^(req|request)$
       - patterns:
+          # Express sem `req.query`: `url.parse(req.url, true)` devolve o objeto cujo `.query` vem do usuário
+          - pattern: $P.parse($REQ.url, true)
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(url|nodeUrl)$
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+      - patterns:
           - pattern-inside: |
               class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
           - metavariable-regex:
@@ -466,9 +475,18 @@ rules:
               - pattern: $FS.unlink($P, ...)
               - pattern: $FS.unlinkSync($P, ...)
               - pattern: $FS.readdir($P, ...)
+              # fs-extra (`fse`, `fsExtra`): leitura/gravação/remoção de JSON e arquivos
+              - pattern: $FS.readJson($P, ...)
+              - pattern: $FS.readJsonSync($P, ...)
+              - pattern: $FS.outputFile($P, ...)
+              - pattern: $FS.outputFileSync($P, ...)
+              - pattern: $FS.outputJson($P, ...)
+              - pattern: $FS.outputJsonSync($P, ...)
+              - pattern: $FS.remove($P, ...)
+              - pattern: $FS.removeSync($P, ...)
           - metavariable-regex:
               metavariable: $FS
-              regex: ^(res|response|fs|fsp|fsPromise|fsPromises|fs\.promises|promises)$
+              regex: ^(res|response|fs|fsp|fsPromise|fsPromises|fs\.promises|promises|fse|fsExtra)$
           - focus-metavariable: $P
       - patterns:
           # importação nomeada (`import { readFile } from "fs/promises"`)
@@ -540,6 +558,15 @@ rules:
               - pattern: $REQ.params
               - pattern: $REQ.body
               - pattern: $REQ.headers
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+      - patterns:
+          # Express sem `req.query`: `url.parse(req.url, true)` devolve o objeto cujo `.query` vem do usuário
+          - pattern: $P.parse($REQ.url, true)
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(url|nodeUrl)$
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
@@ -1119,6 +1146,19 @@ rules:
               metavariable: $T
               regex: ^`\s*<[\s\S]*\$\{
           - focus-metavariable: $T
+      # eco direto de parâmetro de texto (`res.send(req.query.x)`): string sai como text/html
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($T)
+              - pattern: $RES.end($T)
+              - pattern: $RES.write($T)
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response)$
+          - metavariable-regex:
+              metavariable: $T
+              regex: ^(req|request)\.(query|params)\.\w+$
+          - focus-metavariable: $T
     pattern-sanitizers:
       - patterns:
           - pattern: $F(...)
@@ -1148,6 +1188,8 @@ rules:
           - pattern: $M.findByIdAndUpdate($I, $REQ.body, ...)
           - pattern: $M.findOneAndUpdate($F, $REQ.body, ...)
           - pattern: new $M($REQ.body)
+          - pattern: 'new $M({..., ...$REQ.body, ...})'
+          - pattern: '$M.create({..., ...$REQ.body, ...})'
           - pattern: Object.assign($X, $REQ.body)
       - metavariable-regex:
           metavariable: $REQ

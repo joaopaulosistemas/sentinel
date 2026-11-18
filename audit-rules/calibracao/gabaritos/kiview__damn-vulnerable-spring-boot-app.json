@@ -1,0 +1,26 @@
+{
+ "_comentario": "Falhas de kiview/damn-vulnerable-spring-boot-app lidas no código (treino), volta 47. Gabarito escrito pelo mesmo agente que corrige. Regras vazias valem qualquer achado perto da linha; lacuna assumida quando não há regra.",
+ "repo": "kiview/damn-vulnerable-spring-boot-app",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/com/groovycoder/dvsba/books/BookController.java",
+   "linha": 37,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-taint-sql-parametro-http"
+   ]
+  },
+  {
+   "arquivo": "src/main/resources/templates/views/comment/comment.tpl",
+   "linha": 20,
+   "cwe": "CWE-79",
+   "regras": []
+  },
+  {
+   "arquivo": "build.gradle",
+   "linha": 55,
+   "cwe": "CWE-1104",
+   "regras": []
+  }
+ ]
+}
