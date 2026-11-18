@@ -1,11 +1,11 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 45,
-  "ultimoRepositorioTreino": "Contrast-Security-OSS/vulnerable-spring-boot-application",
-  "ultimaStack": "JAVA",
+  "ultimaVolta": 46,
+  "ultimoRepositorioTreino": "layro01/node-api-goat",
+  "ultimaStack": "JAVASCRIPT",
   "branchAtual": "ciclo/estabilizacao-14",
   "proximaBranch": null,
-  "voltasNaBranch": 4,
+  "voltasNaBranch": 5,
   "voltasSemGanhoSeguidas": 0,
   "limiteVoltasPorBranch": 6,
   "ultimoPrMesclado": "#335",
@@ -46,6 +46,7 @@
     "Volta 41 (nearform/owasp-top-ten-workshop): cookie com signed:false (CWE-565, a05 index.js:39) e IDOR por query username (a01) sem regra; undici 5.8.0 só pelo Trivy",
     "PR #335 (ciclo 13) bloqueado: job Dashboard falha em npm audit (picomatch <=4.0.7, GHSA-fc5q-39xc-vjpf, sem versao corrigida publicada; npm sugere rebaixar vite, mudanca major). Decisao do Joao: aceitar o risco no audit (mexe em .github/) ou trocar vite; nao mesclar com CI vermelho",
     "Volta 42 (reactvulna): token/resposta de login em localStorage (CWE-922, Login.js:47) sem regra; CSRF e WebSocket do exercício são falhas de lógica/backend; Generalização: sem gabarito de validação novo, Benchmark não rodado (regras só de JS/React)",
-    "Volta 44 (ivna): res.render com objeto da requisição (CWE-79), DOM XSS por location.search em innerHTML e IDOR por findById sem regra; reserva Java: Contrast-Security-OSS/vulnerable-spring-boot-application"
+    "Volta 44 (ivna): res.render com objeto da requisição (CWE-79), DOM XSS por location.search em innerHTML e IDOR por findById sem regra; reserva Java: Contrast-Security-OSS/vulnerable-spring-boot-application",
+    "Volta 46 (node-api-goat): CRLF por res.append(req.query.x, ...) (CWE-113) sem regra (Node pode recusar CR/LF em cabecalho; nao conferido); Benchmark OWASP nao rodado (nenhuma regra Java mudou); amostra-revisao.md com 15 achados (repo so tinha 15), proxima na volta 49; metrica A: media movel 40-46 = 59,1% contra 54,8% em 33-39 (+4,3 pontos); ALERTA de generalizacao so avalia depois de 10 voltas sob a regra nova (volta 55)"
   ]
 }
