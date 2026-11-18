@@ -1,18 +1,18 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 46,
-  "ultimoRepositorioTreino": "layro01/node-api-goat",
-  "ultimaStack": "JAVASCRIPT",
+  "ultimaVolta": 47,
+  "ultimoRepositorioTreino": "kiview/damn-vulnerable-spring-boot-app",
+  "ultimaStack": "JAVA",
   "branchAtual": "ciclo/estabilizacao-14",
   "proximaBranch": null,
-  "voltasNaBranch": 5,
-  "voltasSemGanhoSeguidas": 0,
+  "voltasNaBranch": 6,
+  "voltasSemGanhoSeguidas": 1,
   "limiteVoltasPorBranch": 6,
   "ultimoPrMesclado": "#335",
   "gabaritosValidacao": [
     "bnematzadeh/vulnerable-rest-api"
   ],
-  "conjuntosSha256": "83c3fbbaa457b4599589449111c44612047fafcb894dccfffea0dee37885ef2e",
+  "conjuntosSha256": "97ba97f22864ed8fd326202fcc29c400511d712f171ed699b9dbd37464700907",
   "pendencias": [
     "Volta dedicada a avaliar o Joern para JS/TS (decisão pendente desde a 12.65.0)",
     "Aplicar no GitHub a proteção de .github/agente/protecao-main.json (exige o João)",
@@ -47,6 +47,7 @@
     "PR #335 (ciclo 13) bloqueado: job Dashboard falha em npm audit (picomatch <=4.0.7, GHSA-fc5q-39xc-vjpf, sem versao corrigida publicada; npm sugere rebaixar vite, mudanca major). Decisao do Joao: aceitar o risco no audit (mexe em .github/) ou trocar vite; nao mesclar com CI vermelho",
     "Volta 42 (reactvulna): token/resposta de login em localStorage (CWE-922, Login.js:47) sem regra; CSRF e WebSocket do exercício são falhas de lógica/backend; Generalização: sem gabarito de validação novo, Benchmark não rodado (regras só de JS/React)",
     "Volta 44 (ivna): res.render com objeto da requisição (CWE-79), DOM XSS por location.search em innerHTML e IDOR por findById sem regra; reserva Java: Contrast-Security-OSS/vulnerable-spring-boot-application",
-    "Volta 46 (node-api-goat): CRLF por res.append(req.query.x, ...) (CWE-113) sem regra (Node pode recusar CR/LF em cabecalho; nao conferido); Benchmark OWASP nao rodado (nenhuma regra Java mudou); amostra-revisao.md com 15 achados (repo so tinha 15), proxima na volta 49; metrica A: media movel 40-46 = 59,1% contra 54,8% em 33-39 (+4,3 pontos); ALERTA de generalizacao so avalia depois de 10 voltas sob a regra nova (volta 55)"
+    "Volta 46 (node-api-goat): CRLF por res.append(req.query.x, ...) (CWE-113) sem regra (Node pode recusar CR/LF em cabecalho; nao conferido); Benchmark OWASP nao rodado (nenhuma regra Java mudou); amostra-revisao.md com 15 achados (repo so tinha 15), proxima na volta 49; metrica A: media movel 40-46 = 59,1% contra 54,8% em 33-39 (+4,3 pontos); ALERTA de generalizacao so avalia depois de 10 voltas sob a regra nova (volta 55)",
+    "Volta 47: projeto Gradle sem lockfile fica sem SCA (Trivy não lê build.gradle); decisão do João. open-redirect marca host fixo com parâmetro na query (ruído, 1 achado na amostra); corrigir na volta de ruído"
   ]
 }

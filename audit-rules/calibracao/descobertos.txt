@@ -64,3 +64,4 @@ fortify-presales/IWA-PharmacyDirect
 VitthalS/ivna
 Contrast-Security-OSS/vulnerable-spring-boot-application
 layro01/node-api-goat
+kiview/damn-vulnerable-spring-boot-app
