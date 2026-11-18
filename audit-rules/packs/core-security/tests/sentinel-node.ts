@@ -1156,3 +1156,49 @@ export function checarChave(apiKey: string, senha: string, modo: string): boolea
   // ok: sentinel-node-credencial-literal-comparada
   return apiKey === process.env.API_KEY;
 }
+
+// ---------- volta 46: fs-extra como sumidouro de path traversal e eco direto de dado da requisição ----------
+export function lerJsonExtra (req: any, fse: any) {
+  // ruleid: sentinel-node-path-traversal
+  return fse.readJsonSync(req.query.arquivo)
+}
+
+export function gravarJsonExtra (req: any, fse: any) {
+  // ruleid: sentinel-node-path-traversal
+  return fse.outputFile(req.body.destino, 'x')
+}
+
+export function lerJsonFixo (fse: any) {
+  // ok: sentinel-node-path-traversal
+  return fse.readJsonSync('./config/app.json')
+}
+
+export function lerJsonBasename (req: any, fse: any, path: any) {
+  // ok: sentinel-node-path-traversal
+  return fse.readJsonSync(path.basename(req.query.arquivo))
+}
+
+export function ecoDireto (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.send(req.query.text)
+}
+
+export function ecoDiretoParam (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.send(req.params.nome)
+}
+
+export function ecoNumerico (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send(String(parseInt(req.query.n, 10)))
+}
+
+export function ecoEscapadoDireto (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send(escapeHtml(req.query.text))
+}
+
+export function ecoJsonDoCorpo (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send(req.body)
+}

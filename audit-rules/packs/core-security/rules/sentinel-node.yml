@@ -475,9 +475,18 @@ rules:
               - pattern: $FS.unlink($P, ...)
               - pattern: $FS.unlinkSync($P, ...)
               - pattern: $FS.readdir($P, ...)
+              # fs-extra (`fse`, `fsExtra`): leitura/gravação/remoção de JSON e arquivos
+              - pattern: $FS.readJson($P, ...)
+              - pattern: $FS.readJsonSync($P, ...)
+              - pattern: $FS.outputFile($P, ...)
+              - pattern: $FS.outputFileSync($P, ...)
+              - pattern: $FS.outputJson($P, ...)
+              - pattern: $FS.outputJsonSync($P, ...)
+              - pattern: $FS.remove($P, ...)
+              - pattern: $FS.removeSync($P, ...)
           - metavariable-regex:
               metavariable: $FS
-              regex: ^(res|response|fs|fsp|fsPromise|fsPromises|fs\.promises|promises)$
+              regex: ^(res|response|fs|fsp|fsPromise|fsPromises|fs\.promises|promises|fse|fsExtra)$
           - focus-metavariable: $P
       - patterns:
           # importação nomeada (`import { readFile } from "fs/promises"`)
@@ -1136,6 +1145,19 @@ rules:
           - metavariable-regex:
               metavariable: $T
               regex: ^`\s*<[\s\S]*\$\{
+          - focus-metavariable: $T
+      # eco direto de parâmetro de texto (`res.send(req.query.x)`): string sai como text/html
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($T)
+              - pattern: $RES.end($T)
+              - pattern: $RES.write($T)
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response)$
+          - metavariable-regex:
+              metavariable: $T
+              regex: ^(req|request)\.(query|params)\.\w+$
           - focus-metavariable: $T
     pattern-sanitizers:
       - patterns:
