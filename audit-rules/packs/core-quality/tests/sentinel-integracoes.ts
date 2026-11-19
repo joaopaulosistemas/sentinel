@@ -47,3 +47,10 @@ export const FEATURE_SAX = 'http://xml.org/sax/features/external-general-entitie
 
 // ok: sentinel-int-http-sem-tls
 export const NAMESPACE_PMD = 'http://pmd.sourceforge.net/ruleset/2.0.0';
+
+/**
+ * Link de documentação em Javadoc/TSDoc (atributo href), não é conexão.
+ * ok: sentinel-int-http-sem-tls
+ * @see <a href="http://d.example.com/docs">Documentação</a>
+ */
+export const COM_DOC = 1;

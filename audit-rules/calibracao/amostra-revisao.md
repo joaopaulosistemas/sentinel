@@ -1,4 +1,32 @@
-# Amostra para revisão humana (item E)
+# Amostra para revisao humana (item E)
+
+## Volta 49 (2026-11-19): appsecco/VyAPI, regras 12.118.0 (depois), branch `ciclo/estabilizacao-16`
+
+O alvo so tem **17** achados de regras de seguranca do Opengrep (descartados estilo, qualidade, comentarios, PMD, SCA); todos listados, **sem sorteio (semente nao se aplica)**. **Classificacao feita por subagente independente do Claude** (contexto novo, so a lista e o codigo do VyAPI; nao viu diff, gabarito nem LOG). Nao e revisao externa: o Joao pode sobrescrever qualquer linha e a dele prevalece. Resultado: 14 VERDADEIRO, 2 BAIXO VALOR, 1 FALSO em 17 (estrito 14/17 = 82 %; largo 16/17 = 94 %). 5 dos 17 sao a mesma falha vista por varias linhas (receiver e provider), e 12 dos 17 sao de regras criadas ou ajustadas nesta propria volta ou de manifesto: o numero e estimativa, nao medida.
+
+| # | Regra | Arquivo | Linha | Classificacao |
+|---|---|---|---|---|
+| 1 | sentinel-int-http-sem-tls | app/src/androidTest/java/com/appsecco/vyapi/ExampleInstrumentedTest.java | 16 | FALSO: linha 16 e comentario Javadoc (href), sem requisicao; a regra casava `href="http://` (corrigido nesta volta) |
+| 2 | sentinel-android-manifest-allow-backup | app/src/main/AndroidManifest.xml | 16 | VERDADEIRO: allowBackup="true" permite extrair o banco por adb backup |
+| 3 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 26 | VERDADEIRO: receiver exportado sem permissao |
+| 4 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 36 | VERDADEIRO: provider exportado; permissao de outro app nao declarada; SQLi no #13 |
+| 5 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 46 | VERDADEIRO: provider exportado com grantUriPermissions e file paths amplos |
+| 6 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 59 | VERDADEIRO: provider exportado com grantUriPermissions e paths amplos |
+| 7 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 72 | VERDADEIRO (impacto provavel baixo): servico exportado sem permissao |
+| 8 | sentinel-arquivo-temporario-inseguro | app/src/main/java/com/appsecco/vyapi/fragments/CameraFragment.java | 178 | BAIXO VALOR: createTempFile no diretorio externo do proprio app, nome aleatorio |
+| 9 | sentinel-crypto-cifra-fraca | app/src/main/java/com/appsecco/vyapi/fragments/CreateContactFragment.java | 122 | VERDADEIRO: Cipher.getInstance("AES") = ECB, chave fixa "secretKey" |
+| 10 | sentinel-crypto-cifra-fraca | app/src/main/java/com/appsecco/vyapi/fragments/CreateContactFragment.java | 141 | VERDADEIRO: decrypt com o mesmo ECB e chave fixa |
+| 11 | sentinel-android-webview-javascript | app/src/main/java/com/appsecco/vyapi/fragments/ViewWebsiteFragment.java | 49 | VERDADEIRO: JS habilitado em WebView que carrega URL do usuario |
+| 12 | sentinel-android-sqlite-concatenado | app/src/main/java/com/appsecco/vyapi/misc/ContactDBHandler.java | 53 | VERDADEIRO: SQLi por concatenacao em rawQuery |
+| 13 | sentinel-android-sqlite-concatenado | app/src/main/java/com/appsecco/vyapi/provider/ContactDBProvider.java | 68 | VERDADEIRO: appendWhere com segmento da URI em provider exportado |
+| 14 | sentinel-android-intent-caminho-arquivo | app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java | 50 | VERDADEIRO: FileInputStream com caminho do extra do broadcast exportado |
+| 15 | sentinel-android-intent-caminho-arquivo | app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java | 51 | VERDADEIRO: FileOutputStream com nome do extra (traversal) |
+| 16 | sentinel-android-intent-caminho-arquivo | app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java | 58 | BAIXO VALOR: so cria o File, redundante com o #14 |
+| 17 | sentinel-android-intent-caminho-arquivo | app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java | 59 | VERDADEIRO: renameTo com destino controlado pelo extra |
+
+---
+
+## Volta 46 (amostra anterior)
 
 Gerada na volta 46 (2026-11-18) a partir da auditoria do CI de `layro01/node-api-goat` (treino mais recente, branch `ciclo/estabilizacao-14`, regras da versão 12.116.0).
 **Classificação feita na volta 47 por subagente independente do Claude** (contexto novo, recebeu só a lista e o código do alvo, sem ver diff, gabaritos nem LOG). Não é revisão externa: o João pode sobrescrever qualquer linha e a dele prevalece. Resultado: 12 VERDADEIRO, 3 VERDADEIRO DE BAIXO VALOR, 0 FALSO em 15 (estrito 12/15 = 80 %, Wilson 55 a 93 %; largo 15/15, Wilson 80 a 100 %). 8 dos 15 são duplicatas da mesma linha por regras diferentes (eval e exec), o que infla a precisão.
