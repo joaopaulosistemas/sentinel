@@ -1,0 +1,12 @@
+{
+  "_comentario": "Falhas de djadmin/vulnerable-app (AngularJS 1.x + Express, HotTowel) lidas no codigo (treino), volta 48; o README descreve XSS, CSRF e clickjacking. Gabarito escrito pelo mesmo agente que corrige, antes de ver os achados do Sentinel. Regras aceitas fixadas antes da medida; CSRF, clickjacking (cabecalho ausente) e token fixo sao falhas de ausencia/logica e valem como meta (lacuna assumida quando nao ha regra). Correcao apos a primeira medida (recall antes 1/6, medido com este arquivo): so o NOME da regra aceita do XSS do Angular foi ajustado para sentinel-angularjs-trust-as; linhas e CWE nao mudaram.",
+  "repo": "djadmin/vulnerable-app",
+  "falhas": [
+    {"arquivo": "src/server/routes.js", "linha": 29, "cwe": "CWE-79", "regras": ["sentinel-node-xss-refletido"]},
+    {"arquivo": "src/client/app/xss-search/xss-search.controller.js", "linha": 64, "cwe": "CWE-79", "regras": ["sentinel-angularjs-trust-as"]},
+    {"arquivo": "src/server/routes.js", "linha": 62, "cwe": "CWE-1004", "regras": ["sentinel-node-cookie-sem-flags", "sentinel-node-cookie-httponly-desligado"]},
+    {"arquivo": "src/server/routes.js", "linha": 38, "cwe": "CWE-352", "regras": ["sentinel-node-csrf-ausente"]},
+    {"arquivo": "src/server/app.js", "linha": 16, "cwe": "CWE-1021", "regras": ["sentinel-node-sem-cabecalhos-seguranca"]},
+    {"arquivo": "src/server/routes.js", "linha": 53, "cwe": "CWE-330", "regras": ["sentinel-node-math-random-segredo"]}
+  ]
+}
