@@ -17,7 +17,7 @@ rules:
 
   # AngularJS 1.x: $sce.trustAs* desliga o filtro de conteúdo (mesma classe do bypassSecurityTrust* do Angular)
   - id: sentinel-angularjs-trust-as
-    pattern-regex: '\$sce\s*\.\s*trustAs(?:Html|Js|Css|Url|ResourceUrl)?\s*\('
+    pattern-regex: '(?m)^(?![ \t]*(?://|\*|/\*)).*?(\$sce\s*\.\s*trustAs(?:Html|Js|Css|Url|ResourceUrl)?\s*\()'
     message: >
       $sce.trustAs* marca o valor como confiável e desliga a proteção do AngularJS: se ele vier do usuário, de
       resposta de API ou da URL, é XSS (CWE-79). Prefira ng-bind (texto) ou o módulo ngSanitize com $sanitize.

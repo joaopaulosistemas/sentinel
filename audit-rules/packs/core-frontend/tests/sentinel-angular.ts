@@ -42,3 +42,9 @@ export function angularJsTextoPuro ($sce: any, resposta: string) {
   // ok: sentinel-angularjs-trust-as
   return $sce.getTrustedHtml(resposta)
 }
+
+export function angularJsTrechoComentado ($sce: any, vm: any) {
+  // vm.zz = $sce.trustAsHtml("<b>teste</b>");
+  // ok: sentinel-angularjs-trust-as
+  return vm.zz
+}
