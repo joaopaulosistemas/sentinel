@@ -68,3 +68,4 @@ kiview/damn-vulnerable-spring-boot-app
 djadmin/vulnerable-app
 appsecco/VyAPI
 leihehehe/nodejs-vul-labs
+veracode/verademo
