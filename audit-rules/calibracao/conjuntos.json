@@ -91,7 +91,8 @@
     "_nota_ivna": "VitthalS/ivna (app Node/Express com MongoDB intencionalmente vulneravel, branch main, stack JAVASCRIPT, 21 estrelas) entrou em 2026-11-17 na volta 44 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
     "_nota_contrast_spring": "Contrast-Security-OSS/vulnerable-spring-boot-application (app Spring Boot de busca de provedores intencionalmente vulneravel, branch master, stack JAVA, 18 estrelas, 7 arquivos Java) entrou em 2026-11-17 na volta 45 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
     "_nota_dvsba": "kiview/damn-vulnerable-spring-boot-app (app Spring Boot com Gradle intencionalmente vulneravel, branch master, stack JAVA, 13 estrelas, 5 arquivos Java) entrou em 2026-11-18 na volta 47 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
-    "_nota_djadmin": "djadmin/vulnerable-app (front-end AngularJS 1.x + Express intencionalmente vulneravel, branch master, stack MIXED, 10 estrelas) entrou em 2026-11-19 na volta 48 (ciclo/estabilizacao-15); treino, codigo lido para o gabarito."
+    "_nota_djadmin": "djadmin/vulnerable-app (front-end AngularJS 1.x + Express intencionalmente vulneravel, branch master, stack MIXED, 10 estrelas) entrou em 2026-11-19 na volta 48 (ciclo/estabilizacao-15); treino, codigo lido para o gabarito.",
+    "_nota_vyapi": "appsecco/VyAPI (app Android hibrido vulneravel, Java, branch master, stack JAVA, 84 estrelas, 24 arquivos Java) entrou em 2026-11-19 na volta 49 (ciclo/estabilizacao-16); treino, codigo lido para o gabarito. Mesmo autor do dvja (validacao), repositorio diferente."
   },
   "validacao": {
     "repositorios_fixos": [
