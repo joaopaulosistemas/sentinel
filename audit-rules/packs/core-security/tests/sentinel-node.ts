@@ -1202,3 +1202,28 @@ export function ecoJsonDoCorpo (req: any, res: any) {
   // ok: sentinel-node-xss-refletido
   res.send(req.body)
 }
+
+export function ecoDiretoComStatus (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.status(200).send(req.query.searchTerm)
+}
+
+export function ecoHtmlConcatenadoComStatus (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.status(200).send('<p>Busca: ' + req.query.q + '</p>')
+}
+
+export function ecoComStatusEscapado (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.status(200).send(escapeHtml(req.query.searchTerm))
+}
+
+export function ecoComStatusJsonDoCorpo (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.status(201).send(req.body)
+}
+
+export function ecoComStatusValorFixo (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.status(404).send('Nao encontrado')
+}

@@ -86,6 +86,13 @@
   effort: M
   regression-risk: MEDIUM
 
+- key: "sentinel-angularjs-trust-as"
+  summary: "Não marque como confiável o que vem do usuário ou da API: mostre como texto (ng-bind) ou sanitize com ngSanitize."
+  before: "vm.resultado = $sce.trustAsHtml(resposta);"
+  after: "vm.resultado = resposta;  // <pre ng-bind=\"vm.resultado\"> ou ng-bind-html com ngSanitize ($sanitize)"
+  effort: S
+  regression-risk: LOW
+
 - key: "sentinel-ng-nativeelement-html"
   summary: "Use binding [innerHTML] ou Renderer2.setProperty."
   before: "el.nativeElement.innerHTML = v;"

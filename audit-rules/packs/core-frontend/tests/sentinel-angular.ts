@@ -22,3 +22,29 @@ export class Exemplo {
     this._rest.get<any>('/api/contas');
   }
 }
+
+export function angularJsConfiaNoHtml ($sce: any, resposta: string) {
+  // ruleid: sentinel-angularjs-trust-as
+  return $sce.trustAsHtml(resposta)
+}
+
+export function angularJsConfiaNaUrl ($sce: any, destino: string) {
+  // ruleid: sentinel-angularjs-trust-as
+  return $sce.trustAsResourceUrl(destino)
+}
+
+export function angularJsSanitiza ($sanitize: any, resposta: string) {
+  // ok: sentinel-angularjs-trust-as
+  return $sanitize(resposta)
+}
+
+export function angularJsTextoPuro ($sce: any, resposta: string) {
+  // ok: sentinel-angularjs-trust-as
+  return $sce.getTrustedHtml(resposta)
+}
+
+export function angularJsTrechoComentado ($sce: any, vm: any) {
+  // vm.zz = $sce.trustAsHtml("<b>teste</b>");
+  // ok: sentinel-angularjs-trust-as
+  return vm.zz
+}

@@ -15,6 +15,22 @@ rules:
       cwe: "CWE-79: Cross-site Scripting"
       owasp: A03:2021 - Injection
 
+  # AngularJS 1.x: $sce.trustAs* desliga o filtro de conteúdo (mesma classe do bypassSecurityTrust* do Angular)
+  - id: sentinel-angularjs-trust-as
+    pattern-regex: '(?m)^(?![ \t]*(?://|\*|/\*)).*?(\$sce\s*\.\s*trustAs(?:Html|Js|Css|Url|ResourceUrl)?\s*\()'
+    message: >
+      $sce.trustAs* marca o valor como confiável e desliga a proteção do AngularJS: se ele vier do usuário, de
+      resposta de API ou da URL, é XSS (CWE-79). Prefira ng-bind (texto) ou o módulo ngSanitize com $sanitize.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.js"]
+      exclude: ["**/node_modules/**", "**/bower_components/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*", "*.min.js"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting"
+      owasp: A03:2021 - Injection
+
   - id: sentinel-ng-nativeelement-html
     pattern-regex: '\.nativeElement\.(?:innerHTML|outerHTML)\s*='
     message: >

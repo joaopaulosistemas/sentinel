@@ -1124,7 +1124,9 @@ rules:
       - patterns:
           - pattern-either:
               - pattern: $RES.send($H + $V)
+              - pattern: $RES.status(...).send($H + $V)
               - pattern: $RES.send($H + $V + $T)
+              - pattern: $RES.status(...).send($H + $V + $T)
               - pattern: $RES.end($H + $V)
               - pattern: $RES.write($H + $V)
           - metavariable-regex:
@@ -1150,6 +1152,7 @@ rules:
       - patterns:
           - pattern-either:
               - pattern: $RES.send($T)
+              - pattern: $RES.status(...).send($T)
               - pattern: $RES.end($T)
               - pattern: $RES.write($T)
           - metavariable-regex:
