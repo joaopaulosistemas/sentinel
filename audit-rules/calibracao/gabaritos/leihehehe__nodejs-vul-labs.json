@@ -1,5 +1,5 @@
 {
- "_comentario": "Falhas de leihehe/nodejs-vul-labs (6 labs Node.js + Angular, MIXED) lidas no codigo (treino), volta 50; linhas conferidas com grep -n. Gabarito escrito pelo mesmo agente que corrige, ANTES de ver os achados do Sentinel; regras aceitas fixadas antes da medida e nomes conferidos contra a lista de regras. Entrada com regras [] e lacuna assumida (falha logica ou de ausencia). Fora: CVE de bibliotecas (SCA), flags literais dos labs. Correcao antes de medir a mudanca: a primeira conta (6/11 = 55 %) estava inflada porque entrada com regras [] aceita qualquer achado a 3 linhas (ESLint prefer-const, console.log), e a linha do prototype pollution estava na chamada (155) em vez de na funcao merge (231), onde a regra acerta. Lacunas sem regra possivel (falha logica ou de ausencia) saem da conta e ficam em lacunas_assumidas_nao_medidas.",
+ "_comentario": "Falhas de leihehe/nodejs-vul-labs (6 labs Node.js + Angular, MIXED) lidas no codigo (treino), volta 50; linhas conferidas com grep -n. Gabarito escrito pelo mesmo agente que corrige, ANTES de ver os achados do Sentinel; regras aceitas fixadas antes da medida e nomes conferidos contra a lista de regras. Entrada com regras [] e lacuna assumida (falha logica ou de ausencia). Fora: CVE de bibliotecas (SCA), flags literais dos labs. Correcao antes de medir a mudanca: a primeira conta (6/11 = 55 %) estava inflada porque entrada com regras [] aceita qualquer achado a 3 linhas (ESLint prefer-const, console.log), e a linha do prototype pollution estava na chamada (155) em vez de na funcao merge (231), onde a regra acerta. Lacunas sem regra possivel (falha logica ou de ausencia) saem da conta e ficam em lacunas_assumidas_nao_medidas. Ajuste depois da medida do antes (3/5, que nao muda): a regra nova sentinel-node-credencial-literal-atribuida entrou nas aceitas do CWE-798 da linha 209 (sentinel-senha-fixa-no-codigo e so Java; eu a listei por engano).",
  "repo": "leihehehe/nodejs-vul-labs",
  "falhas": [
   {
@@ -40,7 +40,8 @@
    "linha": 209,
    "cwe": "CWE-798",
    "regras": [
-    "sentinel-senha-fixa-no-codigo"
+    "sentinel-senha-fixa-no-codigo",
+    "sentinel-node-credencial-literal-atribuida"
    ]
   }
  ],
