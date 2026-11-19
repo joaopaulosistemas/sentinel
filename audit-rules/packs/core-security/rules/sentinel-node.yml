@@ -1004,6 +1004,14 @@ rules:
           - metavariable-regex:
               metavariable: $REQ
               regex: ^(req|request)$
+      # evento do socket.io: o payload do cliente é objeto JSON livre, como o corpo de uma requisição
+      - patterns:
+          - pattern-inside: |
+              $S.on($EVT, function ($DATA, ...) { ... })
+          - pattern: $DATA
+          - metavariable-regex:
+              metavariable: $S
+              regex: ^(socket|client|conn|connection|sock)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -1403,6 +1411,37 @@ rules:
       category: security
       cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
       owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-node-credencial-literal-atribuida
+    patterns:
+      - pattern-either:
+          - pattern: const $K = "$VAL"
+          - pattern: let $K = "$VAL"
+          - pattern: var $K = "$VAL"
+          - pattern: '{..., $K: "$VAL", ...}'
+          - pattern: $O.$K = "$VAL"
+      # nome de credencial (o `secret` solto fica com sentinel-node-session-secret-literal, que já cobre a sessão)
+      - metavariable-regex:
+          metavariable: $K
+          regex: (?i)^(\w+\.)*(\w*password|passwd|\w*senha\w*|\w*api_?key|\w*client_?secret|\w*secret_?key|\w*private_?key|\w*access_?token)$
+      # 8+ caracteres sem espaço: frase, rótulo de tela e campo vazio não são segredo
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: ^(?!(?i:password|senha|passwd|changeme|\*+|x+)$)[^\s"'`$<{]{8,}$
+      - focus-metavariable: $VAL
+    message: >
+      Credencial escrita no código-fonte (CWE-798). Ela vai para o Git, para o pacote publicado e para todo build, e
+      quem lê o código a usa. Leia de variável de ambiente (`process.env.X`) ou de um cofre de segredos, guarde só o hash
+      de senha de usuário e troque a que já foi exposta.
+    severity: WARNING
+    languages: [javascript, typescript]
+    paths:
+      exclude: ["**/*.spec.*", "**/*.test.*", "**/test/**", "**/tests/**", "**/__tests__/**", "**/e2e/**", "**/mocks/**", "**/*.stories.*"]
+    metadata:
+      side: common
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: A07:2021 - Identification and Authentication Failures
 
   - id: sentinel-node-credencial-literal-comparada
     patterns:

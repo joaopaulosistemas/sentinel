@@ -664,6 +664,13 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
 
+- key: "sentinel-node-credencial-literal-atribuida"
+  summary: "Tire a credencial do código: leia de variável de ambiente ou cofre de segredos e troque a que já foi exposta."
+  before: "const config = { password: 'admin123123' }"
+  after: "const config = { password: process.env.DB_PASSWORD }"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
 - key: "sentinel-node-prototype-pollution"
   summary: "Ignore as chaves __proto__, constructor e prototype ao mesclar objetos vindos de fora."
   before: "for (const k of Object.keys(src)) { merge(dst[k], src[k]) }"
