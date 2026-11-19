@@ -730,6 +730,14 @@
     - "https://cwe.mitre.org/data/definitions/89.html"
     - "https://developer.android.com/privacy-and-security/risks/sql-injection"
 
+- key: "sentinel-android-intent-caminho-arquivo"
+  summary: "Não use o extra do Intent como caminho de arquivo: fique só com o nome e confira o caminho canônico."
+  before: "new FileInputStream(new File(intent.getStringExtra(\"path\")));"
+  after: "File base = ctx.getFilesDir();\nFile f = new File(base, new File(intent.getStringExtra(\"name\")).getName());\nif (!f.getCanonicalPath().startsWith(base.getCanonicalPath() + File.separator)) { return; }"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/22.html"
+    - "https://developer.android.com/privacy-and-security/risks/path-traversal"
+
 - key: "sentinel-android-segredo-literal-comparado"
   summary: "Não compare a entrada com uma chave escrita no código: valide no servidor ou compare o hash de um segredo guardado fora do APK."
   before: "if (campo.getText().toString().equals(\"vendorsecretkey\")) { liberar(); }"

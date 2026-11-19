@@ -105,6 +105,21 @@ class AndroidTeste extends android.app.Activity {
         db.execSQL("CREATE TABLE IF NOT EXISTS " + "u(user VARCHAR);");
     }
 
+    void consultaEmVariavel(android.database.sqlite.SQLiteDatabase db, String fname, String id) {
+        String q1 = "Select * FROM contacts WHERE fname = " + "\"" + fname + "\"";
+        // ruleid: sentinel-android-sqlite-concatenado
+        db.rawQuery(q1, null);
+        String q2 = "DELETE FROM contacts WHERE _id = " + id;
+        // ruleid: sentinel-android-sqlite-concatenado
+        db.execSQL(q2);
+        String q3 = "SELECT * FROM " + TABELA + " WHERE " + COL_ID + " = 1";
+        // ok: sentinel-android-sqlite-concatenado
+        db.rawQuery(q3, null);
+        String q4 = "SELECT * FROM contacts WHERE fname = ?";
+        // ok: sentinel-android-sqlite-concatenado
+        db.rawQuery(q4, new String[] { fname });
+    }
+
     void construtor(android.database.sqlite.SQLiteQueryBuilder qb, Uri uri) {
         // ruleid: sentinel-android-sqlite-concatenado
         qb.appendWhere(COL_ID + "=" + uri.getLastPathSegment());
@@ -119,6 +134,23 @@ class AndroidTeste extends android.app.Activity {
         db.delete(TABELA, COL_ID + " = " + id, args);
         // ok: sentinel-android-sqlite-concatenado
         db.delete(TABELA, COL_ID + " = ?", new String[] { id });
+    }
+
+    void caminhoDoIntent(android.content.Intent intent, android.content.Context ctx) throws Exception {
+        String nome = intent.getStringExtra("new_file_name");
+        // ruleid: sentinel-android-intent-caminho-arquivo
+        java.io.FileOutputStream out = new java.io.FileOutputStream(ctx.getFilesDir() + "/" + nome);
+        android.os.Bundle extras = intent.getExtras();
+        String origem = extras.get("temp_file_path").toString();
+        // ruleid: sentinel-android-intent-caminho-arquivo
+        java.io.FileInputStream in = new java.io.FileInputStream(new java.io.File(origem));
+        // ok: sentinel-android-intent-caminho-arquivo
+        java.io.File fixo = new java.io.File(ctx.getFilesDir(), "dados.bin");
+        // ok: sentinel-android-intent-caminho-arquivo
+        java.io.File seguro = new java.io.File(ctx.getFilesDir(), new java.io.File(nome).getName());
+        String canonico = new java.io.File(ctx.getFilesDir(), "x").getCanonicalPath();
+        // ok: sentinel-android-intent-caminho-arquivo
+        java.io.File ok2 = new java.io.File(canonico);
     }
 
     void segredoLiteral(android.widget.EditText chave, String nome) {

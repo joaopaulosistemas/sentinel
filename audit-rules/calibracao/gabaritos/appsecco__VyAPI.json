@@ -1,0 +1,110 @@
+{
+ "_comentario": "Falhas de appsecco/VyAPI (app Android hibrido, Java) lidas no codigo (treino), volta 49; linhas conferidas com grep -n. Gabarito escrito pelo mesmo agente que corrige, ANTES de ver os achados do Sentinel; regras aceitas fixadas antes da medida; nomes das regras aceitas conferidos contra a lista de regras do Sentinel (grep de ids), ainda antes de ver qualquer achado. Entrada com regras [] e lacuna assumida. Fora: Cognito/Amplify (config externa), CVE de bibliotecas (SCA). Ajuste depois da medida do antes (6/13, que nao muda): a regra nova sentinel-android-intent-caminho-arquivo entrou nas aceitas do CWE-22 do receiver (linha 50) porque nenhuma regra existente tinha essa forma.",
+ "repo": "appsecco/VyAPI",
+ "falhas": [
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 16,
+   "cwe": "CWE-530",
+   "regras": [
+    "sentinel-android-manifest-allow-backup"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 24,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 33,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/AndroidManifest.xml",
+   "linha": 70,
+   "cwe": "CWE-926",
+   "regras": [
+    "sentinel-android-manifest-exported"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/appsecco/vyapi/provider/ContactDBProvider.java",
+   "linha": 68,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-android-sqlite-concatenado",
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/appsecco/vyapi/misc/ContactDBHandler.java",
+   "linha": 53,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-android-sqlite-concatenado",
+    "sentinel-sql-injection"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java",
+   "linha": 50,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-android-intent-caminho-arquivo",
+    "sentinel-resource-path-concatenado",
+    "sentinel-servlet-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/appsecco/vyapi/fragments/CreateContactFragment.java",
+   "linha": 122,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-crypto-cifra-fraca"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/appsecco/vyapi/fragments/CreateContactFragment.java",
+   "linha": 120,
+   "cwe": "CWE-321",
+   "regras": [
+    "sentinel-crypto-chave-fixa-no-codigo"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/appsecco/vyapi/fragments/ViewWebsiteFragment.java",
+   "linha": 49,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-android-webview-javascript"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/appsecco/vyapi/fragments/ViewWebsiteFragment.java",
+   "linha": 64,
+   "cwe": "CWE-79",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/java/com/appsecco/vyapi/fragments/HomeFragment.java",
+   "linha": 277,
+   "cwe": "CWE-532",
+   "regras": [
+    "sentinel-android-log-segredo"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/res/xml/load_file_paths.xml",
+   "linha": 10,
+   "cwe": "CWE-200",
+   "regras": []
+  }
+ ]
+}

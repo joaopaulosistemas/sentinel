@@ -152,7 +152,8 @@ rules:
       cwe: "CWE-1049: Excessive Data Query Operations in a Large Data Table"
 
   - id: sentinel-sql-delete-sem-where
-    pattern-regex: '(?i)"\s*delete\s+from\s+[\w.]+\s*"(?![^;]*\bwhere\b)'
+    # @Query("delete from t") (Room, Spring Data) é um método dedicado a limpar a tabela, escolha explícita do autor
+    pattern-regex: '(?<!@Query\()(?<!@Query\(value = )(?i)"\s*delete\s+from\s+[\w.]+\s*"(?![^;]*\bwhere\b)'
     message: >
       DELETE sem WHERE apaga todas as linhas da tabela. Se a intenção é limpar a tabela, deixe isso explícito
       (TRUNCATE em migration); senão, acrescente a condição.

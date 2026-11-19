@@ -206,6 +206,57 @@ rules:
       cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
       owasp: M4 - Insufficient Input/Output Validation
 
+  - id: sentinel-android-intent-caminho-arquivo
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $I.getStringExtra(...)
+          - pattern: (android.content.Intent $I).getExtras().get(...)
+          - pattern: (android.content.Intent $I).getExtras().getString(...)
+          - pattern: (Intent $I).getExtras().get(...)
+          - pattern: (Intent $I).getExtras().getString(...)
+          - pattern: (android.os.Bundle $B).get(...)
+          - pattern: (android.os.Bundle $B).getString(...)
+          - pattern: (Bundle $B).get(...)
+          - pattern: (Bundle $B).getString(...)
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: $X.getCanonicalPath()
+          - pattern: $X.getName()
+          - pattern: (java.io.File $F).getName()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: new java.io.File($P)
+              - pattern: new java.io.File($D, $P)
+              - pattern: new File($P)
+              - pattern: new File($D, $P)
+              - pattern: new java.io.FileInputStream($P)
+              - pattern: new java.io.FileOutputStream($P)
+              - pattern: new FileInputStream($P)
+              - pattern: new FileOutputStream($P)
+              - pattern: new java.io.FileReader($P)
+              - pattern: new java.io.FileWriter($P)
+              - pattern: new FileReader($P)
+              - pattern: new FileWriter($P)
+          # o File embrulhado em FileInputStream/FileOutputStream já é marcado no `new File(...)` de dentro
+          - pattern-not: new java.io.FileInputStream(new java.io.File(...))
+          - pattern-not: new java.io.FileOutputStream(new java.io.File(...))
+          - pattern-not: new FileInputStream(new File(...))
+          - pattern-not: new FileOutputStream(new File(...))
+          - focus-metavariable: $P
+    message: >
+      Um extra do Intent (ou do Bundle recebido de outro app) vira nome ou caminho de arquivo (CWE-22). Um componente
+      exportado, como o BroadcastReceiver, recebe o valor de qualquer app instalado: "../" ou um caminho absoluto leva à
+      leitura ou à sobrescrita de arquivos privados do app. Use só o nome (File.getName()), resolva com getCanonicalPath()
+      e confira que fica dentro da pasta permitida, ou aceite uma lista fixa de nomes.
+    severity: ERROR
+    languages: [java]
+    metadata:
+      category: security
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp: M4 - Insufficient Input/Output Validation
+
   - id: sentinel-android-classloader-armazenamento-externo
     patterns:
       - pattern-either:
@@ -256,28 +307,41 @@ rules:
   - id: sentinel-android-sqlite-concatenado
     patterns:
       - pattern-either:
-          - pattern: $DB.rawQuery($Q, ...)
-          - pattern: $DB.execSQL($Q, ...)
-          - pattern: $QB.appendWhere($Q)
-          - pattern: (android.database.sqlite.SQLiteDatabase $DB).delete($T, $Q, ...)
-          - pattern: (SQLiteDatabase $DB).delete($T, $Q, ...)
-          - pattern: (android.database.sqlite.SQLiteDatabase $DB).update($T, $V, $Q, ...)
-          - pattern: (SQLiteDatabase $DB).update($T, $V, $Q, ...)
-      # só conta quando a consulta junta algo que não é literal nem constante (NOME_EM_MAIÚSCULAS)
-      - metavariable-pattern:
-          metavariable: $Q
-          patterns:
-            - pattern-either:
-                - patterns:
-                    - pattern: <... $L + $X ...>
-                    - metavariable-regex:
-                        metavariable: $X
-                        regex: '^(?!["\x27])(?![A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)*$).+'
-                - patterns:
-                    - pattern: <... $X + $R ...>
-                    - metavariable-regex:
-                        metavariable: $X
-                        regex: '^(?!["\x27])(?![A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)*$)(?!.* \+ ).+'
+          - patterns:
+              - pattern-either:
+                  - pattern: $DB.rawQuery($Q, ...)
+                  - pattern: $DB.execSQL($Q, ...)
+                  - pattern: $QB.appendWhere($Q)
+                  - pattern: (android.database.sqlite.SQLiteDatabase $DB).delete($T, $Q, ...)
+                  - pattern: (SQLiteDatabase $DB).delete($T, $Q, ...)
+                  - pattern: (android.database.sqlite.SQLiteDatabase $DB).update($T, $V, $Q, ...)
+                  - pattern: (SQLiteDatabase $DB).update($T, $V, $Q, ...)
+              # só conta quando a consulta junta algo que não é literal nem constante (NOME_EM_MAIÚSCULAS)
+              - metavariable-pattern:
+                  metavariable: $Q
+                  patterns:
+                    - pattern-either:
+                        - patterns:
+                            - pattern: <... $L + $X ...>
+                            - metavariable-regex:
+                                metavariable: $X
+                                regex: '^(?!["\x27])(?![A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)*$).+'
+                        - patterns:
+                            - pattern: <... $X + $R ...>
+                            - metavariable-regex:
+                                metavariable: $X
+                                regex: '^(?!["\x27])(?![A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)*$)(?!.* \+ ).+'
+          # a mesma consulta montada numa variável local antes de ir para rawQuery/execSQL
+          - patterns:
+              - pattern-either:
+                  - pattern: $DB.rawQuery($Q, ...)
+                  - pattern: $DB.execSQL($Q, ...)
+              - pattern-inside: |
+                  $T $Q = <... $L + $X ...>;
+                  ...
+              - metavariable-regex:
+                  metavariable: $X
+                  regex: '^(?!["\x27])(?![A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)*$).+'
     message: >
       Consulta SQLite montada por concatenação (CWE-89): se o texto vier de um campo da tela, de um Intent ou da URI de
       um ContentProvider, quem controla a entrada altera a consulta e lê ou apaga dados de outros registros. Use

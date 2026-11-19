@@ -20,11 +20,24 @@ rules:
   - id: sentinel-crypto-cifra-fraca
     patterns:
       - pattern-either:
-          - pattern: Cipher.getInstance($ALG, ...)
-          - pattern: javax.crypto.Cipher.getInstance($ALG, ...)
-      - metavariable-regex:
-          metavariable: $ALG
-          regex: (?i)^"((DES|DESEDE|3DES|TRIPLEDES|RC2|RC4|ARCFOUR|BLOWFISH)(/.*)?|AES|[A-Z0-9]+/ECB(/.*)?)"$
+          - patterns:
+              - pattern-either:
+                  - pattern: Cipher.getInstance($ALG, ...)
+                  - pattern: javax.crypto.Cipher.getInstance($ALG, ...)
+              - metavariable-regex:
+                  metavariable: $ALG
+                  regex: (?i)^"((DES|DESEDE|3DES|TRIPLEDES|RC2|RC4|ARCFOUR|BLOWFISH)(/.*)?|AES|[A-Z0-9]+/ECB(/.*)?)"$
+          # nome de campo da mesma classe com o algoritmo fraco (private static String AES = "AES"; o Opengrep
+          # não propaga constante que não é final)
+          - patterns:
+              - pattern-either:
+                  - pattern: Cipher.getInstance($ALG, ...)
+                  - pattern: javax.crypto.Cipher.getInstance($ALG, ...)
+              - pattern-inside: |
+                  class $K { ... $T $ALG = "$V"; ... }
+              - metavariable-regex:
+                  metavariable: $V
+                  regex: (?i)^((DES|DESEDE|3DES|TRIPLEDES|RC2|RC4|ARCFOUR|BLOWFISH)(/.*)?|AES|[A-Z0-9]+/ECB(/.*)?)$
     message: >
       Cifra fraca ou modo inseguro (DES/3DES, RC4, Blowfish, AES/ECB ou AES sem modo, que cai em ECB). Use AES/GCM/NoPadding com IV aleatório e único.
     severity: ERROR

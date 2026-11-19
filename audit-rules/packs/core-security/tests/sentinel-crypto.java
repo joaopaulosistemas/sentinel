@@ -7,6 +7,9 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 class CryptoCases {
+    private static String AES = "AES";
+    private static final String MODO_ECB = "AES/ECB/PKCS5Padding";
+    private static final String MODO_GCM = "AES/GCM/NoPadding";
 
     void hash() throws Exception {
         // ruleid: sentinel-crypto-hash-fraco
@@ -26,6 +29,12 @@ class CryptoCases {
         Cipher.getInstance("AES");
         // ok: sentinel-crypto-cifra-fraca
         Cipher.getInstance("AES/GCM/NoPadding");
+        // ruleid: sentinel-crypto-cifra-fraca
+        Cipher.getInstance(AES);
+        // ruleid: sentinel-crypto-cifra-fraca
+        Cipher.getInstance(MODO_ECB);
+        // ok: sentinel-crypto-cifra-fraca
+        Cipher.getInstance(MODO_GCM);
     }
 
     String gerarToken() {
