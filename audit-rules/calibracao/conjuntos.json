@@ -111,5 +111,16 @@
     "_nota_dvja": "appsecco/dvja (app Java vulnerável, Struts) entrou em 2026-11-05 no lugar do WebGoat; ninguém leu o código dele. Só os números do CI valem.",
     "_nota_rest_api": "bnematzadeh/vulnerable-rest-api (API Node/Express vulneravel, branch main, stack JAVASCRIPT) entrou na validacao em 2026-11-07 (branch ciclo/estabilizacao-9): so o README foi lido; o codigo nao foi aberto. Gabarito em gabaritos/validacao.",
     "_nota_node": "OWASP/NodeGoat, appsecco/dvna e snyk-labs/nodejs-goof entraram em 2026-11-05 para validar as regras sentinel-node-*. Só contagens de achados por regra foram vistas; o código não foi lido."
+  },
+  "ancora": {
+    "_comentario": "Decisão do João em 2026-11-21: conjunto-âncora (treino já lido, com gabarito e baseline). Remedir com medir-volta.py a cada mudança de regra para separar regressão de variação de repositório.",
+    "repos": [
+      "HCL-TECH-SOFTWARE/AltoroJ",
+      "ShiftLeftSecurity/tarpit-java",
+      "CSPF-Founder/JavaVulnerableLab",
+      "SirAppSec/vuln-node.js-express.js-app",
+      "snoopysecurity/dvws-node",
+      "cr0hn/vulnerable-node"
+    ]
   }
 }
