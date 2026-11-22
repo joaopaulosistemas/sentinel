@@ -26,7 +26,7 @@ rules:
                   - pattern: javax.crypto.Cipher.getInstance($ALG, ...)
               - metavariable-regex:
                   metavariable: $ALG
-                  regex: (?i)^"((DES|DESEDE|3DES|TRIPLEDES|RC2|RC4|ARCFOUR|BLOWFISH)(/.*)?|AES|[A-Z0-9]+/ECB(/.*)?)"$
+                  regex: (?i)^"((DES|DESEDE|3DES|TRIPLEDES|RC2|RC4|ARCFOUR|BLOWFISH)(/.*)?|PBEWITH\w+AND(DES|DESEDE|TRIPLEDES|RC2|RC4)\w*(/.*)?|AES|[A-Z0-9]+/ECB(/.*)?)"$
           # nome de campo da mesma classe com o algoritmo fraco (private static String AES = "AES"; o Opengrep
           # não propaga constante que não é final)
           - patterns:

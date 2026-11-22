@@ -380,3 +380,38 @@ rules:
       category: security
       cwe: "CWE-643: Improper Neutralization of Data within XPath Expressions"
       owasp: A03:2021 - Injection
+
+  # Consulta montada por concatenação e executada direto no JDBC. A regra de taint (sentinel-sql-injection) só vê dado
+  # vindo de getParameter e parâmetros String; aqui a origem não precisa ser rastreada (campo preenchido por parser
+  # próprio, DTO, outro método): texto SQL + valor que não é literal nem constante em maiúsculas, chegando a
+  # executeQuery/executeUpdate/execute, é o padrão SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE do SpotBugs/FindSecBugs.
+  - id: sentinel-sql-concatenado-executado
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern: '"$SQL" + $X'
+          - pattern-not: '"$SQL" + "..."'
+          - metavariable-regex:
+              metavariable: $SQL
+              regex: (?is)^\s*(select\s.+\sfrom\s|insert\s+into\s|update\s+\S+\s+set\s|delete\s+from\s)
+          - metavariable-regex:
+              metavariable: $X
+              regex: ^(?![A-Z][A-Z0-9_]*$)
+    pattern-sinks:
+      - patterns:
+          - pattern: $S.$M($ARG, ...)
+          - focus-metavariable: $ARG
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(executeQuery|executeUpdate|executeLargeUpdate|execute)$
+    message: >
+      Instrução SQL montada por concatenação com valor que não é constante e executada direto no JDBC (Statement).
+      Se o valor vem do usuário, é SQL Injection. Use PreparedStatement com ? e setString/setInt.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection

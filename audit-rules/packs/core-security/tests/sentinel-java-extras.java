@@ -22,6 +22,19 @@ class Extras {
         f.newDocumentBuilder();
     }
 
+    void saxReaderRuim() throws Exception {
+        // ruleid: sentinel-xxe-parser-xml
+        XMLReader reader = XMLReaderFactory.createXMLReader();
+        reader.parse(new InputSource(System.in));
+    }
+
+    void saxReaderSeguro() throws Exception {
+        // ok: sentinel-xxe-parser-xml
+        XMLReader reader = XMLReaderFactory.createXMLReader();
+        reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        reader.parse(new InputSource(System.in));
+    }
+
     void spel(String entrada, SpelExpressionParser spelParser) {
         // ruleid: sentinel-spel-injection
         spelParser.parseExpression(entrada);

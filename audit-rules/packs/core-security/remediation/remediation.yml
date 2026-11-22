@@ -1008,3 +1008,10 @@
   after: "XStream xs = new XStream(); xs.allowTypes(new Class[] { Pessoa.class }); xs.fromXML(xml)"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-sql-concatenado-executado"
+  summary: "Use PreparedStatement com ? e passe o valor por setString/setInt em vez de concatenar."
+  before: "stmt.executeQuery(\"SELECT * FROM user_data WHERE last_name = '\" + nome + \"'\")"
+  after: "PreparedStatement ps = c.prepareStatement(\"SELECT * FROM user_data WHERE last_name = ?\"); ps.setString(1, nome); ps.executeQuery()"
+  effort: S
+  regression-risk: LOW
