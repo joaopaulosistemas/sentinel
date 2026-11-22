@@ -137,7 +137,8 @@
    "cwe": "CWE-502",
    "regras": [
     "sentinel-xstream-qualquer-tipo",
-    "sentinel-desserializacao-insegura"
+    "sentinel-desserializacao-insegura",
+    "sentinel-xstream-sem-lista-de-tipos"
    ]
   },
   {
@@ -161,7 +162,8 @@
    "linha": 112,
    "cwe": "CWE-502",
    "regras": [
-    "sentinel-desserializacao-insegura"
+    "sentinel-desserializacao-insegura",
+    "sentinel-xmldecoder-entrada"
    ]
   },
   {
@@ -339,5 +341,6 @@
    "cwe": "CWE-113",
    "regras": []
   }
- ]
+ ],
+ "_nota_volta53": "Regras novas da volta 53 (sentinel-xstream-sem-lista-de-tipos, sentinel-xmldecoder-entrada) incluidas nas aceitas DEPOIS da primeira medida (29/38, que e o 'recall antes'); isso conta como ganho no treino, nao como generalizacao."
 }

@@ -273,4 +273,16 @@ class LdapEXpathSoNoReceptorCerto {
     }
 
     static class DtoLogin { String getUsername() { return ""; } }
+
+    void xpathMapDoCorpo(javax.xml.xpath.XPath xp, @org.springframework.web.bind.annotation.RequestBody java.util.Map<String, String> corpo) throws Exception {
+        String usuario = corpo.get("username");
+        // ruleid: sentinel-xpath-injection
+        xp.compile("//user[username='" + usuario + "']");
+    }
+
+    void xpathMapSemCorpo(javax.xml.xpath.XPath xp, java.util.Map<String, String> config) throws Exception {
+        String usuario = config.get("username");
+        // ok: sentinel-xpath-injection
+        xp.compile("//user[username='" + usuario + "']");
+    }
 }

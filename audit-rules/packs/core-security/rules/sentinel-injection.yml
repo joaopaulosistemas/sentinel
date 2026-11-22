@@ -264,6 +264,10 @@ rules:
               metavariable: $G
               regex: ^(get|is)[A-Z]\w*$
       - patterns:
+          - pattern: $B.get(...)
+          - pattern-inside: |
+              $RET $M(..., @RequestBody Map<$K, $V> $B, ...) { ... }
+      - patterns:
           - pattern-inside: |
               $RET $M(..., String $P, ...) { ... }
           - focus-metavariable: $P
@@ -328,6 +332,10 @@ rules:
           - metavariable-regex:
               metavariable: $G
               regex: ^(get|is)[A-Z]\w*$
+      - patterns:
+          - pattern: $B.get(...)
+          - pattern-inside: |
+              $RET $M(..., @RequestBody Map<$K, $V> $B, ...) { ... }
       - patterns:
           - pattern-inside: |
               $RET $M(..., String $P, ...) { ... }
