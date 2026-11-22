@@ -285,4 +285,12 @@ class LdapEXpathSoNoReceptorCerto {
         // ok: sentinel-xpath-injection
         xp.compile("//user[username='" + usuario + "']");
     }
+
+    void xpathComEscape(javax.xml.xpath.XPath xp, @org.springframework.web.bind.annotation.RequestBody java.util.Map<String, String> corpo) throws Exception {
+        String usuario = Seguranca.escapeXPath(corpo.get("username"));
+        // ok: sentinel-xpath-injection
+        xp.compile("//user[username='" + usuario + "']");
+    }
+
+    static class Seguranca { static String escapeXPath(String v) { return v; } }
 }
