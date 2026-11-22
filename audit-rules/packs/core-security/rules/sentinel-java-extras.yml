@@ -419,6 +419,32 @@ rules:
       cwe: "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
       owasp: A05:2021 - Security Misconfiguration
 
+  - id: sentinel-cookie-sem-httponly
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $T $C = new Cookie(...);
+              - pattern: $T $C = new javax.servlet.http.Cookie(...);
+              - pattern: $T $C = new jakarta.servlet.http.Cookie(...);
+          - pattern-not-inside: |
+              ...
+              $C.setHttpOnly(true);
+              ...
+      - pattern: $R.addCookie(new Cookie(...))
+      - pattern: $R.addCookie(new javax.servlet.http.Cookie(...))
+      - pattern: $R.addCookie(new jakarta.servlet.http.Cookie(...))
+    message: >
+      Cookie criado sem setHttpOnly(true): um script injetado na página (XSS) consegue ler o valor. Defina HttpOnly
+      (e Secure e SameSite) em cookies de sessão ou autenticação.
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp: A05:2021 - Security Misconfiguration
+
   - id: sentinel-cookie-secure-desligado
     pattern: $C.setSecure(false)
     message: >

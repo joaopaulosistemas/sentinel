@@ -1015,3 +1015,10 @@
   after: "PreparedStatement ps = c.prepareStatement(\"SELECT * FROM user_data WHERE last_name = ?\"); ps.setString(1, nome); ps.executeQuery()"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-cookie-sem-httponly"
+  summary: "Chame setHttpOnly(true) (e setSecure(true)) antes de addCookie, para que script da página não leia o cookie."
+  before: "response.addCookie(new Cookie(\"sid\", id))"
+  after: "Cookie c = new Cookie(\"sid\", id); c.setHttpOnly(true); c.setSecure(true); response.addCookie(c)"
+  effort: S
+  regression-risk: LOW

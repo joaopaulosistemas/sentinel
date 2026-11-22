@@ -10,7 +10,7 @@ import java.util.Map;
 class InjectionCases {
 
     void sql(Connection c, Statement st, String nome) throws Exception {
-        // ruleid: sentinel-sql-injection
+        // ruleid: sentinel-sql-injection, sentinel-sql-concatenado-executado
         st.executeQuery("SELECT * FROM usuario WHERE nome = '" + nome + "'");
         // ruleid: sentinel-sql-injection
         st.executeUpdate(String.format("DELETE FROM usuario WHERE nome = '%s'", nome));
@@ -22,11 +22,11 @@ class InjectionCases {
     }
 
     void sqlGenerico(Statement st, JdbcTemplate jdbc, String nome) throws Exception {
-        // ruleid: sentinel-sql-injection
+        // ruleid: sentinel-sql-injection, sentinel-sql-concatenado-executado
         st.execute("DELETE FROM usuario WHERE nome = '" + nome + "'");
-        // ruleid: sentinel-sql-injection
+        // ruleid: sentinel-sql-injection, sentinel-sql-concatenado-executado
         jdbc.update("UPDATE usuario SET ativo = 0 WHERE nome = '" + nome + "'");
-        // ruleid: sentinel-sql-injection
+        // ruleid: sentinel-sql-injection, sentinel-sql-concatenado-executado
         jdbc.query("SELECT * FROM usuario WHERE nome = '" + nome + "'", (rs, i) -> rs.getString(1));
         // ok: sentinel-sql-injection
         jdbc.update("UPDATE usuario SET ativo = 0 WHERE nome = ?", nome);
@@ -176,13 +176,13 @@ class PropagacaoEmColecoes {
         java.util.Map<String, Object> m = new java.util.HashMap<String, Object>();
         m.put("a", request.getParameter("u"));
         String bar = (String) m.get("a");
-        // ruleid: sentinel-sql-injection
+        // ruleid: sentinel-sql-injection, sentinel-sql-concatenado-executado
         st.executeQuery("select * from u where n = '" + bar + "'");
     }
 
     void sqlNomeDeCabecalho(javax.servlet.http.HttpServletRequest request, java.sql.Statement st) throws Exception {
         String nome = request.getHeaderNames().nextElement();
-        // ruleid: sentinel-sql-injection
+        // ruleid: sentinel-sql-injection, sentinel-sql-concatenado-executado
         st.executeQuery("select * from u where n = '" + nome + "'");
     }
 }

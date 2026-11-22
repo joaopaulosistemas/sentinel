@@ -403,10 +403,11 @@ rules:
           - focus-metavariable: $ARG
           - metavariable-regex:
               metavariable: $M
-              regex: ^(executeQuery|executeUpdate|executeLargeUpdate|execute)$
+              regex: ^(executeQuery|executeUpdate|executeLargeUpdate|execute|query|queryForObject|queryForList|queryForMap|queryForRowSet|queryForStream|update|batchUpdate)$
     message: >
-      Instrução SQL montada por concatenação com valor que não é constante e executada direto no JDBC (Statement).
-      Se o valor vem do usuário, é SQL Injection. Use PreparedStatement com ? e setString/setInt.
+      Instrução SQL montada por concatenação com valor que não é constante e executada direto no JDBC (Statement)
+      ou no JdbcTemplate do Spring (query, update, queryForObject...). Se o valor vem do usuário, é SQL Injection.
+      Use PreparedStatement ou parâmetros ? do JdbcTemplate (query(sql, args...)) em vez de concatenar.
     severity: WARNING
     languages: [java]
     paths:

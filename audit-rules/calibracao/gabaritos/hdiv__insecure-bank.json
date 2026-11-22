@@ -1,0 +1,188 @@
+{
+ "_comentario": "Falhas de hdiv/insecure-bank (Spring MVC + JSP, JAVA) lidas no codigo (treino), volta 56: SQL por concatenacao nos DAOs, LDAP, desserializacao, MD5, SSRF, path traversal, CSRF desligado, permitAll, cookie sem flags, EL em JSP sem escape, log e cabecalho. Escrito pelo mesmo agente que corrige, ANTES de ver os achados. Regras aceitas por classe, conferidas contra o catalogo de regras (nao contra os achados). CWE-113 sem regra no catalogo: lacuna assumida (meta).",
+ "repo": "hdiv/insecure-bank",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/org/hdivsamples/dao/AccountDaoImpl.java",
+   "linha": 58,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/dao/AccountDaoImpl.java",
+   "linha": 77,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/dao/ActivityDaoImpl.java",
+   "linha": 20,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/dao/CashAccountImpl.java",
+   "linha": 22,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/dao/CreditAccountImpl.java",
+   "linha": 21,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/dao/CreditAccountImpl.java",
+   "linha": 41,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/dao/AccountDaoImpl.java",
+   "linha": 50,
+   "cwe": "CWE-90",
+   "regras": [
+    "sentinel-ldap-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/dao/AccountDaoImpl.java",
+   "linha": 33,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-senha-fixa-no-codigo",
+    "sentinel-jdbc-senha-fixa"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/config/SpringWebInit.java",
+   "linha": 59,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-senha-fixa-no-codigo",
+    "sentinel-jdbc-senha-fixa"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/controllers/DashboardController.java",
+   "linha": 181,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/controllers/DashboardController.java",
+   "linha": 173,
+   "cwe": "CWE-328",
+   "regras": [
+    "sentinel-crypto-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/controllers/DashboardController.java",
+   "linha": 210,
+   "cwe": "CWE-328",
+   "regras": [
+    "sentinel-crypto-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/controllers/DashboardController.java",
+   "linha": 118,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-ssrf-url-do-parametro",
+    "sentinel-api-ssrf"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/facade/StorageFacadeImpl.java",
+   "linha": 24,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-servlet-path-traversal",
+    "sentinel-api-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/config/SecurityConfig.java",
+   "linha": 41,
+   "cwe": "CWE-352",
+   "regras": [
+    "sentinel-api-csrf-disabled"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/config/SecurityConfig.java",
+   "linha": 32,
+   "cwe": "CWE-862",
+   "regras": [
+    "sentinel-spring-permitall-geral"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/controllers/TransferController.java",
+   "linha": 64,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-cookie-sem-secure",
+    "sentinel-cookie-secure-desligado"
+   ]
+  },
+  {
+   "arquivo": "src/main/webapp/WEB-INF/jsp/accountActivity.jsp",
+   "linha": 135,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/controllers/ActivityController.java",
+   "linha": 88,
+   "cwe": "CWE-117",
+   "regras": [
+    "sentinel-log-injection",
+    "sentinel-java-log-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/hdivsamples/controllers/DashboardController.java",
+   "linha": 116,
+   "cwe": "CWE-113",
+   "regras": []
+  }
+ ]
+}
