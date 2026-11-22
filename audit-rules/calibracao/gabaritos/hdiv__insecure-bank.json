@@ -1,10 +1,10 @@
 {
- "_comentario": "Falhas de hdiv/insecure-bank (Spring MVC + JSP, JAVA) lidas no codigo (treino), volta 56: SQL por concatenacao nos DAOs, LDAP, desserializacao, MD5, SSRF, path traversal, CSRF desligado, permitAll, cookie sem flags, EL em JSP sem escape, log e cabecalho. Escrito pelo mesmo agente que corrige, ANTES de ver os achados. Regras aceitas por classe, conferidas contra o catalogo de regras (nao contra os achados). CWE-113 sem regra no catalogo: lacuna assumida (meta).",
+ "_comentario": "Falhas de hdiv/insecure-bank (Spring MVC + JSP, JAVA) lidas no codigo (treino), volta 56: SQL por concatenacao nos DAOs, LDAP, desserializacao, MD5, SSRF, path traversal, CSRF desligado, permitAll, cookie sem flags, EL em JSP sem escape, log e cabecalho. Escrito pelo mesmo agente que corrige, ANTES de ver os achados. Regras aceitas por classe, conferidas contra o catalogo de regras (nao contra os achados). CWE-113 sem regra no catalogo: lacuna assumida (meta). Correcao pos-medida (volta 56): as 5 linhas de SQL tinham sido fixadas na linha da concatenacao e passaram para o ponto de execucao (jdbcTemplate.query/update), a convencao do WebGoat-Legacy; 'recall antes' oficial da volta ficou 9/20 com as linhas antigas (14/20 com a convencao certa). sentinel-cookie-sem-httponly (regra nova da volta) entrou nas aceitas depois da primeira medida.",
  "repo": "hdiv/insecure-bank",
  "falhas": [
   {
    "arquivo": "src/main/java/org/hdivsamples/dao/AccountDaoImpl.java",
-   "linha": 58,
+   "linha": 72,
    "cwe": "CWE-89",
    "regras": [
     "sentinel-sql-injection",
@@ -15,7 +15,7 @@
   },
   {
    "arquivo": "src/main/java/org/hdivsamples/dao/AccountDaoImpl.java",
-   "linha": 77,
+   "linha": 91,
    "cwe": "CWE-89",
    "regras": [
     "sentinel-sql-injection",
@@ -37,7 +37,7 @@
   },
   {
    "arquivo": "src/main/java/org/hdivsamples/dao/CashAccountImpl.java",
-   "linha": 22,
+   "linha": 36,
    "cwe": "CWE-89",
    "regras": [
     "sentinel-sql-injection",
@@ -48,7 +48,7 @@
   },
   {
    "arquivo": "src/main/java/org/hdivsamples/dao/CreditAccountImpl.java",
-   "linha": 21,
+   "linha": 35,
    "cwe": "CWE-89",
    "regras": [
     "sentinel-sql-injection",
@@ -59,7 +59,7 @@
   },
   {
    "arquivo": "src/main/java/org/hdivsamples/dao/CreditAccountImpl.java",
-   "linha": 41,
+   "linha": 42,
    "cwe": "CWE-89",
    "regras": [
     "sentinel-sql-injection",
@@ -158,7 +158,8 @@
    "cwe": "CWE-1004",
    "regras": [
     "sentinel-cookie-sem-secure",
-    "sentinel-cookie-secure-desligado"
+    "sentinel-cookie-secure-desligado",
+    "sentinel-cookie-sem-httponly"
    ]
   },
   {
