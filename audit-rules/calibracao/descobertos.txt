@@ -70,3 +70,4 @@ appsecco/VyAPI
 leihehehe/nodejs-vul-labs
 veracode/verademo
 d-velopr/vuln-springboot-app
+bansh2eBreak/SpringVulnBoot-backend
