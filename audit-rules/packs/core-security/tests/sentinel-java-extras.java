@@ -3,6 +3,7 @@ package demo;
 import java.io.File;
 import java.util.zip.ZipEntry;
 import java.beans.XMLDecoder;
+import java.beans.XMLEncoder;
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import com.thoughtworks.xstream.XStream;
 
@@ -489,6 +490,12 @@ class ServletVolta36 {
         // ruleid: sentinel-xmldecoder-entrada
         XMLDecoder d = new XMLDecoder(new java.io.ByteArrayInputStream(xml.getBytes()));
         return d.readObject();
+    }
+
+    void xmlEncoderNaoDecodifica(java.io.OutputStream saida, Object valor) {
+        // ok: sentinel-xmldecoder-entrada
+        XMLEncoder e = new XMLEncoder(saida);
+        e.writeObject(valor);
     }
 
     Object xstreamSemLista(String xml) {
