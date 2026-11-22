@@ -369,6 +369,10 @@ rules:
           - metavariable-regex:
               metavariable: $RES
               regex: ^(res|response)$
+          # host fixo no literal (`'https://portal.exemplo.com/x?o=' + valor`): o dado só vai para o caminho/consulta
+          - metavariable-regex:
+              metavariable: $U
+              regex: ^(?!["'`]https?://[^/"'`$\s]+[/?])
           - focus-metavariable: $U
       - patterns:
           - pattern-inside: |
@@ -1139,7 +1143,7 @@ rules:
               - pattern: $RES.write($H + $V)
           - metavariable-regex:
               metavariable: $H
-              regex: ^["'`]\s*<
+              regex: ^["'`]
           - metavariable-regex:
               metavariable: $RES
               regex: ^(res|response)$
@@ -1189,6 +1193,43 @@ rules:
       category: security
       cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
       owasp: A03:2021 - Injection
+
+  - id: sentinel-node-mongo-corpo-inteiro
+    patterns:
+      - pattern-either:
+          - pattern: $DB.collection(...).$OP($REQ.body, ...)
+          - patterns:
+              - pattern: $DB.collection(...).$OP($X, ...)
+              - pattern-either:
+                  - pattern-inside: |
+                      $X = $REQ.body
+                      ...
+                  - pattern-inside: |
+                      var $X = $REQ.body
+                      ...
+                  - pattern-inside: |
+                      const $X = $REQ.body
+                      ...
+                  - pattern-inside: |
+                      let $X = $REQ.body
+                      ...
+      - metavariable-regex:
+          metavariable: $OP
+          regex: ^(insert|insertOne|insertMany|save)$
+      - metavariable-regex:
+          metavariable: $REQ
+          regex: ^(req|request)$
+    message: >
+      O corpo da requisição é gravado inteiro na coleção (CWE-915): quem envia campos a mais (`paid`, `role`,
+      `_id`) grava o que quiser. Monte o documento campo a campo, converta os tipos e valide o formato antes de
+      inserir.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+      owasp: A04:2021 - Insecure Design
 
   - id: sentinel-node-mass-assignment
     patterns:
