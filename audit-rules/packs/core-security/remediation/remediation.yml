@@ -987,3 +987,17 @@
   after: "static backendUrlBase = \"https://servidor/\";"
   refs:
     - "https://owasp.org/Top10/A02_2021-Cryptographic_Failures/"
+
+- key: "sentinel-xmldecoder-entrada"
+  summary: "Não leia XML de origem externa com java.beans.XMLDecoder; use JSON ou XML com binding tipado."
+  before: "new XMLDecoder(entrada).readObject()"
+  after: "objectMapper.readValue(entrada, Pessoa.class)"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-xstream-sem-lista-de-tipos"
+  summary: "Libere só as classes esperadas antes de chamar fromXML."
+  before: "new XStream().fromXML(xml)"
+  after: "XStream xs = new XStream(); xs.allowTypes(new Class[] { Pessoa.class }); xs.fromXML(xml)"
+  effort: S
+  regression-risk: LOW

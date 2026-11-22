@@ -254,4 +254,23 @@ class LdapEXpathSoNoReceptorCerto {
         new ProcessBuilder(cmd, "-x").start();
         return "ok";
     }
+
+    void ldapDtoGetter(org.springframework.ldap.core.LdapTemplate ldapTemplate, @org.springframework.web.bind.annotation.RequestBody DtoLogin req) {
+        String filtro = "(&(uid=" + req.getUsername() + "))";
+        // ruleid: sentinel-ldap-injection
+        ldapTemplate.search("ou=users", filtro, (a) -> a);
+    }
+
+    void ldapDtoGetterFixo(org.springframework.ldap.core.LdapTemplate ldapTemplate, @org.springframework.web.bind.annotation.RequestBody DtoLogin req) {
+        // ok: sentinel-ldap-injection
+        ldapTemplate.search("ou=users", "(uid=admin)", (a) -> a);
+    }
+
+    void xpathDtoGetter(javax.xml.xpath.XPath xp, org.w3c.dom.Document doc, @org.springframework.web.bind.annotation.RequestBody DtoLogin req) throws Exception {
+        String expr = "//user[username='" + req.getUsername() + "']";
+        // ruleid: sentinel-xpath-injection
+        xp.compile(expr);
+    }
+
+    static class DtoLogin { String getUsername() { return ""; } }
 }

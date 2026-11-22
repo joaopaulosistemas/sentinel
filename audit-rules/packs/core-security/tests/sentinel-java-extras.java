@@ -453,4 +453,53 @@ class ServletVolta36 {
         // ok: sentinel-httponly-desligado
         tomcat.setUseHttpOnly(true);
     }
+
+    void spelContextoSimples(String entrada, SpelExpressionParser spelParser) {
+        org.springframework.expression.spel.support.SimpleEvaluationContext contexto =
+            org.springframework.expression.spel.support.SimpleEvaluationContext.forReadOnlyDataBinding().build();
+        // ok: sentinel-spel-injection
+        spelParser.parseExpression(entrada).getValue(contexto);
+    }
+
+    void zipSlipCaminhoEmVariavelConferido(ZipEntry entry, File destino) throws Exception {
+        // ok: sentinel-zip-slip
+        File saida = new File(destino, entry.getName());
+        String caminho = saida.getCanonicalPath();
+        if (!caminho.startsWith(destino.getCanonicalPath() + File.separator)) {
+            throw new SecurityException("fora do destino");
+        }
+    }
+
+    void zipSlipCaminhoEmVariavelSemConferir(ZipEntry entry, File destino) throws Exception {
+        // ruleid: sentinel-zip-slip
+        File saida = new File(destino, entry.getName());
+        boolean fora = !saida.getCanonicalPath().startsWith(destino.getCanonicalPath());
+    }
+
+    void transformerComAcessoExternoDesligado() throws Exception {
+        // ok: sentinel-xxe-parser-xml
+        javax.xml.transform.TransformerFactory f = javax.xml.transform.TransformerFactory.newInstance();
+        f.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        f.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+    }
+
+    Object xmlDecoder(String xml) throws Exception {
+        // ruleid: sentinel-xmldecoder-entrada
+        java.beans.XMLDecoder d = new java.beans.XMLDecoder(new java.io.ByteArrayInputStream(xml.getBytes()));
+        return d.readObject();
+    }
+
+    Object xstreamSemLista(String xml) {
+        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        xs.alias("pessoa", Object.class);
+        // ruleid: sentinel-xstream-sem-lista-de-tipos
+        return xs.fromXML(xml);
+    }
+
+    Object xstreamComLista(String xml) {
+        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        xs.allowTypes(new Class[] {String.class});
+        // ok: sentinel-xstream-sem-lista-de-tipos
+        return xs.fromXML(xml);
+    }
 }

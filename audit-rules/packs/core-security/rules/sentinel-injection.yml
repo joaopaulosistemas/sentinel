@@ -255,6 +255,14 @@ rules:
       - pattern: $REQ.getRequestURL()
       - pattern: $REQ.getQueryString()
       - pattern: $C.getValue()
+      # DTO recebido no corpo da requisição (@RequestBody): os getters devolvem texto do usuário
+      - patterns:
+          - pattern: $B.$G()
+          - pattern-inside: |
+              $RET $M(..., @RequestBody $T $B, ...) { ... }
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(get|is)[A-Z]\w*$
       - patterns:
           - pattern-inside: |
               $RET $M(..., String $P, ...) { ... }
@@ -312,6 +320,14 @@ rules:
       - pattern: $REQ.getRequestURL()
       - pattern: $REQ.getQueryString()
       - pattern: $C.getValue()
+      # DTO recebido no corpo da requisição (@RequestBody): os getters devolvem texto do usuário
+      - patterns:
+          - pattern: $B.$G()
+          - pattern-inside: |
+              $RET $M(..., @RequestBody $T $B, ...) { ... }
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(get|is)[A-Z]\w*$
       - patterns:
           - pattern-inside: |
               $RET $M(..., String $P, ...) { ... }
