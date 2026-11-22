@@ -81,9 +81,9 @@ Meta era 20 achados de regras de segurança; o repositório só tem **15** (todo
 | 15 | ESLint | eslint-security/detect-child-process | app/server.js | 106 | VERDADEIRO: `cprocess.exec(req.query.foo)`, duplicado do #1 |
 
 
-## Volta 55 (2026-11-22): WebGoat/WebGoat-Legacy, regras 12.123.0 (antes da correção de ruído do XSS-JSP desta volta), branch 
+## Volta 55 (2026-11-22): WebGoat/WebGoat-Legacy, regras 12.123.0 (antes da correção de ruído do XSS-JSP desta volta), branch `ciclo/estabilizacao-17`
 
-Sorteio:  sobre os 725 achados de regras de segurança (categoria ) do Opengrep na auditoria 45022478169, 20 sorteados e ordenados por arquivo e linha. **Classificação por subagente independente do Claude** (contexto novo, só a lista e o código do WebGoat-Legacy; não viu diff, gabarito nem LOG). Não é revisão externa: o João pode sobrescrever qualquer linha e a dele prevalece. Resultado: 8 VERDADEIRO, 5 BAIXO VALOR, 7 FALSO (estrito 8/20 = 40 %, Wilson 22 a 61 %; largo 13/20 = 65 %, Wilson 43 a 82 %). 545 dos 725 achados são da regra XSS-JSP, então a amostra é dominada por ela (13 das 20 linhas; 7 falsos, 6 deles XSS-JSP: constante, , acessador ). Estimativa, não medida.
+Sorteio: `random.seed(5503)` sobre os 725 achados de regras de segurança (categoria `security`) do Opengrep na auditoria 45022478169, 20 sorteados e ordenados por arquivo e linha. **Classificação por subagente independente do Claude** (contexto novo, só a lista e o código do WebGoat-Legacy; não viu diff, gabarito nem LOG). Não é revisão externa: o João pode sobrescrever qualquer linha e a dele prevalece. Resultado: 8 VERDADEIRO, 5 BAIXO VALOR, 7 FALSO (estrito 8/20 = 40 %, Wilson 22 a 61 %; largo 13/20 = 65 %, Wilson 43 a 82 %). 545 dos 725 achados são da regra XSS-JSP, então a amostra é dominada por ela (13 das 20 linhas; 6 dos 7 falsos são XSS-JSP: constante, getFormAction(), acessador int). Estimativa, não medida.
 
 | # | Regra | Arquivo | Linha | Classificação |
 |---|---|---|---|---|
