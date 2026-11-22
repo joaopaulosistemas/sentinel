@@ -74,3 +74,4 @@ bansh2eBreak/SpringVulnBoot-backend
 dbohannon/MEANBug
 WebGoat/WebGoat-Legacy
 hdiv/insecure-bank
+DefendShield/DefendShield-VulnBank

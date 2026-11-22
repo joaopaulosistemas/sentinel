@@ -1321,3 +1321,79 @@ export function insereCamposEscolhidos (req: any, db: any) {
   // ok: sentinel-node-mongo-corpo-inteiro
   db.collection('faturas').insert({ item: String(req.body.item), preco: Number(req.body.preco) })
 }
+
+// ---------- Volta 57: better-sqlite3 (prepare), cliente http/https em variável, eco com fallback, SSTI ----------
+export function loginPrepare (req: any, res: any) {
+  const { username } = req.body
+  const consulta = `SELECT * FROM users WHERE username = '${username}'`
+  // ruleid: sentinel-node-sql-injection
+  const u = db.prepare(consulta).get()
+  res.json(u)
+}
+
+export function loginPrepareCabecalho (req: any, res: any) {
+  const ua = req.headers['user-agent'] || ''
+  const consulta = "SELECT '" + ua + "' AS agent"
+  // ruleid: sentinel-node-sql-injection
+  res.json(db.prepare(consulta).get())
+}
+
+export function loginPrepareSeguro (req: any, res: any) {
+  // ok: sentinel-node-sql-injection
+  const u = db.prepare('SELECT * FROM users WHERE username = ?').get(req.body.username)
+  res.json(u)
+}
+
+export function loginPrepareNumero (req: any, res: any) {
+  const id = Number(req.query.id)
+  const consulta = `SELECT * FROM users WHERE id = ${id}`
+  // ok: sentinel-node-sql-injection
+  res.json(db.prepare(consulta).get())
+}
+
+export function proxyClienteVariavel (req: any, res: any) {
+  const url = req.query.url
+  const client = url.startsWith('https') ? https : http
+  // ruleid: sentinel-node-ssrf
+  client.get(url, (r: any) => { r.pipe(res) })
+}
+
+export function proxyClienteVariavelInvertido (req: any, res: any) {
+  const alvo = req.body.url
+  const cliente = alvo.startsWith('http://') ? http : https
+  // ruleid: sentinel-node-ssrf
+  cliente.get(alvo, (r: any) => { r.pipe(res) })
+}
+
+export function proxyClienteFixo (req: any, res: any) {
+  const client = req.secure ? https : http
+  // ok: sentinel-node-ssrf
+  client.get('http://servico-interno/saude', (r: any) => { r.pipe(res) })
+}
+
+export function ecoComFallback (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.send(req.query.body || 'hello')
+}
+
+export function ecoComFallbackEscapado (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send(escapeHtml(req.query.body) || 'hello')
+}
+
+export function saudacaoEjs (req: any, res: any) {
+  const ejs = require('ejs')
+  // ruleid: sentinel-node-ssti-template-dinamico
+  const out = ejs.render(`Hello, ${req.user.display_name}!`)
+  res.send(out)
+}
+
+export function saudacaoPugConcat (req: any, res: any) {
+  // ruleid: sentinel-node-ssti-template-dinamico
+  res.send(pug.render('p Olá ' + req.query.nome))
+}
+
+export function saudacaoEjsFixa (req: any, res: any) {
+  // ok: sentinel-node-ssti-template-dinamico
+  res.send(ejs.render('Hello, <%= nome %>!', { nome: req.query.nome }))
+}
