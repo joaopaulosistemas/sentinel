@@ -52,7 +52,8 @@
       "djadmin/vulnerable-app",
       "d-velopr/vuln-springboot-app",
       "bansh2eBreak/SpringVulnBoot-backend",
-      "dbohannon/MEANBug"
+      "dbohannon/MEANBug",
+      "WebGoat/WebGoat-Legacy"
     ],
     "_nota_terracotta": "terracotta-bank/terracotta-bank (app bancária Java servlet intencionalmente vulnerável, branch master, stack JAVA, 41 estrelas) entrou em 2026-11-17 na volta 36 (ciclo/estabilizacao-12); treino, código lido para o gabarito.",
     "_nota_webgoat": "WebGoat/WebGoat foi lido a fundo em 2026-11-05 (cruzamento da auditoria #92 com o código) e por isso saiu da validação e virou treino; as regras novas desta data foram escritas com ele.",
@@ -94,6 +95,7 @@
     "_nota_ivna": "VitthalS/ivna (app Node/Express com MongoDB intencionalmente vulneravel, branch main, stack JAVASCRIPT, 21 estrelas) entrou em 2026-11-17 na volta 44 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
     "_nota_contrast_spring": "Contrast-Security-OSS/vulnerable-spring-boot-application (app Spring Boot de busca de provedores intencionalmente vulneravel, branch master, stack JAVA, 18 estrelas, 7 arquivos Java) entrou em 2026-11-17 na volta 45 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
     "_nota_dvsba": "kiview/damn-vulnerable-spring-boot-app (app Spring Boot com Gradle intencionalmente vulneravel, branch master, stack JAVA, 13 estrelas, 5 arquivos Java) entrou em 2026-11-18 na volta 47 (ciclo/estabilizacao-14); treino, codigo lido para o gabarito.",
+    "_nota_webgoat_legacy": "WebGoat/WebGoat-Legacy (WebGoat 5.x em Java/JSP, intencionalmente vulneravel, branch master, stack JAVA, 331 estrelas, 189 arquivos Java e 64 JSP) entrou em 2026-11-22 na volta 55 (ciclo/estabilizacao-17); treino, codigo lido para o gabarito.",
     "_nota_djadmin": "djadmin/vulnerable-app (front-end AngularJS 1.x + Express intencionalmente vulneravel, branch master, stack MIXED, 10 estrelas) entrou em 2026-11-19 na volta 48 (ciclo/estabilizacao-15); treino, codigo lido para o gabarito.",
     "_nota_vyapi": "appsecco/VyAPI (app Android hibrido vulneravel, Java, branch master, stack JAVA, 84 estrelas, 24 arquivos Java) entrou em 2026-11-19 na volta 49 (ciclo/estabilizacao-16); treino, codigo lido para o gabarito. Mesmo autor do dvja (validacao), repositorio diferente.",
     "_nota_meanbug": "dbohannon/MEANBug (fatura MEAN com falhas de proposito, Express + AngularJS 1.x, branch master, stack MIXED, 16 estrelas, 1 server.js de 215 linhas e 3 HTML) entrou em 2026-11-22 na volta 54 (ciclo/estabilizacao-16); treino, codigo lido para o gabarito. Excecao ao criterio de 15 falhas: a busca (topics, linguagem e texto) nao achou app novo em Node/front-end com mais falhas.",

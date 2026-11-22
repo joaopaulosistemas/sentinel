@@ -72,3 +72,4 @@ veracode/verademo
 d-velopr/vuln-springboot-app
 bansh2eBreak/SpringVulnBoot-backend
 dbohannon/MEANBug
+WebGoat/WebGoat-Legacy
