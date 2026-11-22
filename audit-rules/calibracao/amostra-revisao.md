@@ -1,5 +1,34 @@
 # Amostra para revisao humana (item E)
 
+## Volta 52 (2026-11-22): veracode/verademo, regras 12.119.0 (antes da correcao desta volta), branch `ciclo/estabilizacao-16`
+
+Sorteio: `random.seed(5202)` sobre os 106 achados de regras de seguranca do Opengrep da auditoria 44733964974 (excluidos qualidade, estilo, log de erro, CSS, front-end, camadas e docker-sem-user), 20 sorteados e ordenados por arquivo e linha. **Classificacao por subagente independente do Claude** (contexto novo, so a lista e o codigo do verademo; nao viu diff, gabarito nem LOG). Nao e revisao externa: o Joao pode sobrescrever qualquer linha e a dele prevalece. Resultado: 12 VERDADEIRO, 3 BAIXO VALOR, 5 FALSO (estrito 12/20 = 60 %, Wilson 39 a 78 %; largo 15/20 = 75 %, Wilson 53 a 89 %). O verademo tem 47 de 106 achados da regra XSS-JSP, entao a amostra e dominada por ela; estimativa, nao medida.
+
+| # | Regra | Arquivo | Linha | Classificacao |
+|---|---|---|---|---|
+| 1 | sentinel-spring-print-stack-trace | app/src/main/java/com/veracode/verademo/commands/ListenCommand.java | 51 | BAIXO VALOR: printStackTrace so em stderr |
+| 2 | sentinel-sql-injection | app/src/main/java/com/veracode/verademo/commands/RemoveAccountCommand.java | 49 | VERDADEIRO: INSERT concatenado com blabberUsername de requisicao |
+| 3 | sentinel-log-injection | app/src/main/java/com/veracode/verademo/controller/BlabController.java | 278 | VERDADEIRO: User-Agent gravado sem sanitizar (forja de log) |
+| 4 | sentinel-sql-injection | app/src/main/java/com/veracode/verademo/controller/BlabController.java | 464 | VERDADEIRO: ORDER BY com sort de @RequestParam |
+| 5 | sentinel-crypto-random-servidor | app/src/main/java/com/veracode/verademo/controller/ResetController.java | 90 | FALSO: new Random() so gera dados de demonstracao no reset do banco |
+| 6 | sentinel-log-injection | app/src/main/java/com/veracode/verademo/controller/UserController.java | 115 | VERDADEIRO: target e username de requisicao no log |
+| 7 | sentinel-servlet-path-traversal | app/src/main/java/com/veracode/verademo/controller/UserController.java | 619 | FALSO: oldImage vem de listFiles/getName (nome base); o risco real esta na linha seguinte |
+| 8 | sentinel-crypto-hash-fraco | app/src/main/java/com/veracode/verademo/controller/UserController.java | 908 | VERDADEIRO: MD5 sem salt para senha |
+| 9 | sentinel-crypto-hash-fraco | app/src/main/java/com/veracode/verademo/utils/User.java | 103 | VERDADEIRO: MD5 sem salt na classe User |
+| 10 | sentinel-spring-print-stack-trace | app/src/main/java/com/veracode/verademo/utils/User.java | 109 | BAIXO VALOR: printStackTrace de MD5 inexistente |
+| 11 | sentinel-spring-print-stack-trace | app/src/main/java/com/veracode/verademo/utils/UserFactory.java | 50 | BAIXO VALOR: printStackTrace na desserializacao do cookie |
+| 12 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/blab.jsp | 108 | VERDADEIRO: comentario armazenado impresso sem escape |
+| 13 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/blabbers.jsp | 103 | VERDADEIRO: blab_name armazenado sem escape |
+| 14 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/blabbers.jsp | 119 | FALSO: saida e literal constante (Ignore/Listen) |
+| 15 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/feed.jsp | 102 | FALSO: post.getId() e int |
+| 16 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/feed.jsp | 102 | FALSO: post.getCommentCount() e int |
+| 17 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/login.jsp | 59 | VERDADEIRO: error com mensagem SQL com entrada do usuario |
+| 18 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/login.jsp | 78 | VERDADEIRO: target de requisicao dentro de atributo |
+| 19 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/profile.jsp | 101 | VERDADEIRO: realName armazenado em atributo |
+| 20 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/profile.jsp | 119 | VERDADEIRO: username escolhido pelo usuario |
+
+---
+
 ## Volta 49 (2026-11-19): appsecco/VyAPI, regras 12.118.0 (depois), branch `ciclo/estabilizacao-16`
 
 O alvo so tem **17** achados de regras de seguranca do Opengrep (descartados estilo, qualidade, comentarios, PMD, SCA); todos listados, **sem sorteio (semente nao se aplica)**. **Classificacao feita por subagente independente do Claude** (contexto novo, so a lista e o codigo do VyAPI; nao viu diff, gabarito nem LOG). Nao e revisao externa: o Joao pode sobrescrever qualquer linha e a dele prevalece. Resultado: 14 VERDADEIRO, 2 BAIXO VALOR, 1 FALSO em 17 (estrito 14/17 = 82 %; largo 16/17 = 94 %). 5 dos 17 sao a mesma falha vista por varias linhas (receiver e provider), e 12 dos 17 sao de regras criadas ou ajustadas nesta propria volta ou de manifesto: o numero e estimativa, nao medida.

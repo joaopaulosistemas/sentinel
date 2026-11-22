@@ -1,0 +1,56 @@
+{
+ "_comentario": "Falhas de d-velopr/vuln-springboot-app (Spring Boot + React, MIXED) lidas no codigo (treino), volta 52; linhas por leitura de cada arquivo isolado. Escrito pelo mesmo agente que corrige, ANTES de ver os achados. Entrada com regras [] e lacuna assumida.",
+ "repo": "d-velopr/vuln-springboot-app",
+ "falhas": [
+  {
+   "arquivo": "backend/src/main/java/com/dvelupmint/app/config/AdminInitializer.java",
+   "linha": 19,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-senha-fixa-no-codigo"
+   ]
+  },
+  {
+   "arquivo": "backend/src/main/java/com/dvelupmint/app/config/AdminInitializer.java",
+   "linha": 46,
+   "cwe": "CWE-532",
+   "regras": [
+    "sentinel-log-dado-sensivel"
+   ]
+  },
+  {
+   "arquivo": "backend/src/main/java/com/dvelupmint/app/security/JwtAuthenticationFilter.java",
+   "linha": 42,
+   "cwe": "CWE-532",
+   "regras": [
+    "sentinel-log-dado-sensivel"
+   ]
+  },
+  {
+   "arquivo": "frontend/src/pages/loginPg.jsx",
+   "linha": 20,
+   "cwe": "CWE-922",
+   "regras": [
+    "sentinel-ts-token-em-localstorage"
+   ]
+  },
+  {
+   "arquivo": "backend/src/main/resources/application.properties",
+   "linha": 10,
+   "cwe": "CWE-1188",
+   "regras": []
+  },
+  {
+   "arquivo": "backend/src/main/resources/application.properties",
+   "linha": 7,
+   "cwe": "CWE-1188",
+   "regras": []
+  },
+  {
+   "arquivo": "backend/src/main/java/com/dvelupmint/app/controller/AuthController.java",
+   "linha": 49,
+   "cwe": "CWE-915",
+   "regras": []
+  }
+ ]
+}
