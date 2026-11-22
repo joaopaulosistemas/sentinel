@@ -10,6 +10,8 @@ rules:
       # saída numérica pelo nome do acessador (`x.getId()`, `getCommentCount()`, `getSize()`, `.size()`, `.length()`) e ternário que só devolve literais
       - pattern-not-regex: '<%=\s*[\w.]+\.(get\w*(Id|Count|Size|Total|Length|Number)|size|length)\(\)\s*%>'
       - pattern-not-regex: '<%=\s*\(?[^%"?]*\?\s*"[^"%]*"\s*:\s*"[^"%]*"\s*\)?\s*%>'
+      # constante estática em maiúsculas (`Classe.NOME_DA_ACAO`): valor do código, não da requisição
+      - pattern-not-regex: '<%=\s*(\w+\.)*[A-Z][A-Z0-9_]+\s*%>'
     paths:
       include:
         - "*.jsp"

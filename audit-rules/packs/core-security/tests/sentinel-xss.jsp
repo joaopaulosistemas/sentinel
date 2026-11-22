@@ -34,5 +34,9 @@
     <td><%= post.getName() %></td>
     <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
     <td><%= (a ? request.getParameter("x") : "b") %></td>
+    <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
+    <input value="<%=employee.getFirstName()%>">
+    <!-- ok: sentinel-xss-jsp-unescaped-output -->
+    <input value="<%=GoatHillsFinancial.VIEWPROFILE_ACTION%>">
   </body>
 </html>
