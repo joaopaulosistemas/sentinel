@@ -66,3 +66,9 @@ Contrast-Security-OSS/vulnerable-spring-boot-application
 layro01/node-api-goat
 kiview/damn-vulnerable-spring-boot-app
 djadmin/vulnerable-app
+appsecco/VyAPI
+leihehehe/nodejs-vul-labs
+veracode/verademo
+d-velopr/vuln-springboot-app
+bansh2eBreak/SpringVulnBoot-backend
+dbohannon/MEANBug

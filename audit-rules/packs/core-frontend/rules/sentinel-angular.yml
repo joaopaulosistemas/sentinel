@@ -16,6 +16,23 @@ rules:
       owasp: A03:2021 - Injection
 
   # AngularJS 1.x: $sce.trustAs* desliga o filtro de conteúdo (mesma classe do bypassSecurityTrust* do Angular)
+  # AngularJS 1.x: $sceProvider.enabled(false) desliga o escape contextual estrito de todo o módulo
+  - id: sentinel-angularjs-sce-desligado
+    pattern-regex: '(?m)^(?![ \t]*(?://|\*|/\*)).*?(\$sceProvider\s*\.\s*enabled\s*\(\s*false\s*\))'
+    message: >
+      $sceProvider.enabled(false) desliga o contexto estrito do AngularJS: todo ng-bind-html passa a renderizar HTML
+      sem filtro e qualquer dado vindo do usuário ou da API vira XSS (CWE-79). Mantenha o $sce ligado e use o
+      módulo ngSanitize.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.ts", "*.js", "*.html"]
+      exclude: ["**/node_modules/**", "**/bower_components/**", "**/dist/**", "**/test/**", "*.spec.*", "*.test.*", "*.min.js"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting"
+      owasp: A03:2021 - Injection
+
   - id: sentinel-angularjs-trust-as
     pattern-regex: '(?m)^(?![ \t]*(?://|\*|/\*)).*?(\$sce\s*\.\s*trustAs(?:Html|Js|Css|Url|ResourceUrl)?\s*\()'
     message: >

@@ -86,6 +86,13 @@
   effort: M
   regression-risk: MEDIUM
 
+- key: "sentinel-angularjs-sce-desligado"
+  summary: "Mantenha o $sce ligado: sem ele todo ng-bind-html renderiza HTML sem filtro. Use ngSanitize."
+  before: "$sceProvider.enabled(false);"
+  after: "// não desligue; inclua o módulo ngSanitize e mantenha $sceProvider.enabled(true) (padrão)"
+  effort: S
+  regression-risk: LOW
+
 - key: "sentinel-angularjs-trust-as"
   summary: "Não marque como confiável o que vem do usuário ou da API: mostre como texto (ng-bind) ou sanitize com ngSanitize."
   before: "vm.resultado = $sce.trustAsHtml(resposta);"

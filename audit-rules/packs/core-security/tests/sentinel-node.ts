@@ -564,7 +564,8 @@ export function saudacaoEscapada (req: any, res: any) {
 }
 
 export function respostaTexto (req: any, res: any) {
-  // ok: sentinel-node-xss-refletido
+  // volta 54: texto fixo + dado também é text/html no Express (mesma classe do eco direto da volta 46)
+  // ruleid: sentinel-node-xss-refletido
   res.send('erro: ' + req.query.name)
 }
 declare function escapeHtml (s: string): string
@@ -1226,4 +1227,97 @@ export function ecoComStatusJsonDoCorpo (req: any, res: any) {
 export function ecoComStatusValorFixo (req: any, res: any) {
   // ok: sentinel-node-xss-refletido
   res.status(404).send('Nao encontrado')
+}
+
+// ---------- NoSQL: payload de evento do socket.io direto no filtro ----------
+export function aoConectar (io: any, col: any) {
+  io.on('connection', function (socket: any) {
+    socket.on('unlock', function (data: any) {
+      // ruleid: sentinel-node-nosql-operador
+      col.findOne(data, 'codigo', function () {})
+    })
+    socket.on('buscar', function (data: any) {
+      // ruleid: sentinel-node-nosql-operador
+      col.find({ dono: data.dono }).toArray()
+    })
+    socket.on('seguro', function (data: any) {
+      // ok: sentinel-node-nosql-operador
+      col.findOne({ usuario: String(data.usuario) }, function () {})
+    })
+    socket.on('lista', function (data: any) {
+      const itens: any[] = []
+      // ok: sentinel-node-nosql-operador
+      return itens.find((i) => i.id === data)
+    })
+  })
+}
+
+// ---------- Credencial literal atribuída ----------
+export const configuracao = {
+  host: 'localhost',
+  // ruleid: sentinel-node-credencial-literal-atribuida
+  password: 'admin123123',
+  // ok: sentinel-node-credencial-literal-atribuida
+  usuario: 'administrador'
+}
+// ruleid: sentinel-node-credencial-literal-atribuida
+export const apiKey = 'sk_live_51HabcdefGHIJ'
+// ruleid: sentinel-node-credencial-literal-atribuida
+export const senhaBanco = 'S3nh4Forte!'
+// ok: sentinel-node-credencial-literal-atribuida
+export const apiKeyDoAmbiente = process.env.API_KEY
+// ok: sentinel-node-credencial-literal-atribuida
+export const rotuloSenha = { password: 'Digite a senha' }
+// ok: sentinel-node-credencial-literal-atribuida
+export const vazio = { password: '' }
+// ok: sentinel-node-credencial-literal-atribuida
+export const campo = { password: 'password' }
+// ok: sentinel-node-credencial-literal-atribuida
+export const curta = { password: 'abc' }
+
+// ---------- volta 54: eco com texto fixo antes do dado, redirecionamento para host fixo, insert do corpo ----------
+export function ecoComTextoFixo (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.status(500).send('Nao foi possivel remover o item ' + req.query.value)
+}
+
+export function ecoComTextoFixoVariosTrechos (req: any, res: any, removidos: number) {
+  // ruleid: sentinel-node-xss-refletido
+  res.send('Removidos ' + removidos + ' itens com id = ' + req.query.value)
+}
+
+export function ecoComTextoFixoEscapado (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.status(400).send('Valor invalido: ' + escapeHtml(req.query.value))
+}
+
+export function ecoComTextoFixoNumero (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send('Pagina ' + parseInt(req.query.n, 10))
+}
+
+export function redirecionaParaHostFixo (req: any, res: any) {
+  // ok: sentinel-node-open-redirect
+  res.redirect('https://portal.exemplo.com/entrar?origem=' + req.query.origem)
+}
+
+export function redirecionaHostMontado (req: any, res: any) {
+  // ruleid: sentinel-node-open-redirect
+  res.redirect('https://' + req.query.host + '/entrar')
+}
+
+export function insereCorpoInteiro (req: any, db: any) {
+  // ruleid: sentinel-node-mongo-corpo-inteiro
+  db.collection('faturas').insert(req.body)
+}
+
+export function insereCorpoPorVariavel (req: any, db: any) {
+  const fatura = req.body
+  // ruleid: sentinel-node-mongo-corpo-inteiro
+  db.collection('faturas').insertOne(fatura, () => {})
+}
+
+export function insereCamposEscolhidos (req: any, db: any) {
+  // ok: sentinel-node-mongo-corpo-inteiro
+  db.collection('faturas').insert({ item: String(req.body.item), preco: Number(req.body.preco) })
 }

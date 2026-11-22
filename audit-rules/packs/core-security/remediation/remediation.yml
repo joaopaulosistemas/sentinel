@@ -664,6 +664,13 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
 
+- key: "sentinel-node-credencial-literal-atribuida"
+  summary: "Tire a credencial do código: leia de variável de ambiente ou cofre de segredos e troque a que já foi exposta."
+  before: "const config = { password: 'admin123123' }"
+  after: "const config = { password: process.env.DB_PASSWORD }"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
 - key: "sentinel-node-prototype-pollution"
   summary: "Ignore as chaves __proto__, constructor e prototype ao mesclar objetos vindos de fora."
   before: "for (const k of Object.keys(src)) { merge(dst[k], src[k]) }"
@@ -684,6 +691,13 @@
   after: "res.send('<h1>' + escapeHtml(req.query.name) + '</h1>')"
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+
+- key: "sentinel-node-mongo-corpo-inteiro"
+  summary: "Monte o documento campo a campo (e converta os tipos) em vez de gravar o corpo da requisição inteiro."
+  before: "db.collection('faturas').insert(req.body)"
+  after: "db.collection('faturas').insert({ item: String(req.body.item), preco: Number(req.body.preco) })"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
 
 - key: "sentinel-node-mass-assignment"
   summary: "Escolha os campos permitidos um a um e defina papel, saldo e permissões só no servidor."
@@ -729,6 +743,14 @@
   refs:
     - "https://cwe.mitre.org/data/definitions/89.html"
     - "https://developer.android.com/privacy-and-security/risks/sql-injection"
+
+- key: "sentinel-android-intent-caminho-arquivo"
+  summary: "Não use o extra do Intent como caminho de arquivo: fique só com o nome e confira o caminho canônico."
+  before: "new FileInputStream(new File(intent.getStringExtra(\"path\")));"
+  after: "File base = ctx.getFilesDir();\nFile f = new File(base, new File(intent.getStringExtra(\"name\")).getName());\nif (!f.getCanonicalPath().startsWith(base.getCanonicalPath() + File.separator)) { return; }"
+  refs:
+    - "https://cwe.mitre.org/data/definitions/22.html"
+    - "https://developer.android.com/privacy-and-security/risks/path-traversal"
 
 - key: "sentinel-android-segredo-literal-comparado"
   summary: "Não compare a entrada com uma chave escrita no código: valide no servidor ou compare o hash de um segredo guardado fora do APK."
@@ -972,3 +994,17 @@
   after: "static backendUrlBase = \"https://servidor/\";"
   refs:
     - "https://owasp.org/Top10/A02_2021-Cryptographic_Failures/"
+
+- key: "sentinel-xmldecoder-entrada"
+  summary: "Não leia XML de origem externa com java.beans.XMLDecoder; use JSON ou XML com binding tipado."
+  before: "new XMLDecoder(entrada).readObject()"
+  after: "objectMapper.readValue(entrada, Pessoa.class)"
+  effort: M
+  regression-risk: MEDIUM
+
+- key: "sentinel-xstream-sem-lista-de-tipos"
+  summary: "Libere só as classes esperadas antes de chamar fromXML."
+  before: "new XStream().fromXML(xml)"
+  after: "XStream xs = new XStream(); xs.allowTypes(new Class[] { Pessoa.class }); xs.fromXML(xml)"
+  effort: S
+  regression-risk: LOW

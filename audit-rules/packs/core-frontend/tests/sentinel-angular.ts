@@ -48,3 +48,14 @@ export function angularJsTrechoComentado ($sce: any, vm: any) {
   // ok: sentinel-angularjs-trust-as
   return vm.zz
 }
+
+// volta 54: AngularJS com o contexto estrito ($sce) desligado
+export function angularJsDesligaSce ($sceProvider: any) {
+  // ruleid: sentinel-angularjs-sce-desligado
+  $sceProvider.enabled(false)
+}
+
+export function angularJsMantemSce ($sceProvider: any) {
+  // ok: sentinel-angularjs-sce-desligado
+  $sceProvider.enabled(true)
+}

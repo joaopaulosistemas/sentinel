@@ -18,7 +18,7 @@ rules:
               $RET $M(...);
       - metavariable-regex:
           metavariable: $SQL
-          regex: '(?s)^"[^"]*\$\{[^}]+\}'
+          regex: '(?s)^"(?:[^"]|"\s*\+\s*")*\$\{[^}]+\}'
     message: >
       Em anotação MyBatis, ${...} é colado no texto do SQL sem parâmetro (injeção de SQL se o valor puder vir de
       fora). Use #{...} para valores; para coluna, tabela ou ORDER BY, valide contra uma lista fixa antes.

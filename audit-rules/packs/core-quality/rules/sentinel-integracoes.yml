@@ -100,7 +100,7 @@ rules:
       category: quality
 
   - id: sentinel-int-http-sem-tls
-    pattern-regex: '["''`]http://(?!www\.w3\.org|apache\.org|xml\.org|pmd\.sourceforge\.net|java\.sun\.com|xmlns\.jcp\.org|json-schema\.org|adaptivecards\.io|schemas\.|www\.springframework\.org|localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|host\.docker\.internal|[\w.-]*\.(local|internal|svc|cluster\.local)\b)[\w.-]+'
+    pattern-regex: '(?<!href=)["''`]http://(?!www\.w3\.org|apache\.org|xml\.org|pmd\.sourceforge\.net|java\.sun\.com|xmlns\.jcp\.org|json-schema\.org|adaptivecards\.io|schemas\.|www\.springframework\.org|localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|host\.docker\.internal|[\w.-]*\.(local|internal|svc|cluster\.local)\b)[\w.-]+'
     message: >
       URL http:// (sem TLS) fixa no código: dados e credenciais trafegam em texto claro. Use https:// e leia o
       endereço da configuração do ambiente.
@@ -108,7 +108,7 @@ rules:
     languages: [regex]
     paths:
       include: ["*.java", "*.ts", "*.tsx"]
-      exclude: ["**/test/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
+      exclude: ["**/test/**", "**/androidTest/**", "*.spec.ts", "*.test.ts", "*.test.tsx", "**/node_modules/**"]
     metadata:
       side: common
       category: security

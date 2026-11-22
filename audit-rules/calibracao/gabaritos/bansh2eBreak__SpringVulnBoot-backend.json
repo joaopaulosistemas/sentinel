@@ -1,0 +1,346 @@
+{
+ "_comentario": "Falhas de bansh2eBreak/SpringVulnBoot-backend (Spring Boot, JAVA) lidas no codigo (treino), volta 53; so as variantes marcadas como vulneraveis (as -Sec/sec ficaram de fora e servem de teste de falso positivo). Escrito pelo mesmo agente que corrige, ANTES de ver os achados. Entrada com regras [] e lacuna assumida.",
+ "repo": "bansh2eBreak/SpringVulnBoot-backend",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SQLI/JdbcController.java",
+   "linha": 63,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SQLI/JdbcController.java",
+   "linha": 103,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SQLI/JdbcController.java",
+   "linha": 145,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SQLI/ErrorInjectionController.java",
+   "linha": 54,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SQLI/ErrorInjectionController.java",
+   "linha": 100,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SQLI/BooleanBlindJdbcController.java",
+   "linha": 88,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SQLI/UnionInjectionController.java",
+   "linha": 112,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/mapper/UnionInjectionMapper.java",
+   "linha": 36,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-mybatis-anotacao-cifrao",
+    "sentinel-mybatis-cifrao-sql"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/mapper/LoginMapper.java",
+   "linha": 44,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-mybatis-anotacao-cifrao",
+    "sentinel-mybatis-cifrao-sql"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/mapper/GraphQLMapper.java",
+   "linha": 53,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-mybatis-anotacao-cifrao",
+    "sentinel-mybatis-cifrao-sql"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/DeSerialize/DeSerializeController.java",
+   "linha": 99,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/DeSerialize/DeSerializeController.java",
+   "linha": 184,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/DeSerialize/DeSerializeController.java",
+   "linha": 311,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/DeSerialize/DeSerializeController.java",
+   "linha": 357,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/Components/XStreamController.java",
+   "linha": 159,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-xstream-qualquer-tipo",
+    "sentinel-desserializacao-insegura",
+    "sentinel-xstream-sem-lista-de-tipos"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/Components/SnakeYAMLController.java",
+   "linha": 26,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-snakeyaml-construtor-padrao"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/Components/FastjsonController.java",
+   "linha": 22,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-fastjson-autotype"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/Components/XMLDecoderController.java",
+   "linha": 112,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura",
+    "sentinel-xmldecoder-entrada"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/XML/XxeController.java",
+   "linha": 67,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml",
+    "sentinel-xxe-outros-parsers"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/XML/XxeController.java",
+   "linha": 153,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml",
+    "sentinel-xxe-outros-parsers"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/XML/XxeController.java",
+   "linha": 216,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml",
+    "sentinel-xxe-outros-parsers"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/XML/XxeController.java",
+   "linha": 364,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml",
+    "sentinel-xxe-outros-parsers"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/XML/XxeSsrfController.java",
+   "linha": 69,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml",
+    "sentinel-xxe-outros-parsers"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/XML/XIncludeController.java",
+   "linha": 46,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml",
+    "sentinel-xxe-outros-parsers"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/XML/XPathInjectionController.java",
+   "linha": 95,
+   "cwe": "CWE-643",
+   "regras": [
+    "sentinel-xpath-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/Other/LdapInjectionController.java",
+   "linha": 62,
+   "cwe": "CWE-90",
+   "regras": [
+    "sentinel-ldap-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SpEL/SpelController.java",
+   "linha": 53,
+   "cwe": "CWE-917",
+   "regras": [
+    "sentinel-spel-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/RCE/RCEController.java",
+   "linha": 36,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection",
+    "sentinel-command-injection-requisicao",
+    "sentinel-command-injection-shell",
+    "sentinel-command-injection-variable"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/RCE/RCEController.java",
+   "linha": 121,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection",
+    "sentinel-command-injection-requisicao",
+    "sentinel-command-injection-shell",
+    "sentinel-command-injection-variable"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/SSRF/SSRFController.java",
+   "linha": 24,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-ssrf-url-do-parametro",
+    "sentinel-api-ssrf"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/PathTraversal/PathTraversalController.java",
+   "linha": 27,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-servlet-path-traversal",
+    "sentinel-api-path-traversal",
+    "sentinel-resource-path-concatenado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/PathTraversal/ZipSlipController.java",
+   "linha": 62,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-zip-slip"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/Redirect/RedirectController.java",
+   "linha": 26,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-open-redirect",
+    "sentinel-open-redirect-requisicao",
+    "sentinel-open-redirect-spring"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/FileInclusion/FileInclusionController.java",
+   "linha": 143,
+   "cwe": "CWE-94",
+   "regras": [
+    "sentinel-groovy-evaluate-dinamico"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/CryptoSecurity/PredictableSeedController.java",
+   "linha": 61,
+   "cwe": "CWE-330",
+   "regras": [
+    "sentinel-crypto-random-previsivel",
+    "sentinel-crypto-random-servidor"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/Authentication/SmsBasedAuthVulnController.java",
+   "linha": 24,
+   "cwe": "CWE-330",
+   "regras": [
+    "sentinel-crypto-random-previsivel",
+    "sentinel-crypto-random-servidor"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/FileUpload/FileUploadController.java",
+   "linha": 74,
+   "cwe": "CWE-434",
+   "regras": []
+  },
+  {
+   "arquivo": "src/main/java/icu/secnotes/controller/Other/CrlfController.java",
+   "linha": 32,
+   "cwe": "CWE-113",
+   "regras": []
+  }
+ ],
+ "_nota_volta53": "Regras novas da volta 53 (sentinel-xstream-sem-lista-de-tipos, sentinel-xmldecoder-entrada) incluidas nas aceitas DEPOIS da primeira medida (29/38, que e o 'recall antes'); isso conta como ganho no treino, nao como generalizacao."
+}

@@ -1,0 +1,194 @@
+{
+ "_comentario": "Falhas de veracode/verademo (Spring MVC + JSP, Java) lidas no codigo (treino), volta 51; linhas por grep -n e pelas marcas START EXAMPLE VULNERABILITY do autor. Escrito pelo mesmo agente que corrige, ANTES de ver os achados; nomes de regras conferidos contra a lista de ids. Entrada com regras [] e lacuna assumida. Fora: CVE de bibliotecas (SCA).",
+ "repo": "veracode/verademo",
+ "falhas": [
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/ToolsController.java",
+   "linha": 53,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection",
+    "sentinel-command-injection-requisicao",
+    "sentinel-command-injection-shell",
+    "sentinel-command-injection-variable"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/ToolsController.java",
+   "linha": 83,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection",
+    "sentinel-command-injection-requisicao",
+    "sentinel-command-injection-shell",
+    "sentinel-command-injection-variable"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 165,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 249,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 310,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 373,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 479,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/BlabController.java",
+   "linha": 176,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/BlabController.java",
+   "linha": 464,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 86,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-open-redirect",
+    "sentinel-open-redirect-requisicao",
+    "sentinel-open-redirect-spring"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 143,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-open-redirect",
+    "sentinel-open-redirect-requisicao",
+    "sentinel-open-redirect-spring"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 629,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-api-path-traversal",
+    "sentinel-servlet-path-traversal",
+    "sentinel-resource-path-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 667,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-api-path-traversal",
+    "sentinel-servlet-path-traversal",
+    "sentinel-resource-path-concatenado"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/UserController.java",
+   "linha": 908,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-crypto-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/utils/UserFactory.java",
+   "linha": 42,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-desserializacao-insegura"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/utils/Constants.java",
+   "linha": 13,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-jdbc-senha-fixa",
+    "sentinel-senha-fixa-no-codigo"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/utils/Utils.java",
+   "linha": 55,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-httponly-desligado",
+    "sentinel-cookie-sem-secure"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/java/com/veracode/verademo/controller/BlabController.java",
+   "linha": 543,
+   "cwe": "CWE-470",
+   "regras": []
+  },
+  {
+   "arquivo": "app/src/main/webapp/WEB-INF/views/feed.jsp",
+   "linha": 96,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ]
+  },
+  {
+   "arquivo": "app/src/main/webapp/WEB-INF/views/blab.jsp",
+   "linha": 56,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output"
+   ]
+  }
+ ]
+}

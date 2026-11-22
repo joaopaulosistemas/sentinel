@@ -102,4 +102,14 @@ class Exemplos {
         // ruleid: sentinel-sql-update-sem-where
         String n = "UPDATE conta SET saldo = " + saldo;
     }
+
+    interface ContaDao {
+        // ok: sentinel-sql-delete-sem-where
+        @Query("delete from conta")
+        void apagarTudo();
+
+        // ok: sentinel-sql-delete-sem-where
+        @Query(value = "DELETE FROM conta", nativeQuery = true)
+        void limparTabela();
+    }
 }

@@ -1,0 +1,106 @@
+{
+  "_comentario": "Linhas de manageInvoices.html corrigidas depois da primeira medida (eu tinha contado com cat -n continuo entre arquivos: 190 e 147 em vez de 66 e 23); regra sentinel-angularjs-sce-desligado e sentinel-node-mongo-corpo-inteiro entraram nas aceitas DEPOIS da primeira medida (nota; a primeira medida 1/12 vale para as regras aceitas originais). Falhas de dbohannon/MEANBug lidas no codigo (treino), volta 54; o README lista as classes. Regras aceitas fixadas antes de ver os achados. Gabarito escrito pelo mesmo agente que corrige. Sem regra assumida (lacuna): CSRF por ordem de middleware (server.js:142, csurf depois das rotas POST), CSRF em GET que remove (166), sessao invalidada so no cookie (130), erro verboso de sendFile (118), localStorage com dado de fatura (manageInvoices.html:209).",
+  "repo": "dbohannon/MEANBug",
+  "falhas": [
+    {
+      "arquivo": "server.js",
+      "linha": 51,
+      "cwe": "CWE-943",
+      "regras": [
+        "sentinel-node-nosql-operador"
+      ]
+    },
+    {
+      "arquivo": "server.js",
+      "linha": 83,
+      "cwe": "CWE-943",
+      "regras": [
+        "sentinel-node-nosql-operador"
+      ]
+    },
+    {
+      "arquivo": "server.js",
+      "linha": 30,
+      "cwe": "CWE-1004",
+      "regras": [
+        "sentinel-node-cookie-httponly-desligado",
+        "sentinel-node-cookie-sem-flags"
+      ]
+    },
+    {
+      "arquivo": "server.js",
+      "linha": 179,
+      "cwe": "CWE-79",
+      "regras": [
+        "sentinel-node-xss-refletido"
+      ]
+    },
+    {
+      "arquivo": "server.js",
+      "linha": 185,
+      "cwe": "CWE-79",
+      "regras": [
+        "sentinel-node-xss-refletido"
+      ]
+    },
+    {
+      "arquivo": "server.js",
+      "linha": 187,
+      "cwe": "CWE-79",
+      "regras": [
+        "sentinel-node-xss-refletido"
+      ]
+    },
+    {
+      "arquivo": "server.js",
+      "linha": 205,
+      "cwe": "CWE-915",
+      "regras": [
+        "sentinel-node-mass-assignment",
+        "sentinel-node-mongo-corpo-inteiro"
+      ]
+    },
+    {
+      "arquivo": "server.conf",
+      "linha": 3,
+      "cwe": "CWE-798",
+      "regras": [
+        "sentinel-node-credencial-literal-atribuida",
+        "sentinel-node-session-secret-literal",
+        "gitleaks"
+      ]
+    },
+    {
+      "arquivo": "manageInvoices.html",
+      "linha": 66,
+      "cwe": "CWE-79",
+      "regras": [
+        "sentinel-angularjs-sce-desligado"
+      ]
+    },
+    {
+      "arquivo": "manageInvoices.html",
+      "linha": 23,
+      "cwe": "CWE-79",
+      "regras": [
+        "sentinel-angular-ng-bind-html"
+      ]
+    },
+    {
+      "arquivo": "login.html",
+      "linha": 14,
+      "cwe": "CWE-549",
+      "regras": [
+        "sentinel-html-senha-campo-texto"
+      ]
+    },
+    {
+      "arquivo": "server.js",
+      "linha": 142,
+      "cwe": "CWE-352",
+      "regras": [
+        "sentinel-node-csrf-ordem"
+      ]
+    }
+  ]
+}

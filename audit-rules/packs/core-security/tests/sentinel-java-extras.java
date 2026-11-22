@@ -2,6 +2,10 @@ package demo;
 
 import java.io.File;
 import java.util.zip.ZipEntry;
+import java.beans.XMLDecoder;
+import java.beans.XMLEncoder;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
+import com.thoughtworks.xstream.XStream;
 
 class Extras {
 
@@ -185,13 +189,13 @@ class SenhaComparadaComLiteral {
     }
 
     void xstreamQualquerTipo() {
-        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        XStream xs = new XStream();
         // ruleid: sentinel-xstream-qualquer-tipo
         xs.addPermission(AnyTypePermission.ANY);
     }
 
     void xstreamTipoEspecifico() {
-        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        XStream xs = new XStream();
         // ok: sentinel-xstream-qualquer-tipo
         xs.addPermission(new WildcardTypePermission(new String[] {"com.exemplo.dto.*"}));
     }
@@ -452,5 +456,59 @@ class ServletVolta36 {
         c.setHttpOnly(true);
         // ok: sentinel-httponly-desligado
         tomcat.setUseHttpOnly(true);
+    }
+
+    void spelContextoSimples(String entrada, SpelExpressionParser spelParser) {
+        SimpleEvaluationContext contexto = SimpleEvaluationContext.forReadOnlyDataBinding().build();
+        // ok: sentinel-spel-injection
+        spelParser.parseExpression(entrada).getValue(contexto);
+    }
+
+    void zipSlipCaminhoEmVariavelConferido(ZipEntry entry, File destino) throws Exception {
+        // ok: sentinel-zip-slip
+        File saida = new File(destino, entry.getName());
+        String caminho = saida.getCanonicalPath();
+        if (!caminho.startsWith(destino.getCanonicalPath() + File.separator)) {
+            throw new SecurityException("fora do destino");
+        }
+    }
+
+    void zipSlipCaminhoEmVariavelSemConferir(ZipEntry entry, File destino) throws Exception {
+        // ruleid: sentinel-zip-slip
+        File saida = new File(destino, entry.getName());
+        boolean fora = !saida.getCanonicalPath().startsWith(destino.getCanonicalPath());
+    }
+
+    void transformerComAcessoExternoDesligado() throws Exception {
+        // ok: sentinel-xxe-parser-xml
+        javax.xml.transform.TransformerFactory f = javax.xml.transform.TransformerFactory.newInstance();
+        f.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        f.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+    }
+
+    Object xmlDecoder(String xml) throws Exception {
+        // ruleid: sentinel-xmldecoder-entrada
+        XMLDecoder d = new XMLDecoder(new java.io.ByteArrayInputStream(xml.getBytes()));
+        return d.readObject();
+    }
+
+    void xmlEncoderNaoDecodifica(java.io.OutputStream saida, Object valor) {
+        // ok: sentinel-xmldecoder-entrada
+        XMLEncoder e = new XMLEncoder(saida);
+        e.writeObject(valor);
+    }
+
+    Object xstreamSemLista(String xml) {
+        XStream xs = new XStream();
+        xs.alias("pessoa", Object.class);
+        // ruleid: sentinel-xstream-sem-lista-de-tipos
+        return xs.fromXML(xml);
+    }
+
+    Object xstreamComLista(String xml) {
+        XStream xs = new XStream();
+        xs.allowTypes(new Class[] {String.class});
+        // ok: sentinel-xstream-sem-lista-de-tipos
+        return xs.fromXML(xml);
     }
 }

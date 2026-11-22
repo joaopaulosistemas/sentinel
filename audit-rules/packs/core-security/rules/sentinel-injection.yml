@@ -255,6 +255,18 @@ rules:
       - pattern: $REQ.getRequestURL()
       - pattern: $REQ.getQueryString()
       - pattern: $C.getValue()
+      # DTO recebido no corpo da requisição (@RequestBody): os getters devolvem texto do usuário
+      - patterns:
+          - pattern: $B.$G()
+          - pattern-inside: |
+              $RET $M(..., @RequestBody $T $B, ...) { ... }
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(get|is)[A-Z]\w*$
+      - patterns:
+          - pattern: $B.get(...)
+          - pattern-inside: |
+              $RET $M(..., @RequestBody Map<$K, $V> $B, ...) { ... }
       - patterns:
           - pattern-inside: |
               $RET $M(..., String $P, ...) { ... }
@@ -290,6 +302,13 @@ rules:
           - metavariable-regex:
               metavariable: $CTX
               regex: (?i)^(.*\.)?(\w*(ldap|dirctx|dircontext|ctx|context|jndi)\w*|idc)$
+    # escape próprio do projeto (Security.escapeXPath, LdapUtils.escapeFilter...) neutraliza o valor
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $O.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i)^(escape|sanitize|encode)\w*$
     message: >
       Possível LDAP Injection (OWASP A03): filtro LDAP montado por concatenação.
       Escape os valores (RFC 4515) ou use filtros parametrizados do JNDI.
@@ -312,6 +331,18 @@ rules:
       - pattern: $REQ.getRequestURL()
       - pattern: $REQ.getQueryString()
       - pattern: $C.getValue()
+      # DTO recebido no corpo da requisição (@RequestBody): os getters devolvem texto do usuário
+      - patterns:
+          - pattern: $B.$G()
+          - pattern-inside: |
+              $RET $M(..., @RequestBody $T $B, ...) { ... }
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(get|is)[A-Z]\w*$
+      - patterns:
+          - pattern: $B.get(...)
+          - pattern-inside: |
+              $RET $M(..., @RequestBody Map<$K, $V> $B, ...) { ... }
       - patterns:
           - pattern-inside: |
               $RET $M(..., String $P, ...) { ... }
@@ -333,6 +364,13 @@ rules:
           - metavariable-regex:
               metavariable: $XPATH
               regex: (?i)^(.*\.)?(\w*xpath\w*|xp\w*)$
+    # escape próprio do projeto (Security.escapeXPath, LdapUtils.escapeFilter...) neutraliza o valor
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $O.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i)^(escape|sanitize|encode)\w*$
     message: >
       Possível XPath Injection (OWASP A03): expressão XPath montada por concatenação.
       Use XPathVariableResolver (consultas parametrizadas) em vez de concatenar valores.

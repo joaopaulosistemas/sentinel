@@ -25,6 +25,18 @@ rules:
             $F.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             ...
           }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $F.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $F.setProperty(javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            ...
+          }
     message: >
       Parser XML criado sem desligar DTD e entidades externas: permite XXE (leitura de arquivos do servidor e SSRF).
       Chame setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) (ou desligue SUPPORT_DTD no
@@ -44,6 +56,13 @@ rules:
           - pattern: $P.parseExpression($X)
           - pattern: new SpelExpressionParser().parseExpression($X)
       - pattern-not: $P.parseExpression("...")
+      # SimpleEvaluationContext não permite T(), construtores nem referência a tipos: é a mitigação oficial do Spring
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            SimpleEvaluationContext.$F(...);
+            ...
+          }
       - metavariable-regex:
           metavariable: $P
           regex: (?i).*(spel|expression|parser).*
@@ -215,6 +234,17 @@ rules:
           String $V = new File($D, $E.getName()).getCanonicalPath();
           ...
           if (<... $V.startsWith(...) ...>) { ... }
+      # caminho montado numa variável, resolvido depois e conferido num if antes de gravar
+      - pattern-not-inside: |
+          File $O = new File($D, $E.getName());
+          ...
+          String $V = $O.getCanonicalPath();
+          ...
+          if (<... $V.startsWith(...) ...>) { ... }
+      - pattern-not-inside: |
+          File $O = new File($D, $E.getName());
+          ...
+          if (<... $O.getCanonicalPath().startsWith(...) ...>) { ... }
     message: >
       Arquivo extraído usando o nome da entrada do ZIP sem validar: um ZIP com "../../x" grava fora da pasta de
       destino (Zip Slip). Resolva o caminho, normalize e confira que continua dentro do diretório de destino.
@@ -581,3 +611,65 @@ rules:
       category: security
       cwe: "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
       owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-xmldecoder-entrada
+    pattern: new XMLDecoder(...)
+    message: >
+      java.beans.XMLDecoder executa o que o XML descreve (construtores e chamadas de método): ler XML de origem
+      externa com ele permite execução remota de código. Troque por um formato de dados (JSON/XML com binding
+      tipado) ou, no mínimo, restrinja as classes aceitas antes de decodificar.
+    severity: ERROR
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
+  - id: sentinel-xstream-sem-lista-de-tipos
+    patterns:
+      - pattern: $X.fromXML(...)
+      - pattern-inside: |
+          $T $M(...) {
+            ...
+            XStream $X = new XStream(...);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $X.allowTypes(...);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $X.allowTypesByWildcard(...);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $X.allowTypeHierarchy(...);
+            ...
+          }
+      - pattern-not-inside: |
+          $T $M(...) {
+            ...
+            $X.addPermission(...);
+            ...
+          }
+    message: >
+      XStream decodifica XML sem lista de tipos permitidos: um XML de origem externa pode instanciar classes arbitrárias
+      e executar código. Antes de ler, chame allowTypes/allowTypesByWildcard só com as classes esperadas (ou
+      XStream.setupDefaultSecurity e liste os tipos).
+    severity: WARNING
+    languages: [java]
+    paths:
+      exclude: ["**/test/**"]
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures
+

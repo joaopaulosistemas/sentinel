@@ -1,4 +1,61 @@
-# Amostra para revisão humana (item E)
+# Amostra para revisao humana (item E)
+
+## Volta 52 (2026-11-22): veracode/verademo, regras 12.119.0 (antes da correcao desta volta), branch `ciclo/estabilizacao-16`
+
+Sorteio: `random.seed(5202)` sobre os 106 achados de regras de seguranca do Opengrep da auditoria 44733964974 (excluidos qualidade, estilo, log de erro, CSS, front-end, camadas e docker-sem-user), 20 sorteados e ordenados por arquivo e linha. **Classificacao por subagente independente do Claude** (contexto novo, so a lista e o codigo do verademo; nao viu diff, gabarito nem LOG). Nao e revisao externa: o Joao pode sobrescrever qualquer linha e a dele prevalece. Resultado: 12 VERDADEIRO, 3 BAIXO VALOR, 5 FALSO (estrito 12/20 = 60 %, Wilson 39 a 78 %; largo 15/20 = 75 %, Wilson 53 a 89 %). O verademo tem 47 de 106 achados da regra XSS-JSP, entao a amostra e dominada por ela; estimativa, nao medida.
+
+| # | Regra | Arquivo | Linha | Classificacao |
+|---|---|---|---|---|
+| 1 | sentinel-spring-print-stack-trace | app/src/main/java/com/veracode/verademo/commands/ListenCommand.java | 51 | BAIXO VALOR: printStackTrace so em stderr |
+| 2 | sentinel-sql-injection | app/src/main/java/com/veracode/verademo/commands/RemoveAccountCommand.java | 49 | VERDADEIRO: INSERT concatenado com blabberUsername de requisicao |
+| 3 | sentinel-log-injection | app/src/main/java/com/veracode/verademo/controller/BlabController.java | 278 | VERDADEIRO: User-Agent gravado sem sanitizar (forja de log) |
+| 4 | sentinel-sql-injection | app/src/main/java/com/veracode/verademo/controller/BlabController.java | 464 | VERDADEIRO: ORDER BY com sort de @RequestParam |
+| 5 | sentinel-crypto-random-servidor | app/src/main/java/com/veracode/verademo/controller/ResetController.java | 90 | FALSO: new Random() so gera dados de demonstracao no reset do banco |
+| 6 | sentinel-log-injection | app/src/main/java/com/veracode/verademo/controller/UserController.java | 115 | VERDADEIRO: target e username de requisicao no log |
+| 7 | sentinel-servlet-path-traversal | app/src/main/java/com/veracode/verademo/controller/UserController.java | 619 | FALSO: oldImage vem de listFiles/getName (nome base); o risco real esta na linha seguinte |
+| 8 | sentinel-crypto-hash-fraco | app/src/main/java/com/veracode/verademo/controller/UserController.java | 908 | VERDADEIRO: MD5 sem salt para senha |
+| 9 | sentinel-crypto-hash-fraco | app/src/main/java/com/veracode/verademo/utils/User.java | 103 | VERDADEIRO: MD5 sem salt na classe User |
+| 10 | sentinel-spring-print-stack-trace | app/src/main/java/com/veracode/verademo/utils/User.java | 109 | BAIXO VALOR: printStackTrace de MD5 inexistente |
+| 11 | sentinel-spring-print-stack-trace | app/src/main/java/com/veracode/verademo/utils/UserFactory.java | 50 | BAIXO VALOR: printStackTrace na desserializacao do cookie |
+| 12 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/blab.jsp | 108 | VERDADEIRO: comentario armazenado impresso sem escape |
+| 13 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/blabbers.jsp | 103 | VERDADEIRO: blab_name armazenado sem escape |
+| 14 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/blabbers.jsp | 119 | FALSO: saida e literal constante (Ignore/Listen) |
+| 15 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/feed.jsp | 102 | FALSO: post.getId() e int |
+| 16 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/feed.jsp | 102 | FALSO: post.getCommentCount() e int |
+| 17 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/login.jsp | 59 | VERDADEIRO: error com mensagem SQL com entrada do usuario |
+| 18 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/login.jsp | 78 | VERDADEIRO: target de requisicao dentro de atributo |
+| 19 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/profile.jsp | 101 | VERDADEIRO: realName armazenado em atributo |
+| 20 | sentinel-xss-jsp-unescaped-output | app/src/main/webapp/WEB-INF/views/profile.jsp | 119 | VERDADEIRO: username escolhido pelo usuario |
+
+---
+
+## Volta 49 (2026-11-19): appsecco/VyAPI, regras 12.118.0 (depois), branch `ciclo/estabilizacao-16`
+
+O alvo so tem **17** achados de regras de seguranca do Opengrep (descartados estilo, qualidade, comentarios, PMD, SCA); todos listados, **sem sorteio (semente nao se aplica)**. **Classificacao feita por subagente independente do Claude** (contexto novo, so a lista e o codigo do VyAPI; nao viu diff, gabarito nem LOG). Nao e revisao externa: o Joao pode sobrescrever qualquer linha e a dele prevalece. Resultado: 14 VERDADEIRO, 2 BAIXO VALOR, 1 FALSO em 17 (estrito 14/17 = 82 %; largo 16/17 = 94 %). 5 dos 17 sao a mesma falha vista por varias linhas (receiver e provider), e 12 dos 17 sao de regras criadas ou ajustadas nesta propria volta ou de manifesto: o numero e estimativa, nao medida.
+
+| # | Regra | Arquivo | Linha | Classificacao |
+|---|---|---|---|---|
+| 1 | sentinel-int-http-sem-tls | app/src/androidTest/java/com/appsecco/vyapi/ExampleInstrumentedTest.java | 16 | FALSO: linha 16 e comentario Javadoc (href), sem requisicao; a regra casava `href="http://` (corrigido nesta volta) |
+| 2 | sentinel-android-manifest-allow-backup | app/src/main/AndroidManifest.xml | 16 | VERDADEIRO: allowBackup="true" permite extrair o banco por adb backup |
+| 3 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 26 | VERDADEIRO: receiver exportado sem permissao |
+| 4 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 36 | VERDADEIRO: provider exportado; permissao de outro app nao declarada; SQLi no #13 |
+| 5 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 46 | VERDADEIRO: provider exportado com grantUriPermissions e file paths amplos |
+| 6 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 59 | VERDADEIRO: provider exportado com grantUriPermissions e paths amplos |
+| 7 | sentinel-android-manifest-exported | app/src/main/AndroidManifest.xml | 72 | VERDADEIRO (impacto provavel baixo): servico exportado sem permissao |
+| 8 | sentinel-arquivo-temporario-inseguro | app/src/main/java/com/appsecco/vyapi/fragments/CameraFragment.java | 178 | BAIXO VALOR: createTempFile no diretorio externo do proprio app, nome aleatorio |
+| 9 | sentinel-crypto-cifra-fraca | app/src/main/java/com/appsecco/vyapi/fragments/CreateContactFragment.java | 122 | VERDADEIRO: Cipher.getInstance("AES") = ECB, chave fixa "secretKey" |
+| 10 | sentinel-crypto-cifra-fraca | app/src/main/java/com/appsecco/vyapi/fragments/CreateContactFragment.java | 141 | VERDADEIRO: decrypt com o mesmo ECB e chave fixa |
+| 11 | sentinel-android-webview-javascript | app/src/main/java/com/appsecco/vyapi/fragments/ViewWebsiteFragment.java | 49 | VERDADEIRO: JS habilitado em WebView que carrega URL do usuario |
+| 12 | sentinel-android-sqlite-concatenado | app/src/main/java/com/appsecco/vyapi/misc/ContactDBHandler.java | 53 | VERDADEIRO: SQLi por concatenacao em rawQuery |
+| 13 | sentinel-android-sqlite-concatenado | app/src/main/java/com/appsecco/vyapi/provider/ContactDBProvider.java | 68 | VERDADEIRO: appendWhere com segmento da URI em provider exportado |
+| 14 | sentinel-android-intent-caminho-arquivo | app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java | 50 | VERDADEIRO: FileInputStream com caminho do extra do broadcast exportado |
+| 15 | sentinel-android-intent-caminho-arquivo | app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java | 51 | VERDADEIRO: FileOutputStream com nome do extra (traversal) |
+| 16 | sentinel-android-intent-caminho-arquivo | app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java | 58 | BAIXO VALOR: so cria o File, redundante com o #14 |
+| 17 | sentinel-android-intent-caminho-arquivo | app/src/main/java/com/appsecco/vyapi/receiver/VyAPIBroadcastReceiver.java | 59 | VERDADEIRO: renameTo com destino controlado pelo extra |
+
+---
+
+## Volta 46 (amostra anterior)
 
 Gerada na volta 46 (2026-11-18) a partir da auditoria do CI de `layro01/node-api-goat` (treino mais recente, branch `ciclo/estabilizacao-14`, regras da versão 12.116.0).
 **Classificação feita na volta 47 por subagente independente do Claude** (contexto novo, recebeu só a lista e o código do alvo, sem ver diff, gabaritos nem LOG). Não é revisão externa: o João pode sobrescrever qualquer linha e a dele prevalece. Resultado: 12 VERDADEIRO, 3 VERDADEIRO DE BAIXO VALOR, 0 FALSO em 15 (estrito 12/15 = 80 %, Wilson 55 a 93 %; largo 15/15, Wilson 80 a 100 %). 8 dos 15 são duplicatas da mesma linha por regras diferentes (eval e exec), o que infla a precisão.

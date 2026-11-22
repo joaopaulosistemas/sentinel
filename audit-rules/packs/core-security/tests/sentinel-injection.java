@@ -4,6 +4,8 @@ import java.sql.Statement;
 import java.security.MessageDigest;
 import java.util.concurrent.Executor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.annotation.RequestBody;
+import java.util.Map;
 
 class InjectionCases {
 
@@ -254,4 +256,43 @@ class LdapEXpathSoNoReceptorCerto {
         new ProcessBuilder(cmd, "-x").start();
         return "ok";
     }
+
+    void ldapDtoGetter(org.springframework.ldap.core.LdapTemplate ldapTemplate, @RequestBody DtoLogin req) {
+        String filtro = "(&(uid=" + req.getUsername() + "))";
+        // ruleid: sentinel-ldap-injection
+        ldapTemplate.search("ou=users", filtro, (a) -> a);
+    }
+
+    void ldapDtoGetterFixo(org.springframework.ldap.core.LdapTemplate ldapTemplate, @RequestBody DtoLogin req) {
+        // ok: sentinel-ldap-injection
+        ldapTemplate.search("ou=users", "(uid=admin)", (a) -> a);
+    }
+
+    void xpathDtoGetter(javax.xml.xpath.XPath xp, org.w3c.dom.Document doc, @RequestBody DtoLogin req) throws Exception {
+        String expr = "//user[username='" + req.getUsername() + "']";
+        // ruleid: sentinel-xpath-injection
+        xp.compile(expr);
+    }
+
+    static class DtoLogin { String getUsername() { return ""; } }
+
+    void xpathMapDoCorpo(javax.xml.xpath.XPath xp, @RequestBody Map<String, String> corpo) throws Exception {
+        String usuario = corpo.get("username");
+        // ruleid: sentinel-xpath-injection
+        xp.compile("//user[username='" + usuario + "']");
+    }
+
+    void xpathMapSemCorpo(javax.xml.xpath.XPath xp, java.util.Map<String, String> config) throws Exception {
+        String usuario = config.get("username");
+        // ok: sentinel-xpath-injection
+        xp.compile("//user[username='" + usuario + "']");
+    }
+
+    void xpathComEscape(javax.xml.xpath.XPath xp, @RequestBody Map<String, String> corpo) throws Exception {
+        String usuario = Seguranca.escapeXPath(corpo.get("username"));
+        // ok: sentinel-xpath-injection
+        xp.compile("//user[username='" + usuario + "']");
+    }
+
+    static class Seguranca { static String escapeXPath(String v) { return v; } }
 }

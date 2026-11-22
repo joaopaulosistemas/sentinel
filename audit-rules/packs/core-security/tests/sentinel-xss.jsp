@@ -26,5 +26,13 @@
     <p><%= session.getAttribute("user") %></p>
     <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
     <p><%= esc(titulo) + request.getParameter("x") %></p>
+    <!-- ok: sentinel-xss-jsp-unescaped-output -->
+    <td><%= post.getCommentCount() %></td>
+    <!-- ok: sentinel-xss-jsp-unescaped-output -->
+    <td><%=(blabber.getNumberListeners() == 1 ? "Ignore" : "Listen")%></td>
+    <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
+    <td><%= post.getName() %></td>
+    <!-- ruleid: sentinel-xss-jsp-unescaped-output -->
+    <td><%= (a ? request.getParameter("x") : "b") %></td>
   </body>
 </html>

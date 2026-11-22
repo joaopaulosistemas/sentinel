@@ -1,0 +1,86 @@
+{
+ "_comentario": "Falhas de leihehe/nodejs-vul-labs (6 labs Node.js + Angular, MIXED) lidas no codigo (treino), volta 50; linhas conferidas com grep -n. Gabarito escrito pelo mesmo agente que corrige, ANTES de ver os achados do Sentinel; regras aceitas fixadas antes da medida e nomes conferidos contra a lista de regras. Entrada com regras [] e lacuna assumida (falha logica ou de ausencia). Fora: CVE de bibliotecas (SCA), flags literais dos labs. Correcao antes de medir a mudanca: a primeira conta (6/11 = 55 %) estava inflada porque entrada com regras [] aceita qualquer achado a 3 linhas (ESLint prefer-const, console.log), e a linha do prototype pollution estava na chamada (155) em vez de na funcao merge (231), onde a regra acerta. Lacunas sem regra possivel (falha logica ou de ausencia) saem da conta e ficam em lacunas_assumidas_nao_medidas. Ajuste depois da medida do antes (3/5, que nao muda): a regra nova sentinel-node-credencial-literal-atribuida entrou nas aceitas do CWE-798 da linha 209 (sentinel-senha-fixa-no-codigo e so Java; eu a listei por engano).",
+ "repo": "leihehehe/nodejs-vul-labs",
+ "falhas": [
+  {
+   "arquivo": "main.js",
+   "linha": 72,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-command-injection",
+    "sentinel-node-exec-dinamico"
+   ]
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 88,
+   "cwe": "CWE-943",
+   "regras": [
+    "sentinel-node-nosql-operador"
+   ]
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 231,
+   "cwe": "CWE-1321",
+   "regras": [
+    "sentinel-node-prototype-pollution"
+   ]
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 13,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 209,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-senha-fixa-no-codigo",
+    "sentinel-node-credencial-literal-atribuida"
+   ]
+  }
+ ],
+ "lacunas_assumidas_nao_medidas": [
+  {
+   "arquivo": "login/passport.js",
+   "linha": 23,
+   "cwe": "CWE-256",
+   "regras": []
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 44,
+   "cwe": "CWE-200",
+   "regras": []
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 115,
+   "cwe": "CWE-863",
+   "regras": []
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 129,
+   "cwe": "CWE-843",
+   "regras": []
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 192,
+   "cwe": "CWE-1321",
+   "regras": []
+  },
+  {
+   "arquivo": "main.js",
+   "linha": 201,
+   "cwe": "CWE-306",
+   "regras": []
+  }
+ ]
+}
