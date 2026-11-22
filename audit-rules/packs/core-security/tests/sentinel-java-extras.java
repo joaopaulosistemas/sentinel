@@ -2,6 +2,9 @@ package demo;
 
 import java.io.File;
 import java.util.zip.ZipEntry;
+import java.beans.XMLDecoder;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
+import com.thoughtworks.xstream.XStream;
 
 class Extras {
 
@@ -185,13 +188,13 @@ class SenhaComparadaComLiteral {
     }
 
     void xstreamQualquerTipo() {
-        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        XStream xs = new XStream();
         // ruleid: sentinel-xstream-qualquer-tipo
         xs.addPermission(AnyTypePermission.ANY);
     }
 
     void xstreamTipoEspecifico() {
-        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        XStream xs = new XStream();
         // ok: sentinel-xstream-qualquer-tipo
         xs.addPermission(new WildcardTypePermission(new String[] {"com.exemplo.dto.*"}));
     }
@@ -455,8 +458,7 @@ class ServletVolta36 {
     }
 
     void spelContextoSimples(String entrada, SpelExpressionParser spelParser) {
-        org.springframework.expression.spel.support.SimpleEvaluationContext contexto =
-            org.springframework.expression.spel.support.SimpleEvaluationContext.forReadOnlyDataBinding().build();
+        SimpleEvaluationContext contexto = SimpleEvaluationContext.forReadOnlyDataBinding().build();
         // ok: sentinel-spel-injection
         spelParser.parseExpression(entrada).getValue(contexto);
     }
@@ -485,19 +487,19 @@ class ServletVolta36 {
 
     Object xmlDecoder(String xml) throws Exception {
         // ruleid: sentinel-xmldecoder-entrada
-        java.beans.XMLDecoder d = new java.beans.XMLDecoder(new java.io.ByteArrayInputStream(xml.getBytes()));
+        XMLDecoder d = new XMLDecoder(new java.io.ByteArrayInputStream(xml.getBytes()));
         return d.readObject();
     }
 
     Object xstreamSemLista(String xml) {
-        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        XStream xs = new XStream();
         xs.alias("pessoa", Object.class);
         // ruleid: sentinel-xstream-sem-lista-de-tipos
         return xs.fromXML(xml);
     }
 
     Object xstreamComLista(String xml) {
-        com.thoughtworks.xstream.XStream xs = new com.thoughtworks.xstream.XStream();
+        XStream xs = new XStream();
         xs.allowTypes(new Class[] {String.class});
         // ok: sentinel-xstream-sem-lista-de-tipos
         return xs.fromXML(xml);
