@@ -1,14 +1,13 @@
 import { DataTableSkeleton, InlineNotification, Modal } from '@carbon/react';
 import { PageShell } from '../../components/PageShell';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../../api/client';
 import { EngineAnalyzersPanel, EngineRulesPanel } from '../../components/EnginePanel';
 import { McpPanel } from '../../components/McpPanel';
 import { StartAuditModal } from '../../components/StartAuditModal';
 import { usePacks } from '../../hooks/useLifecycle';
-import { useSystems } from '../../hooks/useSystems';
+import { persistSystem, useLocalSourceEnabled, useRemoveSystem, useSourceChecks, useSystems } from '../../hooks/useSystems';
 import type { IProfileInfo, ISystemSummaryResponse } from '../../types';
 import {
   emptyForm,
@@ -37,9 +36,11 @@ function savedSystem(editing: ISystemSummaryResponse | 'new' | null): ISystemSum
 }
 
 async function saveSystem(values: ISystemFormValues, current: ISystemSummaryResponse | null) {
-  const body = toRequest(values);
-  const system = current ? await api.updateSystem(current.id, body) : await api.createSystem(body);
-  return scheduleChanged(values, current) ? api.updateSchedule(system.id, toSchedule(values)) : system;
+  return persistSystem({
+    currentId: current?.id,
+    body: toRequest(values),
+    schedule: scheduleChanged(values, current) ? toSchedule(values) : null,
+  });
 }
 
 function filterSystems(systems: ISystemSummaryResponse[], query: string): ISystemSummaryResponse[] {
@@ -368,55 +369,16 @@ function DeleteSystemModal({ target, remove, onClose }: { target: ISystemSummary
   );
 }
 
-/** Sem resposta do servidor, a origem "pasta local" fica desligada. */
-async function fetchLocalSourceEnabled(): Promise<boolean> {
-  try {
-    return (await api.getLocalSourceEnabled()).enabled;
-  } catch {
-    return false;
-  }
-}
-
-/** A origem "pasta local" só aparece quando o servidor a habilitou (SENTINEL_LOCAL_ROOT). */
-function useLocalSourceEnabled(): boolean {
-  return (
-    useQuery({
-      queryKey: ['local-source-enabled'],
-      queryFn: fetchLocalSourceEnabled,
-      staleTime: 5 * 60_000,
-    }).data === true
-  );
-}
-
-/** Exclui o sistema e todas as suas auditorias (a API remove tudo junto); só depois da confirmação. */
-function useRemoveSystem() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (target: ISystemSummaryResponse) => api.deleteSystem(target.id),
-    onSuccess: (_data, target) => {
-      void queryClient.invalidateQueries({ queryKey: ['systems'] });
-      void queryClient.invalidateQueries({ queryKey: ['audits'] });
-      queryClient.removeQueries({ queryKey: ['systems', target.id] });
-    },
-  });
-}
-
-/** Confere o endereço (responde? qual a branch padrão?) e a pasta local, sem clonar. */
-function useSourceChecks(values: ISystemFormValues, editing: ISystemSummaryResponse | 'new' | null) {
-  const check = useMutation({
-    mutationFn: () =>
-      api.checkRepo({
-        repoUrl: values.repoUrl.trim(),
-        branch: values.scheduledBranch.trim() || undefined,
-        systemId: savedSystem(editing)?.id,
-        gitToken: values.gitToken.trim(),
-        gitTokenHosts: values.gitTokenHosts.trim(),
-      }),
-  });
-  const checkPath = useMutation({
-    mutationFn: () => api.checkPath(values.localPath.trim(), values.scheduledBranch.trim() || undefined),
-  });
-  return { check, checkPath };
+/** Confere o endereço e a pasta local deste formulário, sem clonar. */
+function useFormSourceChecks(values: ISystemFormValues, editing: ISystemSummaryResponse | 'new' | null) {
+  return useSourceChecks(() => ({
+    repoUrl: values.repoUrl.trim(),
+    branch: values.scheduledBranch.trim() || undefined,
+    systemId: savedSystem(editing)?.id,
+    gitToken: values.gitToken.trim(),
+    gitTokenHosts: values.gitTokenHosts.trim(),
+    localPath: values.localPath.trim(),
+  }));
 }
 
 /** Abas do pop-up. As do motor ficam montadas depois da primeira visita: trocar de aba não descarta o que foi digitado. */
@@ -585,7 +547,7 @@ export function SystemsPage() {
   const { engineDirty, onMotorDirty, onAnalyzersDirty, resetEngineDirty } = useEngineDirty();
 
   const errors = validate(values);
-  const { check, checkPath } = useSourceChecks(values, editing);
+  const { check, checkPath } = useFormSourceChecks(values, editing);
   const localEnabled = useLocalSourceEnabled();
   const remove = useRemoveSystem();
   const save = useSaveSystem(values, editing);

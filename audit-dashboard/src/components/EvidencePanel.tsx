@@ -1,7 +1,6 @@
 import { ActionableNotification, Button, InlineNotification, Tag } from '@carbon/react';
 import { CheckmarkFilled, Upload, WarningAlt } from '@carbon/icons-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../api/client';
+import { useSystemEvidence } from '../hooks/useSystemEvidence';
 import { useId, useRef, useState, type DragEvent } from 'react';
 import {
   EVIDENCE_TYPES,
@@ -85,20 +84,8 @@ interface IEvidencePanelProps {
 }
 
 export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvidencePanelProps) {
-  const queryClient = useQueryClient();
-  const server = useQuery({ queryKey: ['system-evidence', systemId], queryFn: () => api.getSystemEvidence(systemId) });
   const [delivered, setDelivered] = useState(false);
-  const deliver = useMutation({
-    mutationFn: async () => {
-      const files = Object.values(slots).filter((v): v is IAccepted => !!v?.file).map((v) => v.file as File);
-      for (const f of files) await api.putSystemEvidence(systemId, f);
-      return files.length;
-    },
-    onSuccess: () => {
-      setDelivered(true);
-      void queryClient.invalidateQueries({ queryKey: ['system-evidence', systemId] });
-    },
-  });
+  const { server, deliver } = useSystemEvidence(systemId, () => setDelivered(true));
   const [slots, setSlots] = useState<Partial<Record<EvidenceKind, IAccepted>>>({});
   const [rejected, setRejected] = useState<IRejected[]>([]);
   const [open, setOpen] = useState<EvidenceKind | null>(null);
@@ -151,7 +138,7 @@ export function EvidencePanel({ systemId, systemName, lastRun, onAudit }: IEvide
       <DropZone dragging={dragging} setDragging={setDragging} onDrop={onDrop} inputRef={inputRef} onPick={() => pick(null)} onFiles={(files) => void receive(files, targetRef.current)} />
       <RejectedList rejected={rejected} />
       <AreaLists coverage={coverage} slots={slots} open={open} setOpen={setOpen} baseId={baseId} onPick={pick} onRemove={(kind) => setSlots((cur) => withoutSlot(cur, kind))} />
-      <DeliverBar disabled={coverage.received === 0 || delivered || deliver.isPending || server.data?.enabled === false} enabled={server.data?.enabled !== false} pending={deliver.isPending} delivered={delivered} error={deliver.isError ? (deliver.error as Error).message : null} onDeliver={() => deliver.mutate()} />
+      <DeliverBar disabled={coverage.received === 0 || delivered || deliver.isPending || server.data?.enabled === false} enabled={server.data?.enabled !== false} pending={deliver.isPending} delivered={delivered} error={deliver.isError ? (deliver.error as Error).message : null} onDeliver={() => deliver.mutate(Object.values(slots).filter((v): v is IAccepted => !!v?.file).map((v) => v.file as File))} />
     </PageSection>
   );
 }

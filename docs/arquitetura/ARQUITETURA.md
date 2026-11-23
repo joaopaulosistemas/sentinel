@@ -151,7 +151,7 @@ Pacote raiz: `com.sentinel.audit`. Quarkus 3.40, bytecode Java 21 (a imagem comp
 flowchart TB
     RES["resource (borda REST)\nAuditResource, SystemResource, FindingResource,\nWebhookResource, PackResource, RuleResource,\nHealthResource, ApiKeyFilter, StartupChecks"]
     DTO["dto\nrequests, responses e FindingMapper"]
-    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AnalyzerRunner,\nAuditScheduler, AuditSlots, IngestionService, EvidenceStager,\nScoringService, FindingRefinement, FindingLifecycleService,\nReportService, PdfReportService, PortfolioReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService"]
+    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AnalyzerRunner,\nAuditScheduler, AuditSlots, IngestionService, EvidenceStager,\nScoringService, FindingRefinement, FindingLifecycleService,\nSystemRegistration, SystemWriter, SystemCatalog, RunCatalog,\nReportService, PdfReportService, PortfolioReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService,\nDomainException (404, 400, 409 sem HTTP)"]
     ANA["analyzer (motores)\nCodeAnalyzer e 20 analisadores\n+ deps, evidence, quality, structure"]
     PCK["pack (regras e perfis)\nPackRegistry, PackLoader, PackIntegrity, ProfileLoader, AuditPolicy,\nFindingDeduplicator, RuleCatalog, GuideBook"]
     INS["insights (auditoria completa)\nInsightsService, InsightsBuilder, ProjectProfiler"]
@@ -169,6 +169,12 @@ flowchart TB
 ```
 
 Regra de leitura: a seta vai de quem chama para quem é chamado. `resource` nunca fala com `analyzer` diretamente; só `AuditOrchestrationService` orquestra os analisadores.
+
+**Papel de cada camada (equivalente ao MVC de uma API REST):** `resource` é o controller (recebe o pedido, valida o formato, chama um serviço e monta a resposta com DTOs); `service`, `repository` e `model` são o modelo (regra de negócio, transação e persistência); o `audit-dashboard` é a visão. Três regras mantêm isso de pé:
+
+- **Regra e transação ficam no `service`.** O `resource` não decide nada de negócio nem abre transação; `SystemRegistration` é o exemplo (criar, editar, agendar, trocar o perfil e remover sistema). A exceção é o montador de resposta (`AuditRunViews.request`), que abre a transação para o pedido e a leitura da entidade ficarem juntos.
+- **O `service` não conhece HTTP.** Ele lança `ResourceNotFoundException` (404), `InvalidInputException` (400) ou `ConflictException` (409), todas filhas de `DomainException`; quem escolhe o status é o `DomainExceptionMapper`, no `resource`. Nenhum serviço importa `jakarta.ws.rs`.
+- **No dashboard, a tela não chama a API.** Páginas e componentes usam os hooks de `src/hooks/` (`useEngineConfig`, `useMcpConfig`, `usePendingActions`, `useSystems` e outros); só `src/api/client.ts` e os hooks importam `api`.
 
 ### 3.2 Fluxo de uma auditoria (sequência)
 
@@ -675,7 +681,7 @@ flowchart TB
 | Calibração | `scripts/calibracao.sh`, `scripts/comparar-calibracao.py`, `audit-rules/calibracao/esperado.json` |
 | Release | `.github/workflows/release.yml`, `scripts/versoes-pacotes.sh` |
 | Agente Sentinel Ciclo | `.claude/agents/sentinel-ciclo.md`, `.github/workflows/auditoria-completa.yml`, `scripts/auditoria-completa.sh` |
-| Memória e metas | `docs/evolucao/` (`PLACAR.md`, `LOG.md`, `estado.json` com o estado entre execuções, `calibracao.md`, `precisao.md`, `relatorios/`, `AGENTE.md`) |
+| Memória e metas | `docs/evolucao/` (`PLACAR.md`, `LOG.md`, `estado.json` com o estado entre execuções, `calibracao.md`, `precisao.md`, `AGENTE.md`) |
 | Medição | `scripts/benchmark-owasp.py`, `scripts/medir-volta.py`, `scripts/verificar-separacao.py` (treino × validação), `scripts/conferir-numeros.py` (números da documentação) e `scripts/sincronizar-versao.py` (versão única em `audit-dashboard/package.json`, Helm e OpenAPI) |
 
 O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é manual. A calibração pesada do CI roda nesses PRs.
@@ -700,7 +706,7 @@ O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é
 | GitHub / GitLab | Clone e webhooks | sim, para repositórios remotos |
 | Teams / Slack / webhook genérico | `NotificationService` | opcional |
 | Keycloak / OIDC | Autenticação corporativa | opcional |
-| GitHub Actions, GHCR, `anthropics/claude-code-action` | CI, release e agentes | só para o desenvolvimento do próprio Sentinel |
+| GitHub Actions, GHCR | CI e release | só para o desenvolvimento do próprio Sentinel |
 
 ---
 

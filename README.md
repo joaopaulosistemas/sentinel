@@ -2,7 +2,7 @@
 
 Plataforma de auditoria técnica contínua de código. Clona o repositório (ou lê uma pasta local), roda vários analisadores, calcula uma nota de risco por sistema e mostra tudo em um painel, em relatórios (HTML, PDF, CSV), em SARIF e em um CLI que serve de gate no pipeline.
 
-**Documentação completa: [`docs/`](docs/README.md)** · [Instalação](docs/guia/instalacao.md) · [Arquitetura](docs/arquitetura/ARQUITETURA.md) · [Impacto e o que foi medido](docs/IMPACTO.md) · [Histórico](docs/evolucao/LOG.md)
+**Documentação completa: [`docs/`](docs/README.md)** · [Instalação](docs/guia/instalacao.md) · [Arquitetura](docs/arquitetura/ARQUITETURA.md) · [Impacto e o que foi medido](docs/IMPACTO.md) · [Histórico](docs/evolucao/LOG.md) · [Telas para o Figma](figma/README.md)
 
 ---
 

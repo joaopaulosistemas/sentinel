@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import type { ISystemSummaryResponse } from '../../types';
-import { scoreColor } from '../../utils/systemAttention';
+import { AuditAgeBadge } from '../../components/AuditAgeBadge';
+import { useNow } from '../../hooks/useNow';
+import { auditAge, scoreColor } from '../../utils/systemAttention';
 import { EditIcon, ListIcon, PlayIcon, TrashIcon } from '../../components/ActionIcons';
 import { scheduleText, sourceText, stackShort } from './systemForm';
 
@@ -11,6 +13,8 @@ interface IProps {
   onAudit: (s: ISystemSummaryResponse) => void;
   onEdit: (s: ISystemSummaryResponse) => void;
   onDelete: (s: ISystemSummaryResponse) => void;
+  /** Instante de referência do selo de auditoria antiga; por padrão, a hora atual (os testes fixam um valor). */
+  now?: number;
 }
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
@@ -19,6 +23,7 @@ const actionButton = { display: 'inline-flex', alignItems: 'center', gap: 6, pad
 interface IRowProps {
   system: ISystemSummaryResponse;
   selected: boolean;
+  now: number;
   onAudit: (s: ISystemSummaryResponse) => void;
   onEdit: (s: ISystemSummaryResponse) => void;
   onDelete: (s: ISystemSummaryResponse) => void;
@@ -29,7 +34,7 @@ function hasAudits(s: ISystemSummaryResponse): boolean {
   return (s.auditCount ?? (s.lastAuditDate ? 1 : 0)) > 0;
 }
 
-function RowActions({ system: s, onAudit, onEdit, onDelete }: Omit<IRowProps, 'selected'>) {
+function RowActions({ system: s, onAudit, onEdit, onDelete }: Omit<IRowProps, 'selected' | 'now'>) {
   const navigate = useNavigate();
   const audits = hasAudits(s);
   return (
@@ -61,8 +66,9 @@ function RowActions({ system: s, onAudit, onEdit, onDelete }: Omit<IRowProps, 's
   );
 }
 
-function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: IRowProps) {
+function SystemRow({ system: s, selected, now, onAudit, onEdit, onDelete }: IRowProps) {
   const navigate = useNavigate();
+  const age = auditAge(s, now);
   const score = s.lastAuditScore === null ? null : Math.round(s.lastAuditScore);
   return (
     <tr style={{ borderBottom: '1px solid var(--s-border)', background: selected ? 'var(--s-selected)' : 'var(--s-surface)' }}>
@@ -75,6 +81,11 @@ function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: IRowProps
           {s.name}
         </button>
         <div style={{ fontSize: 12, color: 'var(--s-text-3)', fontFamily: mono }}>{sourceText(s)}</div>
+        {age && (
+          <div style={{ marginTop: 4 }}>
+            <AuditAgeBadge age={age} />
+          </div>
+        )}
       </td>
       <td style={{ padding: '12px 8px' }}>
         <span style={{ background: 'var(--s-border)', padding: '2px 8px', borderRadius: 10, fontSize: 12 }}>{stackShort[s.stack] ?? s.stack}</span>
@@ -88,7 +99,9 @@ function SystemRow({ system: s, selected, onAudit, onEdit, onDelete }: IRowProps
 }
 
 /** Tabela dos sistemas cadastrados, com as ações de cada linha. */
-export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }: IProps) {
+export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete, now }: IProps) {
+  const clock = useNow(60_000);
+  const reference = now ?? clock;
   return (
     <div className="sys-table-wrap" style={{ overflowX: 'auto' }}>
       <table className="sys-table" aria-label="Sistemas cadastrados" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 920 }}>
@@ -104,7 +117,7 @@ export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete }:
         </thead>
         <tbody>
           {systems.map((s) => (
-            <SystemRow key={s.id} system={s} selected={selectedId === s.id} onAudit={onAudit} onEdit={onEdit} onDelete={onDelete} />
+            <SystemRow key={s.id} system={s} selected={selectedId === s.id} now={reference} onAudit={onAudit} onEdit={onEdit} onDelete={onDelete} />
           ))}
         </tbody>
       </table>

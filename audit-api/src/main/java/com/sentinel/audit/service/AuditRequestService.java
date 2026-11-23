@@ -9,9 +9,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.ClientErrorException;
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -48,10 +45,10 @@ public class AuditRequestService {
         // Uma auditoria por sistema de cada vez, em qualquer branch: duas juntas clonam, analisam e gravam o mesmo
         // sistema ao mesmo tempo, e a segunda compara contra uma base que a primeira ainda não terminou.
         AuditedSystem system = systemRepository.lockById(systemId)
-                .orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + systemId));
+                .orElseThrow(() -> new ResourceNotFoundException("Sistema não encontrado: " + systemId));
         activeRun(systemId, LocalDateTime.now()).ifPresent(active -> {
-            throw new ClientErrorException("Este sistema já tem a auditoria #" + active.getId() + " em andamento ("
-                    + active.getBranch() + "). Aguarde ela terminar ou cancele para iniciar outra.", Response.Status.CONFLICT);
+            throw new ConflictException("Este sistema já tem a auditoria #" + active.getId() + " em andamento ("
+                    + active.getBranch() + "). Aguarde ela terminar ou cancele para iniciar outra.");
         });
         AuditRun run = new AuditRun();
         run.setSystem(system);

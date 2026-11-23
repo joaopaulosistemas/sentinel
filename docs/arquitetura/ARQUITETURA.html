@@ -338,7 +338,7 @@ Os diagramas (14, em Mermaid) aparecem desenhados no GitHub e no VS Code.</p>
 <figure class="diagrama"><pre class="mermaid">flowchart TB
     RES["resource (borda REST)\nAuditResource, SystemResource, FindingResource,\nWebhookResource, PackResource, RuleResource,\nHealthResource, ApiKeyFilter, StartupChecks"]
     DTO["dto\nrequests, responses e FindingMapper"]
-    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AnalyzerRunner,\nAuditScheduler, AuditSlots, IngestionService, EvidenceStager,\nScoringService, FindingRefinement, FindingLifecycleService,\nReportService, PdfReportService, PortfolioReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService"]
+    SVC["service (negócio)\nAuditRequestService, AuditOrchestrationService, AnalyzerRunner,\nAuditScheduler, AuditSlots, IngestionService, EvidenceStager,\nScoringService, FindingRefinement, FindingLifecycleService,\nSystemRegistration, SystemWriter, SystemCatalog, RunCatalog,\nReportService, PdfReportService, PortfolioReportService,\nNotificationService, WebhookService, RuleQualityService, RulePlaygroundService,\nDomainException (404, 400, 409 sem HTTP)"]
     ANA["analyzer (motores)\nCodeAnalyzer e 20 analisadores\n+ deps, evidence, quality, structure"]
     PCK["pack (regras e perfis)\nPackRegistry, PackLoader, PackIntegrity, ProfileLoader, AuditPolicy,\nFindingDeduplicator, RuleCatalog, GuideBook"]
     INS["insights (auditoria completa)\nInsightsService, InsightsBuilder, ProjectProfiler"]
@@ -354,6 +354,12 @@ Os diagramas (14, em Mermaid) aparecem desenhados no GitHub e no VS Code.</p>
     ANA --&gt; PCK
     REP --&gt; MOD</pre></figure>
 <p>Regra de leitura: a seta vai de quem chama para quem é chamado. <code>resource</code> nunca fala com <code>analyzer</code> diretamente; só <code>AuditOrchestrationService</code> orquestra os analisadores.</p>
+<p><strong>Papel de cada camada (equivalente ao MVC de uma API REST):</strong> <code>resource</code> é o controller (recebe o pedido, valida o formato, chama um serviço e monta a resposta com DTOs); <code>service</code>, <code>repository</code> e <code>model</code> são o modelo (regra de negócio, transação e persistência); o <code>audit-dashboard</code> é a visão. Três regras mantêm isso de pé:</p>
+<ul>
+<li><strong>Regra e transação ficam no <code>service</code>.</strong> O <code>resource</code> não decide nada de negócio nem abre transação; <code>SystemRegistration</code> é o exemplo (criar, editar, agendar, trocar o perfil e remover sistema). A exceção é o montador de resposta (<code>AuditRunViews.request</code>), que abre a transação para o pedido e a leitura da entidade ficarem juntos.</li>
+<li><strong>O <code>service</code> não conhece HTTP.</strong> Ele lança <code>ResourceNotFoundException</code> (404), <code>InvalidInputException</code> (400) ou <code>ConflictException</code> (409), todas filhas de <code>DomainException</code>; quem escolhe o status é o <code>DomainExceptionMapper</code>, no <code>resource</code>. Nenhum serviço importa <code>jakarta.ws.rs</code>.</li>
+<li><strong>No dashboard, a tela não chama a API.</strong> Páginas e componentes usam os hooks de <code>src/hooks/</code> (<code>useEngineConfig</code>, <code>useMcpConfig</code>, <code>usePendingActions</code>, <code>useSystems</code> e outros); só <code>src/api/client.ts</code> e os hooks importam <code>api</code>.</li>
+</ul>
 <h3 id="32-fluxo-de-uma-auditoria-sequencia">3.2 Fluxo de uma auditoria (sequência)</h3>
 <figure class="diagrama"><pre class="mermaid">sequenceDiagram
     autonumber
@@ -1378,7 +1384,7 @@ Os diagramas (14, em Mermaid) aparecem desenhados no GitHub e no VS Code.</p>
 </tr>
 <tr>
 <td>Memória e metas</td>
-<td><code>docs/evolucao/</code> (<code>PLACAR.md</code>, <code>LOG.md</code>, <code>estado.json</code> com o estado entre execuções, <code>calibracao.md</code>, <code>precisao.md</code>, <code>relatorios/</code>, <code>AGENTE.md</code>)</td>
+<td><code>docs/evolucao/</code> (<code>PLACAR.md</code>, <code>LOG.md</code>, <code>estado.json</code> com o estado entre execuções, <code>calibracao.md</code>, <code>precisao.md</code>, <code>AGENTE.md</code>)</td>
 </tr>
 <tr>
 <td>Medição</td>
@@ -1469,8 +1475,8 @@ Os diagramas (14, em Mermaid) aparecem desenhados no GitHub e no VS Code.</p>
 <td>opcional</td>
 </tr>
 <tr>
-<td>GitHub Actions, GHCR, <code>anthropics/claude-code-action</code></td>
-<td>CI, release e agentes</td>
+<td>GitHub Actions, GHCR</td>
+<td>CI e release</td>
 <td>só para o desenvolvimento do próprio Sentinel</td>
 </tr>
 </tbody>

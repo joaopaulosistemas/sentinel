@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthGate, ehRetornoDoLogin, lerConfig, lerConfigDe, lerPerfilDe } from './AuthGate';
 import { useAuth } from './AuthContext';
@@ -123,5 +123,29 @@ describe('conferência dos dados recebidos', () => {
     });
     expect(() => lerPerfilDe({ roles: [] })).toThrow('perfil inválido');
     expect(() => lerPerfilDe(undefined)).toThrow('perfil inválido');
+  });
+});
+
+describe('telas de entrada', () => {
+  it('enquanto confirma a sessão mostra "Entrando…" com o aviso de status', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)));
+    render(<AuthGate><Quem /></AuthGate>);
+    expect(screen.getByRole('status')).toHaveTextContent('Entrando…');
+    expect(screen.getByRole('status')).toHaveTextContent('Confirmando a sua sessão');
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+  });
+
+  it('na falha explica o que houve e o botão tenta entrar de novo', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+      String(url).includes('/config.json')
+        ? new Response(JSON.stringify({ oidcAuthority: 'http://kc/realms/s', oidcClientId: 'painel' }), { status: 200 })
+        : new Response('', { status: 401 })));
+    m.getUser.mockResolvedValue({ expired: false, access_token: 'ruim' });
+    render(<AuthGate><Quem /></AuthGate>);
+    expect(await screen.findByRole('heading', { name: 'Não foi possível entrar' })).toBeInTheDocument();
+    expect(screen.getByText('A sessão pode ter expirado ou o servidor ficou indisponível.')).toBeInTheDocument();
+    m.signinRedirect.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar de novo' }));
+    expect(m.signinRedirect).toHaveBeenCalledTimes(1);
   });
 });

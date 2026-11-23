@@ -4,7 +4,6 @@ import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.repository.AuditRunRepository;
 import com.sentinel.audit.repository.AuditedSystemRepository;
-import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -27,9 +26,9 @@ class CatalogsTest {
         };
 
         assertNotNull(catalog.require(1L));
-        NotFoundException e = assertThrows(NotFoundException.class, () -> catalog.require(2L));
+        ResourceNotFoundException e = assertThrows(ResourceNotFoundException.class, () -> catalog.require(2L));
         assertEquals("Sistema não encontrado: 2", e.getMessage());
-        assertThrows(NotFoundException.class, () -> catalog.requireExists(3L));
+        assertThrows(ResourceNotFoundException.class, () -> catalog.requireExists(3L));
     }
 
     @Test
@@ -43,8 +42,8 @@ class CatalogsTest {
         };
 
         assertNotNull(catalog.require(7L));
-        NotFoundException e = assertThrows(NotFoundException.class, () -> catalog.require(8L));
+        ResourceNotFoundException e = assertThrows(ResourceNotFoundException.class, () -> catalog.require(8L));
         assertEquals("Auditoria não encontrada: 8", e.getMessage());
-        assertThrows(NotFoundException.class, () -> catalog.requireExists(9L));
+        assertThrows(ResourceNotFoundException.class, () -> catalog.requireExists(9L));
     }
 }

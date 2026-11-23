@@ -109,6 +109,7 @@ O documento OpenAPI (`/q/openapi`) e o Swagger UI (`/swagger-ui`; ligado no Comp
 | `POST` | `/api/v1/findings/{id}/suppress` | Suprime com motivo, justificativa e validade |
 | `POST` | `/api/v1/findings/suppress-batch` | Suprime até 200 findings de uma vez (mesmo motivo/justificativa); devolve as falhas por id |
 | `POST` | `/api/v1/webhooks/github` · `/gitlab` | Disparo por push (autenticado por segredo próprio) |
+| `GET` | `/api/v1/systems/{id}/evidence` | Evidências offline do sistema (arquivos da pasta `evidencias/<sistema>/`); `PUT …/{nome}` envia um arquivo e `DELETE …/{nome}` apaga (valem a partir da próxima auditoria; veja [evidências](../evidencias/README.md)) |
 | `GET` `PUT` | `/api/v1/engine-config/{id}` | Ajuste do motor do sistema (regras, limites, pacotes, analisadores) e o resultado já resolvido |
 | `GET` `PUT` | `/api/v1/settings` | Configurações da instalação (tela de Configurações); `PUT` grava só as editáveis |
 | `DELETE` | `/api/v1/settings/{chave}` | Volta uma configuração para o valor do ambiente |

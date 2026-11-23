@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { IAuditRunResponse } from '../types';
 
@@ -59,5 +59,17 @@ export function useFixPlan({ auditId, enabled }: IFixPlanInput) {
     queryKey: ['fixPlan', auditId],
     queryFn: () => api.getFixPlan(auditId),
     enabled: enabled && auditId > 0,
+  });
+}
+
+/** Cancela a auditoria e atualiza as listas que a mostram. */
+export function useCancelAudit(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.cancelAudit(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['audit', id] });
+      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
+    },
   });
 }

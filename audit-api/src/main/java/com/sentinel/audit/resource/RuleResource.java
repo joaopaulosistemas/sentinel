@@ -5,7 +5,6 @@ import com.sentinel.audit.service.RulePlaygroundService;
 import com.sentinel.audit.service.RuleQualityService;
 import com.sentinel.audit.service.RuleQualityService.RuleQuality;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
@@ -47,7 +46,6 @@ public class RuleResource {
 
     @GET
     @Path("/quality")
-    @Transactional
     @Operation(summary = "Qualidade das regras",
             description = "Taxa de falso positivo por regra, com base nas supressões do time; marca as que merecem revisão")
     public List<RuleQuality> quality() {

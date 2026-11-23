@@ -20,6 +20,34 @@ export function daysSinceAudit(system: Pick<ISystemSummaryResponse, 'lastAuditDa
   return Number.isNaN(auditTimestamp) ? null : Math.max(0, Math.floor((now - auditTimestamp) / DAY_MS));
 }
 
+/** Depois de quantos dias sem auditar a lista de Sistemas mostra o selo (mais de uma semana). */
+export const AUDIT_BADGE_DAYS = 7;
+/** Depois de quantos dias o selo passa de "atenção" para "crítico". */
+export const AUDIT_BADGE_CRITICAL_DAYS = 14;
+
+export type AuditAgeLevel = 'attention' | 'critical' | 'never';
+
+export interface IAuditAge {
+  level: AuditAgeLevel;
+  /** Nulo só em "never" */
+  days: number | null;
+}
+
+/**
+ * Idade da última auditoria para o selo da lista de Sistemas; nulo enquanto estiver em dia (até 7 dias).
+ * Sem data de auditoria concluída: "never" se o sistema não tem auditoria nenhuma; se tem (todas falharam ou ainda
+ * correm), nulo, porque não dá para dizer há quantos dias.
+ */
+export function auditAge(system: Pick<ISystemSummaryResponse, 'lastAuditDate' | 'auditCount'>, now: number): IAuditAge | null {
+  const days = daysSinceAudit(system, now);
+  if (days === null) {
+    const hasAudits = (system.auditCount ?? 0) > 0;
+    return hasAudits ? null : { level: 'never', days: null };
+  }
+  if (days <= AUDIT_BADGE_DAYS) return null;
+  return { level: days > AUDIT_BADGE_CRITICAL_DAYS ? 'critical' : 'attention', days };
+}
+
 export const isStale = (system: ISystemSummaryResponse, now: number) => {
   const days = daysSinceAudit(system, now);
   return days === null || days > STALE_DAYS;

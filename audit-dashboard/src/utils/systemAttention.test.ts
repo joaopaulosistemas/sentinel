@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ISystemSummaryResponse } from '../types';
-import { daysSinceAudit, isStale, systemsNeedingAttention } from './systemAttention';
+import { auditAge, daysSinceAudit, isStale, systemsNeedingAttention } from './systemAttention';
 
 const NOW = Date.parse('2026-10-22T12:00:00Z');
 const day = (n: number) => new Date(NOW - n * 86_400_000).toISOString();
@@ -42,5 +42,34 @@ describe('sistemas que precisam de atenção', () => {
 
   it('lista vazia quando está tudo em ordem', () => {
     expect(systemsNeedingAttention([sys({ id: 1, name: 'ok' })], NOW)).toEqual([]);
+  });
+});
+
+describe('selo de auditoria antiga (mais de 7 dias)', () => {
+  const age = (over: Partial<ISystemSummaryResponse>) => auditAge(sys({ id: 1, name: 'a', ...over }), NOW);
+
+  it('não aparece até 7 dias', () => {
+    expect(age({ lastAuditDate: day(0) })).toBeNull();
+    expect(age({ lastAuditDate: day(7) })).toBeNull();
+  });
+
+  it('pede atenção de 8 a 14 dias e fica crítico depois de 14', () => {
+    expect(age({ lastAuditDate: day(8) })).toEqual({ level: 'attention', days: 8 });
+    expect(age({ lastAuditDate: day(14) })).toEqual({ level: 'attention', days: 14 });
+    expect(age({ lastAuditDate: day(15) })).toEqual({ level: 'critical', days: 15 });
+    expect(age({ lastAuditDate: day(90) })).toEqual({ level: 'critical', days: 90 });
+  });
+
+  it('marca como nunca auditado quem não tem nenhuma auditoria', () => {
+    expect(age({ lastAuditDate: null, auditCount: 0 })).toEqual({ level: 'never', days: null });
+    expect(age({ lastAuditDate: null, auditCount: undefined })).toEqual({ level: 'never', days: null });
+  });
+
+  it('não chuta a idade quando há auditorias mas nenhuma concluída', () => {
+    expect(age({ lastAuditDate: null, auditCount: 3 })).toBeNull();
+  });
+
+  it('data inválida não gera selo de dias', () => {
+    expect(age({ lastAuditDate: 'ontem', auditCount: 2 })).toBeNull();
   });
 });

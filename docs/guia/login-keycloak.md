@@ -47,6 +47,8 @@ O Keycloak do protótipo não tem volume: usuários criados no console somem qua
 
 ## Como o token é validado
 
+O realm de teste tem os clientes `sentinel-dashboard` (painel, código + PKCE), `sentinel-cli` (CLI) e `sentinel-api` (a API, que só valida o token) e `sentinel-teste-sem-audiencia` (só para provar que um token sem a audiência certa é recusado).
+
 A API só aceita um token que (1) tenha assinatura válida do Keycloak, (2) venha do emissor configurado e (3) tenha `aud=sentinel-api`; um token do mesmo Keycloak feito para outro cliente é recusado. O nome vem de `preferred_username` e os papéis de `realm_access.roles`. O painel usa o fluxo de código com PKCE e guarda o token só em memória.
 
 ## Produção
@@ -57,4 +59,4 @@ Verificação de ponta a ponta: `scripts/verificar-login-keycloak.sh` (roda no C
 
 ## Tela de login (tema do Sentinel)
 
-A tela de login do Keycloak usa o tema `sentinel` (`deploy/keycloak/themes/sentinel/login/`): painel de marca escuro à esquerda e formulário claro à direita, com a IBM Plex Sans (fonte do painel, em `resources/fonts`, licença OFL) e as cores da paleta Suave. É só CSS sobre o tema padrão `keycloak.v2`, ligado pelo realm (`loginTheme`) e montado no container pelo overlay do Compose. O realm também fica em português (`pt-BR`). Para trocar a frase ou as cores, edite `resources/css/sentinel.css` e reinicie o Keycloak. O workflow "Login com Keycloak" guarda uma captura da tela (artefato `tela-login-keycloak`).
+A tela de login do Keycloak usa o tema `sentinel` (`deploy/keycloak/themes/sentinel/login/`), no padrão Carbon do painel: painel de marca em cinza escuro à esquerda, com um radar de anéis finos ao fundo (`resources/img/radar.svg`), o nome "Sentinel Audit Tool" com a frase "Plataforma de auditoria técnica contínua de código" embaixo, e a chamada e o texto de apoio centralizados na vertical; à direita, o formulário no mesmo cinza escuro (cinza 100 do Carbon, sem branco na tela), separado por uma linha fina, com campos em cinza 90 e linha só embaixo, botão grande com seta (`resources/img/seta.svg`) e o erro de senha em vermelho. Fonte IBM Plex Sans (em `resources/fonts`, licença OFL). É só CSS sobre o tema padrão `keycloak.v2`, ligado pelo realm (`loginTheme`) e montado no container pelo overlay do Compose; o realm também fica em português (`pt-BR`). Abaixo de 900 px o painel de marca some e o nome aparece acima do formulário. Para trocar a frase ou as cores, edite `resources/css/sentinel.css` e reinicie o Keycloak. As telas "Entrando…" e "Não foi possível entrar" do painel (`audit-dashboard/src/auth/AuthScreens.tsx`) seguem o mesmo estilo e ficam sempre escuras (tema `g100` do Carbon), mesmo que o painel esteja no tema claro. O workflow "Login com Keycloak" guarda uma captura da tela (artefato `tela-login-keycloak`).

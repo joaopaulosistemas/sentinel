@@ -7,9 +7,9 @@ import com.sentinel.audit.dto.ScheduleRequest;
 import com.sentinel.audit.dto.SystemSummaryResponse;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.service.SystemCatalog;
+import com.sentinel.audit.service.SystemRegistration;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -48,10 +48,7 @@ public class SystemResource {
     SystemViews views;
 
     @Inject
-    SystemCleanup cleanup;
-
-    @Inject
-    SystemWriter writer;
+    SystemRegistration registration;
 
     /**
      * Lista todos os sistemas cadastrados com um resumo da última auditoria.
@@ -68,14 +65,11 @@ public class SystemResource {
      * Cadastra um novo sistema para auditoria.
      */
     @POST
-    @Transactional
     @Operation(summary = "Criar sistema", description = "Cadastra um novo sistema para auditoria")
     @APIResponse(responseCode = "201", description = "Sistema criado",
                 content = {@Content(mediaType = "application/json", schema = @Schema(implementation = SystemSummaryResponse.class))})
     public Response createSystem(@Valid CreateSystemRequest request) {
-        AuditedSystem system = new AuditedSystem();
-        writer.apply(system, request, true);
-        systemCatalog.add(system);
+        AuditedSystem system = registration.create(request);
         return Response.status(Response.Status.CREATED).entity(views.summary(system)).build();
     }
 
@@ -84,12 +78,9 @@ public class SystemResource {
      */
     @PUT
     @Path("/{id}")
-    @Transactional
     @Operation(summary = "Atualizar sistema", description = "Altera nome, descrição, repositório, stack, equipe e (se informado) o perfil de regras")
     public SystemSummaryResponse updateSystem(@PathParam("id") Long id, @Valid CreateSystemRequest request) {
-        AuditedSystem system = systemCatalog.require(id);
-        writer.apply(system, request, false);
-        return views.summary(system);
+        return views.summary(registration.update(id, request));
     }
 
     /**
@@ -108,13 +99,10 @@ public class SystemResource {
      */
     @DELETE
     @Path("/{id}")
-    @Transactional
     @Operation(summary = "Remover sistema", description = "Remove um sistema e todas as suas auditorias")
     @APIResponse(responseCode = "204", description = "Sistema removido")
     public Response deleteSystem(@PathParam("id") Long id) {
-        AuditedSystem system = systemCatalog.require(id);
-        cleanup.purgeRelated(id);
-        systemCatalog.remove(system);
+        registration.delete(id);
         return Response.noContent().build();
     }
 
@@ -123,16 +111,10 @@ public class SystemResource {
      */
     @PUT
     @Path("/{id}/schedule")
-    @Transactional
     @Operation(summary = "Configurar auditoria automática",
             description = "Intervalo em horas (0 desliga), branch auditada e auditoria a cada push")
     public SystemSummaryResponse updateSchedule(@PathParam("id") Long id, @Valid ScheduleRequest request) {
-        AuditedSystem system = systemCatalog.require(id);
-        Integer hours = request.auditIntervalHours();
-        system.setAuditIntervalHours(hours == null || hours <= 0 ? null : hours);
-        system.setScheduledBranch(request.branch() == null || request.branch().isBlank() ? null : request.branch().trim());
-        system.setAuditOnPush(Boolean.TRUE.equals(request.auditOnPush()));
-        return views.summary(system);
+        return views.summary(registration.updateSchedule(id, request));
     }
 
     /**
@@ -140,12 +122,9 @@ public class SystemResource {
      */
     @PUT
     @Path("/{id}/profile")
-    @Transactional
     @Operation(summary = "Definir perfil de regras",
             description = "Escolhe o perfil (pacotes ativos, sobrescritas e limites) usado nas próximas auditorias; vazio = default")
     public SystemSummaryResponse updateProfile(@PathParam("id") Long id, @Valid ProfileRequest request) {
-        AuditedSystem system = systemCatalog.require(id);
-        system.setProfile(writer.validProfile(request == null ? null : request.profile()));
-        return views.summary(system);
+        return views.summary(registration.updateProfile(id, request == null ? null : request.profile()));
     }
 }

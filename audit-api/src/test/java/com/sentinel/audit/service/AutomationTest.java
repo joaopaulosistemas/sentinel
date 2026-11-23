@@ -231,9 +231,8 @@ class AutomationTest {
         AuditedSystem s = system(1, "https://github.com/org/repo.git", true, null, null);
         AuditRun ativa = run(s, "main", AuditStatus.PENDING, LocalDateTime.now());
 
-        jakarta.ws.rs.ClientErrorException e = org.junit.jupiter.api.Assertions.assertThrows(
-                jakarta.ws.rs.ClientErrorException.class, () -> realRequestService.request(1L, "develop", null, "dashboard"));
-        assertEquals(409, e.getResponse().getStatus());
+        ConflictException e = org.junit.jupiter.api.Assertions.assertThrows(
+                ConflictException.class, () -> realRequestService.request(1L, "develop", null, "dashboard"));
         assertTrue(e.getMessage().contains("#" + ativa.getId()), e.getMessage());
     }
 
