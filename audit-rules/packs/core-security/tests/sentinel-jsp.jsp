@@ -53,3 +53,6 @@ response.addCookie(new Cookie("b_id", basketId));
 // ok: sentinel-jsp-cookie-sem-httponly
 Cookie c = new Cookie("b_id", basketId); c.setHttpOnly(true); response.addCookie(c);
 %>
+<h3>Exemplo de injeção</h3>
+<!-- ok: sentinel-jsp-sql-concatenado -->
+<pre>String q = "SELECT * FROM Users WHERE name = '" + nome + "'";</pre>

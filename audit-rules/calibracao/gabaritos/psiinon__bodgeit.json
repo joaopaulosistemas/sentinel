@@ -1,5 +1,5 @@
 {
- "_comentario": "Falhas de psiinon/bodgeit (JSP + servlet Java, JAVA) lidas no codigo (treino), volta 58: SQL por concatenacao em JSP e AdvancedSearch, XSS refletido e armazenado, cookie sem HttpOnly, AES/ECB, acesso admin sem checagem e excecao exposta. Escrito pelo mesmo agente que corrige, ANTES de ver os achados. CWE-285 e CWE-209 sem regra no catalogo: lacuna assumida.",
+ "_comentario": "Falhas de psiinon/bodgeit (JSP + servlet Java, JAVA) lidas no codigo (treino), volta 58: SQL por concatenacao em JSP e AdvancedSearch, XSS refletido e armazenado, cookie sem HttpOnly, AES/ECB, acesso admin sem checagem e excecao exposta. Escrito pelo mesmo agente que corrige, ANTES de ver os achados. CWE-285 e CWE-209 sem regra no catalogo: lacuna assumida. As 4 regras sentinel-jsp-* da volta 58 entraram nas aceitas DEPOIS da primeira medida (recall antes oficial 4/18 = 22 % com o catalogo anterior); as demais aceitas foram fixadas antes de ver os achados.",
  "repo": "psiinon/bodgeit",
  "falhas": [
   {
@@ -10,7 +10,8 @@
     "sentinel-sql-injection",
     "sentinel-taint-sql-parametro-http",
     "sentinel-sql-literal-concatenado",
-    "sentinel-sql-concatenado-executado"
+    "sentinel-sql-concatenado-executado",
+    "sentinel-jsp-sql-concatenado"
    ]
   },
   {
@@ -21,7 +22,8 @@
     "sentinel-sql-injection",
     "sentinel-taint-sql-parametro-http",
     "sentinel-sql-literal-concatenado",
-    "sentinel-sql-concatenado-executado"
+    "sentinel-sql-concatenado-executado",
+    "sentinel-jsp-sql-concatenado"
    ]
   },
   {
@@ -32,7 +34,8 @@
     "sentinel-sql-injection",
     "sentinel-taint-sql-parametro-http",
     "sentinel-sql-literal-concatenado",
-    "sentinel-sql-concatenado-executado"
+    "sentinel-sql-concatenado-executado",
+    "sentinel-jsp-sql-concatenado"
    ]
   },
   {
@@ -43,7 +46,8 @@
     "sentinel-sql-injection",
     "sentinel-taint-sql-parametro-http",
     "sentinel-sql-literal-concatenado",
-    "sentinel-sql-concatenado-executado"
+    "sentinel-sql-concatenado-executado",
+    "sentinel-jsp-sql-concatenado"
    ]
   },
   {
@@ -54,7 +58,8 @@
     "sentinel-sql-injection",
     "sentinel-taint-sql-parametro-http",
     "sentinel-sql-literal-concatenado",
-    "sentinel-sql-concatenado-executado"
+    "sentinel-sql-concatenado-executado",
+    "sentinel-jsp-sql-concatenado"
    ]
   },
   {
@@ -65,7 +70,8 @@
     "sentinel-sql-injection",
     "sentinel-taint-sql-parametro-http",
     "sentinel-sql-literal-concatenado",
-    "sentinel-sql-concatenado-executado"
+    "sentinel-sql-concatenado-executado",
+    "sentinel-jsp-sql-concatenado"
    ]
   },
   {
@@ -74,7 +80,8 @@
    "cwe": "CWE-79",
    "regras": [
     "sentinel-xss-jsp-unescaped-output",
-    "sentinel-xss-response-write"
+    "sentinel-xss-response-write",
+    "sentinel-jsp-saida-com-variavel"
    ]
   },
   {
@@ -83,7 +90,8 @@
    "cwe": "CWE-79",
    "regras": [
     "sentinel-xss-jsp-unescaped-output",
-    "sentinel-xss-response-write"
+    "sentinel-xss-response-write",
+    "sentinel-jsp-saida-com-variavel"
    ]
   },
   {
@@ -92,7 +100,8 @@
    "cwe": "CWE-79",
    "regras": [
     "sentinel-xss-jsp-unescaped-output",
-    "sentinel-xss-response-write"
+    "sentinel-xss-response-write",
+    "sentinel-jsp-saida-com-variavel"
    ]
   },
   {
@@ -101,7 +110,8 @@
    "cwe": "CWE-79",
    "regras": [
     "sentinel-xss-jsp-unescaped-output",
-    "sentinel-xss-response-write"
+    "sentinel-xss-response-write",
+    "sentinel-jsp-saida-com-variavel"
    ]
   },
   {
@@ -110,7 +120,8 @@
    "cwe": "CWE-79",
    "regras": [
     "sentinel-xss-jsp-unescaped-output",
-    "sentinel-xss-response-write"
+    "sentinel-xss-response-write",
+    "sentinel-jsp-saida-com-variavel"
    ]
   },
   {
@@ -119,7 +130,8 @@
    "cwe": "CWE-79",
    "regras": [
     "sentinel-xss-jsp-unescaped-output",
-    "sentinel-xss-response-write"
+    "sentinel-xss-response-write",
+    "sentinel-jsp-saida-com-variavel"
    ]
   },
   {
@@ -128,7 +140,8 @@
    "cwe": "CWE-79",
    "regras": [
     "sentinel-xss-jsp-unescaped-output",
-    "sentinel-xss-response-write"
+    "sentinel-xss-response-write",
+    "sentinel-jsp-saida-com-variavel"
    ]
   },
   {
@@ -136,7 +149,8 @@
    "linha": 56,
    "cwe": "CWE-1004",
    "regras": [
-    "sentinel-cookie-sem-httponly"
+    "sentinel-cookie-sem-httponly",
+    "sentinel-jsp-cookie-sem-httponly"
    ],
    "nota": "cookie b_id sem HttpOnly"
   },
@@ -145,7 +159,8 @@
    "linha": 84,
    "cwe": "CWE-1004",
    "regras": [
-    "sentinel-cookie-sem-httponly"
+    "sentinel-cookie-sem-httponly",
+    "sentinel-jsp-cookie-sem-httponly"
    ],
    "nota": "cookie b_id sem HttpOnly"
   },
@@ -172,7 +187,8 @@
    "linha": 63,
    "cwe": "CWE-209",
    "regras": [
-    "sentinel-exposicao-excecao"
+    "sentinel-exposicao-excecao",
+    "sentinel-jsp-excecao-na-resposta"
    ],
    "nota": "excecao impressa na resposta (debug=true); sem regra no catalogo: lacuna assumida"
   }

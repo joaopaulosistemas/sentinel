@@ -2,6 +2,10 @@ rules:
   - id: sentinel-jsp-sql-concatenado
     # JSP não é suportado pelo parser do Semgrep: modo "generic" (as regras de SQL de Java não rodam em .jsp)
     patterns:
+      # exemplo de SQL escrito como texto da página (`<pre>`, `<code>`, `<textarea>`) não executa
+      - pattern-not-inside: <pre> ... </pre>
+      - pattern-not-inside: <code> ... </code>
+      - pattern-not-inside: <textarea> ... </textarea>
       - pattern-regex: '"\s*(?i:SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s(?:[^"\\]|\\.)*"(?:\s*\+\s*"(?:[^"\\]|\\.)*")*\s*\+\s*[A-Za-z_(][^;]*'
       # valor convertido para número, índice sorteado e chamada sem argumento sobre identificador solto (gerador do servidor): não carregam entrada do usuário
       - pattern-not-regex: '\+\s*(?:Integer\.parseInt\(|Long\.parseLong\(|Double\.parseDouble\(|\(\s*\(?\s*(?:int|long)\s*\)|[A-Za-z_]\w*\(\s*\)\s*(?:\+|\)))'
