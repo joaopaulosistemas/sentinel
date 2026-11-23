@@ -1,0 +1,180 @@
+{
+ "_comentario": "Falhas de psiinon/bodgeit (JSP + servlet Java, JAVA) lidas no codigo (treino), volta 58: SQL por concatenacao em JSP e AdvancedSearch, XSS refletido e armazenado, cookie sem HttpOnly, AES/ECB, acesso admin sem checagem e excecao exposta. Escrito pelo mesmo agente que corrige, ANTES de ver os achados. CWE-285 e CWE-209 sem regra no catalogo: lacuna assumida.",
+ "repo": "psiinon/bodgeit",
+ "falhas": [
+  {
+   "arquivo": "root/login.jsp",
+   "linha": 15,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "root/basket.jsp",
+   "linha": 55,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "root/register.jsp",
+   "linha": 29,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "root/register.jsp",
+   "linha": 59,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "root/password.jsp",
+   "linha": 24,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/com/thebodgeitstore/search/AdvancedSearch.java",
+   "linha": 186,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "root/login.jsp",
+   "linha": 91,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output",
+    "sentinel-xss-response-write"
+   ]
+  },
+  {
+   "arquivo": "root/search.jsp",
+   "linha": 18,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output",
+    "sentinel-xss-response-write"
+   ]
+  },
+  {
+   "arquivo": "root/contact.jsp",
+   "linha": 37,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output",
+    "sentinel-xss-response-write"
+   ]
+  },
+  {
+   "arquivo": "root/contact.jsp",
+   "linha": 68,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output",
+    "sentinel-xss-response-write"
+   ]
+  },
+  {
+   "arquivo": "root/advanced.jsp",
+   "linha": 46,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output",
+    "sentinel-xss-response-write"
+   ]
+  },
+  {
+   "arquivo": "root/product.jsp",
+   "linha": 79,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output",
+    "sentinel-xss-response-write"
+   ]
+  },
+  {
+   "arquivo": "root/password.jsp",
+   "linha": 57,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-xss-jsp-unescaped-output",
+    "sentinel-xss-response-write"
+   ]
+  },
+  {
+   "arquivo": "root/login.jsp",
+   "linha": 56,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-cookie-sem-httponly"
+   ],
+   "nota": "cookie b_id sem HttpOnly"
+  },
+  {
+   "arquivo": "root/basket.jsp",
+   "linha": 84,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-cookie-sem-httponly"
+   ],
+   "nota": "cookie b_id sem HttpOnly"
+  },
+  {
+   "arquivo": "src/com/thebodgeitstore/util/AES.java",
+   "linha": 50,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-crypto-cifra-fraca"
+   ],
+   "nota": "AES/ECB/NoPadding"
+  },
+  {
+   "arquivo": "root/admin.jsp",
+   "linha": 12,
+   "cwe": "CWE-285",
+   "regras": [
+    "sentinel-controle-acesso-ausente"
+   ],
+   "nota": "admin sem checagem de acesso; sem regra no catalogo: lacuna assumida"
+  },
+  {
+   "arquivo": "root/login.jsp",
+   "linha": 63,
+   "cwe": "CWE-209",
+   "regras": [
+    "sentinel-exposicao-excecao"
+   ],
+   "nota": "excecao impressa na resposta (debug=true); sem regra no catalogo: lacuna assumida"
+  }
+ ]
+}

@@ -1,0 +1,80 @@
+rules:
+  - id: sentinel-jsp-sql-concatenado
+    # JSP não é suportado pelo parser do Semgrep: modo "generic" (as regras de SQL de Java não rodam em .jsp)
+    patterns:
+      - pattern-regex: '"\s*(?i:SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s(?:[^"\\]|\\.)*"(?:\s*\+\s*"(?:[^"\\]|\\.)*")*\s*\+\s*[A-Za-z_(][^;]*'
+      # valor convertido para número, índice sorteado e chamada sem argumento sobre identificador solto (gerador do servidor): não carregam entrada do usuário
+      - pattern-not-regex: '\+\s*(?:Integer\.parseInt\(|Long\.parseLong\(|Double\.parseDouble\(|\(\s*\(?\s*(?:int|long)\s*\)|[A-Za-z_]\w*\(\s*\)\s*(?:\+|\)))'
+    paths:
+      include:
+        - "*.jsp"
+    message: >
+      Possível injeção de SQL (OWASP A03, CWE-89): comando SQL montado por concatenação dentro de um scriptlet JSP.
+      Use PreparedStatement com parâmetros (`?`). Limite: não distingue valor fixo do servidor (data, id interno) de entrada do usuário.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-jsp-saida-com-variavel
+    patterns:
+      - pattern-either:
+          # out.println("..." + variavel ...): a concatenação fora das aspas
+          - pattern-regex: 'out\.(?:println|print|write)\((?:[^;"]|"(?:[^"\\]|\\.)*")*?\+\s*[A-Za-z_(][^;]*\)\s*;'
+          # out.println(rs.getString("coluna")): texto do banco sem escape
+          - pattern-regex: 'out\.(?:println|print|write)\(\s*\w+\.getString\([^;]*\)\s*\)\s*;'
+      # coluna numérica, tamanho e formatação de número: não carregam HTML
+      - pattern-not-regex: '\+\s*\w+\.get(?:Int|Long|Double|Float|Short|Boolean|Byte)\('
+      - pattern-not-regex: '\+\s*(?:\w+\.format\(|\w+\.size\(\)|\w+\.length\(\)|String\.valueOf\()'
+      # já passou por um codificador conhecido
+      - pattern-not-regex: '(?:Encode\.for\w+\(|encodeFor\w+\(|escapeHtml\w*\(|escapeXml\w*\(|escapeJavaScript\(|HtmlUtils\.|fn:escapeXml)'
+      # caminho da aplicação entre literais (`"<script src=\""+path+"/x.js\">"`) e propriedade do sistema: valores do servidor
+      - pattern-not-regex: 'out\.\w+\(\s*"(?:[^"\\]|\\.)*"\s*\+\s*(?:path|contextPath|ctxPath|basePath|request\.getContextPath\(\))\s*\+\s*"(?:[^"\\]|\\.)*"\s*\)\s*;'
+      - pattern-not-regex: '\+\s*System\.getProperty\('
+      # a exceção impressa tem regra própria
+      - pattern-not-regex: '\+\s*(?:e|ex|exc|exception|se|t)\s*(?:\+|\)|\.getMessage\(\))'
+    paths:
+      include:
+        - "*.jsp"
+    message: >
+      Possível XSS (OWASP A03, CWE-79): `out.println` com variável ou texto do banco sem escape no HTML.
+      Escape com `Encode.forHtml`, `StringEscapeUtils.escapeHtml4` ou `<c:out>`.
+      Limite: não distingue valor fixo do servidor de entrada do usuário.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-jsp-excecao-na-resposta
+    pattern-regex: 'out\.(?:println|print|write)\((?:[^;"]|"(?:[^"\\]|\\.)*")*?\+\s*(?:e|ex|exc|exception|se|t)\s*(?:\+|\)|\.getMessage\(\))'
+    paths:
+      include:
+        - "*.jsp"
+    message: >
+      Exposição de informação (OWASP A05, CWE-209): a mensagem da exceção vai para a resposta HTTP e mostra detalhes
+      internos (consulta SQL, caminho, versão) a quem atacar. Registre no log e devolva uma mensagem genérica.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-209: Generation of Error Message Containing Sensitive Information"
+      owasp: A05:2021 - Security Misconfiguration
+
+  - id: sentinel-jsp-cookie-sem-httponly
+    pattern-regex: 'response\.addCookie\(\s*new\s+Cookie\([^;]*\)\s*\)\s*;'
+    paths:
+      include:
+        - "*.jsp"
+    message: >
+      Cookie criado em linha e enviado sem `setHttpOnly(true)` (OWASP A05, CWE-1004): um XSS lê o cookie por JavaScript.
+      Crie a variável, chame `setHttpOnly(true)` (e `setSecure(true)` em HTTPS) e só então `response.addCookie`.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp: A05:2021 - Security Misconfiguration
