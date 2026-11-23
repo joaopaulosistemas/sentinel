@@ -2168,3 +2168,10 @@ O PDF lista os achados ativos junto com os 105 já suprimidos, o que tinha me le
 - **Testes:** os de `AuthGate` continuam valendo (29 passam em `src/auth`); o CSS do tema não tem teste unitário.
 - **Verificado:** `tsc --noEmit`, `eslint src --max-warnings 0`, `vitest run` (68 arquivos, 441 testes), os 10 e2e do Playwright e o tema renderizado num Keycloak 26.0.8 de verdade (login a 1440, 1100 e 390 px, foco e erro de campo); `sincronizar-versao.py --check` e `conferir-numeros.py`.
 - **Não verificado:** as telas "Entrando…" e "Não foi possível entrar" no tema escuro só por teste, sem captura; o contraste do erro `#fa4d56` sobre `#161616` não foi medido; Firefox e Safari; o job "Login com Keycloak" do CI (imagem 26.0 do Docker).
+
+## Documentação — pasta `figma/` movida para `docs/figma/` (sem mudança de versão)
+
+- **Origem:** pedido de deixar na raiz só o que não é documentação. `evidencias/` ficou (é pasta de entrada do compose, do CI e de `PgStatChecks`) e `specs/` ficou (convenção do Spec Kit).
+- **Corrigido:** `docs/figma/capturar-telas.mjs` agora acha a pasta pelo próprio caminho e a raiz do projeto dois níveis acima; o comando passa a ser `node docs/figma/capturar-telas.mjs`. Links em `docs/README.md` e `docs/guia/instalacao.md` ajustados.
+- **Verificado:** verificadores de versão, números e regras, e links relativos; sintaxe do script (`node --check`).
+- **Não verificado:** nova execução completa do script de captura (precisa de `npm ci` e Chrome); o código só mudou na resolução de caminhos.

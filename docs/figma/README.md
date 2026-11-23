@@ -45,7 +45,7 @@ Depois de mudar uma tela do dashboard, na raiz do projeto:
 
 ```bash
 cd audit-dashboard && npm ci && cd ..
-node figma/capturar-telas.mjs
+node docs/figma/capturar-telas.mjs
 ```
 
 O script sobe o dashboard (`npm run dev`), responde a API com `dados-simulados.mjs`, abre cada rota no Chrome e grava `telas/`, `html/` e `indice.json`. Não precisa de backend, de Docker nem de Maven. Se o Chrome não for achado sozinho, aponte o caminho em `E2E_CHROMIUM`. Para uma tela nova, acrescente uma linha na lista `telas` do script.

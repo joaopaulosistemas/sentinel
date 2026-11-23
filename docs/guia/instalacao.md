@@ -142,7 +142,7 @@ sentinel/
 ├── settings-local.xml              ← Maven settings (fora da rede corporativa)
 ├── docker-compose.yml              ← Ambiente completo local
 ├── .env.example                    ← Template de variáveis de ambiente
-├── docs/                           ← Toda a documentação (índice em docs/README.md); o esquema do banco está em [referencia/banco-de-dados.md](../referencia/banco-de-dados.md)
+├── docs/                           ← Toda a documentação (índice em docs/README.md); o esquema do banco está em [referencia/banco-de-dados.md](../referencia/banco-de-dados.md); telas do dashboard para o Figma em `docs/figma/` (`node docs/figma/capturar-telas.mjs` refaz tudo)
 │
 ├── audit-api/                      ← Backend Quarkus 3.40 (bytecode Java 21; imagem em JRE 25)
 │   ├── Dockerfile                  ← ferramentas externas com versão e SHA-256 fixados
@@ -196,7 +196,6 @@ sentinel/
 ├── scripts/                        ← e2e, auditoria completa, calibração, medição, conferência de números e versão, anotações de CI
 ├── specs/                          ← Uma pasta por funcionalidade (spec, plano e tarefas); veja [sdd.md](../sdd.md)
 ├── .specify/                       ← Constituição, modelos e scripts do GitHub Spec Kit
-├── figma/                          ← Telas do dashboard em PNG e HTML (claro e escuro) para levar ao Figma; `node figma/capturar-telas.mjs` refaz tudo
 └── evidencias/                     ← Uma subpasta por sistema com dumps e exports para a análise offline
 ```
 
