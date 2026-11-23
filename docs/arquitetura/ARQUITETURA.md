@@ -681,7 +681,7 @@ flowchart TB
 | Calibração | `scripts/calibracao.sh`, `scripts/comparar-calibracao.py`, `audit-rules/calibracao/esperado.json` |
 | Release | `.github/workflows/release.yml`, `scripts/versoes-pacotes.sh` |
 | Agente Sentinel Ciclo | `.claude/agents/sentinel-ciclo.md`, `.github/workflows/auditoria-completa.yml`, `scripts/auditoria-completa.sh` |
-| Memória e metas | `docs/evolucao/` (`PLACAR.md`, `LOG.md`, `estado.json` com o estado entre execuções, `calibracao.md`, `precisao.md`, `relatorios/`, `AGENTE.md`) |
+| Memória e metas | `docs/evolucao/` (`PLACAR.md`, `LOG.md`, `estado.json` com o estado entre execuções, `calibracao.md`, `precisao.md`, `AGENTE.md`) |
 | Medição | `scripts/benchmark-owasp.py`, `scripts/medir-volta.py`, `scripts/verificar-separacao.py` (treino × validação), `scripts/conferir-numeros.py` (números da documentação) e `scripts/sincronizar-versao.py` (versão única em `audit-dashboard/package.json`, Helm e OpenAPI) |
 
 O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é manual. A calibração pesada do CI roda nesses PRs.
@@ -706,7 +706,7 @@ O agente só abre PR em `ciclo/*` e roda na máquina de quem o chama; o merge é
 | GitHub / GitLab | Clone e webhooks | sim, para repositórios remotos |
 | Teams / Slack / webhook genérico | `NotificationService` | opcional |
 | Keycloak / OIDC | Autenticação corporativa | opcional |
-| GitHub Actions, GHCR, `anthropics/claude-code-action` | CI, release e agentes | só para o desenvolvimento do próprio Sentinel |
+| GitHub Actions, GHCR | CI e release | só para o desenvolvimento do próprio Sentinel |
 
 ---
 
