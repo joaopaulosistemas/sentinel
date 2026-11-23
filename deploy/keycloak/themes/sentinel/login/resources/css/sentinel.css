@@ -1,8 +1,8 @@
 /* stylelint-disable a11y/content-property-no-static-value -- o painel de marca é decorativo e não carrega informação */
 /*
- * Tema de login do Sentinel, no padrão Carbon do painel: painel de marca em cinza 100 (#161616) à esquerda, com um radar
- * de anéis finos ao fundo, e formulário branco à direita, com campos chapados em cinza 10 e linha só embaixo, botão
- * grande quadrado e notificação de erro como a do painel. IBM Plex Sans e o azul 60 do Carbon (#0f62fe).
+ * Tema de login do Sentinel, no padrão Carbon escuro (cinza 100, #161616): painel de marca à esquerda, com um radar
+ * de anéis finos ao fundo, e formulário na mesma cor à direita (separado por uma linha fina), com campos em cinza 90 e
+ * linha só embaixo, botão grande quadrado e notificação de erro como a do painel. Não há branco na tela. IBM Plex Sans e o azul 60 do Carbon (#0f62fe).
  * Só CSS sobre o tema keycloak.v2. O painel de marca é decorativo (conteúdo gerado); o formulário continua o do Keycloak.
  */
 @font-face { font-family: 'IBM Plex Sans'; font-weight: 400; font-style: normal; font-display: swap; src: url('../fonts/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); }
@@ -11,14 +11,17 @@
 
 :root {
   --sn-chrome: #161616; --sn-chrome-text: #f4f4f4; --sn-chrome-text-2: #c6c6c6;
-  --sn-surface: #ffffff; --sn-field: #f4f4f4; --sn-field-hover: #e8e8e8; --sn-line: #8d8d8d;
-  --sn-text: #161616; --sn-text-2: #525252;
-  --sn-primary: #0f62fe; --sn-primary-hover: #0043ce; --sn-danger: #da1e28; --sn-danger-bg: #fff1f1;
+  --sn-surface: #161616; --sn-field: #262626; --sn-field-hover: #333333; --sn-line: #8d8d8d; --sn-divider: #393939;
+  --sn-text: #f4f4f4; --sn-text-2: #c6c6c6; --sn-focus: #ffffff;
+  --sn-primary: #0f62fe; --sn-primary-hover: #0043ce; --sn-link: #78a9ff; --sn-link-hover: #a6c8ff;
+  --sn-danger: #fa4d56; --sn-danger-bg: #262626;
+  color-scheme: dark;
   --pf-v5-global--FontFamily--text: 'IBM Plex Sans', system-ui, sans-serif;
   --pf-v5-global--FontFamily--heading: 'IBM Plex Sans', system-ui, sans-serif;
   --pf-v5-global--primary-color--100: var(--sn-primary);
   --pf-v5-global--primary-color--200: var(--sn-primary-hover);
-  --pf-v5-global--link--Color: var(--sn-primary);
+  --pf-v5-global--link--Color: var(--sn-link);
+  --pf-v5-global--danger-color--100: var(--sn-danger);
 }
 
 html, body, .pf-v5-c-login { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
@@ -48,7 +51,7 @@ body { background: var(--sn-surface); color: var(--sn-text); }
 }
 .pf-v5-c-form-control::before, .pf-v5-c-form-control::after { display: none; }
 .pf-v5-c-form-control:hover { background: var(--sn-field-hover); }
-.pf-v5-c-form-control:focus-within { outline: 2px solid var(--sn-primary); outline-offset: -2px; border-bottom-color: transparent; }
+.pf-v5-c-form-control:focus-within { outline: 2px solid var(--sn-focus); outline-offset: -2px; border-bottom-color: transparent; }
 .pf-v5-c-form-control input {
   min-height: 48px; padding: 0 16px; border: 0; border-radius: 0; background: transparent; color: var(--sn-text);
   font-size: 0.875rem; letter-spacing: 0.16px; outline: 0;
@@ -57,12 +60,12 @@ body { background: var(--sn-surface); color: var(--sn-text); }
 .pf-v5-c-form-control:has(input[aria-invalid='true']) { outline: 2px solid var(--sn-danger); outline-offset: -2px; border-bottom-color: transparent; }
 .pf-v5-c-input-group { position: relative; align-items: stretch; background: var(--sn-field); border-bottom: 1px solid var(--sn-line); }
 .pf-v5-c-input-group .pf-v5-c-form-control, .pf-v5-c-input-group .pf-v5-c-form-control:focus-within, .pf-v5-c-input-group .pf-v5-c-form-control:has(input[aria-invalid='true']) { border-bottom: 0; outline: 0; }
-/* moldura do grupo (campo + botão de mostrar a senha) por cima dos dois: azul no foco, vermelha no erro */
+/* moldura do grupo (campo + botão de mostrar a senha) por cima dos dois: branca no foco, vermelha no erro */
 .pf-v5-c-input-group:focus-within::after, .pf-v5-c-input-group:has(input[aria-invalid='true'])::after {
-  content: ''; position: absolute; inset: 0; z-index: 3; border: 2px solid var(--sn-primary); pointer-events: none;
+  content: ''; position: absolute; inset: 0; z-index: 3; border: 2px solid var(--sn-focus); pointer-events: none;
 }
 .pf-v5-c-input-group:has(input[aria-invalid='true'])::after { border-color: var(--sn-danger); }
-.pf-v5-c-helper-text__item.pf-m-error, [id^='input-error'] { color: var(--sn-danger); font-size: 0.75rem; letter-spacing: 0.32px; }
+.pf-v5-c-helper-text__item.pf-m-error, .pf-v5-c-helper-text__item.pf-m-error .pf-v5-c-helper-text__item-text, .pf-v5-c-helper-text__item.pf-m-error .pf-v5-c-helper-text__item-icon, [id^='input-error'] { color: var(--sn-danger); font-size: 0.75rem; letter-spacing: 0.32px; }
 .pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
   min-height: 48px; width: 48px; border: 0; border-radius: 0; background: transparent; color: var(--sn-text-2);
 }
@@ -77,14 +80,15 @@ body { background: var(--sn-surface); color: var(--sn-text); }
   background-image: url('../img/seta.svg'); background-repeat: no-repeat; background-position: right 16px center; background-size: 20px;
 }
 .pf-v5-c-button.pf-m-primary:hover, .pf-v5-c-button.pf-m-primary:focus, [id='kc-login']:hover, [id='kc-login']:focus { background-color: var(--sn-primary-hover); }
-a { color: var(--sn-primary); }
-:focus-visible { outline: 2px solid var(--sn-primary); outline-offset: 2px; }
+a { color: var(--sn-link); }
+a:hover { color: var(--sn-link-hover); }
+:focus-visible { outline: 2px solid var(--sn-focus); outline-offset: 2px; }
 
 /* Erro de login: notificação Carbon (a mesma do painel), com a borda vermelha na lateral. */
 .pf-v5-c-alert.pf-m-danger {
   --pf-v5-c-alert--BorderTopColor: transparent; --pf-v5-c-alert--m-danger__icon--Color: var(--sn-danger);
   margin-bottom: 24px; border: 0; border-left: 3px solid var(--sn-danger); border-radius: 0; background: var(--sn-danger-bg);
-  box-shadow: inset 0 0 0 1px #ffd7d9;
+  box-shadow: inset 0 0 0 1px var(--sn-divider);
 }
 .pf-v5-c-alert.pf-m-danger .pf-v5-c-alert__title { color: var(--sn-text); font-weight: 400; font-size: 0.875rem; }
 
@@ -92,11 +96,12 @@ a { color: var(--sn-primary); }
    a marca e as duas frases são posicionados em relação à janela, centralizados na vertical. */
 body::before {
   content: ''; position: fixed; inset: 0 45% 0 0; z-index: 0; box-sizing: border-box;
+  border-right: 1px solid var(--sn-divider);
   background: url('../img/logo.svg') no-repeat 64px 48px / 44px 44px, url('../img/radar.svg') no-repeat center / 1100px 1100px, var(--sn-chrome);
 }
 body::after {
-  content: 'Sentinel Audit Tool'; position: fixed; left: 124px; top: 48px; z-index: 1; line-height: 44px;
-  font: 600 1.75rem/44px 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: 0.1px; white-space: nowrap;
+  content: 'Sentinel Audit Tool'; position: fixed; left: 124px; top: 44px; z-index: 1; line-height: 32px;
+  font: 600 1.75rem/32px 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: 0.1px; white-space: nowrap;
   background: linear-gradient(90deg, var(--sn-chrome-text) 0 3.96em, var(--sn-chrome-text-2) 3.96em); -webkit-background-clip: text; background-clip: text;
   color: transparent; -webkit-text-fill-color: transparent;
 }
@@ -109,6 +114,11 @@ body::after {
   position: fixed; left: 64px; top: calc(50% + 46px); width: calc(55% - 128px); max-width: 30rem; z-index: 1;
   color: var(--sn-chrome-text-2); font: 400 1rem/1.5 'IBM Plex Sans', system-ui, sans-serif;
 }
+/* Frase da plataforma sob o nome: fica no contêiner do formulário porque o <body> e o login já usam os quatro pseudo-elementos. */
+.pf-v5-c-login__container::before {
+  content: 'Plataforma de auditoria técnica contínua de código'; position: fixed; left: 124px; top: 80px; z-index: 1;
+  color: var(--sn-chrome-text-2); font: 400 0.8125rem/18px 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: 0.16px; white-space: nowrap;
+}
 /* A marca já está no painel: esconde o cabeçalho com o nome do realm. */
 [id='kc-header'], .pf-v5-c-login__header { display: none; }
 
@@ -118,7 +128,7 @@ body::after {
 }
 /* Telas estreitas: sem painel de marca, formulário em largura total. */
 @media (max-width: 900px) {
-  body::before, body::after, .pf-v5-c-login::before, .pf-v5-c-login::after { display: none; }
+  body::before, body::after, .pf-v5-c-login::before, .pf-v5-c-login::after, .pf-v5-c-login__container::before { display: none; }
   .pf-v5-c-login { justify-content: center; }
   .pf-v5-c-login__container { width: 100%; }
   [id='kc-header'], .pf-v5-c-login__header { display: block; margin-bottom: 32px; }
