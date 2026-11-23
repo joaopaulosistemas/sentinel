@@ -34,7 +34,8 @@
 ## Como desenvolver
 | Documento | Para quê |
 |---|---|
-| [sdd.md](sdd.md) | Desenvolvimento orientado por especificação com o GitHub Spec Kit: constituição, fluxo de comandos, ligação com issues, PRs e CI. Specs em [`specs/`](../specs/) |
+| [sdd.md](sdd.md) | Desenvolvimento orientado por especificação com o GitHub Spec Kit: constituição, fluxo de comandos, ligação com issues, PRs e CI, e o estado de cada spec em [`specs/`](../specs/) |
+| [../figma/README.md](../figma/README.md) | Telas do dashboard em PNG e HTML, nos temas claro e escuro, para levar ao Figma, e o script que as refaz |
 
 ## Integração
 | Documento | Para quê |
@@ -53,4 +54,5 @@
 | [evolucao/precisao.md](evolucao/precisao.md) · [calibracao.md](evolucao/calibracao.md) · [revisao-humana.md](evolucao/revisao-humana.md) | Precisão medida e calibração |
 | [evolucao/AGENTE.md](evolucao/AGENTE.md) | Agente Sentinel Ciclo (auditoria completa em repositórios vulneráveis), com o estado entre execuções em `evolucao/estado.json` |
 | [evolucao/triagem-auditoria-33.md](evolucao/triagem-auditoria-33.md) · `evolucao/relatorios/` | Triagem da auditoria #33 do próprio Sentinel (justificativas prontas para suprimir) e relatórios das rodadas de 2026-10-21 a 28 |
+| [../reports/Análise do agente ciclo Sentinel.md](<../reports/Análise do agente ciclo Sentinel.md>) | Análise externa do agente Sentinel Ciclo (ruído, generalização, riscos do laço), com as notas de pesquisa em [`research_notes/`](<../research_notes/Análise do agente ciclo Sentinel/>) |
 | [historico-de-versoes.md](historico-de-versoes.md) · [historia.md](historia.md) | Resumo antigo por versão e origem do projeto |
