@@ -107,3 +107,30 @@ Sorteio: `random.seed(5503)` sobre os 725 achados de regras de segurança (categ
 | 18 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/RoleBasedAccessControl/error.jsp | 10 | FALSO: getFormAction() é valor interno do servidor |
 | 19 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/SQLInjection/EditProfile.jsp | 22 | VERDADEIRO: sobrenome editável sem escape em atributo |
 | 20 | sentinel-xss-jsp-unescaped-output | src/main/webapp/main.jsp | 89 | FALSO: valores numéricos do servidor |
+
+## Volta 58 (2026-11-23): psiinon/bodgeit, regras 12.127.0 (apos as regras de JSP desta volta), branch `ciclo/estabilizacao-17`
+
+Sorteio: `random.seed(20261123)` sobre os 69 achados de regras com `category: security` do Opengrep da auditoria 45267610795, 20 sorteados e ordenados por arquivo e linha. **Classificacao por subagente independente do Claude** (contexto novo, so a lista e o codigo do bodgeit; nao viu diff, gabarito nem LOG). Nao e revisao externa: o Joao pode sobrescrever qualquer linha e a dele prevalece. Resultado: 10 VERDADEIRO, 6 BAIXO VALOR, 4 FALSO (estrito 10/20 = 50 %, Wilson 30 a 70 %; largo 16/20 = 80 %, Wilson 58 a 92 %). Amostra dominada pelas regras novas de JSP (so 4 regras aparecem); estimativa, nao medida.
+
+| # | arquivo:linha | regra | classe | justificativa |
+|---|---|---|---|---|
+| 1 | root/admin.jsp:53 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | consultas fixas; so vaza se o banco falhar |
+| 2 | root/advanced.jsp:46 | sentinel-xss-jsp-unescaped-output | VERDADEIRO | valor da requisicao ecoado sem escape |
+| 3 | root/advanced.jsp:47 | sentinel-xss-jsp-unescaped-output | VERDADEIRO | HTML montado com parametros do usuario |
+| 4 | root/basket.jsp:55 | sentinel-jsp-sql-concatenado | VERDADEIRO | cookie b_id concatenado no SQL |
+| 5 | root/basket.jsp:65 | sentinel-jsp-excecao-na-resposta | VERDADEIRO | debug=true provoca erro da SQLi do cookie |
+| 6 | root/basket.jsp:89 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | excecao de INSERT com Timestamp do servidor |
+| 7 | root/basket.jsp:128 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | consultas com valores da sessao/banco |
+| 8 | root/basket.jsp:141 | sentinel-jsp-saida-com-variavel | BAIXO VALOR | XSS so no proprio dono do cookie (self-XSS) |
+| 9 | root/basket.jsp:180 | sentinel-jsp-sql-concatenado | VERDADEIRO | productid da requisicao concatenado |
+| 10 | root/basket.jsp:221 | sentinel-jsp-sql-concatenado | VERDADEIRO | prodId vindo do nome de parametro |
+| 11 | root/contact.jsp:37 | sentinel-jsp-saida-com-variavel | VERDADEIRO | filtro fraco (replace de <script>) contornavel |
+| 12 | root/login.jsp:63 | sentinel-jsp-excecao-na-resposta | VERDADEIRO | excecao exposta apos SQLi em login |
+| 13 | root/login.jsp:91 | sentinel-jsp-saida-com-variavel | VERDADEIRO | username ecoado sem escape |
+| 14 | root/password.jsp:48 | sentinel-jsp-saida-com-variavel | FALSO | okresult e constante |
+| 15 | root/password.jsp:57 | sentinel-xss-jsp-unescaped-output | BAIXO VALOR | username de sessao, self-XSS |
+| 16 | root/product.jsp:67 | sentinel-jsp-saida-com-variavel | FALSO | id inteiro |
+| 17 | root/product.jsp:68 | sentinel-jsp-saida-com-variavel | FALSO | price BigDecimal |
+| 18 | root/register.jsp:78 | sentinel-jsp-excecao-na-resposta | VERDADEIRO | excecao exposta apos SQLi no cadastro |
+| 19 | root/score.jsp:37 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | consulta fixa |
+| 20 | root/search.jsp:25 | sentinel-jsp-sql-concatenado | FALSO | query passa por escapeHtml4 e perde a aspa simples |
