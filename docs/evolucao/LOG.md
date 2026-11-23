@@ -2122,3 +2122,12 @@ O PDF lista os achados ativos junto com os 105 já suprimidos, o que tinha me le
 - **Verificado:** dashboard com `tsc --noEmit`, `eslint --max-warnings 0` e `vitest run` (65 arquivos e 425 testes antes dos novos; os 5 novos passam); `sincronizar-versao.py --check`, `conferir-numeros.py`.
 - **Não verificado:** o backend Java não foi compilado nem testado aqui (Maven não alcança o repositório central neste ambiente); quem valida é o CI do GitHub (Quarkus 3.40, Java 21). Os testes `@QuarkusTest` de endpoints (404, 409 e 400) dependem do `DomainExceptionMapper` ser registrado pelo Quarkus.
 
+
+## 12.124.0 — Sistemas: selo "sem auditar há N dias" na lista
+
+- **Origem:** pedido do João, depois de um protótipo com três posições para o selo (escolhida: sob o nome do sistema). A Visão geral já alertava auditoria antiga (limite de 5 dias), mas a lista de Sistemas não mostrava nada.
+- **O que mudou:** a linha de cada sistema em Sistemas ganha um selo sob o nome quando a última auditoria concluída tem mais de 7 dias: âmbar de 8 a 14 dias, vermelho acima de 14 e cinza tracejado "Nunca auditado" (sem nenhuma auditoria). Sem data concluída mas com auditorias (todas falharam ou ainda correm), não mostra selo, porque não dá para dizer a idade. Cores dos tokens do tema (claro e escuro); o texto do selo diz o estado, então a cor não é o único sinal.
+- **Decisão:** o limite do selo (7 dias, `AUDIT_BADGE_DAYS`) é separado do `STALE_DAYS` (5) da Visão geral, que não mudou. Unificar os dois fica como decisão do João.
+- **Testes:** regra de idade em `systemAttention.test.ts` (limites 7, 8, 14 e 15, nunca auditado, sem data com auditorias, data inválida), `AuditAgeBadge.test.tsx` (3) e `SystemsTable.test.tsx` (selo só onde deve e no nível certo).
+- **Verificado:** `tsc --noEmit`, `eslint src --max-warnings 0` e `vitest run` (68 arquivos, 439 testes) no dashboard; `sincronizar-versao.py --check`.
+- **Não verificado:** a aparência no navegador (o protótipo foi conferido por captura, a tela real não) e o CI do GitHub.
