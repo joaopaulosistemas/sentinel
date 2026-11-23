@@ -1,0 +1,226 @@
+[
+  {
+    "id": "01-visao-geral",
+    "titulo": "Visão geral",
+    "rota": "/",
+    "tema": "light",
+    "arquivo": "01-visao-geral-claro"
+  },
+  {
+    "id": "01b-nova-auditoria",
+    "titulo": "Visão geral (janela Nova auditoria)",
+    "rota": "/",
+    "tema": "light",
+    "arquivo": "01b-nova-auditoria-claro"
+  },
+  {
+    "id": "02-sistemas",
+    "titulo": "Sistemas (lista)",
+    "rota": "/systems",
+    "tema": "light",
+    "arquivo": "02-sistemas-claro"
+  },
+  {
+    "id": "03-sistemas-novo",
+    "titulo": "Sistemas (painel de cadastro)",
+    "rota": "/systems",
+    "tema": "light",
+    "arquivo": "03-sistemas-novo-claro"
+  },
+  {
+    "id": "04-sistemas-editar-cadastro",
+    "titulo": "Sistemas (painel de edição: Cadastro e Git)",
+    "rota": "/systems",
+    "tema": "light",
+    "arquivo": "04-sistemas-editar-cadastro-claro"
+  },
+  {
+    "id": "05-sistemas-editar-motor-de-regras",
+    "titulo": "Sistemas (painel de edição: Motor de regras)",
+    "rota": "/systems",
+    "tema": "light",
+    "arquivo": "05-sistemas-editar-motor-de-regras-claro"
+  },
+  {
+    "id": "06-sistemas-editar-analisadores",
+    "titulo": "Sistemas (painel de edição: Analisadores)",
+    "rota": "/systems",
+    "tema": "light",
+    "arquivo": "06-sistemas-editar-analisadores-claro"
+  },
+  {
+    "id": "07-sistemas-editar-claude-mcp",
+    "titulo": "Sistemas (painel de edição: Claude (MCP))",
+    "rota": "/systems",
+    "tema": "light",
+    "arquivo": "07-sistemas-editar-claude-mcp-claro"
+  },
+  {
+    "id": "08-detalhe-do-sistema",
+    "titulo": "Detalhe do sistema",
+    "rota": "/systems/1",
+    "tema": "light",
+    "arquivo": "08-detalhe-do-sistema-claro"
+  },
+  {
+    "id": "09-auditoria-em-execucao",
+    "titulo": "Auditoria em execução",
+    "rota": "/audits/102",
+    "tema": "light",
+    "arquivo": "09-auditoria-em-execucao-claro"
+  },
+  {
+    "id": "10-auditoria-resultado",
+    "titulo": "Auditoria concluída (resultado)",
+    "rota": "/audits/101",
+    "tema": "light",
+    "arquivo": "10-auditoria-resultado-claro"
+  },
+  {
+    "id": "11-achados",
+    "titulo": "Achados",
+    "rota": "/findings",
+    "tema": "light",
+    "arquivo": "11-achados-claro"
+  },
+  {
+    "id": "12-ranking",
+    "titulo": "Ranking de sistemas",
+    "rota": "/ranking",
+    "tema": "light",
+    "arquivo": "12-ranking-claro"
+  },
+  {
+    "id": "13-relatorios",
+    "titulo": "Relatórios",
+    "rota": "/reports",
+    "tema": "light",
+    "arquivo": "13-relatorios-claro"
+  },
+  {
+    "id": "14-guia",
+    "titulo": "Guia de código",
+    "rota": "/guide",
+    "tema": "light",
+    "arquivo": "14-guia-claro"
+  },
+  {
+    "id": "15-configuracoes",
+    "titulo": "Configurações",
+    "rota": "/settings",
+    "tema": "light",
+    "arquivo": "15-configuracoes-claro"
+  },
+  {
+    "id": "01-visao-geral",
+    "titulo": "Visão geral",
+    "rota": "/",
+    "tema": "dark",
+    "arquivo": "01-visao-geral-escuro"
+  },
+  {
+    "id": "01b-nova-auditoria",
+    "titulo": "Visão geral (janela Nova auditoria)",
+    "rota": "/",
+    "tema": "dark",
+    "arquivo": "01b-nova-auditoria-escuro"
+  },
+  {
+    "id": "02-sistemas",
+    "titulo": "Sistemas (lista)",
+    "rota": "/systems",
+    "tema": "dark",
+    "arquivo": "02-sistemas-escuro"
+  },
+  {
+    "id": "03-sistemas-novo",
+    "titulo": "Sistemas (painel de cadastro)",
+    "rota": "/systems",
+    "tema": "dark",
+    "arquivo": "03-sistemas-novo-escuro"
+  },
+  {
+    "id": "04-sistemas-editar-cadastro",
+    "titulo": "Sistemas (painel de edição: Cadastro e Git)",
+    "rota": "/systems",
+    "tema": "dark",
+    "arquivo": "04-sistemas-editar-cadastro-escuro"
+  },
+  {
+    "id": "05-sistemas-editar-motor-de-regras",
+    "titulo": "Sistemas (painel de edição: Motor de regras)",
+    "rota": "/systems",
+    "tema": "dark",
+    "arquivo": "05-sistemas-editar-motor-de-regras-escuro"
+  },
+  {
+    "id": "06-sistemas-editar-analisadores",
+    "titulo": "Sistemas (painel de edição: Analisadores)",
+    "rota": "/systems",
+    "tema": "dark",
+    "arquivo": "06-sistemas-editar-analisadores-escuro"
+  },
+  {
+    "id": "07-sistemas-editar-claude-mcp",
+    "titulo": "Sistemas (painel de edição: Claude (MCP))",
+    "rota": "/systems",
+    "tema": "dark",
+    "arquivo": "07-sistemas-editar-claude-mcp-escuro"
+  },
+  {
+    "id": "08-detalhe-do-sistema",
+    "titulo": "Detalhe do sistema",
+    "rota": "/systems/1",
+    "tema": "dark",
+    "arquivo": "08-detalhe-do-sistema-escuro"
+  },
+  {
+    "id": "09-auditoria-em-execucao",
+    "titulo": "Auditoria em execução",
+    "rota": "/audits/102",
+    "tema": "dark",
+    "arquivo": "09-auditoria-em-execucao-escuro"
+  },
+  {
+    "id": "10-auditoria-resultado",
+    "titulo": "Auditoria concluída (resultado)",
+    "rota": "/audits/101",
+    "tema": "dark",
+    "arquivo": "10-auditoria-resultado-escuro"
+  },
+  {
+    "id": "11-achados",
+    "titulo": "Achados",
+    "rota": "/findings",
+    "tema": "dark",
+    "arquivo": "11-achados-escuro"
+  },
+  {
+    "id": "12-ranking",
+    "titulo": "Ranking de sistemas",
+    "rota": "/ranking",
+    "tema": "dark",
+    "arquivo": "12-ranking-escuro"
+  },
+  {
+    "id": "13-relatorios",
+    "titulo": "Relatórios",
+    "rota": "/reports",
+    "tema": "dark",
+    "arquivo": "13-relatorios-escuro"
+  },
+  {
+    "id": "14-guia",
+    "titulo": "Guia de código",
+    "rota": "/guide",
+    "tema": "dark",
+    "arquivo": "14-guia-escuro"
+  },
+  {
+    "id": "15-configuracoes",
+    "titulo": "Configurações",
+    "rota": "/settings",
+    "tema": "dark",
+    "arquivo": "15-configuracoes-escuro"
+  }
+]

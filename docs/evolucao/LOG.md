@@ -2123,6 +2123,16 @@ O PDF lista os achados ativos junto com os 105 já suprimidos, o que tinha me le
 - **Não verificado:** o backend Java não foi compilado nem testado aqui (Maven não alcança o repositório central neste ambiente); quem valida é o CI do GitHub (Quarkus 3.40, Java 21). Os testes `@QuarkusTest` de endpoints (404, 409 e 400) dependem do `DomainExceptionMapper` ser registrado pelo Quarkus.
 
 
+## Documentação — revisão geral dos documentos contra o código (sem mudança de versão)
+
+- **Origem:** "atualize todos os documentos e verifique o que é usado". Conferidos links relativos, números, versões, variáveis do Compose, migrações, endpoints, estrutura do projeto, status das specs e arquivos que ninguém referencia.
+- **Corrigido:** `docs/evolucao/AGENTE.md` dizia 26 voltas (o `estado.json` está na volta 54, até 2026-11-22); `docs/sdd.md` tratava a spec 001 como rascunho (agora tem a tabela com o estado de 001 a 008); `docs/guia/instalacao.md` ganhou `specs/`, `.specify/`, `figma/`, `reports/`, `research_notes/`, `deploy/keycloak`, `deploy/observabilidade` e os 6 workflows; `docs/README.md` e o `README.md` passaram a apontar para `figma/` e para a análise do agente Sentinel Ciclo; `docs/referencia/auditoria-e-api.md` ganhou os endpoints de evidências (`GET/PUT/DELETE /api/v1/systems/{id}/evidence`), que existiam e não estavam listados.
+- **Removido:** `audit-dashboard/coverage/` (117 arquivos do relatório de cobertura, gerados por `npm run test:coverage`). Estava versionado apesar de constar no `.gitignore` e nada o lê; o `.gitignore` agora vale de fato.
+- **Conferido e sem divergência:** links relativos (0 quebrados), versão (12.123.0), números de regras e pacotes (347 regras), `ARQUITETURA.html` (14 diagramas), migrações V1 a V6, versões fixadas do `Dockerfile` e variáveis do `docker-compose.yml`.
+- **Mantido por ser usado:** `audit-rules/calibracao/descobertos.txt` (lido por `verificar-separacao.py`), `evidencias/LEIA-ME.md` (pasta montada no Compose), `docs/historico-de-versoes.md` (já marcado como resumo antigo).
+- **Verificado:** `sincronizar-versao.py --check`, `conferir-numeros.py`, `verificar-regras.py` e a checagem de links, rodados depois das edições.
+- **Não verificado:** o texto das telas e dos guias contra o comportamento em execução (nenhuma instalação foi subida); `docs/evolucao/relatorios/*.md` e `docs/evolucao/precisao.md` guardam números de rodadas passadas e não foram refeitos.
+
 ## 12.124.0 — Sistemas: selo "sem auditar há N dias" na lista
 
 - **Origem:** pedido do João, depois de um protótipo com três posições para o selo (escolhida: sob o nome do sistema). A Visão geral já alertava auditoria antiga (limite de 5 dias), mas a lista de Sistemas não mostrava nada.
