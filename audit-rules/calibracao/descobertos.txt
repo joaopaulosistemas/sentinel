@@ -75,3 +75,4 @@ dbohannon/MEANBug
 WebGoat/WebGoat-Legacy
 hdiv/insecure-bank
 DefendShield/DefendShield-VulnBank
+psiinon/bodgeit
