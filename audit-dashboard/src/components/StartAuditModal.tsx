@@ -1,8 +1,7 @@
 import { InlineNotification, Modal, TextInput } from '@carbon/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api/client';
+import { checkLocalPath, useTriggerAudit } from '../hooks/useStartAudit';
 import type { IAuditRunResponse, IPathCheck } from '../types';
 
 interface IProps {
@@ -26,7 +25,7 @@ function useInitialBranch(system: IProps['system'], setBranch: (b: string) => vo
     let ativo = true;
     const usarBranchAtual = async () => {
       try {
-        const check = await api.checkPath(system.localPath as string, system.scheduledBranch || 'main');
+        const check = await checkLocalPath(system.localPath as string, system.scheduledBranch || 'main');
         if (ativo && shouldFallBackToCurrentBranch(check)) setBranch(check.defaultBranch);
       } catch {
         // Sem a checagem a branch fica a agendada (ou main) e a pessoa ainda pode editar o campo.
@@ -59,25 +58,15 @@ export function staysOnPage(onStarted: IProps['onStarted'], follow: boolean | un
 /** Pede o branch, dispara a auditoria e leva para o acompanhamento. */
 export function StartAuditModal({ system, onClose, onStarted, follow }: IProps) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [branch, setBranch] = useState('main');
 
   useInitialBranch(system, setBranch);
 
-  const mutation = useMutation({
-    mutationFn: (vars: { systemId: number; branch: string }) =>
-      api.triggerAudit(vars),
-    onSuccess: (run, vars) => {
-      void queryClient.invalidateQueries({ queryKey: ['systems'] });
-      // Sem isto a lista de auditorias só mostrava a nova depois de um refresh.
-      void queryClient.invalidateQueries({ queryKey: ['auditRuns'] });
-      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
-      mutation.reset();
-      onClose();
-      if (onStarted && staysOnPage(onStarted, follow)) onStarted(run);
-      else void navigate(`/audits/${run.id}`);
-      void vars;
-    },
+  const mutation = useTriggerAudit((run, reset) => {
+    reset();
+    onClose();
+    if (onStarted && staysOnPage(onStarted, follow)) onStarted(run);
+    else void navigate(`/audits/${run.id}`);
   });
 
   return (

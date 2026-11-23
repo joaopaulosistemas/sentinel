@@ -1,7 +1,6 @@
 import { InlineNotification } from '@carbon/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { api } from '../api/client';
+import { useClaudeReview, useReviewMetrics } from '../hooks/useClaudeReview';
 import type { IClaudeReview, IRuleProposalView, SuggestionStatus, ISystemSummaryResponse } from '../types';
 import { startLabel } from '../utils/timeAgo';
 
@@ -25,7 +24,7 @@ function rate(v: number | null | undefined): string {
 }
 
 function MetricsBox({ systemId }: { systemId: number }) {
-  const metricsQuery = useQuery({ queryKey: ['review-metrics', systemId], queryFn: () => api.getReviewMetrics(systemId) });
+  const metricsQuery = useReviewMetrics(systemId);
   const metrics = metricsQuery.data;
   if (!metrics || typeof metrics.suggestionsTotal !== 'number') return null;
   return (
@@ -216,14 +215,8 @@ function ProposalsSection({ data, systems, systemId, act, busy }: { data: IClaud
  * só pesa nela depois de passar pelo funil e ser promovida por uma pessoa.
  */
 export function ClaudeReviewPanel({ systems, initialSystemId }: { systems: ISystemSummaryResponse[]; initialSystemId?: number }) {
-  const queryClient = useQueryClient();
   const [systemId, setSystemId] = useState<number | undefined>(initialSystemId ?? systems[0]?.id);
-  const key = ['claude-review', systemId];
-  const review = useQuery({ queryKey: key, queryFn: () => api.getClaudeReview(systemId as number), enabled: systemId !== undefined });
-  const mutation = useMutation({
-    mutationFn: (v: { path: string; body?: unknown }) => api.reviewAction({ systemId: systemId as number, path: v.path, body: v.body }),
-    onSuccess: (data) => queryClient.setQueryData(key, data),
-  });
+  const { review, mutation } = useClaudeReview(systemId);
   const act = (path: string, body?: unknown) => mutation.mutate({ path, body });
   const setStatus = (id: number, status: SuggestionStatus) => act(`suggestions/${id}/status`, { status });
   const data = review.data;

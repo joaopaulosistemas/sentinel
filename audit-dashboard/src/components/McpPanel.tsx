@@ -1,7 +1,6 @@
 import { Button, Checkbox, InlineNotification } from '@carbon/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { api } from '../api/client';
+import { useMcpCalls, useMcpConfig } from '../hooks/useMcpConfig';
 import { startLabel } from '../utils/timeAgo';
 import type { IMcpConfig, IMcpConfigRequest, McpDataLevel, IMcpNewKey, ISystemSummaryResponse } from '../types';
 import { LoadError } from './EngineRulesParts';
@@ -175,8 +174,7 @@ function ToolsFieldset({ cfg, update, onToggle }: { cfg: IMcpConfig; update: Upd
 }
 
 type CallRow = NonNullable<ReturnType<typeof useCalls>['data']>[number];
-const useCalls = (systemId: number) =>
-  useQuery({ queryKey: ['mcp', systemId, 'calls'], queryFn: () => api.getMcpCalls(systemId), refetchOnWindowFocus: true });
+const useCalls = useMcpCalls;
 
 function callResult(c: CallRow): string {
   if (c.ok) return 'ok';
@@ -224,35 +222,16 @@ function CallsSection({ calls }: { calls: CallRow[] | undefined }) {
  * liga a consulta, gera a chave, escolhe quanto do resultado pode sair e quais ferramentas ficam liberadas.
  */
 export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
-  const queryClient = useQueryClient();
-  const key = ['mcp', system.id];
-  const config = useQuery({ queryKey: key, queryFn: () => api.getMcp(system.id) });
   const calls = useCalls(system.id);
   // A chave completa só existe logo depois de gerada; ao fechar o painel ela some.
   const [fresh, setFresh] = useState<IMcpNewKey | null>(null);
   const [confirmNew, setConfirmNew] = useState(false);
-
-  const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: key });
-  };
-  const update = useMutation({
-    mutationFn: (body: IMcpConfigRequest) => api.updateMcp(system.id, body),
-    onSuccess: (data) => queryClient.setQueryData(key, data),
-  });
-  const issue = useMutation({
-    mutationFn: () => api.newMcpKey(system.id),
-    onSuccess: (data) => {
+  const { config, update, issue, revoke } = useMcpConfig(system.id, {
+    onIssued: (data) => {
       setFresh(data);
       setConfirmNew(false);
-      refresh();
     },
-  });
-  const revoke = useMutation({
-    mutationFn: () => api.revokeMcpKey(system.id),
-    onSuccess: () => {
-      setFresh(null);
-      refresh();
-    },
+    onRevoked: () => setFresh(null),
   });
 
   if (config.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;

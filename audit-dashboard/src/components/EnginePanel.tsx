@@ -1,8 +1,7 @@
 import { Button, Checkbox, TextArea } from '@carbon/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../api/client';
+import { useEngineConfig } from '../hooks/useEngineConfig';
 import { useAuditRuns, useFixPlan } from '../hooks/useAuditRuns';
 import type { IEngineConfig, IEngineTuning, IRuleAdjustment, ISystemSummaryResponse } from '../types';
 import {
@@ -52,20 +51,6 @@ export function mergeTuning(server: IEngineTuning, slice: Partial<IEngineTuning>
 
 /** Regra sem nenhum efeito não é ajuste. */
 export const isNoop = isNoopAdjustment;
-
-function useEngine(systemId: number) {
-  const queryClient = useQueryClient();
-  const key = ['engine', systemId];
-  const query = useQuery({ queryKey: key, queryFn: () => api.getEngineConfig(systemId) });
-  const save = useMutation({
-    mutationFn: (body: IEngineTuning) => api.updateEngineConfig(systemId, body),
-    onSuccess: (data) => {
-      queryClient.setQueryData(key, data);
-      void queryClient.invalidateQueries({ queryKey: ['systems'] });
-    },
-  });
-  return { query, save };
-}
 
 function Header({ cfg, onReset, busy }: { cfg: IEngineConfig; onReset: () => void; busy: boolean }) {
   return (
@@ -318,7 +303,7 @@ function useRulesDraft({ cfg, plan, onDirtyChange }: { cfg: IEngineConfig | unde
 
 /** Aba "Motor de regras": pacotes, limites e regras deste sistema, por cima do perfil. A nota continua sendo do motor. */
 export function EngineRulesPanel({ system, onDirtyChange }: IPanelProps) {
-  const { query, save } = useEngine(system.id);
+  const { query, save } = useEngineConfig(system.id);
   const cfg = query.data;
   const plan = useFixPlanItems(system.id);
   const {
@@ -476,7 +461,7 @@ function useAnalyzersDraft({ cfg, onDirtyChange }: { cfg: IEngineConfig | undefi
 }
 
 export function EngineAnalyzersPanel({ system, onDirtyChange }: IPanelProps) {
-  const { query, save } = useEngine(system.id);
+  const { query, save } = useEngineConfig(system.id);
   const cfg = query.data;
   const { off, setOff, pathsText, setPathsText, paths, dirty, syncSaved } = useAnalyzersDraft({ cfg, onDirtyChange });
 

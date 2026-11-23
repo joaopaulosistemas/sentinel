@@ -1,4 +1,4 @@
-package com.sentinel.audit.resource;
+package com.sentinel.audit.service;
 
 import com.sentinel.audit.actions.PendingActionService;
 import com.sentinel.audit.mcp.McpGateService;
@@ -23,7 +23,7 @@ public class SystemCleanup {
     @Inject
     PendingActionService pendingActions;
 
-    void purgeRelated(Long systemId) {
+    public void purgeRelated(Long systemId) {
         mcpGate.purge(systemId);
         tuningService.purge(systemId);
         reviewService.purge(systemId);

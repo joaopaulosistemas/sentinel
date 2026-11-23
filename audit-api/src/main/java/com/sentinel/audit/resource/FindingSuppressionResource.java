@@ -4,6 +4,7 @@ import com.sentinel.audit.dto.BatchSuppressRequest;
 import com.sentinel.audit.dto.BatchSuppressResponse;
 import com.sentinel.audit.dto.SuppressRequest;
 import com.sentinel.audit.dto.SuppressionResponse;
+import com.sentinel.audit.service.DomainException;
 import com.sentinel.audit.service.FindingLifecycleService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
@@ -65,7 +66,7 @@ public class FindingSuppressionResource {
             try {
                 service.suppress(id, request.toSingle());
                 done++;
-            } catch (jakarta.ws.rs.WebApplicationException e) {
+            } catch (DomainException e) {
                 failures.add(new BatchSuppressResponse.Failure(id, e.getMessage()));
             }
         }

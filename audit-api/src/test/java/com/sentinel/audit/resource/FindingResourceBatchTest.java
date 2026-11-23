@@ -4,7 +4,7 @@ import com.sentinel.audit.dto.BatchSuppressRequest;
 import com.sentinel.audit.dto.BatchSuppressResponse;
 import com.sentinel.audit.model.SuppressionReason;
 import com.sentinel.audit.service.FindingLifecycleService;
-import jakarta.ws.rs.NotFoundException;
+import com.sentinel.audit.service.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ class FindingResourceBatchTest {
         @Override
         public com.sentinel.audit.model.FindingSuppression suppress(Long id, com.sentinel.audit.dto.SuppressRequest r) {
             if (id == 2L) {
-                throw new NotFoundException("Finding não encontrado: 2");
+                throw new ResourceNotFoundException("Finding não encontrado: 2");
             }
             seen.add(id);
             return null;

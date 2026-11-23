@@ -4,7 +4,6 @@ import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.repository.AuditRunRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 import java.util.Map;
@@ -17,9 +16,9 @@ public class RunCatalog {
     @Inject
     AuditRunRepository repository;
 
-    /** A auditoria, ou {@link NotFoundException} (404) com a mensagem padrão. */
+    /** A auditoria, ou {@link ResourceNotFoundException} (404) com a mensagem padrão. */
     public AuditRun require(Long id) {
-        return find(id).orElseThrow(() -> new NotFoundException("Auditoria não encontrada: " + id));
+        return find(id).orElseThrow(() -> new ResourceNotFoundException("Auditoria não encontrada: " + id));
     }
 
     /** Falha com 404 se a auditoria não existir; para endpoints que só precisam validar o id. */

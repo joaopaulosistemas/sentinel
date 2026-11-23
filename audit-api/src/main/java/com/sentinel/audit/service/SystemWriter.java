@@ -1,17 +1,12 @@
-package com.sentinel.audit.resource;
+package com.sentinel.audit.service;
 
 import com.sentinel.audit.dto.CreateSystemRequest;
 import com.sentinel.audit.model.AuditedSystem;
 import com.sentinel.audit.model.LocalSnapshot;
 import com.sentinel.audit.model.SourceType;
 import com.sentinel.audit.pack.PackRegistry;
-import com.sentinel.audit.service.IngestionService;
-import com.sentinel.audit.service.LocalSource;
-import com.sentinel.audit.service.NotificationService;
-import com.sentinel.audit.service.SecretBox;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.BadRequestException;
 
 import java.util.Locale;
 
@@ -29,7 +24,7 @@ public class SystemWriter {
     SecretBox secretBox;
 
     /** @param create no cadastro o perfil é sempre gravado; na edição só se vier informado */
-    void apply(AuditedSystem system, CreateSystemRequest request, boolean create) {
+    public void apply(AuditedSystem system, CreateSystemRequest request, boolean create) {
         system.setName(request.name());
         system.setDescription(request.description());
         applySource(system, request);
@@ -42,12 +37,12 @@ public class SystemWriter {
     }
 
     /** Perfil conhecido (ou vazio = default); desconhecido é erro 400 para o erro de digitação aparecer na hora. */
-    String validProfile(String profile) {
+    public String validProfile(String profile) {
         if (profile == null || profile.isBlank()) {
             return null;
         }
         if (!packRegistry.profileExists(profile)) {
-            throw new BadRequestException("Perfil não encontrado: " + profile
+            throw new InvalidInputException("Perfil não encontrado: " + profile
                     + ". Perfis disponíveis: " + String.join(", ", packRegistry.snapshot().profiles().keySet()));
         }
         return profile.trim().toLowerCase(Locale.ROOT);
@@ -69,7 +64,7 @@ public class SystemWriter {
                 try {
                     system.setLocalPath(ingestionService.validateLocalPath(request.localPath(), null));
                 } catch (IllegalArgumentException e) {
-                    throw new BadRequestException(e.getMessage(), e);
+                    throw new InvalidInputException(e.getMessage(), e);
                 }
             }
             system.setLocalSnapshot(request.localSnapshot() == null ? LocalSnapshot.COMMIT : request.localSnapshot());
@@ -124,7 +119,7 @@ public class SystemWriter {
             try {
                 NotificationService.validateTarget(notifyUrl.trim());
             } catch (IllegalArgumentException e) {
-                throw new BadRequestException(e.getMessage(), e);
+                throw new InvalidInputException(e.getMessage(), e);
             }
             system.setNotifyUrlEnc(encrypted(notifyUrl, "a URL"));
         }
@@ -147,7 +142,7 @@ public class SystemWriter {
 
     private String encrypted(String value, String what) {
         if (!secretBox.available()) {
-            throw new BadRequestException("Não foi possível guardar " + what + ": a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
+            throw new InvalidInputException("Não foi possível guardar " + what + ": a API não tem chave de cifragem (defina SECRETS_KEY ou deixe-a gravar o arquivo de chave em um volume).");
         }
         return secretBox.encrypt(value.trim());
     }
