@@ -28,7 +28,8 @@ export function AuthLoadingScreen() {
         <div style={{ marginBottom: '1.5rem' }}>
           <Loading small withOverlay={false} description="Carregando" />
         </div>
-        <h1 style={titleStyle}>Entrando…</h1>
+        {/* Não é um h1: é um estado passageiro, e os testes e leitores de tela procuram o título da página que vem depois. */}
+        <p style={{ ...titleStyle, color: 'var(--s-text)' }}>Entrando…</p>
         <p style={textStyle}>Confirmando a sua sessão com o servidor de login.</p>
       </div>
     </AuthScreen>

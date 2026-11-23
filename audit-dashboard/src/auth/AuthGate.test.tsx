@@ -130,8 +130,9 @@ describe('telas de entrada', () => {
   it('enquanto confirma a sessão mostra "Entrando…" com o aviso de status', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)));
     render(<AuthGate><Quem /></AuthGate>);
-    expect(screen.getByRole('heading', { name: 'Entrando…' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Entrando…');
     expect(screen.getByRole('status')).toHaveTextContent('Confirmando a sua sessão');
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
   });
 
   it('na falha explica o que houve e o botão tenta entrar de novo', async () => {
