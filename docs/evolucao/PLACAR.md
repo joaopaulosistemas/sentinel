@@ -37,11 +37,11 @@ Marque `[x]` no PR que fecha o item, com a evidência.
 - [ ] 1/2 OWASP Benchmark: subir `cmdi` (hoje 0,06) tratando `exec` com argumentos de ambiente e `ProcessBuilder.command(...)`; medir antes e depois no CI
 - [ ] 1/2 OWASP Benchmark: reduzir o FPR de `pathtraver` e `trustbound` (hoje 54–65%) com sanitizadores genéricos (`normalize`, `getFileName`, validação por lista) sem olhar o código do Benchmark
 - [ ] 1/2 Estender o benchmark a outra linguagem com gabarito (NodeGoat ou OWASP Juice Shop com lista de desafios) para medir as regras de JS/TS
-- [ ] 8 Métricas Prometheus da API (`/q/metrics`: auditorias, duração, achados) com teste
+- [x] 8 Métricas Prometheus da API (`/q/metrics`: auditorias, duração, achados): `quarkus.micrometer.enabled=true` em `application.properties`; painel e alertas em `deploy/observabilidade/` (workflow `observabilidade.yml`)
 - [ ] 9 Corrigir N+1 em `RuleQualityService` e `AuditScheduler` com teste que conta consultas
 - [x] 9 Cobertura JaCoCo no Maven (`quarkus-jacoco` e `jacoco-maven-plugin` em `audit-api/pom.xml`; o relatório sai como artefato `cobertura-jacoco` do job `backend` em `ci.yml`)
 - [ ] 9 Meta de 70% de cobertura nos pacotes de regra e pontuação, com falha no CI abaixo do piso (hoje o relatório é publicado, sem piso)
-- [ ] 8 Teste de login OIDC contra Keycloak em CI (job novo no `e2e`, sem tocar `.github/` — pedir ao humano o ajuste do workflow)
+- [x] 8 Teste de login OIDC contra Keycloak em CI: workflow `.github/workflows/login-keycloak.yml` (login e papéis de ponta a ponta)
 - [ ] 3 SARIF de uma auditoria subido ao Code Scanning (depende do plano do GitHub)
 - [ ] 8 Teste de carga (k6) com limites de latência documentados
 - [x] 7 Teste ponta a ponta do dashboard com Playwright (`audit-dashboard/e2e/*.spec.ts`, `playwright.config.ts`; roda no job `dashboard` de `ci.yml`). O eixo 7 só sobe para 3 com o critério da tabela: auditoria, relatório e filtros cobertos

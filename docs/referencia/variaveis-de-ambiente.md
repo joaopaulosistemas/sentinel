@@ -28,6 +28,7 @@ Tabela única das variáveis do Compose. No dia a dia só se mexe em poucas; o `
 | `AUDIT_MAX_CONCURRENT` | `2` | Auditorias simultâneas; as outras esperam vaga |
 | `AUDIT_RETENTION_DAYS` | `0` | Apaga auditorias antigas por dia (`0` desliga) |
 | `AUDIT_RETENTION_KEEP` | `20` | Quantas auditorias recentes de cada sistema nunca são apagadas |
+| `EVIDENCE_MIN_LINE_COVERAGE` | `60` | Cobertura mínima de linhas (%) das evidências offline; abaixo disso o relatório avisa ([evidências](../evidencias/README.md)) |
 
 ## Ferramentas (build args: valem no próximo `--build`)
 
