@@ -2,7 +2,7 @@
 
 Agente do Claude Code (`.claude/agents/sentinel-ciclo.md`) que conduz o ciclo de auditoria do Sentinel contra repositórios vulneráveis públicos e corrige o próprio Sentinel a partir do que encontra. Roda na máquina de quem o chama, com a assinatura do Claude. Não usa API paga e não roda sozinho.
 
-Substitui os antigos Sentinel Evolution e Sentinel Descoberta, que eram workflows do GitHub e foram removidos. O histórico do que eles fizeram continua em `docs/evolucao/LOG.md`, `precisao.md` e `relatorios/`.
+Substitui os antigos Sentinel Evolution e Sentinel Descoberta, que eram workflows do GitHub e foram removidos. O histórico do que eles fizeram continua em `docs/evolucao/LOG.md` e `precisao.md`.
 
 ## Como chamar
 No Claude Code, dentro do repositório: peça "use o agente sentinel-ciclo para rodar o ciclo no repositório X" (ou deixe o Claude escolher o alvo pelo perfil). Ele pede autorização antes de fazer merge.

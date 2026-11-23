@@ -29,7 +29,6 @@
 | [padrao-typescript/README.md](padrao-typescript/README.md) · [clean-code-labs42.md](padrao-typescript/clean-code-labs42.md) | Padrão TypeScript da casa e regras do guia clean-code-typescript |
 | [padrao-google/README.md](padrao-google/README.md) | Perfis Google Java/TypeScript, SEI CERT e Sonar |
 | [referencia/severidade-das-regras.md](referencia/severidade-das-regras.md) | Critério único de severidade das regras (ERROR, WARNING, INFO) |
-| [referencia/claude-md-spring-boot.md](referencia/claude-md-spring-boot.md) · [claude-md-typescript.md](referencia/claude-md-typescript.md) | Exemplos do CLAUDE.md que o Guia de código gera (cópias de 2026-11-06, ajustadas ao gerador 12.64.0) |
 
 ## Como desenvolver
 | Documento | Para quê |
@@ -53,6 +52,4 @@
 | [evolucao/LOG.md](evolucao/LOG.md) | Histórico por versão, com o que foi e não foi verificado |
 | [evolucao/precisao.md](evolucao/precisao.md) · [calibracao.md](evolucao/calibracao.md) · [revisao-humana.md](evolucao/revisao-humana.md) | Precisão medida e calibração |
 | [evolucao/AGENTE.md](evolucao/AGENTE.md) | Agente Sentinel Ciclo (auditoria completa em repositórios vulneráveis), com o estado entre execuções em `evolucao/estado.json` |
-| [evolucao/triagem-auditoria-33.md](evolucao/triagem-auditoria-33.md) · `evolucao/relatorios/` | Triagem da auditoria #33 do próprio Sentinel (justificativas prontas para suprimir) e relatórios das rodadas de 2026-10-21 a 28 |
-| [../reports/Análise do agente ciclo Sentinel.md](<../reports/Análise do agente ciclo Sentinel.md>) | Análise externa do agente Sentinel Ciclo (ruído, generalização, riscos do laço), com as notas de pesquisa em [`research_notes/`](<../research_notes/Análise do agente ciclo Sentinel/>) |
-| [historico-de-versoes.md](historico-de-versoes.md) · [historia.md](historia.md) | Resumo antigo por versão e origem do projeto |
+| [historia.md](historia.md) | Origem do projeto |

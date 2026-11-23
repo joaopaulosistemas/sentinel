@@ -116,7 +116,8 @@ java -jar audit-cli/target/sentinel-audit-cli.jar \
   --fail-below 60 \
   --api-key "$AUDIT_API_KEY"      # ou apenas exporte AUDIT_API_KEY
 
-# Códigos de saída: 0 = aprovado, 1 = reprovado pelo gate, 2 = erro (API fora, 401, auditoria FAILED), 3 = timeout
+# Códigos de saída: 0 = aprovado, 1 = reprovado pelo gate, 2 = erro (API fora, 401, auditoria FAILED), 3 = timeout,
+#                    4 = resultado incompleto (algum analisador falhou; use --allow-incomplete para aceitar)
 ```
 
 Opções extras do CLI:
@@ -129,6 +130,7 @@ Opções extras do CLI:
 | `--fail-on-score-drop 0` | Catraca da nota: reprova se ela cair mais que esses pontos desde a auditoria anterior (sem anterior, não reprova) |
 | `--sarif relatorio.sarif` | Grava SARIF 2.1.0 (GitHub Code Scanning, Azure DevOps, GitLab) |
 | `--junit relatorio.xml` | Grava JUnit XML (aparece como teste no pipeline) |
+| `--allow-incomplete` | Aceita um resultado incompleto (algum analisador falhou ou terminou pela metade). Sem a opção, o CLI sai com código 4, porque a nota pode estar mais alta do que a realidade |
 
 ---
 
@@ -195,7 +197,6 @@ sentinel/
 ├── specs/                          ← Uma pasta por funcionalidade (spec, plano e tarefas); veja [sdd.md](../sdd.md)
 ├── .specify/                       ← Constituição, modelos e scripts do GitHub Spec Kit
 ├── figma/                          ← Telas do dashboard em PNG e HTML (claro e escuro) para levar ao Figma; `node figma/capturar-telas.mjs` refaz tudo
-├── reports/ e research_notes/      ← Análise do agente Sentinel Ciclo e as notas de pesquisa que a sustentam
 └── evidencias/                     ← Uma subpasta por sistema com dumps e exports para a análise offline
 ```
 

@@ -10,7 +10,7 @@ Levantado no repositório em 2026-11-13.
 | Precisão por regra (revisão do agente) | `docs/evolucao/precisao.md`, `scripts/precisao-regras.py` | existe; amostras pequenas |
 | Revisão humana por amostragem | `docs/evolucao/revisao-humana.md` | existe o formato; a tabela traz a coluna **"Veredito do agente"** ao lado do humano, e nenhum veredito humano foi preenchido |
 | Placar | `docs/evolucao/PLACAR.md` (eixo 10 Credibilidade; eixo 3: "SARIF aceito pelo GitHub Code Scanning em execução real") | existe; item "SARIF de uma auditoria subido ao Code Scanning" **aberto** |
-| Relatórios | `docs/evolucao/relatorios/` | pasta existe |
+| Relatórios | `docs/evolucao/relatorios/` | pasta removida em 2026-11-23 (eram os relatórios do agente Descoberta); a spec a cria de novo |
 | SARIF e SBOM | `SarifWriter`, `SbomWriter`; modelo de pipeline `docs/integracao/github-actions.yml` (`upload-sarif`) | existem; sem evidência de aceite real |
 | Ferramentas externas já integradas | pacote `market-tools` (Checkstyle e outras, `tools/*.yml`), Joern opcional | existem |
 | Régua, amostra cega, registro do reservado, linha de base | spec 003 (`scripts/medicao.py`) | **só documentos**: a implementação foi revertida |
