@@ -19,6 +19,7 @@ import { UserMenu } from '../../auth/UserMenu';
 import { usePendingClaude } from '../../hooks/usePendingClaude';
 import { MENU_MIN, MENU_PADRAO, MENU_TRILHO, clampMenu, menuMaxFor, readMenuWidth, saveMenuWidth } from '../../utils/menuWidth';
 import { useThemeStore } from '../../store/useThemeStore';
+import { SentinelLogo } from '../SentinelLogo';
 
 interface IAppShellProps {
   children: React.ReactNode;
@@ -34,17 +35,6 @@ function ThemeIcon({ dark }: { dark: boolean }) {
   ) : (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
-    </svg>
-  );
-}
-
-/** Logo: escudo com um olho (o "vigia" do Sentinel). */
-function SentinelLogo({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <path d="M16 2.5 4.5 6.8v8.2c0 7.2 4.9 12.4 11.5 14.5 6.6-2.1 11.5-7.3 11.5-14.5V6.8z" fill="#4589ff" />
-      <ellipse cx="16" cy="15" rx="6.2" ry="4" fill="none" stroke="#fff" strokeWidth="2" />
-      <circle cx="16" cy="15" r="1.9" fill="#fff" />
     </svg>
   );
 }

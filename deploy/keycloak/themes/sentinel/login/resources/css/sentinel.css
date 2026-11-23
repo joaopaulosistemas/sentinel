@@ -1,16 +1,19 @@
 /* stylelint-disable a11y/content-property-no-static-value -- o painel de marca é decorativo e não carrega informação */
 /*
- * Tema de login do Sentinel: painel de marca escuro à esquerda e formulário claro à direita, com a IBM Plex Sans e as
- * cores da paleta "Suave" do painel (audit-dashboard/src/styles/paletas.css). Só CSS sobre o tema keycloak.v2.
- * O painel de marca é decorativo (conteúdo gerado), o formulário continua o do Keycloak.
+ * Tema de login do Sentinel, no padrão Carbon do painel: painel de marca em cinza 100 (#161616) à esquerda, com um radar
+ * de anéis finos ao fundo, e formulário branco à direita, com campos chapados em cinza 10 e linha só embaixo, botão
+ * grande quadrado e notificação de erro como a do painel. IBM Plex Sans e o azul 60 do Carbon (#0f62fe).
+ * Só CSS sobre o tema keycloak.v2. O painel de marca é decorativo (conteúdo gerado); o formulário continua o do Keycloak.
  */
 @font-face { font-family: 'IBM Plex Sans'; font-weight: 400; font-style: normal; font-display: swap; src: url('../fonts/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); }
 @font-face { font-family: 'IBM Plex Sans'; font-weight: 500; font-style: normal; font-display: swap; src: url('../fonts/ibm-plex-sans-latin-500-normal.woff2') format('woff2'); }
 @font-face { font-family: 'IBM Plex Sans'; font-weight: 600; font-style: normal; font-display: swap; src: url('../fonts/ibm-plex-sans-latin-600-normal.woff2') format('woff2'); }
 
 :root {
-  --sn-chrome: #0f1217; --sn-chrome-border: #2b323d; --sn-chrome-text: #d6dbe4; --sn-chrome-text-2: #aab2bf;
-  --sn-surface: #fbfbfc; --sn-text: #262b33; --sn-text-2: #4d5560; --sn-border: #8a929e; --sn-primary: #1f5fd1; --sn-primary-hover: #1a50b0;
+  --sn-chrome: #161616; --sn-chrome-text: #f4f4f4; --sn-chrome-text-2: #c6c6c6;
+  --sn-surface: #ffffff; --sn-field: #f4f4f4; --sn-field-hover: #e8e8e8; --sn-line: #8d8d8d;
+  --sn-text: #161616; --sn-text-2: #525252;
+  --sn-primary: #0f62fe; --sn-primary-hover: #0043ce; --sn-danger: #da1e28; --sn-danger-bg: #fff1f1;
   --pf-v5-global--FontFamily--text: 'IBM Plex Sans', system-ui, sans-serif;
   --pf-v5-global--FontFamily--heading: 'IBM Plex Sans', system-ui, sans-serif;
   --pf-v5-global--primary-color--100: var(--sn-primary);
@@ -21,7 +24,7 @@
 html, body, .pf-v5-c-login { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
 body { background: var(--sn-surface); color: var(--sn-text); }
 
-/* Formulário à direita (45%), centralizado. */
+/* Formulário à direita (45%), centralizado na vertical. */
 .pf-v5-c-login.pf-v5-c-login {
   display: flex; justify-content: flex-end; min-height: 100dvh; background: var(--sn-surface);
 }
@@ -29,39 +32,99 @@ body { background: var(--sn-surface); color: var(--sn-text); }
   display: flex; flex-direction: column; justify-content: center; align-items: stretch; box-sizing: border-box;
   width: 45%; max-width: none; margin: 0; padding: 48px clamp(24px, 5vw, 80px); position: relative; z-index: 2;
 }
-.pf-v5-c-login__main { background: transparent; box-shadow: none; max-width: 420px; width: 100%; margin: 0 auto; }
-.pf-v5-c-login__main-header { padding-inline: 0; }
+.pf-v5-c-login__main { background: transparent; box-shadow: none; max-width: 400px; width: 100%; margin: 0 auto; }
+.pf-v5-c-login__main-header { padding-inline: 0; padding-bottom: 32px; }
 .pf-v5-c-login__main-body { padding-inline: 0; }
-[id='kc-page-title'] { font-size: 1.75rem; font-weight: 600; color: var(--sn-text); }
-.pf-v5-c-form__label-text, label { color: var(--sn-text-2); font-size: 0.8125rem; }
-.pf-v5-c-form-control, .pf-v5-c-form-control input { min-height: 44px; border-radius: 4px; border-color: var(--sn-border); background: #fff; font-size: 0.9375rem; }
-.pf-v5-c-button.pf-m-primary, [id='kc-login'] { min-height: 48px; border-radius: 4px; background: var(--sn-primary); font-weight: 600; font-size: 0.9375rem; }
-.pf-v5-c-button.pf-m-primary:hover, .pf-v5-c-button.pf-m-primary:focus, [id='kc-login']:hover, [id='kc-login']:focus { background: var(--sn-primary-hover); }
+[id='kc-page-title'] { font-size: 2rem; line-height: 1.25; font-weight: 400; color: var(--sn-text); }
+
+/* Rótulos e campos no padrão Carbon: preenchimento cinza e linha só embaixo. */
+.pf-v5-c-form__label-text, label { color: var(--sn-text-2); font-size: 0.75rem; font-weight: 400; letter-spacing: 0.32px; }
+.pf-v5-c-form { --pf-v5-c-form--GridGap: 24px; }
+.pf-v5-c-form__group:not(:has(*)) { display: none; }  /* grupo vazio que o Keycloak deixa antes do botão */
+.pf-v5-c-form-control {
+  min-height: 48px; border: 0; border-bottom: 1px solid var(--sn-line); border-radius: 0; background: var(--sn-field);
+  --pf-v5-c-form-control--BorderColor: transparent; --pf-v5-c-form-control--hover--BorderColor: transparent;
+  --pf-v5-c-form-control--focus--BorderColor: transparent;
+}
+.pf-v5-c-form-control::before, .pf-v5-c-form-control::after { display: none; }
+.pf-v5-c-form-control:hover { background: var(--sn-field-hover); }
+.pf-v5-c-form-control:focus-within { outline: 2px solid var(--sn-primary); outline-offset: -2px; border-bottom-color: transparent; }
+.pf-v5-c-form-control input {
+  min-height: 48px; padding: 0 16px; border: 0; border-radius: 0; background: transparent; color: var(--sn-text);
+  font-size: 0.875rem; letter-spacing: 0.16px; outline: 0;
+}
+.pf-v5-c-form-control input[aria-invalid='true'] { box-shadow: none; }
+.pf-v5-c-form-control:has(input[aria-invalid='true']) { outline: 2px solid var(--sn-danger); outline-offset: -2px; border-bottom-color: transparent; }
+.pf-v5-c-input-group { position: relative; align-items: stretch; background: var(--sn-field); border-bottom: 1px solid var(--sn-line); }
+.pf-v5-c-input-group .pf-v5-c-form-control, .pf-v5-c-input-group .pf-v5-c-form-control:focus-within, .pf-v5-c-input-group .pf-v5-c-form-control:has(input[aria-invalid='true']) { border-bottom: 0; outline: 0; }
+/* moldura do grupo (campo + botão de mostrar a senha) por cima dos dois: azul no foco, vermelha no erro */
+.pf-v5-c-input-group:focus-within::after, .pf-v5-c-input-group:has(input[aria-invalid='true'])::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; border: 2px solid var(--sn-primary); pointer-events: none;
+}
+.pf-v5-c-input-group:has(input[aria-invalid='true'])::after { border-color: var(--sn-danger); }
+.pf-v5-c-helper-text__item.pf-m-error, [id^='input-error'] { color: var(--sn-danger); font-size: 0.75rem; letter-spacing: 0.32px; }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
+  min-height: 48px; width: 48px; border: 0; border-radius: 0; background: transparent; color: var(--sn-text-2);
+}
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control::after { display: none; }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control:hover { color: var(--sn-text); background: transparent; }
+
+/* Botão Carbon grande: texto à esquerda, seta à direita. */
+.pf-v5-c-form__actions { margin-top: 8px; }
+.pf-v5-c-button.pf-m-primary, [id='kc-login'] {
+  min-height: 64px; border-radius: 0; background-color: var(--sn-primary); font-weight: 400; font-size: 0.875rem; letter-spacing: 0.16px;
+  justify-content: flex-start; text-align: left; padding: 0 64px 0 16px;
+  background-image: url('../img/seta.svg'); background-repeat: no-repeat; background-position: right 16px center; background-size: 20px;
+}
+.pf-v5-c-button.pf-m-primary:hover, .pf-v5-c-button.pf-m-primary:focus, [id='kc-login']:hover, [id='kc-login']:focus { background-color: var(--sn-primary-hover); }
 a { color: var(--sn-primary); }
 :focus-visible { outline: 2px solid var(--sn-primary); outline-offset: 2px; }
 
-/* Painel de marca à esquerda (55%): fica atrás do formulário e só aparece em telas largas. */
+/* Erro de login: notificação Carbon (a mesma do painel), com a borda vermelha na lateral. */
+.pf-v5-c-alert.pf-m-danger {
+  --pf-v5-c-alert--BorderTopColor: transparent; --pf-v5-c-alert--m-danger__icon--Color: var(--sn-danger);
+  margin-bottom: 24px; border: 0; border-left: 3px solid var(--sn-danger); border-radius: 0; background: var(--sn-danger-bg);
+  box-shadow: inset 0 0 0 1px #ffd7d9;
+}
+.pf-v5-c-alert.pf-m-danger .pf-v5-c-alert__title { color: var(--sn-text); font-weight: 400; font-size: 0.875rem; }
+
+/* Painel de marca à esquerda (55%): fica atrás do formulário e só aparece em telas largas. O radar é o fundo; o logo,
+   a marca e as duas frases são posicionados em relação à janela, centralizados na vertical. */
 body::before {
-  content: 'Sentinel Audit Tool'; position: fixed; inset: 0 45% 0 0; z-index: 0; box-sizing: border-box; padding: 64px 64px 0 112px;
-  background: var(--sn-chrome) url('../img/logo.svg') no-repeat 64px 58px; border-right: 1px solid var(--sn-chrome-border);
-  color: var(--sn-chrome-text); font: 600 1.25rem/1.6 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: 0.2px;
+  content: ''; position: fixed; inset: 0 45% 0 0; z-index: 0; box-sizing: border-box;
+  background: url('../img/logo.svg') no-repeat 64px 48px / 44px 44px, url('../img/radar.svg') no-repeat center / 1100px 1100px, var(--sn-chrome);
+}
+body::after {
+  content: 'Sentinel Audit Tool'; position: fixed; left: 124px; top: 48px; z-index: 1; line-height: 44px;
+  font: 600 1.75rem/44px 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: 0.1px; white-space: nowrap;
+  background: linear-gradient(90deg, var(--sn-chrome-text) 0 3.96em, var(--sn-chrome-text-2) 3.96em); -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
 }
 .pf-v5-c-login::before {
-  content: 'Todos os sistemas sob a mesma régua.'; position: fixed; left: 64px; bottom: 36%; width: calc(55% - 128px); max-width: 460px; z-index: 1;
-  color: var(--sn-chrome-text); font: 600 2.25rem/1.2 'IBM Plex Sans', system-ui, sans-serif;
+  content: 'Todos os sistemas sob a mesma régua.'; position: fixed; left: 64px; bottom: calc(50% - 22px); width: calc(55% - 128px); max-width: 34rem; z-index: 1;
+  color: var(--sn-chrome-text); font: 400 3.5rem/1.08 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: -0.02em; text-wrap: balance;
 }
 .pf-v5-c-login::after {
   content: 'Segurança, qualidade e arquitetura viram uma nota de risco por sistema, e cada achado é acompanhado até ser corrigido.';
-  position: fixed; left: 64px; bottom: 20%; width: calc(55% - 128px); max-width: 460px; z-index: 1;
-  color: var(--sn-chrome-text-2); font: 400 1rem/1.6 'IBM Plex Sans', system-ui, sans-serif;
+  position: fixed; left: 64px; top: calc(50% + 46px); width: calc(55% - 128px); max-width: 30rem; z-index: 1;
+  color: var(--sn-chrome-text-2); font: 400 1rem/1.5 'IBM Plex Sans', system-ui, sans-serif;
 }
 /* A marca já está no painel: esconde o cabeçalho com o nome do realm. */
 [id='kc-header'], .pf-v5-c-login__header { display: none; }
 
+/* Telas médias: frase menor. */
+@media (max-width: 1180px) {
+  .pf-v5-c-login::before { font-size: 2.75rem; }
+}
 /* Telas estreitas: sem painel de marca, formulário em largura total. */
 @media (max-width: 900px) {
-  body::before, .pf-v5-c-login::before, .pf-v5-c-login::after { display: none; }
+  body::before, body::after, .pf-v5-c-login::before, .pf-v5-c-login::after { display: none; }
   .pf-v5-c-login { justify-content: center; }
   .pf-v5-c-login__container { width: 100%; }
-  [id='kc-header'], .pf-v5-c-login__header { display: block; }
+  [id='kc-header'], .pf-v5-c-login__header { display: block; margin-bottom: 32px; }
+  /* o tema base fixa o texto do cabeçalho em branco com !important; a marca visível vem do ::before */
+  #kc-header-wrapper { font-size: 0; line-height: 0; }
+  .pf-v5-c-login__header::before { content: 'Sentinel Audit Tool'; display: block; color: var(--sn-text); font: 600 1.25rem/1.2 'IBM Plex Sans', system-ui, sans-serif; }
+  .pf-v5-c-login__header { padding: 0; }
+  .pf-v5-c-login__main-header { padding-bottom: 24px; }
 }

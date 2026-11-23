@@ -1,7 +1,7 @@
 import { UserManager, WebStorageStateStore, type User } from 'oidc-client-ts';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { InlineNotification, Loading } from '@carbon/react';
 import { AuthContext, SEM_LOGIN, type IAuth } from './AuthContext';
+import { AuthErrorScreen, AuthLoadingScreen } from './AuthScreens';
 import { authHeader, setAccessToken } from './session';
 
 interface IConfig {
@@ -142,14 +142,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     };
   }, [estado, mgr]);
 
-  if (estado.fase === 'carregando') return <Loading description="Entrando…" withOverlay={false} />;
-  if (estado.fase === 'erro') {
-    return (
-      <div style={{ padding: '2rem' }}>
-        <InlineNotification kind="error" lowContrast hideCloseButton title="Não foi possível entrar" subtitle={estado.mensagem} />
-        <button type="button" onClick={() => void mgr?.signinRedirect()}>Entrar de novo</button>
-      </div>
-    );
-  }
+  if (estado.fase === 'carregando') return <AuthLoadingScreen />;
+  if (estado.fase === 'erro') return <AuthErrorScreen message={estado.mensagem} onRetry={() => void mgr?.signinRedirect()} />;
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
 }
