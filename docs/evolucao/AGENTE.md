@@ -59,4 +59,4 @@ gh run download <id> -n auditoria-completa -D saida-auditoria
 - O Opengrep não segue o dado entre funções e arquivos; o Joern cobre só Java.
 - A análise de falso positivo é manual e por amostragem.
 - O workflow audita só repositórios públicos.
-- O agente já fez 26 voltas (de 2026-11-05 a 2026-11-11; o estado fica em `docs/evolucao/estado.json`). O ganho é medido no treino; na validação só há gabarito de fonte pública para `bnematzadeh/vulnerable-rest-api` (`audit-rules/calibracao/gabaritos/validacao/`), então a generalização para Java/Spring segue sem recall medido (ver `docs/evolucao/LOG.md` e a prova de generalização no guia).
+- O agente já fez 54 voltas (de 2026-11-05 a 2026-11-22; o estado fica em `docs/evolucao/estado.json`). O ganho é medido no treino; na validação só há gabarito de fonte pública para `bnematzadeh/vulnerable-rest-api` (`audit-rules/calibracao/gabaritos/validacao/`), então a generalização para Java/Spring segue sem recall medido (ver `docs/evolucao/LOG.md` e a prova de generalização no guia).
