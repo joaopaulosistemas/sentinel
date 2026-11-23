@@ -47,6 +47,8 @@ O Keycloak do protótipo não tem volume: usuários criados no console somem qua
 
 ## Como o token é validado
 
+O realm de teste tem os clientes `sentinel-dashboard` (painel, código + PKCE), `sentinel-cli` (CLI) e `sentinel-api` (a API, que só valida o token) e `sentinel-teste-sem-audiencia` (só para provar que um token sem a audiência certa é recusado).
+
 A API só aceita um token que (1) tenha assinatura válida do Keycloak, (2) venha do emissor configurado e (3) tenha `aud=sentinel-api`; um token do mesmo Keycloak feito para outro cliente é recusado. O nome vem de `preferred_username` e os papéis de `realm_access.roles`. O painel usa o fluxo de código com PKCE e guarda o token só em memória.
 
 ## Produção

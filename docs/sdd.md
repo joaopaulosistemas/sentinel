@@ -49,9 +49,22 @@ Versão do kit usada para gerar estes arquivos: 1.4.1 (nesta versão os comandos
 - **Não use** para correção pequena, ajuste de texto ou bug óbvio: vá direto ao PR. O ciclo completo para uma linha de código é só burocracia.
 - **O agente `sentinel-ciclo` continua à parte.** Ele mede e calibra as regras contra repositórios vulneráveis; as specs descrevem funcionalidades do produto. Uma volta do ciclo pode, no máximo, apontar uma lacuna que vira uma spec nova.
 
-## Primeira spec
+## Specs existentes
 
-`specs/001-separar-regras-front-back/spec.md` é um rascunho escrito só com o que já estava decidido, com três perguntas em aberto. O próximo passo é rodar `/speckit-clarify` nela.
+Estado lido dos `tasks.md` de cada pasta (tarefas marcadas `[x]` sobre o total):
+
+| Spec | Assunto | Estado |
+|---|---|---|
+| `001-separar-regras-front-back` | Separar as regras em front-end e back-end (tela Motor de regras) | Implementada: 35 de 36 tarefas; falta a T039, rodar o `quickstart.md` numa instalação real |
+| `002-documentar-api-openapi` | Documento OpenAPI da API | Em andamento: 21 de 24 tarefas; faltam o LOG e o merge dos PRs B e C (T015, T018) e a conferência manual no Swagger (T022) |
+| `003-medicao-e-prova` | Medir e provar o ganho de cada mudança | Só escrita; nenhuma tarefa executada |
+| `004-menos-alarme-falso` | Menos alarme falso e só o que é novo nos PRs | Só escrita; nenhuma tarefa executada |
+| `005-modelo-estrutural-codigo` | Modelo estrutural do código | Só escrita; nenhuma tarefa executada |
+| `006-rastreio-entre-arquivos` | Rastreio de dados entre arquivos (começando por injeção de SQL) | Só escrita; nenhuma tarefa executada |
+| `007-arquitetura-verificavel` | Arquitetura verificável | Só escrita; nenhuma tarefa executada |
+| `008-prova-externa` | Prova externa, com revisor de fora | Só escrita; nenhuma tarefa executada |
+
+As specs 003 a 008 formam o plano "Sentinel Premium". Antes de implementar qualquer uma, rode `/speckit-analyze`.
 
 ## Atualizar ou regenerar o kit
 

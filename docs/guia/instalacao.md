@@ -116,7 +116,8 @@ java -jar audit-cli/target/sentinel-audit-cli.jar \
   --fail-below 60 \
   --api-key "$AUDIT_API_KEY"      # ou apenas exporte AUDIT_API_KEY
 
-# Códigos de saída: 0 = aprovado, 1 = reprovado pelo gate, 2 = erro (API fora, 401, auditoria FAILED), 3 = timeout
+# Códigos de saída: 0 = aprovado, 1 = reprovado pelo gate, 2 = erro (API fora, 401, auditoria FAILED), 3 = timeout,
+#                    4 = resultado incompleto (algum analisador falhou; use --allow-incomplete para aceitar)
 ```
 
 Opções extras do CLI:
@@ -129,6 +130,7 @@ Opções extras do CLI:
 | `--fail-on-score-drop 0` | Catraca da nota: reprova se ela cair mais que esses pontos desde a auditoria anterior (sem anterior, não reprova) |
 | `--sarif relatorio.sarif` | Grava SARIF 2.1.0 (GitHub Code Scanning, Azure DevOps, GitLab) |
 | `--junit relatorio.xml` | Grava JUnit XML (aparece como teste no pipeline) |
+| `--allow-incomplete` | Aceita um resultado incompleto (algum analisador falhou ou terminou pela metade). Sem a opção, o CLI sai com código 4, porque a nota pode estar mais alta do que a realidade |
 
 ---
 
@@ -168,7 +170,10 @@ sentinel/
 │   ├── lint/eslint/                ← Configuração do ESLint usada pelo analisador
 │   └── bin/sentinel-pack           ← Ferramenta de linha de comando para autores de pacotes
 │
-├── deploy/helm/sentinel/           ← Chart Helm (API, dashboard, PostgreSQL opcional) — `helm lint` e `helm template` rodam no CI
+├── deploy/
+│   ├── helm/sentinel/              ← Chart Helm (API, dashboard, PostgreSQL opcional) — `helm lint` e `helm template` rodam no CI
+│   ├── keycloak/                   ← Overlay do Compose com o Keycloak (login) e o realm de teste
+│   └── observabilidade/            ← Overlay do Compose com Prometheus, Loki, Tempo, Grafana e alertas
 │
 ├── audit-dashboard/                ← Frontend React 19 + IBM Carbon DS
 │   ├── Dockerfile + nginx.conf.template
@@ -184,11 +189,14 @@ sentinel/
 ├── audit-cli/                      ← CLI Java para integração CI/CD
 │   └── src/main/java/.../AuditCli.java
 │
-├── .github/workflows/              ← ci.yml, auditoria-completa.yml, release.yml
+├── .github/workflows/              ← ci.yml, auditoria-completa.yml, calibracao-arquitetura.yml, login-keycloak.yml, observabilidade.yml, release.yml
 ├── .claude/agents/                 ← agente Sentinel Ciclo (Claude Code)
 ├── .github/agente/                 ← proteção sugerida para a branch main (protecao-main.json)
 ├── .sentinel.yml                   ← ajustes do próprio Sentinel para as auditorias do Sentinel
 ├── scripts/                        ← e2e, auditoria completa, calibração, medição, conferência de números e versão, anotações de CI
+├── specs/                          ← Uma pasta por funcionalidade (spec, plano e tarefas); veja [sdd.md](../sdd.md)
+├── .specify/                       ← Constituição, modelos e scripts do GitHub Spec Kit
+├── figma/                          ← Telas do dashboard em PNG e HTML (claro e escuro) para levar ao Figma; `node figma/capturar-telas.mjs` refaz tudo
 └── evidencias/                     ← Uma subpasta por sistema com dumps e exports para a análise offline
 ```
 

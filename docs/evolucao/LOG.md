@@ -2123,6 +2123,33 @@ O PDF lista os achados ativos junto com os 105 já suprimidos, o que tinha me le
 - **Não verificado:** o backend Java não foi compilado nem testado aqui (Maven não alcança o repositório central neste ambiente); quem valida é o CI do GitHub (Quarkus 3.40, Java 21). Os testes `@QuarkusTest` de endpoints (404, 409 e 400) dependem do `DomainExceptionMapper` ser registrado pelo Quarkus.
 
 
+## Documentação — revisão geral dos documentos contra o código (sem mudança de versão)
+
+- **Origem:** "atualize todos os documentos e verifique o que é usado". Conferidos links relativos, números, versões, variáveis do Compose, migrações, endpoints, estrutura do projeto, status das specs e arquivos que ninguém referencia.
+- **Corrigido:** `docs/evolucao/AGENTE.md` dizia 26 voltas (o `estado.json` está na volta 54, até 2026-11-22); `docs/sdd.md` tratava a spec 001 como rascunho (agora tem a tabela com o estado de 001 a 008); `docs/guia/instalacao.md` ganhou `specs/`, `.specify/`, `figma/`, `reports/`, `research_notes/`, `deploy/keycloak`, `deploy/observabilidade` e os 6 workflows; `docs/README.md` e o `README.md` passaram a apontar para `figma/` e para a análise do agente Sentinel Ciclo; `docs/referencia/auditoria-e-api.md` ganhou os endpoints de evidências (`GET/PUT/DELETE /api/v1/systems/{id}/evidence`), que existiam e não estavam listados.
+- **Removido:** `audit-dashboard/coverage/` (117 arquivos do relatório de cobertura, gerados por `npm run test:coverage`). Estava versionado apesar de constar no `.gitignore` e nada o lê; o `.gitignore` agora vale de fato.
+- **Conferido e sem divergência:** links relativos (0 quebrados), versão (12.123.0), números de regras e pacotes (347 regras), `ARQUITETURA.html` (14 diagramas), migrações V1 a V6, versões fixadas do `Dockerfile` e variáveis do `docker-compose.yml`.
+- **Mantido por ser usado:** `audit-rules/calibracao/descobertos.txt` (lido por `verificar-separacao.py`), `evidencias/LEIA-ME.md` (pasta montada no Compose), `docs/historico-de-versoes.md` (já marcado como resumo antigo).
+- **Verificado:** `sincronizar-versao.py --check`, `conferir-numeros.py`, `verificar-regras.py` e a checagem de links, rodados depois das edições.
+- **Não verificado:** o texto das telas e dos guias contra o comportamento em execução (nenhuma instalação foi subida); `docs/evolucao/relatorios/*.md` e `docs/evolucao/precisao.md` guardam números de rodadas passadas e não foram refeitos.
+
+## Documentação — correções da conferência arquivo a arquivo e limpeza do que não era usado (sem mudança de versão)
+
+- **Origem:** relatório da conferência dos documentos contra o código (129 arquivos, 3.449 referências verificadas, mais listas e valores padrão comparados à mão).
+- **Corrigido:** `docs/guia/instalacao.md` (código de saída 4 da CLI e a opção `--allow-incomplete`); `docs/referencia/variaveis-de-ambiente.md` (`EVIDENCE_MIN_LINE_COVERAGE`, padrão 60); `ARQUITETURA.md` e o `.html` gerado (saiu `claude-code-action`, que nenhum workflow usa); `PLACAR.md` (métricas Prometheus e teste de login com Keycloak em CI passam a `[x]`, com a evidência; o item de N+1 segue aberto porque `RuleQualityService` ainda consulta supressões dentro de um laço por sistema); `docs/guia/login-keycloak.md` (os 4 clientes do realm).
+- **Removido (continua no histórico do Git):** `docs/historico-de-versoes.md`, `docs/evolucao/triagem-auditoria-33.md` (as justificativas já são supressões do `.sentinel.yml`), os 7 relatórios de `docs/evolucao/relatorios/` (rodadas do agente Descoberta, removido em 2026-11-05), os exemplos `claude-md-spring-boot.md` e `claude-md-typescript.md` (o endpoint do Guia de código gera o texto vigente), `reports/` e `research_notes/` (análise pontual do agente Sentinel Ciclo). Índices e referências foram ajustados; a pasta `docs/evolucao/relatorios/` passa a não existir até a spec 008 criá-la (a pesquisa da spec foi atualizada).
+- **Verificado:** `sincronizar-versao.py --check`, `conferir-numeros.py`, `verificar-regras.py`, checagem de links relativos e regeneração do `ARQUITETURA.html` depois das edições.
+- **Não verificado:** os guias contra uma instalação em execução; as specs 003 a 008 (só planejam); as 1.115 referências "não encontradas" do LOG e dos relatórios históricos (esperadas, são arquivos renomeados ou removidos).
+
+## 12.124.0 — Sistemas: selo "sem auditar há N dias" na lista
+
+- **Origem:** pedido do João, depois de um protótipo com três posições para o selo (escolhida: sob o nome do sistema). A Visão geral já alertava auditoria antiga (limite de 5 dias), mas a lista de Sistemas não mostrava nada.
+- **O que mudou:** a linha de cada sistema em Sistemas ganha um selo sob o nome quando a última auditoria concluída tem mais de 7 dias: âmbar de 8 a 14 dias, vermelho acima de 14 e cinza tracejado "Nunca auditado" (sem nenhuma auditoria). Sem data concluída mas com auditorias (todas falharam ou ainda correm), não mostra selo, porque não dá para dizer a idade. Cores dos tokens do tema (claro e escuro); o texto do selo diz o estado, então a cor não é o único sinal.
+- **Decisão:** o limite do selo (7 dias, `AUDIT_BADGE_DAYS`) é separado do `STALE_DAYS` (5) da Visão geral, que não mudou. Unificar os dois fica como decisão do João.
+- **Testes:** regra de idade em `systemAttention.test.ts` (limites 7, 8, 14 e 15, nunca auditado, sem data com auditorias, data inválida), `AuditAgeBadge.test.tsx` (3) e `SystemsTable.test.tsx` (selo só onde deve e no nível certo).
+- **Verificado:** `tsc --noEmit`, `eslint src --max-warnings 0` e `vitest run` (68 arquivos, 439 testes) no dashboard; `sincronizar-versao.py --check`.
+- **Não verificado:** a aparência no navegador (o protótipo foi conferido por captura, a tela real não) e o CI do GitHub.
+
 ## 12.125.0 — Login: novo visual do tema do Keycloak e das telas "Entrando…" e "Não foi possível entrar"
 
 - **Origem:** pedido do João, depois de protótipos (escolhido: referência Carbon, com a identidade da marca em primeiro lugar; um logo animado e um gráfico de régua foram descartados por ele).
