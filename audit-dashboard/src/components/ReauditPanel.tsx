@@ -1,8 +1,7 @@
 import { InlineNotification } from '@carbon/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
+import { usePendingActions } from '../hooks/usePendingActions';
 import { useAuditRuns } from '../hooks/useAuditRuns';
 import { useDiff } from '../hooks/useLifecycle';
 import type { IPendingAction, ISystemSummaryResponse } from '../types';
@@ -29,17 +28,7 @@ export function scoreChange(before: number | null, after: number | null): string
 }
 
 function Requests({ systemId }: { systemId: number }) {
-  const queryClient = useQueryClient();
-  const key = ['pending-actions', systemId];
-  const list = useQuery({ queryKey: key, queryFn: () => api.getPendingActions(systemId), refetchInterval: 15_000 });
-  const decide = useMutation({
-    mutationFn: (v: { id: number; decision: 'approve' | 'reject' }) => api.decidePendingAction({ systemId, actionId: v.id, decision: v.decision }),
-    onSuccess: (data) => {
-      queryClient.setQueryData(key, data);
-      void queryClient.invalidateQueries({ queryKey: ['auditRuns'] });
-      void queryClient.invalidateQueries({ queryKey: ['systems'] });
-    },
-  });
+  const { list, decide } = usePendingActions(systemId);
   const items: IPendingAction[] = list.data ?? [];
   const waiting = items.filter((a) => a.status === 'PENDING').length;
 

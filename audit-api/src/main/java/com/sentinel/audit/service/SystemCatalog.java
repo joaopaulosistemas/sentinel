@@ -5,7 +5,6 @@ import com.sentinel.audit.repository.AuditedSystemRepository;
 import com.sentinel.audit.repository.FindingSuppressionRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,9 +22,9 @@ public class SystemCatalog {
     @Inject
     FindingSuppressionRepository suppressionRepository;
 
-    /** O sistema, ou {@link NotFoundException} (404) com a mensagem padrão. */
+    /** O sistema, ou {@link ResourceNotFoundException} (404) com a mensagem padrão. */
     public AuditedSystem require(Long id) {
-        return find(id).orElseThrow(() -> new NotFoundException("Sistema não encontrado: " + id));
+        return find(id).orElseThrow(() -> new ResourceNotFoundException("Sistema não encontrado: " + id));
     }
 
     /** Falha com 404 se o sistema não existir; para endpoints que só precisam validar o id. */

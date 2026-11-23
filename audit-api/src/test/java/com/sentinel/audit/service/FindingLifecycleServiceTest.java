@@ -9,8 +9,6 @@ import com.sentinel.audit.model.*;
 import com.sentinel.audit.repository.AuditRunRepository;
 import com.sentinel.audit.repository.FindingRepository;
 import com.sentinel.audit.repository.FindingSuppressionRepository;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -207,7 +205,7 @@ class FindingLifecycleServiceTest {
         AuditDiffResponse diff = service.diff(1L);
         assertFalse(diff.hasBaseline());
         assertTrue(diff.newFindings().isEmpty());
-        assertThrows(NotFoundException.class, () -> service.diff(99L));
+        assertThrows(ResourceNotFoundException.class, () -> service.diff(99L));
     }
 
     @Test
@@ -254,8 +252,8 @@ class FindingLifecycleServiceTest {
     @Test
     void naoAceitaPrazoNoPassadoNemFindingInexistente() {
         run(1, "main", AuditStatus.COMPLETED, finding(10, "pwd", "C.java", "s", Severity.CRITICAL));
-        assertThrows(BadRequestException.class, () -> service.suppress(10L, req(LocalDateTime.now().minusDays(1))));
-        assertThrows(NotFoundException.class, () -> service.suppress(999L, req(null)));
+        assertThrows(InvalidInputException.class, () -> service.suppress(10L, req(LocalDateTime.now().minusDays(1))));
+        assertThrows(ResourceNotFoundException.class, () -> service.suppress(999L, req(null)));
         assertTrue(suppressions.isEmpty());
     }
 
@@ -270,7 +268,7 @@ class FindingLifecycleServiceTest {
         assertEquals(FindingStatus.OPEN, findingsById.get(10L).getStatus());
         assertEquals(original, r1.getRiskScore().getSecurity());
         assertTrue(suppressions.isEmpty());
-        assertThrows(NotFoundException.class, () -> service.removeSuppression(1L, 12345L));
+        assertThrows(ResourceNotFoundException.class, () -> service.removeSuppression(1L, 12345L));
     }
 
     // ------------------------------------------------------------------ tendência

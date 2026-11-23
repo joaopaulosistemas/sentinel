@@ -1,10 +1,9 @@
 import { Button, InlineNotification, Modal, SkeletonText } from '@carbon/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api } from '../../api/client';
 import { StartAuditModal } from '../../components/StartAuditModal';
-import { useAudit, useAuditRuns } from '../../hooks/useAuditRuns';
+import { useAudit, useAuditRuns, useCancelAudit } from '../../hooks/useAuditRuns';
 import { AnalyzerCard, EventLog, LoadingSourceCard, PartialResult, PhaseStrip } from '../../components/ExecutionPanels';
 import { PageShell, type ICrumb } from '../../components/PageShell';
 import { McpStatusStrip } from '../../components/McpStatusStrip';
@@ -302,18 +301,6 @@ function CancelModal({ open, pending, error, isError, onClose, onConfirm }: ICan
       )}
     </Modal>
   );
-}
-
-/** Cancela a auditoria e atualiza as listas que a mostram. */
-function useCancelAudit(id: number) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => api.cancelAudit(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['audit', id] });
-      void queryClient.invalidateQueries({ queryKey: ['recentAudits'] });
-    },
-  });
 }
 
 /** Tempo restante estimado pela média das auditorias anteriores do mesmo sistema. */

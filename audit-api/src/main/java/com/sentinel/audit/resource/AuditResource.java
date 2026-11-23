@@ -5,7 +5,6 @@ import com.sentinel.audit.dto.AuditRunResponse;
 import com.sentinel.audit.dto.CreateAuditRequest;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -61,7 +60,6 @@ public class AuditResource {
      * Retorna 202 Accepted com o estado inicial da execução.
      */
     @POST
-    @Transactional
     @Operation(summary = "Criar auditoria", description = "Dispara uma nova execução de auditoria de forma assíncrona")
     @APIResponse(responseCode = "202", description = "Auditoria aceita; roda de forma assíncrona",
                 content = {@Content(mediaType = "application/json", schema = @Schema(implementation = AuditRunResponse.class))})

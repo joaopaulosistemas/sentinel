@@ -13,6 +13,7 @@ import com.sentinel.audit.repository.FindingRepository;
 import com.sentinel.audit.repository.FindingSuppressionRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -65,7 +66,8 @@ public class RuleQualityService {
         return out;
     }
 
-    /** Precisa de transação ativa (quem chama) para os repositórios. */
+    /** Abre a própria transação: os repositórios precisam de uma ativa. */
+    @Transactional
     public List<RuleQuality> compute() {
         List<Snapshot> snapshots = new ArrayList<>();
         Map<Long, AuditRun> latestBySystem = auditRunRepository.findLatestCompletedBySystem();

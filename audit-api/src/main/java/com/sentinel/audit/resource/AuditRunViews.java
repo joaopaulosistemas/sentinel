@@ -8,6 +8,7 @@ import com.sentinel.audit.service.AuditRunMapper;
 import com.sentinel.audit.service.RunCatalog;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
@@ -31,7 +32,8 @@ public class AuditRunViews {
     @Inject
     AuditOrchestrationService orchestration;
 
-    /** Pede uma auditoria (assíncrona) e devolve o estado inicial dela. */
+    /** Pede uma auditoria (assíncrona) e devolve o estado inicial dela. A transação cobre o pedido e a montagem da resposta. */
+    @Transactional
     AuditRunResponse request(Long systemId, String branch, String baseRef, String actor) {
         AuditRun run = requestService.request(systemId, branch, baseRef, actor);
         return runMapper.toResponse(run);

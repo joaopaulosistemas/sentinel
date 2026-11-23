@@ -17,7 +17,6 @@ import com.sentinel.audit.repository.FindingSuppressionRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.NotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -128,13 +127,13 @@ public class FindingLifecycleService {
     public FindingSuppression suppress(Long findingId, SuppressRequest request) {
         Finding finding = findingRepository.findById(findingId);
         if (finding == null) {
-            throw new NotFoundException("Finding não encontrado: " + findingId);
+            throw new ResourceNotFoundException("Finding não encontrado: " + findingId);
         }
         AuditRun run = finding.getAuditRun();
         AuditedSystem system = run.getSystem();
         String fingerprint = fingerprintOf(finding);
         if (request.expiresAt() != null && !request.expiresAt().isAfter(LocalDateTime.now())) {
-            throw new jakarta.ws.rs.BadRequestException("A data de validade da supressão deve estar no futuro");
+            throw new InvalidInputException("A data de validade da supressão deve estar no futuro");
         }
 
         FindingSuppression s = suppressionRepository.findBySystemAndFingerprint(system.getId(), fingerprint)
@@ -165,7 +164,7 @@ public class FindingLifecycleService {
     public void removeSuppression(Long systemId, Long suppressionId) {
         FindingSuppression s = suppressionRepository.findById(suppressionId);
         if (s == null || !s.getSystem().getId().equals(systemId)) {
-            throw new NotFoundException("Supressão não encontrada: " + suppressionId);
+            throw new ResourceNotFoundException("Supressão não encontrada: " + suppressionId);
         }
         String fingerprint = s.getFingerprint();
         suppressionRepository.delete(s);
@@ -217,7 +216,7 @@ public class FindingLifecycleService {
     public AuditDiffResponse diff(Long auditId) {
         AuditRun run = auditRunRepository.findById(auditId);
         if (run == null) {
-            throw new NotFoundException("Auditoria não encontrada: " + auditId);
+            throw new ResourceNotFoundException("Auditoria não encontrada: " + auditId);
         }
         Double overall = overallOf(run);
         AuditRun base = previousFor(run, auditId);
