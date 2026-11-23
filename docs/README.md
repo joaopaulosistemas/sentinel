@@ -34,7 +34,7 @@
 | Documento | Para quê |
 |---|---|
 | [sdd.md](sdd.md) | Desenvolvimento orientado por especificação com o GitHub Spec Kit: constituição, fluxo de comandos, ligação com issues, PRs e CI, e o estado de cada spec em [`specs/`](../specs/) |
-| [../figma/README.md](../figma/README.md) | Telas do dashboard em PNG e HTML, nos temas claro e escuro, para levar ao Figma, e o script que as refaz |
+| [figma/README.md](figma/README.md) | Telas do dashboard em PNG e HTML, nos temas claro e escuro, para levar ao Figma, e o script que as refaz |
 
 ## Integração
 | Documento | Para quê |
