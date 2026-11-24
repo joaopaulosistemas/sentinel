@@ -149,7 +149,7 @@ rules:
               - pattern: $REQ.body
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
     pattern-sinks:
       - patterns:
           - pattern: '{..., $where: $X, ...}'
@@ -187,7 +187,7 @@ rules:
               - pattern: $REQ.cookies
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern-either:
               - pattern: $EV.body
@@ -295,7 +295,7 @@ rules:
               - pattern: $REQ.headers
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -344,7 +344,7 @@ rules:
               - pattern: $REQ.headers
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           # Express sem `req.query`: `url.parse(req.url, true)` devolve o objeto cujo `.query` vem do usuário
           - pattern: $P.parse($REQ.url, true)
@@ -374,6 +374,8 @@ rules:
               metavariable: $U
               regex: ^(?!["'`]https?://[^/"'`$\s]+[/?])
           - focus-metavariable: $U
+      # Egg: `ctx.unsafeRedirect(url)` desliga a lista de domínios do framework (o nome já diz)
+      - pattern: ctx.unsafeRedirect($U)
       - patterns:
           - pattern-inside: |
               class $C { ... @Redirect(...) $M(...) {...} ... }
@@ -439,12 +441,12 @@ rules:
               - pattern: $REQ.headers
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern: $REQ.file.originalname
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern-inside: |
               class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
@@ -564,7 +566,7 @@ rules:
               - pattern: $REQ.headers
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           # Express sem `req.query`: `url.parse(req.url, true)` devolve o objeto cujo `.query` vem do usuário
           - pattern: $P.parse($REQ.url, true)
@@ -620,6 +622,8 @@ rules:
               - pattern: superagent.delete($U, ...)
               - pattern: http.request($U, ...)
               - pattern: https.request($U, ...)
+              # Egg: `ctx.curl(url)` é o cliente HTTP do framework
+              - pattern: ctx.curl($U, ...)
           - focus-metavariable: $U
       # cliente escolhido por ternário (`const client = url.startsWith('https') ? https : http; client.get(url)`)
       - patterns:
@@ -755,7 +759,7 @@ rules:
               - pattern: $REQ.cookies
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern-inside: |
               class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
@@ -847,7 +851,7 @@ rules:
               - pattern: $REQ.cookies
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern-either:
               - pattern: $EV.body
@@ -1020,7 +1024,7 @@ rules:
               - pattern: $REQ.query
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       # evento do socket.io: o payload do cliente é objeto JSON livre, como o corpo de uma requisição
       - patterns:
           - pattern-inside: |
@@ -1111,7 +1115,7 @@ rules:
               - pattern: $REQ.body
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
     pattern-sinks:
       - patterns:
           - pattern: new RegExp($P, ...)
@@ -1144,7 +1148,7 @@ rules:
               - pattern: $REQ.body
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
     pattern-sinks:
       - patterns:
           - pattern-either:

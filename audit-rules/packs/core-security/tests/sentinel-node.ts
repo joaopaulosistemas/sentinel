@@ -1397,3 +1397,47 @@ export function saudacaoEjsFixa (req: any, res: any) {
   // ok: sentinel-node-ssti-template-dinamico
   res.send(ejs.render('Hello, <%= nome %>!', { nome: req.query.nome }))
 }
+
+// ---------- Koa e Egg: a requisição vem em `ctx` (ctx.query, ctx.params, ctx.request.body) ----------
+export class ArquivoController {
+  async ler (ctx: any) {
+    // ruleid: sentinel-node-path-traversal
+    const dados = await readFile(ctx.params.file)
+    ctx.body = { msg: dados.toString() }
+  }
+
+  async lerSeguro (ctx: any) {
+    // ok: sentinel-node-path-traversal
+    const dados = await readFile(path.basename(ctx.params.file))
+    ctx.body = { msg: dados.toString() }
+  }
+
+  async buscar (ctx: any) {
+    const url = decodeURIComponent(ctx.query.url)
+    // ruleid: sentinel-node-ssrf
+    const resposta = await ctx.curl(url)
+    ctx.body = { msg: resposta.data.toString() }
+  }
+
+  async buscarFixo (ctx: any) {
+    // ok: sentinel-node-ssrf
+    const resposta = await ctx.curl('https://api.exemplo.com/status')
+    ctx.body = { msg: resposta.data.toString() }
+  }
+
+  async ir (ctx: any) {
+    const destino = decodeURIComponent(ctx.query.url)
+    // ruleid: sentinel-node-open-redirect
+    ctx.unsafeRedirect(destino)
+  }
+
+  async irFixo (ctx: any) {
+    // ok: sentinel-node-open-redirect
+    ctx.unsafeRedirect('/inicio')
+  }
+
+  async corpo (ctx: any) {
+    // ruleid: sentinel-node-ssrf
+    await ctx.curl(ctx.request.body.callback)
+  }
+}
