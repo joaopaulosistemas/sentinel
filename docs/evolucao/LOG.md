@@ -1548,6 +1548,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado:** cada tarefa da fase extra tem dependências e posição declaradas nas seções "Dependências" (003 a 008); teste antes do código em todas; a 003 fixa os limites antes da linha de base.
 - **NÃO verificado:** nada implementado.
 
+## Comando /speckit-sprint (só configuração e documentos, sem versão nova)
+
+- **Verificado:** criados `.claude/skills/speckit-sprint/SKILL.md`, `.specify/sprint-config.yml`, `.specify/templates/sprint-template.md` e `.specify/extensions.yml` (gancho opcional depois de `/speckit-tasks`); o comando escreve só `docs/evolucao/roteiro.md` e `roteiro.csv` e nunca altera specs nem código.
+- **NÃO verificado:** o comando ainda não foi executado; o formato do gancho segue o descrito pelos próprios comandos do Spec Kit, sem teste com a CLI `specify`. Nada do Sentinel foi implementado.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
