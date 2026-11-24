@@ -526,6 +526,32 @@ function mergeSeguro (target: any, source: any) {
   return target
 }
 
+// merge recursivo escrito como método de classe (`this.merge(...)`), comum em controllers e serviços
+class Mesclador {
+  // ruleid: sentinel-node-prototype-pollution
+  merge (target: any, source: any) {
+    for (const key in source) {
+      if (key in source && key in target) {
+        this.merge(target[key], source[key])
+      } else {
+        target[key] = source[key]
+      }
+    }
+  }
+
+  // ok: sentinel-node-prototype-pollution
+  mergeSeguro (target: any, source: any) {
+    for (const key in source) {
+      if (key === '__proto__' || key === 'constructor') continue
+      if (key in source && key in target) {
+        this.mergeSeguro(target[key], source[key])
+      } else {
+        target[key] = source[key]
+      }
+    }
+  }
+}
+
 // ---------- RegExp montada com dado da requisição (ReDoS) ----------
 export function testarPadrao (req: any) {
   const padrao = req.body.pattern
