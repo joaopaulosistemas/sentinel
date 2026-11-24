@@ -1,0 +1,37 @@
+# Configuração do comando /speckit-sprint (roteiro de fatias, quadro kanban e sprints opcionais).
+# Ajuste aqui; o comando só lê este arquivo e nunca o altera.
+
+# Onde o roteiro é gravado (o comando escreve só nestes dois arquivos).
+saida:
+  roteiro: docs/evolucao/roteiro.md
+  cartoes: docs/evolucao/roteiro.csv
+
+# Ordem das specs no roteiro. Dependências declaradas nos tasks.md têm prioridade sobre esta ordem.
+ordem-specs: ["003", "004", "005", "006", "007", "008"]
+
+# Quadro kanban (modo padrão): um cartão por fatia, não por tarefa.
+kanban:
+  limite-em-andamento: 1          # fatias em andamento ao mesmo tempo
+  colunas: ["Backlog", "Pronto", "Em andamento", "Aguardando você", "Em revisão", "Feito"]
+
+# Sprints (opcional). Desligado por padrão: o roteiro sai sem sprints.
+sprint:
+  habilitada: false
+  duracao-dias: 14
+  fatias-por-sprint: 2            # meta por contagem de fatias, sem horas
+
+# Estimativa de esforço (opcional, desligada). Quando ligada, soma os pesos por tarefa.
+estimativa:
+  habilitada: false
+  unidade: "pontos"
+  pesos:
+    teste: 1
+    codigo: 2
+    documento: 1
+    acao-humana: 3                # tarefas marcadas 👤
+    autorizacao: 1                # tarefas marcadas ⚠️
+  capacidade-por-sprint: 20       # usada só se sprint.habilitada e estimativa.habilitada
+
+# Bloqueios externos conhecidos; entram na coluna "Aguardando você" quando afetam uma fatia.
+bloqueios-externos:
+  - "GitHub Actions indisponível por cobrança: nenhuma fatia tem CI verde até resolver"

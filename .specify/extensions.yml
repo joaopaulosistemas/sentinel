@@ -1,0 +1,10 @@
+# Registro de extensões e ganchos do Spec Kit neste projeto.
+installed: []
+hooks:
+  after_tasks:
+    - extension: sprint
+      command: speckit.sprint
+      enabled: true
+      optional: true
+      description: Atualizar o roteiro de fatias e os cartões do quadro com as tarefas recém-geradas
+      prompt: Atualizar o roteiro de fatias (docs/evolucao/roteiro.md)?
