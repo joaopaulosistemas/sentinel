@@ -1,5 +1,5 @@
 {
- "_comentario": "Falhas de wyxu95/JSecCode (Egg + MySQL/MongoDB com front-ends Vue, React e Rax, MIXED) lidas no codigo (treino), volta 59. Escrito pelo mesmo agente que corrige, ANTES de ver os achados; regras aceitas fixadas antes e conferidas contra o catalogo. Falhas logicas, de configuracao ou sem regra no catalogo ficam em lacunas_assumidas_nao_medidas (nao entram no recall).",
+ "_comentario": "Falhas de wyxu95/JSecCode (Egg + MySQL/MongoDB com front-ends Vue, React e Rax, MIXED) lidas no codigo (treino), volta 59. Escrito pelo mesmo agente que corrige, ANTES de ver os achados; regras aceitas fixadas antes e conferidas contra o catalogo. Falhas logicas, de configuracao ou sem regra no catalogo ficam em lacunas_assumidas_nao_medidas (nao entram no recall). As 3 falhas de redirecionamento no navegador (rax e React) entraram em falhas DEPOIS da primeira medida, quando a regra sentinel-dom-open-redirect passou a existir na volta 59; o recall antes oficial (9/24) usa o gabarito original.",
  "repo": "wyxu95/JSecCode",
  "falhas": [
   {
@@ -224,30 +224,33 @@
    "regras": [
     "sentinel-postmessage-origem-curinga"
    ]
-  }
- ],
- "lacunas_assumidas_nao_medidas": [
+  },
   {
    "arquivo": "frontend-rax/src/pages/URLRedirect/urlredirect_frontend.tsx",
    "linha": 7,
    "cwe": "CWE-601",
-   "regras": [],
-   "nota": "window.location.href com parametro da query; nao existe regra de redirecionamento no navegador no catalogo"
+   "regras": [
+    "sentinel-dom-open-redirect"
+   ]
   },
   {
    "arquivo": "frontend-react/src/urlredirect/SimpleURLRedirect.tsx",
    "linha": 13,
    "cwe": "CWE-601",
-   "regras": [],
-   "nota": "window.location.href = url vinda da query; sem regra"
+   "regras": [
+    "sentinel-dom-open-redirect"
+   ]
   },
   {
    "arquivo": "frontend-react/src/urlredirect/DelayedURLRedirect.tsx",
    "linha": 26,
    "cwe": "CWE-601",
-   "regras": [],
-   "nota": "window.location.href = this.redirectURL; sem regra"
-  },
+   "regras": [
+    "sentinel-dom-open-redirect"
+   ]
+  }
+ ],
+ "lacunas_assumidas_nao_medidas": [
   {
    "arquivo": "frontend-vue/src/components/postmessage/PostRedirectReceiver.vue",
    "linha": 17,
