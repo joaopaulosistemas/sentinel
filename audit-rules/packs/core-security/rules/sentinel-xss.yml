@@ -87,3 +87,20 @@ rules:
       category: security
       cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
       owasp: A03:2021 - Injection
+
+  - id: sentinel-vue-v-html
+    # `v-html` põe o texto como HTML, sem escapar. Vale para Vue 2 e 3; fica no pacote que roda sempre porque XSS não é estilo.
+    # Ignora o valor passado por um sanitizador conhecido (DOMPurify, sanitize..., escape...).
+    pattern-regex: '(?m)\bv-html\s*=\s*"(?![^"]*(?:[Ss]anitiz|[Pp]urify|[Ee]scape))'
+    message: >
+      v-html insere HTML sem escapar: com dado do usuário vira XSS. Use a interpolação {{ }}, que escapa o texto,
+      ou sanitize o HTML (DOMPurify) antes de exibir.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.vue"]
+      exclude: ["**/node_modules/**"]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
