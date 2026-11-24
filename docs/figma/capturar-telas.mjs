@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Gera a pasta figma/: uma imagem (PNG) e um HTML autônomo de cada tela do dashboard, nos temas claro e escuro.
-// Roda o dashboard de verdade (vite dev) com a API simulada por figma/dados-simulados.mjs: não precisa de backend.
+// Gera a pasta docs/figma/: uma imagem (PNG) e um HTML autônomo de cada tela do dashboard, nos temas claro e escuro.
+// Roda o dashboard de verdade (vite dev) com a API simulada por docs/figma/dados-simulados.mjs: não precisa de backend.
 //
 // Uso (na raiz do projeto, depois de `npm ci` em audit-dashboard):
-//   node figma/capturar-telas.mjs
+//   node docs/figma/capturar-telas.mjs
 // Variáveis: E2E_CHROMIUM = caminho do Chrome/Chromium (senão procura um instalado), DASHBOARD_URL = servidor já em pé.
 import { spawn } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -12,9 +12,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as dados from './dados-simulados.mjs';
 
-const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const pastaFigma = dirname(fileURLToPath(import.meta.url));
+const raiz = resolve(pastaFigma, '..', '..');
 const pastaDashboard = join(raiz, 'audit-dashboard');
-const pastaFigma = join(raiz, 'figma');
 const requireDoDashboard = createRequire(join(pastaDashboard, 'package.json'));
 const { chromium } = requireDoDashboard('@playwright/test');
 
@@ -114,7 +114,7 @@ function acharChrome() {
 
 /**
  * Devolve o HTML da tela como está na janela, sem scripts: só o CSS que a tela usa, num <style> único, com as
- * fontes apontando para figma/html/fonts/. Abre offline e serve de entrada para importar no Figma (html.to.design e similares).
+ * fontes apontando para docs/figma/html/fonts/. Abre offline e serve de entrada para importar no Figma (html.to.design e similares).
  * `fontesUsadas` são os caminhos (depois de "~@ibm/plex/") que o navegador de fato baixou.
  */
 async function htmlAutonomo(page, fontesUsadas) {
