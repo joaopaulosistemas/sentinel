@@ -28,7 +28,7 @@ semgrep --test --config audit-rules/packs/core-quality/rules audit-rules/packs/c
 ## Pacotes de regras, perfis e arquitetura (plug and play)
 
 As regras não ficam mais no código: são **pacotes** (pastas com um `pack.yml`) que você adiciona, atualiza ou remove sem recompilar.
-Vêm prontos em `audit-rules/packs/`: `core-security` (144 regras Semgrep, 32 delas para backend Node/Express), `core-spring` (23, Spring Boot e JPA), `core-persistencia` (14: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
+Vêm prontos em `audit-rules/packs/`: `core-security` (146 regras Semgrep, 32 delas para backend Node/Express; inclui `v-html` do Vue e o redirecionamento aberto no navegador), `core-spring` (23, Spring Boot e JPA), `core-persistencia` (14: N+1, escrita em loop, `findAll` sem paginação, `SELECT *`, `LIKE '%x'`, `ORDER BY random()`, `DELETE`/`UPDATE` sem `WHERE`, `@ManyToOne` EAGER, log de SQL em DEBUG), `core-iac` (Dockerfile, Compose e Kubernetes),
 `core-quality` (45, clean code, integrações e **vazamento de memória em Java**), `core-frontend` (32: Angular, React, HTML, CSS/SCSS, acessibilidade, performance e **vazamento de memória no navegador**), `market-tools` (ferramentas externas, veja abaixo), `ts-clean-code` (padrão TypeScript, opt-in) `core-architecture` (exemplo de política de camadas e componentes, **desligado por padrão**) e três estilos de arquitetura, também desligados por padrão: `arq-hexagonal` (hexagonal/limpa/cebola), `arq-monolito-modular` (sem ciclo entre módulos, só API pública) `arq-frontend-fsd` (Feature-Sliced Design) e `arq-angular-nx` (bibliotecas Nx: feature, ui, data-access, util).
 
 ### Estrutura de um pacote
@@ -95,7 +95,7 @@ introduzir uma regra nova sem derrubar a nota de ninguém: observe o volume, aju
 **Perfis para Quarkus:** `quarkus-react` e `quarkus-vue` reúnem os pacotes padrão (sem Spring nem Angular) com `core-quarkus`
 (injeção por reflexão, `getenv`, `await()` e `Thread.sleep` em código reativo, HQL do Panache concatenado, segredo em `application.properties`),
 `core-boas-praticas` (recurso sem `try-with-resources`, `@Transactional` no controller, `strict: false`, cast sem validação, `fetch` em `useEffect`) e,
-no Vue, `core-vue` (`v-html`, `v-for` sem `:key`, `v-if` com `v-for`, `reactive` desestruturado). Os três pacotes têm `enabled-by-default: false`:
+no Vue, `core-vue` (`v-for` sem `:key`, `v-if` com `v-for`, `reactive` desestruturado). Os três pacotes têm `enabled-by-default: false`:
 só pesam na nota de quem escolhe um desses perfis.
 
 ### Guia de código

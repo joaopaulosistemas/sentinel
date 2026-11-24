@@ -1,13 +1,3 @@
-- key: "sentinel-vue-v-html"
-  summary: "Use a interpolação {{ }}, que escapa o texto; se o HTML for inevitável, sanitize antes."
-  before: "<div v-html=\"comentario\"></div>"
-  after: |-
-    <div>{{ comentario }}</div>
-    <!-- ou, com HTML confiável e limpo: -->
-    <div v-html="DOMPurify.sanitize(comentario)"></div>
-  refs:
-    - "https://vuejs.org/guide/best-practices/security.html"
-
 - key: "sentinel-vue-v-for-sem-key"
   summary: "Dê ao v-for uma :key estável, com o id do dado."
   before: "<li v-for=\"item in itens\">{{ item.nome }}</li>"
