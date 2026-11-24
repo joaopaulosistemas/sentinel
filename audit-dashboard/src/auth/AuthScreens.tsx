@@ -39,6 +39,19 @@ export function AuthLoadingScreen() {
   );
 }
 
+/** Depois de Sair: confirma que a sessão terminou e deixa o usuário escolher quando entrar de novo. */
+export function AuthSignedOutScreen({ onSignIn }: { onSignIn: () => void }) {
+  return (
+    <AuthScreen>
+      <h1 style={titleStyle}>Você saiu</h1>
+      <p style={textStyle}>A sua sessão foi encerrada. Para voltar ao painel, entre de novo.</p>
+      <Button kind="primary" size="xl" renderIcon={ArrowRight} onClick={onSignIn} style={{ width: '100%', maxWidth: 'none' }}>
+        Entrar de novo
+      </Button>
+    </AuthScreen>
+  );
+}
+
 interface IErrorProps {
   message: string;
   onRetry: () => void;
