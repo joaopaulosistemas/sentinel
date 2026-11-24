@@ -31,3 +31,61 @@ rules:
       category: security
       cwe: "CWE-346: Origin Validation Error"
       owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-dom-open-redirect
+    mode: taint
+    pattern-sources:
+      # URL da própria página: `?url=`, `#destino` e o objeto de rota do React Router (`props.location.search`)
+      - pattern: $W.location.search
+      - pattern: $W.location.hash
+      - pattern: location.search
+      - pattern: location.hash
+      - pattern: document.URL
+      - pattern: document.referrer
+      # rotas do Vue e do Next: `this.$route.query.x`, `$route.query.x`, `router.query.x`
+      - pattern: $R.$route.query
+      - pattern: $route.query
+      - patterns:
+          - pattern: $R.query
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(router|this\.\$route|\$route|route)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $W.location.href = $U
+              - pattern: $W.location = $U
+              - pattern: location.href = $U
+              - pattern: location = $U
+              - pattern: $W.location.assign($U)
+              - pattern: $W.location.replace($U)
+              - pattern: location.assign($U)
+              - pattern: location.replace($U)
+          # destino que começa por um host fixo ou por um caminho do próprio site (`'/painel?aba=' + x`): o dado só vai para o resto
+          - metavariable-regex:
+              metavariable: $U
+              regex: ^(?!["'`](https?://[^/"'`$\s]+|/[^/"'`$\s])[/?"'`])
+          # navegação dentro de um `if` que confere o destino (`startsWith('/')`, lista de permissão com `includes`/`indexOf`)
+          - pattern-not-inside: |
+              if (<... $X.startsWith(...) ...>) { ... }
+          - pattern-not-inside: |
+              if (<... $X.includes(...) ...>) { ... }
+          - pattern-not-inside: |
+              if (<... $X.indexOf(...) ...>) { ... }
+          - focus-metavariable: $U
+    pattern-sanitizers:
+      - pattern: encodeURIComponent(...)
+      - pattern: encodeURI(...)
+    message: >
+      Redirecionamento aberto no navegador (CWE-601): a página navega para um destino que vem da própria URL
+      (`?url=`, `?next=`, `#...`). Um link montado por quem ataca leva a vítima para outro site com a aparência do seu.
+      Aceite só caminhos do próprio site (comece por `/` e não por `//`) ou compare o destino com uma lista de permissão.
+    severity: WARNING
+    languages: [javascript, typescript]
+    paths:
+      exclude: ["**/node_modules/**", "**/dist/**", "**/test/**", "**/*.spec.*", "**/*.test.*"]
+    metadata:
+      side: front
+      category: security
+      cwe: "CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"
+      owasp: A01:2021 - Broken Access Control

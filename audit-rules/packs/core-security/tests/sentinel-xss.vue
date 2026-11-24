@@ -10,5 +10,7 @@
     <p v-html="DOMPurify.sanitize(echoValue)"></p>
     <!-- ok: sentinel-vue-v-html -->
     <p v-html="sanitizar(msg.content)"></p>
+    <!-- ok: sentinel-vue-v-html -->
+<!--    <p v-html="page"/>-->
   </div>
 </template>
