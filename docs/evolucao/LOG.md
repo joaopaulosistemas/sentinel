@@ -2278,3 +2278,10 @@ O PDF lista os achados ativos junto com os 105 já suprimidos, o que tinha me le
 - **Testes:** 4 novos em `AuthGate.test.tsx` (Sair anota a saída e chama o logout do Keycloak; a volta mostra "Você saiu" sem chamar o login; o botão leva ao login; a anotação vale uma vez). `src/auth`: 33 passam; a suíte completa do painel: 445 testes passam.
 - **Verificado:** `tsc --noEmit`, `eslint src/auth`, `vitest run src/auth`; `sincronizar-versao.py --check`.
 - **Não verificado:** o fluxo contra um Keycloak de verdade (não subi o Keycloak aqui); a tela "Você saiu" por captura; se a tela "Entrando…" do relato ficava travada, caso em que a causa seria outra (redirect de logout recusado pelo cliente); a suíte completa do painel e os e2e (ficam para o CI).
+
+## Ciclo — correção do CI do PR 369 (sem mudança de versão, sem volta nova)
+
+- **Origem:** execução agendada de 2026-11-25 achou o PR 369 aberto com o job "Testes Semgrep dos pacotes" vermelho (`ruleid annotation with no YAML rule`), então não iniciou volta nova (item F).
+- **Causa:** o teste `sentinel-sql-concatenado.java` não tinha `.yml` de mesmo nome e, como "órfão", rodava contra todas as regras do pacote; a regra genérica `sentinel-jsp-sql-concatenado` (que no uso real só vale em `*.jsp`) casou no `.java` sem anotação, e o `semgrep --test` recusou.
+- **Correção:** os casos foram anexados a `sentinel-injection.java` (pareado só com `sentinel-injection.yml`); o arquivo órfão saiu. Nenhuma regra mudou.
+- **Verificado:** `testar-pacote.py audit-rules/packs/core-security` com Semgrep 1.187 (0 problemas). **NÃO verificado:** o CI completo depois do push (conferido no PR).
