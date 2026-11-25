@@ -182,4 +182,22 @@ class ReportServiceTest {
         assertEquals(ReportService.Type.COMPARATIVO, ReportService.Type.parse("comparative"));
         assertThrows(IllegalArgumentException.class, () -> ReportService.Type.parse("xyz"));
     }
+
+    @Test
+    void todoRelatorioHtmlTemOLogoDoSentinelNoTopo() {
+        ReportService rs = new ReportService();
+        String tecnico = rs.generateHtmlReport(run(), List.of());
+        String comparativo = rs.generateComparativeReport(run(), List.of(), null);
+
+        for (String html : List.of(tecnico, comparativo)) {
+            assertTrue(html.contains("<header class=\"brand\"><svg"), "logo no cabeçalho");
+            assertTrue(html.contains("aria-label=\"Sentinel\""));
+            assertTrue(html.indexOf("<header class=\"brand\">") < html.indexOf("<h1>"), "logo vem antes do título");
+        }
+    }
+
+    @Test
+    void cabecalhoEscapaOTipoDoRelatorio() {
+        assertFalse(ReportService.cabecalho("<script>x</script>").contains("<script>"));
+    }
 }

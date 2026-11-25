@@ -12,11 +12,14 @@ import org.openpdf.text.DocumentException;
 import org.openpdf.text.Element;
 import org.openpdf.text.Font;
 import org.openpdf.text.FontFactory;
+import org.openpdf.text.Image;
 import org.openpdf.text.PageSize;
 import org.openpdf.text.Paragraph;
 import org.openpdf.text.Phrase;
+import org.openpdf.text.pdf.PdfContentByte;
 import org.openpdf.text.pdf.PdfPCell;
 import org.openpdf.text.pdf.PdfPTable;
+import org.openpdf.text.pdf.PdfTemplate;
 import org.openpdf.text.pdf.PdfWriter;
 
 import java.awt.Color;
@@ -53,6 +56,12 @@ public class PdfReportService {
     private static final Font SMALL = FontFactory.getFont(FontFactory.HELVETICA, 8, Color.DARK_GRAY);
     private static final Font TH = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE);
     private static final Font TD = FontFactory.getFont(FontFactory.HELVETICA, 9);
+    private static final float LOGO_BOX = 32;
+    private static final float LOGO_PRINT_SIZE = 34;
+    private static final Color LOGO_BLUE = new Color(0x45, 0x89, 0xff);
+    private static final Font BRAND_NAME = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
+    private static final Font BRAND_SUB = FontFactory.getFont(FontFactory.HELVETICA, 8, Color.GRAY);
+    private static final Font BRAND_DOC = FontFactory.getFont(FontFactory.HELVETICA, 9, Color.GRAY);
     private static final Color HEAD_BG = new Color(0x16, 0x16, 0x16);
 
     // ------------------------------------------------------------------ técnico
@@ -194,10 +203,11 @@ public class PdfReportService {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Document doc = new Document(PageSize.A4.rotate(), PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN);
         try {
-            PdfWriter.getInstance(doc, out);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
             doc.addTitle(clean(title));
             doc.addCreator("Sentinel Audit Tool");
             doc.open();
+            cabecalho(doc, writer, title);
             doc.add(new Paragraph(clean(title), H1));
             for (String line : intro) {
                 doc.add(new Paragraph(clean(line), BODY));
@@ -222,6 +232,56 @@ public class PdfReportService {
 
     // ------------------------------------------------------------------ infraestrutura
 
+    /** Escudo com olho (o mesmo logo do painel), desenhado em vetor: nítido em qualquer zoom e sem arquivo de imagem. */
+    private static Image logo(PdfWriter writer) throws DocumentException {
+        PdfContentByte cb = writer.getDirectContent();
+        PdfTemplate t = cb.createTemplate(LOGO_BOX, LOGO_BOX);
+        t.setColorFill(LOGO_BLUE);
+        // O desenho original usa y para baixo (SVG); no PDF o y cresce para cima, por isso 32 - y.
+        t.moveTo(16, 29.5f);
+        t.lineTo(4.5f, 25.2f);
+        t.lineTo(4.5f, 17f);
+        t.curveTo(4.5f, 9.8f, 9.4f, 4.6f, 16, 2.5f);
+        t.curveTo(22.6f, 4.6f, 27.5f, 9.8f, 27.5f, 17f);
+        t.lineTo(27.5f, 25.2f);
+        t.closePath();
+        t.fill();
+        t.setColorStroke(Color.WHITE);
+        t.setLineWidth(2);
+        t.ellipse(9.8f, 13f, 22.2f, 21f);
+        t.stroke();
+        t.setColorFill(Color.WHITE);
+        t.circle(16, 17, 1.9f);
+        t.fill();
+        Image img = Image.getInstance(t);
+        img.scaleAbsolute(LOGO_PRINT_SIZE, LOGO_PRINT_SIZE);
+        return img;
+    }
+
+    /** Cabeçalho de todo PDF: logo, nome da ferramenta, tipo do relatório à direita e uma linha azul embaixo. */
+    private static void cabecalho(Document doc, PdfWriter writer, String tipoDoRelatorio) throws DocumentException {
+        PdfPTable t = new PdfPTable(new float[] {0.8f, 4f, 5f});
+        t.setWidthPercentage(100);
+        PdfPCell logoCell = new PdfPCell(logo(writer), false);
+        PdfPCell nome = new PdfPCell();
+        nome.addElement(new Paragraph("Sentinel", BRAND_NAME));
+        nome.addElement(new Paragraph("Audit Tool", BRAND_SUB));
+        PdfPCell tipo = new PdfPCell(new Phrase(clean(tipoDoRelatorio), BRAND_DOC));
+        tipo.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        tipo.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        for (PdfPCell c : List.of(logoCell, nome, tipo)) {
+            c.setBorder(PdfPCell.BOTTOM);
+            c.setBorderColorBottom(LOGO_BLUE);
+            c.setBorderWidthBottom(1.5f);
+            c.setPaddingBottom(CELL_PADDING * 2);
+        }
+        t.addCell(logoCell);
+        t.addCell(nome);
+        t.addCell(tipo);
+        t.setSpacingAfter(H2_SPACING_BEFORE);
+        doc.add(t);
+    }
+
     @FunctionalInterface
     private interface Body {
         void write(Document doc) throws DocumentException;
@@ -231,10 +291,11 @@ public class PdfReportService {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Document doc = new Document(PageSize.A4, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN);
         try {
-            PdfWriter.getInstance(doc, out);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
             doc.addTitle(clean(title + " - " + run.getSystem().getName()));
             doc.addCreator("Sentinel Audit Tool");
             doc.open();
+            cabecalho(doc, writer, title);
             doc.add(new Paragraph(clean(title), H1));
             body.write(doc);
         } catch (DocumentException e) {

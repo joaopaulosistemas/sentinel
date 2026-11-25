@@ -160,6 +160,7 @@ public class PortfolioReportService {
                 .append("<title>").append(ReportService.esc(doc.title())).append("</title>")
                 .append("<style>").append(ReportService.CSS).append("</style></head><body>")
                 .append("<p class=\"noprint hint\">Para gerar o PDF: Imprimir (Ctrl+P) &rarr; Salvar como PDF.</p>")
+                .append(ReportService.cabecalho("Relatório consolidado"))
                 .append("<h1>").append(ReportService.esc(doc.title())).append("</h1>");
         for (String line : doc.intro()) {
             h.append("<p>").append(ReportService.esc(line)).append("</p>");
