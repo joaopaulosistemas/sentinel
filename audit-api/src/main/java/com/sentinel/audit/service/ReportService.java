@@ -1,5 +1,7 @@
 package com.sentinel.audit.service;
 
+import com.sentinel.audit.dto.IsoQualityDto;
+import com.sentinel.audit.iso.Iso25010Perfil;
 import com.sentinel.audit.pack.RemediationCatalog;
 import com.sentinel.audit.insights.AreaReport;
 import com.sentinel.audit.insights.AuditInsights;
@@ -14,6 +16,7 @@ import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.Severity;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.Comparator;
 import java.util.List;
@@ -61,6 +64,7 @@ public class ReportService {
                 .append("</dl>");
 
         appendSummary(h, run, active, suppressed);
+        appendIso(h, run, findings);
         appendInsights(h, run, FindingLifecycleService.active(findings).stream().filter(f -> !isLowConfidence(f)).toList());
         appendFindingLists(h, active, suppressed);
 
@@ -180,6 +184,7 @@ public class ReportService {
             h.append("<p>Corrigir os ").append(plan.criticalCount()).append(" crítico(s) leva a nota de ")
                     .append(fmt(plan.scoreNow())).append(" para cerca de <strong>").append(fmt(plan.scoreIfCriticalFixed())).append("</strong>.</p>");
         }
+        appendIso(h, run, findings);
         appendFixFirst(h, plan);
         return pageEnd(h);
     }
@@ -292,6 +297,28 @@ public class ReportService {
                 .append("<style>").append(CSS).append("</style></head><body>")
                 .append(cabecalho(title))
                 .append("<p class=\"noprint hint\">Para gerar o PDF: Imprimir (Ctrl+P) &rarr; Salvar como PDF.</p>");
+    }
+
+    @Inject
+    ScoringService scoring;
+
+    private ScoringService scoring() {
+        return scoring != null ? scoring : new ScoringService();
+    }
+
+    /** Qualidade por característica da ISO/IEC 25010, com as que o Sentinel não avalia marcadas como tal. */
+    void appendIso(StringBuilder h, AuditRun run, List<Finding> active) {
+        IsoQualityDto iso = IsoQuality.calculate(scoring(), FindingLifecycleService.active(active), run.getLinesOfCode(),
+                Iso25010Perfil.PADRAO);
+        h.append("<h2>Qualidade segundo a ISO/IEC 25010</h2><p>Nota ponderada: <strong>").append(iso.notaPonderada())
+                .append("</strong> (0–100, maior = melhor). Alinhamento de vocabulário, não certificação.</p>")
+                .append("<table><tr><th>Característica</th><th>Nota</th><th>Achados</th></tr>");
+        for (IsoQualityDto.Caracteristica c : iso.caracteristicas()) {
+            h.append("<tr><td>").append(esc(c.nome())).append("</td><td>")
+                    .append(c.avaliada() ? String.valueOf(c.nota()) : "não avaliada").append("</td><td>")
+                    .append(c.avaliada() ? String.valueOf(c.achados()) : "—").append("</td></tr>");
+        }
+        h.append("</table>");
     }
 
     private static String pageEnd(StringBuilder h) {

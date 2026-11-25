@@ -1,4 +1,7 @@
 import type {
+  IIsoQuality,
+  IIsoTrendPoint,
+  IsoProfile,
   IAuditDiff,
   IAuditFreshness,
   IAuditRunResponse,
@@ -207,6 +210,11 @@ export const api = {
       headers: { 'Content-Type': 'application/octet-stream' },
       body: file,
     }),
+
+  getIsoQuality: (auditId: number, perfil: IsoProfile) =>
+    apiFetch<IIsoQuality>(`/api/v1/audits/${auditId}/iso25010?perfil=${perfil}`),
+  getIsoTrend: (systemId: number, limit = 10) =>
+    apiFetch<IIsoTrendPoint[]>(`/api/v1/systems/${systemId}/iso25010/trend?limit=${limit}`),
 
   getFixPlan: (auditId: number) => apiFetch<IFixPlan>(`/api/v1/audits/${auditId}/fix-plan`),
   getScoreExplanation: (auditId: number, without: string[]) =>

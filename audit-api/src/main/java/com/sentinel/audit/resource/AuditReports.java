@@ -2,7 +2,10 @@ package com.sentinel.audit.resource;
 
 import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.FixPlanDto;
+import com.sentinel.audit.dto.IsoQualityDto;
 import com.sentinel.audit.dto.ScoreExplanationDto;
+import com.sentinel.audit.iso.Iso25010Perfil;
+import com.sentinel.audit.service.IsoQuality;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Finding;
@@ -95,6 +98,14 @@ public class AuditReports {
         List<Finding> active = FindingLifecycleService.active(findingCatalog.byRun(run.getId()));
         List<String> removed = without == null || without.isBlank() ? List.of() : List.of(without.split(","));
         return scoringService.explainWithout(active, run.getLinesOfCode(), removed);
+    }
+
+    /** Qualidade por característica da ISO/IEC 25010; {@code perfil} muda os pesos e {@code metas} (security:90,...) pede notas mínimas. */
+    IsoQualityDto isoQuality(Long id, String perfil, String metas) {
+        AuditRun run = runCatalog.require(id);
+        List<Finding> active = FindingLifecycleService.active(findingCatalog.byRun(run.getId()));
+        return IsoQuality.calculate(scoringService, active, run.getLinesOfCode(), Iso25010Perfil.parse(perfil),
+                IsoQuality.parseMetas(metas));
     }
 
     FixPlanDto fixPlan(Long id) {

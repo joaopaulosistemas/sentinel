@@ -137,7 +137,7 @@ public class ScoringService {
     }
 
     /** Fator (0,2 a 1,0) aplicado às penalidades que não são CRITICAL, conforme o tamanho do projeto. */
-    double sizeFactor(Long linesOfCode) {
+    public double sizeFactor(Long linesOfCode) {
         if (!densityEnabled || linesOfCode == null || referenceLines <= 0 || linesOfCode <= referenceLines) {
             return 1.0;
         }
@@ -161,14 +161,19 @@ public class ScoringService {
      * @return score entre 0 e 100
      */
     public double calculateDimensionScore(List<Finding> findings, Category category, double sizeFactor) {
+        return scoreOf(findings.stream().filter(f -> f.getCategory() == category).toList(), sizeFactor);
+    }
+
+    /**
+     * Nota (0-100) de um conjunto de achados, com as mesmas regras de penalidade, tetos e curva da nota por dimensão.
+     * Serve para agrupar por outro critério além da categoria (por exemplo, as características da ISO 25010).
+     */
+    public double scoreOf(List<Finding> findings, double sizeFactor) {
         double criticalPenalty = 0.0;
         double penalty = 0.0;
         Map<String, Double> cappedByRule = new HashMap<>();
 
         for (Finding f : findings) {
-            if (f.getCategory() != category) {
-                continue;
-            }
             double p = findingPenalty(f);
             if (f.getSeverity() == Severity.CRITICAL) {
                 criticalPenalty += p;

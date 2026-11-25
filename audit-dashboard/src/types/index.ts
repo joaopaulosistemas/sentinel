@@ -210,6 +210,8 @@ export interface IFindingResponse {
   confidence?: Confidence;
   confidenceReason?: string | null;
   remediation?: IRemediation | null;
+  /** característica da ISO/IEC 25010 que o achado afeta (security, maintainability, reliability, performance-efficiency) */
+  iso25010?: string | null;
 }
 
 type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
@@ -384,6 +386,38 @@ export interface IFixPlanItem {
   exampleFile: string | null;
   exampleLine: number | null;
   howToFix: string | null;
+}
+
+export type IsoProfile = 'padrao' | 'financeiro' | 'interno';
+
+export interface IIsoCharacteristic {
+  id: string;
+  nome: string;
+  /** false = o Sentinel não tem regras para esta característica (sem nota) */
+  avaliada: boolean;
+  nota: number | null;
+  achados: number;
+  peso: number;
+  meta: number | null;
+  atingiu: boolean | null;
+}
+
+/** Qualidade por característica da ISO/IEC 25010 (alinhamento de vocabulário, não certificação). */
+export interface IIsoQuality {
+  perfil: IsoProfile;
+  notaPonderada: number;
+  caracteristicas: IIsoCharacteristic[];
+  /** ids das avaliadas, da que mais merece atenção para a que menos */
+  prioridade: string[];
+  metasAtingidas: boolean | null;
+}
+
+export interface IIsoTrendPoint {
+  auditId: number;
+  branch: string;
+  completedAt: string | null;
+  notaPonderada: number;
+  notas: Record<string, number>;
 }
 
 export interface IFixPlan {

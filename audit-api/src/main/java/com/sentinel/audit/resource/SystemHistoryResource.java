@@ -1,6 +1,7 @@
 package com.sentinel.audit.resource;
 
 import com.sentinel.audit.dto.AuditRunResponse;
+import com.sentinel.audit.dto.IsoTrendPoint;
 import com.sentinel.audit.dto.SuppressionResponse;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.service.SystemCatalog;
@@ -47,6 +48,17 @@ public class SystemHistoryResource {
     public List<TrendPoint> trend(@PathParam("id") Long id, @QueryParam("limit") @DefaultValue("30") int limit) {
         systemCatalog.require(id);
         return views.trend(id, limit);
+    }
+
+    /**
+     * Evolução das características ISO/IEC 25010 ao longo das auditorias concluídas (mais antiga primeiro).
+     */
+    @GET
+    @Path("/{id}/iso25010/trend")
+    @Operation(summary = "Tendência por característica ISO/IEC 25010", description = "Nota de cada característica nas últimas auditorias concluídas")
+    public List<IsoTrendPoint> isoTrend(@PathParam("id") Long id, @QueryParam("limit") @DefaultValue("30") int limit) {
+        systemCatalog.require(id);
+        return views.isoTrend(id, limit);
     }
 
     /**

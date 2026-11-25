@@ -232,7 +232,7 @@ Pontos do código que valem saber (do comentário de `AuditOrchestrationService`
 | `SystemEvidenceResource` | Lista, envia e apaga as evidências offline de um sistema | `/api/v1/systems/{id}/evidence`, `/{name}` |
 | `AuditResource` | Cria, lista e cancela auditorias; entrega o resultado com andamento e diz se a auditoria está desatualizada em relação à ponta da branch | `/api/v1/audits`, `/{id}`, `/{id}/cancel`, `/{id}/freshness` |
 | `AuditFindingsResource` | Achados de uma auditoria, com filtros | `/api/v1/audits/{id}/findings` |
-| `AuditAnalysisResource` | Leituras analíticas: diferença para a auditoria anterior, o que corrigir primeiro, explicação da nota e auditoria completa | `/api/v1/audits/{id}/diff`, `/fix-plan`, `/score-explanation`, `/insights` |
+| `AuditAnalysisResource` | Leituras analíticas: diferença para a auditoria anterior, o que corrigir primeiro, explicação da nota e auditoria completa | `/api/v1/audits/{id}/diff`, `/fix-plan`, `/score-explanation`, `/iso25010`, `/insights` |
 | `AuditExportResource` | Relatórios (HTML e PDF; técnico, executivo, comparativo), achados em CSV e SBOM | `/api/v1/audits/{id}/report`, `/report.pdf`, `/findings.csv`, `/sbom` |
 | `ReportResource` | Relatório de todos os sistemas (ou de um) em HTML, PDF ou CSV | `/api/v1/reports/portfolio` |
 | `GuideResource` | Guia de código por tecnologia e o CLAUDE.md gerado | `/api/v1/guide`, `/guide/{stack}/claude-md` |

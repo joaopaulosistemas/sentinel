@@ -1,7 +1,12 @@
 package com.sentinel.audit.resource;
 
 import com.sentinel.audit.dto.AuditRunResponse;
+import com.sentinel.audit.dto.IsoQualityDto;
+import com.sentinel.audit.dto.IsoTrendPoint;
 import com.sentinel.audit.dto.SuppressionResponse;
+import com.sentinel.audit.iso.Iso25010Perfil;
+import com.sentinel.audit.service.IsoQuality;
+import com.sentinel.audit.service.ScoringService;
 import com.sentinel.audit.dto.SystemSummaryResponse;
 import com.sentinel.audit.dto.TrendPoint;
 import com.sentinel.audit.model.AuditRun;
@@ -38,11 +43,32 @@ public class SystemViews {
     @Inject
     FindingLifecycleService lifecycleService;
 
+    @Inject
+    ScoringService scoringService;
+
     List<AuditRunResponse> audits(Long systemId, int limit) {
         List<AuditRun> runs = runCatalog.bySystem(systemId, limit);
         List<AuditRunResponse> out = new java.util.ArrayList<>(runs.size());
         for (int i = 0; i < runs.size(); i++) {
             out.add(runMapper.toResponse(runs.get(i), AuditListLimit.withDiff(i)));
+        }
+        return out;
+    }
+
+    /** Limite de auditorias na tendência ISO: cada ponto relê os achados da auditoria. */
+    private static final int ISO_TREND_MAX_POINTS = 60;
+
+    List<IsoTrendPoint> isoTrend(Long systemId, int limit) {
+        int n = Math.max(1, Math.min(limit, ISO_TREND_MAX_POINTS));
+        List<IsoTrendPoint> out = new java.util.ArrayList<>();
+        for (TrendPoint p : lifecycleService.trend(systemId, n)) {
+            AuditRun run = runCatalog.require(p.auditId());
+            IsoQualityDto iso = IsoQuality.calculate(scoringService,
+                    FindingLifecycleService.active(findingCatalog.byRun(p.auditId())), run.getLinesOfCode(), Iso25010Perfil.PADRAO);
+            Map<String, Double> notas = new java.util.LinkedHashMap<>();
+            iso.caracteristicas().stream().filter(IsoQualityDto.Caracteristica::avaliada)
+                    .forEach(c -> notas.put(c.id(), c.nota()));
+            out.add(new IsoTrendPoint(p.auditId(), p.branch(), p.completedAt(), iso.notaPonderada(), notas));
         }
         return out;
     }

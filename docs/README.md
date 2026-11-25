@@ -26,6 +26,7 @@
 | [referencia/variaveis-de-ambiente.md](referencia/variaveis-de-ambiente.md) | Todas as variáveis do Compose numa tabela, com padrão e para quê |
 | [referencia/banco-de-dados.md](referencia/banco-de-dados.md) · [banco-de-dados.html](referencia/banco-de-dados.html) | Tabelas, relações, migrações Flyway e o diagrama do banco |
 | [referencia/auditoria-e-api.md](referencia/auditoria-e-api.md) | Auditoria completa, webhooks, notificações, Configurações, OIDC e todos os endpoints |
+| [referencia/iso-25010.md](referencia/iso-25010.md) | Qualidade por característica da ISO/IEC 25010: mapa, perfis de peso, metas, API, CLI e relatórios |
 | [padrao-typescript/README.md](padrao-typescript/README.md) · [clean-code-labs42.md](padrao-typescript/clean-code-labs42.md) | Padrão TypeScript da casa e regras do guia clean-code-typescript |
 | [padrao-google/README.md](padrao-google/README.md) | Perfis Google Java/TypeScript, SEI CERT e Sonar |
 | [referencia/severidade-das-regras.md](referencia/severidade-das-regras.md) | Critério único de severidade das regras (ERROR, WARNING, INFO) |
