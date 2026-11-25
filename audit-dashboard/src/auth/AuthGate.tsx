@@ -1,8 +1,8 @@
 import { UserManager, WebStorageStateStore, type User } from 'oidc-client-ts';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AuthContext, SEM_LOGIN, type IAuth } from './AuthContext';
-import { AuthErrorScreen, AuthLoadingScreen } from './AuthScreens';
-import { authHeader, setAccessToken } from './session';
+import { AuthErrorScreen, AuthLoadingScreen, AuthSignedOutScreen } from './AuthScreens';
+import { authHeader, consumirSaida, marcarSaida, setAccessToken } from './session';
 
 interface IConfig {
   oidcAuthority?: string;
@@ -16,7 +16,7 @@ interface IMe {
   canExecute: boolean;
 }
 
-type Estado = { fase: 'carregando' } | { fase: 'livre' } | { fase: 'erro'; mensagem: string } | { fase: 'ok'; me: IMe };
+type Estado = { fase: 'carregando' } | { fase: 'livre' } | { fase: 'saiu' } | { fase: 'erro'; mensagem: string } | { fase: 'ok'; me: IMe };
 
 const TIMEOUT_MS = 10_000;
 const HTTP_NAO_AUTORIZADO = 401;
@@ -108,6 +108,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
       }
       const m = criarGerenciador(cfg);
       setMgr(m);
+      if (consumirSaida() && !ehRetornoDoLogin(window.location.search)) {
+        setEstado({ fase: 'saiu' }); // voltou do Keycloak depois de Sair: não manda para o login sozinho
+        return;
+      }
       try {
         const user = await obterUsuario(m);
         if (!user || user.expired) {
@@ -137,12 +141,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
       canExecute: me.canExecute,
       logout: () => {
         setAccessToken(undefined);
+        marcarSaida();
         void mgr?.signoutRedirect();
       },
     };
   }, [estado, mgr]);
 
   if (estado.fase === 'carregando') return <AuthLoadingScreen />;
+  if (estado.fase === 'saiu') return <AuthSignedOutScreen onSignIn={() => void mgr?.signinRedirect()} />;
   if (estado.fase === 'erro') return <AuthErrorScreen message={estado.mensagem} onRetry={() => void mgr?.signinRedirect()} />;
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
 }

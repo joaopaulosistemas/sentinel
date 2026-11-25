@@ -1548,6 +1548,11 @@ Só documentação: `contracts/arquivos.md` da 003 ganha o campo opcional `publi
 - **Verificado:** cada tarefa da fase extra tem dependências e posição declaradas nas seções "Dependências" (003 a 008); teste antes do código em todas; a 003 fixa os limites antes da linha de base.
 - **NÃO verificado:** nada implementado.
 
+## Comando /speckit-sprint (só configuração e documentos, sem versão nova)
+
+- **Verificado:** criados `.claude/skills/speckit-sprint/SKILL.md`, `.specify/sprint-config.yml`, `.specify/templates/sprint-template.md` e `.specify/extensions.yml` (gancho opcional depois de `/speckit-tasks`); o comando escreve só `docs/evolucao/roteiro.md` e `roteiro.csv` e nunca altera specs nem código.
+- **NÃO verificado:** o comando ainda não foi executado; o formato do gancho segue o descrito pelos próprios comandos do Spec Kit, sem teste com a CLI `specify`. Nada do Sentinel foi implementado.
+
 ## Documentação alinhada ao código da 12.84.0 (sem versão nova)
 
 - **Por quê:** `ARQUITETURA.md` descrevia o código até a 12.11.0; outros documentos citavam Java 21/JRE 21/Node 20 (a imagem usa JRE 25 e Node 24), 41 regras no `core-quality` (são 45), 13 diagramas (são 14), "dois agentes" e 13 voltas do Sentinel Ciclo (são 26).
@@ -2267,3 +2272,9 @@ O PDF lista os achados ativos junto com os 105 já suprimidos, o que tinha me le
 - **Feito:** estado conferido (branch 17 com 5 voltas, 49 a 59 sem PR aberto, nenhuma auditoria em andamento, última volta terminou há mais de 1 h); a `main` (figma movido para `docs/figma/`, 12.125.0 a 12.126.0 do painel) foi mesclada na branch; o único conflito era o LOG (duas entradas anexadas, mantidas as duas).
 - **Não feito:** escolha de repositório novo, auditoria, gabarito, mudança de regra, validação (dvja, NodeGoat, bnematzadeh, petclinic), Benchmark, amostra. Nada disso foi rodado e nada deve ser lido como verificado. A branch continua com 5 voltas; não abri o PR porque o critério (6 voltas ou 2 sem ganho) não foi atingido.
 - **Decisão pendente do João:** para o ciclo agendado funcionar, a tarefa precisa ter acesso aos repositórios de treino (criar nova conversa no claude.ai pedindo para adicionar todos os repositórios necessários e recriar a tarefa), ou aceitar que o ciclo agendado só trabalhe com o que está no `sentinel`. O ALERTA "ciclo não generaliza" segue valendo (média móvel 36,6 % nas voltas 53 a 59).
+## 12.127.0 — Login: depois de Sair, tela "Você saiu" em vez de voltar sozinho ao login
+
+- **O que mudou (pedido do João: ao clicar em Sair aparecia a tela "Entrando…"):** o painel encerrava a sessão no Keycloak, voltava para `/`, não achava usuário e mandava para o login na hora, mostrando "Entrando…" no meio. Agora, ao sair, o painel anota na `sessionStorage` da aba (`sentinel.saiu`); na volta do Keycloak ele lê e apaga a anotação e mostra "Você saiu" com o botão "Entrar de novo". A URL de retorno não mudou, então os URIs registrados no Keycloak continuam valendo. Recarregar a página depois leva ao login como antes.
+- **Testes:** 4 novos em `AuthGate.test.tsx` (Sair anota a saída e chama o logout do Keycloak; a volta mostra "Você saiu" sem chamar o login; o botão leva ao login; a anotação vale uma vez). `src/auth`: 33 passam; a suíte completa do painel: 445 testes passam.
+- **Verificado:** `tsc --noEmit`, `eslint src/auth`, `vitest run src/auth`; `sincronizar-versao.py --check`.
+- **Não verificado:** o fluxo contra um Keycloak de verdade (não subi o Keycloak aqui); a tela "Você saiu" por captura; se a tela "Entrando…" do relato ficava travada, caso em que a causa seria outra (redirect de logout recusado pelo cliente); a suíte completa do painel e os e2e (ficam para o CI).

@@ -3,12 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthGate, ehRetornoDoLogin, lerConfig, lerConfigDe, lerPerfilDe } from './AuthGate';
 import { useAuth } from './AuthContext';
 import { rotuloDoPapel } from './UserMenu';
-import { authHeader, setAccessToken } from './session';
+import { authHeader, consumirSaida, marcarSaida, setAccessToken } from './session';
 
 const m = vi.hoisted(() => ({
   getUser: vi.fn(),
   signinRedirect: vi.fn(async () => undefined),
   signinRedirectCallback: vi.fn(),
+  signoutRedirect: vi.fn(async () => undefined),
 }));
 
 vi.mock('oidc-client-ts', () => ({
@@ -18,7 +19,7 @@ vi.mock('oidc-client-ts', () => ({
     getUser = m.getUser;
     signinRedirect = m.signinRedirect;
     signinRedirectCallback = m.signinRedirectCallback;
-    signoutRedirect = vi.fn();
+    signoutRedirect = m.signoutRedirect;
   },
 }));
 
@@ -41,6 +42,8 @@ beforeEach(() => {
   m.getUser.mockReset();
   m.signinRedirect.mockClear();
   m.signinRedirectCallback.mockReset();
+  m.signoutRedirect.mockClear();
+  window.sessionStorage.clear();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -83,6 +86,51 @@ describe('AuthGate', () => {
     m.getUser.mockResolvedValue({ expired: false, access_token: 'ruim' });
     render(<AuthGate><Quem /></AuthGate>);
     expect(await screen.findByText('A API recusou o token.')).toBeInTheDocument();
+  });
+});
+
+describe('sair do painel', () => {
+  const CONFIG = { oidcAuthority: 'http://kc/realms/s', oidcClientId: 'painel' };
+  const ME = { username: 'ana', roles: [], admin: false, canExecute: false };
+
+  function BotaoSair() {
+    const a = useAuth();
+    return <button onClick={a.logout}>sair</button>;
+  }
+
+  it('Sair anota a saída, limpa o token e vai ao Keycloak encerrar a sessão', async () => {
+    stubFetch(CONFIG, ME);
+    m.getUser.mockResolvedValue({ expired: false, access_token: 'tok' });
+    render(<AuthGate><BotaoSair /></AuthGate>);
+    fireEvent.click(await screen.findByText('sair'));
+    expect(m.signoutRedirect).toHaveBeenCalledTimes(1);
+    expect(authHeader()).toEqual({});
+    expect(window.sessionStorage.getItem('sentinel.saiu')).toBe('1');
+  });
+
+  it('na volta do logout mostra "Você saiu" sem mandar para o login sozinho', async () => {
+    stubFetch(CONFIG);
+    m.getUser.mockResolvedValue(null);
+    marcarSaida();
+    render(<AuthGate><Quem /></AuthGate>);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Você saiu' })).toBeInTheDocument();
+    expect(screen.queryByText('Entrando…')).toBeNull();
+    expect(m.signinRedirect).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem('sentinel.saiu')).toBeNull();
+  });
+
+  it('o botão da tela "Você saiu" leva ao login', async () => {
+    stubFetch(CONFIG);
+    marcarSaida();
+    render(<AuthGate><Quem /></AuthGate>);
+    fireEvent.click(await screen.findByRole('button', { name: /Entrar de novo/ }));
+    expect(m.signinRedirect).toHaveBeenCalledTimes(1);
+  });
+
+  it('a anotação vale uma vez: recarregar depois vai direto ao login', () => {
+    marcarSaida();
+    expect(consumirSaida()).toBe(true);
+    expect(consumirSaida()).toBe(false);
   });
 });
 
