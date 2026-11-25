@@ -85,4 +85,15 @@ class PdfReportServiceTest {
         assertEquals("a-b?c", PdfReportService.clean("a—b→c"));
         assertEquals("ção", PdfReportService.clean("ção"));
     }
+
+    @Test
+    void pdfsTemLogoVetorialNoCabecalho() {
+        // O logo é um XObject de formulário (PdfTemplate): aparece como /Subtype /Form no PDF.
+        PdfReportService pdf = new PdfReportService();
+        String tecnico = new String(pdf.technical(run(), List.of()), StandardCharsets.ISO_8859_1);
+        String tabelas = new String(pdf.tables("Consolidado", List.of(), List.of()), StandardCharsets.ISO_8859_1);
+
+        assertTrue(tecnico.contains("/Subtype/Form") || tecnico.contains("/Subtype /Form"), "logo no PDF técnico");
+        assertTrue(tabelas.contains("/Subtype/Form") || tabelas.contains("/Subtype /Form"), "logo no PDF consolidado");
+    }
 }

@@ -48,7 +48,8 @@ public class ReportService {
                 .append("<title>Relatório de Auditoria - ").append(esc(run.getSystem().getName())).append("</title>")
                 .append("<style>").append(CSS).append("</style></head><body>");
 
-        h.append("<p class=\"noprint hint\">Para gerar o PDF: Imprimir (Ctrl+P) &rarr; Salvar como PDF.</p>");
+        h.append(cabecalho("Relatório de auditoria de código"))
+                .append("<p class=\"noprint hint\">Para gerar o PDF: Imprimir (Ctrl+P) &rarr; Salvar como PDF.</p>");
         h.append("<h1>Relatório de Auditoria de Código</h1><dl class=\"meta\">")
                 .append(meta("Sistema", esc(run.getSystem().getName())))
                 .append(meta("Auditoria", "#" + run.getId()))
@@ -289,6 +290,7 @@ public class ReportService {
                 .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
                 .append("<title>").append(title).append(" - ").append(esc(run.getSystem().getName())).append("</title>")
                 .append("<style>").append(CSS).append("</style></head><body>")
+                .append(cabecalho(title))
                 .append("<p class=\"noprint hint\">Para gerar o PDF: Imprimir (Ctrl+P) &rarr; Salvar como PDF.</p>");
     }
 
@@ -441,7 +443,24 @@ public class ReportService {
                 .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
+    /** Logo do Sentinel (escudo com um olho), o mesmo do painel e da tela de login; inline para o relatório ser um arquivo só. */
+    static final String LOGO_SVG = "<svg width=\"44\" height=\"44\" viewBox=\"0 0 32 32\" role=\"img\" aria-label=\"Sentinel\">"
+            + "<path d=\"M16 2.5 4.5 6.8v8.2c0 7.2 4.9 12.4 11.5 14.5 6.6-2.1 11.5-7.3 11.5-14.5V6.8z\" fill=\"#4589ff\"/>"
+            + "<ellipse cx=\"16\" cy=\"15\" rx=\"6.2\" ry=\"4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\"/>"
+            + "<circle cx=\"16\" cy=\"15\" r=\"1.9\" fill=\"#fff\"/></svg>";
+
+    /** Cabeçalho comum a todos os relatórios HTML: logo, nome da ferramenta e o tipo do relatório. */
+    static String cabecalho(String tipoDoRelatorio) {
+        return "<header class=\"brand\">" + LOGO_SVG
+                + "<div><div class=\"brand-name\">Sentinel</div><div class=\"brand-sub\">Audit Tool</div></div>"
+                + "<div class=\"brand-doc\">" + esc(tipoDoRelatorio) + "</div></header>";
+    }
+
     static final String CSS =
+            ".brand{display:flex;align-items:center;gap:12px;border-bottom:2px solid #4589ff;padding-bottom:12px;margin-bottom:8px}"
+            + ".brand-name{font-size:18px;font-weight:bold;line-height:1.1;color:#161616}.brand-sub{font-size:11px;color:#6f6f6f;letter-spacing:.04em}"
+            + ".brand-doc{margin-left:auto;font-size:12px;color:#6f6f6f}"
+            +
             "body{font-family:Arial,sans-serif;margin:32px;color:#222;line-height:1.4}"
             + "h1{color:#003641}h2{color:#00525f;border-bottom:2px solid #00525f;padding-bottom:4px;margin-top:32px}"
             + "h3{font-size:15px;margin:0 0 4px}.hint{background:#fff8e1;padding:8px;border-radius:4px;font-size:13px}"
