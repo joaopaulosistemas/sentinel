@@ -1,3 +1,4 @@
+import { isoFilterOptions } from './isoQuality';
 import type { Category, IFindingResponse, IFindingsOverview, FindingStatus, Severity } from '../types';
 
 interface ISystemGroup {
@@ -72,7 +73,7 @@ export const DEFAULT_SEVERITY: SeverityChoice = 'critHigh';
 export const DEFAULT_SITUATION: SituationChoice = 'open';
 
 export interface IFilterChip {
-  key: 'system' | 'severity' | 'category' | 'situation';
+  key: 'system' | 'severity' | 'category' | 'iso' | 'situation';
   label: string;
   /** O sistema fica em azul; os demais, em cinza */
   tone: 'blue' | 'gray';
@@ -85,6 +86,8 @@ interface IActiveFilters {
   showSystem: boolean;
   severity: SeverityChoice;
   category?: Category;
+  /** característica ISO/IEC 25010 escolhida; vazio = todas */
+  iso?: string;
   situation: SituationChoice;
 }
 
@@ -96,6 +99,7 @@ export function activeFilterChips(f: IActiveFilters): IFilterChip[] {
     chips.push({ key: 'severity', label: severityChoices.find((c) => c.id === f.severity)?.label ?? f.severity, tone: 'gray' });
   }
   if (f.category) chips.push({ key: 'category', label: categoryLabels[f.category], tone: 'gray' });
+  if (f.iso) chips.push({ key: 'iso', label: `ISO 25010: ${isoFilterOptions.find((o) => o.value === f.iso)?.label ?? f.iso}`, tone: 'gray' });
   if (f.situation !== 'all') {
     chips.push({ key: 'situation', label: situationChoices.find((c) => c.id === f.situation)?.label ?? f.situation, tone: 'gray' });
   }

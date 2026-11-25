@@ -186,6 +186,8 @@ export const api = {
       status?: FindingStatus;
       includeSuppressed?: boolean;
       onlyNew?: boolean;
+      /** característica da ISO/IEC 25010 (security, maintainability, reliability, performance-efficiency) */
+      iso25010?: string;
     },
   ) => {
     const qs = params
@@ -226,6 +228,7 @@ export const api = {
     severity?: Severity[];
     category?: Category;
     status?: FindingStatus;
+    iso25010?: string;
     onlyNew?: boolean;
     includeSuppressed?: boolean;
     limit: number;

@@ -1,5 +1,14 @@
 import type { IIsoCharacteristic, IIsoTrendPoint, IsoProfile } from '../types';
 
+/** Características que o Sentinel avalia, para o filtro da lista de achados. */
+export const isoFilterOptions: Array<{ value: string; label: string }> = [
+  { value: '', label: 'Todas' },
+  { value: 'security', label: 'Segurança' },
+  { value: 'maintainability', label: 'Manutenibilidade' },
+  { value: 'reliability', label: 'Confiabilidade' },
+  { value: 'performance-efficiency', label: 'Eficiência de desempenho' },
+];
+
 export const isoProfileLabels: Record<IsoProfile, string> = {
   padrao: 'Padrão (pesos iguais)',
   financeiro: 'Financeiro (segurança e confiabilidade pesam mais)',

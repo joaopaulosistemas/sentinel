@@ -70,7 +70,7 @@ interface IConnectedFiltersProps {
 function ConnectedFilters({ auditMode, systems, activeSystemId, filters, data }: IConnectedFiltersProps) {
   const [, setSearchParams] = useSearchParams();
   const systemName = data.summary.find((b) => b.systemId === filters.systemId)?.systemName ?? '';
-  const chips = activeFilterChips({ systemName, showSystem: !auditMode, severity: filters.severity, category: filters.category, situation: filters.situation });
+  const chips = activeFilterChips({ systemName, showSystem: !auditMode, severity: filters.severity, category: filters.category, iso: filters.iso, situation: filters.situation });
   return (
     <FindingsFilters
       auditMode={auditMode}
@@ -85,6 +85,8 @@ function ConnectedFilters({ auditMode, systems, activeSystemId, filters, data }:
       onSeverity={filters.setSeverity}
       category={filters.category}
       onCategory={filters.setCategory}
+      iso={filters.iso}
+      onIso={filters.setIso}
       situation={filters.situation}
       onSituation={filters.setSituation}
       grouped={filters.grouped}

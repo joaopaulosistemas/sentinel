@@ -26,6 +26,7 @@ export function useFindingFilters(searchParams: URLSearchParams) {
   const [systemId, setSystemId] = useState<number | undefined>(() => linkedSystemId(searchParams.get('systemId')));
   const [severity, setSeverity] = useState<SeverityChoice>(DEFAULT_SEVERITY);
   const [category, setCategory] = useState<Category | undefined>(undefined);
+  const [iso, setIso] = useState<string | undefined>(undefined);
   const [situation, setSituation] = useState<SituationChoice>(searchParams.get('onlyNew') === '1' ? 'new' : DEFAULT_SITUATION);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -35,11 +36,12 @@ export function useFindingFilters(searchParams: URLSearchParams) {
 
   const reset = () => setPage(1);
   return {
-    systemId, severity, category, situation, page, pageSize, grouped, showResolved, showLow,
+    systemId, severity, category, iso, situation, page, pageSize, grouped, showResolved, showLow,
     setPage, setGrouped, setShowResolved,
     setSystemId: (value: number | undefined) => { setSystemId(value); reset(); },
     setSeverity: (value: SeverityChoice) => { setSeverity(value); reset(); },
     setCategory: (value: Category | undefined) => { setCategory(value); reset(); },
+    setIso: (value: string | undefined) => { setIso(value); reset(); },
     setSituation: (value: SituationChoice) => { setSituation(value); reset(); },
     setShowLow: ({ visible }: IShowLowChange) => { setShowLow(visible); reset(); },
     setPageSize: (value: number) => { setPageSize(value); setPage(1); },
@@ -47,6 +49,7 @@ export function useFindingFilters(searchParams: URLSearchParams) {
       setSeverity(DEFAULT_SEVERITY);
       setSituation(DEFAULT_SITUATION);
       setCategory(undefined);
+      setIso(undefined);
       setSystemId(undefined);
       reset();
     },
@@ -57,7 +60,7 @@ export type FindingFilters = ReturnType<typeof useFindingFilters>;
 
 /** Nenhum filtro mexido: some o botão "Restaurar filtros". */
 export function isDefaultFilters(f: FindingFilters): boolean {
-  return f.severity === DEFAULT_SEVERITY && f.situation === DEFAULT_SITUATION && f.category === undefined && f.systemId === undefined;
+  return f.severity === DEFAULT_SEVERITY && f.situation === DEFAULT_SITUATION && f.category === undefined && f.iso === undefined && f.systemId === undefined;
 }
 
 interface IFindingsDataInput {
@@ -73,6 +76,7 @@ export function useFindingsData({ auditMode, auditId, filters: f }: IFindingsDat
   const single = useFindings(auditId, {
     severity: sev.length === 1 ? sev[0] : undefined,
     category: f.category,
+    iso25010: f.iso,
     status: sit.status,
     onlyNew: sit.onlyNew,
     includeSuppressed: sit.includeSuppressed,
@@ -81,6 +85,7 @@ export function useFindingsData({ auditMode, auditId, filters: f }: IFindingsDat
     {
       severity: sev.length > 0 ? sev : undefined,
       category: f.category,
+      iso25010: f.iso,
       status: sit.status,
       onlyNew: sit.onlyNew,
       includeSuppressed: sit.includeSuppressed,

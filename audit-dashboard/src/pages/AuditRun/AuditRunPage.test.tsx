@@ -41,6 +41,10 @@ function renderPage(run: Partial<IAuditRunResponse>, { plan, history = [], mcp, 
       const requestUrl = String(url);
       calls.push({ url: requestUrl, method: init?.method ?? 'GET' });
       if (requestUrl.endsWith('/insights')) return new Response(JSON.stringify(insights ?? { analyzers: [] }), { status: 200 });
+      if (requestUrl.includes('/iso25010/trend')) return new Response(JSON.stringify([]), { status: 200 });
+      if (requestUrl.includes('/iso25010')) {
+        return new Response(JSON.stringify({ perfil: 'padrao', notaPonderada: 100, caracteristicas: [], prioridade: [], metasAtingidas: null }), { status: 200 });
+      }
       if (requestUrl.endsWith('/fix-plan')) return new Response(JSON.stringify(plan), { status: 200 });
       if (requestUrl.includes('/systems/') && requestUrl.endsWith('/audits')) return new Response(JSON.stringify(history), { status: 200 });
       if (requestUrl.endsWith('/cancel')) return new Response(JSON.stringify({ ...full, status: 'CANCELLED' }), { status: 202 });

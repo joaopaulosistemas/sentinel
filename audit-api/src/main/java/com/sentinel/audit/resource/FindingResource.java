@@ -69,7 +69,7 @@ public class FindingResource {
         }
         return FindingsOverview.build(sources,
                 new FindingsOverview.Filter(q.systemId, q.severity == null ? java.util.Set.of() : java.util.Set.copyOf(q.severity),
-                        q.category, q.status, q.onlyNew, q.includeSuppressed), q.limit, q.offset);
+                        q.category, q.status, q.onlyNew, q.includeSuppressed, q.iso25010), q.limit, q.offset);
     }
 
     /** Filtros e paginação de {@link #overview}. */
@@ -82,6 +82,8 @@ public class FindingResource {
         public Category category;
         @QueryParam("status")
         public FindingStatus status;
+        @QueryParam("iso25010")
+        public String iso25010;
         @QueryParam("onlyNew")
         @DefaultValue("false")
         public boolean onlyNew;

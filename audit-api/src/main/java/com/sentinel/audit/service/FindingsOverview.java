@@ -29,7 +29,13 @@ public final class FindingsOverview {
 
     /** @param severities vazio ou nulo = qualquer severidade */
     public record Filter(Long systemId, java.util.Set<Severity> severities, Category category, FindingStatus status,
-                         boolean onlyNew, boolean includeSuppressed) {
+                         boolean onlyNew, boolean includeSuppressed, String iso25010) {
+
+        /** Sem filtro por característica da ISO/IEC 25010. */
+        public Filter(Long systemId, java.util.Set<Severity> severities, Category category, FindingStatus status,
+                      boolean onlyNew, boolean includeSuppressed) {
+            this(systemId, severities, category, status, onlyNew, includeSuppressed, null);
+        }
     }
 
     public static FindingsOverviewDto build(List<Source> sources, Filter filter, int limit, int offset) {
@@ -78,7 +84,9 @@ public final class FindingsOverview {
 
     private static boolean attributesMatch(Finding f, Filter filter) {
         return (filter.category() == null || f.getCategory() == filter.category())
-                && (filter.status() == null || f.getStatus() == filter.status());
+                && (filter.status() == null || f.getStatus() == filter.status())
+                && (filter.iso25010() == null || filter.iso25010().isBlank()
+                        || com.sentinel.audit.iso.Iso25010.of(f).id().equalsIgnoreCase(filter.iso25010().strip()));
     }
 
     private static boolean severityMatches(Finding f, Filter filter) {

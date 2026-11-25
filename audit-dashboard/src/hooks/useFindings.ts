@@ -6,6 +6,7 @@ interface IFindingsFilter {
   severity?: Severity;
   category?: Category;
   status?: FindingStatus;
+  iso25010?: string;
   includeSuppressed?: boolean;
   onlyNew?: boolean;
 }

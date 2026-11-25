@@ -41,3 +41,13 @@ describe('findingsView', () => {
     expect(footerText({ shown: 2, total: 2, situation: 'suppressed', severity: 'HIGH', systems: 0 })).toBe('Mostrando 2 de 2 suprimidos (altos)');
   });
 });
+
+describe('chip da característica ISO', () => {
+  it('aparece quando uma característica é escolhida e some quando não', () => {
+    const base = { showSystem: false, severity: 'all' as const, situation: 'all' as const };
+
+    expect(activeFilterChips({ ...base, iso: 'security' }).map((c) => c.label)).toEqual(['ISO 25010: Segurança']);
+    expect(activeFilterChips({ ...base, iso: undefined })).toEqual([]);
+    expect(activeFilterChips({ ...base, iso: 'estranha' })[0].label).toBe('ISO 25010: estranha');
+  });
+});
