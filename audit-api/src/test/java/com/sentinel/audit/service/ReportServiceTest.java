@@ -200,4 +200,15 @@ class ReportServiceTest {
     void cabecalhoEscapaOTipoDoRelatorio() {
         assertFalse(ReportService.cabecalho("<script>x</script>").contains("<script>"));
     }
+
+    @Test
+    void relatoriosTecnicoEExecutivoTrazemAQualidadeIsoComAsNaoAvaliadas() {
+        ReportService rs = new ReportService();
+        String tecnico = rs.generateHtmlReport(run(), List.of(f("SQL", Severity.CRITICAL, FindingStatus.OPEN, true, "sql-injection")));
+
+        assertTrue(tecnico.contains("Qualidade segundo a ISO/IEC 25010"));
+        assertTrue(tecnico.contains("Manutenibilidade"));
+        assertTrue(tecnico.contains("Segurança operacional (safety)</td><td>não avaliada"));
+        assertTrue(tecnico.contains("não é certificação") || tecnico.contains("não certificação"));
+    }
 }

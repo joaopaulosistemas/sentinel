@@ -29,6 +29,7 @@ class AuditCliTest {
     private volatile String auditJson;
     private volatile String findingsJson;
     private volatile String diffJson;
+    private volatile String isoJson;
     private volatile int createStatus;
 
     @BeforeEach
@@ -39,6 +40,7 @@ class AuditCliTest {
                 + "\"findingsSummary\":{\"CRITICAL\":0,\"HIGH\":1,\"MEDIUM\":0,\"LOW\":0,\"INFO\":0}}";
         findingsJson = "[{\"id\":1,\"severity\":\"HIGH\",\"category\":\"SECURITY\",\"title\":\"X\",\"ruleId\":\"r\",\"filePath\":\"A.java\",\"lineNumber\":3}]";
         diffJson = "{\"hasBaseline\":true,\"baseAuditId\":4,\"newFindings\":[],\"resolvedFindings\":[],\"persistingCount\":1}";
+        isoJson = "{\"perfil\":\"padrao\",\"caracteristicas\":[{\"id\":\"security\",\"nome\":\"Segurança\",\"nota\":70.0,\"meta\":90.0,\"atingiu\":false}]}";
 
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/api/v1/audits", ex -> {
@@ -48,6 +50,8 @@ class AuditCliTest {
                 reply(ex, createStatus, createStatus == 202 ? "{\"id\":5}" : "{\"message\":\"nao\"}");
             } else if (path.endsWith("/findings")) {
                 reply(ex, 200, findingsJson);
+            } else if (path.endsWith("/iso25010")) {
+                reply(ex, 200, isoJson);
             } else if (path.endsWith("/diff")) {
                 reply(ex, 200, diffJson);
             } else {
@@ -99,6 +103,15 @@ class AuditCliTest {
     void scoreAbaixoDoLimiteRetornaUm() {
         assertEquals(1, run("--fail-below", "90"));
         assertEquals(0, run("--fail-below", "70"));
+    }
+
+    @Test
+    void failBelowIsoReprovaQuandoUmaCaracteristicaFicaAbaixoDaMeta() {
+        assertEquals(1, run("--fail-below-iso", "security:90"));
+
+        isoJson = "{\"perfil\":\"padrao\",\"caracteristicas\":[{\"id\":\"security\",\"nome\":\"Segurança\",\"nota\":95.0,\"meta\":90.0,\"atingiu\":true}]}";
+        assertEquals(0, run("--fail-below-iso", "security:90", "--iso-profile", "financeiro"));
+        assertEquals(0, run());                                  // sem a opção, a consulta nem é feita
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.sentinel.audit.resource;
 
 import com.sentinel.audit.dto.AuditDiffResponse;
 import com.sentinel.audit.dto.FixPlanDto;
+import com.sentinel.audit.dto.IsoQualityDto;
 import com.sentinel.audit.dto.ScoreExplanationDto;
 import com.sentinel.audit.insights.AuditInsights;
 import jakarta.annotation.security.PermitAll;
@@ -65,6 +66,18 @@ public class AuditAnalysisResource {
     @Operation(summary = "Explicação da nota", description = "Quanto cada regra tirou em cada dimensão; com ?without=regra1,regra2 simula a nota sem elas")
     public ScoreExplanationDto getScoreExplanation(@PathParam("id") Long id, @QueryParam("without") String without) {
         return reports.scoreExplanation(id, without);
+    }
+
+    /**
+     * Qualidade por característica da ISO/IEC 25010 (segurança, manutenibilidade, confiabilidade, desempenho), com as
+     * características que o Sentinel não avalia marcadas como tal. {@code perfil}: padrao, financeiro ou interno.
+     * {@code metas}: notas mínimas, por exemplo {@code security:90,maintainability:75}.
+     */
+    @GET
+    @Path("/{id}/iso25010")
+    @Operation(summary = "Qualidade ISO/IEC 25010", description = "Nota por característica, ponderada por perfil, com metas opcionais (?metas=security:90). Alinhamento de vocabulário, não certificação.")
+    public IsoQualityDto getIsoQuality(@PathParam("id") Long id, @QueryParam("perfil") String perfil, @QueryParam("metas") String metas) {
+        return reports.isoQuality(id, perfil, metas);
     }
 
     /**

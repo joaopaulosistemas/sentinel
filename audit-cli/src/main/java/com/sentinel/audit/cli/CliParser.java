@@ -10,6 +10,8 @@ final class CliParser {
           + "       [--api-key <chave> | env AUDIT_API_KEY] [--fail-below <score>]\n"
           + "       [--fail-on <CRITICAL|HIGH|MEDIUM|LOW>] [--fail-on-new <CRITICAL|HIGH|MEDIUM|LOW>]\n"
           + "       [--fail-on-score-drop <pontos>  reprova se a nota cair mais que isso desde a auditoria anterior]\n"
+          + "       [--fail-below-iso <caracteristica:nota,...>  ex.: security:90,maintainability:75 (ISO/IEC 25010)]\n"
+          + "       [--iso-profile <padrao|financeiro|interno>  pesos da nota ISO ponderada]\n"
           + "       [--sarif <arquivo>] [--junit <arquivo>] [--json <arquivo>] [--repo <url> (informativo)]\n"
           + "       [--base-ref <branch-base>  audita só o que mudou em relação a ele (modo PR)]\n"
           + "       [--pr-comment <arquivo.md>  grava o resumo em Markdown para comentar no PR]\n"
@@ -76,6 +78,8 @@ final class CliParser {
             Map.entry("--fail-on", (a, v) -> a.failOn = parseSeverity("--fail-on", v)),
             Map.entry("--fail-on-new", (a, v) -> a.failOnNew = parseSeverity("--fail-on-new", v)),
             Map.entry("--fail-on-score-drop", (a, v) -> a.failOnScoreDrop = parseNumber("--fail-on-score-drop", v)),
+            Map.entry("--fail-below-iso", (a, v) -> a.failBelowIso = v),
+            Map.entry("--iso-profile", (a, v) -> a.isoProfile = v),
             Map.entry("--sarif", (a, v) -> a.sarifFile = v),
             Map.entry("--junit", (a, v) -> a.junitFile = v),
             Map.entry("--json", (a, v) -> a.jsonFile = v),

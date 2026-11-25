@@ -6,7 +6,10 @@ import com.sentinel.audit.model.AuditRun;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.FindingStatus;
 import com.sentinel.audit.model.Severity;
+import com.sentinel.audit.dto.IsoQualityDto;
+import com.sentinel.audit.iso.Iso25010Perfil;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.openpdf.text.Document;
 import org.openpdf.text.DocumentException;
 import org.openpdf.text.Element;
@@ -83,6 +86,7 @@ public class PdfReportService {
             }
             doc.add(new Paragraph(severityLine(active) + " | " + active.size() + " findings ativos"
                     + (suppressed.isEmpty() ? "" : "; " + suppressed.size() + " suprimidos (fora do score)"), BODY));
+            iso(doc, run, findings);
 
             List<Finding> reliable = active.stream().filter(f -> !ReportService.isLowConfidence(f)).toList();
             List<Finding> lowConfidence = active.stream().filter(ReportService::isLowConfidence).toList();
@@ -141,6 +145,7 @@ public class PdfReportService {
                 doc.add(new Paragraph("Corrigir os " + plan.criticalCount() + " crítico(s) leva a nota de "
                         + fmt(plan.scoreNow()) + " para cerca de " + fmt(plan.scoreIfCriticalFixed()) + ".", BODY));
             }
+            iso(doc, run, findings);
             doc.add(h2("O que corrigir primeiro"));
             if (plan.items().isEmpty()) {
                 doc.add(new Paragraph("Nenhum problema ativo.", BODY));
@@ -231,6 +236,22 @@ public class PdfReportService {
     }
 
     // ------------------------------------------------------------------ infraestrutura
+
+    @Inject
+    ScoringService scoring;
+
+    /** Seção "Qualidade segundo a ISO/IEC 25010": nota e achados por característica; as não avaliadas dizem isso. */
+    private void iso(Document doc, AuditRun run, List<Finding> findings) throws DocumentException {
+        IsoQualityDto iso = IsoQuality.calculate(scoring != null ? scoring : new ScoringService(),
+                FindingLifecycleService.active(findings), run.getLinesOfCode(), Iso25010Perfil.PADRAO);
+        doc.add(h2("Qualidade segundo a ISO/IEC 25010"));
+        doc.add(new Paragraph("Nota ponderada: " + fmt(iso.notaPonderada())
+                + " (0-100, maior = melhor). Alinhamento de vocabulário, não certificação.", BODY));
+        table(doc, List.of("Característica", "Nota", "Achados"), iso.caracteristicas().stream()
+                .map(c -> List.of(c.nome(), c.avaliada() ? fmt(c.nota()) : "não avaliada",
+                        c.avaliada() ? String.valueOf(c.achados()) : "-"))
+                .toList());
+    }
 
     /** Escudo com olho (o mesmo logo do painel), desenhado em vetor: nítido em qualquer zoom e sem arquivo de imagem. */
     private static Image logo(PdfWriter writer) throws DocumentException {

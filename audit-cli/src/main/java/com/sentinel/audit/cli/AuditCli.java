@@ -132,6 +132,7 @@ public class AuditCli {
         failed |= failedOnFindings(args, findings);
         failed |= failedOnNewFindings(args, auditRunId);
         failed |= failedOnScoreDrop(args, auditRunId);
+        failed |= failedBelowIso(args, auditRunId);
         if (failed) {
             return 1;
         }
@@ -222,6 +223,25 @@ public class AuditCli {
             return true;
         }
         return false;
+    }
+
+    /** Metas por característica da ISO/IEC 25010: reprova se alguma nota ficou abaixo da meta pedida. */
+    private boolean failedBelowIso(CliArgs args, long auditRunId) throws Exception {
+        if (args.failBelowIso == null || args.failBelowIso.isBlank()) {
+            return false;
+        }
+        String query = "?metas=" + java.net.URLEncoder.encode(args.failBelowIso, StandardCharsets.UTF_8)
+                + (args.isoProfile == null ? "" : "&perfil=" + java.net.URLEncoder.encode(args.isoProfile, StandardCharsets.UTF_8));
+        JsonNode iso = fetchJson(args, "/api/v1/audits/" + auditRunId + "/iso25010" + query);
+        boolean failed = false;
+        for (JsonNode c : iso.path("caracteristicas")) {
+            if (c.path("atingiu").isBoolean() && !c.path("atingiu").asBoolean()) {
+                System.err.printf("%nFALHA: %s (ISO/IEC 25010) com nota %.1f, abaixo da meta %.1f (--fail-below-iso)%n",
+                        c.path("nome").asText(c.path("id").asText()), c.path("nota").asDouble(), c.path("meta").asDouble());
+                failed = true;
+            }
+        }
+        return failed;
     }
 
     /** Catraca da nota: reprova se ela caiu mais que o permitido em relação à auditoria anterior. */
@@ -453,6 +473,8 @@ public class AuditCli {
         String failOn;
         String failOnNew;
         Double failOnScoreDrop;
+        String failBelowIso;
+        String isoProfile;
         String sarifFile;
         String junitFile;
         String jsonFile;

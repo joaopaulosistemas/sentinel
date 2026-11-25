@@ -5,6 +5,7 @@ import { useFixPlan } from '../hooks/useAuditRuns';
 import { useInsights } from '../hooks/useLifecycle';
 import { AuditHistoryChart } from './AuditHistoryChart';
 import { ChangesCard } from './ChangesCard';
+import { IsoQualityPanel } from './IsoQualityPanel';
 import { ScoreExplanationPanel } from './ScoreExplanationPanel';
 import type { IAnalyzerRunInfo, IAuditRunResponse, Category, Severity } from '../types';
 import { categoriesByScore, categoryLabels, verdict } from '../utils/resultVerdict';
@@ -393,6 +394,7 @@ export function ResultSteps({ run, onOpenFindings }: { run: IAuditRunResponse; o
         <FixSection run={run} plan={plan} category={category} items={items} onOpenFindings={onOpenFindings} />
       </div>
       <ToolsSection runId={run.id} systemId={run.systemId} />
+      <IsoQualityPanel run={run} />
       <ScoreExplanationPanel run={run} />
     </div>
   );

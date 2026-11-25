@@ -127,6 +127,7 @@ Opções extras do CLI:
 | `--fail-on HIGH` | Reprova se houver qualquer finding daquela severidade (ou acima) |
 | `--json resultado.json` | Grava os findings em JSON |
 | `--fail-on-new CRITICAL` | Reprova se surgir finding **novo** daquela severidade (ou acima) desde a auditoria anterior |
+| `--fail-below-iso security:90,maintainability:75` | Reprova se a nota de alguma característica da [ISO/IEC 25010](../referencia/iso-25010.md) ficar abaixo da meta; `--iso-profile financeiro` escolhe os pesos |
 | `--fail-on-score-drop 0` | Catraca da nota: reprova se ela cair mais que esses pontos desde a auditoria anterior (sem anterior, não reprova) |
 | `--sarif relatorio.sarif` | Grava SARIF 2.1.0 (GitHub Code Scanning, Azure DevOps, GitLab) |
 | `--junit relatorio.xml` | Grava JUnit XML (aparece como teste no pipeline) |

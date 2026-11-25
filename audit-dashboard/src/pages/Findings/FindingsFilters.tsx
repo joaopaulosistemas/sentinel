@@ -8,6 +8,7 @@ import {
   type SituationChoice,
 } from '../../utils/findingsView';
 import type { Category } from '../../types';
+import { isoFilterOptions } from '../../utils/isoQuality';
 
 const label = { fontSize: 12, color: 'var(--s-text-3)' } as const;
 const select = { height: 40, padding: '0 8px', border: 0, borderBottom: '1px solid var(--s-border-strong)', background: 'var(--s-layer)', fontSize: 14 } as const;
@@ -31,6 +32,8 @@ interface IFiltersProps {
   onSeverity: (v: SeverityChoice) => void;
   category: Category | undefined;
   onCategory: (v: Category | undefined) => void;
+  iso: string | undefined;
+  onIso: (v: string | undefined) => void;
   situation: SituationChoice;
   onSituation: (v: SituationChoice) => void;
   grouped: boolean;
@@ -125,6 +128,11 @@ export function FindingsFilters(p: IFiltersProps) {
         <SelectField id="f-cat" text="Categoria" value={p.category ?? ''} onChange={(v) => p.onCategory((v || undefined) as Category | undefined)}>
           {categoryOptions.map((c) => (
             <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </SelectField>
+        <SelectField id="f-iso" text="Característica ISO 25010" value={p.iso ?? ''} onChange={(v) => p.onIso(v || undefined)}>
+          {isoFilterOptions.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </SelectField>
         <SelectField id="f-st" text="Situação" value={p.situation} onChange={(v) => p.onSituation(v as SituationChoice)}>

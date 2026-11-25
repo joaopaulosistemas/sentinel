@@ -1,4 +1,7 @@
 import type {
+  IIsoQuality,
+  IIsoTrendPoint,
+  IsoProfile,
   IAuditDiff,
   IAuditFreshness,
   IAuditRunResponse,
@@ -183,6 +186,8 @@ export const api = {
       status?: FindingStatus;
       includeSuppressed?: boolean;
       onlyNew?: boolean;
+      /** característica da ISO/IEC 25010 (security, maintainability, reliability, performance-efficiency) */
+      iso25010?: string;
     },
   ) => {
     const qs = params
@@ -208,6 +213,11 @@ export const api = {
       body: file,
     }),
 
+  getIsoQuality: (auditId: number, perfil: IsoProfile) =>
+    apiFetch<IIsoQuality>(`/api/v1/audits/${auditId}/iso25010?perfil=${perfil}`),
+  getIsoTrend: (systemId: number, limit = 10) =>
+    apiFetch<IIsoTrendPoint[]>(`/api/v1/systems/${systemId}/iso25010/trend?limit=${limit}`),
+
   getFixPlan: (auditId: number) => apiFetch<IFixPlan>(`/api/v1/audits/${auditId}/fix-plan`),
   getScoreExplanation: (auditId: number, without: string[]) =>
     apiFetch<IScoreExplanation>(`/api/v1/audits/${auditId}/score-explanation${without.length > 0 ? `?without=${encodeURIComponent(without.join(','))}` : ''}`),
@@ -218,6 +228,7 @@ export const api = {
     severity?: Severity[];
     category?: Category;
     status?: FindingStatus;
+    iso25010?: string;
     onlyNew?: boolean;
     includeSuppressed?: boolean;
     limit: number;

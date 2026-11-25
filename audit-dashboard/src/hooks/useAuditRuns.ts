@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { IAuditRunResponse } from '../types';
+import type { IAuditRunResponse, IsoProfile } from '../types';
 
 const POLL_MS = 3000;
 
@@ -46,6 +46,23 @@ export function useScoreExplanation({ auditId, enabled, without }: IScoreExplana
     queryFn: () => api.getScoreExplanation(auditId, without),
     enabled: enabled && auditId > 0,
     placeholderData: (previous) => previous,
+  });
+}
+
+export function useIsoQuality({ auditId, perfil, enabled }: { auditId: number; perfil: IsoProfile; enabled: boolean }) {
+  return useQuery({
+    queryKey: ['isoQuality', auditId, perfil],
+    queryFn: () => api.getIsoQuality(auditId, perfil),
+    enabled: enabled && auditId > 0,
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useIsoTrend({ systemId, enabled }: { systemId: number | undefined; enabled: boolean }) {
+  return useQuery({
+    queryKey: ['isoTrend', systemId],
+    queryFn: () => api.getIsoTrend(systemId ?? 0),
+    enabled: enabled && systemId !== undefined && systemId > 0,
   });
 }
 

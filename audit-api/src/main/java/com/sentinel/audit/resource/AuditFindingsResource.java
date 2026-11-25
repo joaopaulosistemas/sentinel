@@ -2,6 +2,7 @@ package com.sentinel.audit.resource;
 
 import com.sentinel.audit.dto.FindingMapper;
 import com.sentinel.audit.dto.FindingResponse;
+import com.sentinel.audit.iso.Iso25010;
 import com.sentinel.audit.model.Category;
 import com.sentinel.audit.model.Finding;
 import com.sentinel.audit.model.FindingStatus;
@@ -65,6 +66,7 @@ public class AuditFindingsResource {
                 .filter(f -> q.severity == null || f.getSeverity() == q.severity)
                 .filter(f -> q.category == null || f.getCategory() == q.category)
                 .filter(f -> q.status == null || f.getStatus() == q.status)
+                .filter(f -> q.iso25010 == null || q.iso25010.isBlank() || Iso25010.of(f).id().equalsIgnoreCase(q.iso25010.strip()))
                 // suprimidos só aparecem se pedidos (includeSuppressed ou status=SUPPRESSED)
                 .filter(f -> q.includeSuppressed || q.status == FindingStatus.SUPPRESSED || f.getStatus() != FindingStatus.SUPPRESSED)
                 .filter(f -> !q.onlyNew || Boolean.TRUE.equals(f.getIsNew()))
@@ -84,6 +86,8 @@ public class AuditFindingsResource {
         public Category category;
         @QueryParam("status")
         public FindingStatus status;
+        @QueryParam("iso25010")
+        public String iso25010;
         @QueryParam("includeSuppressed")
         @DefaultValue("false")
         public boolean includeSuppressed;

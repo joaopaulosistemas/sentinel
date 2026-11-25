@@ -100,4 +100,13 @@ class FindingsOverviewTest {
                 new FindingsOverview.Filter(null, java.util.Set.of(), null, null, false, true), 20, 0);
         assertEquals(4, r.total());
     }
+
+    @Test
+    void filtraPorCaracteristicaIso() {
+        FindingsOverview.Filter seguranca = new FindingsOverview.Filter(null, java.util.Set.of(), null, null, false, false, "Security");
+        FindingsOverview.Filter manutencao = new FindingsOverview.Filter(null, java.util.Set.of(), null, null, false, false, "maintainability");
+
+        assertEquals(3, FindingsOverview.build(sources, seguranca, 20, 0).total());   // todos os achados do teste são de segurança
+        assertEquals(0, FindingsOverview.build(sources, manutencao, 20, 0).total());
+    }
 }
