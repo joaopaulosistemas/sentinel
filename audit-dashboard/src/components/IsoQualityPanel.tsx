@@ -47,7 +47,7 @@ export function IsoQualityPanel({ run }: { run: IAuditRunResponse }) {
       </div>
       {isLoading && <SkeletonText paragraph lineCount={4} />}
       {error && <InlineNotification kind="error" title="Não foi possível calcular a qualidade ISO" subtitle={error instanceof Error ? error.message : 'Erro desconhecido'} hideCloseButton />}
-      {data && (
+      {data && Array.isArray(data.caracteristicas) && (
         <>
           <p style={{ margin: '0.75rem 0', fontSize: 14 }}>
             Nota ponderada <strong style={{ color: scoreColor(data.notaPonderada) }}>{num.format(data.notaPonderada)}</strong>

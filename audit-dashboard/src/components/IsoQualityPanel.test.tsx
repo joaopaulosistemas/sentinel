@@ -46,4 +46,12 @@ describe('IsoQualityPanel', () => {
     expect(container).toBeEmptyDOMElement();
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('resposta fora do formato não derruba a página', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([]), { status: 200 })));
+    wrap();
+
+    expect(await screen.findByRole('region', { name: 'Qualidade ISO/IEC 25010' })).toBeInTheDocument();
+    expect(screen.queryByText(/Nota ponderada/)).not.toBeInTheDocument();
+  });
 });
