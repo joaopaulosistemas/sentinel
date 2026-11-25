@@ -2180,3 +2180,10 @@ O PDF lista os achados ativos junto com os 105 já suprimidos, o que tinha me le
 - **Corrigido:** `docs/figma/capturar-telas.mjs` agora acha a pasta pelo próprio caminho e a raiz do projeto dois níveis acima; o comando passa a ser `node docs/figma/capturar-telas.mjs`. Links em `docs/README.md` e `docs/guia/instalacao.md` ajustados.
 - **Verificado:** verificadores de versão, números e regras, e links relativos; sintaxe do script (`node --check`).
 - **Não verificado:** nova execução completa do script de captura (precisa de `npm ci` e Chrome); o código só mudou na resolução de caminhos.
+
+## 12.127.0 — Login: depois de Sair, tela "Você saiu" em vez de voltar sozinho ao login
+
+- **O que mudou (pedido do João: ao clicar em Sair aparecia a tela "Entrando…"):** o painel encerrava a sessão no Keycloak, voltava para `/`, não achava usuário e mandava para o login na hora, mostrando "Entrando…" no meio. Agora, ao sair, o painel anota na `sessionStorage` da aba (`sentinel.saiu`); na volta do Keycloak ele lê e apaga a anotação e mostra "Você saiu" com o botão "Entrar de novo". A URL de retorno não mudou, então os URIs registrados no Keycloak continuam valendo. Recarregar a página depois leva ao login como antes.
+- **Testes:** 4 novos em `AuthGate.test.tsx` (Sair anota a saída e chama o logout do Keycloak; a volta mostra "Você saiu" sem chamar o login; o botão leva ao login; a anotação vale uma vez). `src/auth`: 33 passam; a suíte completa do painel: 445 testes passam.
+- **Verificado:** `tsc --noEmit`, `eslint src/auth`, `vitest run src/auth`; `sincronizar-versao.py --check`.
+- **Não verificado:** o fluxo contra um Keycloak de verdade (não subi o Keycloak aqui); a tela "Você saiu" por captura; se a tela "Entrando…" do relato ficava travada, caso em que a causa seria outra (redirect de logout recusado pelo cliente); a suíte completa do painel e os e2e (ficam para o CI).
