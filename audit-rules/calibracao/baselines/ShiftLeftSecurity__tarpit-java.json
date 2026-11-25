@@ -1,11 +1,11 @@
 {
  "repo": "ShiftLeftSecurity/tarpit-java",
- "nota": 33.13,
- "total": 272,
+ "nota": 32.86,
+ "total": 274,
  "porSeveridade": {
   "CRITICAL": 25,
   "HIGH": 53,
-  "MEDIUM": 70,
+  "MEDIUM": 72,
   "LOW": 124
  },
  "porRegra": {
@@ -104,6 +104,7 @@
   "Opengrep/sentinel-java-catch-vazio": 2,
   "Opengrep/sentinel-java-simpledateformat-estatico": 1,
   "Opengrep/sentinel-command-injection-variable": 1,
+  "Opengrep/sentinel-cookie-sem-httponly": 2,
   "Opengrep/sentinel-cookie-sem-secure": 2,
   "Opengrep/sentinel-log-dado-sensivel": 1,
   "Opengrep/sentinel-log-injection": 5,

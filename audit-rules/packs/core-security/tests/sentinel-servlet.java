@@ -50,10 +50,11 @@ class ServletCases extends HttpServlet {
     }
 
     void cookies(HttpServletResponse response) {
-        // ruleid: sentinel-cookie-sem-secure
+        // ruleid: sentinel-cookie-sem-secure, sentinel-cookie-sem-httponly
         javax.servlet.http.Cookie sem = new javax.servlet.http.Cookie("a", "1");
         response.addCookie(sem);
         Cookie ok = new Cookie("b", "2");
+        ok.setHttpOnly(true);
         // ok: sentinel-cookie-sem-secure
         ok.setSecure(true);
         // ruleid: sentinel-cookie-secure-desligado

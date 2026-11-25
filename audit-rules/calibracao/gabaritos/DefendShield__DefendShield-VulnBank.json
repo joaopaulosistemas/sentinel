@@ -1,0 +1,399 @@
+{
+  "_comentario": "Falhas de DefendShield/DefendShield-VulnBank lidas no codigo (treino), volta 57; os comentarios VB-nnn do proprio codigo ajudaram a achar, as linhas sao do sink. Regras aceitas fixadas antes de ver os achados. Gabarito escrito pelo mesmo agente que corrige. Sem regra assumida (lacuna): CRLF em setHeader (misc.js:19, morevulns.js:34), senha em texto claro no banco, CSRF sem token (advanced.js:100), JWT kid (jwtlab.js:66), enumeracao de usuario, XXE por regex (misc.js:42), DoS (report, billion laughs). CORRECOES DEPOIS DA PRIMEIRA MEDIDA (16/37): removido advanced.js:57 (parseInt/Math.min sanitiza, nao e injecao); profile.js:44 -> 8 (a regra marca a definicao do unsafeMerge, nao a chamada); server.js:28 aceita sentinel-api-jwt-segredo-padrao-js (a regra marcava e eu so aceitara a de session-secret). Com isso o 'antes' vira 18/36. Regras sentinel-node-ssti-template-dinamico e extensoes de sql-injection (prepare), ssrf (cliente em ternario) e xss (fallback ||) entraram nas aceitas DEPOIS da primeira medida (ja listadas em regras).",
+  "repo": "DefendShield/DefendShield-VulnBank",
+  "falhas": [
+    {
+      "arquivo": "src/routes/auth.js",
+      "linha": 18,
+      "cwe": "CWE-89",
+      "regras": [
+        "sentinel-node-sql-injection",
+        "sentinel-node-sql-concatenado",
+        "sentinel-node-sqlite-sql-dinamico",
+        "sentinel-sql-injection",
+        "sentinel-sql-concatenado-executado",
+        "sentinel-taint-sql-parametro-http"
+      ]
+    },
+    {
+      "arquivo": "src/routes/accounts.js",
+      "linha": 80,
+      "cwe": "CWE-89",
+      "regras": [
+        "sentinel-node-sql-injection",
+        "sentinel-node-sql-concatenado",
+        "sentinel-node-sqlite-sql-dinamico",
+        "sentinel-sql-injection",
+        "sentinel-sql-concatenado-executado",
+        "sentinel-taint-sql-parametro-http"
+      ]
+    },
+    {
+      "arquivo": "src/routes/injection2.js",
+      "linha": 39,
+      "cwe": "CWE-89",
+      "regras": [
+        "sentinel-node-sql-injection",
+        "sentinel-node-sql-concatenado",
+        "sentinel-node-sqlite-sql-dinamico",
+        "sentinel-sql-injection",
+        "sentinel-sql-concatenado-executado",
+        "sentinel-taint-sql-parametro-http"
+      ]
+    },
+    {
+      "arquivo": "src/routes/injection2.js",
+      "linha": 61,
+      "cwe": "CWE-89",
+      "regras": [
+        "sentinel-node-sql-injection",
+        "sentinel-node-sql-concatenado",
+        "sentinel-node-sqlite-sql-dinamico",
+        "sentinel-sql-injection",
+        "sentinel-sql-concatenado-executado",
+        "sentinel-taint-sql-parametro-http"
+      ]
+    },
+    {
+      "arquivo": "src/routes/injection2.js",
+      "linha": 72,
+      "cwe": "CWE-89",
+      "regras": [
+        "sentinel-node-sql-injection",
+        "sentinel-node-sql-concatenado",
+        "sentinel-node-sqlite-sql-dinamico",
+        "sentinel-sql-injection",
+        "sentinel-sql-concatenado-executado",
+        "sentinel-taint-sql-parametro-http"
+      ]
+    },
+    {
+      "arquivo": "src/routes/injection3.js",
+      "linha": 15,
+      "cwe": "CWE-78",
+      "regras": [
+        "sentinel-node-command-injection",
+        "sentinel-node-exec-dinamico",
+        "sentinel-command-injection",
+        "sentinel-command-injection-requisicao",
+        "sentinel-command-injection-variable",
+        "sentinel-command-injection-shell"
+      ]
+    },
+    {
+      "arquivo": "src/routes/injection3.js",
+      "linha": 49,
+      "cwe": "CWE-89",
+      "regras": [
+        "sentinel-node-sql-injection",
+        "sentinel-node-sql-concatenado",
+        "sentinel-node-sqlite-sql-dinamico",
+        "sentinel-sql-injection",
+        "sentinel-sql-concatenado-executado",
+        "sentinel-taint-sql-parametro-http"
+      ]
+    },
+    {
+      "arquivo": "src/routes/injection3.js",
+      "linha": 61,
+      "cwe": "CWE-89",
+      "regras": [
+        "sentinel-node-sql-injection",
+        "sentinel-node-sql-concatenado",
+        "sentinel-node-sqlite-sql-dinamico",
+        "sentinel-sql-injection",
+        "sentinel-sql-concatenado-executado",
+        "sentinel-taint-sql-parametro-http"
+      ]
+    },
+    {
+      "arquivo": "src/routes/injection3.js",
+      "linha": 73,
+      "cwe": "CWE-88",
+      "regras": [
+        "sentinel-node-command-injection",
+        "sentinel-node-exec-dinamico",
+        "sentinel-command-injection",
+        "sentinel-command-injection-requisicao",
+        "sentinel-command-injection-variable",
+        "sentinel-command-injection-shell"
+      ]
+    },
+    {
+      "arquivo": "src/routes/admin.js",
+      "linha": 21,
+      "cwe": "CWE-78",
+      "regras": [
+        "sentinel-node-command-injection",
+        "sentinel-node-exec-dinamico",
+        "sentinel-command-injection",
+        "sentinel-command-injection-requisicao",
+        "sentinel-command-injection-variable",
+        "sentinel-command-injection-shell"
+      ]
+    },
+    {
+      "arquivo": "src/routes/advanced.js",
+      "linha": 76,
+      "cwe": "CWE-918",
+      "regras": [
+        "sentinel-node-ssrf",
+        "sentinel-api-ssrf",
+        "sentinel-ssrf-url-do-parametro"
+      ]
+    },
+    {
+      "arquivo": "src/routes/advanced.js",
+      "linha": 73,
+      "cwe": "CWE-22",
+      "regras": [
+        "sentinel-node-path-traversal",
+        "sentinel-api-path-traversal",
+        "sentinel-servlet-path-traversal",
+        "sentinel-node-ssrf",
+        "sentinel-api-ssrf",
+        "sentinel-ssrf-url-do-parametro"
+      ]
+    },
+    {
+      "arquivo": "src/routes/files.js",
+      "linha": 39,
+      "cwe": "CWE-918",
+      "regras": [
+        "sentinel-node-ssrf",
+        "sentinel-api-ssrf",
+        "sentinel-ssrf-url-do-parametro"
+      ]
+    },
+    {
+      "arquivo": "src/routes/files.js",
+      "linha": 54,
+      "cwe": "CWE-22",
+      "regras": [
+        "sentinel-node-path-traversal",
+        "sentinel-api-path-traversal",
+        "sentinel-servlet-path-traversal"
+      ]
+    },
+    {
+      "arquivo": "src/routes/misc.js",
+      "linha": 30,
+      "cwe": "CWE-918",
+      "regras": [
+        "sentinel-node-ssrf",
+        "sentinel-api-ssrf",
+        "sentinel-ssrf-url-do-parametro"
+      ]
+    },
+    {
+      "arquivo": "src/routes/misc.js",
+      "linha": 12,
+      "cwe": "CWE-601",
+      "regras": [
+        "sentinel-node-open-redirect",
+        "sentinel-open-redirect",
+        "sentinel-open-redirect-requisicao"
+      ]
+    },
+    {
+      "arquivo": "src/routes/misc.js",
+      "linha": 51,
+      "cwe": "CWE-22",
+      "regras": [
+        "sentinel-node-path-traversal",
+        "sentinel-api-path-traversal",
+        "sentinel-servlet-path-traversal"
+      ]
+    },
+    {
+      "arquivo": "src/server.js",
+      "linha": 106,
+      "cwe": "CWE-22",
+      "regras": [
+        "sentinel-node-path-traversal",
+        "sentinel-api-path-traversal",
+        "sentinel-servlet-path-traversal"
+      ]
+    },
+    {
+      "arquivo": "src/server.js",
+      "linha": 28,
+      "cwe": "CWE-798",
+      "regras": [
+        "sentinel-node-session-secret-literal",
+        "sentinel-api-jwt-segredo-padrao-js"
+      ]
+    },
+    {
+      "arquivo": "src/server.js",
+      "linha": 31,
+      "cwe": "CWE-1004",
+      "regras": [
+        "sentinel-node-cookie-httponly-desligado",
+        "sentinel-node-cookie-sem-flags",
+        "sentinel-cookie-secure-desligado"
+      ]
+    },
+    {
+      "arquivo": "src/server.js",
+      "linha": 37,
+      "cwe": "CWE-942",
+      "regras": [
+        "sentinel-api-cors-aberto-js",
+        "sentinel-api-cors-wildcard"
+      ]
+    },
+    {
+      "arquivo": "src/routes/profile.js",
+      "linha": 49,
+      "cwe": "CWE-915",
+      "regras": [
+        "sentinel-node-mass-assignment",
+        "sentinel-node-mass-assignment-campo"
+      ]
+    },
+    {
+      "arquivo": "src/routes/profile.js",
+      "linha": 8,
+      "cwe": "CWE-1321",
+      "regras": [
+        "sentinel-node-prototype-pollution"
+      ]
+    },
+    {
+      "arquivo": "src/routes/profile.js",
+      "linha": 62,
+      "cwe": "CWE-1336",
+      "regras": [
+        "sentinel-ssti-modelo-variavel",
+        "sentinel-ejs-saida-sem-escape",
+        "sentinel-node-ssti-template-dinamico"
+      ]
+    },
+    {
+      "arquivo": "src/routes/api.js",
+      "linha": 7,
+      "cwe": "CWE-798",
+      "regras": [
+        "sentinel-api-jwt-segredo-padrao-js",
+        "sentinel-api-jwt-chave-fixa-js",
+        "sentinel-api-jwt-chave-fixa",
+        "sentinel-node-credencial-literal-atribuida"
+      ]
+    },
+    {
+      "arquivo": "src/routes/api.js",
+      "linha": 28,
+      "cwe": "CWE-347",
+      "regras": [
+        "sentinel-node-jwt-algoritmo-none",
+        "sentinel-node-jwt-sem-algoritmo",
+        "sentinel-node-jwt-decode-sem-verificar",
+        "sentinel-api-jwt-sem-verificacao",
+        "sentinel-api-jwt-segredo-padrao-js",
+        "sentinel-api-jwt-chave-fixa-js",
+        "sentinel-api-jwt-chave-fixa"
+      ]
+    },
+    {
+      "arquivo": "src/routes/jwtlab.js",
+      "linha": 48,
+      "cwe": "CWE-347",
+      "regras": [
+        "sentinel-node-jwt-algoritmo-none",
+        "sentinel-node-jwt-sem-algoritmo",
+        "sentinel-node-jwt-decode-sem-verificar",
+        "sentinel-api-jwt-sem-verificacao",
+        "sentinel-api-jwt-segredo-padrao-js",
+        "sentinel-api-jwt-chave-fixa-js",
+        "sentinel-api-jwt-chave-fixa"
+      ]
+    },
+    {
+      "arquivo": "src/routes/integrity.js",
+      "linha": 25,
+      "cwe": "CWE-502",
+      "regras": [
+        "sentinel-node-desserializacao",
+        "sentinel-desserializacao-insegura"
+      ]
+    },
+    {
+      "arquivo": "src/routes/integrity.js",
+      "linha": 47,
+      "cwe": "CWE-22",
+      "regras": [
+        "sentinel-zip-slip",
+        "sentinel-node-path-traversal",
+        "sentinel-api-path-traversal",
+        "sentinel-servlet-path-traversal"
+      ]
+    },
+    {
+      "arquivo": "src/routes/morevulns.js",
+      "linha": 14,
+      "cwe": "CWE-915",
+      "regras": [
+        "sentinel-node-mass-assignment",
+        "sentinel-node-mass-assignment-campo"
+      ]
+    },
+    {
+      "arquivo": "src/routes/morevulns.js",
+      "linha": 87,
+      "cwe": "CWE-1004",
+      "regras": [
+        "sentinel-node-cookie-httponly-desligado",
+        "sentinel-node-cookie-sem-flags",
+        "sentinel-cookie-sem-httponly"
+      ]
+    },
+    {
+      "arquivo": "src/routes/oauth.js",
+      "linha": 18,
+      "cwe": "CWE-601",
+      "regras": [
+        "sentinel-node-open-redirect",
+        "sentinel-open-redirect",
+        "sentinel-open-redirect-requisicao"
+      ]
+    },
+    {
+      "arquivo": "src/routes/otp.js",
+      "linha": 12,
+      "cwe": "CWE-338",
+      "regras": [
+        "sentinel-node-math-random-segredo",
+        "sentinel-node-math-random-retorno",
+        "sentinel-crypto-random-previsivel"
+      ]
+    },
+    {
+      "arquivo": "src/routes/cryptolab.js",
+      "linha": 50,
+      "cwe": "CWE-328",
+      "regras": [
+        "sentinel-node-hash-fraco",
+        "sentinel-crypto-hash-fraco"
+      ]
+    },
+    {
+      "arquivo": "src/routes/clientside.js",
+      "linha": 28,
+      "cwe": "CWE-79",
+      "regras": [
+        "sentinel-xss-inner-html"
+      ]
+    },
+    {
+      "arquivo": "src/routes/cache.js",
+      "linha": 36,
+      "cwe": "CWE-79",
+      "regras": [
+        "sentinel-node-xss-refletido",
+        "sentinel-xss-inner-html",
+        "sentinel-xss-response-write"
+      ]
+    }
+  ]
+}

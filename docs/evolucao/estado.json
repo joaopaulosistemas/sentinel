@@ -1,18 +1,18 @@
 {
   "_comentario": "Estado do laço entre execuções (a sessão não lembra da anterior). O agente LÊ este arquivo no início e o ATUALIZA no mesmo commit de cada volta; o LOG continua sendo a narrativa. conjuntosSha256 é conferido por scripts/verificar-separacao.py (rode com --atualizar-hash depois de editar conjuntos.json).",
-  "ultimaVolta": 54,
-  "ultimoRepositorioTreino": "dbohannon/MEANBug",
+  "ultimaVolta": 59,
+  "ultimoRepositorioTreino": "wyxu95/JSecCode",
   "ultimaStack": "MIXED",
-  "branchAtual": "ciclo/estabilizacao-16",
+  "branchAtual": "ciclo/estabilizacao-17",
   "proximaBranch": null,
-  "voltasNaBranch": 6,
+  "voltasNaBranch": 5,
   "voltasSemGanhoSeguidas": 0,
   "limiteVoltasPorBranch": 6,
-  "ultimoPrMesclado": "#337",
+  "ultimoPrMesclado": "#338",
   "gabaritosValidacao": [
     "bnematzadeh/vulnerable-rest-api"
   ],
-  "conjuntosSha256": "9fc70e43dfa48dd381da28ae80736ef99cc010d1c1cbc514ea122ead38aef10f",
+  "conjuntosSha256": "6ebeb6e1211b25c49b082100c46b7ae72ab143e17740f669ad5f3ff5d3f1f6be",
   "pendencias": [
     "Volta dedicada a avaliar o Joern para JS/TS (decisão pendente desde a 12.65.0)",
     "Aplicar no GitHub a proteção de .github/agente/protecao-main.json (exige o João)",
@@ -51,6 +51,9 @@
     "Volta 48 (djadmin/vulnerable-app): CSRF por ausencia de token (CWE-352), cabecalho anti-clickjacking ausente (CWE-1021) e token de sessao fixo (routes.js:53) sem regra (ausencia/logica); sentinel-ts-var gera 302 achados MEDIUM em ES5 .js legado (ruido de estilo, 1 repo); metrica A: media movel 42-48 = 45,8% contra 58% em 35-41 e 51,4% em 41-47 (tendencia de queda, so entra em ALERTA na volta 55); proposta de estrategia no LOG; amostra de 20 na volta 49; PR #336 ja mesclado, job Dashboard/npm audit do #335/#336 continua pendente de decisao do Joao se reaparecer",
     "Volta 49 (VyAPI): FileProvider com paths amplos (load_file_paths.xml, CWE-200), XSS por loadDataWithBaseURL com URL do Bundle (CWE-79), log de EditText (CWE-532) e chave fixa derivada por SHA-256 de literal (CWE-321) sem regra; Android ja somou 3 voltas",
     "Volta 51 (verademo): ALERTA: ciclo nao generaliza (media movel 45-51 = 51,4% contra 58% de 35-41, sem +5); ciclo parado ate decisao do Joao sobre estrategia; perdidas sem regra: SQLi em UserController:373 e :479 (CWE-89, forma nao conferida), open redirect em :86 e :143 (CWE-601) e cookie sem HttpOnly em Utils:55 (CWE-1004)",
-    "Volta 53 (SpringVulnBoot-backend): fastjson JSON.parse (versao 1.2.24 so por CVE), XInclude (XInclude-aware ligado), CRLF em setHeader (CWE-113) sem regra; helpers compartilhados entre variante vulneravel e segura (XStream/XMLDecoder) geram achado nos dois; amostra de 20 da volta 55"
+    "Volta 53 (SpringVulnBoot-backend): fastjson JSON.parse (versao 1.2.24 so por CVE), XInclude (XInclude-aware ligado), CRLF em setHeader (CWE-113) sem regra; helpers compartilhados entre variante vulneravel e segura (XStream/XMLDecoder) geram achado nos dois; amostra de 20 da volta 55",
+    "Volta 57 (DefendShield-VulnBank): mass assignment por lista de campos com role (CWE-915, profile.js:49 e morevulns.js:14), JWT alg confusion com algorithms RS256+HS256 (jwtlab.js:48), CORS com origem refletida via variavel, DOM XSS em script inline de template string (clientside.js:28), argument injection em spawnSync('tar') e Zip Slip com AdmZip sem regra; vuln-node.js nao reauditado (falha de Maven no CI); amostra de 20 na volta 58",
+    "Volta 58 (bodgeit): AdvancedSearch.java:186 (SQL por replaceAll de parametros) e admin.jsp:12 (acesso admin sem checagem) sem regra; FPs da amostra: variavel de valor numerico/constante em out/atributo (product.jsp:67-68, password.jsp:48); amostra de 20 da volta 61",
+    "Volta 59 (JSecCode): regras JS/TS (taint, postMessage) provavelmente nao rodam no <script> de arquivos .vue (Opengrep nao le SFC; PostRedirectSender.vue:13 perdido, v-html so pego por regex) - extrair o <script> antes do motor e mudanca em Java, fica para volta dedicada com aprovacao; lodash.merge/template com corpo da requisicao (CWE-1321/CWE-94, so CVE do lodash), senha curta em objeto de configuracao (`password: 'root'`, abaixo do limite de 8 caracteres da regra) e `config.keys` por concatenacao sem regra; IDOR, CSRF por GET e csrf.ignore sao logica/configuracao; ctx.redirect do Egg fica sem marca (seguro no Egg, inseguro no Koa); Benchmark OWASP nao rodado (nenhuma regra Java mudou); amostra de 20 na volta 61; PR da branch na volta 60 (6 voltas)"
   ]
 }

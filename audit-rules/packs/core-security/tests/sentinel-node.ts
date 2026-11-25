@@ -526,6 +526,32 @@ function mergeSeguro (target: any, source: any) {
   return target
 }
 
+// merge recursivo escrito como método de classe (`this.merge(...)`), comum em controllers e serviços
+class Mesclador {
+  // ruleid: sentinel-node-prototype-pollution
+  merge (target: any, source: any) {
+    for (const key in source) {
+      if (key in source && key in target) {
+        this.merge(target[key], source[key])
+      } else {
+        target[key] = source[key]
+      }
+    }
+  }
+
+  // ok: sentinel-node-prototype-pollution
+  mergeSeguro (target: any, source: any) {
+    for (const key in source) {
+      if (key === '__proto__' || key === 'constructor') continue
+      if (key in source && key in target) {
+        this.mergeSeguro(target[key], source[key])
+      } else {
+        target[key] = source[key]
+      }
+    }
+  }
+}
+
 // ---------- RegExp montada com dado da requisição (ReDoS) ----------
 export function testarPadrao (req: any) {
   const padrao = req.body.pattern
@@ -1320,4 +1346,124 @@ export function insereCorpoPorVariavel (req: any, db: any) {
 export function insereCamposEscolhidos (req: any, db: any) {
   // ok: sentinel-node-mongo-corpo-inteiro
   db.collection('faturas').insert({ item: String(req.body.item), preco: Number(req.body.preco) })
+}
+
+// ---------- Volta 57: better-sqlite3 (prepare), cliente http/https em variável, eco com fallback, SSTI ----------
+export function loginPrepare (req: any, res: any) {
+  const { username } = req.body
+  const consulta = `SELECT * FROM users WHERE username = '${username}'`
+  // ruleid: sentinel-node-sql-injection
+  const u = db.prepare(consulta).get()
+  res.json(u)
+}
+
+export function loginPrepareCabecalho (req: any, res: any) {
+  const ua = req.headers['user-agent'] || ''
+  const consulta = "SELECT '" + ua + "' AS agent"
+  // ruleid: sentinel-node-sql-injection
+  res.json(db.prepare(consulta).get())
+}
+
+export function loginPrepareSeguro (req: any, res: any) {
+  // ok: sentinel-node-sql-injection
+  const u = db.prepare('SELECT * FROM users WHERE username = ?').get(req.body.username)
+  res.json(u)
+}
+
+export function loginPrepareNumero (req: any, res: any) {
+  const id = Number(req.query.id)
+  const consulta = `SELECT * FROM users WHERE id = ${id}`
+  // ok: sentinel-node-sql-injection
+  res.json(db.prepare(consulta).get())
+}
+
+export function proxyClienteVariavel (req: any, res: any) {
+  const url = req.query.url
+  const client = url.startsWith('https') ? https : http
+  // ruleid: sentinel-node-ssrf
+  client.get(url, (r: any) => { r.pipe(res) })
+}
+
+export function proxyClienteVariavelInvertido (req: any, res: any) {
+  const alvo = req.body.url
+  const cliente = alvo.startsWith('http://') ? http : https
+  // ruleid: sentinel-node-ssrf
+  cliente.get(alvo, (r: any) => { r.pipe(res) })
+}
+
+export function proxyClienteFixo (req: any, res: any) {
+  const client = req.secure ? https : http
+  // ok: sentinel-node-ssrf
+  client.get('http://servico-interno/saude', (r: any) => { r.pipe(res) })
+}
+
+export function ecoComFallback (req: any, res: any) {
+  // ruleid: sentinel-node-xss-refletido
+  res.send(req.query.body || 'hello')
+}
+
+export function ecoComFallbackEscapado (req: any, res: any) {
+  // ok: sentinel-node-xss-refletido
+  res.send(escapeHtml(req.query.body) || 'hello')
+}
+
+export function saudacaoEjs (req: any, res: any) {
+  const ejs = require('ejs')
+  // ruleid: sentinel-node-ssti-template-dinamico
+  const out = ejs.render(`Hello, ${req.user.display_name}!`)
+  res.send(out)
+}
+
+export function saudacaoPugConcat (req: any, res: any) {
+  // ruleid: sentinel-node-ssti-template-dinamico
+  res.send(pug.render('p Olá ' + req.query.nome))
+}
+
+export function saudacaoEjsFixa (req: any, res: any) {
+  // ok: sentinel-node-ssti-template-dinamico
+  res.send(ejs.render('Hello, <%= nome %>!', { nome: req.query.nome }))
+}
+
+// ---------- Koa e Egg: a requisição vem em `ctx` (ctx.query, ctx.params, ctx.request.body) ----------
+export class ArquivoController {
+  async ler (ctx: any) {
+    // ruleid: sentinel-node-path-traversal
+    const dados = await readFile(ctx.params.file)
+    ctx.body = { msg: dados.toString() }
+  }
+
+  async lerSeguro (ctx: any) {
+    // ok: sentinel-node-path-traversal
+    const dados = await readFile(path.basename(ctx.params.file))
+    ctx.body = { msg: dados.toString() }
+  }
+
+  async buscar (ctx: any) {
+    const url = decodeURIComponent(ctx.query.url)
+    // ruleid: sentinel-node-ssrf
+    const resposta = await ctx.curl(url)
+    ctx.body = { msg: resposta.data.toString() }
+  }
+
+  async buscarFixo (ctx: any) {
+    // ok: sentinel-node-ssrf
+    const resposta = await ctx.curl('https://api.exemplo.com/status')
+    ctx.body = { msg: resposta.data.toString() }
+  }
+
+  async ir (ctx: any) {
+    const destino = decodeURIComponent(ctx.query.url)
+    // ruleid: sentinel-node-open-redirect
+    ctx.unsafeRedirect(destino)
+  }
+
+  async irFixo (ctx: any) {
+    // ok: sentinel-node-open-redirect
+    ctx.unsafeRedirect('/inicio')
+  }
+
+  async corpo (ctx: any) {
+    // ruleid: sentinel-node-ssrf
+    await ctx.curl(ctx.request.body.callback)
+  }
 }

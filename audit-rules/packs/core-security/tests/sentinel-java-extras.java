@@ -22,6 +22,19 @@ class Extras {
         f.newDocumentBuilder();
     }
 
+    void saxReaderRuim() throws Exception {
+        // ruleid: sentinel-xxe-parser-xml
+        XMLReader reader = XMLReaderFactory.createXMLReader();
+        reader.parse(new InputSource(System.in));
+    }
+
+    void saxReaderSeguro() throws Exception {
+        // ok: sentinel-xxe-parser-xml
+        XMLReader reader = XMLReaderFactory.createXMLReader();
+        reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        reader.parse(new InputSource(System.in));
+    }
+
     void spel(String entrada, SpelExpressionParser spelParser) {
         // ruleid: sentinel-spel-injection
         spelParser.parseExpression(entrada);
@@ -130,13 +143,30 @@ class Extras {
     }
 
     void cookies(HttpServletResponse resp) {
+        // ruleid: sentinel-cookie-sem-secure, sentinel-cookie-sem-httponly
+        Cookie c = new Cookie("sid", "1");
+        resp.addCookie(c);
+    }
+
+    void cookieSemHttpOnly(HttpServletResponse resp) {
+        // ruleid: sentinel-cookie-sem-httponly
+        resp.addCookie(new Cookie("accountType", "personal"));
+        // ruleid: sentinel-cookie-sem-httponly, sentinel-cookie-sem-secure
+        Cookie c = new Cookie("sid", "1");
+        resp.addCookie(c);
+    }
+
+    void cookieComHttpOnly(HttpServletResponse resp) {
+        // ok: sentinel-cookie-sem-httponly
         // ruleid: sentinel-cookie-sem-secure
         Cookie c = new Cookie("sid", "1");
+        c.setHttpOnly(true);
         resp.addCookie(c);
     }
 
     void cookiesSeguros(HttpServletResponse resp) {
         // ok: sentinel-cookie-sem-secure
+        // ruleid: sentinel-cookie-sem-httponly
         Cookie c = new Cookie("sid", "1");
         c.setSecure(true);
         resp.addCookie(c);

@@ -1,10 +1,5 @@
 <template>
   <div>
-    <!-- ruleid: sentinel-vue-v-html -->
-    <div v-html="conteudo"></div>
-    <!-- ok: sentinel-vue-v-html -->
-    <div>{{ conteudo }}</div>
-
     <!-- ruleid: sentinel-vue-v-for-sem-key -->
     <li v-for="item in itens">{{ item.nome }}</li>
     <!-- ok: sentinel-vue-v-for-sem-key -->

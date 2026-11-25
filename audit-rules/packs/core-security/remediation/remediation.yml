@@ -1008,3 +1008,44 @@
   after: "XStream xs = new XStream(); xs.allowTypes(new Class[] { Pessoa.class }); xs.fromXML(xml)"
   effort: S
   regression-risk: LOW
+
+- key: "sentinel-sql-concatenado-executado"
+  summary: "Use PreparedStatement com ? e passe o valor por setString/setInt em vez de concatenar."
+  before: "stmt.executeQuery(\"SELECT * FROM user_data WHERE last_name = '\" + nome + \"'\")"
+  after: "PreparedStatement ps = c.prepareStatement(\"SELECT * FROM user_data WHERE last_name = ?\"); ps.setString(1, nome); ps.executeQuery()"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-cookie-sem-httponly"
+  summary: "Chame setHttpOnly(true) (e setSecure(true)) antes de addCookie, para que script da página não leia o cookie."
+  before: "response.addCookie(new Cookie(\"sid\", id))"
+  after: "Cookie c = new Cookie(\"sid\", id); c.setHttpOnly(true); c.setSecure(true); response.addCookie(c)"
+  effort: S
+  regression-risk: LOW
+
+- key: "sentinel-node-ssti-template-dinamico"
+  summary: "Mantenha o texto do modelo fixo e passe o valor do usuário como dado, para o motor de templates escapar."
+  before: "ejs.render(`Olá, ${req.user.nome}!`)"
+  after: "ejs.render('Olá, <%= nome %>!', { nome: req.user.nome })"
+  refs:
+    - "https://portswigger.net/web-security/server-side-template-injection"
+
+- key: "sentinel-vue-v-html"
+  summary: "Use a interpolação {{ }}, que escapa o texto; se o HTML for inevitável, sanitize antes."
+  before: "<div v-html=\"comentario\"></div>"
+  after: |-
+    <div>{{ comentario }}</div>
+    <!-- ou, com HTML confiável e limpo: -->
+    <div v-html="DOMPurify.sanitize(comentario)"></div>
+  refs:
+    - "https://vuejs.org/guide/best-practices/security.html"
+
+- key: "sentinel-dom-open-redirect"
+  summary: "Navegue só para caminhos do próprio site (começam por / e não por //) ou compare o destino com uma lista de permissão."
+  before: "window.location.href = new URLSearchParams(location.search).get('next')"
+  after: |-
+    const destino = new URLSearchParams(location.search).get('next') ?? '/'
+    const interno = destino.startsWith('/') && !destino.startsWith('//')
+    window.location.href = interno ? destino : '/'
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html"

@@ -1,20 +1,5 @@
 # Armadilhas de Vue 3. Casos de teste: tests/sentinel-vue.vue
 rules:
-  - id: sentinel-vue-v-html
-    pattern-regex: '(?m)\bv-html\s*='
-    message: >
-      v-html insere HTML sem escapar: com dado do usuário vira XSS. Use a interpolação {{ }}, que escapa o texto,
-      ou sanitize o HTML (DOMPurify) antes de exibir.
-    severity: ERROR
-    languages: [regex]
-    paths:
-      include: ["*.vue"]
-      exclude: ["**/node_modules/**"]
-    metadata:
-      category: security
-      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
-      owasp: A03:2021 - Injection
-
   - id: sentinel-vue-v-for-sem-key
     pattern-regex: '(?s)<(?!template\b)[A-Za-z][\w-]*\b(?=[^>]*\sv-for\s*=)(?![^>]*(?:\s:key\s*=|\sv-bind:key\s*=))[^>]*>'
     message: >

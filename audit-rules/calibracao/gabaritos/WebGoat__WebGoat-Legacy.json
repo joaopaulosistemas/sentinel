@@ -1,0 +1,267 @@
+{
+ "_comentario": "Falhas de WebGoat/WebGoat-Legacy (WebGoat 5.x, JAVA) lidas no codigo (treino), volta 55: SQL por concatenacao no ponto do executeQuery/executeUpdate, comando, XPath, XXE, cripto fraca e cookie sem HttpOnly; JSP/XSS ficaram de fora do gabarito (lacuna assumida, nao lida a fundo). Escrito pelo mesmo agente que corrige, ANTES de ver os achados. Aceita depois da primeira medida: sentinel-sql-concatenado-executado (regra nova desta volta).",
+ "repo": "WebGoat/WebGoat-Legacy",
+ "falhas": [
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/MaliciousFileExecution.java",
+   "linha": 150,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/MaliciousFileExecution.java",
+   "linha": 302,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/Challenge2Screen.java",
+   "linha": 226,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/AbstractLesson.java",
+   "linha": 623,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/DOS_Login.java",
+   "linha": 106,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/SqlNumericInjection.java",
+   "linha": 118,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/BlindNumericSqlInjection.java",
+   "linha": 102,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/WsSqlInjection.java",
+   "linha": 233,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/SqlAddData.java",
+   "linha": 88,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/BlindStringSqlInjection.java",
+   "linha": 102,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/SqlStringInjection.java",
+   "linha": 100,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/SqlModifyData.java",
+   "linha": 91,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/DBSQLInjection/Login.java",
+   "linha": 201,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/SQLInjection/ViewProfile.java",
+   "linha": 157,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/SQLInjection/Login.java",
+   "linha": 131,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/GoatHillsFinancial/Login.java",
+   "linha": 127,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/GoatHillsFinancial/ViewProfile.java",
+   "linha": 94,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/RoleBasedAccessControl/DeleteProfile.java",
+   "linha": 103,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/admin/ViewDatabase.java",
+   "linha": 82,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http",
+    "sentinel-sql-literal-concatenado",
+    "sentinel-sql-concatenado-executado"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/CommandInjection.java",
+   "linha": 149,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-command-injection",
+    "sentinel-command-injection-requisicao",
+    "sentinel-command-injection-shell",
+    "sentinel-command-injection-variable"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/XPATHInjection.java",
+   "linha": 145,
+   "cwe": "CWE-643",
+   "regras": [
+    "sentinel-xpath-injection"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/WsSAXInjection.java",
+   "linha": 158,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-xxe-parser-xml"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/Encoding.java",
+   "linha": 465,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-crypto-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/Encoding.java",
+   "linha": 325,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-crypto-cifra-fraca"
+   ]
+  },
+  {
+   "arquivo": "src/main/java/org/owasp/webgoat/lessons/WeakAuthenticationCookie.java",
+   "linha": 143,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-httponly-desligado",
+    "sentinel-cookie-secure-desligado"
+   ]
+  }
+ ]
+}

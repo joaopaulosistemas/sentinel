@@ -79,3 +79,58 @@ Meta era 20 achados de regras de segurança; o repositório só tem **15** (todo
 | 13 | ESLint | eslint-security/detect-eval-with-expression | app/server.js | 33 | VERDADEIRO: duplicado do #10 |
 | 14 | ESLint | eslint-security/detect-eval-with-expression | app/server.js | 34 | VERDADEIRO: duplicado do #11 |
 | 15 | ESLint | eslint-security/detect-child-process | app/server.js | 106 | VERDADEIRO: `cprocess.exec(req.query.foo)`, duplicado do #1 |
+
+
+## Volta 55 (2026-11-22): WebGoat/WebGoat-Legacy, regras 12.123.0 (antes da correção de ruído do XSS-JSP desta volta), branch `ciclo/estabilizacao-17`
+
+Sorteio: `random.seed(5503)` sobre os 725 achados de regras de segurança (categoria `security`) do Opengrep na auditoria 45022478169, 20 sorteados e ordenados por arquivo e linha. **Classificação por subagente independente do Claude** (contexto novo, só a lista e o código do WebGoat-Legacy; não viu diff, gabarito nem LOG). Não é revisão externa: o João pode sobrescrever qualquer linha e a dele prevalece. Resultado: 8 VERDADEIRO, 5 BAIXO VALOR, 7 FALSO (estrito 8/20 = 40 %, Wilson 22 a 61 %; largo 13/20 = 65 %, Wilson 43 a 82 %). 545 dos 725 achados são da regra XSS-JSP, então a amostra é dominada por ela (13 das 20 linhas; 6 dos 7 falsos são XSS-JSP: constante, getFormAction(), acessador int). Estimativa, não medida.
+
+| # | Regra | Arquivo | Linha | Classificação |
+|---|---|---|---|---|
+| 1 | sentinel-sql-concatenado-executado | src/main/java/org/owasp/webgoat/lessons/BlindStringSqlInjection.java | 114 | VERDADEIRO: executeQuery com accountNumber do usuário (injeção cega) |
+| 2 | sentinel-sql-concatenado-executado | src/main/java/org/owasp/webgoat/lessons/DOS_Login.java | 106 | VERDADEIRO: username/password concatenados em executeQuery |
+| 3 | sentinel-crypto-hash-fraco | src/main/java/org/owasp/webgoat/lessons/Encoding.java | 465 | BAIXO VALOR: MD5 só para exibir hash na lição, sem autenticação |
+| 4 | sentinel-senha-comparada-com-literal | src/main/java/org/owasp/webgoat/lessons/HtmlClues.java | 84 | VERDADEIRO: credencial fixa admin/adminpw |
+| 5 | sentinel-senha-fixa-no-codigo | src/main/java/org/owasp/webgoat/lessons/MultiLevelLogin2.java | 61 | FALSO: PASSWORD é o nome do parâmetro de formulário |
+| 6 | sentinel-spring-requestmapping-sem-method | src/main/java/org/owasp/webgoat/service/LessonPlanService.java | 57 | BAIXO VALOR: RequestMapping sem method em handler só de leitura |
+| 7 | sentinel-node-eval-dinamico | src/main/webapp/js/deprecated/menu_system.js | 144 | VERDADEIRO: eval com parte da URL (DOM XSS) |
+| 8 | sentinel-html-handler-inline | src/main/webapp/lesson_plans/en/RoleBasedAccessControl.html | 15 | BAIXO VALOR: handler inline com conteúdo estático |
+| 9 | sentinel-fe-target-blank | src/main/webapp/lesson_plans/en/UsefulTools.html | 36 | BAIXO VALOR: target=_blank sem rel em links fixos |
+| 10 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/CrossSiteScripting/EditProfile.jsp | 103 | VERDADEIRO: notas impressas sem escape em textarea (XSS armazenado) |
+| 11 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/CrossSiteScripting/ListStaff.jsp | 13 | FALSO: getFormAction() é valor interno do servidor |
+| 12 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/CrossSiteScripting/ListStaff.jsp | 31 | FALSO: constante literal SEARCHSTAFF_ACTION |
+| 13 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/DBCrossSiteScripting/ListStaff.jsp | 22 | VERDADEIRO: nome/papel do banco sem escape (XSS armazenado) |
+| 14 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/DBCrossSiteScripting/ViewProfile.jsp | 45 | BAIXO VALOR: campo de data improvável de carregar payload |
+| 15 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/GoatHillsFinancial/EditProfile.jsp | 40 | VERDADEIRO: telefone String sem escape em atributo |
+| 16 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/GoatHillsFinancial/EditProfile.jsp | 121 | FALSO: constante literal VIEWPROFILE_ACTION |
+| 17 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/GoatHillsFinancial/ViewProfile.jsp | 103 | FALSO: getManager() devolve int |
+| 18 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/RoleBasedAccessControl/error.jsp | 10 | FALSO: getFormAction() é valor interno do servidor |
+| 19 | sentinel-xss-jsp-unescaped-output | src/main/webapp/lessons/SQLInjection/EditProfile.jsp | 22 | VERDADEIRO: sobrenome editável sem escape em atributo |
+| 20 | sentinel-xss-jsp-unescaped-output | src/main/webapp/main.jsp | 89 | FALSO: valores numéricos do servidor |
+
+## Volta 58 (2026-11-23): psiinon/bodgeit, regras 12.127.0 (apos as regras de JSP desta volta), branch `ciclo/estabilizacao-17`
+
+Sorteio: `random.seed(20261123)` sobre os 69 achados de regras com `category: security` do Opengrep da auditoria 45267610795, 20 sorteados e ordenados por arquivo e linha. **Classificacao por subagente independente do Claude** (contexto novo, so a lista e o codigo do bodgeit; nao viu diff, gabarito nem LOG). Nao e revisao externa: o Joao pode sobrescrever qualquer linha e a dele prevalece. Resultado: 10 VERDADEIRO, 6 BAIXO VALOR, 4 FALSO (estrito 10/20 = 50 %, Wilson 30 a 70 %; largo 16/20 = 80 %, Wilson 58 a 92 %). Amostra dominada pelas regras novas de JSP (so 4 regras aparecem); estimativa, nao medida.
+
+| # | arquivo:linha | regra | classe | justificativa |
+|---|---|---|---|---|
+| 1 | root/admin.jsp:53 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | consultas fixas; so vaza se o banco falhar |
+| 2 | root/advanced.jsp:46 | sentinel-xss-jsp-unescaped-output | VERDADEIRO | valor da requisicao ecoado sem escape |
+| 3 | root/advanced.jsp:47 | sentinel-xss-jsp-unescaped-output | VERDADEIRO | HTML montado com parametros do usuario |
+| 4 | root/basket.jsp:55 | sentinel-jsp-sql-concatenado | VERDADEIRO | cookie b_id concatenado no SQL |
+| 5 | root/basket.jsp:65 | sentinel-jsp-excecao-na-resposta | VERDADEIRO | debug=true provoca erro da SQLi do cookie |
+| 6 | root/basket.jsp:89 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | excecao de INSERT com Timestamp do servidor |
+| 7 | root/basket.jsp:128 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | consultas com valores da sessao/banco |
+| 8 | root/basket.jsp:141 | sentinel-jsp-saida-com-variavel | BAIXO VALOR | XSS so no proprio dono do cookie (self-XSS) |
+| 9 | root/basket.jsp:180 | sentinel-jsp-sql-concatenado | VERDADEIRO | productid da requisicao concatenado |
+| 10 | root/basket.jsp:221 | sentinel-jsp-sql-concatenado | VERDADEIRO | prodId vindo do nome de parametro |
+| 11 | root/contact.jsp:37 | sentinel-jsp-saida-com-variavel | VERDADEIRO | filtro fraco (replace de <script>) contornavel |
+| 12 | root/login.jsp:63 | sentinel-jsp-excecao-na-resposta | VERDADEIRO | excecao exposta apos SQLi em login |
+| 13 | root/login.jsp:91 | sentinel-jsp-saida-com-variavel | VERDADEIRO | username ecoado sem escape |
+| 14 | root/password.jsp:48 | sentinel-jsp-saida-com-variavel | FALSO | okresult e constante |
+| 15 | root/password.jsp:57 | sentinel-xss-jsp-unescaped-output | BAIXO VALOR | username de sessao, self-XSS |
+| 16 | root/product.jsp:67 | sentinel-jsp-saida-com-variavel | FALSO | id inteiro |
+| 17 | root/product.jsp:68 | sentinel-jsp-saida-com-variavel | FALSO | price BigDecimal |
+| 18 | root/register.jsp:78 | sentinel-jsp-excecao-na-resposta | VERDADEIRO | excecao exposta apos SQLi no cadastro |
+| 19 | root/score.jsp:37 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | consulta fixa |
+| 20 | root/search.jsp:25 | sentinel-jsp-sql-concatenado | FALSO | query passa por escapeHtml4 e perde a aspa simples |

@@ -10,6 +10,8 @@ rules:
       # saída numérica pelo nome do acessador (`x.getId()`, `getCommentCount()`, `getSize()`, `.size()`, `.length()`) e ternário que só devolve literais
       - pattern-not-regex: '<%=\s*[\w.]+\.(get\w*(Id|Count|Size|Total|Length|Number)|size|length)\(\)\s*%>'
       - pattern-not-regex: '<%=\s*\(?[^%"?]*\?\s*"[^"%]*"\s*:\s*"[^"%]*"\s*\)?\s*%>'
+      # constante estática em maiúsculas (`Classe.NOME_DA_ACAO`): valor do código, não da requisição
+      - pattern-not-regex: '<%=\s*(\w+\.)*[A-Z][A-Z0-9_]+\s*%>'
     paths:
       include:
         - "*.jsp"
@@ -81,6 +83,23 @@ rules:
       Use textContent ou sanitize com DOMPurify antes de inserir.
     severity: WARNING
     languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp: A03:2021 - Injection
+
+  - id: sentinel-vue-v-html
+    # `v-html` põe o texto como HTML, sem escapar. Vale para Vue 2 e 3; fica no pacote que roda sempre porque XSS não é estilo.
+    # Ignora o valor passado por um sanitizador conhecido (DOMPurify, sanitize..., escape...) e a linha comentada com `<!--`.
+    pattern-regex: '(?m)^(?:(?!<!--)[^\n])*?\bv-html\s*=\s*"(?![^"]*(?:[Ss]anitiz|[Pp]urify|[Ee]scape))'
+    message: >
+      v-html insere HTML sem escapar: com dado do usuário vira XSS. Use a interpolação {{ }}, que escapa o texto,
+      ou sanitize o HTML (DOMPurify) antes de exibir.
+    severity: ERROR
+    languages: [regex]
+    paths:
+      include: ["*.vue"]
+      exclude: ["**/node_modules/**"]
     metadata:
       category: security
       cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"

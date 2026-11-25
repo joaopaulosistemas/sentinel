@@ -72,3 +72,8 @@ veracode/verademo
 d-velopr/vuln-springboot-app
 bansh2eBreak/SpringVulnBoot-backend
 dbohannon/MEANBug
+WebGoat/WebGoat-Legacy
+hdiv/insecure-bank
+DefendShield/DefendShield-VulnBank
+psiinon/bodgeit
+wyxu95/JSecCode

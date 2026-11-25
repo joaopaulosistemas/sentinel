@@ -43,7 +43,7 @@ rules:
           - pattern: $DB.$METHOD($Q, ...)
           - metavariable-regex:
               metavariable: $METHOD
-              regex: ^(get|all|run|each|exec)$
+              regex: ^(get|all|run|each|exec|prepare)$
           - metavariable-regex:
               metavariable: $DB
               regex: ^(db|database|sqlite|sqlite3|conn|connection)$
@@ -149,7 +149,7 @@ rules:
               - pattern: $REQ.body
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
     pattern-sinks:
       - patterns:
           - pattern: '{..., $where: $X, ...}'
@@ -187,7 +187,7 @@ rules:
               - pattern: $REQ.cookies
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern-either:
               - pattern: $EV.body
@@ -295,7 +295,7 @@ rules:
               - pattern: $REQ.headers
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -344,7 +344,7 @@ rules:
               - pattern: $REQ.headers
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           # Express sem `req.query`: `url.parse(req.url, true)` devolve o objeto cujo `.query` vem do usuário
           - pattern: $P.parse($REQ.url, true)
@@ -374,6 +374,8 @@ rules:
               metavariable: $U
               regex: ^(?!["'`]https?://[^/"'`$\s]+[/?])
           - focus-metavariable: $U
+      # Egg: `ctx.unsafeRedirect(url)` desliga a lista de domínios do framework (o nome já diz)
+      - pattern: ctx.unsafeRedirect($U)
       - patterns:
           - pattern-inside: |
               class $C { ... @Redirect(...) $M(...) {...} ... }
@@ -439,12 +441,12 @@ rules:
               - pattern: $REQ.headers
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern: $REQ.file.originalname
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern-inside: |
               class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
@@ -564,7 +566,7 @@ rules:
               - pattern: $REQ.headers
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           # Express sem `req.query`: `url.parse(req.url, true)` devolve o objeto cujo `.query` vem do usuário
           - pattern: $P.parse($REQ.url, true)
@@ -620,6 +622,21 @@ rules:
               - pattern: superagent.delete($U, ...)
               - pattern: http.request($U, ...)
               - pattern: https.request($U, ...)
+              # Egg: `ctx.curl(url)` é o cliente HTTP do framework
+              - pattern: ctx.curl($U, ...)
+          - focus-metavariable: $U
+      # cliente escolhido por ternário (`const client = url.startsWith('https') ? https : http; client.get(url)`)
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  $C = $COND ? https : http;
+                  ...
+              - pattern-inside: |
+                  $C = $COND ? http : https;
+                  ...
+          - pattern-either:
+              - pattern: $C.get($U, ...)
+              - pattern: $C.request($U, ...)
           - focus-metavariable: $U
     message: >
       Possível SSRF (CWE-918): o servidor faz uma requisição para uma URL vinda do usuário. Valide o destino contra
@@ -742,7 +759,7 @@ rules:
               - pattern: $REQ.cookies
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern-inside: |
               class $C { ... $M(..., @$DEC(...) $P: $T, ...) {...} ... }
@@ -834,7 +851,7 @@ rules:
               - pattern: $REQ.cookies
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       - patterns:
           - pattern-either:
               - pattern: $EV.body
@@ -1007,7 +1024,7 @@ rules:
               - pattern: $REQ.query
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
       # evento do socket.io: o payload do cliente é objeto JSON livre, como o corpo de uma requisição
       - patterns:
           - pattern-inside: |
@@ -1064,6 +1081,16 @@ rules:
                 $F($T[$K], $S[$K]);
                 ...
               }
+          # método de classe (`this.merge(target[key], source[key])`); o achado fica na linha do método
+          - patterns:
+              - pattern-inside: |
+                  class $C { ... }
+              - pattern: |
+                  $F($T, $S) {
+                    ...
+                    this.$F($T[$K], $S[$K]);
+                    ...
+                  }
       - pattern-not: |
           function $F($T, $S) {
             ...
@@ -1072,6 +1099,12 @@ rules:
           }
       - pattern-not: |
           const $F = ($T, $S) => {
+            ...
+            <... "__proto__" ...>
+            ...
+          }
+      - pattern-not: |
+          $F($T, $S) {
             ...
             <... "__proto__" ...>
             ...
@@ -1098,7 +1131,7 @@ rules:
               - pattern: $REQ.body
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
     pattern-sinks:
       - patterns:
           - pattern: new RegExp($P, ...)
@@ -1131,7 +1164,7 @@ rules:
               - pattern: $REQ.body
           - metavariable-regex:
               metavariable: $REQ
-              regex: ^(req|request)$
+              regex: ^(req|request|ctx|ctx\.request)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -1167,6 +1200,8 @@ rules:
               - pattern: $RES.status(...).send($T)
               - pattern: $RES.end($T)
               - pattern: $RES.write($T)
+              - pattern: $RES.send($T || $D)
+              - pattern: $RES.status(...).send($T || $D)
           - metavariable-regex:
               metavariable: $RES
               regex: ^(res|response)$
@@ -1509,3 +1544,30 @@ rules:
       category: security
       cwe: "CWE-798: Use of Hard-coded Credentials"
       owasp: A07:2021 - Identification and Authentication Failures
+
+  - id: sentinel-node-ssti-template-dinamico
+    patterns:
+      - pattern-either:
+          - pattern: $E.render(`...${$X}...`, ...)
+          - pattern: $E.render("..." + $X, ...)
+          - pattern: $E.render($X + "...", ...)
+          - pattern: $E.compile(`...${$X}...`, ...)
+          - pattern: $E.compile("..." + $X, ...)
+          - pattern: $E.compile($X + "...", ...)
+          - pattern: $E.renderString(`...${$X}...`, ...)
+          - pattern: $E.renderString("..." + $X, ...)
+          - pattern: $E.renderString($X + "...", ...)
+      - metavariable-regex:
+          metavariable: $E
+          regex: ^(ejs|pug|jade|nunjucks|Handlebars|handlebars|mustache|swig|dot|doT|_|lodash)$
+    message: >
+      O texto do modelo (template) é montado com variável e depois interpretado (CWE-1336, injeção de modelo no
+      servidor): quem controla o valor executa código do motor de templates (em EJS, `<%= process.env.X %>` e
+      `require('child_process')`). Mantenha o modelo fixo e passe o valor como dado (`ejs.render('Olá <%= nome %>', { nome })`).
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-1336: Improper Neutralization of Special Elements Used in a Template Engine"
+      owasp: A03:2021 - Injection

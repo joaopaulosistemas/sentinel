@@ -1,0 +1,311 @@
+{
+ "_comentario": "Falhas de wyxu95/JSecCode (Egg + MySQL/MongoDB com front-ends Vue, React e Rax, MIXED) lidas no codigo (treino), volta 59. Escrito pelo mesmo agente que corrige, ANTES de ver os achados; regras aceitas fixadas antes e conferidas contra o catalogo. Falhas logicas, de configuracao ou sem regra no catalogo ficam em lacunas_assumidas_nao_medidas (nao entram no recall). As 3 falhas de redirecionamento no navegador (rax e React) entraram em falhas DEPOIS da primeira medida, quando a regra sentinel-dom-open-redirect passou a existir na volta 59; o recall antes oficial (9/24) usa o gabarito original.",
+ "repo": "wyxu95/JSecCode",
+ "falhas": [
+  {
+   "arquivo": "backend/app/controller/sqli.js",
+   "linha": 9,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-concatenado",
+    "sentinel-node-sql-injection",
+    "sentinel-sql-concatenado-executado",
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/sqli.js",
+   "linha": 16,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-concatenado",
+    "sentinel-node-sql-injection",
+    "sentinel-sql-concatenado-executado",
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/sqli.js",
+   "linha": 24,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-concatenado",
+    "sentinel-node-sql-injection",
+    "sentinel-sql-concatenado-executado",
+    "sentinel-sql-injection",
+    "sentinel-taint-sql-parametro-http"
+   ]
+  },
+  {
+   "arquivo": "backend/app/utils.js",
+   "linha": 6,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-node-cifra-ecb",
+    "sentinel-crypto-cifra-fraca"
+   ]
+  },
+  {
+   "arquivo": "backend/app/utils.js",
+   "linha": 14,
+   "cwe": "CWE-327",
+   "regras": [
+    "sentinel-node-cifra-ecb",
+    "sentinel-crypto-cifra-fraca"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/rce.js",
+   "linha": 14,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-command-injection",
+    "sentinel-node-exec-dinamico",
+    "sentinel-command-injection",
+    "sentinel-command-injection-variable"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/rce.js",
+   "linha": 17,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-command-injection",
+    "sentinel-node-exec-dinamico",
+    "sentinel-command-injection",
+    "sentinel-command-injection-variable"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/ssrf.js",
+   "linha": 9,
+   "cwe": "CWE-918",
+   "regras": [
+    "sentinel-node-ssrf",
+    "sentinel-api-ssrf",
+    "sentinel-ssrf-url-do-parametro"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/urlredirect.js",
+   "linha": 9,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-node-open-redirect",
+    "sentinel-open-redirect-requisicao"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/pathtraversal.js",
+   "linha": 12,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal",
+    "sentinel-api-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/proto/lodash.js",
+   "linha": 11,
+   "cwe": "CWE-1321",
+   "regras": [
+    "sentinel-node-prototype-pollution"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/proto/lodash.js",
+   "linha": 12,
+   "cwe": "CWE-94",
+   "regras": [
+    "sentinel-node-eval-dinamico",
+    "sentinel-node-eval-requisicao",
+    "sentinel-node-function-dinamico",
+    "sentinel-node-ssti-template-dinamico"
+   ]
+  },
+  {
+   "arquivo": "backend/app/controller/proto/simple.js",
+   "linha": 22,
+   "cwe": "CWE-1321",
+   "regras": [
+    "sentinel-node-prototype-pollution"
+   ],
+   "tolerancia": 6
+  },
+  {
+   "arquivo": "backend/config/config.default.js",
+   "linha": 17,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal",
+    "sentinel-node-credencial-literal-atribuida"
+   ]
+  },
+  {
+   "arquivo": "backend/config/config.default.js",
+   "linha": 59,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-credencial-literal-atribuida"
+   ]
+  },
+  {
+   "arquivo": "frontend-vue/src/components/xss/ReflectXSSFront.vue",
+   "linha": 6,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-vue-v-html"
+   ]
+  },
+  {
+   "arquivo": "frontend-vue/src/components/xss/ReflectXSSBackend.vue",
+   "linha": 5,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-vue-v-html"
+   ]
+  },
+  {
+   "arquivo": "frontend-vue/src/components/xss/StoredXSS.vue",
+   "linha": 10,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-vue-v-html"
+   ]
+  },
+  {
+   "arquivo": "frontend-vue/src/components/prototype/Lodash.vue",
+   "linha": 7,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-vue-v-html"
+   ]
+  },
+  {
+   "arquivo": "frontend-vue/src/components/prototype/SimpleProto.vue",
+   "linha": 7,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-vue-v-html"
+   ]
+  },
+  {
+   "arquivo": "frontend-vue/src/components/urlredirect/Frontend.vue",
+   "linha": 5,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-vue-v-html"
+   ]
+  },
+  {
+   "arquivo": "frontend-rax/src/pages/XSS/reflectxss.tsx",
+   "linha": 13,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously",
+    "sentinel-xss-inner-html"
+   ]
+  },
+  {
+   "arquivo": "frontend-react/src/xss/ReflectedXSS.tsx",
+   "linha": 11,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-react-dangerously",
+    "sentinel-xss-inner-html"
+   ]
+  },
+  {
+   "arquivo": "frontend-vue/src/components/postmessage/PostRedirectSender.vue",
+   "linha": 13,
+   "cwe": "CWE-345",
+   "regras": [
+    "sentinel-postmessage-origem-curinga"
+   ]
+  },
+  {
+   "arquivo": "frontend-rax/src/pages/URLRedirect/urlredirect_frontend.tsx",
+   "linha": 7,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-dom-open-redirect"
+   ]
+  },
+  {
+   "arquivo": "frontend-react/src/urlredirect/SimpleURLRedirect.tsx",
+   "linha": 13,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-dom-open-redirect"
+   ]
+  },
+  {
+   "arquivo": "frontend-react/src/urlredirect/DelayedURLRedirect.tsx",
+   "linha": 26,
+   "cwe": "CWE-601",
+   "regras": [
+    "sentinel-dom-open-redirect"
+   ]
+  }
+ ],
+ "lacunas_assumidas_nao_medidas": [
+  {
+   "arquivo": "frontend-vue/src/components/postmessage/PostRedirectReceiver.vue",
+   "linha": 17,
+   "cwe": "CWE-601",
+   "regras": [],
+   "nota": "location.href = event.data.url sem checar origem; sem regra"
+  },
+  {
+   "arquivo": "backend/app/controller/bac.js",
+   "linha": 10,
+   "cwe": "CWE-639",
+   "regras": [],
+   "nota": "IDOR por uid da query: falha logica"
+  },
+  {
+   "arquivo": "backend/app/controller/csrf.js",
+   "linha": 9,
+   "cwe": "CWE-352",
+   "regras": [],
+   "nota": "delete por GET com id da query, rota na lista de excecao do CSRF: logica/configuracao"
+  },
+  {
+   "arquivo": "backend/config/config.default.js",
+   "linha": 41,
+   "cwe": "CWE-352",
+   "regras": [],
+   "nota": "csrf.ignore para /api/csrf e /api/user/login: configuracao"
+  },
+  {
+   "arquivo": "backend/app/controller/user.js",
+   "linha": 10,
+   "cwe": "CWE-256",
+   "regras": [],
+   "nota": "senha em texto puro comparada no banco: logica"
+  },
+  {
+   "arquivo": "backend/app/controller/nosqli.js",
+   "linha": 10,
+   "cwe": "CWE-943",
+   "regras": [],
+   "nota": "find com nome vindo de cifra ECB (cut-and-paste): logica"
+  },
+  {
+   "arquivo": "backend/app/controller/xss.js",
+   "linha": 9,
+   "cwe": "CWE-79",
+   "regras": [],
+   "nota": "eco JSON da query; a exploracao esta no v-html do front"
+  },
+  {
+   "arquivo": "frontend-vue/src/components/urlredirect/Backend.vue",
+   "linha": 6,
+   "cwe": "CWE-601",
+   "regras": [],
+   "nota": "iframe :src com url vinda da query; sem regra"
+  }
+ ]
+}

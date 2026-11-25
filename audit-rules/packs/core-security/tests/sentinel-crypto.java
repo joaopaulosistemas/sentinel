@@ -24,6 +24,8 @@ class CryptoCases {
         // ruleid: sentinel-crypto-cifra-fraca
         Cipher.getInstance("DES/CBC/PKCS5Padding");
         // ruleid: sentinel-crypto-cifra-fraca
+        Cipher.getInstance("PBEWithMD5AndDES/CBC/PKCS5Padding");
+        // ruleid: sentinel-crypto-cifra-fraca
         Cipher.getInstance("AES/ECB/PKCS5Padding");
         // ruleid: sentinel-crypto-cifra-fraca
         Cipher.getInstance("AES");
