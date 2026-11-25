@@ -2,6 +2,7 @@
 # Prova de ponta a ponta do login: com a pilha de deploy/keycloak no ar, pega tokens reais do Keycloak e confere que a API
 # valida o token e aplica os papéis (admin e executor). Uso: bash scripts/verificar-login-keycloak.sh
 set -u
+MAILPIT="${MAILPIT:-http://localhost:8025}"; KC_ADMIN_SENHA="${KEYCLOAK_ADMIN_PASSWORD:-kcadmin}"
 KC="${KC:-http://localhost:8180}"; API="${API:-http://localhost:8080}"; PAINEL="${PAINEL:-http://localhost:3000}"
 REALM="$KC/realms/sentinel"; FALHAS=0
 ok()    { echo "  ok    $*"; }
@@ -65,6 +66,33 @@ CSS_URL="$(echo "$TELA" | grep -o '[^"]*sentinel\.css' | head -1)"
 case "$CSS_URL" in http*) ;; /*) CSS_URL="$KC$CSS_URL" ;; esac
 curl -fsS "$CSS_URL" 2>/dev/null | grep -q 'IBM Plex Sans' && ok "o CSS do tema é servido (IBM Plex Sans)" || falha "CSS do tema não servido: $CSS_URL"
 curl -fsS -o /dev/null "${CSS_URL%css/sentinel.css}fonts/ibm-plex-sans-latin-400-normal.woff2" && ok "a fonte do tema é servida" || falha "fonte do tema não servida"
+
+echo "== Redefinição de senha por e-mail (Mailpit)"
+echo "$TELA" | grep -q 'reset-credentials' && ok "a tela de login oferece \"Esqueceu a senha?\"" || falha "a tela de login não tem o link de redefinição de senha"
+espera 20 curl -fsS "$MAILPIT/api/v1/messages" && ok "Mailpit no ar" || falha "Mailpit não respondeu em $MAILPIT"
+curl -sS -X DELETE "$MAILPIT/api/v1/messages" >/dev/null 2>&1
+KC_TOKEN="$(curl -sS -d grant_type=password -d client_id=admin-cli -d username=kcadmin --data-urlencode "password=$KC_ADMIN_SENHA" "$KC/realms/master/protocol/openid-connect/token" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin).get("access_token",""))' 2>/dev/null)"
+USER_ID="$(curl -sS -H "Authorization: Bearer $KC_TOKEN" "$KC/admin/realms/sentinel/users?username=admin&exact=true" \
+  | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["id"] if d else "")' 2>/dev/null)"
+if [ -n "$KC_TOKEN" ] && [ -n "$USER_ID" ]; then
+  ENVIO="$(curl -sS -o /dev/null -w '%{http_code}' -X PUT -H "Authorization: Bearer $KC_TOKEN" -H 'Content-Type: application/json' -d '["UPDATE_PASSWORD"]' \
+    "$KC/admin/realms/sentinel/users/$USER_ID/execute-actions-email?client_id=sentinel-dashboard&redirect_uri=http://localhost:3000/")"
+  [ "$ENVIO" = "204" ] && ok "o Keycloak aceitou enviar o e-mail de redefinição (204)" || falha "envio do e-mail de redefinição: esperava 204 e veio $ENVIO"
+  CHEGOU=""
+  for _ in $(seq 1 15); do
+    CHEGOU="$(curl -sS "$MAILPIT/api/v1/messages" | python3 -c 'import json,sys; m=[x for x in json.load(sys.stdin).get("messages",[]) if any(t["Address"]=="admin@sentinel.local" for t in x["To"])]; print(m[0]["ID"] if m else "")' 2>/dev/null)"
+    [ -n "$CHEGOU" ] && break; sleep 2
+  done
+  if [ -n "$CHEGOU" ]; then
+    ok "o e-mail chegou ao Mailpit para admin@sentinel.local"
+    curl -sS "$MAILPIT/api/v1/message/$CHEGOU" | grep -q 'action-token' && ok "o e-mail traz o link de redefinição" || falha "o e-mail não traz o link (action-token)"
+  else
+    falha "nenhum e-mail para admin@sentinel.local chegou ao Mailpit"
+  fi
+else
+  falha "sem token de administrador do Keycloak ou usuário admin não encontrado (não foi possível pedir o e-mail)"
+fi
 
 echo "== Swagger UI"
 SW="$(curl -sS -o /dev/null -w '%{http_code}' -L "$API/swagger-ui/")"

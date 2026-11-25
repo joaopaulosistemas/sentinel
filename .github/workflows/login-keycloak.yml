@@ -21,7 +21,7 @@ jobs:
       - name: Construir o painel
         run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml build audit-dashboard
       - name: Subir Keycloak, API e painel
-        run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --no-build postgres keycloak audit-api audit-dashboard
+        run: docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --no-build postgres keycloak mailpit audit-api audit-dashboard
       - name: Conferir token, papéis e painel
         run: bash scripts/verificar-login-keycloak.sh
       - name: Captura da tela de login

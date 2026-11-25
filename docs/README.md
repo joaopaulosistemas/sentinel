@@ -8,7 +8,7 @@
 | [guia/instalacao.md](guia/instalacao.md) | Subir com Compose, rodar em modo desenvolvimento, primeira auditoria, CLI para CI/CD, estrutura do projeto, migração de instalação antiga |
 | [guia/certificados.md](guia/certificados.md) | Rede com inspeção SSL: instalar o CA da empresa na imagem |
 | [guia/observabilidade.md](guia/observabilidade.md) | Painel no Grafana, métricas, logs, traces e alertas (Slack/Teams), com a pilha de `deploy/observabilidade/` |
-| [guia/login-keycloak.md](guia/login-keycloak.md) | Login com Keycloak: usuários de teste, papéis admin e executor, como criar usuários e validação do token |
+| [guia/login-keycloak.md](guia/login-keycloak.md) | Login com Keycloak: usuários de teste, papéis admin e executor, como criar usuários, esqueci a senha por e-mail (Mailpit) e validação do token |
 | [guia/compose-combinacoes.md](guia/compose-combinacoes.md) | Subir o Compose com Keycloak e/ou observabilidade (overlays), `COMPOSE_FILE` e o 502 depois de recriar a API |
 | [guia/solucao-de-problemas.md](guia/solucao-de-problemas.md) | Erros comuns (502, 401, TLS no build, API que não sobe, hora do relatório) com causa e correção |
 | [guia/operacao.md](guia/operacao.md) | Backup e restauração do PostgreSQL, atualização de versão, migrações e retenção |

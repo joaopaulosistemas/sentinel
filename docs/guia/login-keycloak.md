@@ -53,6 +53,12 @@ A API só aceita um token que (1) tenha assinatura válida do Keycloak, (2) venh
 
 ## Produção
 
+### Esqueci a senha (Mailpit)
+
+O overlay sobe também o **Mailpit**, uma caixa de e-mails de teste: o Keycloak envia para ele e nada sai da sua máquina. Na tela de login, "Esqueceu a senha?" pede o e-mail (`admin@sentinel.local` ou `executor@sentinel.local`); abra **http://localhost:8025**, clique no link do e-mail recebido e defina a nova senha. O link usa `http://localhost:8180`, então abre no mesmo computador. Para outras pessoas abrirem, o `KC_HOSTNAME` do overlay precisa ser o endereço de rede da máquina.
+
+Quem já tinha o Keycloak criado precisa recriá-lo para receber a configuração do realm: `docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --force-recreate keycloak mailpit` (como o protótipo não guarda os dados do Keycloak, os usuários criados à mão se perdem). **Em produção** troque o `smtpServer` do realm (host, porta, usuário e senha) por um SMTP real; o Mailpit é só para teste. O workflow "Login com Keycloak" confere que o e-mail chega com o link.
+
 As senhas e o `start-dev` são só para teste. Em produção, use um Keycloak real e configure na API `QUARKUS_PROFILE=oidc`, `OIDC_AUTH_SERVER_URL`, `OIDC_CLIENT_ID` e `OIDC_AUDIENCE`, e no painel `OIDC_AUTHORITY`, `OIDC_CLIENT_ID` e `OIDC_ORIGIN`. A imagem da API precisa do build arg `WITH_OIDC=true`. O Helm ainda não tem este modo. Limitação: o login separa por papel, não por squad.
 
 Verificação de ponta a ponta: `scripts/verificar-login-keycloak.sh` (roda no CI no workflow "Login com Keycloak").

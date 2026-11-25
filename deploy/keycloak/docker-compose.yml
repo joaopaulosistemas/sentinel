@@ -2,6 +2,7 @@
 # Uso (na raiz do repositório, uma linha só):
 #   docker compose -f docker-compose.yml -f deploy/keycloak/docker-compose.yml up -d --build
 # Painel: http://localhost:3000  ·  Keycloak: http://localhost:8180 (admin do Keycloak: kcadmin / kcadmin)
+# E-mails de teste (redefinição de senha): http://localhost:8025 (Mailpit)
 # Usuários de teste (SÓ PROTÓTIPO, mude em qualquer ambiente real): admin/admin e executor/executor.
 services:
   keycloak:
@@ -20,6 +21,14 @@ services:
     ports:
       - "127.0.0.1:8180:8080"
     restart: unless-stopped
+
+  # Caixa de e-mails de teste: captura o que o Keycloak envia (redefinição de senha) e não entrega nada para fora.
+  # Interface: http://localhost:8025. SÓ PROTÓTIPO: em produção troque o smtpServer do realm por um SMTP real.
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
 
   audit-api:
     build:

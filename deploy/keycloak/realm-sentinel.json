@@ -5,6 +5,16 @@
   "sslRequired": "none",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@sentinel.local",
+    "fromDisplayName": "Sentinel Audit Tool",
+    "auth": "false",
+    "ssl": "false",
+    "starttls": "false"
+  },
   "bruteForceProtected": true,
   "accessTokenLifespan": 300,
   "ssoSessionIdleTimeout": 1800,
