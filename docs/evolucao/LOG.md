@@ -2317,3 +2317,10 @@ Do relatório #70 (870 achados ativos), ~790 vinham de `docs/figma/**` (protóti
 - **Busca (7 consultas `search/repositories`, Java, Spring, Node, React, Angular, Vue, TypeScript):** nenhum resultado fora de `descobertos.txt` e do LOG, exceto `sspsec/Scan-Spring-GO` (Go, fora do escopo). Segunda execução seguida sem repositório novo (a anterior: 2026-11-25); critério F do prompt atingido para o recall.
 - **Decisão pendente do João (repetida):** ampliar o escopo, adotar o conjunto fixo de alvos nunca lidos (só números) ou parar o recall e manter só ruído e precisão. ALERTA "ciclo não generaliza" segue valendo.
 - **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra classificada.
+
+## Execução de 2026-11-26 (tarde, sem volta 60): nenhum repositório novo adequado, terceira execução seguida
+
+- **Estado:** sem PR de ciclo aberto, sem auditoria em andamento, `ciclo/estabilizacao-17` mesclada; nenhuma branch nova criada.
+- **Busca (8 consultas `search/repositories`, filtradas contra `descobertos.txt`, `conjuntos.json` e LOG):** só sobraram `tothi/log4shell-vulnerable-app` (fork do `christophetd/log4shell-vulnerable-app`, já treino), `harekrishnarai/Damn-vulnerable-sca` (alvo de SCA, quase sem código), apps Android (`Ostorlab/ostorlab_insecure_android_app`, `zinja-coder/Damn-Vulnerable-Android-Components`) e ferramentas/bibliotecas. Nenhum adequado.
+- **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo.
+- **NÃO rodado:** auditoria, recall, validação, petclinic, Benchmark, amostra.
