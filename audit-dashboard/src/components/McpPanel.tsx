@@ -81,7 +81,7 @@ function KeyButtons({ cfg, confirmNew, issuing, revoking, onIssue, onRevoke, onC
 function FreshKey({ fresh, url, systemName, onDismiss }: { fresh: IMcpNewKey; url: string; systemName: string; onDismiss: () => void }) {
   const command = connectCommand({ url, systemName, key: fresh.key });
   return (
-    <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '12px 16px', display: 'grid', gap: 8 }}>
+    <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid var(--s-warn-text)', padding: '12px 16px', display: 'grid', gap: 8 }}>
       <strong>Copie a chave agora: ela não aparece de novo.</strong>
       <code style={{ fontFamily: mono, fontSize: 13, wordBreak: 'break-all' }}>{fresh.key}</code>
       <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Para registrar no Claude Code:</div>
@@ -187,14 +187,14 @@ function CallsSection({ calls }: { calls: CallRow[] | undefined }) {
       <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Últimas chamadas</h3>
       {calls && calls.length > 0 ? (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <table aria-label="Consultas recentes do Claude via MCP" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr style={{ textAlign: 'left', background: 'var(--s-header-row)' }}>
-                <th style={{ padding: '6px 8px' }}>Quando</th>
-                <th style={{ padding: '6px 8px' }}>Ferramenta</th>
-                <th style={{ padding: '6px 8px' }}>Resultado</th>
-                <th style={{ padding: '6px 8px' }}>Parâmetros</th>
-                <th style={{ padding: '6px 8px' }}>Tempo</th>
+                <th scope="col" style={{ padding: '6px 8px' }}>Quando</th>
+                <th scope="col" style={{ padding: '6px 8px' }}>Ferramenta</th>
+                <th scope="col" style={{ padding: '6px 8px' }}>Resultado</th>
+                <th scope="col" style={{ padding: '6px 8px' }}>Parâmetros</th>
+                <th scope="col" style={{ padding: '6px 8px' }}>Tempo</th>
               </tr>
             </thead>
             <tbody>

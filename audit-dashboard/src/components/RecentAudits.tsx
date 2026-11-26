@@ -56,13 +56,13 @@ function RunRow({ run }: { run: IAuditRunResponse }) {
 function RunsTable({ rows }: { rows: IAuditRunResponse[] }) {
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+      <table aria-label="Auditorias recentes" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
         <thead>
           <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
-            <th style={{ padding: '10px 16px' }}>Auditoria</th>
-            <th style={{ padding: '10px 8px' }}>Sistema</th>
-            <th style={{ padding: '10px 8px' }}>Situação</th>
-            <th style={{ padding: '10px 16px', textAlign: 'right' }}>Nota</th>
+            <th scope="col" style={{ padding: '10px 16px' }}>Auditoria</th>
+            <th scope="col" style={{ padding: '10px 8px' }}>Sistema</th>
+            <th scope="col" style={{ padding: '10px 8px' }}>Situação</th>
+            <th scope="col" style={{ padding: '10px 16px', textAlign: 'right' }}>Nota</th>
           </tr>
         </thead>
         <tbody>

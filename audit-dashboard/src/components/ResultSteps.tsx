@@ -251,7 +251,7 @@ function toolView(a: IAnalyzerRunInfo) {
 
 function MissingEvidenceNotice({ link }: { link: string | undefined }) {
   return (
-    <div role="status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', alignItems: 'center', background: 'var(--s-warn-bg)', borderLeft: '3px solid #f1c21b', padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
+    <div role="status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', alignItems: 'center', background: 'var(--s-warn-bg)', borderLeft: '3px solid var(--s-warn-text)', padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
       <span style={{ flex: '1 1 320px' }}>
         <strong>A parte de execução não foi verificada.</strong> Sem evidências, o Sentinel não afirma nada sobre consulta lenta, índice sobrando, cobertura de testes e memória.
       </span>

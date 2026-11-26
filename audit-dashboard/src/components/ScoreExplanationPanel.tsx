@@ -78,11 +78,11 @@ function DimensionBlock({ dimension, onSimulate }: { dimension: IScoreDimension;
         <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma regra tirou pontos aqui.</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table aria-label="De onde vem a nota: pontos perdidos por regra" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 {['Regra', 'Severidade', 'Ocorrências', 'Tirou', 'Como conta', ''].map((h) => (
-                  <th key={h || 'acao'} style={{ ...cell, fontWeight: 600, color: 'var(--s-text-3)' }}>{h}</th>
+                  <th scope="col" key={h || 'acao'} style={{ ...cell, fontWeight: 600, color: 'var(--s-text-3)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
