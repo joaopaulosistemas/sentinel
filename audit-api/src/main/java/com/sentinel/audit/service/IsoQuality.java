@@ -80,26 +80,32 @@ public final class IsoQuality {
             if (part.isBlank()) {
                 continue;
             }
-            String[] kv = part.split("[:=]", 2);
-            Iso25010 c = Iso25010.byId(kv[0]);
-            if (kv.length != 2 || c == null) {
-                throw new InvalidInputException("Meta inválida: \"" + part.strip() + "\". Use característica:nota, por exemplo security:90.");
-            }
-            if (!c.avaliada()) {
-                throw new InvalidInputException("O Sentinel não avalia \"" + c.id() + "\"; não dá para pôr meta nela.");
-            }
-            double value;
-            try {
-                value = Double.parseDouble(kv[1].strip());
-            } catch (NumberFormatException e) {
-                throw new InvalidInputException("Nota da meta inválida em \"" + part.strip() + "\".", e);
-            }
-            if (value < 0 || value > MAX_SCORE) {
-                throw new InvalidInputException("A nota da meta deve estar entre 0 e 100 (\"" + part.strip() + "\").");
-            }
-            metas.put(c, value);
+            Map.Entry<Iso25010, Double> meta = parseMeta(part);
+            metas.put(meta.getKey(), meta.getValue());
         }
         return metas;
+    }
+
+    /** Uma meta no formato {@code característica:nota}; qualquer defeito vira erro 400 com o trecho que falhou. */
+    private static Map.Entry<Iso25010, Double> parseMeta(String part) {
+        String[] kv = part.split("[:=]", 2);
+        Iso25010 c = Iso25010.byId(kv[0]);
+        if (kv.length != 2 || c == null) {
+            throw new InvalidInputException("Meta inválida: \"" + part.strip() + "\". Use característica:nota, por exemplo security:90.");
+        }
+        if (!c.avaliada()) {
+            throw new InvalidInputException("O Sentinel não avalia \"" + c.id() + "\"; não dá para pôr meta nela.");
+        }
+        double value;
+        try {
+            value = Double.parseDouble(kv[1].strip());
+        } catch (NumberFormatException e) {
+            throw new InvalidInputException("Nota da meta inválida em \"" + part.strip() + "\".", e);
+        }
+        if (value < 0 || value > MAX_SCORE) {
+            throw new InvalidInputException("A nota da meta deve estar entre 0 e 100 (\"" + part.strip() + "\").");
+        }
+        return Map.entry(c, value);
     }
 
     private static Map<Severity, Long> bySeverity(List<Finding> list) {

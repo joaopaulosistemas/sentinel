@@ -21,7 +21,7 @@ type Estado = { fase: 'carregando' } | { fase: 'livre' } | { fase: 'saiu' } | { 
 const TIMEOUT_MS = 10_000;
 const HTTP_NAO_AUTORIZADO = 401;
 
-const ehTexto = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
+const ehTexto = (valor: unknown): valor is string => typeof valor === 'string' && valor.length > 0;
 
 /** Confere o JSON da configuração em vez de confiar nele: só vale com os dois campos preenchidos. */
 export function lerConfigDe(dado: unknown): IConfig | null {
@@ -36,7 +36,7 @@ export function lerPerfilDe(dado: unknown): IMe {
   if (!ehTexto(perfil.username) || !Array.isArray(perfil.roles)) throw new Error('A API devolveu um perfil inválido.');
   return {
     username: perfil.username,
-    roles: perfil.roles.filter((r): r is string => typeof r === 'string'),
+    roles: perfil.roles.filter((papel): papel is string => typeof papel === 'string'),
     admin: perfil.admin === true,
     canExecute: perfil.canExecute === true,
   };
@@ -55,12 +55,12 @@ export async function lerConfig(): Promise<IConfig | null> {
 
 /** A volta do Keycloak traz ?code=...&state=... na URL. */
 export function ehRetornoDoLogin(search: string): boolean {
-  const p = new URLSearchParams(search);
-  return p.has('code') && p.has('state');
+  const params = new URLSearchParams(search);
+  return params.has('code') && params.has('state');
 }
 
 function criarGerenciador(cfg: IConfig): UserManager {
-  const m = new UserManager({
+  const gerenciador = new UserManager({
     authority: cfg.oidcAuthority ?? '',
     client_id: cfg.oidcClientId ?? '',
     redirect_uri: `${window.location.origin}/`,
@@ -70,15 +70,15 @@ function criarGerenciador(cfg: IConfig): UserManager {
     automaticSilentRenew: true,
     userStore: new WebStorageStateStore({ store: window.sessionStorage }),
   });
-  m.events.addUserLoaded((u: User) => setAccessToken(u.access_token));
-  m.events.addAccessTokenExpired(() => void m.signinRedirect());
-  return m;
+  gerenciador.events.addUserLoaded((usuario: User) => setAccessToken(usuario.access_token));
+  gerenciador.events.addAccessTokenExpired(() => void gerenciador.signinRedirect());
+  return gerenciador;
 }
 
 /** O usuário da volta do Keycloak (se a URL trouxer o código) ou o que já estava guardado. */
-async function obterUsuario(m: UserManager): Promise<User | null | undefined> {
-  if (!ehRetornoDoLogin(window.location.search)) return m.getUser();
-  const user = await m.signinRedirectCallback();
+async function obterUsuario(gerenciador: UserManager): Promise<User | null | undefined> {
+  if (!ehRetornoDoLogin(window.location.search)) return gerenciador.getUser();
+  const user = await gerenciador.signinRedirectCallback();
   window.history.replaceState({}, '', '/');
   return user;
 }
@@ -87,6 +87,40 @@ async function buscarPerfil(): Promise<IMe> {
   const res = await fetch('/api/v1/me', { headers: authHeader(), signal: AbortSignal.timeout(TIMEOUT_MS) });
   if (!res.ok) throw new Error(res.status === HTTP_NAO_AUTORIZADO ? 'A API recusou o token.' : `A API respondeu ${res.status}.`);
   return lerPerfilDe(await res.json());
+}
+
+interface IEntrada {
+  aindaVivo: () => boolean;
+  setEstado: (estado: Estado) => void;
+  setMgr: (mgr: UserManager) => void;
+}
+
+/** Descobre se há login, leva ao Keycloak quando precisa e termina com o perfil (ou o erro) no estado do AuthGate. */
+async function entrar({ aindaVivo, setEstado, setMgr }: IEntrada): Promise<void> {
+  const cfg = await lerConfig();
+  if (!aindaVivo()) return;
+  if (!cfg) {
+    setEstado({ fase: 'livre' });
+    return;
+  }
+  const gerenciador = criarGerenciador(cfg);
+  setMgr(gerenciador);
+  if (consumirSaida() && !ehRetornoDoLogin(window.location.search)) {
+    setEstado({ fase: 'saiu' }); // voltou do Keycloak depois de Sair: não manda para o login sozinho
+    return;
+  }
+  try {
+    const user = await obterUsuario(gerenciador);
+    if (!user || user.expired) {
+      await gerenciador.signinRedirect();
+      return; // a página sai daqui para o Keycloak
+    }
+    setAccessToken(user.access_token);
+    const me = await buscarPerfil();
+    if (aindaVivo()) setEstado({ fase: 'ok', me });
+  } catch (erro) {
+    if (aindaVivo()) setEstado({ fase: 'erro', mensagem: erro instanceof Error ? erro.message : 'Falha no login.' });
+  }
 }
 
 /**
@@ -99,32 +133,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let vivo = true;
-    void (async () => {
-      const cfg = await lerConfig();
-      if (!vivo) return;
-      if (!cfg) {
-        setEstado({ fase: 'livre' });
-        return;
-      }
-      const m = criarGerenciador(cfg);
-      setMgr(m);
-      if (consumirSaida() && !ehRetornoDoLogin(window.location.search)) {
-        setEstado({ fase: 'saiu' }); // voltou do Keycloak depois de Sair: não manda para o login sozinho
-        return;
-      }
-      try {
-        const user = await obterUsuario(m);
-        if (!user || user.expired) {
-          await m.signinRedirect();
-          return; // a página sai daqui para o Keycloak
-        }
-        setAccessToken(user.access_token);
-        const me = await buscarPerfil();
-        if (vivo) setEstado({ fase: 'ok', me });
-      } catch (e) {
-        if (vivo) setEstado({ fase: 'erro', mensagem: e instanceof Error ? e.message : 'Falha no login.' });
-      }
-    })();
+    void entrar({ aindaVivo: () => vivo, setEstado, setMgr });
     return () => {
       vivo = false;
     };

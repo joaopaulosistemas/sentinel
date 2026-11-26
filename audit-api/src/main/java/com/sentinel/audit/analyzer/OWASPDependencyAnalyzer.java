@@ -119,7 +119,7 @@ public class OWASPDependencyAnalyzer implements CodeAnalyzer {
                 Thread.currentThread().interrupt();
                 LOG.warn("Consulta ao OSV interrompida; usando a base interna");
             } catch (Exception e) {
-                LOG.warnf(e, "OSV.dev indisponível (%s); usando a base interna reduzida", e.getMessage());
+                LOG.warn("OSV.dev indisponível (" + e.getMessage() + "); usando a base interna reduzida", e);
             }
         }
         if (!osvDone) {

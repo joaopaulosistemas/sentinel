@@ -33,11 +33,20 @@ public final class RolePolicy {
         if (isUnder(p, "api/v1/settings")) {
             return Need.ADMIN; // as configurações revelam e mudam o ambiente do servidor
         }
-        String m = method == null ? "" : method.toUpperCase(Locale.ROOT);
-        if (m.equals("GET") || m.equals("HEAD") || m.equals("OPTIONS")) {
+        if (isReadMethod(method)) {
             return Need.READ;
         }
-        return m.equals("POST") && isUnder(p, "api/v1/audits") ? Need.EXECUTE : Need.ADMIN;
+        return isExecuteRoute(method, p) ? Need.EXECUTE : Need.ADMIN;
+    }
+
+    private static boolean isReadMethod(String method) {
+        String m = method == null ? "" : method.toUpperCase(Locale.ROOT);
+        return m.equals("GET") || m.equals("HEAD") || m.equals("OPTIONS");
+    }
+
+    /** Disparar uma auditoria (POST em /audits) é o que o papel de executor pode fazer além de ler. */
+    private static boolean isExecuteRoute(String method, String p) {
+        return "POST".equalsIgnoreCase(method) && isUnder(p, "api/v1/audits");
     }
 
     /** Saúde e webhooks não pedem login (webhooks se autenticam por assinatura própria). */

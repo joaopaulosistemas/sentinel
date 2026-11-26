@@ -227,4 +227,21 @@ class ProjectConfigTest {
         assertTrue(r.summary().contains("1 ignorados por exclude"), r.summary());
         assertFalse(r.summary().contains("exclude ("), r.summary());
     }
+
+    @Test
+    void oSentinelYmlDoProprioRepositorioIgnoraPrototiposEEvidenciasGeradas() {
+        java.nio.file.Path raiz = java.nio.file.Path.of("").toAbsolutePath();
+        while (raiz != null && !java.nio.file.Files.exists(raiz.resolve(".sentinel.yml"))) {
+            raiz = raiz.getParent();
+        }
+        org.junit.jupiter.api.Assumptions.assumeTrue(raiz != null, "sem .sentinel.yml na árvore (build fora do repositório)");
+
+        ProjectConfig config = ProjectConfig.load(raiz);
+
+        assertTrue(config.isExcluded("docs/figma/html/01-visao-geral-claro.html"));
+        assertTrue(config.isExcluded("docs/figma/capturar-telas.mjs"));
+        assertTrue(config.isExcluded(".sentinel/evidence/schema.sql"));
+        assertFalse(config.isExcluded("audit-dashboard/src/auth/AuthGate.tsx"));
+        assertFalse(config.isExcluded("docs/referencia/auditoria-e-api.md"));
+    }
 }

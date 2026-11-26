@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../api/client';
@@ -79,15 +79,15 @@ describe('useTriggerAudit', () => {
     vi.mocked(api.triggerAudit).mockResolvedValue(run);
     const client = new QueryClient();
     const invalidate = vi.spyOn(client, 'invalidateQueries');
-    const onDone = vi.fn();
-    const { result } = renderHook(() => useTriggerAudit(onDone), { wrapper: wrapperWith(client) });
+    const { result } = renderHook(() => useTriggerAudit(), { wrapper: wrapperWith(client) });
 
-    act(() => result.current.mutate({ systemId: 7, branch: 'main' }));
+    let criada: IAuditRunResponse | undefined;
+    await act(async () => {
+      criada = await result.current.mutateAsync({ systemId: 7, branch: 'main' });
+    });
 
-    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
     expect(api.triggerAudit).toHaveBeenCalledWith({ systemId: 7, branch: 'main' });
-    expect(onDone.mock.calls[0][0]).toBe(run);
-    expect(typeof onDone.mock.calls[0][1]).toBe('function');
+    expect(criada).toBe(run);
     for (const key of ['systems', 'auditRuns', 'recentAudits']) {
       expect(invalidate).toHaveBeenCalledWith({ queryKey: [key] });
     }

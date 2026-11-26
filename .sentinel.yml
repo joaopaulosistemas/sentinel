@@ -19,6 +19,10 @@ exclude:
   - "docs/arquitetura/ARQUITETURA.html"
   # Diagrama do banco: página HTML única, com estilo inline (como o ARQUITETURA.html).
   - "docs/referencia/banco-de-dados.html"
+  # Protótipos e capturas de tela (HTML exportado, scripts de captura, dados simulados): material de design, não é o produto.
+  - "docs/figma/**"
+  # Evidências que o próprio Sentinel coleta a cada auditoria (esquema, índices, estatísticas): saída da ferramenta, não código.
+  - ".sentinel/**"
 
 # Achados aceitos: continuam na lista, marcados como suprimidos, e não pesam na nota.
 suppress:
@@ -235,3 +239,35 @@ suppress:
   - rule: "evidencia-*"
     path: ".sentinel/evidence/**"
     reason: "evidência coletada antes do V5; as colunas já são timestamptz"
+
+  # --- Auditoria #70: decisões conscientes, cada uma com o motivo ---
+  - rule: "sentinel-obs-excecao-relancada-sem-causa"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/AnalyzerRunner.java"
+    reason: "o TimeoutException é só o relógio do polling de cancelamento (a cada meio segundo); o AuditCancelledException não tem causa a preservar"
+  - rule: "sentinel-owasp-a01-endpoint-sem-autorizacao"
+    path: "audit-api/src/main/java/com/sentinel/audit/security/MeResource.java"
+    reason: "de propósito: qualquer usuário autenticado lê o próprio perfil; o ApiKeyFilter/OIDC protege /api/* e o RolePolicy marca a rota como ANY_AUTHENTICATED"
+  - rule: "sentinel-quarkus-getenv-direto"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/HorarioDeExibicao.java"
+    reason: "utilitário estático chamado também sem CDI (testes e relatórios fora do Quarkus); só cai no ambiente quando o ConfigProvider não existe"
+  - rule: "sentinel-cc-muitos-parametros"
+    path: "audit-api/src/main/java/com/sentinel/audit/dto/FindingResponse.java"
+    reason: "record de resposta da API: um componente por campo do JSON; os construtores de compatibilidade mantêm os chamadores antigos"
+  - rule: "sentinel-cc-muitos-parametros"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/FindingsOverview.java"
+    reason: "construtor de compatibilidade do record Filter (sem o filtro ISO); o canônico tem um componente por filtro da API"
+  - rule: "pmd-TooManyFields"
+    path: "audit-cli/src/main/java/com/sentinel/audit/cli/AuditCli.java"
+    reason: "um campo por opção da linha de comando (picocli); dividir espalharia as opções"
+  - rule: "arch-god-object"
+    path: "audit-api/src/main/java/com/sentinel/audit/service/ReportService.java"
+    reason: "monta o relatório HTML de cada tipo (técnico, executivo, comparativo, consolidado); a divisão por tipo é uma refatoração própria, ainda não feita"
+  - rule: "sentinel-fe-outline-removido"
+    path: "deploy/keycloak/themes/sentinel/login/resources/css/sentinel.css"
+    reason: "o foco não some: o campo desenha o contorno em :focus-within e o grupo da senha desenha a moldura em ::after"
+  - rule: "stylelint-*"
+    path: "deploy/keycloak/themes/sentinel/login/resources/css/sentinel.css"
+    reason: "sobrepõe o tema PatternFly do Keycloak: precisa de seletores específicos e o foco é desenhado pelo contêiner (ver sentinel-fe-outline-removido)"
+  - rule: "jscpd-*"
+    path: "audit-api/src/main/java/com/sentinel/audit/**"
+    reason: "os trechos repetidos são blocos de imports e anotações de cabeçalho de classes irmãs (recursos REST e analisadores), sem lógica duplicada"

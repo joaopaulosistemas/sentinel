@@ -26,6 +26,69 @@ function Row({ c, delta, first }: { c: IIsoCharacteristic; delta: number | null;
   );
 }
 
+const CABECALHO = [['Característica', cell], ['Nota', right], ['Situação', cell], ['Achados', right], ['Desde a anterior', right]] as const;
+
+function NaoAvaliadas({ lista }: { lista: IIsoCharacteristic[] }) {
+  if (lista.length === 0) return null;
+  return (
+    <details style={{ marginTop: 8, fontSize: 13, color: 'var(--s-text-3)' }}>
+      <summary style={{ cursor: 'pointer', padding: '12px 0' }}>
+        {lista.length === 1 ? '1 característica ainda não avaliada' : `${lista.length} características ainda não avaliadas`} pelo Sentinel
+      </summary>
+      <ul style={{ margin: '0 0 4px', paddingLeft: 20, lineHeight: 1.7 }}>
+        {lista.map((c) => <li key={c.id}>{c.nome}</li>)}
+      </ul>
+      <p style={{ margin: 0 }}>Sem regras para elas, o Sentinel não inventa nota.</p>
+    </details>
+  );
+}
+
+interface IResultadoProps {
+  notaPonderada: number;
+  avaliadas: IIsoCharacteristic[];
+  naoAvaliadas: IIsoCharacteristic[];
+  trend: Parameters<typeof isoDelta>[0];
+}
+
+function Resultado({ notaPonderada, avaliadas, naoAvaliadas, trend }: IResultadoProps) {
+  return (
+    <div aria-live="polite">
+      <p style={{ margin: '0.75rem 0', fontSize: 14, display: 'flex', flexWrap: 'wrap', gap: '4px 24px', alignItems: 'baseline' }}>
+        <span>Nota ponderada <strong style={{ fontSize: 20, color: scoreColor(notaPonderada) }}>{num.format(notaPonderada)}</strong></span>
+        {avaliadas[0] && (
+          <span style={{ background: 'var(--s-selected)', borderRadius: 4, padding: '4px 10px', fontSize: 13 }}>
+            <strong>Comece por aqui:</strong> {avaliadas[0].nome}
+          </span>
+        )}
+      </p>
+      <table aria-label="Notas por característica de qualidade" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            {CABECALHO.map(([titulo, estilo]) => (
+              <th key={titulo} scope="col" style={{ ...estilo, color: 'var(--s-text-3)', fontWeight: 400 }}>{titulo}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {avaliadas.map((c, i) => <Row key={c.id} c={c} delta={isoDelta(trend, c.id)} first={i === 0} />)}
+        </tbody>
+      </table>
+      <NaoAvaliadas lista={naoAvaliadas} />
+    </div>
+  );
+}
+
+function SeletorDePerfil({ profile, onChange }: { profile: IsoProfile; onChange: (perfil: IsoProfile) => void }) {
+  return (
+    <label style={{ fontSize: 13, display: 'grid', gap: 4 }}>
+      Perfil de pesos
+      <select value={profile} onChange={(evento) => onChange(evento.target.value as IsoProfile)} style={{ height: 40, padding: '0 8px' }}>
+        {(Object.keys(isoProfileLabels) as IsoProfile[]).map((chave) => <option key={chave} value={chave}>{isoProfileLabels[chave]}</option>)}
+      </select>
+    </label>
+  );
+}
+
 /** Qualidade por característica da ISO/IEC 25010: a que mais merece atenção em destaque e as não avaliadas recolhidas. */
 export function IsoQualityPanel({ run }: { run: IAuditRunResponse }) {
   const [profile, setProfile] = useState<IsoProfile>('padrao');
@@ -34,10 +97,9 @@ export function IsoQualityPanel({ run }: { run: IAuditRunResponse }) {
   const trend = useIsoTrend({ systemId: run.systemId, enabled: done });
   if (!done) return null;
 
-  const ok = data && Array.isArray(data.caracteristicas);
-  const ordered = ok ? orderedCharacteristics(data.caracteristicas, data.prioridade) : [];
-  const rated = ordered.filter((c) => c.avaliada && c.nota !== null);
-  const unrated = ordered.filter((c) => !c.avaliada || c.nota === null);
+  const ordered = data && Array.isArray(data.caracteristicas) ? orderedCharacteristics(data.caracteristicas, data.prioridade) : null;
+  const avaliadas = (ordered ?? []).filter((c) => c.avaliada && c.nota !== null);
+  const naoAvaliadas = (ordered ?? []).filter((c) => !c.avaliada || c.nota === null);
 
   return (
     <section aria-label="Qualidade ISO/IEC 25010" style={box}>
@@ -46,51 +108,12 @@ export function IsoQualityPanel({ run }: { run: IAuditRunResponse }) {
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Qualidade ISO/IEC 25010</h3>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--s-text-3)' }}>Alinhamento de vocabulário, não certificação.</p>
         </div>
-        <label style={{ fontSize: 13, display: 'grid', gap: 4 }}>
-          Perfil de pesos
-          <select value={profile} onChange={(e) => setProfile(e.target.value as IsoProfile)} style={{ height: 40, padding: '0 8px' }}>
-            {(Object.keys(isoProfileLabels) as IsoProfile[]).map((p) => <option key={p} value={p}>{isoProfileLabels[p]}</option>)}
-          </select>
-        </label>
+        <SeletorDePerfil profile={profile} onChange={setProfile} />
       </div>
       <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--s-text-3)' }}>{isoProfileHints[profile]}</p>
       {isLoading && <SkeletonText paragraph lineCount={4} />}
       {error && <InlineNotification kind="error" title="Não foi possível calcular a qualidade ISO" subtitle={error instanceof Error ? error.message : 'Erro desconhecido'} hideCloseButton />}
-      {ok && (
-        <div aria-live="polite">
-          <p style={{ margin: '0.75rem 0', fontSize: 14, display: 'flex', flexWrap: 'wrap', gap: '4px 24px', alignItems: 'baseline' }}>
-            <span>Nota ponderada <strong style={{ fontSize: 20, color: scoreColor(data.notaPonderada) }}>{num.format(data.notaPonderada)}</strong></span>
-            {rated[0] && (
-              <span style={{ background: 'var(--s-selected)', borderRadius: 4, padding: '4px 10px', fontSize: 13 }}>
-                <strong>Comece por aqui:</strong> {rated[0].nome}
-              </span>
-            )}
-          </p>
-          <table aria-label="Notas por característica de qualidade" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {[['Característica', cell], ['Nota', right], ['Situação', cell], ['Achados', right], ['Desde a anterior', right]].map(([h, st]) => (
-                  <th key={String(h)} scope="col" style={{ ...(st as typeof cell), color: 'var(--s-text-3)', fontWeight: 400 }}>{String(h)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rated.map((c, i) => <Row key={c.id} c={c} delta={isoDelta(trend.data, c.id)} first={i === 0} />)}
-            </tbody>
-          </table>
-          {unrated.length > 0 && (
-            <details style={{ marginTop: 8, fontSize: 13, color: 'var(--s-text-3)' }}>
-              <summary style={{ cursor: 'pointer', padding: '12px 0' }}>
-                {unrated.length === 1 ? '1 característica ainda não avaliada' : `${unrated.length} características ainda não avaliadas`} pelo Sentinel
-              </summary>
-              <ul style={{ margin: '0 0 4px', paddingLeft: 20, lineHeight: 1.7 }}>
-                {unrated.map((c) => <li key={c.id}>{c.nome}</li>)}
-              </ul>
-              <p style={{ margin: 0 }}>Sem regras para elas, o Sentinel não inventa nota.</p>
-            </details>
-          )}
-        </div>
-      )}
+      {data && ordered && <Resultado notaPonderada={data.notaPonderada} avaliadas={avaliadas} naoAvaliadas={naoAvaliadas} trend={trend.data} />}
     </section>
   );
 }
