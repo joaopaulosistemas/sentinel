@@ -2333,3 +2333,10 @@ Nova opção na caixa "Paleta de cores" para ofuscar menos no tema claro: cartã
 
 A paleta ficou clara demais para o João. O claro da "Mais suave" passa de cartão `#f3f4f6` / fundo `#e5e8ec` para cartão `#d3d8df` / fundo `#c3c9d2` (brilho do cartão 0,68; o suave tem 0,97), com texto `#1c2028` (8,8:1 no pior fundo). O tema escuro não mudou, e o `paletas.test.ts` continua conferindo todos os pares (texto de corpo acima de 7:1, o resto acima de 4,5:1). **Não verificado:** a aparência nas telas reais.
 
+
+## Execução de 2026-11-26 (noite, sem volta 60): nenhum repositório novo adequado, quarta execução seguida
+
+- **Estado:** sem PR de ciclo aberto, sem auditoria em andamento (última, 2026-11-24, sucesso); `ciclo/estabilizacao-17` mesclada; nenhuma branch nova criada.
+- **Busca (7 consultas `search/repositories`, 79 resultados, filtrados contra `descobertos.txt`, `conjuntos.json` e LOG):** sobraram só ferramentas/bibliotecas (promptfoo, snyk/cli, DependencyCheck etc.), apps fora do escopo (`Damn-Vulnerable-GraphQL-Application` e CTFs em Python/PHP, `AspGoat` em ASP.NET, `Vuldroid` Android, `Damn-Vulnerable-Drone`) e extensões de Burp. Nenhum adequado.
+- **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall e manter só ruído e precisão. ALERTA "ciclo não generaliza" segue valendo. Sugestão: pausar esta tarefa agendada até a decisão, já que as execuções não produzem volta.
+- **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra classificada.
