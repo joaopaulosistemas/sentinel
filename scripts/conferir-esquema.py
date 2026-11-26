@@ -3,7 +3,7 @@
 Se o Hibernate ainda precisou criar ou alterar algo, falta uma migração: o script lista a diferença e sai com 1.
 Uso: conferir-esquema.py <pg_dump.sql> <V1__baseline.sql> [V2.sql V3.sql ...]
 As migrações depois do V1 só entram pelo que mudam no esquema: DROP INDEX, ALTER COLUMN ... TYPE timestamp(6) with time zone
-e ADD COLUMN (a coluna entra no fim do CREATE TABLE do V1, como o pg_dump a mostra)."""
+e ADD COLUMN (a coluna entra no CREATE TABLE do V1 (as colunas são comparadas em ordem alfabética), como o pg_dump a mostra)."""
 import re
 import sys
 
@@ -31,7 +31,29 @@ def _normaliza(comando):
     def reduz(m):
         valores = ",".join(sorted(re.findall(r"'([^']*)'", m.group(3))))
         return "CONSTRAINT %s CHECK (%s IN (%s))" % (m.group(1), m.group(2), valores)
-    return re.sub(r"CONSTRAINT (\w+) CHECK \(\(\((\w+)\)::text = ANY (.*?\]\)?(?:::text\[\])?\))\)\)", reduz, comando)
+    comando = re.sub(r"CONSTRAINT (\w+) CHECK \(\(\((\w+)\)::text = ANY (.*?\]\)?(?:::text\[\])?\))\)\)", reduz, comando)
+    return _ordena_colunas(comando)
+
+
+def _ordena_colunas(comando):
+    """CREATE TABLE com as colunas em ordem alfabética: o Hibernate cria a tabela numa ordem e o Flyway (ADD COLUMN) em outra,
+    e a ordem das colunas não é esquema. Constraints ficam depois das colunas, também ordenadas."""
+    m = re.match(r"(CREATE TABLE \S+ \()(.*)(\s*\))$", comando)
+    if not m:
+        return comando
+    partes, atual, nivel = [], "", 0
+    for ch in m.group(2):
+        nivel += ch == "("
+        nivel -= ch == ")"
+        if ch == "," and nivel == 0:
+            partes.append(atual.strip())
+            atual = ""
+        else:
+            atual += ch
+    partes.append(atual.strip())
+    colunas = sorted(x for x in partes if not x.startswith("CONSTRAINT "))
+    restricoes = sorted(x for x in partes if x.startswith("CONSTRAINT "))
+    return "%s %s )" % (m.group(1), ", ".join(colunas + restricoes))
 
 
 def _aplica_fuso(v1, comando):
@@ -52,7 +74,7 @@ def _aplica_fuso(v1, comando):
 
 
 def _aplica_coluna(v1, comando):
-    """ALTER TABLE t ADD COLUMN c tipo (uma coluna, sem IF NOT EXISTS: o V2 e o V4 só completam bancos antigos): a coluna entra no fim do CREATE TABLE do V1 (varchar(n) vira character varying(n))."""
+    """ALTER TABLE t ADD COLUMN c tipo (uma coluna, sem IF NOT EXISTS: o V2 e o V4 só completam bancos antigos): a coluna entra no CREATE TABLE do V1 (as colunas são comparadas em ordem alfabética) (varchar(n) vira character varying(n))."""
     m = re.match(r"ALTER TABLE (?:ONLY )?(?:public\.)?(\w+) ADD COLUMN (?!IF NOT EXISTS)(\w+) ([^,]+)$", comando)
     if not m:
         return v1
@@ -61,7 +83,7 @@ def _aplica_coluna(v1, comando):
     for x in v1:
         criar = re.match(r"(CREATE TABLE (?:public\.)?%s \()(.*?)(\s*\))$" % m.group(1), x)
         if criar:
-            x = "%s%s, %s %s%s" % (criar.group(1), criar.group(2), m.group(2), tipo, criar.group(3))
+            x = _ordena_colunas("%s%s, %s %s%s" % (criar.group(1), criar.group(2), m.group(2), tipo, criar.group(3)))
         novo.add(x)
     return novo
 

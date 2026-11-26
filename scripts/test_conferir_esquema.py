@@ -14,9 +14,9 @@ V1 = {"CREATE TABLE public.audit_run ( id bigint NOT NULL, branch character vary
 
 
 class ColunaNovaTest(unittest.TestCase):
-    def test_coluna_entra_no_fim_do_create_table_da_tabela_certa(self):
+    def test_coluna_entra_no_create_table_da_tabela_certa(self):
         saida = esquema._aplica_coluna(V1, "ALTER TABLE public.audit_run ADD COLUMN disabled_sides varchar(20)")
-        self.assertIn("CREATE TABLE public.audit_run ( id bigint NOT NULL, branch character varying(255), disabled_sides character varying(20) )", saida)
+        self.assertIn("CREATE TABLE public.audit_run ( branch character varying(255), disabled_sides character varying(20), id bigint NOT NULL )", saida)
         self.assertIn("CREATE TABLE public.system ( id bigint NOT NULL )", saida)
 
     def test_comando_que_nao_e_add_column_nao_muda_nada(self):
@@ -42,6 +42,13 @@ class ColunaNovaTest(unittest.TestCase):
         sql = os.path.join(RAIZ, "audit-api/src/main/resources/db/migration/V7__contexto_do_codigo_no_achado.sql")
         ordem = esquema.comandos_em_ordem(sql)
         self.assertEqual(["code_context", "code_context_start"], [re.search(r"ADD COLUMN (\w+)", c).group(1) for c in ordem])
+
+    def test_ordem_das_colunas_nao_conta(self):
+        a = esquema._normaliza("CREATE TABLE public.t ( id bigint NOT NULL, b text, a character varying(5) )")
+        b = esquema._normaliza("CREATE TABLE public.t ( id bigint NOT NULL, a character varying(5), b text )")
+        self.assertEqual(a, b)
+        c = esquema._normaliza("CREATE TABLE public.t ( id bigint NOT NULL, a character varying(5) )")
+        self.assertEqual(a, esquema._aplica_coluna({c}, "ALTER TABLE public.t ADD COLUMN b text").pop())
 
     def test_migracao_v6_real_bate_com_o_formato_do_pg_dump(self):
         sql = os.path.join(RAIZ, "audit-api/src/main/resources/db/migration/V6__lados_desligados_na_auditoria.sql")
