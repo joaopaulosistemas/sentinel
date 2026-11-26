@@ -13,6 +13,7 @@ final class RunText {
     private static final int MAX_DESCRIPTION  = 2000;
     private static final int MAX_FILE_PATH    = 1000;
     private static final int MAX_SNIPPET      = 2000;
+    private static final int MAX_CODE_CONTEXT  = 4000;
     private static final int MAX_RULE_ID      = 255;
     private static final int MAX_TOOL_SOURCE  = 100;
     private static final int MAX_CVE_ID       = 50;
@@ -45,6 +46,7 @@ final class RunText {
         f.setDescription(truncate(f.getDescription(), MAX_DESCRIPTION));
         f.setFilePath(truncate(f.getFilePath(), MAX_FILE_PATH));
         f.setCodeSnippet(truncate(f.getCodeSnippet(), MAX_SNIPPET));
+        f.setCodeContext(truncate(f.getCodeContext(), MAX_CODE_CONTEXT));
         f.setRuleId(truncate(f.getRuleId(), MAX_RULE_ID));
         f.setToolSource(truncate(f.getToolSource(), MAX_TOOL_SOURCE));
         f.setCveId(truncate(f.getCveId(), MAX_CVE_ID));

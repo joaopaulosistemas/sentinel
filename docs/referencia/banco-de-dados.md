@@ -1,6 +1,6 @@
 # Banco de dados
 
-O Sentinel usa PostgreSQL 16. O esquema é do Flyway (`audit-api/src/main/resources/db/migration`, V1 a V6) e o Hibernate não altera nada (`DB_SCHEMA_MODE=none`).
+O Sentinel usa PostgreSQL 16. O esquema é do Flyway (`audit-api/src/main/resources/db/migration`, V1 a V7) e o Hibernate não altera nada (`DB_SCHEMA_MODE=none`).
 
 **Diagrama:** abra [banco-de-dados.html](banco-de-dados.html) no navegador (arquivo único, sem dependências). Ele mostra as 12 tabelas, as colunas principais e as relações.
 
@@ -37,6 +37,7 @@ As colunas de data são `timestamptz` (V5) e a API grava em UTC. O painel conver
 | V4 | Completa bancos antigos (o que faltava em relação ao V1) |
 | V5 | Datas passam para `timestamptz` |
 | V6 | Cria `audit_run.disabled_sides` |
+| V7 | Cria `finding.code_context` e `finding.code_context_start` (linhas reais do arquivo ao redor do achado; NULL em achados antigos e em segredos) |
 
 Banco novo roda o V1 e segue até o último. Banco que já existia (criado pelo Hibernate) entra em baseline na versão 1 e recebe as demais. **Não escreva uma migração já aplicada**: o Flyway recusa o start se o arquivo mudar. Para alterar, crie a próxima versão. O CI confere que o esquema depois da subida é igual ao das migrações (`scripts/conferir-esquema.py`).
 

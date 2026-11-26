@@ -93,7 +93,7 @@ O documento OpenAPI (`/q/openapi`) e o Swagger UI (`/swagger-ui`; ligado no Comp
 | `GET` | `/api/v1/audits/{id}` | Status e resultado da auditoria; enquanto roda, traz `progress` (etapa, analisadores e eventos) |
 | `GET` | `/api/v1/audits/{id}/fix-plan` | O que corrigir primeiro: problemas por regra, com o ganho de nota de cada um |
 | `GET` | `/api/v1/findings` | Achados da última auditoria concluída de cada sistema (filtros: `systemId`, `severity`, `category`, `status`, `onlyNew`, `includeSuppressed`, `limit`, `offset`) |
-| `GET` | `/api/v1/audits/{id}/findings` | Findings (filtros: `severity`, `category`, `status`, `onlyNew`, `includeSuppressed`) |
+| `GET` | `/api/v1/audits/{id}/findings` | Findings (filtros: `severity`, `category`, `status`, `onlyNew`, `includeSuppressed`) Cada achado traz `codeContext` (as linhas reais do arquivo, de 2 antes a 4 depois de `lineNumber`) e `codeContextStart` (número da primeira linha do trecho); ficam nulos em segredos (nunca copiamos o valor), arquivo ausente ou binário e em auditorias antigas. `codeSnippet` não muda: é a identidade do achado entre auditorias |
 | `GET` | `/api/v1/audits/{id}/diff` | Novos / resolvidos / persistentes vs. auditoria anterior |
 | `GET` | `/api/v1/audits/{id}/report.pdf` | Mesmos relatórios em PDF (`type=` e `days=` iguais ao HTML) |
 | `GET` | `/api/v1/audits/{id}/report` | Relatório HTML. `type=tecnico` (padrão, todos os achados), `executivo` (uma página: nota, meta, riscos e prioridades) ou `comparativo` (evolução entre auditorias; `days=` limita o período) |
