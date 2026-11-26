@@ -18,7 +18,8 @@
   --s-warn-text: #7b6000;
   --s-disabled: #8a93a1;
 }
-:root[data-theme='dark'][data-palette='suave'] {
+:root[data-theme='dark'][data-palette='suave'],
+:root[data-theme='dark'][data-palette='mais-suave'] {
   --s-text-4: #8e97a6;
   --s-disabled: #626c7b;
 }

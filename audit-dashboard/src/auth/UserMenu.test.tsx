@@ -94,7 +94,7 @@ describe('menu do usuário', () => {
     const caixa = screen.getByRole('combobox', { name: 'Paleta de cores' }) as HTMLSelectElement;
     expect(caixa.style.colorScheme).toBe('dark');
     const opcoes = Array.from(caixa.options);
-    expect(opcoes.length).toBe(3);
+    expect(opcoes.length).toBe(4);
     for (const o of opcoes) {
       expect(o.style.color).toBe('rgb(244, 244, 244)');
       expect(o.style.background).toBe('rgb(38, 38, 38)');

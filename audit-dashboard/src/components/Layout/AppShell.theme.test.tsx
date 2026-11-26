@@ -39,7 +39,7 @@ describe('troca de tema', () => {
     expect(window.localStorage.getItem('sentinel.theme')).toBe('light');
   });
 
-  it('a caixa de paleta troca entre clássico, suave e alternativo, e lembra a escolha', () => {
+  it('a caixa de paleta troca entre clássico, suave, mais suave e alternativo, e lembra a escolha', () => {
     renderShell();
     fireEvent.click(screen.getByRole('button', { name: 'Aparência' }));
     const caixa = screen.getByRole('combobox', { name: 'Paleta de cores' });
@@ -48,6 +48,10 @@ describe('troca de tema', () => {
     fireEvent.change(caixa, { target: { value: 'alternativo' } });
     expect(document.documentElement.getAttribute('data-palette')).toBe('alternativo');
     expect(window.localStorage.getItem('sentinel.palette')).toBe('alternativo');
+
+    fireEvent.change(caixa, { target: { value: 'mais-suave' } });
+    expect(document.documentElement.getAttribute('data-palette')).toBe('mais-suave');
+    expect(window.localStorage.getItem('sentinel.palette')).toBe('mais-suave');
 
     fireEvent.change(caixa, { target: { value: 'classico' } });
     expect(document.documentElement.getAttribute('data-palette')).toBe('classico');
