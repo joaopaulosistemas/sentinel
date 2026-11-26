@@ -57,6 +57,14 @@ public class Finding {
     @Column(name = "code_snippet", length = 2000)
     private String codeSnippet;
 
+    /** Linhas reais do arquivo ao redor do achado (lidas na auditoria); separado do codeSnippet, que também serve de identidade. */
+    @Column(name = "code_context", length = 4000)
+    private String codeContext;
+
+    /** Número da primeira linha de {@link #codeContext} no arquivo. */
+    @Column(name = "code_context_start")
+    private Integer codeContextStart;
+
     @Column(name = "rule_id", length = 255)
     private String ruleId;
 
@@ -177,6 +185,22 @@ public class Finding {
 
     public void setCodeSnippet(String codeSnippet) {
         this.codeSnippet = codeSnippet;
+    }
+
+    public String getCodeContext() {
+        return codeContext;
+    }
+
+    public void setCodeContext(String codeContext) {
+        this.codeContext = codeContext;
+    }
+
+    public Integer getCodeContextStart() {
+        return codeContextStart;
+    }
+
+    public void setCodeContextStart(Integer codeContextStart) {
+        this.codeContextStart = codeContextStart;
     }
 
     public String getRuleId() {

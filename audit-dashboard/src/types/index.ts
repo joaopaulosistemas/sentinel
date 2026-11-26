@@ -196,6 +196,10 @@ export interface IFindingResponse {
   filePath: string;
   lineNumber: number;
   codeSnippet: string | null;
+  /** linhas reais do arquivo ao redor do achado (ausente em segredos e em auditorias antigas) */
+  codeContext?: string | null;
+  /** número da primeira linha de codeContext no arquivo */
+  codeContextStart?: number | null;
   ruleId: string;
   toolSource: string;
   cveId: string | null;

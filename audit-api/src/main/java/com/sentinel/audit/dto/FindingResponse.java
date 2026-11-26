@@ -32,7 +32,20 @@ public record FindingResponse(
         @Schema(description = "Como corrigir, quando há orientação.") RemediationDto remediation,
         @Schema(description = "Confiança do achado.") Confidence confidence,
         @Schema(description = "Por que a confiança é essa.") String confidenceReason,
-        @Schema(description = "Característica da ISO/IEC 25010 que o achado afeta (security, maintainability, reliability, performance-efficiency).") String iso25010) {
+        @Schema(description = "Característica da ISO/IEC 25010 que o achado afeta (security, maintainability, reliability, performance-efficiency).") String iso25010,
+        @Schema(description = "Linhas reais do arquivo ao redor do achado, lidas na auditoria; ausente em segredos e quando o arquivo não pôde ser lido.") String codeContext,
+        @Schema(description = "Número da primeira linha de codeContext no arquivo.") Integer codeContextStart) {
+
+    /** Forma anterior, sem o contexto do código (fica nulo). */
+    public FindingResponse(Long id, Category category, Severity severity, String title, String description, String filePath,
+                           Integer lineNumber, String codeSnippet, String ruleId, String toolSource, String cveId,
+                           String aiRecommendation, FindingStatus status, LocalDateTime createdAt, String fingerprint,
+                           Boolean isNew, Boolean shadow, RemediationDto remediation, Confidence confidence,
+                           String confidenceReason, String iso25010) {
+        this(id, category, severity, title, description, filePath, lineNumber, codeSnippet, ruleId, toolSource, cveId,
+                aiRecommendation, status, createdAt, fingerprint, isNew, shadow, remediation, confidence, confidenceReason,
+                iso25010, null, null);
+    }
 
     /** Forma anterior, sem a característica ISO (fica nula). */
     public FindingResponse(Long id, Category category, Severity severity, String title, String description, String filePath,
@@ -41,6 +54,6 @@ public record FindingResponse(
                            Boolean isNew, Boolean shadow, RemediationDto remediation, Confidence confidence,
                            String confidenceReason) {
         this(id, category, severity, title, description, filePath, lineNumber, codeSnippet, ruleId, toolSource, cveId,
-                aiRecommendation, status, createdAt, fingerprint, isNew, shadow, remediation, confidence, confidenceReason, null);
+                aiRecommendation, status, createdAt, fingerprint, isNew, shadow, remediation, confidence, confidenceReason, null, null, null);
     }
 }

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import type { IFindingResponse, FindingStatus } from '../types';
 import { originLabel } from '../utils/findingOrigin';
 import { severityPill } from '../utils/findingsView';
+import { CodeBlock } from './CodeBlock';
 import { RemediationBlock } from './RemediationBlock';
 import { SuppressModal } from './SuppressModal';
 
@@ -105,7 +106,9 @@ function FindingDetail({ f, onSuppress }: { f: IFindingResponse; onSuppress: () 
         <p>
           <strong>Descrição:</strong> {f.description}
         </p>
-        {f.codeSnippet && (
+        {f.codeContext && f.codeContextStart ? (
+          <CodeBlock filePath={f.filePath} line={f.lineNumber} context={f.codeContext} start={f.codeContextStart} />
+        ) : f.codeSnippet && (
           <pre style={{ background: '#161616', color: '#f4f4f4', padding: '1rem', overflow: 'auto', fontSize: '0.8125rem', marginTop: '0.5rem' }}>
             <code>{f.codeSnippet}</code>
           </pre>

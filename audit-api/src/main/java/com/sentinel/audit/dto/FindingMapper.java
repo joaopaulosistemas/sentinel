@@ -16,6 +16,6 @@ public final class FindingMapper {
                 f.getAiRecommendation(), f.getStatus(), f.getCreatedAt(), f.getFingerprint(), f.getIsNew(),
                 Boolean.TRUE.equals(f.getShadow()), RemediationCatalog.forFinding(f),
                 f.getConfidence() == null ? Confidence.MEDIUM : f.getConfidence(), f.getConfidenceReason(),
-                Iso25010.of(f).id());
+                Iso25010.of(f).id(), f.getCodeContext(), f.getCodeContextStart());
     }
 }

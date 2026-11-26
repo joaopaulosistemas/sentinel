@@ -224,6 +224,7 @@ public class AuditOrchestrationService {
 
     private void persistAndNotify(Long auditRunId, AuditResult result) {
         long linesOfCode = result.sizing().lines();
+        CodeContext.attach(result.findings(), result.clonedPath());
         RiskScore riskScore = scoringService.calculate(FindingLifecycleService.active(result.findings()), linesOfCode);
         progress.phase(auditRunId, AuditProgressTracker.RELATORIO, "Nota " + riskScore.getOverall() + "; gravando o relatório");
         store.persistResultsAndComplete(auditRunId, result.findings(), riskScore, linesOfCode, result.commitSha());
