@@ -107,12 +107,12 @@ export function SystemsTable({ systems, selectedId, onAudit, onEdit, onDelete, n
       <table className="sys-table" aria-label="Sistemas cadastrados" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 920 }}>
         <thead>
           <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
-            <th style={{ padding: '12px 16px' }}>Sistema</th>
-            <th style={{ padding: '12px 8px' }}>Stack</th>
-            <th style={{ padding: '12px 8px' }}>Equipe</th>
-            <th style={{ padding: '12px 8px' }}>Agendamento</th>
-            <th style={{ padding: '12px 8px' }}>Nota</th>
-            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ações</th>
+            <th scope="col" style={{ padding: '12px 16px' }}>Sistema</th>
+            <th scope="col" style={{ padding: '12px 8px' }}>Stack</th>
+            <th scope="col" style={{ padding: '12px 8px' }}>Equipe</th>
+            <th scope="col" style={{ padding: '12px 8px' }}>Agendamento</th>
+            <th scope="col" style={{ padding: '12px 8px' }}>Nota</th>
+            <th scope="col" style={{ padding: '12px 16px', textAlign: 'right' }}>Ações</th>
           </tr>
         </thead>
         <tbody>

@@ -60,7 +60,7 @@ function Header({ cfg, onReset, busy }: { cfg: IEngineConfig; onReset: () => voi
         {cfg.profileDescription && <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{cfg.profileDescription}</div>}
       </div>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span role="status" style={{ fontSize: 13, color: cfg.adjustments > 0 ? '#0043ce' : 'var(--s-text-3)' }}>
+        <span role="status" style={{ fontSize: 13, color: cfg.adjustments > 0 ? 'var(--s-link)' : 'var(--s-text-3)' }}>
           {cfg.adjustments === 0 ? 'Igual ao perfil' : `${cfg.adjustments} ${cfg.adjustments === 1 ? 'ajuste' : 'ajustes'} em relação ao perfil`}
         </span>
         {cfg.adjustments > 0 && (
@@ -164,7 +164,7 @@ function RulesSection(p: IRulesSectionProps) {
         “Só observar” mostra o achado sem pesar na nota. Aceita curinga: <code style={{ fontFamily: mono }}>sentinel-*</code>.
         O ganho na nota é uma estimativa da última auditoria: quanto a nota sobe se a regra deixar de pesar.
       </p>
-      <div style={{ padding: '8px 12px', background: 'var(--s-header-row)', borderLeft: '3px solid #0f62fe', fontSize: 13 }}>{p.packsNote}</div>
+      <div style={{ padding: '8px 12px', background: 'var(--s-header-row)', borderLeft: '3px solid var(--s-link)', fontSize: 13 }}>{p.packsNote}</div>
       <SideTabs counts={p.side.counts} active={p.side.active} sidesOff={p.side.off} onPick={p.side.onPick} />
       <FamilyTabs tabs={p.family.tabs} active={p.family.active} onPick={p.family.onPick} />
       <RuleFilters
@@ -396,7 +396,7 @@ const MAX_IGNORED_PATHS = 50;
 /** Aba "Analisadores": quais ferramentas rodam neste sistema e quais caminhos ficam fora da auditoria. */
 function SidesOffNotice({ sidesOff }: { sidesOff: string[] }) {
   return (
-    <div role="status" style={{ padding: '10px 14px', background: 'var(--s-selected)', borderLeft: '3px solid #0f62fe', fontSize: 13 }}>
+    <div role="status" style={{ padding: '10px 14px', background: 'var(--s-selected)', borderLeft: '3px solid var(--s-link)', fontSize: 13 }}>
       Com o escopo atual, os analisadores {sidesOff.includes('front') ? 'do front-end' : 'do back-end'} ficam desligados e só voltam se o lado for religado na aba Motor de regras.
     </div>
   );

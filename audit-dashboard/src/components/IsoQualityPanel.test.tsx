@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IAuditRunResponse, IIsoQuality } from '../types';
 import { IsoQualityPanel } from './IsoQualityPanel';
@@ -32,10 +32,31 @@ describe('IsoQualityPanel', () => {
     wrap();
 
     expect(await screen.findByText('82,5')).toBeInTheDocument();
-    expect(screen.getByText('Segurança')).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: 'Segurança' })).toBeInTheDocument();
     expect(await screen.findByText('▲ +5')).toBeInTheDocument();
-    expect(screen.getByText(/não avaliada: o Sentinel não tem regras/)).toBeInTheDocument();
+    expect(screen.getByText(/1 característica ainda não avaliada/)).toBeInTheDocument();
     expect(screen.getByText(/não certificação/)).toBeInTheDocument();
+  });
+
+  it('é acessível: tabela com nome, cabeçalhos com escopo, variação por extenso e situação em texto', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+      new Response(JSON.stringify(String(url).includes('/trend') ? trend : iso), { status: 200 })));
+    wrap();
+
+    const table = await screen.findByRole('table', { name: 'Notas por característica de qualidade' });
+    expect(within(table).getAllByRole('columnheader').every((h) => h.getAttribute('scope') === 'col')).toBe(true);
+    expect(within(table).getByRole('rowheader', { name: 'Segurança' })).toBeInTheDocument();
+    expect(await screen.findByText('subiu 5 pontos')).toBeInTheDocument();
+    expect(screen.getAllByText('Bom').length).toBeGreaterThan(0);
+    expect(screen.getByText('Comece por aqui:').parentElement).toHaveTextContent('Segurança');
+  });
+
+  it('sem histórico mostra "—" e avisa que não há com o que comparar', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+      new Response(JSON.stringify(String(url).includes('/trend') ? [] : iso), { status: 200 })));
+    wrap();
+
+    expect(await screen.findAllByText('sem histórico para comparar')).not.toHaveLength(0);
   });
 
   it('não consulta nada enquanto a auditoria não terminou', () => {

@@ -66,3 +66,12 @@ table:not(.cds--data-table) > tbody > tr:focus-within { background: var(--s-head
 .sentinel-linha-hover:hover,
 .sentinel-linha-hover:focus-visible { background: var(--s-header-row) !important; }
 /* stylelint-enable declaration-no-important */
+
+/* Texto só para leitor de tela (legendas de tabela, variações por extenso). */
+.sentinel-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* Foco visível de teclado nos controles nativos que as telas estilizam em linha (o Carbon já cuida dos seus). */
+.sentinel-content-theme :is(button, select, summary, input, textarea, a):not([class*='cds--']):focus-visible {
+  outline: 2px solid var(--s-link);
+  outline-offset: 2px;
+}

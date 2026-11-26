@@ -85,7 +85,7 @@ function LimitsBox({ side, cfg, limits, setLimits, limitError }: ILimitsProps & 
               value={limits[t.key] ?? ''}
               placeholder={t.profileValue === null ? 'padrão do motor' : `perfil: ${t.profileValue}`}
               onChange={(e) => setLimits({ ...limits, [t.key]: e.target.value })}
-              style={{ ...fieldStyle, borderBottom: `1px solid ${limitError(t.key) ? '#da1e28' : 'var(--s-border-strong)'}`, fontFamily: mono }}
+              style={{ ...fieldStyle, borderBottom: `1px solid ${limitError(t.key) ? 'var(--s-danger-text)' : 'var(--s-border-strong)'}`, fontFamily: mono }}
             />
             {limitError(t.key) && <span style={{ color: 'var(--s-danger-text)' }}>Use um inteiro maior que zero.</span>}
           </label>
@@ -170,7 +170,7 @@ export function SideTabs({ counts, active, sidesOff, onPick }: { counts: Record<
             role="tab"
             aria-selected={on}
             onClick={() => onPick(t.key)}
-            style={{ padding: '10px 16px', border: 0, borderBottom: `2px solid ${on ? '#0f62fe' : 'transparent'}`, background: on ? 'var(--s-surface)' : 'transparent', color: off ? 'var(--s-text-4)' : 'var(--s-text)', fontWeight: on ? 600 : 400, cursor: 'pointer' }}
+            style={{ padding: '10px 16px', border: 0, borderBottom: `2px solid ${on ? 'var(--s-link)' : 'transparent'}`, background: on ? 'var(--s-surface)' : 'transparent', color: off ? 'var(--s-text-4)' : 'var(--s-text)', fontWeight: on ? 600 : 400, cursor: 'pointer' }}
           >
             {t.name}{off ? ' (desligado)' : ''} <span style={{ fontWeight: 400, color: 'var(--s-text-3)' }}>· {counts[t.key]}</span>
           </button>
@@ -196,7 +196,7 @@ export function FamilyTabs({ tabs, active, onPick }: { tabs: IFamilyTab[]; activ
             onClick={() => onPick(t.key)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minHeight: 48, padding: '6px 16px', border: 0,
-              borderBottom: `3px solid ${on ? '#0f62fe' : 'transparent'}`, background: on ? 'var(--s-selected)' : 'transparent',
+              borderBottom: `3px solid ${on ? 'var(--s-link)' : 'transparent'}`, background: on ? 'var(--s-selected)' : 'transparent',
               color: 'var(--s-text)', cursor: 'pointer', textAlign: 'left',
             }}
           >
@@ -384,18 +384,18 @@ interface ITableProps {
 export function RulesTable({ rows, allShownPicked, isPicked, current, inProfile, isOff, onPickAll, onSelect, onChange }: ITableProps) {
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+      <table aria-label="Regras do motor, com ganho na nota e ajustes" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead>
           <tr style={{ textAlign: 'left', background: 'var(--s-header-row)' }}>
-            <th style={{ padding: '6px 8px', width: 28 }}>
+            <th scope="col" style={{ padding: '6px 8px', width: 28 }}>
               <input type="checkbox" aria-label="Selecionar as regras mostradas" checked={allShownPicked} onChange={(e) => onPickAll(e.target.checked)} />
             </th>
-            <th style={{ padding: '6px 8px' }}>Lado</th>
-            <th style={{ padding: '6px 8px' }}>Regra</th>
-            <th style={{ padding: '6px 8px' }}>Ganho na nota</th>
-            <th style={{ padding: '6px 8px' }}>Severidade</th>
-            <th style={{ padding: '6px 8px' }}>Desligada</th>
-            <th style={{ padding: '6px 8px' }}>Só observar</th>
+            <th scope="col" style={{ padding: '6px 8px' }}>Lado</th>
+            <th scope="col" style={{ padding: '6px 8px' }}>Regra</th>
+            <th scope="col" style={{ padding: '6px 8px' }}>Ganho na nota</th>
+            <th scope="col" style={{ padding: '6px 8px' }}>Severidade</th>
+            <th scope="col" style={{ padding: '6px 8px' }}>Desligada</th>
+            <th scope="col" style={{ padding: '6px 8px' }}>Só observar</th>
           </tr>
         </thead>
         <tbody>

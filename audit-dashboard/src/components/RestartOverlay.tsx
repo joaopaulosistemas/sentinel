@@ -170,7 +170,7 @@ export function RestartOverlay({ phase, onKeepWaiting, onClose }: IProps) {
         aria-labelledby="restart-overlay-title"
         aria-describedby="restart-overlay-desc"
         tabIndex={-1}
-        style={{ width: '100%', maxWidth: 560, maxHeight: '100%', overflowY: 'auto', background: 'var(--s-surface)', color: 'var(--s-text-2)', border: '1px solid var(--s-border)', borderTop: `4px solid ${timedOut ? '#f1c21b' : '#0f62fe'}`, padding: 32, outline: 'none' }}
+        style={{ width: '100%', maxWidth: 560, maxHeight: '100%', overflowY: 'auto', background: 'var(--s-surface)', color: 'var(--s-text-2)', border: '1px solid var(--s-border)', borderTop: `4px solid ${timedOut ? 'var(--s-warn-text)' : 'var(--s-link)'}`, padding: 32, outline: 'none' }}
       >
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 16 }}>
           {!timedOut && <Loading withOverlay={false} small description="Reiniciando a API" />}

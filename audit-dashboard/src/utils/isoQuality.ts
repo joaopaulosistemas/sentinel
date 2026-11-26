@@ -24,9 +24,28 @@ export function isoDelta(points: IIsoTrendPoint[] | undefined, id: string): numb
   return Math.round((last - before) * 10) / 10;
 }
 
-/** "▲ +3,2", "▼ −1,5" ou "= 0"; vazio sem variação conhecida. */
+export const isoProfileHints: Record<IsoProfile, string> = {
+  padrao: 'Pesos iguais para as características avaliadas.',
+  financeiro: 'Segurança e confiabilidade pesam mais: indicado para sistemas que lidam com dinheiro.',
+  interno: 'Manutenibilidade pesa mais: indicado para ferramentas internas de longa vida.',
+};
+
+/** Situação em texto (a cor sozinha não basta): segue a régua única de scoreBand. */
+export function isoSituacao(band: 'good' | 'warn' | 'bad' | 'none'): string {
+  return band === 'good' ? 'Bom' : band === 'warn' ? 'Atenção' : band === 'bad' ? 'Ruim' : 'Sem nota';
+}
+
+/** Variação por extenso para leitor de tela: "subiu 5 pontos", "caiu 1,5 ponto", "sem variação"; "sem histórico" sem dois pontos. */
+export function isoDeltaSr(delta: number | null): string {
+  if (delta === null) return 'sem histórico para comparar';
+  if (delta === 0) return 'sem variação';
+  const abs = Math.abs(delta).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  return `${delta > 0 ? 'subiu' : 'caiu'} ${abs} ${abs === '1' ? 'ponto' : 'pontos'}`;
+}
+
+/** "▲ +3,2", "▼ −1,5", "= 0" ou "—" quando não há variação conhecida. */
 export function isoDeltaLabel(delta: number | null): string {
-  if (delta === null) return '';
+  if (delta === null) return '—';
   if (delta === 0) return '= 0';
   const abs = Math.abs(delta).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
   return delta > 0 ? `▲ +${abs}` : `▼ −${abs}`;

@@ -176,15 +176,15 @@ function RunsBody({ loading, runs }: { loading: boolean; runs: IAuditRunResponse
   if (runs.length === 0) return <p style={{ color: 'var(--s-text-3)', margin: 0 }}>Nenhuma auditoria encontrada.</p>;
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+      <table aria-label="Histórico de auditorias do sistema" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
         <thead>
           <tr style={{ textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)' }}>
-            <th style={{ padding: '8px 16px 8px 0' }}>Auditoria</th>
-            <th style={{ padding: '8px 16px 8px 0' }}>Branch</th>
-            <th style={{ padding: '8px 16px 8px 0' }}>Situação</th>
-            <th style={{ padding: '8px 16px 8px 0' }}>Nota</th>
-            <th style={{ padding: '8px 16px 8px 0' }}>Achados</th>
-            <th style={{ padding: '8px 0', textAlign: 'right' }}>Início</th>
+            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Auditoria</th>
+            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Branch</th>
+            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Situação</th>
+            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Nota</th>
+            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Achados</th>
+            <th scope="col" style={{ padding: '8px 0', textAlign: 'right' }}>Início</th>
           </tr>
         </thead>
         <tbody>

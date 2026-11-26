@@ -69,7 +69,7 @@ function FindingBadges({ f, claudeNote }: { f: IFindingResponse; claudeNote: { t
         </Badge>
       )}
       {f.confidence === 'HIGH' && f.confidenceReason && (
-        <Badge title={f.confidenceReason} color="#198038" border="#198038">
+        <Badge title={f.confidenceReason} color="var(--s-success-strong)" border="var(--s-success-strong)">
           Confirmado
         </Badge>
       )}
@@ -117,7 +117,7 @@ function FindingDetail({ f, onSuppress }: { f: IFindingResponse; onSuppress: () 
         )}
         {f.remediation && <RemediationBlock remediation={f.remediation} />}
         {f.aiRecommendation && (
-          <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: '#e8f5e9', borderLeft: '4px solid #24a148' }}>
+          <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'var(--s-good-bg)', borderLeft: '4px solid var(--s-success-text)' }}>
             <strong>Recomendação da IA:</strong>
             <p style={{ marginTop: '0.25rem' }}>{f.aiRecommendation}</p>
           </div>
@@ -160,7 +160,7 @@ function FindingRow({ f, origin, systemName, auditId, claudeNote, expanded, sele
               aria-label={`Selecionar ${f.title}`}
               checked={selected}
               onChange={(e) => onSelect(e.target.checked)}
-              style={{ width: 16, height: 16, accentColor: '#0f62fe' }}
+              style={{ width: 16, height: 16, accentColor: 'var(--s-link)' }}
             />
           )}
         </td>
@@ -235,10 +235,10 @@ export function FindingsTable({ findings, systemName, auditId, systemOf, claudeN
     <>
       <BatchBar count={selectedFindings.length} onSuppress={() => setToSuppress(selectedFindings)} onClear={() => setSelected(new Set())} />
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
+        <table aria-label="Achados da auditoria" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
           <thead>
             <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
-              <th style={{ ...th, width: 40, paddingLeft: 16 }}>
+              <th scope="col" style={{ ...th, width: 40, paddingLeft: 16 }}>
                 <input
                   type="checkbox"
                   aria-label="Selecionar todos os findings desta lista"
@@ -248,15 +248,15 @@ export function FindingsTable({ findings, systemName, auditId, systemOf, claudeN
                     if (el) el.indeterminate = selectedFindings.length > 0 && !allSelected;
                   }}
                   onChange={(e) => setSelected(e.target.checked ? new Set(selectable.map((f) => f.id)) : new Set())}
-                  style={{ width: 16, height: 16, accentColor: '#0f62fe' }}
+                  style={{ width: 16, height: 16, accentColor: 'var(--s-link)' }}
                 />
               </th>
-              <th style={{ ...th, width: 96 }}>Severidade</th>
-              <th style={th}>Sistema</th>
-              <th style={th}>Achado</th>
-              <th style={th}>Local</th>
-              <th style={th}>Origem</th>
-              <th style={{ ...th, paddingRight: 16, textAlign: 'right' }}>Situação</th>
+              <th scope="col" style={{ ...th, width: 96 }}>Severidade</th>
+              <th scope="col" style={th}>Sistema</th>
+              <th scope="col" style={th}>Achado</th>
+              <th scope="col" style={th}>Local</th>
+              <th scope="col" style={th}>Origem</th>
+              <th scope="col" style={{ ...th, paddingRight: 16, textAlign: 'right' }}>Situação</th>
             </tr>
           </thead>
           <tbody>

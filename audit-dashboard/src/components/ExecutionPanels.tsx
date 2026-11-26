@@ -11,8 +11,8 @@ const mono = "'IBM Plex Mono', ui-monospace, monospace";
 export function PhaseStrip({ phases }: { phases: IPhaseView[] }) {
   const style = {
     done: { bg: '#198038', fg: '#ffffff', border: '#198038', title: 'var(--s-text)' },
-    active: { bg: '#0f62fe', fg: '#ffffff', border: 'var(--s-link)', title: '#0f62fe' },
-    failed: { bg: '#da1e28', fg: '#ffffff', border: '#da1e28', title: '#da1e28' },
+    active: { bg: '#0f62fe', fg: '#ffffff', border: 'var(--s-link)', title: 'var(--s-link)' },
+    failed: { bg: '#da1e28', fg: '#ffffff', border: '#da1e28', title: 'var(--s-danger-text)' },
     pending: { bg: 'var(--s-surface)', fg: 'var(--s-text-3)', border: 'var(--s-border-strong)', title: 'var(--s-text)' },
   } as const;
   return (

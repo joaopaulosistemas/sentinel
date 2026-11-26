@@ -45,15 +45,15 @@ function DebtTable({ items, limit }: { items: IDebtItem[]; limit?: number }) {
   const shown = limit ? items.slice(0, limit) : items;
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table aria-label="Problemas que mais valem corrigir, por prioridade" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            <th style={th}>Prioridade</th>
-            <th style={th}>Problema</th>
-            <th style={th}>Impacto</th>
-            <th style={th}>Esforço</th>
-            <th style={th}>Risco de regressão</th>
-            <th style={th}>Ocorrências</th>
+            <th scope="col" style={th}>Prioridade</th>
+            <th scope="col" style={th}>Problema</th>
+            <th scope="col" style={th}>Impacto</th>
+            <th scope="col" style={th}>Esforço</th>
+            <th scope="col" style={th}>Risco de regressão</th>
+            <th scope="col" style={th}>Ocorrências</th>
           </tr>
         </thead>
         <tbody>
