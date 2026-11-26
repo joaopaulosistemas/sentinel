@@ -50,7 +50,7 @@ body { background: var(--sn-surface); color: var(--sn-text); }
   --pf-v5-c-form-control--focus--BorderColor: transparent;
 }
 .pf-v5-c-form-control::before, .pf-v5-c-form-control::after { display: none; }
-.pf-v5-c-form-control:hover { background: var(--sn-field-hover); }
+.pf-v5-c-form-control:hover, .pf-v5-c-form-control:focus-within { background: var(--sn-field-hover); }
 .pf-v5-c-form-control:focus-within { outline: 2px solid var(--sn-focus); outline-offset: -2px; border-bottom-color: transparent; }
 .pf-v5-c-form-control input {
   min-height: 48px; padding: 0 16px; border: 0; border-radius: 0; background: transparent; color: var(--sn-text);
@@ -70,7 +70,7 @@ body { background: var(--sn-surface); color: var(--sn-text); }
   min-height: 48px; width: 48px; border: 0; border-radius: 0; background: transparent; color: var(--sn-text-2);
 }
 .pf-v5-c-input-group .pf-v5-c-button.pf-m-control::after { display: none; }
-.pf-v5-c-input-group .pf-v5-c-button.pf-m-control:hover { color: var(--sn-text); background: transparent; }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control:hover, .pf-v5-c-input-group .pf-v5-c-button.pf-m-control:focus { color: var(--sn-text); background: transparent; }
 
 /* Botão Carbon grande: texto à esquerda, seta à direita. */
 .pf-v5-c-form__actions { margin-top: 8px; }
@@ -81,7 +81,7 @@ body { background: var(--sn-surface); color: var(--sn-text); }
 }
 .pf-v5-c-button.pf-m-primary:hover, .pf-v5-c-button.pf-m-primary:focus, [id='kc-login']:hover, [id='kc-login']:focus { background-color: var(--sn-primary-hover); }
 a { color: var(--sn-link); }
-a:hover { color: var(--sn-link-hover); }
+a:hover, a:focus { color: var(--sn-link-hover); }
 :focus-visible { outline: 2px solid var(--sn-focus); outline-offset: 2px; }
 
 /* Erro de login: notificação Carbon (a mesma do painel), com a borda vermelha na lateral. */
@@ -100,7 +100,7 @@ body::before {
   background: url('../img/logo.svg') no-repeat 64px 48px / 44px 44px, url('../img/radar.svg') no-repeat center / 1100px 1100px, var(--sn-chrome);
 }
 body::after {
-  content: 'Sentinel Audit Tool'; position: fixed; left: 124px; top: 44px; z-index: 1; line-height: 32px;
+  content: 'Sentinel Audit Tool'; position: fixed; left: 124px; top: 44px; z-index: 1;
   font: 600 1.75rem/32px 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: 0.1px; white-space: nowrap;
   background: linear-gradient(90deg, var(--sn-chrome-text) 0 3.96em, var(--sn-chrome-text-2) 3.96em); -webkit-background-clip: text; background-clip: text;
   color: transparent; -webkit-text-fill-color: transparent;
@@ -133,7 +133,7 @@ body::after {
   .pf-v5-c-login__container { width: 100%; }
   [id='kc-header'], .pf-v5-c-login__header { display: block; margin-bottom: 32px; }
   /* o tema base fixa o texto do cabeçalho em branco com !important; a marca visível vem do ::before */
-  #kc-header-wrapper { font-size: 0; line-height: 0; }
+  [id='kc-header-wrapper'] { font-size: 0; line-height: 0; }
   .pf-v5-c-login__header::before { content: 'Sentinel Audit Tool'; display: block; color: var(--sn-text); font: 600 1.25rem/1.2 'IBM Plex Sans', system-ui, sans-serif; }
   .pf-v5-c-login__header { padding: 0; }
   .pf-v5-c-login__main-header { padding-bottom: 24px; }

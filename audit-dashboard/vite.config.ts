@@ -20,7 +20,7 @@ export default defineConfig({
         // Bibliotecas grandes e estáveis em pacotes separados: o navegador as mantém em cache entre versões do app.
         // Função, não objeto: o Rolldown (Vite 8) não aceita o objeto do Rollup. A ordem importa: "react" vem por último
         // porque "react-router-dom" e "@tanstack/react-query" têm "react" no caminho.
-        manualChunks(id: string) {
+        manualChunks: (id: string) => {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('/@carbon/')) return 'carbon';
           if (ehBibliotecaDeGraficos(id)) return 'charts';

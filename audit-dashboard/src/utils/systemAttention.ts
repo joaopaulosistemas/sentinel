@@ -23,9 +23,9 @@ export function daysSinceAudit(system: Pick<ISystemSummaryResponse, 'lastAuditDa
 /** Depois de quantos dias sem auditar a lista de Sistemas mostra o selo (mais de uma semana). */
 export const AUDIT_BADGE_DAYS = 7;
 /** Depois de quantos dias o selo passa de "atenção" para "crítico". */
-export const AUDIT_BADGE_CRITICAL_DAYS = 14;
+const AUDIT_BADGE_CRITICAL_DAYS = 14;
 
-export type AuditAgeLevel = 'attention' | 'critical' | 'never';
+type AuditAgeLevel = 'attention' | 'critical' | 'never';
 
 export interface IAuditAge {
   level: AuditAgeLevel;

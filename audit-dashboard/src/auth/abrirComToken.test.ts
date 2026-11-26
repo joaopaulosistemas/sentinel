@@ -29,7 +29,7 @@ describe('abrirComToken', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(new Blob(['<html>'])) });
     vi.stubGlobal('fetch', fetchMock);
     await abrirComToken(URL_RELATORIO);
-    expect(fetchMock).toHaveBeenCalledWith(URL_RELATORIO, { headers: { Authorization: 'Bearer tok-123' } });
+    expect(fetchMock).toHaveBeenCalledWith(URL_RELATORIO, { headers: { Authorization: 'Bearer tok-123' }, signal: expect.any(AbortSignal) });
     expect(aba.location.href).toBe('blob:relatorio');
   });
 

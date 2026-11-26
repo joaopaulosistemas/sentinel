@@ -27,6 +27,8 @@ function PeopleView({ stack, guide }: { stack: IGuideStack; guide: IGuideRespons
   );
 }
 
+const guiaValido = (data: IGuideResponse | undefined): data is IGuideResponse => data !== undefined && Array.isArray(data.stacks);
+
 /** Guia de código: boas práticas e regras do Sentinel por tecnologia, para pessoas e para a IA (CLAUDE.md). */
 export function GuidePage() {
   const { data, isLoading, error } = useGuide();
@@ -34,7 +36,7 @@ export function GuidePage() {
   const [ai, setAi] = useState(false);
 
   if (isLoading) return <DataTableSkeleton columnCount={4} rowCount={6} />;
-  if (error || !data || !Array.isArray(data.stacks)) {
+  if (error || !guiaValido(data)) {
     return <InlineNotification kind="error" title="Erro ao carregar o guia" subtitle={error instanceof Error ? error.message : 'Resposta fora do formato esperado'} />;
   }
   const stack = data.stacks.find((s) => s.id === stackId) ?? data.stacks[0];

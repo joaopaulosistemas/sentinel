@@ -62,6 +62,18 @@ public class PdfReportService {
     private static final float LOGO_BOX = 32;
     private static final float LOGO_PRINT_SIZE = 34;
     private static final Color LOGO_BLUE = new Color(0x45, 0x89, 0xff);
+    // Desenho do logo: coordenadas do SVG de 32 x 32 com o y já invertido (no PDF o y cresce para cima).
+    private static final float[] ESCUDO_PONTA = {16, 29.5f};
+    private static final float[] ESCUDO_ESQUERDA_BAIXO = {4.5f, 25.2f};
+    private static final float[] ESCUDO_ESQUERDA_CIMA = {4.5f, 17f};
+    private static final float[] ESCUDO_CURVA_ESQUERDA = {4.5f, 9.8f, 9.4f, 4.6f, 16, 2.5f};
+    private static final float[] ESCUDO_CURVA_DIREITA = {22.6f, 4.6f, 27.5f, 9.8f, 27.5f, 17f};
+    private static final float[] ESCUDO_DIREITA_BAIXO = {27.5f, 25.2f};
+    private static final float[] OLHO = {9.8f, 13f, 22.2f, 21f};
+    private static final float[] PUPILA = {16, 17, 1.9f};
+    /** Larguras relativas das colunas do cabeçalho: logo, nome da ferramenta e tipo do relatório. */
+    private static final float[] CABECALHO_LARGURAS = {0.8f, 4f, 5f};
+    private static final float CABECALHO_LINHA = 1.5f;
     private static final Font BRAND_NAME = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
     private static final Font BRAND_SUB = FontFactory.getFont(FontFactory.HELVETICA, 8, Color.GRAY);
     private static final Font BRAND_DOC = FontFactory.getFont(FontFactory.HELVETICA, 9, Color.GRAY);
@@ -259,20 +271,22 @@ public class PdfReportService {
         PdfTemplate t = cb.createTemplate(LOGO_BOX, LOGO_BOX);
         t.setColorFill(LOGO_BLUE);
         // O desenho original usa y para baixo (SVG); no PDF o y cresce para cima, por isso 32 - y.
-        t.moveTo(16, 29.5f);
-        t.lineTo(4.5f, 25.2f);
-        t.lineTo(4.5f, 17f);
-        t.curveTo(4.5f, 9.8f, 9.4f, 4.6f, 16, 2.5f);
-        t.curveTo(22.6f, 4.6f, 27.5f, 9.8f, 27.5f, 17f);
-        t.lineTo(27.5f, 25.2f);
+        t.moveTo(ESCUDO_PONTA[0], ESCUDO_PONTA[1]);
+        t.lineTo(ESCUDO_ESQUERDA_BAIXO[0], ESCUDO_ESQUERDA_BAIXO[1]);
+        t.lineTo(ESCUDO_ESQUERDA_CIMA[0], ESCUDO_ESQUERDA_CIMA[1]);
+        t.curveTo(ESCUDO_CURVA_ESQUERDA[0], ESCUDO_CURVA_ESQUERDA[1], ESCUDO_CURVA_ESQUERDA[2], ESCUDO_CURVA_ESQUERDA[3],
+                ESCUDO_CURVA_ESQUERDA[4], ESCUDO_CURVA_ESQUERDA[5]);
+        t.curveTo(ESCUDO_CURVA_DIREITA[0], ESCUDO_CURVA_DIREITA[1], ESCUDO_CURVA_DIREITA[2], ESCUDO_CURVA_DIREITA[3],
+                ESCUDO_CURVA_DIREITA[4], ESCUDO_CURVA_DIREITA[5]);
+        t.lineTo(ESCUDO_DIREITA_BAIXO[0], ESCUDO_DIREITA_BAIXO[1]);
         t.closePath();
         t.fill();
         t.setColorStroke(Color.WHITE);
         t.setLineWidth(2);
-        t.ellipse(9.8f, 13f, 22.2f, 21f);
+        t.ellipse(OLHO[0], OLHO[1], OLHO[2], OLHO[3]);
         t.stroke();
         t.setColorFill(Color.WHITE);
-        t.circle(16, 17, 1.9f);
+        t.circle(PUPILA[0], PUPILA[1], PUPILA[2]);
         t.fill();
         Image img = Image.getInstance(t);
         img.scaleAbsolute(LOGO_PRINT_SIZE, LOGO_PRINT_SIZE);
@@ -281,7 +295,7 @@ public class PdfReportService {
 
     /** Cabeçalho de todo PDF: logo, nome da ferramenta, tipo do relatório à direita e uma linha azul embaixo. */
     private static void cabecalho(Document doc, PdfWriter writer, String tipoDoRelatorio) throws DocumentException {
-        PdfPTable t = new PdfPTable(new float[] {0.8f, 4f, 5f});
+        PdfPTable t = new PdfPTable(CABECALHO_LARGURAS.clone());
         t.setWidthPercentage(100);
         PdfPCell logoCell = new PdfPCell(logo(writer), false);
         PdfPCell nome = new PdfPCell();
@@ -293,7 +307,7 @@ public class PdfReportService {
         for (PdfPCell c : List.of(logoCell, nome, tipo)) {
             c.setBorder(PdfPCell.BOTTOM);
             c.setBorderColorBottom(LOGO_BLUE);
-            c.setBorderWidthBottom(1.5f);
+            c.setBorderWidthBottom(CABECALHO_LINHA);
             c.setPaddingBottom(CELL_PADDING * 2);
         }
         t.addCell(logoCell);

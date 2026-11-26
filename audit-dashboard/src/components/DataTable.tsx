@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-export interface IDataTableColumn {
+interface IDataTableColumn {
   label: string;
   align?: 'left' | 'right';
   /** Largura fixa da coluna, em px. */

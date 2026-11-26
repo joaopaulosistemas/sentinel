@@ -84,20 +84,20 @@ interface ISourceCheckInput {
 export function useSourceChecks(read: () => ISourceCheckInput) {
   const check = useMutation({
     mutationFn: () => {
-      const v = read();
+      const entrada = read();
       return api.checkRepo({
-        repoUrl: v.repoUrl,
-        branch: v.branch,
-        systemId: v.systemId,
-        gitToken: v.gitToken,
-        gitTokenHosts: v.gitTokenHosts,
+        repoUrl: entrada.repoUrl,
+        branch: entrada.branch,
+        systemId: entrada.systemId,
+        gitToken: entrada.gitToken,
+        gitTokenHosts: entrada.gitTokenHosts,
       });
     },
   });
   const checkPath = useMutation({
     mutationFn: () => {
-      const v = read();
-      return api.checkPath(v.localPath, v.branch);
+      const entrada = read();
+      return api.checkPath(entrada.localPath, entrada.branch);
     },
   });
   return { check, checkPath };

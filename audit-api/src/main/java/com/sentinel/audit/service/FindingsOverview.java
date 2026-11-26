@@ -85,8 +85,12 @@ public final class FindingsOverview {
     private static boolean attributesMatch(Finding f, Filter filter) {
         return (filter.category() == null || f.getCategory() == filter.category())
                 && (filter.status() == null || f.getStatus() == filter.status())
-                && (filter.iso25010() == null || filter.iso25010().isBlank()
-                        || com.sentinel.audit.iso.Iso25010.of(f).id().equalsIgnoreCase(filter.iso25010().strip()));
+                && isoMatches(f, filter);
+    }
+
+    private static boolean isoMatches(Finding f, Filter filter) {
+        String wanted = filter.iso25010();
+        return wanted == null || wanted.isBlank() || com.sentinel.audit.iso.Iso25010.of(f).id().equalsIgnoreCase(wanted.strip());
     }
 
     private static boolean severityMatches(Finding f, Filter filter) {

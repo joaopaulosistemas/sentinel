@@ -7,6 +7,9 @@ final class InternalAddresses {
 
     private static final int IPV4_BYTES = 4;
     private static final int BYTE_MASK = 0xff;
+    private static final int CGNAT_FIRST_OCTET = 100;
+    private static final int IETF_PROTOCOL_FIRST_OCTET = 192;
+    private static final int BENCHMARK_FIRST_OCTET = 198;
     private static final int CGNAT_MASK = 0xc0;
     private static final int CGNAT_PREFIX = 64;
     private static final int BENCHMARK_MASK = 0xfe;
@@ -39,17 +42,17 @@ final class InternalAddresses {
 
     /** 100.64.0.0/10: espaço compartilhado de operadora. */
     private static boolean isCgnat(int first, int second) {
-        return first == 100 && (second & CGNAT_MASK) == CGNAT_PREFIX;
+        return first == CGNAT_FIRST_OCTET && (second & CGNAT_MASK) == CGNAT_PREFIX;
     }
 
     /** 192.0.0.0/24. */
     private static boolean isIetfProtocol(int first, int second, int third) {
-        return first == 192 && second == 0 && third == 0;
+        return first == IETF_PROTOCOL_FIRST_OCTET && second == 0 && third == 0;
     }
 
     /** 198.18.0.0/15: faixa de testes de rede. */
     private static boolean isBenchmark(int first, int second) {
-        return first == 198 && (second & BENCHMARK_MASK) == BENCHMARK_PREFIX;
+        return first == BENCHMARK_FIRST_OCTET && (second & BENCHMARK_MASK) == BENCHMARK_PREFIX;
     }
 
     private static boolean isUniqueLocalV6(InetAddress a) {

@@ -62,12 +62,13 @@ export function StartAuditModal({ system, onClose, onStarted, follow }: IProps) 
 
   useInitialBranch(system, setBranch);
 
-  const mutation = useTriggerAudit((run, reset) => {
-    reset();
+  const mutation = useTriggerAudit();
+  const aoIniciar = (run: IAuditRunResponse) => {
+    mutation.reset();
     onClose();
     if (onStarted && staysOnPage(onStarted, follow)) onStarted(run);
     else void navigate(`/audits/${run.id}`);
-  });
+  };
 
   return (
     <Modal
@@ -81,7 +82,7 @@ export function StartAuditModal({ system, onClose, onStarted, follow }: IProps) 
         onClose();
       }}
       onRequestSubmit={() => {
-        if (system) mutation.mutate({ systemId: system.id, branch: branch.trim() });
+        if (system) mutation.mutate({ systemId: system.id, branch: branch.trim() }, { onSuccess: aoIniciar });
       }}
     >
       <TextInput

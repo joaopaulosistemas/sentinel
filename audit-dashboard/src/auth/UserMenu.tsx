@@ -4,7 +4,7 @@ import { PALETTES, TEXT_SIZES, useThemeStore, type Palette, type TextSize } from
 import { useAuth } from './AuthContext';
 
 /** O que o login permite: administrador e/ou quem pode disparar auditorias. */
-export interface IPermissoes {
+interface IPermissoes {
   admin: boolean;
   canExecute: boolean;
 }
@@ -74,15 +74,15 @@ export const OPCAO_ESTILO = { background: '#262626', color: '#f4f4f4' } as const
 const ROTULO_ESTILO = { fontSize: 12, color: '#c6c6c6' } as const;
 
 /** Fecha o menu com Esc ou clique fora dele. */
-function useFecharFora(aberto: boolean, fechar: () => void) {
+function useFecharFora({ aberto, fechar }: { aberto: boolean; fechar: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!aberto) return;
-    const aoClicar = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) fechar();
+    const aoClicar = (evento: MouseEvent) => {
+      if (ref.current && !ref.current.contains(evento.target as Node)) fechar();
     };
-    const aoTeclar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') fechar();
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') fechar();
     };
     document.addEventListener('mousedown', aoClicar);
     document.addEventListener('keydown', aoTeclar);
@@ -230,7 +230,7 @@ export function UserMenu() {
   const auth = useAuth();
   const [aberto, setAberto] = useState(false);
   const fechar = () => setAberto(false);
-  const ref = useFecharFora(aberto, fechar);
+  const ref = useFecharFora({ aberto, fechar });
   const papel = papelDe(auth);
   const rotulo = rotuloDoPapel(auth);
 
