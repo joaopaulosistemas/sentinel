@@ -2328,3 +2328,8 @@ Do relatório #70 (870 achados ativos), ~790 vinham de `docs/figma/**` (protóti
 ### Paleta "Mais suave (claro)"
 
 Nova opção na caixa "Paleta de cores" para ofuscar menos no tema claro: cartão cinza-claro (`#f3f4f6`, sem branco), fundo `#e5e8ec` e texto `#2b3039` (menos escuro). Só o tema claro é novo; o escuro usa o mesmo bloco da "Suave" (seletor compartilhado em `paletas.css` e `leitura.css`), então não muda. `paletas.test.ts` confere o contraste: texto de corpo acima de 7:1 e o restante acima de 4,5:1 em fundo, cartão, cabeçalho de tabela e linha selecionada, mais as etiquetas de status e o botão primário. A "Suave" continua o padrão. **Verificado:** tsc, eslint, 488 testes. **Não verificado:** a aparência nas telas reais (só no protótipo).
+
+### "Mais suave (claro)" no grau 2
+
+A paleta ficou clara demais para o João. O claro da "Mais suave" passa de cartão `#f3f4f6` / fundo `#e5e8ec` para cartão `#d3d8df` / fundo `#c3c9d2` (brilho do cartão 0,68; o suave tem 0,97), com texto `#1c2028` (8,8:1 no pior fundo). O tema escuro não mudou, e o `paletas.test.ts` continua conferindo todos os pares (texto de corpo acima de 7:1, o resto acima de 4,5:1). **Não verificado:** a aparência nas telas reais.
+
