@@ -2340,3 +2340,10 @@ A paleta ficou clara demais para o João. O claro da "Mais suave" passa de cart�
 - **Busca (7 consultas `search/repositories`, 79 resultados, filtrados contra `descobertos.txt`, `conjuntos.json` e LOG):** sobraram só ferramentas/bibliotecas (promptfoo, snyk/cli, DependencyCheck etc.), apps fora do escopo (`Damn-Vulnerable-GraphQL-Application` e CTFs em Python/PHP, `AspGoat` em ASP.NET, `Vuldroid` Android, `Damn-Vulnerable-Drone`) e extensões de Burp. Nenhum adequado.
 - **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall e manter só ruído e precisão. ALERTA "ciclo não generaliza" segue valendo. Sugestão: pausar esta tarefa agendada até a decisão, já que as execuções não produzem volta.
 - **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra classificada.
+
+## Execução de 2026-11-26 (madrugada, sem volta 60): nenhum repositório novo adequado, quinta execução seguida
+
+- **Estado:** sem PR de ciclo aberto, sem auditoria em andamento, `ciclo/estabilizacao-17` mesclada; nenhuma branch nova criada.
+- **Busca (6 consultas `search/repositories`, resultados limitados pela API):** nenhum resultado fora de `descobertos.txt`, `conjuntos.json` e LOG (único novo, `Sfedfcv/redesigned-pancake`, tem size 0, sem código).
+- **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo. Recomendação: pausar a tarefa agendada até a decisão.
+- **NÃO rodado:** auditoria, recall, validação, petclinic, Benchmark, amostra.
