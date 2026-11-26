@@ -20,17 +20,17 @@
   --s-chrome: #1f242c; --s-chrome-border: transparent;
 }
 /* ---- Mais suave: claro ----
- * Um passo além do "suave": cartão em cinza-claro (sem branco), fundo mais baixo e texto menos escuro, para ofuscar menos.
+ * Bem além do "suave": cartão em cinza-azulado médio (brilho 0,68 contra 0,97 do suave), fundo mais baixo e texto escuro, para ofuscar menos.
  * Só o tema claro é novo; o escuro é o mesmo do "suave" (seletor compartilhado abaixo). Contraste conferido em
  * paletas.test.ts: texto de corpo acima de 7:1 e todo o resto acima de 4,5:1 em fundo, cartão, cabeçalho de tabela e linha selecionada. */
 :root[data-theme='light'][data-palette='mais-suave'] {
-  --s-bg: #e5e8ec; --s-surface: #f3f4f6; --s-layer: #e5e8ec; --s-header-row: #dadee4; --s-selected: #dce6f6;
-  --s-border: #cfd4db; --s-border-subtle: #bcc3cc; --s-border-strong: #7f8895;
-  --s-text: #2b3039; --s-text-2: #3d434d; --s-text-3: #4f5763; --s-text-4: #5a6270; --s-disabled: #98a0ab;
-  --s-link: #2557b8; --s-primary: #2557b8; --s-danger-text: #a3282e; --s-success-text: #1f6f3a;
-  --s-warn-text: #755c00; --s-crit-text: #7a1a1f; --s-high-text: #6b3410;
-  --s-good-bg: #dcebdf; --s-bad-bg: #f6e4e5; --s-warn-bg: #f2ebcd;
-  --s-chrome: #232830; --s-chrome-border: transparent;
+  --s-bg: #c3c9d2; --s-surface: #d3d8df; --s-layer: #c3c9d2; --s-header-row: #b8bfc9; --s-selected: #bfcde6;
+  --s-border: #a4acb8; --s-border-subtle: #929ba8; --s-border-strong: #66707e;
+  --s-text: #1c2028; --s-text-2: #2a3039; --s-text-3: #373e49; --s-text-4: #424a57; --s-disabled: #7f8896;
+  --s-link: #1a47a0; --s-primary: #1a47a0; --s-danger-text: #851c22; --s-success-text: #12522a;
+  --s-warn-text: #574400; --s-crit-text: #6a1419; --s-high-text: #5a2a0b;
+  --s-good-bg: #c1d6c8; --s-bad-bg: #e0c8cb; --s-warn-bg: #dbd3b0;
+  --s-chrome: #181c22; --s-chrome-border: transparent;
 }
 /* ---- Suave: escuro (azulado) ---- */
 :root[data-theme='dark'][data-palette='suave'],
