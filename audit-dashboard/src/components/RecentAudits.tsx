@@ -4,6 +4,7 @@ import type { IAuditRunResponse } from '../types';
 import { analyzerCounts, isActiveRun, phaseIndex, PHASES } from '../utils/auditProgress';
 import { scoreColor } from '../utils/systemAttention';
 import { timeAgo } from '../utils/timeAgo';
+import { DataTable } from './DataTable';
 import { SpinnerIcon } from './StatusIcons';
 
 /** "Na fila", "Clonando", "Analisando 4/12", "Pontuando" — onde a auditoria em andamento está. */
@@ -55,21 +56,9 @@ function RunRow({ run }: { run: IAuditRunResponse }) {
 
 function RunsTable({ rows }: { rows: IAuditRunResponse[] }) {
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table aria-label="Auditorias recentes" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
-        <thead>
-          <tr style={{ background: 'var(--s-header-row)', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
-            <th scope="col" style={{ padding: '10px 16px' }}>Auditoria</th>
-            <th scope="col" style={{ padding: '10px 8px' }}>Sistema</th>
-            <th scope="col" style={{ padding: '10px 8px' }}>Situação</th>
-            <th scope="col" style={{ padding: '10px 16px', textAlign: 'right' }}>Nota</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((run) => <RunRow key={run.id} run={run} />)}
-        </tbody>
-      </table>
-    </div>
+    <DataTable label="Auditorias recentes" density="confortavel" minWidth={560} columns={[{ label: 'Auditoria' }, { label: 'Sistema' }, { label: 'Situação' }, { label: 'Nota', align: 'right' }]}>
+      {rows.map((run) => <RunRow key={run.id} run={run} />)}
+    </DataTable>
   );
 }
 

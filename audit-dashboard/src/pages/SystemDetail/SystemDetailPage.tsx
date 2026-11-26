@@ -19,6 +19,7 @@ import { analyzerCounts, PHASES, phaseIndex, progressPercent } from '../../utils
 import { TARGET_SCORE, scoreColor as bandColor } from '../../utils/scoreBand';
 import { scoreColor } from '../../utils/systemAttention';
 import { startLabel } from '../../utils/timeAgo';
+import { DataTable } from '../../components/DataTable';
 
 const stackLabels: Record<Stack, string> = {
   JAVA: 'Java',
@@ -175,25 +176,9 @@ function RunsBody({ loading, runs }: { loading: boolean; runs: IAuditRunResponse
   if (loading) return <SkeletonText lineCount={5} />;
   if (runs.length === 0) return <p style={{ color: 'var(--s-text-3)', margin: 0 }}>Nenhuma auditoria encontrada.</p>;
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table aria-label="Histórico de auditorias do sistema" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
-        <thead>
-          <tr style={{ textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)' }}>
-            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Auditoria</th>
-            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Branch</th>
-            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Situação</th>
-            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Nota</th>
-            <th scope="col" style={{ padding: '8px 16px 8px 0' }}>Achados</th>
-            <th scope="col" style={{ padding: '8px 0', textAlign: 'right' }}>Início</th>
-          </tr>
-        </thead>
-        <tbody>
-          {runs.map((run) => (
-            <RunRow key={run.id} run={run} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable label="Histórico de auditorias do sistema" header="linha" minWidth={720} columns={[{ label: 'Auditoria' }, { label: 'Branch' }, { label: 'Situação' }, { label: 'Nota' }, { label: 'Achados' }, { label: 'Início', align: 'right' }]}>
+      {runs.map((run) => <RunRow key={run.id} run={run} />)}
+    </DataTable>
   );
 }
 
