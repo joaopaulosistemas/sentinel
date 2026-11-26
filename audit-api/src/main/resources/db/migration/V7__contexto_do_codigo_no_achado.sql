@@ -4,6 +4,9 @@
 -- NULL = achado anterior a esta coluna, ou sem arquivo/linha legível, ou de segredo (nunca se copia o arquivo).
 -- Nenhuma linha existente é reescrita e as colunas podem ser ignoradas para voltar ao comportamento anterior.
 
+-- Um ADD COLUMN por comando: scripts/conferir-esquema.py só lê uma coluna por ALTER TABLE.
 ALTER TABLE public.finding
-    ADD COLUMN code_context varchar(4000),
+    ADD COLUMN code_context varchar(4000);
+
+ALTER TABLE public.finding
     ADD COLUMN code_context_start integer;
