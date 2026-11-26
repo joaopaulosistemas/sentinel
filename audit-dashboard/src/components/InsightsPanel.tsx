@@ -4,6 +4,7 @@ import { useInsights } from '../hooks/useLifecycle';
 import type { AreaState, IDebtItem, Severity } from '../types';
 import { PageSection } from './PageSection';
 import { ProjectLimitsSection } from './ProjectLimits';
+import { DataTable } from './DataTable';
 
 type TagType = 'red' | 'magenta' | 'blue' | 'green' | 'gray' | 'warm-gray';
 
@@ -29,7 +30,6 @@ const severityLabel: Record<Severity, string> = {
   INFO: 'Info',
 };
 
-const th: React.CSSProperties = { textAlign: 'left', padding: '8px 16px 8px 0', fontSize: '0.75rem', fontWeight: 600, color: 'var(--s-text-3)', borderBottom: '1px solid var(--s-border)' };
 const td: React.CSSProperties = { padding: '16px 16px 16px 0', fontSize: '0.875rem', verticalAlign: 'top', borderBottom: '1px solid var(--s-border)' };
 
 function SubTitle({ title, hint }: { title: string; hint?: string }) {
@@ -45,19 +45,8 @@ function DebtTable({ items, limit }: { items: IDebtItem[]; limit?: number }) {
   const shown = limit ? items.slice(0, limit) : items;
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table aria-label="Problemas que mais valem corrigir, por prioridade" style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th scope="col" style={th}>Prioridade</th>
-            <th scope="col" style={th}>Problema</th>
-            <th scope="col" style={th}>Impacto</th>
-            <th scope="col" style={th}>Esforço</th>
-            <th scope="col" style={th}>Risco de regressão</th>
-            <th scope="col" style={th}>Ocorrências</th>
-          </tr>
-        </thead>
-        <tbody>
-          {shown.map((d) => (
+      <DataTable label="Problemas que mais valem corrigir, por prioridade" header="linha" density="confortavel" columns={[{ label: 'Prioridade' }, { label: 'Problema' }, { label: 'Impacto' }, { label: 'Esforço' }, { label: 'Risco de regressão' }, { label: 'Ocorrências' }]}>
+        {shown.map((d) => (
             <tr key={d.id}>
               <td style={td}>
                 <Tag type={priorityType[d.priority]} size="sm">
@@ -81,8 +70,7 @@ function DebtTable({ items, limit }: { items: IDebtItem[]; limit?: number }) {
               <td style={td}>{d.occurrences}</td>
             </tr>
           ))}
-        </tbody>
-      </table>
+      </DataTable>
       {limit && items.length > limit && (
         <p style={{ fontSize: '0.75rem', color: 'var(--s-text-3)', marginTop: '0.5rem' }}>
           Mostrando {limit} de {items.length} problemas.

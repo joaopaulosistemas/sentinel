@@ -34,8 +34,8 @@ export function GuidePage() {
   const [ai, setAi] = useState(false);
 
   if (isLoading) return <DataTableSkeleton columnCount={4} rowCount={6} />;
-  if (error || !data) {
-    return <InlineNotification kind="error" title="Erro ao carregar o guia" subtitle={error instanceof Error ? error.message : 'Erro desconhecido'} />;
+  if (error || !data || !Array.isArray(data.stacks)) {
+    return <InlineNotification kind="error" title="Erro ao carregar o guia" subtitle={error instanceof Error ? error.message : 'Resposta fora do formato esperado'} />;
   }
   const stack = data.stacks.find((s) => s.id === stackId) ?? data.stacks[0];
   return (

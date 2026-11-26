@@ -4,6 +4,7 @@ import { useMcpCalls, useMcpConfig } from '../hooks/useMcpConfig';
 import { startLabel } from '../utils/timeAgo';
 import type { IMcpConfig, IMcpConfigRequest, McpDataLevel, IMcpNewKey, ISystemSummaryResponse } from '../types';
 import { LoadError } from './EngineRulesParts';
+import { DataTable } from './DataTable';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
@@ -186,19 +187,8 @@ function CallsSection({ calls }: { calls: CallRow[] | undefined }) {
     <section aria-label="Últimas chamadas" style={{ display: 'grid', gap: 6 }}>
       <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Últimas chamadas</h3>
       {calls && calls.length > 0 ? (
-        <div style={{ overflowX: 'auto' }}>
-          <table aria-label="Consultas recentes do Claude via MCP" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-            <thead>
-              <tr style={{ textAlign: 'left', background: 'var(--s-header-row)' }}>
-                <th scope="col" style={{ padding: '6px 8px' }}>Quando</th>
-                <th scope="col" style={{ padding: '6px 8px' }}>Ferramenta</th>
-                <th scope="col" style={{ padding: '6px 8px' }}>Resultado</th>
-                <th scope="col" style={{ padding: '6px 8px' }}>Parâmetros</th>
-                <th scope="col" style={{ padding: '6px 8px' }}>Tempo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {calls.map((c) => (
+        <DataTable label="Consultas recentes do Claude via MCP" fontSize={12} columns={[{ label: 'Quando' }, { label: 'Ferramenta' }, { label: 'Resultado' }, { label: 'Parâmetros' }, { label: 'Tempo' }]}>
+          {calls.map((c) => (
                 <tr key={`${c.at}-${c.tool}`} style={{ borderTop: '1px solid var(--s-border)' }}>
                   <td style={{ padding: '6px 8px' }}>{startLabel(c.at)}</td>
                   <td style={{ padding: '6px 8px', fontFamily: mono }}>{c.tool}</td>
@@ -207,9 +197,7 @@ function CallsSection({ calls }: { calls: CallRow[] | undefined }) {
                   <td style={{ padding: '6px 8px' }}>{c.durationMs} ms</td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+        </DataTable>
       ) : (
         <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma chamada ainda.</span>
       )}
