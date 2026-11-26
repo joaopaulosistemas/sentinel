@@ -29,7 +29,7 @@ export function PageShell({ crumbs, children }: { crumbs: ICrumb[]; children: Re
 /** Caminho (breadcrumb) no estilo das telas de detalhe. */
 function Breadcrumb({ items }: { items: ICrumb[] }) {
   return (
-    <nav aria-label="Caminho" style={{ fontSize: 12, lineHeight: '16px', color: 'var(--s-text-3)' }}>
+    <nav aria-label="Caminho" className="sentinel-caminho" style={{ fontSize: 12, lineHeight: '16px', color: 'var(--s-text-3)' }}>
       {items.map((c, i) => (
         <span key={c.to ?? c.label}>
           {i > 0 && <span aria-hidden="true"> / </span>}

@@ -177,7 +177,7 @@ function RankingList({ ranking, onOpen }: { ranking: ISystemSummaryResponse[]; o
 function TeamsTable({ teams }: { teams: ReturnType<typeof summarizeTeams> }) {
   return (
     <Tile style={{ padding: '1.25rem' }}>
-      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Por time</h3>
+      <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Por time</h2>
       <Table size="md">
         <TableHead>
           <TableRow>
@@ -246,7 +246,7 @@ function RulesTable({ rules }: { rules: RuleQualityRows }) {
 function RuleQualityTile({ rules }: { rules: RuleQualityRows | undefined }) {
   return (
     <Tile style={{ padding: '1.25rem' }}>
-      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>Qualidade das regras</h3>
+      <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>Qualidade das regras</h2>
       <p style={{ fontSize: '0.875rem', color: 'var(--s-text-3)', marginBottom: '0.75rem' }}>
         Taxa de falso positivo, a partir do que o time suprimiu. Só pede revisão com 5+ ocorrências e 40%+ de falsos positivos.
       </p>

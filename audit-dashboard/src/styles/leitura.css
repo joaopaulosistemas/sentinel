@@ -75,3 +75,6 @@ table:not(.cds--data-table) > tbody > tr:focus-within { background: var(--s-head
   outline: 2px solid var(--s-link);
   outline-offset: 2px;
 }
+
+/* Alvos de toque de pelo menos 24 px (WCAG 2.2, 2.5.8): os links do caminho têm só a altura da linha. */
+.sentinel-caminho a { display: inline-block; min-height: 24px; line-height: 24px; }

@@ -132,7 +132,7 @@ function ShellHeader({ fixo, aberto, onToggleMenu }: { fixo: boolean; aberto: bo
   const toggleTheme = useThemeStore((st) => st.toggle);
   return (
     <Header aria-label="Sentinel Audit Tool">
-      <SkipToContent />
+      <SkipToContent>Pular para o conteúdo</SkipToContent>
       {!fixo && (
         <HeaderMenuButton aria-label={aberto ? 'Fechar o menu' : 'Abrir o menu'} isActive={aberto} onClick={onToggleMenu} isCollapsible />
       )}

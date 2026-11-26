@@ -76,7 +76,7 @@ function SystemRow({ system: s, selected, now, onAudit, onEdit, onDelete }: IRow
         <button
           type="button"
           onClick={() => void navigate(`/systems/${s.id}`)}
-          style={{ background: 'none', border: 0, padding: 0, color: 'var(--s-text)', cursor: 'pointer', fontWeight: 500, fontSize: 'inherit', textAlign: 'left' }}
+          style={{ background: 'none', border: 0, padding: 0, color: 'var(--s-text)', cursor: 'pointer', fontWeight: 500, fontSize: 'inherit', textAlign: 'left', minHeight: 24 }}
         >
           {s.name}
         </button>
