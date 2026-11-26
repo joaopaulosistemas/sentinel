@@ -1,6 +1,7 @@
 """Testes de scripts/conferir-esquema.py: a coluna acrescentada por uma migração depois do V1 conta como parte do esquema."""
 import importlib.util
 import os
+import re
 import unittest
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -36,6 +37,11 @@ class ColunaNovaTest(unittest.TestCase):
         self.assertEqual(2, len(novos))  # audit_run (V6) e finding (V7)
         self.assertTrue(any("disabled_sides character varying(20)" in c for c in novos))
         self.assertTrue(any("code_context character varying(4000)" in c and "code_context_start integer" in c for c in novos))
+
+    def test_comandos_em_ordem_mantem_a_ordem_do_arquivo(self):
+        sql = os.path.join(RAIZ, "audit-api/src/main/resources/db/migration/V7__contexto_do_codigo_no_achado.sql")
+        ordem = esquema.comandos_em_ordem(sql)
+        self.assertEqual(["code_context", "code_context_start"], [re.search(r"ADD COLUMN (\w+)", c).group(1) for c in ordem])
 
     def test_migracao_v6_real_bate_com_o_formato_do_pg_dump(self):
         sql = os.path.join(RAIZ, "audit-api/src/main/resources/db/migration/V6__lados_desligados_na_auditoria.sql")

@@ -8,16 +8,21 @@ import re
 import sys
 
 
-def comandos(caminho):
+def comandos_em_ordem(caminho):
+    """Os comandos do arquivo na ordem em que aparecem (a ordem importa: ADD COLUMN vai para o fim da tabela)."""
     texto = open(caminho, encoding="utf-8").read()
     texto = re.sub(r"--[^\n]*", "", texto)
-    saida = set()
+    saida = []
     for c in texto.split(";"):
         c = " ".join(c.split())
         if not c or c.startswith(("SET ", "SELECT pg_catalog")) or "flyway_schema_history" in c or c.startswith("\\"):
             continue
-        saida.add(c)
-    return {_normaliza(c) for c in saida}
+        saida.append(_normaliza(c))
+    return saida
+
+
+def comandos(caminho):
+    return set(comandos_em_ordem(caminho))
 
 
 def _normaliza(comando):
@@ -67,7 +72,7 @@ def main():
         return 2
     banco, v1 = comandos(sys.argv[1]), comandos(sys.argv[2])
     for extra in sys.argv[3:]:
-        for c in comandos(extra):
+        for c in comandos_em_ordem(extra):
             m = re.match(r"DROP INDEX (?:IF EXISTS )?(?:public\.)?(\w+)$", c)
             if m:
                 v1 = {x for x in v1 if not re.match(r"CREATE (?:UNIQUE )?INDEX %s ON " % m.group(1), x)}
