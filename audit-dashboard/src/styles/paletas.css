@@ -19,8 +19,22 @@
   --s-good-bg: #e1f4e7; --s-bad-bg: #fbecec; --s-warn-bg: #f8f1d6;
   --s-chrome: #1f242c; --s-chrome-border: transparent;
 }
+/* ---- Mais suave: claro ----
+ * Um passo além do "suave": cartão em cinza-claro (sem branco), fundo mais baixo e texto menos escuro, para ofuscar menos.
+ * Só o tema claro é novo; o escuro é o mesmo do "suave" (seletor compartilhado abaixo). Contraste conferido em
+ * paletas.test.ts: texto de corpo acima de 7:1 e todo o resto acima de 4,5:1 em fundo, cartão, cabeçalho de tabela e linha selecionada. */
+:root[data-theme='light'][data-palette='mais-suave'] {
+  --s-bg: #e5e8ec; --s-surface: #f3f4f6; --s-layer: #e5e8ec; --s-header-row: #dadee4; --s-selected: #dce6f6;
+  --s-border: #cfd4db; --s-border-subtle: #bcc3cc; --s-border-strong: #7f8895;
+  --s-text: #2b3039; --s-text-2: #3d434d; --s-text-3: #4f5763; --s-text-4: #5a6270; --s-disabled: #98a0ab;
+  --s-link: #2557b8; --s-primary: #2557b8; --s-danger-text: #a3282e; --s-success-text: #1f6f3a;
+  --s-warn-text: #755c00; --s-crit-text: #7a1a1f; --s-high-text: #6b3410;
+  --s-good-bg: #dcebdf; --s-bad-bg: #f6e4e5; --s-warn-bg: #f2ebcd;
+  --s-chrome: #232830; --s-chrome-border: transparent;
+}
 /* ---- Suave: escuro (azulado) ---- */
-:root[data-theme='dark'][data-palette='suave'] {
+:root[data-theme='dark'][data-palette='suave'],
+:root[data-theme='dark'][data-palette='mais-suave'] {
   --s-bg: #14181f; --s-surface: #1c212a; --s-layer: #232a35; --s-header-row: #232a35; --s-selected: #1d2c47;
   --s-border: #2b323d; --s-border-subtle: #3a4352; --s-border-strong: #6b7686;
   --s-text: #d6dbe4; --s-text-2: #c1c8d3; --s-text-3: #9aa4b3; --s-text-4: #8791a1; --s-disabled: #5d6775;
@@ -53,6 +67,8 @@
 /* Cabeçalho e menu lateral usam a cor "chrome" da paleta (no clássico continua o #161616 do Carbon). */
 :root[data-palette='suave'] .cds--header,
 :root[data-palette='suave'] .cds--side-nav,
+:root[data-palette='mais-suave'] .cds--header,
+:root[data-palette='mais-suave'] .cds--side-nav,
 :root[data-palette='alternativo'] .cds--header,
 :root[data-palette='alternativo'] .cds--side-nav {
   background: var(--s-chrome);
@@ -60,6 +76,7 @@
 
 /* Componentes do Carbon (campos, abas, tabelas, modais) seguem as mesmas cores das telas. */
 :root[data-palette='suave'] .sentinel-content-theme,
+:root[data-palette='mais-suave'] .sentinel-content-theme,
 :root[data-palette='alternativo'] .sentinel-content-theme {
   --cds-background: var(--s-bg);
   --cds-layer: var(--s-surface);

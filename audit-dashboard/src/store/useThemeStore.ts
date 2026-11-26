@@ -6,12 +6,14 @@ type ThemeMode = 'light' | 'dark';
  * Paletas de cor (valem para o tema claro e o escuro):
  * - classico: as cores originais, contraste máximo;
  * - suave: contraste reduzido, sem branco nem preto puros e cores dessaturadas (padrão, mais descansado);
+ * - mais-suave: um passo além do suave só no tema claro (cartão cinza-claro, sem branco); o escuro é o do suave;
  * - alternativo: claro em tom de papel (quente) e escuro em cinza-azulado neutro.
  */
-export type Palette = 'classico' | 'suave' | 'alternativo';
+export type Palette = 'classico' | 'suave' | 'mais-suave' | 'alternativo';
 export const PALETTES: Array<{ id: Palette; label: string }> = [
   { id: 'classico', label: 'Clássico' },
   { id: 'suave', label: 'Suave (recomendado)' },
+  { id: 'mais-suave', label: 'Mais suave (claro)' },
   { id: 'alternativo', label: 'Alternativo' },
 ];
 
@@ -39,7 +41,7 @@ const PALETTE_KEY = 'sentinel.palette';
 function readSavedPalette(): Palette {
   try {
     const saved = window.localStorage.getItem(PALETTE_KEY);
-    return saved === 'classico' || saved === 'alternativo' || saved === 'suave' ? saved : 'suave';
+    return PALETTES.some((p) => p.id === saved) ? (saved as Palette) : 'suave';
   } catch {
     return 'suave';
   }

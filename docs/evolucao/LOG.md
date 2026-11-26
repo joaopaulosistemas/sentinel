@@ -2324,3 +2324,7 @@ Do relatório #70 (870 achados ativos), ~790 vinham de `docs/figma/**` (protóti
 - **Busca (8 consultas `search/repositories`, filtradas contra `descobertos.txt`, `conjuntos.json` e LOG):** só sobraram `tothi/log4shell-vulnerable-app` (fork do `christophetd/log4shell-vulnerable-app`, já treino), `harekrishnarai/Damn-vulnerable-sca` (alvo de SCA, quase sem código), apps Android (`Ostorlab/ostorlab_insecure_android_app`, `zinja-coder/Damn-Vulnerable-Android-Components`) e ferramentas/bibliotecas. Nenhum adequado.
 - **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo.
 - **NÃO rodado:** auditoria, recall, validação, petclinic, Benchmark, amostra.
+
+### Paleta "Mais suave (claro)"
+
+Nova opção na caixa "Paleta de cores" para ofuscar menos no tema claro: cartão cinza-claro (`#f3f4f6`, sem branco), fundo `#e5e8ec` e texto `#2b3039` (menos escuro). Só o tema claro é novo; o escuro usa o mesmo bloco da "Suave" (seletor compartilhado em `paletas.css` e `leitura.css`), então não muda. `paletas.test.ts` confere o contraste: texto de corpo acima de 7:1 e o restante acima de 4,5:1 em fundo, cartão, cabeçalho de tabela e linha selecionada, mais as etiquetas de status e o botão primário. A "Suave" continua o padrão. **Verificado:** tsc, eslint, 488 testes. **Não verificado:** a aparência nas telas reais (só no protótipo).
