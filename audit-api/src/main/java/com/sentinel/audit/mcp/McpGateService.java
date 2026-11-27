@@ -178,6 +178,29 @@ public class McpGateService {
         logRepository.persist(entry);
     }
 
+    /** Nome com que a conexão (o "initialize" do protocolo) aparece no registro de chamadas. */
+    static final String HANDSHAKE_TOOL = "conexão";
+    static final long HANDSHAKE_LOG_EVERY_MINUTES = 5;
+
+    /**
+     * A conexão deve ser anotada? Sim, a não ser que a última linha do registro já seja uma conexão recente:
+     * o Claude Code conecta a cada sessão e a cada conferência, e isso não pode encher o registro.
+     */
+    static boolean shouldLogHandshake(McpCallLog last, LocalDateTime now) {
+        if (last == null || !HANDSHAKE_TOOL.equals(last.getTool()) || last.getCalledAt() == null) {
+            return true;
+        }
+        return last.getCalledAt().isBefore(now.minusMinutes(HANDSHAKE_LOG_EVERY_MINUTES));
+    }
+
+    /** Anota que o Claude Code conectou, para a tela saber que a ligação funciona antes da primeira consulta. */
+    public void noteHandshake(Long systemId) {
+        List<McpCallLog> last = recentCalls(systemId, 1);
+        if (shouldLogHandshake(last.isEmpty() ? null : last.get(0), LocalDateTime.now())) {
+            log(systemId, HANDSHAKE_TOOL, true, 0, null);
+        }
+    }
+
     public List<McpCallLog> recentCalls(Long systemId, int limit) {
         return logRepository.recent(systemId, Math.max(1, Math.min(limit, MAX_RECENT_LOGS)));
     }

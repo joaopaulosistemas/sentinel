@@ -101,4 +101,20 @@ class McpGateServiceTest {
         String reason = McpGateService.refusalReason(access(true, "snt_certa"), "snt_segredo_enviado");
         assertFalse(reason.contains("segredo"));
     }
+
+    private McpCallLog logLine(String tool, java.time.LocalDateTime at) {
+        McpCallLog l = new McpCallLog();
+        l.setTool(tool);
+        l.setCalledAt(at);
+        return l;
+    }
+
+    @Test
+    void aConexaoSoEAnotadaDeNovoDepoisDeUmTempoParaNaoEncherORegistro() {
+        java.time.LocalDateTime agora = java.time.LocalDateTime.of(2026, 11, 27, 2, 0);
+        assertTrue(McpGateService.shouldLogHandshake(null, agora));
+        assertTrue(McpGateService.shouldLogHandshake(logLine("status_auditoria", agora.minusSeconds(5)), agora));
+        assertFalse(McpGateService.shouldLogHandshake(logLine(McpGateService.HANDSHAKE_TOOL, agora.minusMinutes(1)), agora));
+        assertTrue(McpGateService.shouldLogHandshake(logLine(McpGateService.HANDSHAKE_TOOL, agora.minusMinutes(6)), agora));
+    }
 }

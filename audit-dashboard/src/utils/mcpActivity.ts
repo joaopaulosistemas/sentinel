@@ -1,5 +1,5 @@
 import type { IAuditProgress, IMcpCall, IPendingAction } from '../types';
-import { REFUSAL_TOOL } from './mcpSetup';
+import { HANDSHAKE_TOOL, REFUSAL_TOOL } from './mcpSetup';
 
 /** A API devolve listas; se vier outra coisa (erro ou resposta inesperada), trata como vazia. */
 function asList<T>(value: unknown): T[] {
@@ -8,12 +8,12 @@ function asList<T>(value: unknown): T[] {
 
 /**
  * Consultas do Claude (MCP) feitas desde o início da auditoria, da mais recente para a mais antiga. Recusa na porta
- * (chave errada, acesso desligado) não é consulta: aparece na aba Claude (MCP), não aqui.
+ * (chave errada, acesso desligado) e a conexão em si não são consultas: aparecem na aba Claude (MCP), não aqui.
  */
 export function callsSince(calls: unknown, startedAt: string | null | undefined): IMcpCall[] {
   const from = startedAt ? Date.parse(startedAt) : Number.NaN;
   return asList<IMcpCall>(calls)
-    .filter((c) => c.tool !== REFUSAL_TOOL)
+    .filter((c) => c.tool !== REFUSAL_TOOL && c.tool !== HANDSHAKE_TOOL)
     .filter((c) => Number.isNaN(from) || Date.parse(c.at) >= from)
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
 }

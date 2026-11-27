@@ -12,9 +12,10 @@ describe('mcpActivity', () => {
     expect(callsSince(calls, started).map((c) => c.tool)).toEqual(['diff_auditoria', 'buscar_achados']);
   });
 
-  it('recusa na porta (chave errada, acesso desligado) não conta como consulta da auditoria', () => {
+  it('recusa na porta e a conexão em si não contam como consulta da auditoria', () => {
     const calls = [
       call({ tool: 'acesso', ok: false, detail: 'chave diferente da vigente', at: '2026-10-26T10:01:00' }),
+      call({ tool: 'conexão', at: '2026-10-26T10:01:30' }),
       call({ tool: 'buscar_achados', at: '2026-10-26T10:02:00' }),
     ];
     expect(callsSince(calls, started).map((c) => c.tool)).toEqual(['buscar_achados']);

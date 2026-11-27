@@ -15,7 +15,7 @@ A aba **Claude (MCP)** (Sistemas → **Editar**) é um assistente de quatro pass
 
 Abaixo dos passos ficam os **Ajustes**: o que o Claude pode ver e quais ferramentas ficam liberadas.
 
-Sem a chave, com o acesso desligado ou com a chave de outro sistema, a resposta HTTP é sempre a mesma `401`, exista o sistema ou não. Para quem está do lado de dentro, a tela explica o motivo: em um sistema que existe, cada recusa é anotada no registro de chamadas (ferramenta `acesso`) como `nenhuma chave gerada`, `chamada sem chave`, `chave diferente da vigente` ou `acesso desligado`. A chave apresentada nunca é gravada. Se nada aparece no registro, o endereço ou o número do sistema na URL não existe.
+Sem a chave, com o acesso desligado ou com a chave de outro sistema, a resposta HTTP é sempre a mesma `401`, exista o sistema ou não. Para quem está do lado de dentro, a tela explica o motivo: em um sistema que existe, cada recusa é anotada no registro de chamadas (ferramenta `acesso`) como `nenhuma chave gerada`, `chamada sem chave`, `chave diferente da vigente` ou `acesso desligado`. A chave apresentada nunca é gravada. A conexão aceita aparece como `conexão` (no máximo uma vez a cada 5 minutos), e é ela que vira o selo **Conectado**. Se nada aparece no registro, o endereço ou o número do sistema na URL não existe.
 
 ## Conectar o Claude Code
 
