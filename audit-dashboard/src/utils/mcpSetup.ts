@@ -1,4 +1,5 @@
 import type { IMcpCall, IMcpConfig } from '../types';
+import { startLabel } from './timeAgo';
 
 /** Nome com que a API registra, na coluna "Ferramenta", uma chamada recusada antes de chegar a uma ferramenta. */
 export const REFUSAL_TOOL = 'acesso';
@@ -109,3 +110,33 @@ export function removeCommand(name: string): string {
 
 /** Pergunta pronta para a primeira conversa com o Claude Code, depois de conectar. */
 export const EXAMPLE_QUESTION = 'Use o sentinel para listar os achados críticos do último relatório.';
+
+export type StateTone = 'good' | 'bad' | 'warn' | 'idle';
+
+export interface IStateView {
+  tone: StateTone;
+  /** Palavra curta do selo: "Conectado", "Recusando"... */
+  label: string;
+  /** Uma frase que diz o que está acontecendo com este sistema. */
+  detail: string;
+  /** Aba da área Claude (MCP) onde a pessoa resolve ou gerencia. */
+  tab: 'conectar' | 'permissoes';
+  /** Texto do botão que leva até lá. */
+  action: string;
+}
+
+/** O estado da ligação em palavras, para as listas que mostram vários sistemas de uma vez. */
+export function describeState(state: ConnectionState, now: number = Date.now()): IStateView {
+  switch (state.kind) {
+    case 'no-key':
+      return { tone: 'idle', label: 'Falta conectar', detail: 'Sem chave: o Claude ainda não pode consultar este sistema.', tab: 'conectar', action: 'Conectar' };
+    case 'off':
+      return { tone: 'idle', label: 'Desligado', detail: 'A chave existe, mas o acesso está desligado.', tab: 'conectar', action: 'Ligar' };
+    case 'waiting':
+      return { tone: 'warn', label: 'Esperando', detail: 'Tudo pronto: esperando o Claude Code conectar.', tab: 'conectar', action: 'Ver passos' };
+    case 'refused':
+      return { tone: 'bad', label: 'Recusando', detail: refusalHelp(state.reason).what, tab: 'conectar', action: 'Corrigir' };
+    case 'connected':
+      return { tone: 'good', label: 'Conectado', detail: `Última chamada ${startLabel(state.at, now)}.`, tab: 'permissoes', action: 'Gerenciar' };
+  }
+}

@@ -2368,3 +2368,11 @@ O CI da `main` quebrou depois da PR #381: a regra de chave de criptografia escri
 - **Busca (8 consultas `search/repositories` em 2 páginas, filtradas contra `descobertos.txt`, `conjuntos.json` e LOG):** só sobraram `Mixeway/MixewayScanner` (ferramenta), `christophe77/express-honeypot` (honeypot, não é app de treino) e dois repositórios sem código útil. Nenhum adequado.
 - **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo. Recomendação: pausar a tarefa agendada até a decisão.
 - **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra classificada.
+
+## Área Claude (MCP) no dashboard — 2026-11-27
+
+- **O que mudou:** item de menu **Claude (MCP)** (`/claude`) com cinco abas (Visão geral, Conectar, Decisões, Atividade, Permissões). Junta o assistente de conexão, os pedidos do Claude, as regras no funil, as sugestões e o registro de chamadas de todos os sistemas. O selo de pendências do menu passou de Informações de Auditoria para este item. Sistemas → Editar → Claude (MCP) continua e aponta para a área.
+- **Sem mudança de API ou de regras:** só dashboard e docs. Visão geral não mostra "consultas por período" porque a API só devolve as últimas chamadas; mostra conectados, decisões e recusas.
+- **Verificado:** `tsc`, `eslint`, `vitest` (testes novos de estado, de decisões e da página), `conferir-numeros.py`.
+- **NÃO verificado:** aparência em navegador real (só jsdom).
+

@@ -18,7 +18,7 @@ function telaLarga() {
 }
 
 describe('AppShell', () => {
-  it('mostra quantos pedidos do Claude esperam decisão no item de Informações de Auditoria', async () => {
+  it('mostra quantos pedidos do Claude esperam decisão no item Claude (MCP) do menu', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
       const requestUrl = String(url);
       if (requestUrl.includes('/pending-actions/')) return new Response(JSON.stringify([{ id: 1, kind: 'START_AUDIT', summary: 's', status: 'PENDING', createdAt: '', expiresAt: '', decidedAt: null, resultNote: null, auditRunId: null }, { id: 2, kind: 'START_AUDIT', summary: 's', status: 'APPROVED', createdAt: '', expiresAt: '', decidedAt: null, resultNote: null, auditRunId: null }]), { status: 200 });
@@ -53,6 +53,7 @@ describe('AppShell', () => {
       'Visão geral',
       'Sistemas',
       'Informações de Auditoria',
+      'Claude (MCP)',
       'Ranking de Sistemas',
       'Guia de código',
       'Relatórios',
