@@ -78,3 +78,4 @@ DefendShield/DefendShield-VulnBank
 psiinon/bodgeit
 wyxu95/JSecCode
 4auvar/VulnNodeApp
+PaulSec/VNWA

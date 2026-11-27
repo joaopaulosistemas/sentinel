@@ -444,6 +444,13 @@
   refs:
     - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
 
+- key: "sentinel-node-senha-hash-rapido"
+  summary: "Troque o SHA-2 de uma só passada por bcrypt, scrypt ou argon2, que têm custo ajustável e sal próprio."
+  before: "crypto.createHash('sha256').update(password).digest('hex')"
+  after: "const hash = await bcrypt.hash(password, 12)"
+  refs:
+    - "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+
 - key: "sentinel-node-cifra-ecb"
   summary: "Troque o modo ECB por GCM (ou CBC com HMAC) e use IV aleatório por mensagem."
   before: "crypto.createCipheriv('aes-128-ecb', chave, '')"

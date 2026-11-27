@@ -675,6 +675,29 @@ rules:
       cwe: "CWE-328: Use of Weak Hash"
       owasp: A02:2021 - Cryptographic Failures
 
+  - id: sentinel-node-senha-hash-rapido
+    patterns:
+      - pattern: $C.createHash($ALG).update($PWD, ...)
+      - metavariable-regex:
+          metavariable: $C
+          regex: ^(crypto|nodeCrypto)$
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: (?i)^["'`]sha-?(224|256|384|512)["'`]$
+      - metavariable-regex:
+          metavariable: $PWD
+          regex: (?is).*(passw|senha|pwd)
+    message: >
+      Senha guardada com hash rápido (CWE-916): SHA-2 calculado de uma só passada é barato de testar por força bruta
+      em GPU, com ou sem sal. Use `bcrypt`, `scrypt` (`crypto.scrypt`) ou `argon2`, que têm custo ajustável.
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-916: Use of Password Hash With Insufficient Computational Effort"
+      owasp: A02:2021 - Cryptographic Failures
+
   - id: sentinel-node-cifra-ecb
     patterns:
       - pattern-either:

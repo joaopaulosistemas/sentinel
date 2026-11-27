@@ -1,0 +1,88 @@
+{
+ "_comentario": "Falhas de PaulSec/VNWA (Vulnerable Node.js Web App: Express 3 + EJS + Mongoose, 488 linhas) lidas no codigo (treino), volta 61. Gabarito escrito pelo mesmo agente que corrige, antes de ver os achados do Sentinel; regras aceitas fixadas antes da medida. CSRF e NoSQL injection por objeto no corpo (bodyParser do Express 3 aceita username[$ne]=) sao falhas de ausencia/fluxo (lacuna assumida se nenhuma regra acusar). Dependencias velhas (express 3.5.2, ejs 1.0, mongoose 3.8.8) entram como CWE-1104 via SCA. Retirada a entrada CWE-1004 (cookie): o session do Express 3 liga httpOnly por padrao, nao e falha.",
+ "repo": "PaulSec/VNWA",
+ "falhas": [
+  {
+   "arquivo": "internalServer.js",
+   "linha": 52,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-command-injection",
+    "sentinel-node-exec-dinamico"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 24,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "internalServer.js",
+   "linha": 23,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "lib/model.js",
+   "linha": 42,
+   "cwe": "CWE-943",
+   "regras": [
+    "sentinel-node-nosql-operador",
+    "sentinel-node-mongo-corpo-inteiro"
+   ]
+  },
+  {
+   "arquivo": "lib/model.js",
+   "linha": 29,
+   "cwe": "CWE-916",
+   "regras": [
+    "sentinel-node-hash-fraco",
+    "sentinel-crypto-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "lib/model.js",
+   "linha": 73,
+   "cwe": "CWE-916",
+   "regras": [
+    "sentinel-node-hash-fraco",
+    "sentinel-crypto-hash-fraco"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 220,
+   "cwe": "CWE-352",
+   "regras": [
+    "sentinel-node-csrf-ausente"
+   ]
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 185,
+   "cwe": "CWE-352",
+   "regras": [
+    "sentinel-node-csrf-ausente"
+   ]
+  },
+  {
+   "arquivo": "package.json",
+   "linha": 22,
+   "cwe": "CWE-1104",
+   "regras": []
+  },
+  {
+   "arquivo": "server.js",
+   "linha": 85,
+   "cwe": "CWE-117",
+   "regras": [
+    "sentinel-log-segredo-js"
+   ]
+  }
+ ]
+}

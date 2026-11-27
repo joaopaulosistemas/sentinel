@@ -248,6 +248,32 @@ export const hashForte = (dado: string) =>
   // ok: sentinel-node-hash-fraco
   crypto.createHash('sha256').update(dado).digest('hex')
 
+// ---------- senha com hash rápido (SHA-2 sem função de derivação) ----------
+export function senhaSha256 (senha: string) {
+  // ruleid: sentinel-node-senha-hash-rapido
+  return crypto.createHash('sha256').update(senha).digest('hex')
+}
+
+export function senhaSha512Corpo (req: any) {
+  // ruleid: sentinel-node-senha-hash-rapido
+  return crypto.createHash('sha512').update(req.body.password).digest('hex')
+}
+
+export function senhaSha256Sal (password: string, salt: string) {
+  // ruleid: sentinel-node-senha-hash-rapido
+  return crypto.createHash('sha256').update(password + salt).digest('hex')
+}
+
+export function integridadeSha256 (conteudo: Buffer) {
+  // ok: sentinel-node-senha-hash-rapido
+  return crypto.createHash('sha256').update(conteudo).digest('hex')
+}
+
+export function etagSha256 (corpo: string) {
+  // ok: sentinel-node-senha-hash-rapido
+  return crypto.createHash('sha256').update(corpo).digest('hex')
+}
+
 // ---------- cifra ECB e IV fixo ----------
 export function cifraEcb (chave: Buffer, dado: Buffer) {
   // ruleid: sentinel-node-cifra-ecb
