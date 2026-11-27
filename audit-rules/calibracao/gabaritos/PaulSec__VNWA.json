@@ -1,5 +1,5 @@
 {
- "_comentario": "Falhas de PaulSec/VNWA (Vulnerable Node.js Web App: Express 3 + EJS + Mongoose, 488 linhas) lidas no codigo (treino), volta 61. Gabarito escrito pelo mesmo agente que corrige, antes de ver os achados do Sentinel; regras aceitas fixadas antes da medida. CSRF e NoSQL injection por objeto no corpo (bodyParser do Express 3 aceita username[$ne]=) sao falhas de ausencia/fluxo (lacuna assumida se nenhuma regra acusar). Dependencias velhas (express 3.5.2, ejs 1.0, mongoose 3.8.8) entram como CWE-1104 via SCA. Retirada a entrada CWE-1004 (cookie): o session do Express 3 liga httpOnly por padrao, nao e falha.",
+ "_comentario": "Falhas de PaulSec/VNWA (Vulnerable Node.js Web App: Express 3 + EJS + Mongoose, 488 linhas) lidas no codigo (treino), volta 61. Gabarito escrito pelo mesmo agente que corrige, antes de ver os achados do Sentinel; regras aceitas fixadas antes da medida. CSRF e NoSQL injection por objeto no corpo (bodyParser do Express 3 aceita username[$ne]=) sao falhas de ausencia/fluxo (lacuna assumida se nenhuma regra acusar). Dependencias velhas (express 3.5.2, ejs 1.0, mongoose 3.8.8) entram como CWE-1104 via SCA. Retirada a entrada CWE-1004 (cookie): o session do Express 3 liga httpOnly por padrao, nao e falha. Depois da medida: a regra nova sentinel-node-senha-hash-rapido entrou nas aceitas do CWE-916 (ganho no treino, nao prova de generalizacao); o recall antes (3/10) foi medido sem ela.",
  "repo": "PaulSec/VNWA",
  "falhas": [
   {
@@ -42,7 +42,8 @@
    "cwe": "CWE-916",
    "regras": [
     "sentinel-node-hash-fraco",
-    "sentinel-crypto-hash-fraco"
+    "sentinel-crypto-hash-fraco",
+    "sentinel-node-senha-hash-rapido"
    ]
   },
   {
@@ -51,7 +52,8 @@
    "cwe": "CWE-916",
    "regras": [
     "sentinel-node-hash-fraco",
-    "sentinel-crypto-hash-fraco"
+    "sentinel-crypto-hash-fraco",
+    "sentinel-node-senha-hash-rapido"
    ]
   },
   {

@@ -134,3 +134,34 @@ Sorteio: `random.seed(20261123)` sobre os 69 achados de regras com `category: se
 | 18 | root/register.jsp:78 | sentinel-jsp-excecao-na-resposta | VERDADEIRO | excecao exposta apos SQLi no cadastro |
 | 19 | root/score.jsp:37 | sentinel-jsp-excecao-na-resposta | BAIXO VALOR | consulta fixa |
 | 20 | root/search.jsp:25 | sentinel-jsp-sql-concatenado | FALSO | query passa por escapeHtml4 e perde a aspa simples |
+
+---
+
+## Volta 61 (2026-11-27): 4auvar/VulnNodeApp, regras 12.129.0, branch `ciclo/estabilizacao-18`
+
+Sorteio: `random.seed(6101)` sobre os 25 achados de regras de seguranca do Opengrep (excluidos ts, docker, duplicacao, console.log, CSS) da auditoria 45939395816. Classificacao feita por subagente independente (contexto novo, so a lista e o codigo do treino, sem diff, gabarito nem LOG), **nao por revisao externa**; o Joao pode sobrescrever e a dele prevalece.
+
+| # | Regra | Arquivo | Linha | Classificacao |
+|---|---|---|---|---|
+| 1 | sentinel-node-session-secret-literal | app.js | 24 | VERDADEIRO: segredo literal 'secrettobechanged' |
+| 2 | sentinel-node-sql-concatenado | models/usersModel.js | 8 | VERDADEIRO: id de req.query concatenado |
+| 3 | sentinel-node-sql-concatenado | models/usersModel.js | 8 | BAIXO VALOR: duplicata do 2 |
+| 4 | sentinel-node-sql-concatenado | models/usersModel.js | 16 | VERDADEIRO: login com email/senha concatenados (achado no sink, concatenacao na linha 15) |
+| 5 | sentinel-node-sql-concatenado | models/usersModel.js | 43 | VERDADEIRO: like com username concatenado (concatenacao na linha 41) |
+| 6 | sentinel-node-sql-concatenado | models/usersModel.js | 43 | BAIXO VALOR: duplicata do 5 |
+| 7 | sentinel-node-exec-dinamico | utils/utility.js | 66 | VERDADEIRO: exec('ping -c 3 ' + ip) com ip de req.body |
+| 8 | sentinel-node-xxe | utils/utility.js | 120 | VERDADEIRO: noent: true com entrada do usuario |
+| 9 | sentinel-node-node-serialize-unserialize | utils/utility.js | 140 | VERDADEIRO: unserialize do cookie user (RCE) |
+| 10 | sentinel-ejs-saida-sem-escape | views/blind-sqli-blacklist.ejs | 65 | VERDADEIRO: htmlResponse com username sem escape |
+| 11 | sentinel-ejs-saida-sem-escape | views/blind-sqli.ejs | 65 | VERDADEIRO: filtro por regex contornavel |
+| 12 | sentinel-ejs-saida-sem-escape | views/body-header.ejs | 34 | VERDADEIRO: fullname armazenado sem escape |
+| 13 | sentinel-ejs-saida-sem-escape | views/body-header.ejs | 42 | BAIXO VALOR: mesma variavel do 12 |
+| 14 | sentinel-ejs-saida-sem-escape | views/change-password.ejs | 66 | FALSO: htmlResponse so recebe strings constantes |
+| 15 | sentinel-ejs-saida-sem-escape | views/command-injection.ejs | 65 | VERDADEIRO: saida do ping com entrada sem escape |
+| 16 | sentinel-ejs-saida-sem-escape | views/deserialization.ejs | 44 | VERDADEIRO: fullname do cookie sem escape |
+| 17 | sentinel-ejs-saida-sem-escape | views/navigation.ejs | 17 | BAIXO VALOR: mesmo XSS armazenado do 12 |
+| 18 | sentinel-ejs-saida-sem-escape | views/reflected-xss.ejs | 65 | VERDADEIRO: XSS refletido com filtro contornavel |
+| 19 | sentinel-ejs-saida-sem-escape | views/second-order-sqli.ejs | 49 | VERDADEIRO: XSS armazenado |
+| 20 | sentinel-ejs-saida-sem-escape | views/xxe.ejs | 66 | FALSO: htmlResponse e "" nesse render (o sink esta no .html() do cliente, linha 100) |
+
+Resultado: VERDADEIRO 14/20, baixo valor 4, FALSO 2. Estimativa, nao medida definitiva; amostra de um unico alvo de treino cheio de falhas de proposito (precisao em codigo limpo nao foi medida aqui).
