@@ -86,12 +86,12 @@ class McpGateServiceTest {
 
     @Test
     void recusaDizOMotivoNaOrdemEmQueAPessoaCorrige() {
-        assertEquals(McpGateService.REFUSED_NO_KEY, McpGateService.refusalReason(null, "snt_x"));
-        assertEquals(McpGateService.REFUSED_NO_KEY, McpGateService.refusalReason(access(true, null), "snt_x"));
-        assertEquals(McpGateService.REFUSED_MISSING_KEY, McpGateService.refusalReason(access(true, "snt_certa"), null));
-        assertEquals(McpGateService.REFUSED_MISSING_KEY, McpGateService.refusalReason(access(true, "snt_certa"), "  "));
-        assertEquals(McpGateService.REFUSED_WRONG_KEY, McpGateService.refusalReason(access(true, "snt_certa"), "snt_outra"));
-        assertEquals(McpGateService.REFUSED_WRONG_KEY, McpGateService.refusalReason(access(false, "snt_certa"), "snt_outra"));
+        assertEquals(McpGateService.REFUSED_UNSET, McpGateService.refusalReason(null, "snt_x"));
+        assertEquals(McpGateService.REFUSED_UNSET, McpGateService.refusalReason(access(true, null), "snt_x"));
+        assertEquals(McpGateService.REFUSED_ABSENT, McpGateService.refusalReason(access(true, "snt_certa"), null));
+        assertEquals(McpGateService.REFUSED_ABSENT, McpGateService.refusalReason(access(true, "snt_certa"), "  "));
+        assertEquals(McpGateService.REFUSED_MISMATCH, McpGateService.refusalReason(access(true, "snt_certa"), "snt_outra"));
+        assertEquals(McpGateService.REFUSED_MISMATCH, McpGateService.refusalReason(access(false, "snt_certa"), "snt_outra"));
         assertEquals(McpGateService.REFUSED_DISABLED, McpGateService.refusalReason(access(false, "snt_certa"), "snt_certa"));
         assertEquals(McpGateService.REFUSED_DISABLED, McpGateService.refusalReason(access(false, "snt_certa"), "  snt_certa "));
     }
