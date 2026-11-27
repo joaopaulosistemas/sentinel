@@ -186,7 +186,7 @@ describe('SystemsPage', () => {
     expect(tab).toBeEnabled();
     expect(screen.getByRole('tab', { name: 'Cadastro e Git' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.click(tab);
-    expect(await screen.findByText(/O Claude consulta o resultado deste sistema por MCP/)).toBeInTheDocument();
+    expect(await screen.findByText(/O MCP deixa o Claude Code consultar o resultado deste sistema/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/Token Git/)).not.toBeInTheDocument();
   });
 });

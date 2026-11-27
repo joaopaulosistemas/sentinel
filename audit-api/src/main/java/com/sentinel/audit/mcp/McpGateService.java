@@ -52,6 +52,11 @@ public class McpGateService {
         return PUBLIC_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
     }
 
+    static final String REFUSED_NO_KEY = "nenhuma chave gerada";
+    static final String REFUSED_MISSING_KEY = "chamada sem chave";
+    static final String REFUSED_WRONG_KEY = "chave diferente da vigente";
+    static final String REFUSED_DISABLED = "acesso desligado";
+
     static String hash(String key) {
         try {
             byte[] d = MessageDigest.getInstance("SHA-256").digest(key.getBytes(StandardCharsets.UTF_8));
@@ -77,6 +82,27 @@ public class McpGateService {
         return MessageDigest.isEqual(
                 hash(presentedKey.trim()).getBytes(StandardCharsets.UTF_8),
                 access.getKeyHash().getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Por que uma chamada a um sistema que existe foi recusada, em palavras que a tela mostra como estão.
+     * A ordem vai do que a pessoa corrige primeiro ao que corrige depois: sem chave gerada, sem chave no
+     * cabeçalho, chave que não é a vigente e, só então, acesso desligado.
+     */
+    static String refusalReason(McpAccess access, String presentedKey) {
+        if (access == null || access.getKeyHash() == null) {
+            return REFUSED_NO_KEY;
+        }
+        if (presentedKey == null || presentedKey.isBlank()) {
+            return REFUSED_MISSING_KEY;
+        }
+        boolean sameKey = MessageDigest.isEqual(
+                hash(presentedKey.trim()).getBytes(StandardCharsets.UTF_8),
+                access.getKeyHash().getBytes(StandardCharsets.UTF_8));
+        if (!sameKey) {
+            return REFUSED_WRONG_KEY;
+        }
+        return REFUSED_DISABLED;
     }
 
     /** Gera uma chave nova (a anterior deixa de valer). O acesso continua como estava: ligar é outro passo. */

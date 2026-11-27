@@ -2334,6 +2334,12 @@ Nova opção na caixa "Paleta de cores" para ofuscar menos no tema claro: cartã
 A paleta ficou clara demais para o João. O claro da "Mais suave" passa de cartão `#f3f4f6` / fundo `#e5e8ec` para cartão `#d3d8df` / fundo `#c3c9d2` (brilho do cartão 0,68; o suave tem 0,97), com texto `#1c2028` (8,8:1 no pior fundo). O tema escuro não mudou, e o `paletas.test.ts` continua conferindo todos os pares (texto de corpo acima de 7:1, o resto acima de 4,5:1). **Não verificado:** a aparência nas telas reais.
 
 
+### Aba "Claude (MCP)" em quatro passos, com conferência da conexão
+
+A aba era um formulário solto: não dizia em que passo a pessoa estava, nem se o Claude Code tinha conectado, e toda recusa era um `401` sem explicação. Agora é um assistente: um selo no topo (falta gerar a chave, acesso desligado, esperando o Claude conectar, recusando chamadas, conectado) e quatro passos que mostram se já foram feitos: gerar a chave, ligar o acesso, registrar no Claude Code (comando pronto, instrução por sistema operacional, aviso de que `localhost` só vale naquele computador, como tirar um registro antigo) e conferir. A tela confere sozinha a cada 5 s; ao conectar, oferece uma pergunta de exemplo.
+
+No servidor, a chamada recusada em um sistema que existe passa a ser anotada no registro com o motivo (`nenhuma chave gerada`, `chamada sem chave`, `chave diferente da vigente`, `acesso desligado`), na ferramenta `acesso`. A chave apresentada nunca vai para o registro. Sistema que não existe não deixa rastro, e o limite de erros por minuto já freia o volume. A resposta HTTP continua a mesma `401` para quem está de fora. A faixa da execução da auditoria não conta essas recusas como consultas. O endereço e o comando passam a usar o número do sistema, que vale sempre (o nome falha com acento, espaço ou repetição). Testes: `mcpSetup.test.ts`, `McpPanel.test.tsx`, `mcpActivity.test.ts`, `McpGateServiceTest` e `ApiSurfaceIntegrationTest`.
+
 ## Execução de 2026-11-26 (noite, sem volta 60): nenhum repositório novo adequado, quarta execução seguida
 
 - **Estado:** sem PR de ciclo aberto, sem auditoria em andamento (última, 2026-11-24, sucesso); `ciclo/estabilizacao-17` mesclada; nenhuma branch nova criada.

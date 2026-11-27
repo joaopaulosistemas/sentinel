@@ -46,6 +46,9 @@ public class McpResource {
 
     private static final Logger LOG = Logger.getLogger(McpResource.class);
     private static final int MAX_BODY_CHARS = 64 * 1024;
+    /** Nome com que a recusa aparece no registro de chamadas (a coluna "Ferramenta" da tela). */
+    static final String REFUSAL_TOOL = "acesso";
+
     private static final String UNAUTHORIZED_BODY = "{\"error\":\"Chave ausente, inválida ou acesso MCP desligado para este sistema\"}";
 
     @Inject
@@ -104,6 +107,7 @@ public class McpResource {
             return tooMany(authGuard.retryAfterSeconds(ref));
         }
         if (verdict == McpAuthGuard.Verdict.UNAUTHORIZED) {
+            system.ifPresent(s -> logRefusal(s.getId(), access, bearer(authorization)));
             return Response.status(Response.Status.UNAUTHORIZED)
                     .header("WWW-Authenticate", "Bearer")
                     .type(MediaType.APPLICATION_JSON)
@@ -124,6 +128,18 @@ public class McpResource {
         Optional<String> reply = protocol.handle(body, backend);
         return reply.map(r -> Response.ok(r, MediaType.APPLICATION_JSON).build())
                 .orElseGet(() -> Response.accepted().build());
+    }
+
+    /**
+     * Anota no registro do sistema que uma chamada foi recusada e por quê, para a tela dizer o motivo em vez de
+     * deixar a pessoa adivinhar. Só para sistema que existe, e o limite de erros por minuto já freia o volume.
+     */
+    private void logRefusal(Long systemId, McpAccess access, String presentedKey) {
+        try {
+            gate.log(systemId, REFUSAL_TOOL, false, 0, McpGateService.refusalReason(access, presentedKey));
+        } catch (RuntimeException e) {
+            LOG.warnf("Não foi possível registrar a recusa do MCP (%s)", e.getMessage());
+        }
     }
 
     /** As ferramentas de um sistema: só as ligadas para ele, cada chamada registrada no log de uso. */

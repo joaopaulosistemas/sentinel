@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IMcpConfig, ISystemSummaryResponse } from '../types';
-import { McpPanel, connectCommand } from './McpPanel';
+import { McpPanel } from './McpPanel';
 
 const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as ISystemSummaryResponse;
 
@@ -59,12 +59,13 @@ function setup(initial: IMcpConfig) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('McpPanel', () => {
-  it('mostra o endereço do sistema e começa em só números e títulos, com a consulta desligada', async () => {
+  it('começa pedindo a chave: selo "Falta gerar a chave", passo 2 travado e sem comando ainda', async () => {
     setup(config());
-    expect(await screen.findByText(`${window.location.origin}/mcp/conta-corrente-api`)).toBeInTheDocument();
+    expect(await screen.findByRole('status', { name: 'Estado da conexão' })).toHaveTextContent('Falta gerar a chave');
     expect(screen.getByRole('radio', { name: /Só números e títulos/ })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: /Permitir consulta pelo Claude/ })).toBeDisabled();
-    expect(screen.getByText('Nenhuma chave gerada.')).toBeInTheDocument();
+    expect(screen.getByText(/Faça os passos 1 e 2 e o comando aparece aqui/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Copiar comando' })).not.toBeInTheDocument();
   });
 
   it('gera a chave, mostra o texto completo uma vez e depois só o começo', async () => {
@@ -72,11 +73,62 @@ describe('McpPanel', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Gerar chave' }));
     const aviso = await screen.findByRole('status', { name: 'Chave nova' });
     expect(aviso).toHaveTextContent('snt_AbCdEfGHIJ-chave-completa');
-    expect(aviso).toHaveTextContent('claude mcp add --transport http sentinel-conta-corrente-api');
     fireEvent.click(screen.getByRole('button', { name: 'Já copiei' }));
     expect(screen.queryByRole('status', { name: 'Chave nova' })).not.toBeInTheDocument();
-    expect(await screen.findByText('snt_AbCdEf…')).toBeInTheDocument();
+    expect(await screen.findByText(/snt_AbCdEf…/)).toBeInTheDocument();
     expect(screen.queryByText(/chave-completa/)).not.toBeInTheDocument();
+  });
+
+  it('com a chave recém-gerada e o acesso ligado, o passo 3 traz o comando pronto com o número do sistema', async () => {
+    setup(config({ enabled: true }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Gerar chave' }));
+    expect(await screen.findByText(/--scope user --transport http sentinel-conta-corrente-api/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`${window.location.origin}/mcp/7 --header`))).toBeInTheDocument();
+    expect(screen.getByText(/Bearer snt_AbCdEfGHIJ-chave-completa/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copiar comando' })).toBeInTheDocument();
+  });
+
+  it('sem a chave inteira, o comando avisa onde colocá-la e como gerar outra', async () => {
+    setup(config({ hasKey: true, enabled: true, keyPrefix: 'snt_AbCdEf' }));
+    expect(await screen.findByText(/Bearer COLE_AQUI_A_CHAVE/)).toBeInTheDocument();
+    expect(screen.getByText(/gere uma nova no passo 1/)).toBeInTheDocument();
+  });
+
+  it('diz onde abrir o terminal conforme o sistema operacional escolhido', async () => {
+    setup(config({ hasKey: true, enabled: true, keyPrefix: 'snt_AbCdEf' }));
+    expect(await screen.findByText(/Prompt de Comando/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'macOS' }));
+    expect(screen.getByText(/Cmd \+ Espaço/)).toBeInTheDocument();
+    expect(screen.queryByText(/Prompt de Comando/)).not.toBeInTheDocument();
+  });
+
+  it('avisa que localhost só funciona no computador do Sentinel', async () => {
+    setup(config({ hasKey: true, enabled: true, keyPrefix: 'snt_AbCdEf' }));
+    expect(await screen.findByText(/só funciona no computador onde o Sentinel está rodando/)).toBeInTheDocument();
+  });
+
+  it('ligado e sem chamadas, o selo espera e o passo 4 diz o que fazer no Claude Code', async () => {
+    setup(config({ hasKey: true, enabled: true, keyPrefix: 'snt_AbCdEf', keyCreatedAt: '2026-11-27T01:00:00' }));
+    expect(await screen.findByRole('status', { name: 'Estado da conexão' })).toHaveTextContent('Esperando o Claude conectar');
+    expect(screen.getByText(/Esperando a primeira chamada/)).toBeInTheDocument();
+  });
+
+  it('com chamada do Claude depois da chave, o selo vira Conectado e oferece uma pergunta de exemplo', async () => {
+    callList = [{ tool: 'status_auditoria', ok: true, durationMs: 9, detail: null, at: new Date().toISOString() }];
+    setup(config({ hasKey: true, enabled: true, keyPrefix: 'snt_AbCdEf', keyCreatedAt: '2026-01-01T00:00:00' }));
+    await waitFor(() => expect(screen.getByRole('status', { name: 'Estado da conexão' })).toHaveTextContent('Conectado'));
+    expect(screen.getByText(/Use o sentinel para listar os achados críticos/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copiar pergunta' })).toBeInTheDocument();
+    callList = [];
+  });
+
+  it('com recusa na porta, o selo diz Recusando e o passo 4 explica o motivo e o que fazer', async () => {
+    callList = [{ tool: 'acesso', ok: false, durationMs: 0, detail: 'chave diferente da vigente', at: new Date().toISOString() }];
+    setup(config({ hasKey: true, enabled: true, keyPrefix: 'snt_AbCdEf', keyCreatedAt: '2026-01-01T00:00:00' }));
+    await waitFor(() => expect(screen.getByRole('status', { name: 'Estado da conexão' })).toHaveTextContent('Recusando chamadas'));
+    expect(screen.getByText(/não é a atual/)).toBeInTheDocument();
+    expect(screen.getByText(/Gere uma nova chave no passo 1/)).toBeInTheDocument();
+    callList = [];
   });
 
   it('mostra os parâmetros de cada chamada, com o motivo separado quando foi recusada', async () => {
@@ -120,11 +172,5 @@ describe('McpPanel', () => {
     expect(calls.some((c) => c.method === 'POST')).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: /Confirmar: gerar e invalidar a anterior/ }));
     await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.endsWith('/key'))).toBe(true));
-  });
-
-  it('monta o comando do Claude Code com a chave e o endereço', () => {
-    expect(connectCommand({ url: 'https://s.exemplo/mcp/api', systemName: 'api', key: 'snt_x' })).toBe(
-      'claude mcp add --transport http sentinel-api https://s.exemplo/mcp/api --header "Authorization: Bearer snt_x"',
-    );
   });
 });

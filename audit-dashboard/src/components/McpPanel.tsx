@@ -1,8 +1,10 @@
-import { Button, Checkbox, InlineNotification } from '@carbon/react';
+import { Checkbox, InlineNotification } from '@carbon/react';
 import { useState } from 'react';
 import { useMcpCalls, useMcpConfig } from '../hooks/useMcpConfig';
 import { startLabel } from '../utils/timeAgo';
 import type { IMcpConfig, IMcpConfigRequest, McpDataLevel, IMcpNewKey, ISystemSummaryResponse } from '../types';
+import { serverName } from '../utils/mcpSetup';
+import { McpSetupSteps } from './McpSetupSteps';
 import { LoadError } from './EngineRulesParts';
 import { DataTable } from './DataTable';
 
@@ -19,19 +21,6 @@ interface IToolToggle {
   on: boolean;
 }
 
-/** Comando que registra este sistema no Claude Code. A chave é a que acabou de ser gerada. */
-export function connectCommand({ url, systemName, key }: { url: string; systemName: string; key: string }): string {
-  return `claude mcp add --transport http sentinel-${systemName} ${url} --header "Authorization: Bearer ${key}"`;
-}
-
-async function copy(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    /* sem permissão para a área de transferência: a pessoa seleciona o texto à mão */
-  }
-}
-
 /** O registro guarda "erro | campo=valor"; chamadas que deram certo guardam só os parâmetros. */
 function callParams(c: { ok: boolean; detail?: string | null }): string {
   if (!c.detail) return '';
@@ -44,87 +33,6 @@ function callParams(c: { ok: boolean; detail?: string | null }): string {
 
 
 type UpdateMutation = { isPending: boolean; mutate: (body: IMcpConfigRequest) => void };
-
-interface IKeyProps {
-  cfg: IMcpConfig;
-  url: string;
-  systemName: string;
-  fresh: IMcpNewKey | null;
-  confirmNew: boolean;
-  issuing: boolean;
-  revoking: boolean;
-  onIssue: () => void;
-  onRevoke: () => void;
-  onConfirmNew: (on: boolean) => void;
-  onDismissFresh: () => void;
-}
-
-function KeyButtons({ cfg, confirmNew, issuing, revoking, onIssue, onRevoke, onConfirmNew }: Pick<IKeyProps, 'cfg' | 'confirmNew' | 'issuing' | 'revoking' | 'onIssue' | 'onRevoke' | 'onConfirmNew'>) {
-  return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-      {!cfg.hasKey || confirmNew ? (
-        <Button kind="primary" size="sm" disabled={issuing} onClick={onIssue}>
-          {confirmNew ? 'Confirmar: gerar e invalidar a anterior' : 'Gerar chave'}
-        </Button>
-      ) : (
-        <Button kind="tertiary" size="sm" onClick={() => onConfirmNew(true)}>Gerar nova chave</Button>
-      )}
-      {confirmNew && <Button kind="ghost" size="sm" onClick={() => onConfirmNew(false)}>Cancelar</Button>}
-      {cfg.hasKey && !confirmNew && (
-        <Button kind="danger--tertiary" size="sm" disabled={revoking} onClick={onRevoke}>
-          Revogar e desligar
-        </Button>
-      )}
-    </div>
-  );
-}
-
-function FreshKey({ fresh, url, systemName, onDismiss }: { fresh: IMcpNewKey; url: string; systemName: string; onDismiss: () => void }) {
-  const command = connectCommand({ url, systemName, key: fresh.key });
-  return (
-    <div role="status" aria-label="Chave nova" style={{ background: 'var(--s-warn-bg)', borderLeft: '3px solid var(--s-warn-text)', padding: '12px 16px', display: 'grid', gap: 8 }}>
-      <strong>Copie a chave agora: ela não aparece de novo.</strong>
-      <code style={{ fontFamily: mono, fontSize: 13, wordBreak: 'break-all' }}>{fresh.key}</code>
-      <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Para registrar no Claude Code:</div>
-      <code style={{ fontFamily: mono, fontSize: 12, wordBreak: 'break-all' }}>{command}</code>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <Button kind="tertiary" size="sm" onClick={() => void copy(fresh.key)}>Copiar chave</Button>
-        <Button kind="tertiary" size="sm" onClick={() => void copy(command)}>Copiar comando</Button>
-        <Button kind="ghost" size="sm" onClick={onDismiss}>Já copiei</Button>
-      </div>
-    </div>
-  );
-}
-
-function KeySection(props: IKeyProps) {
-  const { cfg, url, systemName, fresh, onDismissFresh } = props;
-  return (
-    <section aria-label="Endereço e chave" style={{ display: 'grid', gap: 10 }}>
-      <div>
-        <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Endereço deste sistema</div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <code style={{ fontFamily: mono, fontSize: 13, background: 'var(--s-layer)', padding: '4px 8px', wordBreak: 'break-all' }}>{url}</code>
-          <Button kind="ghost" size="sm" onClick={() => void copy(url)}>Copiar</Button>
-        </div>
-      </div>
-
-      <div>
-        <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>Chave</div>
-        {cfg.hasKey ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <code style={{ fontFamily: mono, fontSize: 13 }}>{cfg.keyPrefix}…</code>
-            <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>criada em {startLabel(cfg.keyCreatedAt)}</span>
-          </div>
-        ) : (
-          <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhuma chave gerada.</span>
-        )}
-        <KeyButtons {...props} />
-      </div>
-
-      {fresh && <FreshKey fresh={fresh} url={url} systemName={systemName} onDismiss={onDismissFresh} />}
-    </section>
-  );
-}
 
 function LevelsFieldset({ cfg, update }: { cfg: IMcpConfig; update: UpdateMutation }) {
   return (
@@ -226,7 +134,8 @@ export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
   if (config.isError || !config.data) return <LoadError error={config.error} />;
 
   const cfg = config.data;
-  const url = `${window.location.origin}/mcp/${encodeURIComponent(system.name)}`;
+  // O número do sistema vale sempre; o nome falha se tiver acento, espaço ou se outro sistema tiver o mesmo.
+  const url = `${window.location.origin}/mcp/${system.id}`;
   const enabledTools = cfg.tools.filter((t) => t.enabled).map((t) => t.name);
   const toggleTool = ({ name, on }: IToolToggle) =>
     update.mutate({ tools: on ? [...enabledTools, name] : enabledTools.filter((n) => n !== name) });
@@ -234,36 +143,31 @@ export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
 
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 14 }}>
-        O Claude consulta o resultado deste sistema por MCP. As ferramentas de leitura vêm ligadas; as que escrevem
-        (registrar_sugestao e propor_regra) ficam desligadas até você liberar, e só gravam na aba Revisão do Claude.
-        A nota continua sendo calculada apenas pelo motor de regras: o que o Claude sugerir não entra nela.
-      </p>
-
       {error && <InlineNotification kind="error" title="Não foi possível salvar" subtitle={error.message} hideCloseButton />}
 
-      <Checkbox
-        id="mcp-enabled"
-        labelText="Permitir consulta pelo Claude (MCP)"
-        helperText={cfg.hasKey ? 'Desligado, qualquer chamada com a chave deste sistema é recusada.' : 'Gere a chave abaixo para poder ligar.'}
-        checked={cfg.enabled}
-        disabled={!cfg.hasKey || update.isPending}
-        onChange={(_, { checked }) => update.mutate({ enabled: checked })}
-      />
-
-      <KeySection
+      <McpSetupSteps
         cfg={cfg}
         url={url}
-        systemName={system.name}
+        name={serverName(system.name, system.id)}
+        calls={calls.data}
         fresh={fresh}
         confirmNew={confirmNew}
         issuing={issue.isPending}
         revoking={revoke.isPending}
+        updating={update.isPending}
         onIssue={() => issue.mutate()}
         onRevoke={() => revoke.mutate()}
         onConfirmNew={setConfirmNew}
         onDismissFresh={() => setFresh(null)}
+        onToggleEnabled={(on) => update.mutate({ enabled: on })}
       />
+
+      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Ajustes</h3>
+      <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 13 }}>
+        As ferramentas de leitura vêm ligadas; as que escrevem (registrar_sugestao e propor_regra) ficam desligadas até você
+        liberar, e só gravam na aba Revisão do Claude. A nota continua sendo calculada apenas pelo motor de regras: o que o
+        Claude sugerir não entra nela.
+      </p>
       <LevelsFieldset cfg={cfg} update={update} />
       <ToolsFieldset cfg={cfg} update={update} onToggle={toggleTool} />
       <CallsSection calls={calls.data} />
