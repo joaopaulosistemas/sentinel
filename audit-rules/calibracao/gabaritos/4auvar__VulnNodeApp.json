@@ -1,5 +1,5 @@
 {
- "_comentario": "Falhas de 4auvar/VulnNodeApp (Express + EJS + MySQL) lidas no codigo (treino), volta 60. Gabarito escrito pelo mesmo agente que corrige, antes de ver os achados do Sentinel; regras aceitas fixadas antes da medida. IDOR, CSRF e senha sem hash sao falhas logicas/de ausencia (lacuna assumida, valem como meta). utility.js:120 e a chamada libxml com noent:true (linha 127 no arquivo; usei a janela da funcao parseXML, ajuste de linha se a regra acusar em 127). Correcao depois da medida: a linha do XXE passou de 127 (chamada) para 123 (`noent: true`, a falha em si); o recall antes (8/16) foi medido com 127 e nao muda.",
+ "_comentario": "Falhas de 4auvar/VulnNodeApp (Express + EJS + MySQL) lidas no codigo (treino), volta 60. Gabarito escrito pelo mesmo agente que corrige, antes de ver os achados do Sentinel; regras aceitas fixadas antes da medida. IDOR, CSRF e senha sem hash sao falhas logicas/de ausencia (lacuna assumida, valem como meta). utility.js:120 e a chamada libxml com noent:true (linha 127 no arquivo; usei a janela da funcao parseXML, ajuste de linha se a regra acusar em 127). Correcao depois da medida: a linha do XXE passou de 127 (chamada) para 123 (`noent: true`, a falha em si); o recall antes (8/16) foi medido com 127 e nao muda. Depois da correcao: a regra nova sentinel-node-node-serialize-unserialize entrou nas aceitas do CWE-502 (a regra de taint antiga exige a origem na mesma funcao; aqui o cookie chega por outras funcoes); ganho no treino, nao prova de generalizacao.",
  "repo": "4auvar/VulnNodeApp",
  "falhas": [
   {
@@ -72,7 +72,8 @@
    "linha": 140,
    "cwe": "CWE-502",
    "regras": [
-    "sentinel-node-desserializacao"
+    "sentinel-node-desserializacao",
+    "sentinel-node-node-serialize-unserialize"
    ]
   },
   {
