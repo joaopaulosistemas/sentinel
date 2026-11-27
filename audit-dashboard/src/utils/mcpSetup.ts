@@ -3,6 +3,9 @@ import type { IMcpCall, IMcpConfig } from '../types';
 /** Nome com que a API registra, na coluna "Ferramenta", uma chamada recusada antes de chegar a uma ferramenta. */
 export const REFUSAL_TOOL = 'acesso';
 
+/** Nome com que a API registra o Claude Code conectando (o aperto de mão do protocolo, antes de qualquer consulta). */
+export const HANDSHAKE_TOOL = 'conexão';
+
 /** Onde a pessoa abre o terminal para colar o comando, conforme o sistema dela. */
 export type OperatingSystem = 'windows' | 'mac' | 'linux';
 

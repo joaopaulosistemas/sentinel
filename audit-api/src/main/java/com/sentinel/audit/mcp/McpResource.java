@@ -125,9 +125,29 @@ public class McpResource {
         DataLevel level = access.getDataLevel() == null ? DataLevel.TITLES : access.getDataLevel();
         McpBackend backend = new SystemBackend(gate.enabledTools(access), systemId, level);
 
+        noteHandshake(systemId, body);
         Optional<String> reply = protocol.handle(body, backend);
         return reply.map(r -> Response.ok(r, MediaType.APPLICATION_JSON).build())
                 .orElseGet(() -> Response.accepted().build());
+    }
+
+    /** A mensagem é o "initialize" do protocolo (o Claude Code conectando)? */
+    static boolean isInitialize(ObjectMapper mapper, String body) {
+        try {
+            return body != null && "initialize".equals(mapper.readTree(body).path("method").asText(""));
+        } catch (java.io.IOException e) {
+            return false;
+        }
+    }
+
+    private void noteHandshake(Long systemId, String body) {
+        try {
+            if (isInitialize(mapper, body)) {
+                gate.noteHandshake(systemId);
+            }
+        } catch (RuntimeException e) {
+            LOG.warnf("Não foi possível registrar a conexão MCP (%s)", e.getMessage());
+        }
     }
 
     /**

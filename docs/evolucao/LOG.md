@@ -2340,6 +2340,10 @@ A aba era um formulário solto: não dizia em que passo a pessoa estava, nem se 
 
 No servidor, a chamada recusada em um sistema que existe passa a ser anotada no registro com o motivo (`nenhuma chave gerada`, `chamada sem chave`, `chave diferente da vigente`, `acesso desligado`), na ferramenta `acesso`. A chave apresentada nunca vai para o registro. Sistema que não existe não deixa rastro, e o limite de erros por minuto já freia o volume. A resposta HTTP continua a mesma `401` para quem está de fora. A faixa da execução da auditoria não conta essas recusas como consultas. O endereço e o comando passam a usar o número do sistema, que vale sempre (o nome falha com acento, espaço ou repetição). Testes: `mcpSetup.test.ts`, `McpPanel.test.tsx`, `mcpActivity.test.ts`, `McpGateServiceTest` e `ApiSurfaceIntegrationTest`.
 
+### MCP: a conexão que deu certo também fica no registro
+
+A tela mostrava "Recusando chamadas" com o Claude Code já conectado: só consultas a ferramentas eram anotadas, então o aperto de mão (`initialize`, o que `claude mcp list` faz) funcionava sem deixar rastro e a recusa antiga continuava sendo a última notícia. Agora o `initialize` aceito é anotado como `conexão`, no máximo uma vez a cada 5 minutos para não encher o registro, e a tela trata isso como conectado. Uma recusa mais nova que a conexão volta a aparecer. A conexão não conta como consulta na faixa da execução da auditoria. Testes: `mcpSetup.test.ts`, `mcpActivity.test.ts`, `McpGateServiceTest` e `ApiSurfaceIntegrationTest`.
+
 ## Execução de 2026-11-26 (noite, sem volta 60): nenhum repositório novo adequado, quarta execução seguida
 
 - **Estado:** sem PR de ciclo aberto, sem auditoria em andamento (última, 2026-11-24, sucesso); `ciclo/estabilizacao-17` mesclada; nenhuma branch nova criada.

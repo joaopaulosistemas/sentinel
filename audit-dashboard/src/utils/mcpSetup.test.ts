@@ -40,6 +40,22 @@ describe('connectionState', () => {
     expect(connectionState(cfg(), [...calls].reverse()).kind).toBe('refused');
   });
 
+  it('a conexão que deu certo vale mais que uma recusa antiga: some o "Recusando" e vira Conectado', () => {
+    const calls = [
+      call({ tool: 'acesso', ok: false, detail: 'chave diferente da vigente', at: '2026-11-27T01:40:00' }),
+      call({ tool: 'conexão', ok: true, at: '2026-11-27T01:50:00' }),
+    ];
+    expect(connectionState(cfg(), calls)).toEqual({ kind: 'connected', at: '2026-11-27T01:50:00' });
+  });
+
+  it('uma recusa depois da conexão volta a mostrar o problema', () => {
+    const calls = [
+      call({ tool: 'conexão', ok: true, at: '2026-11-27T01:50:00' }),
+      call({ tool: 'acesso', ok: false, detail: 'chave diferente da vigente', at: '2026-11-27T01:55:00' }),
+    ];
+    expect(connectionState(cfg(), calls).kind).toBe('refused');
+  });
+
   it('chamadas de antes da chave atual não contam', () => {
     const antiga = call({ at: '2026-11-27T00:30:00' });
     expect(connectionState(cfg(), [antiga])).toEqual({ kind: 'waiting' });

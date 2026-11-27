@@ -102,6 +102,23 @@ class ApiSurfaceIntegrationTest {
     }
 
     @Test
+    void conexaoQueDeuCertoFicaNoRegistroUmaVezSoEPassaARecusaAntiga() {
+        int id = criaSistema("Sistema MCP Conexao", "https://127.0.0.1:1/org/mcp5.git", null);
+        String chave = given().contentType(JSON).post("/api/v1/mcp-access/" + id + "/key").then().statusCode(200).extract().path("key");
+        given().contentType(JSON).body(Map.of("enabled", true)).put("/api/v1/mcp-access/" + id).then().statusCode(200);
+        given().contentType(JSON).header("Authorization", "Bearer chave-antiga").body(INITIALIZE).post("/mcp/" + id).then().statusCode(401);
+
+        for (int i = 0; i < 3; i++) {
+            given().contentType(JSON).header("Authorization", "Bearer " + chave).body(INITIALIZE).post("/mcp/" + id).then().statusCode(200);
+        }
+
+        given().get("/api/v1/mcp-access/" + id + "/calls").then().statusCode(200)
+                .body("findAll { it.tool == 'conexão' }.size()", is(1))
+                .body("[0].tool", equalTo("conexão"))
+                .body("[0].ok", is(true));
+    }
+
+    @Test
     void nivelDeDadosInvalidoEBarradoNaConfiguracaoDoMcp() {
         int id = criaSistema("Sistema MCP Nivel", "https://127.0.0.1:1/org/mcp3.git", null);
         given().contentType(JSON).body(Map.of("dataLevel", "TUDO")).put("/api/v1/mcp-access/" + id).then().statusCode(400);
