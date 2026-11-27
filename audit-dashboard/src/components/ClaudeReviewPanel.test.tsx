@@ -108,4 +108,20 @@ describe('ClaudeReviewPanel', () => {
     expect(pct(0.9)).toBe('90%');
     expect(pct(0.857)).toBe('86%');
   });
+
+  it('regra descartada que pode voltar mostra Restaurar regra e chama a API; sem etapa guardada não mostra', async () => {
+    const calls = setup({
+      openSuggestions: 0,
+      suggestions: [],
+      proposals: [
+        proposal({ id: 3, slug: 'volta', title: 'Volta', stage: 'DISCARDED', stageLabel: 'Descartada', restorable: true }),
+        proposal({ id: 4, slug: 'antiga', title: 'Antiga', stage: 'DISCARDED', stageLabel: 'Descartada', restorable: false }),
+      ],
+    });
+    const botoes = await screen.findAllByRole('button', { name: 'Restaurar regra' });
+    expect(botoes).toHaveLength(1);
+    fireEvent.click(botoes[0]);
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.endsWith('/claude-review/7/rules/3/restore'))).toBe(true));
+  });
 });
+

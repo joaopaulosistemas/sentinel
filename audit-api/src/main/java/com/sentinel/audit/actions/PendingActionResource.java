@@ -32,7 +32,8 @@ public class PendingActionResource {
 
 
     public record PendingDto(@Schema(description = "Identificador do pedido.") Long id, @Schema(description = "Tipo de ação pedida pelo Claude.") String kind, @Schema(description = "O que o Claude quer fazer.") String summary, @Schema(description = "Situação do pedido.") String status, @Schema(description = "Quando foi criado.") String createdAt, @Schema(description = "Quando deixa de valer.") String expiresAt,
-                             @Schema(description = "Quando foi aprovado ou recusado.") String decidedAt, @Schema(description = "Observação do resultado da ação.") String resultNote, @Schema(description = "Auditoria associada ao pedido, quando há.") Long auditRunId) {}
+                             @Schema(description = "Quando foi aprovado ou recusado.") String decidedAt, @Schema(description = "Observação do resultado da ação.") String resultNote, @Schema(description = "Auditoria associada ao pedido, quando há.") Long auditRunId,
+                             @Schema(description = "Quando uma pessoa desfez a decisão, se desfez.") String undoneAt, @Schema(description = "Verdadeiro quando a decisão aprovada ainda pode ser desfeita.") boolean undoable) {}
 
     @Inject
     SystemCatalog systemCatalog;
@@ -65,6 +66,24 @@ public class PendingActionResource {
         return decide(id, () -> service.reject(id, actionId));
     }
 
+    @POST
+    @Path("/{actionId}/reopen")
+    @Operation(summary = "Reabrir um pedido recusado",
+            description = "Desfaz a recusa: o pedido volta a esperar decisão, com uma validade nova.")
+    public List<PendingDto> reopen(@PathParam("id") Long id, @PathParam("actionId") Long actionId) {
+        requireSystem(id);
+        return decide(id, () -> service.reopen(id, actionId));
+    }
+
+    @POST
+    @Path("/{actionId}/undo")
+    @Operation(summary = "Desfazer um pedido aprovado de suprimir achado",
+            description = "Remove a supressão criada pela aprovação: o achado volta a contar na nota. Não vale para pedido de iniciar auditoria.")
+    public List<PendingDto> undo(@PathParam("id") Long id, @PathParam("actionId") Long actionId) {
+        requireSystem(id);
+        return decide(id, () -> service.undo(id, actionId));
+    }
+
     private List<PendingDto> decide(Long id, Supplier<PendingAction> action) {
         try {
             action.get();
@@ -77,7 +96,8 @@ public class PendingActionResource {
     static PendingDto dto(PendingAction a) {
         return new PendingDto(a.getId(), a.getKind().name(), a.getSummary(), a.getStatus().name(), a.getCreatedAt().toString(),
                 a.getExpiresAt().toString(), a.getDecidedAt() == null ? null : a.getDecidedAt().toString(), a.getResultNote(),
-                a.getResultAuditRunId());
+                a.getResultAuditRunId(), a.getUndoneAt() == null ? null : a.getUndoneAt().toString(),
+                PendingActionRules.cannotUndo(a.getKind(), a.getStatus(), a.getUndoneAt(), a.getResultSuppressionId()) == null);
     }
 
     private void requireSystem(Long id) {

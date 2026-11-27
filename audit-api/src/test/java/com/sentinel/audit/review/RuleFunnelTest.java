@@ -57,4 +57,16 @@ class RuleFunnelTest {
         assertTrue(RuleFunnel.sharedEligible(RuleStage.PROMOTED, 1));
         assertFalse(RuleFunnel.sharedEligible(RuleStage.OBSERVING, 3));
     }
+
+    @Test
+    void restaurarSoVoltaRegraDescartadaParaEtapaAbertaEComLugar() {
+        assertTrue(RuleFunnel.restore(RuleStage.DISCARDED, RuleStage.OBSERVING, 3, 30).ok());
+        assertTrue(RuleFunnel.restore(RuleStage.DISCARDED, RuleStage.PROPOSED, 29, 30).ok(), "ainda cabe uma");
+        assertFalse(RuleFunnel.restore(RuleStage.DISCARDED, RuleStage.PROPOSED, 30, 30).ok(), "sem lugar");
+        assertFalse(RuleFunnel.restore(RuleStage.OBSERVING, RuleStage.REVIEWED, 0, 30).ok(), "só a descartada");
+        assertFalse(RuleFunnel.restore(RuleStage.PROMOTED, RuleStage.OBSERVING, 0, 30).ok(), "promovida não se restaura");
+        assertFalse(RuleFunnel.restore(RuleStage.DISCARDED, null, 0, 30).ok(), "descartada antes de guardar a etapa");
+        assertFalse(RuleFunnel.restore(RuleStage.DISCARDED, RuleStage.DISCARDED, 0, 30).ok(), "etapa anterior encerrada");
+        assertTrue(RuleFunnel.restore(RuleStage.DISCARDED, null, 0, 30).reason().contains("proponha de novo"));
+    }
 }

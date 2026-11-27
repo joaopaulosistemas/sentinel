@@ -126,6 +126,7 @@ function ProposalActions({ p, note, systems, systemId, act, busy }: { p: IRulePr
       {p.stage === 'SAMPLE_PASSED' && <StageButton label="Iniciar observação" disabled={busy} onClick={() => act(path('observe'))} />}
       {p.stage === 'OBSERVING' && <StageButton label="Promover" disabled={busy} onClick={() => act(path('promote'), { note })} />}
       {!isClosed(p.stage) && <StageButton label="Descartar" danger disabled={busy} onClick={() => act(path('discard'), { note })} />}
+      {p.stage === 'DISCARDED' && p.restorable && <StageButton label="Restaurar regra" disabled={busy} onClick={() => act(path('restore'))} />}
       {p.stage === 'PROMOTED' && <CopyToSystem p={p} systems={systems} systemId={systemId} act={act} busy={busy} />}
     </div>
   );

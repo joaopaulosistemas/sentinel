@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import type { ISystemSummaryResponse } from '../../types';
 import type { StateTone } from '../../utils/mcpSetup';
 
+export type { StateTone };
+
 export const TONES: Record<StateTone, { bg: string; fg: string }> = {
   good: { bg: 'var(--s-good-bg)', fg: 'var(--s-success-text)' },
   bad: { bg: 'var(--s-bad-bg)', fg: 'var(--s-danger-text)' },

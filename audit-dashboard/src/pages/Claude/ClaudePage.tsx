@@ -74,10 +74,10 @@ export function ClaudePage() {
           pelo motor de regras.
         </span>
       </div>
-      <TabBar aba={aba} decisions={decisions.total} onSelect={select} />
+      <TabBar aba={aba} decisions={decisions.waiting} onSelect={select} />
       <div role="tabpanel" aria-labelledby={`claude-aba-${aba}`} style={{ display: 'grid', gap: 16 }}>
-        {aba === 'visao' && <ClaudeOverview rows={rows} decisions={decisions.total} loading={loading} />}
-        {aba === 'decisoes' && <ClaudeDecisions items={decisions.items} loading={decisions.loading} />}
+        {aba === 'visao' && <ClaudeOverview rows={rows} decisions={decisions.waiting} loading={loading} />}
+        {aba === 'decisoes' && <ClaudeDecisions items={decisions.items} loading={decisions.loading} systems={systems ?? []} initialSystemId={system?.id} />}
         {aba === 'atividade' && <ClaudeActivity rows={rows} />}
         {(aba === 'conectar' || aba === 'permissoes') &&
           (system ? (

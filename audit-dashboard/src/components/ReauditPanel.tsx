@@ -1,23 +1,13 @@
-import { InlineNotification } from '@carbon/react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePendingActions } from '../hooks/usePendingActions';
 import { useAuditRuns } from '../hooks/useAuditRuns';
 import { useDiff } from '../hooks/useLifecycle';
-import type { IPendingAction, ISystemSummaryResponse } from '../types';
-import { startLabel } from '../utils/timeAgo';
+import type { ISystemSummaryResponse } from '../types';
 import { StartAuditModal } from './StartAuditModal';
 
 const btn = { height: 32, padding: '0 12px', border: '1px solid var(--s-link)', background: 'var(--s-surface)', color: 'var(--s-link)', cursor: 'pointer', fontSize: 13 } as const;
 const btnPrimary = { ...btn, background: 'var(--s-primary)', color: '#fff' } as const;
-const btnDanger = { ...btn, border: '1px solid #da1e28', color: 'var(--s-danger-text)' } as const;
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Esperando aprovação',
-  APPROVED: 'Aprovado',
-  REJECTED: 'Recusado',
-  EXPIRED: 'Venceu sem decisão',
-};
 
 /** Texto da variação de nota: "62 → 71 (+9)". */
 export function scoreChange(before: number | null, after: number | null): string {
@@ -27,38 +17,14 @@ export function scoreChange(before: number | null, after: number | null): string
   return `${Math.round(before)} → ${Math.round(after)} (${delta > 0 ? '+' : ''}${delta})`;
 }
 
-function Requests({ systemId }: { systemId: number }) {
-  const { list, decide } = usePendingActions(systemId);
-  const items: IPendingAction[] = list.data ?? [];
-  const waiting = items.filter((a) => a.status === 'PENDING').length;
-
+/** Os pedidos do Claude se decidem na área Claude (MCP): aqui só o aviso de quantos esperam. */
+function RequestsNotice({ systemId }: { systemId: number }) {
+  const { list } = usePendingActions(systemId);
+  const waiting = (list.data ?? []).filter((a) => a.status === 'PENDING').length;
   return (
-    <section aria-label="Pedidos do Claude" style={{ display: 'grid', gap: 10 }}>
-      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 400 }}>Pedidos do Claude ({waiting} esperando)</h2>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-3)' }}>
-        O Claude só pede; nada acontece até você aprovar aqui. Cada pedido vale por 1 hora.
-      </p>
-      {decide.isError && <InlineNotification kind="error" title="Não foi possível" subtitle={(decide.error as Error).message} hideCloseButton />}
-      {items.length === 0 ? (
-        <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>Nenhum pedido. Libere iniciar_auditoria ou suprimir_achado na aba Claude (MCP) do sistema.</span>
-      ) : (
-        items.map((a) => (
-          <article key={a.id} aria-label={`Pedido ${a.id}`} style={{ border: '1px solid var(--s-border)', background: a.status === 'PENDING' ? 'var(--s-surface)' : 'var(--s-layer)', padding: 14, display: 'grid', gap: 8 }}>
-            <div style={{ fontSize: 14 }}>{a.summary}</div>
-            <div style={{ fontSize: 12, color: 'var(--s-text-3)' }}>
-              {STATUS_LABEL[a.status]} · pedido {startLabel(a.createdAt)}
-              {a.resultNote ? ` · ${a.resultNote}` : ''}
-              {a.auditRunId ? <> · <Link to={`/audits/${a.auditRunId}`}>acompanhar</Link></> : null}
-            </div>
-            {a.status === 'PENDING' && (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" style={btnPrimary} disabled={decide.isPending} onClick={() => decide.mutate({ id: a.id, decision: 'approve' })}>Aprovar</button>
-                <button type="button" style={btnDanger} disabled={decide.isPending} onClick={() => decide.mutate({ id: a.id, decision: 'reject' })}>Recusar</button>
-              </div>
-            )}
-          </article>
-        ))
-      )}
+    <section aria-label="Pedidos do Claude" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', fontSize: 14 }}>
+      <span>{waiting === 0 ? 'Nenhum pedido do Claude esperando.' : `${waiting} ${waiting === 1 ? 'pedido do Claude espera' : 'pedidos do Claude esperam'} sua decisão.`}</span>
+      <Link to={`/claude?aba=decisoes&systemId=${systemId}`}>Abrir Decisões em Claude (MCP)</Link>
     </section>
   );
 }
@@ -120,7 +86,7 @@ export function ReauditPanel({ systems, initialSystemId }: { systems: ISystemSum
       </div>
       {systemId !== undefined && (
         <>
-          <Requests systemId={systemId} />
+          <RequestsNotice systemId={systemId} />
           <BeforeAfter systemId={systemId} />
         </>
       )}

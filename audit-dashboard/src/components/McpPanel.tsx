@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useMcpCalls, useMcpConfig } from '../hooks/useMcpConfig';
 import { startLabel } from '../utils/timeAgo';
 import type { IMcpConfig, IMcpConfigRequest, McpDataLevel, IMcpNewKey, ISystemSummaryResponse } from '../types';
-import { serverName } from '../utils/mcpSetup';
+import { connectionState, describeState, serverName } from '../utils/mcpSetup';
 import { McpSetupSteps } from './McpSetupSteps';
 import { LoadError } from './EngineRulesParts';
 import { DataTable } from './DataTable';
@@ -190,19 +190,28 @@ export function McpAdjustPanel({ system }: { system: ISystemSummaryResponse }) {
 }
 
 /**
- * Aba "Claude (MCP)" do cadastro de um sistema: os passos para conectar e os ajustes, juntos. A mesma configuração
- * está na área Claude (MCP) do menu, que reúne todos os sistemas.
+ * Aba "Claude (MCP)" do cadastro de um sistema: só mostra a situação da ligação e leva à área Claude (MCP) do menu,
+ * onde ficam os passos para conectar, as permissões, as decisões e a atividade (um lugar só, para todos os sistemas).
  */
 export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
+  const { config } = useMcpConfig(system.id, NO_KEY_CALLBACKS);
+  const calls = useMcpCalls(system.id);
+  const state = config.data ? describeState(connectionState(config.data, calls.data)) : null;
   return (
-    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-3)' }}>
-        Esta configuração também está na área <Link to={`/claude?aba=conectar&systemId=${system.id}`}>Claude (MCP)</Link> do menu,
-        onde você vê todos os sistemas, as decisões e a atividade.
+    <section aria-label="Claude (MCP) deste sistema" style={{ padding: '20px 24px', display: 'grid', gap: 12 }}>
+      <p style={{ margin: 0, fontSize: 14 }}>
+        A conexão do Claude Code com este sistema fica na área <strong>Claude (MCP)</strong> do menu, junto com as decisões, a atividade e as permissões
+        de todos os sistemas.
       </p>
-      <McpConnectPanel system={system} />
-      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Ajustes</h3>
-      <McpAdjustPanel system={system} />
-    </div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        {state ? <span style={{ fontWeight: 600 }}>{state.label}</span> : <span>Carregando…</span>}
+        {state && <span style={{ fontSize: 13, color: 'var(--s-text-3)' }}>{state.detail}</span>}
+      </div>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <Link to={`/claude?aba=conectar&systemId=${system.id}`}>Conectar ou corrigir</Link>
+        <Link to={`/claude?aba=permissoes&systemId=${system.id}`}>Permissões</Link>
+        <Link to={`/claude?aba=atividade`}>Atividade</Link>
+      </div>
+    </section>
   );
 }

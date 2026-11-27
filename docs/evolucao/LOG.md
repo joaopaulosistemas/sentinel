@@ -2376,3 +2376,11 @@ O CI da `main` quebrou depois da PR #381: a regra de chave de criptografia escri
 - **Verificado:** `tsc`, `eslint`, `vitest` (testes novos de estado, de decisões e da página), `conferir-numeros.py`.
 - **NÃO verificado:** aparência em navegador real (só jsdom).
 
+## Decisões com histórico e desfazer — 2026-11-27
+
+- **O que mudou:** em Claude (MCP) → Decisões, o item decidido não some: vai para **Decididas** com o resultado e a hora. Dá para desfazer sugestão (reabrir), pedido recusado (reabrir), pedido aprovado de suprimir achado (desfazer a supressão) e regra descartada (restaurar). Iniciar auditoria e promover regra não se desfazem, e a tela diz o motivo. A revisão completa passou para a aba Decisões; em Informações de Auditoria ficou um resumo com link, e a aba MCP de Sistemas → Editar virou um cartão que leva à área.
+- **Backend:** migração V8 (`review_suggestion.decided_at`, `rule_proposal.previous_stage`, `pending_action.result_suppression_id` e `undone_at`); `POST /pending-actions/{id}/{actionId}/reopen` e `/undo`; `POST /claude-review/{id}/rules/{rid}/restore`. O DTO ganhou `decidedAt`, `restorable`, `undoneAt` e `undoable`.
+- **Limites:** decisões anteriores à V8 não têm etapa anterior nem supressão guardadas, então aparecem sem botão de desfazer. O Sentinel não identifica a pessoa, então guarda quando, não quem.
+- **Verificado:** `tsc`, `eslint`, `vitest`, `conferir-numeros.py`, `auditar-sentinel.sh`.
+- **NÃO verificado:** compilação e testes Java (o Maven não resolve as dependências do Quarkus neste ambiente; só o CI roda); a migração V8 contra um Postgres real; aparência em navegador real.
+

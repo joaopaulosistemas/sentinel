@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ClaudeReviewPanel } from '../../components/ClaudeReviewPanel';
+import { ClaudeReviewSummary } from '../../components/ClaudeReviewSummary';
 import { PageShell } from '../../components/PageShell';
 import { ReauditPanel } from '../../components/ReauditPanel';
 import { useAudit } from '../../hooks/useAuditRuns';
@@ -53,7 +53,7 @@ export function FindingsPage() {
     <PageShell crumbs={findingsCrumbs({ auditMode, audit, auditId })}>
       <PageHeading auditMode={auditMode} auditId={auditId} systemName={audit?.systemName} />
       <TabBar aba={aba} onSelect={setAba} />
-      {aba === 'revisao' && <ClaudeReviewPanel key={panelKey} {...panelProps} />}
+      {aba === 'revisao' && <ClaudeReviewSummary key={panelKey} system={(systems ?? []).find((s) => s.id === panelProps.initialSystemId) ?? (systems ?? [])[0]} />}
       {aba === 'reauditoria' && <ReauditPanel key={panelKey} {...panelProps} />}
       {aba === 'achados' && (
         <FindingsTab

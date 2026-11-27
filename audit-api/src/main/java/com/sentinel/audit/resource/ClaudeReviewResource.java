@@ -1,6 +1,7 @@
 package com.sentinel.audit.resource;
 
 import com.sentinel.audit.review.RuleProposal;
+import com.sentinel.audit.review.RuleStage;
 import com.sentinel.audit.review.ReviewService;
 import com.sentinel.audit.review.SuggestionStatus;
 import com.sentinel.audit.review.ReviewSuggestion;
@@ -35,14 +36,15 @@ import java.util.List;
 public class ClaudeReviewResource {
 
     public record SuggestionDto(@Schema(description = "Identificador da sugestão.") Long id, @Schema(description = "Título da sugestão.") String title, @Schema(description = "Detalhe da sugestão.") String detail, @Schema(description = "Regra a que a sugestão se refere.") String ruleRef, @Schema(description = "Arquivo citado.") String file, @Schema(description = "Linha citada.") Integer line,
-                                @Schema(description = "Situação: aberta, tratada ou dispensada.") String status, @Schema(description = "Quando foi feita.") String createdAt) {}
+                                @Schema(description = "Situação: aberta, tratada ou dispensada.") String status, @Schema(description = "Quando foi feita.") String createdAt, @Schema(description = "Quando uma pessoa a tratou ou dispensou; nulo se está aberta.") String decidedAt) {}
 
     public record EvidenceDto(@Schema(description = "Achados que a regra deu durante a observação.") int hits, @Schema(description = "Quantos deles foram marcados como falso positivo.") int falsePositives, @Schema(description = "Auditorias desde que a observação começou.") int auditsSinceStart, @Schema(description = "Proporção de acertos (0 a 1).") double precision) {}
 
     public record ProposalDto(@Schema(description = "Identificador da regra proposta.") Long id, @Schema(description = "Nome curto da regra.") String slug, @Schema(description = "Título.") String title, @Schema(description = "Por que o Claude propôs a regra.") String rationale, @Schema(description = "A regra, em YAML do Semgrep.") String semgrepYaml, @Schema(description = "Estágio da regra.") String stage,
                               @Schema(description = "Estágio, em texto para exibição.") String stageLabel, @Schema(description = "Regra de origem, quando foi copiada de outro sistema.") Long copiedFromId, @Schema(description = "Observação do teste de amostra.") String sampleNote, @Schema(description = "Quando a observação começou.") String observationStartedAt,
                               @Schema(description = "Observação de quem decidiu.") String decisionNote, @Schema(description = "Resultado medido durante a observação.") EvidenceDto evidence, @Schema(description = "Precisão mínima configurada para a regra poder ser promovida.") double minPrecision, @Schema(description = "Mínimo de achados configurado para a regra poder ser promovida.") int minHits,
-                              @Schema(description = "Verdadeiro quando a regra pode ser copiada para outros sistemas.") boolean sharedEligible, @Schema(description = "Verdadeiro quando a regra já roda nas auditorias.") boolean runsInAudits) {}
+                              @Schema(description = "Verdadeiro quando a regra pode ser copiada para outros sistemas.") boolean sharedEligible, @Schema(description = "Verdadeiro quando a regra já roda nas auditorias.") boolean runsInAudits,
+                              @Schema(description = "Quando uma pessoa promoveu ou descartou a regra.") String decidedAt, @Schema(description = "Verdadeiro quando o descarte pode ser desfeito.") boolean restorable) {}
 
     public record ReviewResponse(@Schema(description = "Quantas sugestões estão abertas.") int openSuggestions, @Schema(description = "Sugestões do Claude para o sistema.") List<SuggestionDto> suggestions, @Schema(description = "Regras propostas pelo Claude.") List<ProposalDto> proposals) {}
 
@@ -139,6 +141,16 @@ public class ClaudeReviewResource {
     }
 
     @POST
+    @Path("/rules/{rid}/restore")
+    @Consumes(MediaType.WILDCARD)
+    @Operation(summary = "Desfazer o descarte da regra",
+            description = "A regra descartada volta para a etapa em que estava antes do descarte.")
+    public ReviewResponse restore(@PathParam("id") Long id, @PathParam("rid") Long rid) {
+        requireSystem(id);
+        return act(id, () -> service.restore(id, rid));
+    }
+
+    @POST
     @Path("/rules/{rid}/copy")
     @Operation(summary = "Copiar uma regra promovida para outro sistema, em observação",
             description = "Copia uma regra já promovida para outro sistema, onde ela começa em observação.")
@@ -167,7 +179,8 @@ public class ClaudeReviewResource {
     private ReviewResponse response(Long id) {
         List<SuggestionDto> suggestions = service.suggestions(id).stream()
                 .map(s -> new SuggestionDto(s.getId(), s.getTitle(), s.getDetail(), s.getRuleRef(), s.getFilePath(),
-                        s.getLineNumber(), s.getStatus().name(), s.getCreatedAt().toString()))
+                        s.getLineNumber(), s.getStatus().name(), s.getCreatedAt().toString(),
+                        s.getDecidedAt() == null ? null : s.getDecidedAt().toString()))
                 .toList();
         List<ProposalDto> proposals = service.proposals(id).stream().map(v -> {
             RuleProposal p = v.proposal();
@@ -177,7 +190,9 @@ public class ClaudeReviewResource {
                     p.getDecisionNote(),
                     new EvidenceDto(v.evidence().hits(), v.evidence().falsePositives(), v.evidence().auditsSinceStart(),
                             v.evidence().precision()),
-                    v.minPrecision(), v.minHits(), v.sharedEligible(), p.getStage().runs());
+                    v.minPrecision(), v.minHits(), v.sharedEligible(), p.getStage().runs(),
+                    p.getDecidedAt() == null ? null : p.getDecidedAt().toString(),
+                    p.getStage() == RuleStage.DISCARDED && p.getPreviousStage() != null && !p.getPreviousStage().terminal());
         }).toList();
         long open = suggestions.stream().filter(s -> "OPEN".equals(s.status())).count();
         return new ReviewResponse((int) open, suggestions, proposals);

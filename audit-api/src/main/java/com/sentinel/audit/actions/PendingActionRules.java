@@ -61,6 +61,37 @@ public final class PendingActionRules {
         return expiresAt != null && !expiresAt.isAfter(now);
     }
 
+    /** Só um pedido recusado por uma pessoa volta a esperar decisão; um que venceu sem decisão não volta. */
+    public static String cannotReopen(PendingStatus status, int pendingNow) {
+        if (status != PendingStatus.REJECTED) {
+            return "Só um pedido recusado pode ser reaberto.";
+        }
+        if (pendingNow >= MAX_PENDING_PER_SYSTEM) {
+            return "Há " + MAX_PENDING_PER_SYSTEM + " pedidos esperando aprovação: decida algum antes de reabrir este.";
+        }
+        return null;
+    }
+
+    /**
+     * Só a supressão de um pedido aprovado se desfaz: iniciar uma auditoria já aconteceu e não tem volta.
+     * {@code suppressionId} nulo quer dizer um pedido aprovado antes de o Sentinel guardar qual supressão ele criou.
+     */
+    public static String cannotUndo(PendingKind kind, PendingStatus status, LocalDateTime undoneAt, Long suppressionId) {
+        if (status != PendingStatus.APPROVED) {
+            return "Só um pedido aprovado pode ser desfeito.";
+        }
+        if (undoneAt != null) {
+            return "Este pedido já foi desfeito.";
+        }
+        if (kind == PendingKind.START_AUDIT) {
+            return "A auditoria já começou: não dá para desfazer.";
+        }
+        if (suppressionId == null) {
+            return "Este pedido foi aprovado antes de o Sentinel guardar o que ele criou: remova a supressão na lista de supressões.";
+        }
+        return null;
+    }
+
     /** Só um pedido ainda pendente e dentro da validade pode ser aprovado. */
     public static String cannotDecide(PendingStatus status, LocalDateTime expiresAt, LocalDateTime now) {
         if (status != PendingStatus.PENDING) {

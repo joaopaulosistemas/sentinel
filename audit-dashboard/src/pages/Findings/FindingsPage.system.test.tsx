@@ -27,7 +27,7 @@ function stub() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('FindingsPage: sistema vindo de "Ver todos os achados"', () => {
-  it('o sistema da auditoria já vem escolhido na Revisão do Claude e na Reauditoria', async () => {
+  it('o sistema da auditoria já vem escolhido no resumo da Revisão do Claude e na Reauditoria', async () => {
     stub();
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -42,8 +42,9 @@ describe('FindingsPage: sistema vindo de "Ver todos os achados"', () => {
     await vi.waitFor(() => expect(filtro.value).toBe('2'));
 
     fireEvent.click(screen.getByRole('tab', { name: 'Revisão do Claude' }));
-    const revisao = within(await screen.findByRole('region', { name: 'Revisão do Claude' })).getByRole('combobox') as HTMLSelectElement;
-    expect(revisao.value).toBe('2');
+    const resumo = await screen.findByRole('region', { name: 'Resumo da revisão do Claude' });
+    expect(within(resumo).getByText(/portal-cooperado/)).toBeInTheDocument();
+    expect(within(resumo).getByRole('link', { name: /Abrir revisão completa/ })).toHaveAttribute('href', '/claude?aba=decisoes&systemId=2');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Reauditoria' }));
     const reauditoria = within(await screen.findByRole('region', { name: 'Reauditoria' })).getByRole('combobox') as HTMLSelectElement;

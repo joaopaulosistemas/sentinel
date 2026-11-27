@@ -58,6 +58,23 @@ public final class RuleFunnel {
     }
 
     /**
+     * Uma regra descartada volta para a etapa em que estava, desde que o sistema ainda tenha lugar para ela.
+     * Promovida nunca é descartada, então a etapa guardada é sempre anterior à promoção.
+     */
+    public static Verdict restore(RuleStage from, RuleStage previous, long activeCount, int maxActive) {
+        if (from != RuleStage.DISCARDED) {
+            return Verdict.no("Só uma regra descartada pode ser restaurada.");
+        }
+        if (previous == null || previous.terminal()) {
+            return Verdict.no("Esta regra foi descartada antes de o Sentinel guardar a etapa anterior: proponha de novo.");
+        }
+        if (activeCount >= maxActive) {
+            return Verdict.no("Há " + maxActive + " regras em andamento: promova ou descarte algumas antes.");
+        }
+        return Verdict.yes();
+    }
+
+    /**
      * Uma regra nascida num sistema só vai para o pacote compartilhado depois de ter funcionado em outro:
      * pelo menos uma cópia dela, em outro sistema, promovida.
      */
