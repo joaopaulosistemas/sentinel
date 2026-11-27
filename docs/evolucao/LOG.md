@@ -2391,3 +2391,10 @@ A paleta ficou clara demais para o João. O claro da "Mais suave" passa de cart�
 - **Motivo da parada:** o ALERTA "ciclo não generaliza" do item A está ativo (média móvel 55 a 61 = 36,0 %, janela anterior 32,9 %, +3,1 pontos, abaixo dos 5 exigidos) e a proposta de mudança de estratégia da volta 61 aguarda o João. Pelo item F, a execução para sem criar volta nem branch nova. A branch não atinge os critérios de PR (6 voltas, ou 2 voltas seguidas sem mudança de código).
 - **Decisão pendente do João:** (1) métrica por precisão em código limpo mais amostra classificada; (2) régua fixa de 5 alvos nunca lidos (só números); (3) SCA por manifesto e analisador de ausência de CSRF. Enquanto não houver decisão, as execuções seguintes devem apenas conferir PR/CI e parar. Recomendação: pausar a tarefa agendada ou abrir o PR da branch 18 manualmente.
 - **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra.
+
+## Execução de 2026-11-27 (noite, sem volta 62): parada pelo item F (ALERTA ativo), segunda parada seguida
+
+- **Estado:** `ciclo/estabilizacao-18` com 2 voltas (60 e 61), sem PR de ciclo aberto (o PR #385 aberto é de outra branch, não do ciclo), sem auditoria em andamento (últimas 3 do CI, todas com sucesso, até 08:47 UTC). Nenhuma branch nova criada.
+- **Motivo:** ALERTA "ciclo não generaliza" do item A segue ativo (média móvel 55 a 61 = 36,0 %, +3,1 pontos sobre a anterior); a proposta de estratégia da volta 61 espera decisão do João. A branch não cumpre os critérios de PR (6 voltas, ou 2 voltas seguidas sem mudança de código).
+- **Decisão pendente do João:** (1) métrica por precisão em código limpo mais amostra classificada; (2) régua fixa de 5 alvos nunca lidos (só números); (3) SCA por manifesto e analisador de ausência de CSRF; ou pausar esta tarefa agendada / abrir o PR da branch 18 à mão.
+- **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra.
