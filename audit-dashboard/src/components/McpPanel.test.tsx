@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IMcpConfig, ISystemSummaryResponse } from '../types';
 import { McpPanel } from './McpPanel';
@@ -50,7 +51,9 @@ function setup(initial: IMcpConfig) {
   );
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <McpPanel system={system} />
+      <MemoryRouter>
+        <McpPanel system={system} />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
   return calls;

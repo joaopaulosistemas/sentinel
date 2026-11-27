@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { IMcpCall, IMcpConfig } from '../types';
-import { connectCommand, connectionState, isLocalAddress, refusalHelp, removeCommand, serverName } from './mcpSetup';
+import { connectCommand, connectionState, describeState, isLocalAddress, refusalHelp, removeCommand, serverName } from './mcpSetup';
 
 function cfg(over: Partial<IMcpConfig> = {}): IMcpConfig {
   return { enabled: true, hasKey: true, keyPrefix: 'snt_AbCd', keyCreatedAt: '2026-11-27T01:00:00', dataLevel: 'TITLES', tools: [], ...over };
@@ -99,5 +99,27 @@ describe('endereço e comando', () => {
       'claude mcp add --scope user --transport http sentinel-api https://s.exemplo/mcp/7 --header "Authorization: Bearer snt_x"',
     );
     expect(removeCommand('sentinel-api')).toBe('claude mcp remove sentinel-api');
+  });
+});
+
+describe('describeState', () => {
+  const NOW = Date.parse('2026-11-27T01:20:00');
+
+  it('diz em palavras cada estado e para onde ir', () => {
+    expect(describeState({ kind: 'no-key' }, NOW)).toMatchObject({ tone: 'idle', label: 'Falta conectar', tab: 'conectar', action: 'Conectar' });
+    expect(describeState({ kind: 'off' }, NOW)).toMatchObject({ tone: 'idle', label: 'Desligado', action: 'Ligar' });
+    expect(describeState({ kind: 'waiting' }, NOW)).toMatchObject({ tone: 'warn', label: 'Esperando', tab: 'conectar' });
+  });
+
+  it('recusando leva a corrigir, com o que aconteceu em uma frase', () => {
+    const view = describeState({ kind: 'refused', reason: 'chave diferente da vigente', at: '2026-11-27T01:10:00' }, NOW);
+    expect(view).toMatchObject({ tone: 'bad', label: 'Recusando', tab: 'conectar', action: 'Corrigir' });
+    expect(view.detail).toBe(refusalHelp('chave diferente da vigente').what);
+  });
+
+  it('conectado leva a gerenciar e diz quando foi a última chamada', () => {
+    const view = describeState({ kind: 'connected', at: '2026-11-27T01:10:00' }, NOW);
+    expect(view).toMatchObject({ tone: 'good', label: 'Conectado', tab: 'permissoes', action: 'Gerenciar' });
+    expect(view.detail).toBe('Última chamada há 10 min.');
   });
 });

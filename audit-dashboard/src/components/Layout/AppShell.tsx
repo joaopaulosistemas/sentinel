@@ -11,7 +11,7 @@ import {
   SkipToContent,
   Theme,
 } from '@carbon/react';
-import { Application, Book, ChartBar, Dashboard, Report, Security, Settings } from '@carbon/icons-react';
+import { Application, Bot, Book, ChartBar, Dashboard, Report, Security, Settings } from '@carbon/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
@@ -43,6 +43,7 @@ const ITENS = [
   { nome: 'Visão geral', rota: '/', exata: true, icone: Dashboard },
   { nome: 'Sistemas', rota: '/systems', icone: Application },
   { nome: 'Informações de Auditoria', rota: '/findings', icone: Security },
+  { nome: 'Claude (MCP)', rota: '/claude', icone: Bot },
   { nome: 'Ranking de Sistemas', rota: '/ranking', icone: ChartBar },
   { nome: 'Guia de código', rota: '/guide', icone: Book },
   { nome: 'Relatórios', rota: '/reports', icone: Report },
@@ -179,7 +180,7 @@ function MenuLink({ item, active, trilho, pending }: { item: MenuItem; active: b
       }}
     >
       <span className="sentinel-menu-rotulo" title={trilho ? item.nome : undefined}>{item.nome}</span>
-      {item.rota === '/findings' && pending > 0 && (
+      {item.rota === '/claude' && pending > 0 && (
         <span aria-label={pendingLabel(pending)} className="sentinel-menu-selo">
           {pending}
         </span>

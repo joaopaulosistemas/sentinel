@@ -4,16 +4,30 @@ O Sentinel é um servidor MCP: o Claude Code (ou outro cliente MCP) lê o result
 
 **Princípio:** o motor de regras é a única fonte da nota. O Claude consulta, sugere e propõe, sempre fora da nota. Tudo é configurado por sistema, e o que escreve vem desligado.
 
+## A área Claude (MCP)
+
+Tudo sobre o Claude consultando o Sentinel fica em um item de menu só: **Claude (MCP)** (`/claude`), com cinco abas. A aba aberta e o sistema escolhido ficam na URL (`?aba=conectar&systemId=2`), então dá para guardar ou mandar o link.
+
+| Aba | Para que serve |
+|---|---|
+| **Visão geral** | Quantos sistemas estão conectados, quantas decisões esperam você e quantos estão recusando chamadas. Cada sistema mostra o selo (Conectado, Esperando, Recusando, Desligado, Falta conectar) e o botão que leva ao próximo passo. |
+| **Conectar** | Escolhe o sistema e mostra o assistente de quatro passos abaixo. |
+| **Decisões** | Uma caixa só com tudo o que espera uma pessoa, de todos os sistemas: pedidos do Claude (**Aprovar** ou **Recusar**), regras no funil (próximo passo de cada uma) e sugestões abertas (**Tratada** ou **Dispensar**). Vazia, diz "Nada esperando você". O número aparece na aba e no menu. |
+| **Atividade** | As chamadas de todos os sistemas em uma lista, da mais recente para a mais antiga, com filtro por sistema e **Só recusadas**. Cada recusa traz o motivo e o que fazer, com o link para os passos. |
+| **Permissões** | Escolhe o sistema e ajusta o que o Claude pode ver (nível de dados), as ferramentas liberadas e os parâmetros das chamadas. Gerar ou revogar a chave continua na aba Conectar. |
+
+A aba **Claude (MCP)** de Sistemas → **Editar** continua existindo e aponta para esta área. Uma regra no funil só aparece em **Decisões** quando há algo para a pessoa fazer: em observação, só quando já tem achados e precisão suficientes para promover. Nada daqui entra na nota até uma regra ser promovida por você.
+
 ## Ligar para um sistema
 
-A aba **Claude (MCP)** (Sistemas → **Editar**) é um assistente de quatro passos. O selo no topo diz em que ponto você está, e cada passo mostra se já foi feito:
+Na aba **Conectar** (ou em Sistemas → **Editar** → **Claude (MCP)**) há um assistente de quatro passos. O selo no topo diz em que ponto você está, e cada passo mostra se já foi feito:
 
 1. **Gerar a chave** e copiar na hora (ela não aparece de novo; o Sentinel guarda só o hash).
 2. **Ligar o acesso** (**Permitir consulta pelo Claude (MCP)**).
 3. **Registrar no Claude Code:** escolher o sistema operacional, copiar o comando e colar no terminal.
 4. **Conferir a conexão:** abrir o Claude Code e digitar `/mcp`. A tela confere sozinha e passa a mostrar **Conectado**.
 
-Abaixo dos passos ficam os **Ajustes**: o que o Claude pode ver e quais ferramentas ficam liberadas.
+Os **Ajustes** (o que o Claude pode ver e quais ferramentas ficam liberadas) ficam na aba **Permissões**.
 
 Sem a chave, com o acesso desligado ou com a chave de outro sistema, a resposta HTTP é sempre a mesma `401`, exista o sistema ou não. Para quem está do lado de dentro, a tela explica o motivo: em um sistema que existe, cada recusa é anotada no registro de chamadas (ferramenta `acesso`) como `nenhuma chave gerada`, `chamada sem chave`, `chave diferente da vigente` ou `acesso desligado`. A chave apresentada nunca é gravada. A conexão aceita aparece como `conexão` (no máximo uma vez a cada 5 minutos), e é ela que vira o selo **Conectado**. Se nada aparece no registro, o endereço ou o número do sistema na URL não existe.
 

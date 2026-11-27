@@ -1,5 +1,6 @@
 import { Checkbox, InlineNotification } from '@carbon/react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMcpCalls, useMcpConfig } from '../hooks/useMcpConfig';
 import { startLabel } from '../utils/timeAgo';
 import type { IMcpConfig, IMcpConfigRequest, McpDataLevel, IMcpNewKey, ISystemSummaryResponse } from '../types';
@@ -113,11 +114,10 @@ function CallsSection({ calls }: { calls: CallRow[] | undefined }) {
   );
 }
 
-/**
- * Aba "Claude (MCP)" do cadastro de um sistema. Tudo aqui vale só para este sistema e salva na hora:
- * liga a consulta, gera a chave, escolhe quanto do resultado pode sair e quais ferramentas ficam liberadas.
- */
-export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
+const NO_KEY_CALLBACKS = { onIssued: () => undefined, onRevoked: () => undefined };
+
+/** Os quatro passos para conectar o Claude Code a um sistema: gerar a chave, ligar, registrar e conferir. */
+export function McpConnectPanel({ system }: { system: ISystemSummaryResponse }) {
   const calls = useCalls(system.id);
   // A chave completa só existe logo depois de gerada; ao fechar o painel ela some.
   const [fresh, setFresh] = useState<IMcpNewKey | null>(null);
@@ -133,20 +133,15 @@ export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
   if (config.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (config.isError || !config.data) return <LoadError error={config.error} />;
 
-  const cfg = config.data;
   // O número do sistema vale sempre; o nome falha se tiver acento, espaço ou se outro sistema tiver o mesmo.
   const url = `${window.location.origin}/mcp/${system.id}`;
-  const enabledTools = cfg.tools.filter((t) => t.enabled).map((t) => t.name);
-  const toggleTool = ({ name, on }: IToolToggle) =>
-    update.mutate({ tools: on ? [...enabledTools, name] : enabledTools.filter((n) => n !== name) });
   const error = (update.error ?? issue.error ?? revoke.error) as Error | null;
 
   return (
-    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'grid', gap: 12 }}>
       {error && <InlineNotification kind="error" title="Não foi possível salvar" subtitle={error.message} hideCloseButton />}
-
       <McpSetupSteps
-        cfg={cfg}
+        cfg={config.data}
         url={url}
         name={serverName(system.name, system.id)}
         calls={calls.data}
@@ -161,16 +156,53 @@ export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
         onDismissFresh={() => setFresh(null)}
         onToggleEnabled={(on) => update.mutate({ enabled: on })}
       />
+    </div>
+  );
+}
 
-      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Ajustes</h3>
+/** O que o Claude pode ver e quais ferramentas ficam liberadas para um sistema. Salva na hora. */
+export function McpAdjustPanel({ system }: { system: ISystemSummaryResponse }) {
+  const calls = useCalls(system.id);
+  const { config, update } = useMcpConfig(system.id, NO_KEY_CALLBACKS);
+
+  if (config.isLoading) return <div style={{ padding: 24 }}>Carregando…</div>;
+  if (config.isError || !config.data) return <LoadError error={config.error} />;
+
+  const cfg = config.data;
+  const enabledTools = cfg.tools.filter((t) => t.enabled).map((t) => t.name);
+  const toggleTool = ({ name, on }: IToolToggle) =>
+    update.mutate({ tools: on ? [...enabledTools, name] : enabledTools.filter((n) => n !== name) });
+  const error = update.error as Error | null;
+
+  return (
+    <div style={{ display: 'grid', gap: 20 }}>
+      {error && <InlineNotification kind="error" title="Não foi possível salvar" subtitle={error.message} hideCloseButton />}
       <p style={{ margin: 0, color: 'var(--s-text-3)', fontSize: 13 }}>
         As ferramentas de leitura vêm ligadas; as que escrevem (registrar_sugestao e propor_regra) ficam desligadas até você
-        liberar, e só gravam na aba Revisão do Claude. A nota continua sendo calculada apenas pelo motor de regras: o que o
-        Claude sugerir não entra nela.
+        liberar, e só gravam na Revisão do Claude. As que agem (iniciar_auditoria e suprimir_achado) só valem depois que você
+        aprovar cada pedido. A nota continua sendo calculada apenas pelo motor de regras: o que o Claude sugerir não entra nela.
       </p>
       <LevelsFieldset cfg={cfg} update={update} />
       <ToolsFieldset cfg={cfg} update={update} onToggle={toggleTool} />
       <CallsSection calls={calls.data} />
+    </div>
+  );
+}
+
+/**
+ * Aba "Claude (MCP)" do cadastro de um sistema: os passos para conectar e os ajustes, juntos. A mesma configuração
+ * está na área Claude (MCP) do menu, que reúne todos os sistemas.
+ */
+export function McpPanel({ system }: { system: ISystemSummaryResponse }) {
+  return (
+    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-3)' }}>
+        Esta configuração também está na área <Link to={`/claude?aba=conectar&systemId=${system.id}`}>Claude (MCP)</Link> do menu,
+        onde você vê todos os sistemas, as decisões e a atividade.
+      </p>
+      <McpConnectPanel system={system} />
+      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Ajustes</h3>
+      <McpAdjustPanel system={system} />
     </div>
   );
 }

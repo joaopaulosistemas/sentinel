@@ -14,6 +14,7 @@ const AuditRunPage = lazy(() => import('./pages/AuditRun/AuditRunPage').then((m)
 const RankingPage = lazy(() => import('./pages/Ranking/RankingPage').then((m) => ({ default: m.RankingPage })));
 const GuidePage = lazy(() => import('./pages/Guide/GuidePage').then((m) => ({ default: m.GuidePage })));
 const FindingsPage = lazy(() => import('./pages/Findings/FindingsPage').then((m) => ({ default: m.FindingsPage })));
+const ClaudePage = lazy(() => import('./pages/Claude/ClaudePage').then((m) => ({ default: m.ClaudePage })));
 const ReportsPage = lazy(() => import('./pages/Reports/ReportsPage').then((m) => ({ default: m.ReportsPage })));
 const SettingsPage = lazy(() => import('./pages/Settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 
@@ -30,6 +31,7 @@ export function App() {
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/findings" element={<FindingsPage />} />
+          <Route path="/claude" element={<ClaudePage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={admin ? <SettingsPage /> : <Navigate to="/" replace />} />
         </Routes>
