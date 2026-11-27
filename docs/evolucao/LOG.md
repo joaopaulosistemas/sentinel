@@ -2344,6 +2344,10 @@ No servidor, a chamada recusada em um sistema que existe passa a ser anotada no 
 
 A tela mostrava "Recusando chamadas" com o Claude Code já conectado: só consultas a ferramentas eram anotadas, então o aperto de mão (`initialize`, o que `claude mcp list` faz) funcionava sem deixar rastro e a recusa antiga continuava sendo a última notícia. Agora o `initialize` aceito é anotado como `conexão`, no máximo uma vez a cada 5 minutos para não encher o registro, e a tela trata isso como conectado. Uma recusa mais nova que a conexão volta a aparecer. A conexão não conta como consulta na faixa da execução da auditoria. Testes: `mcpSetup.test.ts`, `mcpActivity.test.ts`, `McpGateServiceTest` e `ApiSurfaceIntegrationTest`.
 
+### Auto-auditoria: constantes do motivo da recusa do MCP
+
+O CI da `main` quebrou depois da PR #381: a regra de chave de criptografia escrita no código (CWE-321) marcou como ERROR três constantes novas, `REFUSED_NO_KEY`, `REFUSED_MISSING_KEY` e `REFUSED_WRONG_KEY`, porque o nome tem `KEY` e o valor é um texto longo. Não eram segredos, eram as mensagens de motivo (`nenhuma chave gerada`...). Renomeadas para `REFUSED_UNSET`, `REFUSED_ABSENT` e `REFUSED_MISMATCH`, sem suprimir a regra. A PR #381 passou porque o passo "Testes Semgrep dos pacotes" só roda na `main`; `auditar-sentinel.sh` na pasta `mcp` agora dá "sem achados".
+
 ## Execução de 2026-11-26 (noite, sem volta 60): nenhum repositório novo adequado, quarta execução seguida
 
 - **Estado:** sem PR de ciclo aberto, sem auditoria em andamento (última, 2026-11-24, sucesso); `ciclo/estabilizacao-17` mesclada; nenhuma branch nova criada.

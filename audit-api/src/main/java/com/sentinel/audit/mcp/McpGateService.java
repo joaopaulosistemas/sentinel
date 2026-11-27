@@ -52,9 +52,9 @@ public class McpGateService {
         return PUBLIC_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
     }
 
-    static final String REFUSED_NO_KEY = "nenhuma chave gerada";
-    static final String REFUSED_MISSING_KEY = "chamada sem chave";
-    static final String REFUSED_WRONG_KEY = "chave diferente da vigente";
+    static final String REFUSED_UNSET = "nenhuma chave gerada";
+    static final String REFUSED_ABSENT = "chamada sem chave";
+    static final String REFUSED_MISMATCH = "chave diferente da vigente";
     static final String REFUSED_DISABLED = "acesso desligado";
 
     static String hash(String key) {
@@ -91,16 +91,16 @@ public class McpGateService {
      */
     static String refusalReason(McpAccess access, String presentedKey) {
         if (access == null || access.getKeyHash() == null) {
-            return REFUSED_NO_KEY;
+            return REFUSED_UNSET;
         }
         if (presentedKey == null || presentedKey.isBlank()) {
-            return REFUSED_MISSING_KEY;
+            return REFUSED_ABSENT;
         }
         boolean sameKey = MessageDigest.isEqual(
                 hash(presentedKey.trim()).getBytes(StandardCharsets.UTF_8),
                 access.getKeyHash().getBytes(StandardCharsets.UTF_8));
         if (!sameKey) {
-            return REFUSED_WRONG_KEY;
+            return REFUSED_MISMATCH;
         }
         return REFUSED_DISABLED;
     }
