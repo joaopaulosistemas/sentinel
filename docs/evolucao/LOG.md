@@ -2347,3 +2347,10 @@ A paleta ficou clara demais para o João. O claro da "Mais suave" passa de cart�
 - **Busca (6 consultas `search/repositories`, resultados limitados pela API):** nenhum resultado fora de `descobertos.txt`, `conjuntos.json` e LOG (único novo, `Sfedfcv/redesigned-pancake`, tem size 0, sem código).
 - **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo. Recomendação: pausar a tarefa agendada até a decisão.
 - **NÃO rodado:** auditoria, recall, validação, petclinic, Benchmark, amostra.
+
+## Execução de 2026-11-27 (madrugada, sem volta 60): nenhum repositório novo adequado, sexta execução seguida
+
+- **Estado:** sem PR de ciclo aberto, sem auditoria em andamento (última, 2026-11-24, sucesso); `ciclo/estabilizacao-17` mesclada; nenhuma branch nova criada.
+- **Busca (8 consultas `search/repositories` em 2 páginas, filtradas contra `descobertos.txt`, `conjuntos.json` e LOG):** só sobraram `Mixeway/MixewayScanner` (ferramenta), `christophe77/express-honeypot` (honeypot, não é app de treino) e dois repositórios sem código útil. Nenhum adequado.
+- **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo. Recomendação: pausar a tarefa agendada até a decisão.
+- **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra classificada.
