@@ -373,6 +373,10 @@ rules:
           - metavariable-regex:
               metavariable: $U
               regex: ^(?!["'`]https?://[^/"'`$\s]+[/?])
+          # caminho do próprio site (`'/perfil?id=' + valor`): a barra seguida de letra mantém o host; `'/' + valor` e `'//'` seguem marcados
+          - metavariable-regex:
+              metavariable: $U
+              regex: ^(?!["'`]/[^/\\"'`$\s])
           - focus-metavariable: $U
       # Egg: `ctx.unsafeRedirect(url)` desliga a lista de domínios do framework (o nome já diz)
       - pattern: ctx.unsafeRedirect($U)
@@ -729,6 +733,11 @@ rules:
       - pattern: '$L.parseXmlString($X, {..., noent: true, ...})'
       - pattern: '$L.parseXml($X, {..., replaceEntities: true, ...})'
       - pattern: '$L.parseXmlString($X, {..., replaceEntities: true, ...})'
+      # opções guardadas numa variável (`const opts = { noent: true }; parseXmlString(x, opts)`): `noent: true` só existe no libxml
+      - patterns:
+          - pattern: '{..., noent: true, ...}'
+          - pattern-inside: |
+              $O = {...}
     message: >
       Entidades externas XML ligadas (`noent: true` ou `replaceEntities: true`, CWE-611): o parser lê arquivos locais e faz requisições a
       pedido do documento. Remova a opção e rejeite DOCTYPE em XML vindo de fora.
@@ -878,6 +887,26 @@ rules:
       cwe: "CWE-502: Deserialization of Untrusted Data"
       owasp: A08:2021 - Software and Data Integrity Failures
 
+  - id: sentinel-node-node-serialize-unserialize
+    patterns:
+      - pattern: $S.unserialize($X, ...)
+      - pattern-inside: |
+          $S = require('node-serialize')
+          ...
+      - pattern-not: $S.unserialize('...')
+      - focus-metavariable: $X
+    message: >
+      `unserialize` do `node-serialize` com texto que não é literal (CWE-502, CVE-2017-5941): o pacote executa funções
+      embutidas no texto (`_$$ND_FUNC$$_`), então quem controla o texto executa código. Troque por JSON.parse e valide o
+      formato; cookie e corpo da requisição chegam aqui passando por outras funções, por isso a regra não exige a origem.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      side: back
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: A08:2021 - Software and Data Integrity Failures
+
   - id: sentinel-node-cookie-sem-flags
     patterns:
       - pattern-either:
@@ -999,6 +1028,18 @@ rules:
           # funções que recebem a requisição já são cobertas por sentinel-node-sql-injection
           - pattern-not-inside: 'function $F(..., req, ...) {...}'
           - pattern-not-inside: 'function $F(..., request, ...) {...}'
+          - pattern-not-inside: '(..., req, ...) => {...}'
+          - pattern-not-inside: '(..., request, ...) => {...}'
+          - pattern-not-inside: '({..., $P, ...}: Request, ...) => {...}'
+          - focus-metavariable: $Q
+      # função auxiliar de consulta (`executeQuery(sql)`, `runQuery(sql)`): o nome diz que o texto vai direto ao banco
+      - patterns:
+          - pattern: $F($Q, ...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: (?i)^(execute|exec|run)\w*(query|sql)$
+          - pattern-not-inside: 'function $F2(..., req, ...) {...}'
+          - pattern-not-inside: 'function $F2(..., request, ...) {...}'
           - pattern-not-inside: '(..., req, ...) => {...}'
           - pattern-not-inside: '(..., request, ...) => {...}'
           - pattern-not-inside: '({..., $P, ...}: Request, ...) => {...}'

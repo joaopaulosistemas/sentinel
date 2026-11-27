@@ -1,0 +1,142 @@
+{
+ "_comentario": "Falhas de 4auvar/VulnNodeApp (Express + EJS + MySQL) lidas no codigo (treino), volta 60. Gabarito escrito pelo mesmo agente que corrige, antes de ver os achados do Sentinel; regras aceitas fixadas antes da medida. IDOR, CSRF e senha sem hash sao falhas logicas/de ausencia (lacuna assumida, valem como meta). utility.js:120 e a chamada libxml com noent:true (linha 127 no arquivo; usei a janela da funcao parseXML, ajuste de linha se a regra acusar em 127). Correcao depois da medida: a linha do XXE passou de 127 (chamada) para 123 (`noent: true`, a falha em si); o recall antes (8/16) foi medido com 127 e nao muda.",
+ "repo": "4auvar/VulnNodeApp",
+ "falhas": [
+  {
+   "arquivo": "models/usersModel.js",
+   "linha": 7,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-concatenado",
+    "sentinel-node-sql-injection",
+    "sentinel-taint-sql-parametro-http"
+   ]
+  },
+  {
+   "arquivo": "models/usersModel.js",
+   "linha": 15,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-concatenado",
+    "sentinel-node-sql-injection",
+    "sentinel-taint-sql-parametro-http"
+   ]
+  },
+  {
+   "arquivo": "models/usersModel.js",
+   "linha": 41,
+   "cwe": "CWE-89",
+   "regras": [
+    "sentinel-node-sql-concatenado",
+    "sentinel-node-sql-injection",
+    "sentinel-taint-sql-parametro-http"
+   ]
+  },
+  {
+   "arquivo": "utils/utility.js",
+   "linha": 66,
+   "cwe": "CWE-78",
+   "regras": [
+    "sentinel-node-command-injection",
+    "sentinel-node-exec-dinamico"
+   ]
+  },
+  {
+   "arquivo": "utils/utility.js",
+   "linha": 80,
+   "cwe": "CWE-22",
+   "regras": [
+    "sentinel-node-path-traversal"
+   ]
+  },
+  {
+   "arquivo": "utils/utility.js",
+   "linha": 94,
+   "cwe": "CWE-185",
+   "regras": [
+    "sentinel-node-regexp-da-requisicao"
+   ]
+  },
+  {
+   "arquivo": "utils/utility.js",
+   "linha": 123,
+   "cwe": "CWE-611",
+   "regras": [
+    "sentinel-node-xxe",
+    "sentinel-xxe-parser-xml",
+    "sentinel-xxe-outros-parsers"
+   ]
+  },
+  {
+   "arquivo": "utils/utility.js",
+   "linha": 140,
+   "cwe": "CWE-502",
+   "regras": [
+    "sentinel-node-desserializacao"
+   ]
+  },
+  {
+   "arquivo": "app.js",
+   "linha": 25,
+   "cwe": "CWE-798",
+   "regras": [
+    "sentinel-node-session-secret-literal"
+   ]
+  },
+  {
+   "arquivo": "app.js",
+   "linha": 28,
+   "cwe": "CWE-1004",
+   "regras": [
+    "sentinel-node-cookie-httponly-desligado",
+    "sentinel-node-cookie-sem-flags",
+    "sentinel-cookie-sem-httponly",
+    "sentinel-cookie-secure-desligado"
+   ]
+  },
+  {
+   "arquivo": "views/reflected-xss.ejs",
+   "linha": 65,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-ejs-saida-sem-escape"
+   ]
+  },
+  {
+   "arquivo": "views/blind-sqli.ejs",
+   "linha": 65,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-ejs-saida-sem-escape"
+   ]
+  },
+  {
+   "arquivo": "views/command-injection.ejs",
+   "linha": 65,
+   "cwe": "CWE-79",
+   "regras": [
+    "sentinel-ejs-saida-sem-escape"
+   ]
+  },
+  {
+   "arquivo": "routes/users/user.js",
+   "linha": 205,
+   "cwe": "CWE-639",
+   "regras": []
+  },
+  {
+   "arquivo": "routes/users/user.js",
+   "linha": 122,
+   "cwe": "CWE-352",
+   "regras": [
+    "sentinel-node-csrf-ausente"
+   ]
+  },
+  {
+   "arquivo": "models/usersModel.js",
+   "linha": 56,
+   "cwe": "CWE-256",
+   "regras": []
+  }
+ ]
+}

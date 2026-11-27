@@ -1467,3 +1467,69 @@ export class ArquivoController {
     await ctx.curl(ctx.request.body.callback)
   }
 }
+
+// ---------- volta 60: opções de XML em variável, node-serialize por alias, SQL por função auxiliar, redirect para caminho do site ----------
+export function lerXmlOpcoesEmVariavel (libxml: any, dados: string) {
+  // ruleid: sentinel-node-xxe
+  const opcoes = {
+    noblanks: true,
+    noent: true
+  }
+  return libxml.parseXmlString(dados, opcoes)
+}
+
+export function lerXmlOpcoesSemNoent (libxml: any, dados: string) {
+  // ok: sentinel-node-xxe
+  const opcoes = {
+    noblanks: true,
+    noent: false
+  }
+  return libxml.parseXmlString(dados, opcoes)
+}
+
+export function lerCookieSerializado (dados: string) {
+  const serialize = require('node-serialize')
+  // ruleid: sentinel-node-node-serialize-unserialize
+  return serialize.unserialize(Buffer.from(dados, 'base64').toString())
+}
+
+export function lerJsonSerializado (dados: string) {
+  const serialize = require('serialize-javascript')
+  // ok: sentinel-node-node-serialize-unserialize
+  return serialize.unserialize(dados)
+}
+
+const consultarBanco = (q: string) => q
+const executeQuery = (q: string) => q
+
+export function buscaPorAuxiliar (usuario: string) {
+  const q = "SELECT * FROM users WHERE username like '%" + usuario + "%'"
+  // ruleid: sentinel-node-sql-concatenado
+  return executeQuery(q)
+}
+
+export function buscaPorAuxiliarSemTexto () {
+  // ok: sentinel-node-sql-concatenado
+  return executeQuery('SELECT * FROM users ORDER BY id')
+}
+
+export function buscaAuxiliarOutroNome (usuario: string) {
+  const q = "SELECT * FROM users WHERE username = '" + usuario + "'"
+  // ok: sentinel-node-sql-concatenado
+  return consultarBanco(q)
+}
+
+export function redirecionaParaCaminhoDoSite (req: any, res: any) {
+  // ok: sentinel-node-open-redirect
+  res.redirect('/perfil?id=' + req.query.id + '&idioma=pt')
+}
+
+export function redirecionaBarraMaisValor (req: any, res: any) {
+  // ruleid: sentinel-node-open-redirect
+  res.redirect('/' + req.query.destino)
+}
+
+export function redirecionaDuplaBarra (req: any, res: any) {
+  // ruleid: sentinel-node-open-redirect
+  res.redirect('//' + req.query.host)
+}
