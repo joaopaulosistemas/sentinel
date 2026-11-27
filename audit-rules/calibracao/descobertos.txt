@@ -77,3 +77,4 @@ hdiv/insecure-bank
 DefendShield/DefendShield-VulnBank
 psiinon/bodgeit
 wyxu95/JSecCode
+4auvar/VulnNodeApp
