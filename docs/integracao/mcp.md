@@ -6,20 +6,30 @@ O Sentinel é um servidor MCP: o Claude Code (ou outro cliente MCP) lê o result
 
 ## Ligar para um sistema
 
-1. Dashboard → **Sistemas** → **Editar** → aba **Claude (MCP)**.
-2. **Gerar chave** e copiar na hora (ela não aparece de novo; o Sentinel guarda só o hash).
-3. Marcar **Permitir consulta pelo Claude (MCP)**.
-4. Escolher **o que o Claude pode ver** e quais ferramentas ficam liberadas.
+A aba **Claude (MCP)** (Sistemas → **Editar**) é um assistente de quatro passos. O selo no topo diz em que ponto você está, e cada passo mostra se já foi feito:
 
-Sem a chave, com o acesso desligado ou com a chave de outro sistema, a resposta é sempre a mesma `401`, exista o sistema ou não.
+1. **Gerar a chave** e copiar na hora (ela não aparece de novo; o Sentinel guarda só o hash).
+2. **Ligar o acesso** (**Permitir consulta pelo Claude (MCP)**).
+3. **Registrar no Claude Code:** escolher o sistema operacional, copiar o comando e colar no terminal.
+4. **Conferir a conexão:** abrir o Claude Code e digitar `/mcp`. A tela confere sozinha e passa a mostrar **Conectado**.
+
+Abaixo dos passos ficam os **Ajustes**: o que o Claude pode ver e quais ferramentas ficam liberadas.
+
+Sem a chave, com o acesso desligado ou com a chave de outro sistema, a resposta HTTP é sempre a mesma `401`, exista o sistema ou não. Para quem está do lado de dentro, a tela explica o motivo: em um sistema que existe, cada recusa é anotada no registro de chamadas (ferramenta `acesso`) como `nenhuma chave gerada`, `chamada sem chave`, `chave diferente da vigente` ou `acesso desligado`. A chave apresentada nunca é gravada. Se nada aparece no registro, o endereço ou o número do sistema na URL não existe.
 
 ## Conectar o Claude Code
 
+Você precisa do Claude Code instalado no computador. O comando que a aba monta, com o número do sistema:
+
 ```
-claude mcp add --transport http sentinel-conta-corrente-api https://SEU-SENTINEL/mcp/conta-corrente-api --header "Authorization: Bearer snt_..."
+claude mcp add --scope user --transport http sentinel-conta-corrente-api https://SEU-SENTINEL/mcp/7 --header "Authorization: Bearer snt_..."
 ```
 
-A aba mostra esse comando já com a chave recém-gerada. O endereço é `/mcp/<nome do sistema>` (também vale o número do sistema).
+- O endereço é `/mcp/<número do sistema>`. O número vale sempre; o nome também funciona, mas falha com acento, espaço ou nome repetido.
+- `--scope user` registra para qualquer pasta. Sem ele, o registro vale só na pasta em que o comando foi rodado.
+- `localhost` só funciona no computador onde o Sentinel roda. Em outro computador, use o endereço do servidor.
+- Já registrou antes e deu erro? Rode `claude mcp remove <nome>` e registre de novo.
+- Depois de conectar, peça por exemplo: "Use o sentinel para listar os achados críticos do último relatório."
 
 ## O que o Claude vê
 

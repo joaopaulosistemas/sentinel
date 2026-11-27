@@ -12,6 +12,15 @@ describe('mcpActivity', () => {
     expect(callsSince(calls, started).map((c) => c.tool)).toEqual(['diff_auditoria', 'buscar_achados']);
   });
 
+  it('recusa na porta (chave errada, acesso desligado) não conta como consulta da auditoria', () => {
+    const calls = [
+      call({ tool: 'acesso', ok: false, detail: 'chave diferente da vigente', at: '2026-10-26T10:01:00' }),
+      call({ tool: 'buscar_achados', at: '2026-10-26T10:02:00' }),
+    ];
+    expect(callsSince(calls, started).map((c) => c.tool)).toEqual(['buscar_achados']);
+    expect(mcpCallEvents(calls, started)).toHaveLength(1);
+  });
+
   it('sem horário de início, mantém todas as chamadas', () => {
     expect(callsSince([call({ tool: 'a', at: '2026-10-26T09:00:00' })], null)).toHaveLength(1);
   });

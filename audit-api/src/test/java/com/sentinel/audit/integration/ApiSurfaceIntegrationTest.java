@@ -85,6 +85,23 @@ class ApiSurfaceIntegrationTest {
     }
 
     @Test
+    void recusaDoMcpApareceNoRegistroComOMotivoENuncaComAChave() {
+        int id = criaSistema("Sistema MCP Recusa", "https://127.0.0.1:1/org/mcp4.git", null);
+
+        given().contentType(JSON).body(INITIALIZE).post("/mcp/" + id).then().statusCode(401);
+        given().contentType(JSON).post("/api/v1/mcp-access/" + id + "/key").then().statusCode(200);
+        given().contentType(JSON).header("Authorization", "Bearer chave-que-nao-e-a-vigente").body(INITIALIZE)
+                .post("/mcp/" + id).then().statusCode(401);
+
+        String registro = given().get("/api/v1/mcp-access/" + id + "/calls").then().statusCode(200)
+                .body("tool", org.hamcrest.Matchers.hasItem("acesso"))
+                .body("ok", org.hamcrest.Matchers.everyItem(is(false)))
+                .body("detail", org.hamcrest.Matchers.hasItems("nenhuma chave gerada", "chave diferente da vigente"))
+                .extract().asString();
+        org.junit.jupiter.api.Assertions.assertFalse(registro.contains("chave-que-nao-e-a-vigente"));
+    }
+
+    @Test
     void nivelDeDadosInvalidoEBarradoNaConfiguracaoDoMcp() {
         int id = criaSistema("Sistema MCP Nivel", "https://127.0.0.1:1/org/mcp3.git", null);
         given().contentType(JSON).body(Map.of("dataLevel", "TUDO")).put("/api/v1/mcp-access/" + id).then().statusCode(400);

@@ -2,9 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { IMcpConfigRequest, IMcpNewKey } from '../types';
 
-/** Últimas chamadas que o Claude fez pelo MCP neste sistema. */
+/** De quanto em quanto tempo a tela do assistente confere se o Claude já conectou. */
+export const MCP_CALLS_POLL_MS = 5000;
+
+/** Últimas chamadas que o Claude fez pelo MCP neste sistema (e as recusadas, com o motivo). */
 export function useMcpCalls(systemId: number) {
-  return useQuery({ queryKey: ['mcp', systemId, 'calls'], queryFn: () => api.getMcpCalls(systemId), refetchOnWindowFocus: true });
+  return useQuery({
+    queryKey: ['mcp', systemId, 'calls'],
+    queryFn: () => api.getMcpCalls(systemId),
+    refetchOnWindowFocus: true,
+    refetchInterval: MCP_CALLS_POLL_MS,
+  });
 }
 
 interface IMcpKeyCallbacks {

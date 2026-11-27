@@ -83,4 +83,22 @@ class McpGateServiceTest {
         assertFalse(McpTool.STATUS_PEDIDOS.writes(), "consultar pedidos é leitura");
         assertTrue(gate.enabledTools(access(true, "k")).contains(McpTool.STATUS_PEDIDOS));
     }
+
+    @Test
+    void recusaDizOMotivoNaOrdemEmQueAPessoaCorrige() {
+        assertEquals(McpGateService.REFUSED_NO_KEY, McpGateService.refusalReason(null, "snt_x"));
+        assertEquals(McpGateService.REFUSED_NO_KEY, McpGateService.refusalReason(access(true, null), "snt_x"));
+        assertEquals(McpGateService.REFUSED_MISSING_KEY, McpGateService.refusalReason(access(true, "snt_certa"), null));
+        assertEquals(McpGateService.REFUSED_MISSING_KEY, McpGateService.refusalReason(access(true, "snt_certa"), "  "));
+        assertEquals(McpGateService.REFUSED_WRONG_KEY, McpGateService.refusalReason(access(true, "snt_certa"), "snt_outra"));
+        assertEquals(McpGateService.REFUSED_WRONG_KEY, McpGateService.refusalReason(access(false, "snt_certa"), "snt_outra"));
+        assertEquals(McpGateService.REFUSED_DISABLED, McpGateService.refusalReason(access(false, "snt_certa"), "snt_certa"));
+        assertEquals(McpGateService.REFUSED_DISABLED, McpGateService.refusalReason(access(false, "snt_certa"), "  snt_certa "));
+    }
+
+    @Test
+    void oMotivoDaRecusaNuncaContemAChaveApresentada() {
+        String reason = McpGateService.refusalReason(access(true, "snt_certa"), "snt_segredo_enviado");
+        assertFalse(reason.contains("segredo"));
+    }
 }
