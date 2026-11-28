@@ -84,7 +84,7 @@ public class PendingAction {
     public String getResultNote() { return resultNote; }
     public void setResultNote(String resultNote) { this.resultNote = resultNote; }
     public Long getResultSuppressionId() { return resultSuppressionId; }
-    public void setResultSuppressionId(Long id) { this.resultSuppressionId = id; }
+    public void setResultSuppressionId(Long suppressionId) { this.resultSuppressionId = suppressionId; }
     public LocalDateTime getUndoneAt() { return undoneAt; }
     public void setUndoneAt(LocalDateTime undoneAt) { this.undoneAt = undoneAt; }
     public Long getResultAuditRunId() { return resultAuditRunId; }

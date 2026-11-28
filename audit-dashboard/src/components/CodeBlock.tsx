@@ -19,6 +19,7 @@ export function CodeBlock({ filePath, line, context, start }: ICodeBlockProps) {
   return (
     <div style={{ background: '#161616', color: '#f4f4f4', fontFamily: mono, fontSize: '0.8125rem', lineHeight: '22px', marginTop: '0.5rem' }}>
       <div style={{ padding: '6px 16px', borderBottom: '1px solid #3a4150', fontSize: 12, color: '#c6cbd4', overflowWrap: 'anywhere' }}>{where}</div>
+      {/* tabIndex de propósito: sem foco, quem usa só o teclado não consegue rolar o código na horizontal (WCAG 2.1.1). */}
       <div role="region" aria-label={`Código de ${where}`} tabIndex={0} style={{ padding: '8px 0', overflowX: 'auto' }}>
         {lines.map((l) => (
           <div key={l.n} style={{ display: 'flex', whiteSpace: 'pre', background: l.hit ? '#5a2328' : 'transparent' }}>

@@ -7,7 +7,7 @@ import { startLabel } from '../../utils/timeAgo';
 import { DataTable } from '../../components/DataTable';
 import { emptyStyle, mono } from './ClaudeParts';
 
-export interface IActivityRow {
+interface IActivityRow {
   key: string;
   systemId: number;
   systemName: string;
@@ -15,7 +15,7 @@ export interface IActivityRow {
 }
 
 /** As chamadas de todos os sistemas em uma lista só, da mais recente para a mais antiga. */
-export function activityRows(rows: IClaudeSystemRow[]): IActivityRow[] {
+function activityRows(rows: IClaudeSystemRow[]): IActivityRow[] {
   return rows
     .flatMap((r) => r.calls.map((call, i) => ({ key: `${r.system.id}-${call.at}-${call.tool}-${i}`, systemId: r.system.id, systemName: r.system.name, call })))
     .sort((a, b) => Date.parse(b.call.at) - Date.parse(a.call.at));

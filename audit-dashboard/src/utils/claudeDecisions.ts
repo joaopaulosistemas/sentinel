@@ -12,10 +12,10 @@ export interface IDecisionButton {
 }
 
 export type DecisionKind = 'pedido' | 'regra' | 'sugestao';
-export type ResultTone = 'good' | 'bad' | 'warn' | 'idle';
+type ResultTone = 'good' | 'bad' | 'warn' | 'idle';
 
 /** O que foi decidido: o selo, quando, e se dá para voltar atrás (ou por que não dá). */
-export interface IDecisionResult {
+interface IDecisionResult {
   label: string;
   tone: ResultTone;
   /** Instante da decisão; nulo quando foi tomada antes de o Sentinel guardar a hora. */
@@ -51,7 +51,6 @@ const waiting = (d: Omit<IDecision, 'result'>): IDecision => ({ ...d, result: nu
 
 const decided = (d: Omit<IDecision, 'primary' | 'secondary' | 'result'>, result: IDecisionResult): IDecision => ({ ...d, primary: null, secondary: null, result });
 
-// ---- pedidos ----
 
 function pedidoBase(system: ISystemSummaryResponse, a: IPendingAction) {
   return {
@@ -98,11 +97,10 @@ function pedidoItem(system: ISystemSummaryResponse, a: IPendingAction): IDecisio
   });
 }
 
-// ---- regras ----
 
 function evidenceText(p: IRuleProposalView): string {
-  const e = p.evidence;
-  return `${e.hits} achado(s), ${e.falsePositives} falso(s) positivo(s), precisão ${Math.round(e.precision * 100)}% (mínimo ${Math.round(p.minPrecision * 100)}% e ${p.minHits} achados).`;
+  const evidencia = p.evidence;
+  return `${evidencia.hits} achado(s), ${evidencia.falsePositives} falso(s) positivo(s), precisão ${Math.round(evidencia.precision * 100)}% (mínimo ${Math.round(p.minPrecision * 100)}% e ${p.minHits} achados).`;
 }
 
 interface IRuleStep {
@@ -158,7 +156,6 @@ function ruleItems(system: ISystemSummaryResponse, review: IClaudeReview): IDeci
   });
 }
 
-// ---- sugestões ----
 
 function suggestionDetail(s: IClaudeReview['suggestions'][number]): string {
   const where = [s.ruleRef, s.file ? `${s.file}${s.line ? `:${s.line}` : ''}` : null].filter(Boolean).join(' · ');
@@ -181,7 +178,6 @@ function suggestionItems(system: ISystemSummaryResponse, review: IClaudeReview):
   });
 }
 
-// ---- junção ----
 
 interface IBuildInput {
   pending: Array<{ system: ISystemSummaryResponse; actions: IPendingAction[] }>;

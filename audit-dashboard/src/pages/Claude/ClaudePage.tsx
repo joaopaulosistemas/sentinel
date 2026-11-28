@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom';
+import type { ISystemSummaryResponse } from '../../types';
 import { McpAdjustPanel, McpConnectPanel } from '../../components/McpPanel';
 import { PageShell } from '../../components/PageShell';
 import { useClaudeSystems, useDecisions } from '../../hooks/useClaudeArea';
@@ -19,6 +20,10 @@ const ABAS = [
 type AbaId = (typeof ABAS)[number]['id'];
 
 const isAba = (v: string | null): v is AbaId => ABAS.some((a) => a.id === v);
+
+function abaDaUrl(valor: string | null): AbaId {
+  return isAba(valor) ? valor : 'visao';
+}
 
 function TabBar({ aba, decisions, onSelect }: { aba: AbaId; decisions: number; onSelect: (id: AbaId) => void }) {
   return (
@@ -41,27 +46,38 @@ function TabBar({ aba, decisions, onSelect }: { aba: AbaId; decisions: number; o
   );
 }
 
+/** Abas que mexem na configuração de um sistema: Conectar (chave e registro) e Permissões (o que o Claude pode ver). */
+function PainelDoSistema({ aba, system, systems, onPick }: { aba: AbaId; system: ISystemSummaryResponse | undefined; systems: ISystemSummaryResponse[]; onPick: (id: number) => void }) {
+  if (!system) return <div style={emptyStyle}>Nenhum sistema cadastrado. Cadastre um em Sistemas para conectar o Claude.</div>;
+  return (
+    <>
+      <SystemPicker systems={systems} value={system.id} onChange={onPick} />
+      {aba === 'conectar' ? <McpConnectPanel key={system.id} system={system} /> : <McpAdjustPanel key={system.id} system={system} />}
+      {aba === 'permissoes' && (
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-3)' }}>
+          Gerar uma chave nova ou revogar a atual: <Link to={`/claude?aba=conectar&systemId=${system.id}`}>aba Conectar</Link>.
+        </p>
+      )}
+    </>
+  );
+}
+
 /**
  * Área Claude (MCP): tudo sobre o Claude Code consultando o Sentinel em um lugar só, na ordem em que se usa:
  * ver a situação, conectar um sistema, decidir o que o Claude deixou esperando, acompanhar a atividade e ajustar as permissões.
  */
 export function ClaudePage() {
   const [params, setParams] = useSearchParams();
-  const aba: AbaId = isAba(params.get('aba')) ? (params.get('aba') as AbaId) : 'visao';
-  const { data: systems } = useSystems();
+  const aba = abaDaUrl(params.get('aba'));
+  const { data: systems = [] } = useSystems();
   const { rows, loading } = useClaudeSystems();
   const decisions = useDecisions();
   const requested = Number(params.get('systemId') ?? '0');
-  const system = (systems ?? []).find((s) => s.id === requested) ?? (systems ?? [])[0];
+  const system = systems.find((s) => s.id === requested) ?? systems[0];
 
-  const select = (next: AbaId) => {
+  const setParam = (chave: string, valor: string) => {
     const nextParams = new URLSearchParams(params);
-    nextParams.set('aba', next);
-    setParams(nextParams);
-  };
-  const pickSystem = (id: number) => {
-    const nextParams = new URLSearchParams(params);
-    nextParams.set('systemId', String(id));
+    nextParams.set(chave, valor);
     setParams(nextParams);
   };
 
@@ -74,25 +90,12 @@ export function ClaudePage() {
           pelo motor de regras.
         </span>
       </div>
-      <TabBar aba={aba} decisions={decisions.waiting} onSelect={select} />
+      <TabBar aba={aba} decisions={decisions.waiting} onSelect={(next) => setParam('aba', next)} />
       <div role="tabpanel" aria-labelledby={`claude-aba-${aba}`} style={{ display: 'grid', gap: 16 }}>
         {aba === 'visao' && <ClaudeOverview rows={rows} decisions={decisions.waiting} loading={loading} />}
-        {aba === 'decisoes' && <ClaudeDecisions items={decisions.items} loading={decisions.loading} systems={systems ?? []} initialSystemId={system?.id} />}
+        {aba === 'decisoes' && <ClaudeDecisions items={decisions.items} loading={decisions.loading} systems={systems} initialSystemId={system?.id} />}
         {aba === 'atividade' && <ClaudeActivity rows={rows} />}
-        {(aba === 'conectar' || aba === 'permissoes') &&
-          (system ? (
-            <>
-              <SystemPicker systems={systems ?? []} value={system.id} onChange={pickSystem} />
-              {aba === 'conectar' ? <McpConnectPanel key={system.id} system={system} /> : <McpAdjustPanel key={system.id} system={system} />}
-              {aba === 'permissoes' && (
-                <p style={{ margin: 0, fontSize: 13, color: 'var(--s-text-3)' }}>
-                  Gerar uma chave nova ou revogar a atual: <Link to={`/claude?aba=conectar&systemId=${system.id}`}>aba Conectar</Link>.
-                </p>
-              )}
-            </>
-          ) : (
-            <div style={emptyStyle}>Nenhum sistema cadastrado. Cadastre um em Sistemas para conectar o Claude.</div>
-          ))}
+        {(aba === 'conectar' || aba === 'permissoes') && <PainelDoSistema aba={aba} system={system} systems={systems} onPick={(id) => setParam('systemId', String(id))} />}
       </div>
     </PageShell>
   );

@@ -25,8 +25,8 @@ export type ConnectionState =
   | { kind: 'connected'; at: string };
 
 function time(iso: string): number {
-  const t = Date.parse(iso);
-  return Number.isNaN(t) ? 0 : t;
+  const instante = Date.parse(iso);
+  return Number.isNaN(instante) ? 0 : instante;
 }
 
 /** Uma recusa que a configuração de hoje já resolveu não deve mais aparecer como problema. */
@@ -51,7 +51,7 @@ export function connectionState(cfg: IMcpConfig, calls: IMcpCall[] | undefined):
   return { kind: 'waiting' };
 }
 
-export interface IRefusalHelp {
+interface IRefusalHelp {
   /** O que aconteceu, em uma frase. */
   what: string;
   /** O que fazer agora. */
@@ -91,7 +91,7 @@ export function isLocalAddress(url: string): boolean {
 export function serverName(systemName: string, systemId: number): string {
   const slug = systemName
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{M}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
