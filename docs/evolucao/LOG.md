@@ -2391,3 +2391,10 @@ O CI da `main` quebrou depois da PR #381: a regra de chave de criptografia escri
 - **Busca (8 consultas `search/repositories`, Java, Spring, Node, React, Angular, Vue, TypeScript, CTF):** nenhum resultado fora de `descobertos.txt`, `conjuntos.json` e LOG.
 - **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo. Recomendação: pausar a tarefa agendada até a decisão.
 - **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra classificada.
+
+## Execução de 2026-11-28 (tarde, sem volta 60): nenhum repositório novo adequado, oitava execução seguida
+
+- **Estado:** sem PR de ciclo aberto, sem auditoria em andamento; `ciclo/estabilizacao-17` mesclada; nenhuma branch nova criada.
+- **Busca (7 consultas `search/repositories`, 3 páginas cada, filtradas contra `descobertos.txt`, `conjuntos.json` e LOG, só Java/JS/TS/HTML/Vue):** sobraram só ferramentas, bibliotecas e apps fora do escopo (Python, PHP, Ruby, Go, Kubernetes). Nenhum adequado.
+- **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo. Recomendação: pausar a tarefa agendada até a decisão.
+- **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra classificada.
