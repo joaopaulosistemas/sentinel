@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { SkeletonText } from '@carbon/react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppShell } from './components/Layout/AppShell';
 import { useAuth } from './auth/AuthContext';
 
@@ -20,22 +21,25 @@ const SettingsPage = lazy(() => import('./pages/Settings/SettingsPage').then((m)
 
 export function App() {
   const { admin } = useAuth();
+  const { pathname } = useLocation();
   return (
     <AppShell>
-      <Suspense fallback={<SkeletonText paragraph lineCount={4} />}>
-        <Routes>
-          <Route path="/" element={<OverviewPage />} />
-          <Route path="/systems" element={<SystemsPage />} />
-          <Route path="/systems/:systemId" element={<SystemDetailPage />} />
-          <Route path="/audits/:auditId" element={<AuditRunPage />} />
-          <Route path="/ranking" element={<RankingPage />} />
-          <Route path="/guide" element={<GuidePage />} />
-          <Route path="/findings" element={<FindingsPage />} />
-          <Route path="/claude" element={<ClaudePage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/settings" element={admin ? <SettingsPage /> : <Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
+      <ErrorBoundary resetKey={pathname}>
+        <Suspense fallback={<SkeletonText paragraph lineCount={4} />}>
+          <Routes>
+            <Route path="/" element={<OverviewPage />} />
+            <Route path="/systems" element={<SystemsPage />} />
+            <Route path="/systems/:systemId" element={<SystemDetailPage />} />
+            <Route path="/audits/:auditId" element={<AuditRunPage />} />
+            <Route path="/ranking" element={<RankingPage />} />
+            <Route path="/guide" element={<GuidePage />} />
+            <Route path="/findings" element={<FindingsPage />} />
+            <Route path="/claude" element={<ClaudePage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/settings" element={admin ? <SettingsPage /> : <Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </AppShell>
   );
 }

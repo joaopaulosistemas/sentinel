@@ -5,8 +5,6 @@ import type { IClaudeReview, IRuleProposalView, SuggestionStatus, ISystemSummary
 import { startLabel } from '../utils/timeAgo';
 
 const mono = "'IBM Plex Mono', ui-monospace, monospace";
-const btn = { height: 32, padding: '0 12px', border: '1px solid var(--s-link)', background: 'var(--s-surface)', color: 'var(--s-link)', cursor: 'pointer', fontSize: 13 } as const;
-const btnDanger = { ...btn, border: '1px solid #da1e28', color: 'var(--s-danger-text)' } as const;
 
 export const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -93,7 +91,7 @@ function ProposalNotes({ p }: { p: IRuleProposalView }) {
 
 function StageButton({ label, danger, disabled, onClick }: { label: string; danger?: boolean; disabled: boolean; onClick: () => void }) {
   return (
-    <button type="button" style={danger ? btnDanger : btn} disabled={disabled} onClick={onClick}>{label}</button>
+    <button type="button" className={danger ? 'sentinel-btn sentinel-btn--danger' : 'sentinel-btn'} disabled={disabled} onClick={onClick}>{label}</button>
   );
 }
 

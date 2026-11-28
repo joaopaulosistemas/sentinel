@@ -7,9 +7,6 @@ import { KIND_LABEL, isWaiting, type DecisionKind, type IDecision, type IDecisio
 import { startLabel } from '../../utils/timeAgo';
 import { Pill, emptyStyle, type StateTone } from './ClaudeParts';
 
-const btn = { height: 32, padding: '0 12px', border: '1px solid var(--s-link)', background: 'var(--s-surface)', color: 'var(--s-link)', cursor: 'pointer', fontSize: 13 } as const;
-const btnPrimary = { ...btn, background: 'var(--s-primary)', color: '#fff' } as const;
-
 type Scope = 'esperando' | 'decididas' | 'todas';
 type KindFilter = 'todas' | DecisionKind;
 
@@ -32,8 +29,8 @@ function WaitingRow({ d, busy, onPress }: { d: IDecision; busy: boolean; onPress
   return (
     <>
       <Pill tone={d.kind === 'pedido' ? 'warn' : 'idle'}>{KIND_LABEL[d.kind]}</Pill>
-      {d.primary && <button type="button" style={btnPrimary} disabled={busy} onClick={() => onPress(d.primary as IDecisionButton)}>{d.primary.label}</button>}
-      {d.secondary && <button type="button" style={btn} disabled={busy} onClick={() => onPress(d.secondary as IDecisionButton)}>{d.secondary.label}</button>}
+      {d.primary && <button type="button" className="sentinel-btn sentinel-btn--primary" disabled={busy} onClick={() => onPress(d.primary as IDecisionButton)}>{d.primary.label}</button>}
+      {d.secondary && <button type="button" className="sentinel-btn" disabled={busy} onClick={() => onPress(d.secondary as IDecisionButton)}>{d.secondary.label}</button>}
     </>
   );
 }
@@ -47,7 +44,7 @@ function DoneRow({ d, busy, onPress }: { d: IDecision; busy: boolean; onPress: (
       <Pill tone={tone}>{result.label}</Pill>
       <span style={{ fontSize: 12, color: 'var(--s-text-3)' }}>{result.at ? startLabel(result.at) : 'sem hora registrada'}</span>
       {result.undo ? (
-        <button type="button" style={btn} disabled={busy} onClick={() => onPress(result.undo as IDecisionButton)}>{result.undo.label}</button>
+        <button type="button" className="sentinel-btn" disabled={busy} onClick={() => onPress(result.undo as IDecisionButton)}>{result.undo.label}</button>
       ) : (
         <span style={{ fontSize: 12, color: 'var(--s-text-3)', maxWidth: 260 }}>{result.undoBlocked}</span>
       )}
@@ -90,7 +87,7 @@ function Filters({ scope, kind, count, onScope, onKind }: { scope: Scope; kind: 
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
       <div role="group" aria-label="Mostrar decisões" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {SCOPES.map((s) => (
-          <button key={s.id} type="button" aria-pressed={scope === s.id} onClick={() => onScope(s.id)} style={{ ...btn, background: scope === s.id ? 'var(--s-selected)' : 'var(--s-surface)' }}>
+          <button key={s.id} type="button" aria-pressed={scope === s.id} onClick={() => onScope(s.id)} className="sentinel-btn">
             {s.label} ({count(s.id)})
           </button>
         ))}
@@ -131,7 +128,7 @@ export function ClaudeDecisions({ items, loading, systems, initialSystemId }: IP
     decide.mutate(b.action, { onSuccess: () => setNotice(noticeFor(d, b)) });
   };
   return (
-    <section aria-label="Decisões do Claude" style={{ display: 'grid', gap: 12 }}>
+    <section aria-label="Decisões do Claude" aria-busy={decide.isPending} style={{ display: 'grid', gap: 12 }}>
       <p style={{ margin: 0, fontSize: 14, color: 'var(--s-text-3)' }}>
         Pedidos do Claude (nada acontece até você aprovar), regras no funil e sugestões abertas. O que você decide continua aqui, em Decididas, e dá para
         desfazer quando o Sentinel permite. Nada daqui entra na nota até uma regra ser promovida por você.
