@@ -27,16 +27,20 @@ class ColunaNovaTest(unittest.TestCase):
                         "ALTER TABLE public.audit_run ADD COLUMN IF NOT EXISTS x text, ADD COLUMN IF NOT EXISTS y text"):
             self.assertEqual(V1, esquema._aplica_coluna(V1, comando))
 
-    def test_migracoes_reais_v2_a_v7_so_acrescentam_as_colunas_do_v6_e_do_v7(self):
+    def test_migracoes_reais_v2_a_v8_so_acrescentam_as_colunas_do_v6_ao_v8(self):
         v1 = esquema.comandos(os.path.join(RAIZ, "audit-api/src/main/resources/db/migration/V1__baseline.sql"))
         depois = v1
         for nome in sorted(os.listdir(os.path.join(RAIZ, "audit-api/src/main/resources/db/migration")))[1:]:
             for c in esquema.comandos(os.path.join(RAIZ, "audit-api/src/main/resources/db/migration", nome)):
                 depois = esquema._aplica_coluna(depois, c)
         novos = depois - v1
-        self.assertEqual(2, len(novos))  # audit_run (V6) e finding (V7)
+        # audit_run (V6), finding (V7), review_suggestion, rule_proposal e pending_action (V8)
+        self.assertEqual(5, len(novos))
         self.assertTrue(any("disabled_sides character varying(20)" in c for c in novos))
         self.assertTrue(any("code_context character varying(4000)" in c and "code_context_start integer" in c for c in novos))
+        for coluna in ("decided_at timestamp(6) with time zone", "previous_stage character varying(20)",
+                       "result_suppression_id bigint", "undone_at timestamp(6) with time zone"):
+            self.assertTrue(any(coluna in c for c in novos), coluna)
 
     def test_comandos_em_ordem_mantem_a_ordem_do_arquivo(self):
         sql = os.path.join(RAIZ, "audit-api/src/main/resources/db/migration/V7__contexto_do_codigo_no_achado.sql")
