@@ -66,10 +66,16 @@ public class PdfReportService {
     private static final float[] ESCUDO_PONTA = {16, 29.5f};
     private static final float[] ESCUDO_ESQUERDA_BAIXO = {4.5f, 25.2f};
     private static final float[] ESCUDO_ESQUERDA_CIMA = {4.5f, 17f};
-    private static final float[] ESCUDO_CURVA_ESQUERDA = {4.5f, 9.8f, 9.4f, 4.6f, 16, 2.5f};
-    private static final float[] ESCUDO_CURVA_DIREITA = {22.6f, 4.6f, 27.5f, 9.8f, 27.5f, 17f};
+    private static final Curva ESCUDO_CURVA_ESQUERDA = new Curva(4.5f, 9.8f, 9.4f, 4.6f, 16, 2.5f);
+    private static final Curva ESCUDO_CURVA_DIREITA = new Curva(22.6f, 4.6f, 27.5f, 9.8f, 27.5f, 17f);
     private static final float[] ESCUDO_DIREITA_BAIXO = {27.5f, 25.2f};
-    private static final float[] OLHO = {9.8f, 13f, 22.2f, 21f};
+    private static final Retangulo OLHO = new Retangulo(9.8f, 13f, 22.2f, 21f);
+    /** Curva de Bézier do logo: dois pontos de controle e o ponto final. */
+    private record Curva(float x1, float y1, float x2, float y2, float x3, float y3) { }
+
+    /** Caixa que delimita a elipse do olho: canto inferior esquerdo e superior direito. */
+    private record Retangulo(float x1, float y1, float x2, float y2) { }
+
     private static final float[] PUPILA = {16, 17, 1.9f};
     /** Larguras relativas das colunas do cabeçalho: logo, nome da ferramenta e tipo do relatório. */
     private static final float[] CABECALHO_LARGURAS = {0.8f, 4f, 5f};
@@ -274,16 +280,16 @@ public class PdfReportService {
         t.moveTo(ESCUDO_PONTA[0], ESCUDO_PONTA[1]);
         t.lineTo(ESCUDO_ESQUERDA_BAIXO[0], ESCUDO_ESQUERDA_BAIXO[1]);
         t.lineTo(ESCUDO_ESQUERDA_CIMA[0], ESCUDO_ESQUERDA_CIMA[1]);
-        t.curveTo(ESCUDO_CURVA_ESQUERDA[0], ESCUDO_CURVA_ESQUERDA[1], ESCUDO_CURVA_ESQUERDA[2], ESCUDO_CURVA_ESQUERDA[3],
-                ESCUDO_CURVA_ESQUERDA[4], ESCUDO_CURVA_ESQUERDA[5]);
-        t.curveTo(ESCUDO_CURVA_DIREITA[0], ESCUDO_CURVA_DIREITA[1], ESCUDO_CURVA_DIREITA[2], ESCUDO_CURVA_DIREITA[3],
-                ESCUDO_CURVA_DIREITA[4], ESCUDO_CURVA_DIREITA[5]);
+        t.curveTo(ESCUDO_CURVA_ESQUERDA.x1(), ESCUDO_CURVA_ESQUERDA.y1(), ESCUDO_CURVA_ESQUERDA.x2(), ESCUDO_CURVA_ESQUERDA.y2(),
+                ESCUDO_CURVA_ESQUERDA.x3(), ESCUDO_CURVA_ESQUERDA.y3());
+        t.curveTo(ESCUDO_CURVA_DIREITA.x1(), ESCUDO_CURVA_DIREITA.y1(), ESCUDO_CURVA_DIREITA.x2(), ESCUDO_CURVA_DIREITA.y2(),
+                ESCUDO_CURVA_DIREITA.x3(), ESCUDO_CURVA_DIREITA.y3());
         t.lineTo(ESCUDO_DIREITA_BAIXO[0], ESCUDO_DIREITA_BAIXO[1]);
         t.closePath();
         t.fill();
         t.setColorStroke(Color.WHITE);
         t.setLineWidth(2);
-        t.ellipse(OLHO[0], OLHO[1], OLHO[2], OLHO[3]);
+        t.ellipse(OLHO.x1(), OLHO.y1(), OLHO.x2(), OLHO.y2());
         t.stroke();
         t.setColorFill(Color.WHITE);
         t.circle(PUPILA[0], PUPILA[1], PUPILA[2]);

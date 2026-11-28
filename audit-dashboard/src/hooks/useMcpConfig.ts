@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import type { IMcpConfigRequest, IMcpNewKey } from '../types';
 
 /** De quanto em quanto tempo a tela do assistente confere se o Claude já conectou. */
-export const MCP_CALLS_POLL_MS = 5000;
+const MCP_CALLS_POLL_MS = 5000;
 
 /** Últimas chamadas que o Claude fez pelo MCP neste sistema (e as recusadas, com o motivo). */
 export function useMcpCalls(systemId: number) {

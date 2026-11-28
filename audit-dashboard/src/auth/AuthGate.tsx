@@ -95,20 +95,8 @@ interface IEntrada {
   setMgr: (mgr: UserManager) => void;
 }
 
-/** Descobre se há login, leva ao Keycloak quando precisa e termina com o perfil (ou o erro) no estado do AuthGate. */
-async function entrar({ aindaVivo, setEstado, setMgr }: IEntrada): Promise<void> {
-  const cfg = await lerConfig();
-  if (!aindaVivo()) return;
-  if (!cfg) {
-    setEstado({ fase: 'livre' });
-    return;
-  }
-  const gerenciador = criarGerenciador(cfg);
-  setMgr(gerenciador);
-  if (consumirSaida() && !ehRetornoDoLogin(window.location.search)) {
-    setEstado({ fase: 'saiu' }); // voltou do Keycloak depois de Sair: não manda para o login sozinho
-    return;
-  }
+/** Com a sessão do Keycloak em mãos, termina com o perfil (ou o erro) no estado do AuthGate. */
+async function concluirLogin(gerenciador: UserManager, { aindaVivo, setEstado }: Pick<IEntrada, 'aindaVivo' | 'setEstado'>): Promise<void> {
   try {
     const user = await obterUsuario(gerenciador);
     if (!user || user.expired) {
@@ -121,6 +109,24 @@ async function entrar({ aindaVivo, setEstado, setMgr }: IEntrada): Promise<void>
   } catch (erro) {
     if (aindaVivo()) setEstado({ fase: 'erro', mensagem: erro instanceof Error ? erro.message : 'Falha no login.' });
   }
+}
+
+/** Descobre se há login e, havendo, leva ao Keycloak quando precisa. */
+async function entrar(entrada: IEntrada): Promise<void> {
+  const { aindaVivo, setEstado, setMgr } = entrada;
+  const cfg = await lerConfig();
+  if (!aindaVivo()) return;
+  if (!cfg) {
+    setEstado({ fase: 'livre' });
+    return;
+  }
+  const gerenciador = criarGerenciador(cfg);
+  setMgr(gerenciador);
+  if (consumirSaida() && !ehRetornoDoLogin(window.location.search)) {
+    setEstado({ fase: 'saiu' }); // voltou do Keycloak depois de Sair: não manda para o login sozinho
+    return;
+  }
+  await concluirLogin(gerenciador, entrada);
 }
 
 /**

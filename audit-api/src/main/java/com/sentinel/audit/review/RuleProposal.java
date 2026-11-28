@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /** Regra proposta para um sistema e o ponto em que está no funil de promoção. */
 @Entity
@@ -67,7 +68,7 @@ public class RuleProposal {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public RuleStage getPreviousStage() { return previousStage == null ? null : RuleStage.valueOf(previousStage); }
-    public void setPreviousStage(RuleStage stage) { this.previousStage = stage == null ? null : stage.name(); }
+    public void setPreviousStage(RuleStage previous) { this.previousStage = Optional.ofNullable(previous).map(Enum::name).orElse(null); }
     public Long getId() { return id; }
     public Long getSystemId() { return systemId; }
     public void setSystemId(Long systemId) { this.systemId = systemId; }

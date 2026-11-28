@@ -64,22 +64,31 @@ final class CodeContext {
     }
 
     private static void attachOne(Finding f, Path root) throws IOException {
-        Integer line = f.getLineNumber();
-        if (line == null || line < 1 || f.getFilePath() == null || f.getFilePath().isBlank() || isSecret(f)) {
+        if (!temArquivoELinha(f) || isSecret(f)) {
             return;
         }
         Path file = root.resolve(f.getFilePath()).normalize();
-        if (!file.startsWith(root) || !Files.isRegularFile(file) || Files.size(file) > MAX_FILE_BYTES) {
+        if (!arquivoDentroDoProjeto(file, root)) {
             return;
         }
-        if (!file.toRealPath().startsWith(root)) {
-            return;                                   // atalho (symlink) que aponta para fora do projeto
-        }
-        Excerpt e = read(file, line);
+        Excerpt e = read(file, f.getLineNumber());
         if (e != null) {
             f.setCodeContext(e.text());
             f.setCodeContextStart(e.start());
         }
+    }
+
+    private static boolean temArquivoELinha(Finding f) {
+        Integer line = f.getLineNumber();
+        return line != null && line >= 1 && f.getFilePath() != null && !f.getFilePath().isBlank();
+    }
+
+    /** Arquivo comum, pequeno, dentro do projeto e sem atalho (symlink) que aponte para fora. */
+    private static boolean arquivoDentroDoProjeto(Path file, Path root) throws IOException {
+        if (!file.startsWith(root) || !Files.isRegularFile(file) || Files.size(file) > MAX_FILE_BYTES) {
+            return false;
+        }
+        return file.toRealPath().startsWith(root);
     }
 
     static boolean isSecret(Finding f) {

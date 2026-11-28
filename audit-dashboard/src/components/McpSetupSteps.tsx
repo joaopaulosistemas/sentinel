@@ -51,7 +51,7 @@ function badgeFor(state: ConnectionState): { tone: Tone; text: string } {
   }
 }
 
-export function StatusBadge({ state }: { state: ConnectionState }) {
+function StatusBadge({ state }: { state: ConnectionState }) {
   const { tone, text } = badgeFor(state);
   return (
     <div role="status" aria-label="Estado da conexão" style={{ display: 'inline-block', padding: '6px 12px', fontSize: 14, fontWeight: 600, background: TONES[tone].bg, color: TONES[tone].fg }}>

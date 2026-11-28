@@ -1,7 +1,7 @@
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { useState } from 'react';
 import { useIsoQuality, useIsoTrend } from '../hooks/useAuditRuns';
-import type { IAuditRunResponse, IIsoCharacteristic, IsoProfile } from '../types';
+import type { IAuditRunResponse, IIsoCharacteristic, IIsoQuality, IsoProfile } from '../types';
 import { isoDelta, isoDeltaLabel, isoDeltaSr, isoProfileHints, isoProfileLabels, isoSituacao, orderedCharacteristics } from '../utils/isoQuality';
 import { scoreBand, scoreColor } from '../utils/scoreBand';
 
@@ -89,6 +89,21 @@ function SeletorDePerfil({ profile, onChange }: { profile: IsoProfile; onChange:
   );
 }
 
+function ErroDaQualidade({ error }: { error: unknown }) {
+  const mensagem = error instanceof Error ? error.message : 'Erro desconhecido';
+  return <InlineNotification kind="error" title="Não foi possível calcular a qualidade ISO" subtitle={mensagem} hideCloseButton />;
+}
+
+/** Ordena as características pela prioridade e separa as que têm nota das que não foram avaliadas; nulo se a resposta veio sem a lista. */
+function separarCaracteristicas(data: IIsoQuality | undefined) {
+  if (!data || !Array.isArray(data.caracteristicas)) return null;
+  const ordered = orderedCharacteristics(data.caracteristicas, data.prioridade);
+  return {
+    avaliadas: ordered.filter((c) => c.avaliada && c.nota !== null),
+    naoAvaliadas: ordered.filter((c) => !c.avaliada || c.nota === null),
+  };
+}
+
 /** Qualidade por característica da ISO/IEC 25010: a que mais merece atenção em destaque e as não avaliadas recolhidas. */
 export function IsoQualityPanel({ run }: { run: IAuditRunResponse }) {
   const [profile, setProfile] = useState<IsoProfile>('padrao');
@@ -97,9 +112,7 @@ export function IsoQualityPanel({ run }: { run: IAuditRunResponse }) {
   const trend = useIsoTrend({ systemId: run.systemId, enabled: done });
   if (!done) return null;
 
-  const ordered = data && Array.isArray(data.caracteristicas) ? orderedCharacteristics(data.caracteristicas, data.prioridade) : null;
-  const avaliadas = (ordered ?? []).filter((c) => c.avaliada && c.nota !== null);
-  const naoAvaliadas = (ordered ?? []).filter((c) => !c.avaliada || c.nota === null);
+  const grupos = separarCaracteristicas(data);
 
   return (
     <section aria-label="Qualidade ISO/IEC 25010" style={box}>
@@ -112,8 +125,8 @@ export function IsoQualityPanel({ run }: { run: IAuditRunResponse }) {
       </div>
       <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--s-text-3)' }}>{isoProfileHints[profile]}</p>
       {isLoading && <SkeletonText paragraph lineCount={4} />}
-      {error && <InlineNotification kind="error" title="Não foi possível calcular a qualidade ISO" subtitle={error instanceof Error ? error.message : 'Erro desconhecido'} hideCloseButton />}
-      {data && ordered && <Resultado notaPonderada={data.notaPonderada} avaliadas={avaliadas} naoAvaliadas={naoAvaliadas} trend={trend.data} />}
+      {error && <ErroDaQualidade error={error} />}
+      {data && grupos && <Resultado notaPonderada={data.notaPonderada} avaliadas={grupos.avaliadas} naoAvaliadas={grupos.naoAvaliadas} trend={trend.data} />}
     </section>
   );
 }
