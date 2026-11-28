@@ -2398,3 +2398,10 @@ A paleta ficou clara demais para o João. O claro da "Mais suave" passa de cart�
 - **Motivo:** ALERTA "ciclo não generaliza" do item A segue ativo (média móvel 55 a 61 = 36,0 %, +3,1 pontos sobre a anterior); a proposta de estratégia da volta 61 espera decisão do João. A branch não cumpre os critérios de PR (6 voltas, ou 2 voltas seguidas sem mudança de código).
 - **Decisão pendente do João:** (1) métrica por precisão em código limpo mais amostra classificada; (2) régua fixa de 5 alvos nunca lidos (só números); (3) SCA por manifesto e analisador de ausência de CSRF; ou pausar esta tarefa agendada / abrir o PR da branch 18 à mão.
 - **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra.
+
+## Execução de 2026-11-28 (sem volta 62): parada pelo item F (ALERTA ativo), terceira parada seguida
+
+- **Estado:** `ciclo/estabilizacao-18` com 2 voltas (60 e 61), sem PR de ciclo aberto (o #385 é de outra branch), sem auditoria em andamento (últimas 3 do CI com sucesso, 2026-11-27). Nenhuma branch nova criada.
+- **Motivo:** ALERTA "ciclo não generaliza" (item A) segue ativo; a proposta de estratégia da volta 61 espera decisão do João. Sem decisão, nenhuma volta nova.
+- **Decisão pendente do João (repetida):** (1) métrica por precisão em código limpo mais amostra classificada; (2) régua fixa de 5 alvos nunca lidos (só números); (3) SCA por manifesto e analisador de ausência de CSRF; ou pausar esta tarefa agendada / abrir à mão o PR da branch 18.
+- **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra.
