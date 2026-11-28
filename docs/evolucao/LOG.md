@@ -2384,3 +2384,10 @@ O CI da `main` quebrou depois da PR #381: a regra de chave de criptografia escri
 - **Verificado:** `tsc`, `eslint`, `vitest`, `conferir-numeros.py`, `auditar-sentinel.sh`.
 - **NÃO verificado:** compilação e testes Java (o Maven não resolve as dependências do Quarkus neste ambiente; só o CI roda); a migração V8 contra um Postgres real; aparência em navegador real.
 
+
+## Execução de 2026-11-28 (meio-dia, sem volta 60): nenhum repositório novo adequado, sétima execução seguida
+
+- **Estado:** sem PR de ciclo aberto, sem auditoria em andamento (última, 2026-11-27, sucesso, na branch 18 já descartada); `ciclo/estabilizacao-17` mesclada; nenhuma branch de ciclo nova criada.
+- **Busca (8 consultas `search/repositories`, Java, Spring, Node, React, Angular, Vue, TypeScript, CTF):** nenhum resultado fora de `descobertos.txt`, `conjuntos.json` e LOG.
+- **Decisão pendente do João (repetida):** ampliar o escopo, conjunto fixo de alvos nunca lidos (só números) ou parar o recall. ALERTA "ciclo não generaliza" segue valendo. Recomendação: pausar a tarefa agendada até a decisão.
+- **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra classificada.
