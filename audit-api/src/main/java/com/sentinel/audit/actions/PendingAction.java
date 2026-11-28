@@ -58,6 +58,13 @@ public class PendingAction {
     @Column(name = "result_audit_run_id")
     private Long resultAuditRunId;
 
+    /** Supressão criada ao aprovar um pedido de suprimir achado; é o que permite desfazer. */
+    @Column(name = "result_suppression_id")
+    private Long resultSuppressionId;
+
+    @Column(name = "undone_at")
+    private LocalDateTime undoneAt;
+
     public Long getId() { return id; }
     public Long getSystemId() { return systemId; }
     public void setSystemId(Long systemId) { this.systemId = systemId; }
@@ -76,6 +83,10 @@ public class PendingAction {
     public void setDecidedAt(LocalDateTime decidedAt) { this.decidedAt = decidedAt; }
     public String getResultNote() { return resultNote; }
     public void setResultNote(String resultNote) { this.resultNote = resultNote; }
+    public Long getResultSuppressionId() { return resultSuppressionId; }
+    public void setResultSuppressionId(Long id) { this.resultSuppressionId = id; }
+    public LocalDateTime getUndoneAt() { return undoneAt; }
+    public void setUndoneAt(LocalDateTime undoneAt) { this.undoneAt = undoneAt; }
     public Long getResultAuditRunId() { return resultAuditRunId; }
     public void setResultAuditRunId(Long auditRunId) { this.resultAuditRunId = auditRunId; }
 }

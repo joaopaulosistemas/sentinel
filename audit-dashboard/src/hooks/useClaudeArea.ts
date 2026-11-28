@@ -2,8 +2,7 @@ import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { IClaudeReview, IMcpCall, IMcpConfig, IPendingAction, ISystemSummaryResponse } from '../types';
 import { connectionState, type ConnectionState } from '../utils/mcpSetup';
-import { buildDecisions, type DecisionAction, type IDecision } from '../utils/claudeDecisions';
-import { usePendingClaude } from './usePendingClaude';
+import { buildDecisions, isWaiting, type DecisionAction, type IDecision } from '../utils/claudeDecisions';
 import { useSystems } from './useSystems';
 
 /** De quanto em quanto tempo a área confere o estado dos sistemas (pouco, porque são vários de uma vez). */
@@ -41,17 +40,24 @@ export function useClaudeSystems() {
 export function useDecisions() {
   const { data: systems } = useSystems();
   const list = systems ?? [];
-  const pendingBySystem = usePendingClaude().bySystem;
+  // Todos os pedidos, não só os pendentes: quem decidiu continua vendo o que fez. Mesma chave do selo do menu.
+  const pendingQueries = useQueries({
+    queries: list.map((s) => ({ queryKey: ['pending-actions', s.id], queryFn: () => api.getPendingActions(s.id), refetchInterval: REVIEW_POLL_MS })),
+  });
   const reviews = useQueries({
     queries: list.map((s) => ({ queryKey: ['claude-review', s.id], queryFn: () => api.getClaudeReview(s.id), refetchInterval: REVIEW_POLL_MS })),
   });
-  const pending: Array<{ system: ISystemSummaryResponse; actions: IPendingAction[] }> = pendingBySystem;
+  const pending: Array<{ system: ISystemSummaryResponse; actions: IPendingAction[] }> = list.map((system, i) => ({
+    system,
+    actions: Array.isArray(pendingQueries[i]?.data) ? (pendingQueries[i].data as IPendingAction[]) : [],
+  }));
   const reviewList: Array<{ system: ISystemSummaryResponse; review: IClaudeReview | undefined }> = list.map((system, i) => ({
     system,
     review: reviews[i]?.data,
   }));
   const items: IDecision[] = buildDecisions({ pending, reviews: reviewList });
-  return { items, total: items.length, loading: reviews.some((q) => q.isLoading) };
+  const waiting = items.filter(isWaiting).length;
+  return { items, waiting, loading: reviews.some((q) => q.isLoading) || pendingQueries.some((q) => q.isLoading) };
 }
 
 /** Executa a ação de uma decisão e atualiza o que ela mexe. */

@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IMcpConfig, ISystemSummaryResponse } from '../types';
-import { McpPanel } from './McpPanel';
+import { McpAdjustPanel, McpConnectPanel, McpPanel } from './McpPanel';
 
 const system = { id: 7, name: 'conta-corrente-api', stack: 'JAVA', team: '', lastAuditScore: 62, lastAuditDate: null, openCritical: 0, openHigh: 0 } as ISystemSummaryResponse;
 
@@ -52,7 +52,8 @@ function setup(initial: IMcpConfig) {
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter>
-        <McpPanel system={system} />
+        <McpConnectPanel system={system} />
+        <McpAdjustPanel system={system} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -61,7 +62,7 @@ function setup(initial: IMcpConfig) {
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe('McpPanel', () => {
+describe('McpConnectPanel e McpAdjustPanel (as abas Conectar e Permissões da área Claude)', () => {
   it('começa pedindo a chave: selo "Falta gerar a chave", passo 2 travado e sem comando ainda', async () => {
     setup(config());
     expect(await screen.findByRole('status', { name: 'Estado da conexão' })).toHaveTextContent('Falta gerar a chave');
@@ -177,3 +178,34 @@ describe('McpPanel', () => {
     await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.endsWith('/key'))).toBe(true));
   });
 });
+
+describe('McpPanel (aba Claude (MCP) do cadastro do sistema)', () => {
+  function renderShort(cfg: IMcpConfig, calls: unknown[] = []) {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(JSON.stringify(String(url).includes('/calls') ? calls : cfg), { status: 200 })));
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <McpPanel system={system} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+  }
+
+  it('não repete os passos: mostra a situação e leva à área Claude (MCP)', async () => {
+    renderShort(config());
+    expect(await screen.findByText('Falta conectar')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Conectar ou corrigir' })).toHaveAttribute('href', '/claude?aba=conectar&systemId=7');
+    expect(screen.getByRole('link', { name: 'Permissões' })).toHaveAttribute('href', '/claude?aba=permissoes&systemId=7');
+    expect(screen.getByRole('link', { name: 'Atividade' })).toHaveAttribute('href', '/claude?aba=atividade');
+    expect(screen.queryByLabelText('Permitir consulta pelo Claude (MCP)')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gerar chave/ })).not.toBeInTheDocument();
+  });
+
+  it('com chamada do Claude depois da chave, diz Conectado', async () => {
+    renderShort(config({ enabled: true, hasKey: true, keyPrefix: 'snt_AbCd', keyCreatedAt: '2026-11-27T01:00:00' }), [
+      { tool: 'status_auditoria', ok: true, durationMs: 4, detail: null, at: '2026-11-27T01:10:00' },
+    ]);
+    expect(await screen.findByText('Conectado')).toBeInTheDocument();
+  });
+});
+

@@ -86,6 +86,7 @@ public class ReviewService {
             throw new IllegalArgumentException("Sugestão não encontrada.");
         }
         s.setStatus(status);
+        s.setDecidedAt(status == SuggestionStatus.OPEN ? null : LocalDateTime.now());
         return s;
     }
 
@@ -169,9 +170,27 @@ public class ReviewService {
     public RuleProposal discard(Long systemId, Long id, String note) {
         RuleProposal p = own(systemId, id);
         check(RuleFunnel.discard(p.getStage()));
+        p.setPreviousStage(p.getStage());
         p.setStage(RuleStage.DISCARDED);
         p.setDecidedAt(LocalDateTime.now());
         p.setDecisionNote(note == null ? null : cut(note.strip(), NOTE_MAX_CHARS));
+        return p;
+    }
+
+    /** Desfaz o descarte: a regra volta para a etapa em que estava, sem refazer o que já tinha passado. */
+    @Transactional
+    public RuleProposal restore(Long systemId, Long id) {
+        RuleProposal p = own(systemId, id);
+        check(RuleFunnel.restore(p.getStage(), p.getPreviousStage(), proposals.activeCount(systemId), MAX_ACTIVE_PROPOSALS));
+        RuleStage back = p.getPreviousStage();
+        p.setStage(back);
+        p.setPreviousStage(null);
+        if (back == RuleStage.OBSERVING) {
+            // Descartada, a regra não rodou nas auditorias: a observação recomeça agora, senão contaria auditorias sem ela.
+            p.setObservationStartedAt(LocalDateTime.now());
+        }
+        p.setDecidedAt(null);
+        p.setDecisionNote(null);
         return p;
     }
 

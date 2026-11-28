@@ -245,8 +245,8 @@ Pontos do código que valem saber (do comentário de `AuditOrchestrationService`
 | `EngineConfigResource` | Lê e grava o ajuste do motor de um sistema e mostra o resultado já resolvido | `/api/v1/engine-config/{id}` |
 | `McpResource` | Servidor MCP (JSON-RPC por POST) com a chave do sistema, fora da API key global | `POST /mcp/{sistema}` |
 | `McpAdminResource` | Liga o MCP, escolhe nível de dado e ferramentas, gera ou revoga a chave, lista as chamadas | `/api/v1/mcp-access/{id}`, `/key`, `/calls` |
-| `ClaudeReviewResource` | Sugestões, regras propostas, funil e métricas do Claude | `/api/v1/claude-review/{id}`, `/metrics`, `/suggestions/{sid}/status`, `/rules/{rid}/review\|sample\|observe\|promote\|discard\|copy` |
-| `PendingActionResource` | Pedidos do Claude esperando aprovação | `/api/v1/pending-actions/{id}`, `/{actionId}/approve`, `/reject` |
+| `ClaudeReviewResource` | Sugestões, regras propostas, funil e métricas do Claude | `/api/v1/claude-review/{id}`, `/metrics`, `/suggestions/{sid}/status`, `/rules/{rid}/review\|sample\|observe\|promote\|discard\|restore\|copy` |
+| `PendingActionResource` | Pedidos do Claude esperando aprovação | `/api/v1/pending-actions/{id}`, `/{actionId}/approve`, `/reject`, `/reopen`, `/undo` |
 | `HealthResource` | Verificação de saúde | `/api/v1/health` |
 | `ApiKeyFilter` | Exige a chave `X-API-Key` quando `API_KEY` está definida | filtro global |
 | `ApiErrorMapper` | Devolve em JSON a mensagem dos erros 4xx (sem ela a tela só mostraria "HTTP 400"); erros 5xx não expõem detalhe | — |

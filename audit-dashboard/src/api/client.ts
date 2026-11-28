@@ -58,7 +58,7 @@ interface IReviewActionParams {
 interface IDecidePendingActionParams {
   systemId: number;
   actionId: number;
-  decision: 'approve' | 'reject';
+  decision: 'approve' | 'reject' | 'reopen' | 'undo';
 }
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';

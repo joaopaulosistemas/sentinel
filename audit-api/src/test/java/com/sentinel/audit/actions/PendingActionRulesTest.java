@@ -60,4 +60,26 @@ class PendingActionRulesTest {
         assertEquals(90, PendingActionRules.SUPPRESSION_DAYS);
         assertEquals(java.util.Set.of(SuppressionReason.FALSE_POSITIVE), PendingActionRules.ALLOWED_FOR_CLAUDE);
     }
+
+    @Test
+    void soUmPedidoRecusadoVoltaEEnquantoHaLugarNaFila() {
+        assertNull(PendingActionRules.cannotReopen(PendingStatus.REJECTED, 0));
+        assertNull(PendingActionRules.cannotReopen(PendingStatus.REJECTED, PendingActionRules.MAX_PENDING_PER_SYSTEM - 1));
+        assertNotNull(PendingActionRules.cannotReopen(PendingStatus.REJECTED, PendingActionRules.MAX_PENDING_PER_SYSTEM), "fila cheia");
+        assertNotNull(PendingActionRules.cannotReopen(PendingStatus.EXPIRED, 0), "o que venceu sem decisão não volta");
+        assertNotNull(PendingActionRules.cannotReopen(PendingStatus.APPROVED, 0), "o aprovado já agiu");
+        assertNotNull(PendingActionRules.cannotReopen(PendingStatus.PENDING, 0));
+    }
+
+    @Test
+    void soSupressaoAprovadaSeDesfazEIniciarAuditoriaNunca() {
+        LocalDateTime undone = LocalDateTime.of(2026, 11, 27, 10, 0);
+        assertNull(PendingActionRules.cannotUndo(PendingKind.SUPPRESS_FINDING, PendingStatus.APPROVED, null, 7L));
+        assertTrue(PendingActionRules.cannotUndo(PendingKind.START_AUDIT, PendingStatus.APPROVED, null, null).contains("já começou"));
+        assertNotNull(PendingActionRules.cannotUndo(PendingKind.SUPPRESS_FINDING, PendingStatus.REJECTED, null, 7L));
+        assertNotNull(PendingActionRules.cannotUndo(PendingKind.SUPPRESS_FINDING, PendingStatus.PENDING, null, 7L));
+        assertTrue(PendingActionRules.cannotUndo(PendingKind.SUPPRESS_FINDING, PendingStatus.APPROVED, undone, 7L).contains("já foi desfeito"), "não desfaz duas vezes");
+        assertTrue(PendingActionRules.cannotUndo(PendingKind.SUPPRESS_FINDING, PendingStatus.APPROVED, null, null).contains("supressões"),
+                "pedido anterior ao registro da supressão manda remover na lista");
+    }
 }

@@ -116,8 +116,8 @@ O documento OpenAPI (`/q/openapi`) e o Swagger UI (`/swagger-ui`; ligado no Comp
 | `POST` | `/api/v1/settings/restart` | Reinicia a API para as configurações salvas valerem |
 | `GET` `PUT` | `/api/v1/mcp-access/{id}` | Acesso MCP do sistema: ligar, nível de dado, ferramentas; `POST/DELETE …/key` gera e revoga a chave; `GET …/calls` lista as chamadas |
 | `POST` | `/mcp/{sistema}` | Servidor MCP (JSON-RPC), com a chave do sistema em `Authorization: Bearer`; fora da `API_KEY` global; limite de chamadas (`429`) |
-| `GET` | `/api/v1/claude-review/{id}` | Sugestões e regras propostas do Claude; `…/metrics` mede quanto ele acerta; `POST …/suggestions/{sid}/status` e `…/rules/{rid}/review\|sample\|observe\|promote\|discard\|copy` movem o funil |
-| `GET` | `/api/v1/pending-actions/{id}` | Pedidos do Claude; `POST …/{actionId}/approve` ou `…/reject` |
+| `GET` | `/api/v1/claude-review/{id}` | Sugestões e regras propostas do Claude; `…/metrics` mede quanto ele acerta; `POST …/suggestions/{sid}/status` e `…/rules/{rid}/review\|sample\|observe\|promote\|discard\|restore\|copy` movem o funil (`restore` desfaz um descarte) |
+| `GET` | `/api/v1/pending-actions/{id}` | Pedidos do Claude; `POST …/{actionId}/approve` ou `…/reject`; `…/reopen` reabre um pedido recusado e `…/undo` desfaz a supressão de um aprovado |
 | `GET` | `/api/v1/audits/{id}/iso25010` | Nota por característica da [ISO/IEC 25010](iso-25010.md), com características não avaliadas marcadas; `perfil=padrao\|financeiro\|interno` e `metas=security:90,...` |
 | `GET` | `/api/v1/audits/{id}/score-explanation` | De onde vem a nota, por dimensão e regra, com o teto por regra marcado (20 pontos por regra em MEDIUM/LOW/INFO e 50 em HIGH; CRITICAL não tem teto); `without=<regras>` simula a nota sem elas |
 | `GET` | `/api/v1/audits/{id}/freshness` | Auditoria desatualizada? Compara o commit auditado com a ponta atual da branch no remoto (`git ls-remote`) |

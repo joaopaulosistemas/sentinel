@@ -629,6 +629,8 @@ export interface IReviewSuggestion {
   line: number | null;
   status: SuggestionStatus;
   createdAt: string;
+  /** Quando uma pessoa tratou ou dispensou; nulo se está aberta ou foi decidida antes de o Sentinel guardar a hora. */
+  decidedAt?: string | null;
 }
 
 interface IRuleEvidence {
@@ -655,6 +657,9 @@ export interface IRuleProposalView {
   minHits: number;
   sharedEligible: boolean;
   runsInAudits: boolean;
+  decidedAt?: string | null;
+  /** Verdadeiro quando o descarte pode ser desfeito (a regra volta para a etapa em que estava). */
+  restorable?: boolean;
 }
 
 export interface IClaudeReview {
@@ -676,6 +681,10 @@ export interface IPendingAction {
   decidedAt: string | null;
   resultNote: string | null;
   auditRunId: number | null;
+  /** Quando uma pessoa desfez a decisão de um pedido aprovado. */
+  undoneAt?: string | null;
+  /** Verdadeiro quando o pedido aprovado ainda pode ser desfeito. */
+  undoable?: boolean;
 }
 
 /** Quanto o Claude acerta, segundo o que as pessoas decidiram. Taxas são null enquanto não há decisão. */

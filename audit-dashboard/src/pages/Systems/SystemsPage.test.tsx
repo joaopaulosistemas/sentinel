@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SystemsPage } from './SystemsPage';
@@ -78,13 +78,13 @@ describe('SystemsPage', () => {
   it('?edit=ID&tab=mcp abre o cadastro direto na aba Claude (MCP)', async () => {
     renderPage({}, { systems: [{ id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true }], url: '/systems?edit=3&tab=mcp' });
     expect(await screen.findByRole('dialog', { name: 'Editar sistema' })).toBeInTheDocument();
-    expect(await screen.findByLabelText('Permitir consulta pelo Claude (MCP)')).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Claude (MCP) deste sistema' })).toBeInTheDocument();
   });
 
   it('?edit=ID sem tab abre na aba de cadastro', async () => {
     renderPage({}, { systems: [{ id: 3, name: 'conta-corrente-api', stack: 'JAVA', team: 'Squad Contas', lastAuditScore: 61, lastAuditDate: null, openCritical: 0, openHigh: 0, repoUrl: 'https://github.com/acme/conta-corrente', auditIntervalHours: 24, scheduledBranch: 'main', auditOnPush: true }], url: '/systems?edit=3' });
     expect(await screen.findByLabelText(/Nome do sistema/)).toHaveValue('conta-corrente-api');
-    expect(screen.queryByLabelText('Permitir consulta pelo Claude (MCP)')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Claude (MCP) deste sistema' })).not.toBeInTheDocument();
   });
 
   it('Editar abre o cadastro em pop-up, com a linha destacada, e fechar some com ele', async () => {
@@ -186,7 +186,9 @@ describe('SystemsPage', () => {
     expect(tab).toBeEnabled();
     expect(screen.getByRole('tab', { name: 'Cadastro e Git' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.click(tab);
-    expect(await screen.findByText(/O MCP deixa o Claude Code consultar o resultado deste sistema/)).toBeInTheDocument();
+    const card = await screen.findByRole('region', { name: 'Claude (MCP) deste sistema' });
+    expect(within(card).getByRole('link', { name: 'Conectar ou corrigir' })).toHaveAttribute('href', '/claude?aba=conectar&systemId=4');
+    expect(screen.queryByLabelText('Permitir consulta pelo Claude (MCP)')).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Token Git/)).not.toBeInTheDocument();
   });
 });

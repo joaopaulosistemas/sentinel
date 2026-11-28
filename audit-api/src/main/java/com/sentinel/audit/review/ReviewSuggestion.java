@@ -52,6 +52,9 @@ public class ReviewSuggestion {
     @SuppressWarnings("PMD.ImmutableField") // o Hibernate atribui o campo ao carregar a entidade: não pode ser final
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "decided_at")
+    private LocalDateTime decidedAt;
+
     public Long getId() { return id; }
     public Long getSystemId() { return systemId; }
     public void setSystemId(Long systemId) { this.systemId = systemId; }
@@ -68,4 +71,6 @@ public class ReviewSuggestion {
     public SuggestionStatus getStatus() { return status; }
     public void setStatus(SuggestionStatus status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getDecidedAt() { return decidedAt; }
+    public void setDecidedAt(LocalDateTime decidedAt) { this.decidedAt = decidedAt; }
 }

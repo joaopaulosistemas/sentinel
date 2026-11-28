@@ -58,10 +58,16 @@ public class RuleProposal {
     @Column(name = "decided_at")
     private LocalDateTime decidedAt;
 
+    /** Etapa em que a regra estava antes de ser descartada; guarda-se como texto para poder restaurá-la. */
+    @Column(name = "previous_stage", length = 20)
+    private String previousStage;
+
     @Column(name = "created_at", nullable = false)
     @SuppressWarnings("PMD.ImmutableField") // o Hibernate atribui o campo ao carregar a entidade: não pode ser final
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    public RuleStage getPreviousStage() { return previousStage == null ? null : RuleStage.valueOf(previousStage); }
+    public void setPreviousStage(RuleStage stage) { this.previousStage = stage == null ? null : stage.name(); }
     public Long getId() { return id; }
     public Long getSystemId() { return systemId; }
     public void setSystemId(Long systemId) { this.systemId = systemId; }

@@ -12,11 +12,24 @@ Tudo sobre o Claude consultando o Sentinel fica em um item de menu só: **Claude
 |---|---|
 | **Visão geral** | Quantos sistemas estão conectados, quantas decisões esperam você e quantos estão recusando chamadas. Cada sistema mostra o selo (Conectado, Esperando, Recusando, Desligado, Falta conectar) e o botão que leva ao próximo passo. |
 | **Conectar** | Escolhe o sistema e mostra o assistente de quatro passos abaixo. |
-| **Decisões** | Uma caixa só com tudo o que espera uma pessoa, de todos os sistemas: pedidos do Claude (**Aprovar** ou **Recusar**), regras no funil (próximo passo de cada uma) e sugestões abertas (**Tratada** ou **Dispensar**). Vazia, diz "Nada esperando você". O número aparece na aba e no menu. |
+| **Decisões** | Uma caixa só com tudo o que espera uma pessoa, de todos os sistemas: pedidos do Claude (**Aprovar** ou **Recusar**), regras no funil (próximo passo de cada uma) e sugestões abertas (**Tratada** ou **Dispensar**). O que você decide **não some**: vai para **Decididas**, com o resultado e a hora, e dá para **desfazer** quando o Sentinel permite (tabela abaixo). Embaixo fica a **Revisão completa** de um sistema: métricas, funil com evidências e sugestões. O número de decisões esperando aparece na aba; o do menu conta os pedidos do Claude. |
 | **Atividade** | As chamadas de todos os sistemas em uma lista, da mais recente para a mais antiga, com filtro por sistema e **Só recusadas**. Cada recusa traz o motivo e o que fazer, com o link para os passos. |
 | **Permissões** | Escolhe o sistema e ajusta o que o Claude pode ver (nível de dados), as ferramentas liberadas e os parâmetros das chamadas. Gerar ou revogar a chave continua na aba Conectar. |
 
-A aba **Claude (MCP)** de Sistemas → **Editar** continua existindo e aponta para esta área. Uma regra no funil só aparece em **Decisões** quando há algo para a pessoa fazer: em observação, só quando já tem achados e precisão suficientes para promover. Nada daqui entra na nota até uma regra ser promovida por você.
+A aba **Claude (MCP)** de Sistemas → **Editar** só mostra a situação da ligação e leva a esta área, sem repetir os passos. Em **Informações de Auditoria**, a aba **Revisão do Claude** é um resumo (pedidos esperando, regras no funil, sugestões abertas e o próximo passo) com o link para a revisão completa; a **Reauditoria** só avisa quantos pedidos esperam. Uma regra no funil só aparece em **Decisões** quando há algo para a pessoa fazer: em observação, só quando já tem achados e precisão suficientes para promover. Nada daqui entra na nota até uma regra ser promovida por você.
+
+### Desfazer uma decisão
+
+| Decisão | Desfazer | Como |
+|---|---|---|
+| Sugestão tratada ou dispensada | Sim | **Reabrir** (`POST …/suggestions/{sid}/status` com `OPEN`) |
+| Pedido recusado | Sim | **Reabrir** (`POST /api/v1/pending-actions/{id}/{actionId}/reopen`): volta a esperar, com 1 hora nova de validade, se a fila (5 pendentes) tiver lugar. Pedido que venceu sem decisão não volta |
+| Pedido aprovado de **suprimir achado** | Sim | **Desfazer** (`…/undo`): remove a supressão e o achado volta a contar. O pedido continua aprovado, marcado como **Desfeito**, com a hora |
+| Pedido aprovado de **iniciar auditoria** | Não | A auditoria já começou |
+| Regra descartada | Sim | **Restaurar** (`POST /api/v1/claude-review/{id}/rules/{rid}/restore`): volta para a etapa em que estava (a observação recomeça do zero, porque a regra não rodou enquanto esteve descartada), se o sistema tiver lugar entre as 30 regras em andamento |
+| Regra promovida | Não | Ela já pesa nas auditorias e na nota |
+
+Regras descartadas e pedidos aprovados **antes** desta versão não guardam a etapa anterior nem a supressão criada: aparecem como decididos, sem botão, e a tela diz o motivo. O Sentinel não tem identidade de pessoa por usuário, então o registro guarda **quando** foi decidido ou desfeito, não **quem**.
 
 ## Ligar para um sistema
 
@@ -85,18 +98,18 @@ Na tela de execução da auditoria (`/audits/<id>`), enquanto ela roda, aparece 
 - **ligado, sem consultas nesta auditoria**;
 - **ligado**, com o número de consultas desde o início da auditoria (e quantas foram recusadas), a última e a ferramenta usada.
 
-Cada chamada do Claude também entra no quadro **Eventos** ("Claude (MCP) chamou `buscar_achados`"), na ordem em que aconteceu. Pedidos do Claude esperando aprovação aparecem como link para **Reauditoria**.
+Cada chamada do Claude também entra no quadro **Eventos** ("Claude (MCP) chamou `buscar_achados`"), na ordem em que aconteceu. Pedidos do Claude esperando aprovação aparecem como link para **Claude (MCP) → Decisões**.
 
 É só informação: lê a configuração, as últimas chamadas e os pedidos pendentes, e não escreve nada. A nota continua vindo apenas do motor de regras. A faixa some quando a auditoria termina; o histórico completo fica na aba Claude (MCP) do sistema. Cada chamada guarda também os parâmetros recebidos (campo e valor curtos, até 60 caracteres; campos com `key`, `token`, `secret`, `senha`, `password` ou `authorization` no nome saem como `***`), mostrados na coluna Parâmetros. O MCP continua enxergando um sistema só, o da chave usada.
 
 ## Revisão do Claude: sugestões e regras
 
-As duas primeiras ferramentas de escrita só gravam em **Informações de Auditoria → Revisão do Claude**. Não criam achado, não mudam regra do motor e não entram na nota. O quadro no topo da aba mostra **quanto o Claude acerta**: sugestões aproveitadas (tratadas ÷ tratadas + dispensadas) e regras promovidas (promovidas ÷ promovidas + descartadas), medidas pelo que as pessoas decidiram (`GET /api/v1/claude-review/{id}/metrics`). Sem decisão, a taxa aparece como "sem decisão ainda".
+As duas primeiras ferramentas de escrita só gravam na **Revisão do Claude** (resumo em Informações de Auditoria; completa em **Claude (MCP) → Decisões**). Não criam achado, não mudam regra do motor e não entram na nota. O quadro no topo da revisão completa mostra **quanto o Claude acerta**: sugestões aproveitadas (tratadas ÷ tratadas + dispensadas) e regras promovidas (promovidas ÷ promovidas + descartadas), medidas pelo que as pessoas decidiram (`GET /api/v1/claude-review/{id}/metrics`). Sem decisão, a taxa aparece como "sem decisão ainda".
 
 ### Funil de uma regra proposta
 
 1. **Proposta** — validada na entrada: formato, um único casador, sem `fix`, expressão regular sem repetição aninhada.
-2. **Revisada** por uma pessoa (botão na aba). Até aqui a regra **não roda**.
+2. **Revisada** por uma pessoa (botão na revisão). Até aqui a regra **não roda**.
 3. **Teste de amostra** — feito fora do Sentinel (por exemplo `semgrep --test` pelo Claude Code); a pessoa registra passou/falhou.
 4. **Observação** — a regra roda nas auditorias do sistema em **modo sombra**: aparece, mas não pesa na nota. Falso positivo = achado suprimido como falso positivo.
 5. **Promovida** (pesa na nota) ou **descartada**. Para promover: pelo menos uma auditoria depois do início, 5 achados ou mais e precisão de 90% ou mais (`sentinel.review.min-hits`, `sentinel.review.min-precision`).
@@ -105,11 +118,11 @@ A regra nasce valendo só no sistema onde foi proposta. **Copiar para outro sist
 
 ## Triagem em lote com o Claude
 
-Peça ao Claude, na sua assinatura (sem API paga): "busque os achados de baixa confiança (`buscar_achados` com `confianca=LOW`), diga quais parecem falso positivo e peça a supressão". O Claude só enxerga título, regra, arquivo e o motivo da confiança, nunca o trecho de código; por isso a decisão dele é uma sugestão. Cada `suprimir_achado` vira um pedido pendente e uma pessoa aprova em **Reauditoria**.
+Peça ao Claude, na sua assinatura (sem API paga): "busque os achados de baixa confiança (`buscar_achados` com `confianca=LOW`), diga quais parecem falso positivo e peça a supressão". O Claude só enxerga título, regra, arquivo e o motivo da confiança, nunca o trecho de código; por isso a decisão dele é uma sugestão. Cada `suprimir_achado` vira um pedido pendente e uma pessoa aprova em **Claude (MCP) → Decisões**.
 
 ## Reauditoria e pedidos com aprovação
 
-`iniciar_auditoria` e `suprimir_achado` **nunca executam**: só criam um pedido pendente. Quem aprova ou recusa é uma pessoa, em **Informações de Auditoria → Reauditoria**, onde também ficam "Reauditar agora" e o antes e depois (nota, resolvidos, novos, persistentes).
+`iniciar_auditoria` e `suprimir_achado` **nunca executam**: só criam um pedido pendente. Quem aprova ou recusa é uma pessoa, em **Claude (MCP) → Decisões**. Em **Informações de Auditoria → Reauditoria** ficam "Reauditar agora" e o antes e depois (nota, resolvidos, novos, persistentes).
 
 - Cada pedido vale 1 hora; no máximo 5 pendentes por sistema; pedido repetido é recusado.
 - A branch é validada (sem `-` no início, sem `..`).

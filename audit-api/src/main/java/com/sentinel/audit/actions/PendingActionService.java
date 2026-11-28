@@ -108,8 +108,9 @@ public class PendingActionService {
         } else {
             long findingId = p.path("findingId").asLong();
             ownFinding(systemId, findingId);
-            lifecycle.suppress(findingId, new SuppressRequest(SuppressionReason.FALSE_POSITIVE, p.path("justification").asText(),
+            var suppression = lifecycle.suppress(findingId, new SuppressRequest(SuppressionReason.FALSE_POSITIVE, p.path("justification").asText(),
                     "Claude (aprovado por uma pessoa)", LocalDateTime.now().plusDays(PendingActionRules.SUPPRESSION_DAYS)));
+            a.setResultSuppressionId(suppression.getId());
             a.setResultNote("Achado suprimido por " + PendingActionRules.SUPPRESSION_DAYS + " dias.");
         }
         a.setStatus(PendingStatus.APPROVED);
@@ -123,6 +124,42 @@ public class PendingActionService {
         a.setStatus(PendingStatus.REJECTED);
         a.setDecidedAt(LocalDateTime.now());
         a.setResultNote("Recusado por uma pessoa.");
+        return a;
+    }
+
+    /** Desfaz a recusa: o pedido volta a esperar decisão, com uma validade nova. */
+    @Transactional
+    public PendingAction reopen(Long systemId, Long id) {
+        PendingAction a = owned(systemId, id);
+        String why = PendingActionRules.cannotReopen(a.getStatus(), (int) repository.pendingCount(systemId));
+        if (why != null) {
+            throw new IllegalArgumentException(why);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        a.setStatus(PendingStatus.PENDING);
+        a.setDecidedAt(null);
+        a.setResultNote(null);
+        a.setExpiresAt(PendingActionRules.expiresAt(now));
+        return a;
+    }
+
+    /** Desfaz um pedido aprovado de suprimir achado: remove a supressão e o achado volta a contar. */
+    @Transactional
+    public PendingAction undo(Long systemId, Long id) {
+        PendingAction a = owned(systemId, id);
+        String why = PendingActionRules.cannotUndo(a.getKind(), a.getStatus(), a.getUndoneAt(), a.getResultSuppressionId());
+        if (why != null) {
+            throw new IllegalArgumentException(why);
+        }
+        // Checa antes em vez de capturar a exceção: um erro dentro da transação a marcaria para desfazer.
+        boolean stillThere = lifecycle.listSuppressions(systemId).stream().anyMatch(s -> a.getResultSuppressionId().equals(s.getId()));
+        if (stillThere) {
+            lifecycle.removeSuppression(systemId, a.getResultSuppressionId());
+            a.setResultNote("Supressão desfeita por uma pessoa: o achado voltou a contar.");
+        } else {
+            a.setResultNote("A supressão já tinha sido removida: o achado já contava de novo.");
+        }
+        a.setUndoneAt(LocalDateTime.now());
         return a;
     }
 
@@ -171,11 +208,16 @@ public class PendingActionService {
         return a;
     }
 
-    private PendingAction decidable(Long systemId, Long id) {
+    private PendingAction owned(Long systemId, Long id) {
         PendingAction a = repository.findById(id);
         if (a == null || !a.getSystemId().equals(systemId)) {
             throw new IllegalArgumentException("Pedido não encontrado.");
         }
+        return a;
+    }
+
+    private PendingAction decidable(Long systemId, Long id) {
+        PendingAction a = owned(systemId, id);
         String why = PendingActionRules.cannotDecide(a.getStatus(), a.getExpiresAt(), LocalDateTime.now());
         if (why != null) {
             throw new IllegalArgumentException(why);

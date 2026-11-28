@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IPendingAction, ISystemSummaryResponse } from '../types';
@@ -15,13 +15,10 @@ function action(over: Partial<IPendingAction> = {}): IPendingAction {
 }
 
 function setup(actions: IPendingAction[]) {
-  const calls: Array<{ url: string; method: string }> = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => {
+    vi.fn(async (url: string) => {
       const requestUrl = String(url);
-      calls.push({ url: requestUrl, method: init?.method ?? 'GET' });
-      if (requestUrl.includes('/pending-actions/') && init?.method === 'POST') return new Response(JSON.stringify([action({ status: 'APPROVED', resultNote: 'Auditoria #9 iniciada.', auditRunId: 9 })]), { status: 200 });
       if (requestUrl.includes('/pending-actions/')) return new Response(JSON.stringify(actions), { status: 200 });
       if (requestUrl.includes('/audits')) return new Response('[]', { status: 200 });
       return new Response('{}', { status: 200 });
@@ -34,42 +31,28 @@ function setup(actions: IPendingAction[]) {
       </QueryClientProvider>
     </MemoryRouter>,
   );
-  return calls;
 }
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ReauditPanel', () => {
-  it('mostra o pedido esperando e deixa claro que nada acontece sem aprovação', async () => {
-    setup([action()]);
-    expect(await screen.findByText('Iniciar uma auditoria de conta-corrente-api na branch main')).toBeInTheDocument();
-    expect(screen.getByText(/nada acontece até você aprovar/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Aprovar' })).toBeInTheDocument();
-  });
-
-  it('aprovar chama a API e mostra o resultado com o link da auditoria', async () => {
-    const calls = setup([action()]);
-    fireEvent.click(await screen.findByRole('button', { name: 'Aprovar' }));
-    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.endsWith('/pending-actions/7/1/approve'))).toBe(true));
-    expect(await screen.findByText(/Auditoria #9 iniciada/)).toBeInTheDocument();
+  it('os pedidos não se decidem aqui: mostra quantos esperam e leva às Decisões do sistema', async () => {
+    setup([action(), action({ id: 2, status: 'APPROVED' })]);
+    const aviso = await screen.findByRole('region', { name: 'Pedidos do Claude' });
+    expect(await within(aviso).findByText('1 pedido do Claude espera sua decisão.')).toBeInTheDocument();
+    expect(within(aviso).getByRole('link', { name: /Abrir Decisões/ })).toHaveAttribute('href', '/claude?aba=decisoes&systemId=7');
     expect(screen.queryByRole('button', { name: 'Aprovar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Recusar' })).not.toBeInTheDocument();
   });
 
-  it('recusar chama a API de recusa', async () => {
-    const calls = setup([action()]);
-    fireEvent.click(await screen.findByRole('button', { name: 'Recusar' }));
-    await waitFor(() => expect(calls.some((c) => c.url.endsWith('/pending-actions/7/1/reject'))).toBe(true));
+  it('com vários pedidos, fala no plural', async () => {
+    setup([action(), action({ id: 2 })]);
+    expect(await screen.findByText('2 pedidos do Claude esperam sua decisão.')).toBeInTheDocument();
   });
 
-  it('pedido já decidido não tem botões', async () => {
-    setup([action({ status: 'EXPIRED', resultNote: 'Perdeu a validade sem decisão.' })]);
-    expect(await screen.findByText(/Venceu sem decisão/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Aprovar' })).not.toBeInTheDocument();
-  });
-
-  it('sem pedidos explica como liberar as ferramentas', async () => {
-    setup([]);
-    expect(await screen.findByText(/Libere iniciar_auditoria ou suprimir_achado/)).toBeInTheDocument();
+  it('sem pedidos esperando, diz isso (pedido já decidido não conta)', async () => {
+    setup([action({ status: 'EXPIRED' })]);
+    expect(await screen.findByText('Nenhum pedido do Claude esperando.')).toBeInTheDocument();
   });
 
   it('formata a variação de nota', () => {
