@@ -34,7 +34,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    css: { include: [/styles\/paletas\.css/] }, // as demais folhas ficam vazias; esta é lida pelo teste de contraste (paletas.test.ts)
+    css: { include: [/styles\/(paletas|acoes)\.css/] }, // as demais folhas ficam vazias; estas duas são lidas por testes (paletas.test.ts, acoes.test.ts)
     exclude: ['**/node_modules/**', 'e2e/**'],
     // Piso de cobertura (medido em 2026-11: linhas 88,7%, instruções 87,1%, ramos 77,9%, funções 82,7%). Sobe com o tempo.
     coverage: {

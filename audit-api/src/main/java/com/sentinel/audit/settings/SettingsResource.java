@@ -26,7 +26,8 @@ import java.util.Map;
  * Tela de Configurações: mostra as configurações da instalação, grava as que podem ser mudadas por aqui e reinicia
  * a API para valerem. As protegidas (banco, chaves, caminhos, execução de programas) aparecem só para leitura.
  */
-// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; sem papéis adicionais por endpoint.
+// Acesso: ApiKeyFilter (API_KEY) ou http.auth.permission do perfil oidc protegem /api/*; o papel sentinel-admin (inclusive para /restart)
+// é exigido por RolePolicy e aplicado pelo RoleAuthorizationFilter, por isso a classe não repete @RolesAllowed.
 @PermitAll
 @Path("/api/v1/settings")
 @Produces(MediaType.APPLICATION_JSON)

@@ -5,6 +5,7 @@ import './styles/paletas.css';
 import './styles/responsivo.css';
 import './styles/grafico-auditorias.css';
 import './styles/leitura.css';
+import './styles/acoes.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import ReactDOM from 'react-dom/client';

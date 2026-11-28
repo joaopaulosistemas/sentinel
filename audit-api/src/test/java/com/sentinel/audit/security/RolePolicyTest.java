@@ -50,6 +50,7 @@ class RolePolicyTest {
         assertEquals(Need.ADMIN, RolePolicy.need("GET", "/api/v1/settings"));
         assertEquals(Need.ADMIN, RolePolicy.need("PUT", "/api/v1/settings"));
         assertEquals(Need.ADMIN, RolePolicy.need("DELETE", "/api/v1/settings/CHAVE"));
+        assertEquals(Need.ADMIN, RolePolicy.need("POST", "/api/v1/settings/restart"));
     }
 
     @Test
