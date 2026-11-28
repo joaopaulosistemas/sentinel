@@ -2405,3 +2405,10 @@ A paleta ficou clara demais para o João. O claro da "Mais suave" passa de cart�
 - **Motivo:** ALERTA "ciclo não generaliza" (item A) segue ativo; a proposta de estratégia da volta 61 espera decisão do João. Sem decisão, nenhuma volta nova.
 - **Decisão pendente do João (repetida):** (1) métrica por precisão em código limpo mais amostra classificada; (2) régua fixa de 5 alvos nunca lidos (só números); (3) SCA por manifesto e analisador de ausência de CSRF; ou pausar esta tarefa agendada / abrir à mão o PR da branch 18.
 - **NÃO rodado:** auditoria, recall, validação (dvja, NodeGoat, bnematzadeh), petclinic, Benchmark OWASP, amostra.
+
+## Execução de 2026-11-28 (tarde, sem volta 62): parada pelo item F (ALERTA ativo), quarta parada seguida
+
+- **Estado:** `ciclo/estabilizacao-18` com 2 voltas (60 e 61), sem PR de ciclo aberto, sem auditoria em andamento (últimas 3 do CI com sucesso, 2026-11-27). Nenhuma branch nova criada.
+- **Busca (6 consultas, 2 páginas, `pushed:>2026-01-01`, filtradas contra `descobertos.txt`, `conjuntos.json` e LOG):** nenhum app de treino novo em Java/JS/TS; sobraram ferramentas, `railsgoat` (Ruby), `vuln-bank` (Python), `kubernetes-goat`/`github-actions-goat` (infra) e `the-most-vulnerable-dotnet-app` (.NET).
+- **Decisão pendente do João (repetida):** estratégia da volta 61 (precisão em código limpo, régua fixa de alvos só com números, SCA por manifesto e analisador de CSRF), ou pausar esta tarefa agendada, ou abrir à mão o PR da branch 18.
+- **NÃO rodado:** auditoria, recall, validação, petclinic, Benchmark OWASP, amostra.
